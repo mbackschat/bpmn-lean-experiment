@@ -10,6 +10,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { resolveCibSevenMavenTimeoutMs, wrapCibSevenMavenFailure } from "./cibseven-maven-budget.ts";
+import { populationEvidenceCases, populationEvidenceDocument } from "./cibseven-population-evidence.ts";
+import type { CibPopulationResult } from "./cibseven-population-evidence.ts";
 import { oracleEvidenceCases } from "./contract-artifact-cases.ts";
 import { resolveJavaHome } from "./java-home.ts";
 import { runCommand } from "./run-command.ts";
@@ -153,7 +155,11 @@ export function cibBridgeDeadlineMs(scenarioCount: number, environment: NodeJS.P
 }
 
 type HarnessFailure = Readonly<{ scenarioId: string; failure: string }>;
-type BatchOutcome = Readonly<{ results: ReadonlyArray<CibRunnerResult>; failures: ReadonlyArray<HarnessFailure> }>;
+type BatchOutcome = Readonly<{
+  results: ReadonlyArray<CibRunnerResult>;
+  populations: ReadonlyArray<CibPopulationResult>;
+  failures: ReadonlyArray<HarnessFailure>;
+}>;
 
 /**
  * Splits the export bridge's output into answers and harness failures. The bridge answers every requested scenario in
@@ -165,6 +171,7 @@ export function bridgeOutcomes(requested: ReadonlyArray<string>, lines: Readonly
     throw new Error(`CIB bridge answered ${String(lines.length)} of ${String(requested.length)} scenarios`);
   }
   const results: CibRunnerResult[] = [];
+  const populations: CibPopulationResult[] = [];
   const failures: HarnessFailure[] = [];
   for (const [index, line] of lines.entries()) {
     const answer = parseWireJson<Readonly<{ kind: string; scenarioId: string; failure?: string }>>(
@@ -175,15 +182,16 @@ export function bridgeOutcomes(requested: ReadonlyArray<string>, lines: Readonly
       throw new Error(`CIB bridge line ${String(index + 1)} answers ${answer.scenarioId}, not ${requested[index]!}`);
     }
     if (answer.kind === "scenarioResult") results.push(answer as unknown as CibRunnerResult);
+    else if (answer.kind === "cibSevenPopulationResult") populations.push(answer as unknown as CibPopulationResult);
     else if (answer.kind === "scenarioHarnessFailure" && typeof answer.failure === "string") {
       failures.push({ scenarioId: answer.scenarioId, failure: answer.failure });
     } else throw new Error(`CIB bridge line ${String(index + 1)} has kind ${answer.kind}`);
   }
-  return { results, failures };
+  return { results, populations, failures };
 }
 
 async function runCibBatch(
-  scenarios: ReadonlyArray<ScenarioDocument>,
+  scenarios: ReadonlyArray<Readonly<{ id: string }>>,
   temporaryDirectory: string,
   engineVersion: string,
   effectSchedule:
@@ -264,6 +272,63 @@ export function cibEvidenceEffectSchedule(
     stimulus.kind === "command" &&
     (stimulus["action"] as { readonly kind?: unknown } | undefined)?.kind === "cancelIncidentProcess");
   return cancels ? "incidentReportCancel" : "incidentReportRetrySuccess";
+}
+
+type Replacement = Readonly<{ relativePath: string; value: unknown }>;
+
+/** A population run removed everything it created, under the profile's pinned producer. */
+export function requireCleanPopulation(result: CibPopulationResult, profile: SemanticProfile): void {
+  const { cleanup, engineVersion, databaseVersion } = result.diagnostics;
+  if (Object.values(cleanup).some((count) => count !== 0)) {
+    throw new Error(`CIB population ${result.scenarioId} did not clean up`);
+  }
+  if (engineVersion !== profile.oracle.version || databaseVersion !== profile.environment.database.split(" ")[1]) {
+    throw new Error(`CIB producer identity differs for ${result.scenarioId}`);
+  }
+}
+
+/**
+ * The evidence of every population an evidence run covers (`populationEvidenceCases`). The bridge runs a population in
+ * the default engine environment, the only one it runs in, so every population takes the plain schedule.
+ */
+async function populationReplacements(
+  temporaryDirectory: string,
+): Promise<Readonly<{ replacements: ReadonlyArray<Replacement>; failures: ReadonlyArray<string> }>> {
+  const sources = await Promise.all(populationEvidenceCases(projectRoot).map(async (artifactCase) => {
+    const scenario = await readJsonWithBytes<Readonly<{ id: string; profile: string }>>(artifactCase.scenarioRelativePath);
+    const profile = await readJsonWithBytes<SemanticProfile>(`profiles/${scenario.value.profile}/profile.json`);
+    return { artifactCase, scenario, profile };
+  }));
+  const replacements: Replacement[] = [];
+  const failures: string[] = [];
+  for (const [engineVersion, versionSources] of Map.groupBy(sources, ({ profile }) => profile.value.oracle.version)) {
+    await runCibBatch([], temporaryDirectory, engineVersion, "plainSuccess");
+    for (let start = 0; start < versionSources.length; start += cibBatchChunkSize) {
+      const chunk = versionSources.slice(start, start + cibBatchChunkSize);
+      const batch = await runCibBatch(
+        chunk.map(({ scenario }) => scenario.value), temporaryDirectory, engineVersion, "plainSuccess");
+      if (batch.results.length > 0) throw new Error("CIB answered a population with a single-instance result");
+      failures.push(...batch.failures.map(({ scenarioId, failure }) => `${scenarioId}: ${failure}`));
+      for (const result of batch.populations) {
+        const source = chunk.find(({ scenario }) => scenario.value.id === result.scenarioId);
+        if (source === undefined) throw new Error(`CIB answered population ${result.scenarioId}, which it was not asked`);
+        requireCleanPopulation(result, source.profile.value);
+        const { scenario, profile } = source;
+        replacements.push({
+          relativePath: source.artifactCase.evidenceRelativePath,
+          value: populationEvidenceDocument(
+            { id: scenario.value.id, bytes: scenario.bytes },
+            {
+              id: profile.value.id, bytes: profile.bytes, revision: profile.value.oracle.revision,
+              java: profile.value.environment.java, database: profile.value.environment.database,
+            },
+            result,
+          ),
+        });
+      }
+    }
+  }
+  return { replacements, failures };
 }
 
 async function replaceEvidence() {
@@ -423,8 +488,10 @@ async function replaceEvidence() {
         };
       },
     );
+    const population = await populationReplacements(temporaryDirectory);
+    failures.push(...population.failures);
     await Promise.all(
-      replacements.map(({ relativePath, value }) =>
+      [...replacements, ...population.replacements].map(({ relativePath, value }) =>
         writeFile(
           path.join(projectRoot, relativePath),
           `${JSON.stringify(value, null, 2)}\n`,
@@ -433,7 +500,7 @@ async function replaceEvidence() {
       ),
     );
     process.stdout.write(
-      `replaced ${replacements.length} content-bound CIB evidence artifacts\n`,
+      `replaced ${replacements.length + population.replacements.length} content-bound CIB evidence artifacts\n`,
     );
     if (failures.length > 0) {
       throw new Error(`CIB could not run ${String(failures.length)} scenarios:\n${failures.join("\n")}`);

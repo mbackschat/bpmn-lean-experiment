@@ -12,18 +12,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Test;
 
 /**
  * The runner reproduces every retained CIB evidence result of its packaged release: the scenario next to each
- * `*cibseven-evidence.json` under `scenarios/`, discovered by name, runs through one runner and its canonical result
- * equals the retained one. Open waits compare in the canonical order of `canonical-result.schema.json`.
+ * `*cibseven-evidence.json` under `scenarios/`, discovered by name, runs through one runner and its canonical result,
+ * or a population's deployments, steps, input failures and states, equal the retained ones. Open waits compare in the
+ * canonical order of `canonical-result.schema.json`.
  */
 public class CibSevenRetainedEvidenceTest {
 
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final String POPULATION_EVIDENCE_KIND = "cibSevenPopulationEvidence";
 
   @Test
   public void reproducesEveryRetainedEvidenceResultOfThePackagedRelease() throws Exception {
@@ -39,22 +42,39 @@ public class CibSevenRetainedEvidenceTest {
         var scenarioPath =
             evidencePath.resolveSibling(evidencePath.getFileName().toString()
                 .replace("cibseven-evidence.json", "scenario.json"));
+        if (POPULATION_EVIDENCE_KIND.equals(evidence.at("/kind").asText())) {
+          var population = ScenarioJson.readPopulation(Files.readString(scenarioPath));
+          var answer = MAPPER.readTree(ScenarioJson.writePopulation(runner.runPopulation(population, PROJECT_ROOT)));
+          for (var member : List.of("deployments", "steps", "inputFailures", "processStates")) {
+            assertEquals(scenarioPath + " " + member,
+                canonical(evidence.at("/result").path(member)), canonical(answer.path(member)));
+          }
+          assertClean(scenarioPath, answer);
+          compared += 1;
+          continue;
+        }
         var scenario = ScenarioJson.read(scenarioPath);
         var result = runner.run(scenario, PROJECT_ROOT, schedule(scenario));
         var actual = MAPPER.readTree(ScenarioJson.write(result));
         var expected = evidence.get("result");
         assertEquals(scenarioPath.toString(), canonical(expected.get("outcome")), canonical(actual.get("outcome")));
         assertEquals(scenarioPath.toString(), canonical(expected.get("trace")), canonical(actual.get("trace")));
-        // Both sides come from JSON text: `valueToTree` keeps the record's `long` counts as long nodes, a parsed small
-        // number is an int node, and Jackson's node equality compares node types.
-        assertEquals(
-            scenarioPath.toString(),
-            MAPPER.readTree(MAPPER.writeValueAsString(ScenarioDiagnosticsProtocol.CleanupProjection.clean())),
-            actual.at("/diagnostics/cleanup"));
+        assertClean(scenarioPath, actual);
         compared += 1;
       }
     }
     assertFalse("no retained evidence of CIB Seven " + version, compared == 0);
+  }
+
+  /**
+   * The run removed everything it created. Both sides come from JSON text: `valueToTree` keeps the record's `long`
+   * counts as long nodes, a parsed small number is an int node, and Jackson's node equality compares node types.
+   */
+  private static void assertClean(Path scenarioPath, JsonNode answer) throws IOException {
+    assertEquals(
+        scenarioPath.toString(),
+        MAPPER.readTree(MAPPER.writeValueAsString(ScenarioDiagnosticsProtocol.CleanupProjection.clean())),
+        answer.at("/diagnostics/cleanup"));
   }
 
   /**

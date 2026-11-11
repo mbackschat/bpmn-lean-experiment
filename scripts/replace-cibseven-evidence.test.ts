@@ -5,6 +5,7 @@ import {
   bridgeOutcomes,
   cibBridgeDeadlineMs,
   cibEvidenceEffectSchedule,
+  requireCleanPopulation,
   requireReplacementAuthorization,
 } from "./replace-cibseven-evidence.ts";
 
@@ -34,10 +35,26 @@ test("requires explicit authorization before replacing CIB evidence", () => {
 test("reads each scenario's answer or harness failure from the bridge output, in request order", () => {
   const result = { kind: "scenarioResult", scenarioId: "a" };
   const failure = { kind: "scenarioHarnessFailure", scenarioId: "b", failure: "java.lang.IllegalStateException: no host" };
-  assert.deepEqual(bridgeOutcomes(["a", "b"], [JSON.stringify(result), JSON.stringify(failure)]), {
-    results: [result],
-    failures: [{ scenarioId: "b", failure: "java.lang.IllegalStateException: no host" }],
+  const population = { kind: "cibSevenPopulationResult", scenarioId: "c" };
+  assert.deepEqual(
+    bridgeOutcomes(["a", "b", "c"], [JSON.stringify(result), JSON.stringify(failure), JSON.stringify(population)]),
+    {
+      results: [result],
+      populations: [population],
+      failures: [{ scenarioId: "b", failure: "java.lang.IllegalStateException: no host" }],
+    },
+  );
+});
+
+test("keeps population evidence only from a clean run under the profile's pinned producer", () => {
+  const profile = { id: "p", oracle: { version: "2.2.0", revision: "r" }, environment: { java: "21", database: "H2 2.3.232" } };
+  const result = (cleanup: Record<string, number>, engineVersion = "2.2.0") => ({
+    scenarioId: "p", deployments: [], steps: [], processStates: [],
+    diagnostics: { engineVersion, databaseVersion: "2.3.232", cleanup },
   });
+  assert.doesNotThrow(() => requireCleanPopulation(result({ deployments: 0, jobs: 0 }), profile));
+  assert.throws(() => requireCleanPopulation(result({ deployments: 1 }), profile), /did not clean up/);
+  assert.throws(() => requireCleanPopulation(result({}, "2.0.0"), profile), /producer identity differs/);
 });
 
 test("refuses bridge output that skips, reorders or invents a scenario", () => {

@@ -3,7 +3,8 @@
  * return the same whole result on every scenario and population scenario, and on every scenario with retained CIB Seven
  * evidence the kernel's result equals the retained one at the CIB observation boundary (`compareTargetResults`, which
  * drops the kernel-only `code` and `scopes` members and sorts open waits, after `foldSynchronousEffects` folds the
- * effect inputs of delegates CIB ran inside another command). Discovery is by directory
+ * effect inputs of delegates CIB ran inside another command), as on every population with retained evidence
+ * (`comparePopulationResults`). Discovery is by directory
  * (`scenario-discovery.ts`), so a new scenario or evidence file joins without an edit here.
  *
  * No disagreement between the kernels is expected. A disagreement with retained evidence is expected exactly when the
@@ -21,11 +22,13 @@ import { test } from "node:test";
 import {
   ComparisonKind,
   DifferentialTarget,
+  comparePopulationResults,
   compareTargetResults,
   firstValueDisagreement,
   foldSynchronousEffects,
+  populationClockMs,
 } from "@bpmn-lean/differential";
-import type { ScenarioDisagreement, ValueDisagreement } from "@bpmn-lean/differential";
+import type { PopulationResultDocument, ScenarioDisagreement, ValueDisagreement } from "@bpmn-lean/differential";
 import { parseStrict, runPopulation, runScenario } from "@bpmn-lean/kernel";
 
 import { pipelineTestTimeoutMs } from "../../../scripts/pipeline-budget.ts";
@@ -38,7 +41,11 @@ import { DiscoveredKind, discoverScenarios, kernelProgramFor, scenarioKernelInpu
 import type { CanonicalResult, DiscoveredScenario, ScenarioDocument } from "./scenario-discovery.ts";
 
 type OracleDisagreement = Readonly<{ scenario: string } & ValueDisagreement>;
-type EvidenceDisagreement = Readonly<{ scenario: string; evidence: string; disagreement: ScenarioDisagreement }>;
+type EvidenceDisagreement = Readonly<{
+  scenario: string;
+  evidence: string;
+  disagreement: ScenarioDisagreement | ValueDisagreement;
+}>;
 
 /** JSON serialization erases the undefined members a TypeScript result may carry and Lean's cannot. */
 const wireValue = (value: unknown): unknown => JSON.parse(JSON.stringify(value)) as unknown;
@@ -81,8 +88,17 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
           const digestsPath = path.join(directory, `population-${String(index)}-digests.json`);
           await writeFile(digestsPath, JSON.stringify(digests), "utf8");
           const lean = await runLeanKernelPopulation(digestsPath, sourcePaths, scenarioPath);
-          const difference = compared(label(scenario), lean, wireValue(runPopulation(sources, scenario.document, digests)));
+          const typeScript = wireValue(runPopulation(sources, scenario.document, digests)) as PopulationResultDocument;
+          const difference = compared(label(scenario), lean, typeScript);
           if (difference !== null) kernelDisagreements.push(difference);
+          if (scenario.evidence === null) break;
+          evidenceCount += 1;
+          retained.add(scenario.evidence.relativePath);
+          const population = comparePopulationResults(
+            scenario.evidence.result, typeScript, populationClockMs(scenario.document.steps));
+          if (population !== null) {
+            evidenceDisagreements.push({ scenario: label(scenario), evidence: scenario.evidence.relativePath, disagreement: population });
+          }
           break;
         }
         case DiscoveredKind.Scenario: {

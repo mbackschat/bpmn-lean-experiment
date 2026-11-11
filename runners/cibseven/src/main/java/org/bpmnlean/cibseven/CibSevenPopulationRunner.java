@@ -53,6 +53,7 @@ final class CibSevenPopulationRunner {
   private final CibSevenStateProjector projector;
   private final CibSevenStarts starts;
   private final CibSevenCommandExecutor executor;
+  private final CibSevenCascades cascades;
   private final CibSevenPopulationCommands commands;
   /** Engine identifier to public identifier of every root instance, in start order. */
   private final Map<String, String> roots = new LinkedHashMap<>();
@@ -66,7 +67,8 @@ final class CibSevenPopulationRunner {
     this.starts = new CibSevenStarts(engine, logicalEpoch);
     this.executor = new CibSevenCommandExecutor(
         engine, projector, effects, CibEffectExecutionSchedule.PLAIN_SUCCESS, new Options(null), logicalEpoch);
-    this.commands = new CibSevenPopulationCommands(engine, registry, projector, starts, logicalEpoch, roots);
+    this.cascades = new CibSevenCascades(engine, registry, projector, roots);
+    this.commands = new CibSevenPopulationCommands(engine, registry, projector, starts, cascades, logicalEpoch, roots);
   }
 
   /** Every CIB deployment the run made, for cleanup, also after a harness failure. */
@@ -106,23 +108,24 @@ final class CibSevenPopulationRunner {
       clock = at;
       setClock(at);
       var before = starts.rootInstances();
+      var activities = cascades.activities();
       switch (step) {
         case DeployStep deploy -> {
           registry.deploy(deploy.definitionRef(), resources.get(deploy.definitionRef()), scenario.id());
-          adopt(before, Map.of(), "deploy " + deploy.definitionRef());
+          adopt(before, activities, Map.of(), null);
         }
         case InstanceStep instance -> {
           var answer = instance(instance);
           if (answer.outcome() != COMMITTED) {
             failures.add(new InputFailure(instance.stimulus().commandId(), answer.outcome()));
           }
-          adopt(before, answer.started(), instance.stimulus().commandId());
+          adopt(before, activities, answer.started(), instance.stimulus().commandId());
         }
         case PopulationCommand command -> {
           effects.beginCommand(command.commandId());
-          var answer = commands.apply(command, at);
+          var answer = commands.apply(command, at, activities);
           steps.add(new StepEntry(command.commandId(), steps.size() + 1L, at, answer.outcome(), answer.resolution()));
-          adopt(before, answer.started(), command.commandId());
+          adopt(before, activities, answer.started(), command.commandId());
         }
       }
       numberActivations();
@@ -229,24 +232,25 @@ final class CibSevenPopulationRunner {
   }
 
   /**
-   * Names the root instances a step started: each must be one the step names (`started`), under an identity no other
-   * root holds. A root CIB started inside the step that the step cannot name has no derived identity in this runner.
+   * Names the root instances a step started, in creation order, under identities no other root holds: those the step
+   * started itself by the names it gives (`started`), and each other one as a cascade of the step's command
+   * ({@link CibSevenCascades#identify}), whose emitter may be an instance the same step started earlier. A deploy step
+   * has no command (`commandId` null) and starts nothing.
    */
-  private void adopt(Set<String> before, Map<String, String> started, String step) {
+  private void adopt(Set<String> before, Set<String> activities, Map<String, String> started, String commandId) {
     var created = starts.startedSince(before);
+    var named = 0;
     for (var instance : created) {
-      var id = started.get(instance.getId());
-      if (id == null) {
-        throw new IllegalStateException("Step " + step + " started root instance " + instance.getId()
-            + " at " + instance.getStartActivityId() + ", which this runner derives no identity for");
-      }
+      var own = started.get(instance.getId());
+      named += own == null ? 0 : 1;
+      var id = own != null ? own : cascades.identify(instance, commandId, activities);
       if (roots.containsValue(id)) {
-        throw new IllegalStateException("Step " + step + " started a second root instance " + id);
+        throw new IllegalStateException("Step " + commandId + " started a second root instance " + id);
       }
       roots.put(instance.getId(), id);
     }
-    if (created.size() != started.size()) {
-      throw new IllegalStateException("Step " + step + " names a root instance it did not start");
+    if (named != started.size()) {
+      throw new IllegalStateException("Step " + commandId + " names a root instance it did not start");
     }
   }
 

@@ -120,6 +120,11 @@ function comparable(observation: unknown, observed: Observed): unknown {
     : rooted;
 }
 
+/** One observation as retained CIB Seven evidence observes it, the comparable form against such evidence. */
+export function atCibBoundary(observation: unknown): unknown {
+  return comparable(observation, { kernelFields: false, cibEvidence: true });
+}
+
 /**
  * Root bindings as the CIB runner projects them: Java stores the legacy `stringList` kind and a structured `list` of
  * Strings as the same ArrayList, so the runner spells every root List of Strings, the empty one included, as

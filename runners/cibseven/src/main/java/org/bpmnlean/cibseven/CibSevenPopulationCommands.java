@@ -10,7 +10,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
+import java.util.Set;
 import org.bpmnlean.cibseven.CibSevenOpenWaitProjector.ProjectedWait;
 import org.bpmnlean.cibseven.CibSevenOpenWaitProjector.SubscriptionHandle;
 import org.bpmnlean.cibseven.CibSevenPopulationRegistry.Registered;
@@ -32,7 +32,6 @@ import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.history.HistoricProcessInstance;
 import org.cibseven.bpm.engine.impl.MessageCorrelationBuilderImpl;
 import org.cibseven.bpm.engine.runtime.ProcessInstance;
-import org.cibseven.bpm.model.bpmn.instance.ConditionalEventDefinition;
 import org.cibseven.bpm.model.bpmn.instance.SignalEventDefinition;
 import org.cibseven.bpm.model.bpmn.instance.StartEvent;
 
@@ -41,7 +40,8 @@ import org.cibseven.bpm.model.bpmn.instance.StartEvent;
  * broadcast through `createSignalEvent`, a Conditional start evaluation through `createConditionEvaluation`, and a
  * Timer-start firing by executing the start's job. CIB delivers every receiver of one command in one transaction
  * (M8-LIM-G), so a command has one outcome; the instances it started are named by the derived identities of the
- * population contract §4, mapped from CIB's by their deployment and start activity (M8-OP-A).
+ * population contract §4, mapped from CIB's by their deployment and start activity (M8-OP-A). The instances a thrown
+ * Signal started inside the command are no instances it started; the population runner names them as cascades.
  */
 final class CibSevenPopulationCommands {
 
@@ -60,6 +60,7 @@ final class CibSevenPopulationCommands {
   private final CibSevenStateProjector projector;
   private final CibSevenStarts starts;
   private final Date logicalEpoch;
+  private final CibSevenCascades cascades;
   /** The population's root instances, engine identifier to public identifier, which the population runner keeps. */
   private final Map<String, String> roots;
 
@@ -68,26 +69,29 @@ final class CibSevenPopulationCommands {
       CibSevenPopulationRegistry registry,
       CibSevenStateProjector projector,
       CibSevenStarts starts,
+      CibSevenCascades cascades,
       Date logicalEpoch,
       Map<String, String> roots) {
     this.engine = engine;
     this.registry = registry;
     this.projector = projector;
     this.starts = starts;
+    this.cascades = cascades;
     this.logicalEpoch = logicalEpoch;
     this.roots = roots;
   }
 
   /**
-   * Applies `command` at the logical time `atMs`, to which the clock is already set. A Message CIB correlates to no
+   * Applies `command` at the logical time `atMs`, to which the clock is already set; `activities` are the activity
+   * instances before it ({@link CibSevenCascades#activities}). A Message CIB correlates to no
    * candidate, or to several, rolls the command back with `noMatch` or `ambiguous` (`CorrelateMessageCmd.java:57-95`,
    * `DefaultCorrelationHandler.java:46-71`); any other CIB failure rolls it back without a resolution.
    */
-  Answer apply(PopulationCommand command, long atMs) {
+  Answer apply(PopulationCommand command, long atMs, Set<String> activities) {
     try {
       return switch (command) {
         case PublishStep publish -> publish(publish);
-        case BroadcastStep broadcast -> broadcast(broadcast);
+        case BroadcastStep broadcast -> broadcast(broadcast, activities);
         case EvaluateConditionsStep evaluation -> evaluate(evaluation);
         case TimerStartStep timer -> timerStart(timer, atMs);
       };
@@ -141,7 +145,7 @@ final class CibSevenPopulationCommands {
     return switch (result.getResultType()) {
       case Execution -> delivered(result.getExecution().getId(), name, waits);
       case ProcessDefinition ->
-          started(publish.commandId(), List.of(result.getProcessInstance().getId()), start -> true);
+          started(publish.commandId(), List.of(result.getProcessInstance().getId()));
     };
   }
 
@@ -175,20 +179,35 @@ final class CibSevenPopulationCommands {
 
   /**
    * Broadcasts a Signal; its discovery order is not CIB's to follow (PopulationProtocol.Receiver). CIB starts every
-   * current deployment's matching Signal start; an instance any other start began inside the broadcast's transaction is
-   * a cascaded intent, whose identity this runner does not derive.
+   * current deployment's Signal start of that name, which the broadcast names; an instance another start began inside
+   * the broadcast's transaction is a cascaded intent, which {@link CibSevenCascades} names. When a receiver rethrows the
+   * broadcast's own Signal, CIB starts each such start twice, and which instance which delivery started cannot be told.
    */
-  private Answer broadcast(BroadcastStep broadcast) {
+  private Answer broadcast(BroadcastStep broadcast, Set<String> activities) {
     var name = registry.signalName(broadcast.address());
     var before = starts.rootInstances();
     engine.getRuntimeService().createSignalEvent(name)
         .setVariables(ScenarioVariableBindings.toEngineMap(broadcast.variables()))
         .send();
-    var started = starts.startedSince(before).stream().map(HistoricProcessInstance::getId).toList();
-    return started(broadcast.commandId(), started, start -> start.getEventDefinitions().stream()
-        .anyMatch(definition -> definition instanceof SignalEventDefinition signal
-            && signal.getSignal() != null
-            && name.equals(signal.getSignal().getName())));
+    if (!cascades.throwsOf(name, activities).isEmpty()) {
+      throw new IllegalStateException("A receiver of broadcast " + broadcast.commandId() + " rethrew its Signal " + name
+          + "; the instances each delivery started cannot be told apart");
+    }
+    var own = starts.startedSince(before).stream()
+        .filter(instance -> signalStart(instance, name))
+        .map(HistoricProcessInstance::getId)
+        .toList();
+    return started(broadcast.commandId(), own);
+  }
+
+  /** Whether `instance` began at a Signal start of the Signal `name`. */
+  private boolean signalStart(HistoricProcessInstance instance, String name) {
+    return engine.getRepositoryService().getBpmnModelInstance(instance.getProcessDefinitionId())
+            .getModelElementById(instance.getStartActivityId()) instanceof StartEvent start
+        && start.getEventDefinitions().stream()
+            .anyMatch(definition -> definition instanceof SignalEventDefinition signal
+                && signal.getSignal() != null
+                && name.equals(signal.getSignal().getName()));
   }
 
   /** Evaluates the Conditional starts of one deployment, or of every current one, against the given variables. */
@@ -208,8 +227,7 @@ final class CibSevenPopulationCommands {
         .evaluateStartConditions().stream()
         .map(ProcessInstance::getId)
         .toList();
-    return started(evaluation.commandId(), started, start -> start.getEventDefinitions().stream()
-        .anyMatch(ConditionalEventDefinition.class::isInstance));
+    return started(evaluation.commandId(), started);
   }
 
   /**
@@ -250,9 +268,9 @@ final class CibSevenPopulationCommands {
   /**
    * The instances a command started, each named `start:` by the command, its deployment and its start Event, and
    * ordered by deployment and start Event: CIB's order comes from a `HashSet` (population contract §6), which a
-   * witness compared with CIB never depends on. Each must have begun at a start `startedBy` accepts.
+   * witness compared with CIB never depends on.
    */
-  private Answer started(String commandId, List<String> engineIds, Predicate<StartEvent> startedBy) {
+  private Answer started(String commandId, List<String> engineIds) {
     var entries = new ArrayList<Started>();
     var mapped = new LinkedHashMap<String, String>();
     for (var engineId : engineIds) {
@@ -260,12 +278,6 @@ final class CibSevenPopulationCommands {
           .processInstanceId(engineId).singleResult();
       var definition = engine.getRepositoryService().getProcessDefinition(instance.getProcessDefinitionId());
       var startEvent = instance.getStartActivityId();
-      if (!(engine.getRepositoryService().getBpmnModelInstance(definition.getId()).getModelElementById(startEvent)
-              instanceof StartEvent start)
-          || !startedBy.test(start)) {
-        throw new IllegalStateException("Command " + commandId + " started an instance at " + startEvent
-            + ", which a cascaded intent began; this runner derives no identity for it");
-      }
       var deploymentId = registry.ordinalOf(definition.getDeploymentId());
       var id = startedInstanceId(commandId, deploymentId, startEvent);
       entries.add(new Started(id, deploymentId, definition.getVersion(), startEvent));

@@ -51,6 +51,20 @@ public class PopulationContractTest {
         CibSevenPopulationCommands.timerInstanceId(3, "Timer_Start", 60000));
   }
 
+  /**
+   * The literals `packages/differential/test/cib-runner-identities.test.ts` pins for the kernel's `cascadeInstanceId`,
+   * so the runner and the kernel name a cascade-started instance alike, byte for byte.
+   */
+  @Test
+  public void cascadeIdentityExtendsTheStartIdentityByTheLengthPrefixedEmitterKey() {
+    var emitter = CibSevenCascades.emitterKey("Antrag-ß", "Throw_1", 3);
+    assertEquals("9:Antrag-ß:7:Throw_1:3", emitter);
+    assertEquals("start:10:publish-ä:1:2:8:Start_Ü:23:9:Antrag-ß:7:Throw_1:3",
+        CibSevenCascades.cascadeInstanceId("publish-ä", 2, "Start_Ü", emitter));
+    assertEquals("start:3:c-1:1:3:5:Start:29:13:Bestellung-ä:8:Wurf-€:2",
+        CibSevenCascades.cascadeInstanceId("c-1", 3, "Start", CibSevenCascades.emitterKey("Bestellung-ä", "Wurf-€", 2)));
+  }
+
   private static String document(String calledElement, String declarations) {
     return """
         <?xml version="1.0" encoding="UTF-8"?>

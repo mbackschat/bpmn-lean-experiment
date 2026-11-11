@@ -1,7 +1,7 @@
 /**
  * The differential's case list: every scenario and population scenario under the discovery roots, found by file name
  * (guard 14 of the kernel rewrite proposal), so a new scenario joins every target without an edit here and no count is
- * written down. A single-instance scenario carries its retained CIB Seven evidence when a sibling file of the same stem
+ * written down. A scenario or population carries its retained CIB Seven evidence when a sibling file of the same stem
  * exists (`<stem>cibseven-evidence.json` next to `<stem>scenario.json`), the pairing `CibSevenRetainedEvidenceTest`
  * reproduces in the runtime lane. Evidence binds the exact scenario and profile bytes by SHA-256; evidence bound to
  * other bytes, or without its scenario, is a harness error rather than a comparison to skip.
@@ -11,6 +11,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
 import type { KernelJson, KernelRead } from "@bpmn-lean/bpmn-source";
+import type { PopulationResultDocument } from "@bpmn-lean/differential";
 import { unsupportedDeploymentResult } from "@bpmn-lean/kernel";
 
 import { differentialDiscoveryRoots } from "../../../scripts/pipeline-budget.ts";
@@ -65,6 +66,13 @@ export type RetainedEvidence = Readonly<{
   synchronousAfter: ReadonlySet<string>;
 }>;
 
+/** Retained CIB evidence of a population (`cibseven-population-evidence.schema.json`). */
+export type RetainedPopulationEvidence = Readonly<{
+  relativePath: string;
+  engineVersion: string;
+  result: PopulationResultDocument;
+}>;
+
 export type DiscoveredScenario =
   | Readonly<{
     kind: typeof DiscoveredKind.Scenario;
@@ -76,16 +84,22 @@ export type DiscoveredScenario =
     kind: typeof DiscoveredKind.PopulationScenario;
     relativePath: string;
     document: PopulationScenarioDocument;
+    evidence: RetainedPopulationEvidence | null;
   }>;
 
-type EvidenceDocument = Readonly<{
-  kind: "cibSevenScenarioEvidence";
+type BoundIdentity = Readonly<{
   scenario: Readonly<{ id: string; sha256: string }>;
   profile: Readonly<{ id: string; sha256: string }>;
   producer: Readonly<{ engineVersion: string }>;
-  producerObservations: Readonly<{ mappingExecutions?: ReadonlyArray<Readonly<{ afterCommandId: string }>> }>;
-  result: CanonicalResult;
 }>;
+
+type EvidenceDocument =
+  | BoundIdentity & Readonly<{
+    kind: "cibSevenScenarioEvidence";
+    producerObservations: Readonly<{ mappingExecutions?: ReadonlyArray<Readonly<{ afterCommandId: string }>> }>;
+    result: CanonicalResult;
+  }>
+  | BoundIdentity & Readonly<{ kind: "cibSevenPopulationEvidence"; result: PopulationResultDocument }>;
 
 function assertNever(value: never): never {
   throw new TypeError(`unhandled discovered kind ${JSON.stringify(value)}`);
@@ -102,25 +116,57 @@ async function filesUnder(relativeDirectory: string): Promise<ReadonlyArray<stri
   return nested.flat();
 }
 
+/**
+ * The evidence beside a scenario or population, bound to its exact bytes and its profile's; the caller requires the
+ * evidence kind its scenario's kind pairs with.
+ */
+async function boundDocument(
+  scenarioPath: string,
+  scenarioBytes: Uint8Array,
+  scenario: Readonly<{ id: string; profile: string }>,
+  present: ReadonlySet<string>,
+): Promise<Readonly<{ relativePath: string; evidence: EvidenceDocument }> | null> {
+  const relativePath = scenarioPath.slice(0, -scenarioSuffix.length) + evidenceSuffix;
+  if (!present.has(relativePath)) return null;
+  const evidence = parseWireJsonBytes<EvidenceDocument>(await readFile(path.join(projectRoot, relativePath)), relativePath);
+  const profileBytes = await readFile(path.join(projectRoot, "profiles", scenario.profile, "profile.json"));
+  if (
+    evidence.scenario.id !== scenario.id || evidence.scenario.sha256 !== sha256(scenarioBytes) ||
+    evidence.profile.id !== scenario.profile || evidence.profile.sha256 !== sha256(profileBytes)
+  ) {
+    throw new Error(`${relativePath} is not bound to the exact bytes of ${scenarioPath} and its profile`);
+  }
+  return { relativePath, evidence };
+}
+
+const misbound = (relativePath: string, kind: string): Error =>
+  new Error(`${relativePath} is no ${kind} evidence`);
+
 async function boundEvidence(
   scenarioPath: string,
   scenarioBytes: Uint8Array,
   scenario: ScenarioDocument,
   present: ReadonlySet<string>,
 ): Promise<RetainedEvidence | null> {
-  const relativePath = scenarioPath.slice(0, -scenarioSuffix.length) + evidenceSuffix;
-  if (!present.has(relativePath)) return null;
-  const evidence = parseWireJsonBytes<EvidenceDocument>(await readFile(path.join(projectRoot, relativePath)), relativePath);
-  const profileBytes = await readFile(path.join(projectRoot, "profiles", scenario.profile, "profile.json"));
-  if (
-    evidence.kind !== "cibSevenScenarioEvidence" ||
-    evidence.scenario.id !== scenario.id || evidence.scenario.sha256 !== sha256(scenarioBytes) ||
-    evidence.profile.id !== scenario.profile || evidence.profile.sha256 !== sha256(profileBytes)
-  ) {
-    throw new Error(`${relativePath} is not bound to the exact bytes of ${scenarioPath} and its profile`);
-  }
+  const bound = await boundDocument(scenarioPath, scenarioBytes, scenario, present);
+  if (bound === null) return null;
+  const { relativePath, evidence } = bound;
+  if (evidence.kind !== "cibSevenScenarioEvidence") throw misbound(relativePath, "scenario");
   const synchronousAfter = new Set((evidence.producerObservations.mappingExecutions ?? []).map((run) => run.afterCommandId));
   return { relativePath, engineVersion: evidence.producer.engineVersion, result: evidence.result, synchronousAfter };
+}
+
+async function boundPopulationEvidence(
+  scenarioPath: string,
+  scenarioBytes: Uint8Array,
+  scenario: PopulationScenarioDocument,
+  present: ReadonlySet<string>,
+): Promise<RetainedPopulationEvidence | null> {
+  const bound = await boundDocument(scenarioPath, scenarioBytes, scenario, present);
+  if (bound === null) return null;
+  const { relativePath, evidence } = bound;
+  if (evidence.kind !== "cibSevenPopulationEvidence") throw misbound(relativePath, "population");
+  return { relativePath, engineVersion: evidence.producer.engineVersion, result: evidence.result };
 }
 
 /** Every scenario under `roots`, sorted by path. */
@@ -149,7 +195,12 @@ export async function discoverScenarios(
           evidence: await boundEvidence(relativePath, bytes, document, present),
         } as const;
       case DiscoveredKind.PopulationScenario:
-        return { kind: DiscoveredKind.PopulationScenario, relativePath, document } as const;
+        return {
+          kind: DiscoveredKind.PopulationScenario,
+          relativePath,
+          document,
+          evidence: await boundPopulationEvidence(relativePath, bytes, document, present),
+        } as const;
     }
     return assertNever(document);
   }));
