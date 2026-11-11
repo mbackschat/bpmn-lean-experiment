@@ -43,7 +43,7 @@ const decode = (continuationFailure: string) => decodeProgram({
           work: "none",
           envelope: {
             incoming: ["To_Check"], outgoing: ["To_A", "To_B"], inputs: [], outputs: [], boundaries: [], multiInstance: null,
-            compensationHandler: null, defaultFlow: null, asyncBefore: false, asyncAfter: false,
+            compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false,
           },
         },
       },

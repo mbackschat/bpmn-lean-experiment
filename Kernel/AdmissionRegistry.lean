@@ -18,7 +18,7 @@ namespace Kernel.AdmissionRegistry
 
 /-- Whether an element is some Activity's or Scope's compensation handler. -/
 def isHandler (program : Program) (id : ElementId) : Bool :=
-  program.elements.any fun element => (element.envelope?.bind (·.compensationHandler)) == some id
+  program.elements.any fun element => ((element.envelope?.map (·.compensationHandlers)).getD []).contains id
 
 /-- Refusals an Activity owes because of how it begins or of what its handler restores. -/
 def activityOrigin (program : Program) (header : Header) (payload : ActivityPayload) : Option String :=
@@ -167,6 +167,7 @@ def signalDeclarations (program : Program) : Option String :=
 def element (program : Program) (throws : List Element) : Element → Option String
   | .activity header payload =>
     Admission.Data.origin program header <|> envelopeData program header payload.envelope <|>
+      Admission.Work.handlerCount payload.envelope <|>
       (payload.work.call?.bind fun work =>
         Admission.Data.mappings program.options.evaluator (site program (some header.id)) work.inputs <|>
           Admission.Data.mappings program.options.evaluator (site program (some header.id)) work.outputs) <|>
@@ -182,6 +183,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       Admission.Scopes.nestedCompensation program throws header payload.envelope
   | .scope header payload =>
     Admission.Data.origin program header <|> envelopeData program header payload.envelope <|>
+      Admission.Work.handlerCount payload.envelope <|>
       Admission.Scopes.scope program header payload <|>
       -- A Sub-Process instance submits no output data item, so `submits` is false (PC-MI-10).
       payload.envelope.multiInstance.bind
@@ -225,6 +227,18 @@ def abnormalScope (program : Program) : Bool :=
 /-- Whether the program has a Multi-Instance loop, which `Admission.Profile.multiInstance` reads. -/
 def loops (program : Program) : Bool :=
   program.elements.any fun element => ((element.envelope?).bind (·.multiInstance)).isSome
+
+/-- Whether a Sub-Process an Error can leave retains compensable work: an element with a compensation handler lies in
+a Sub-Process. Any work may raise an Error, so every such Sub-Process counts. -/
+def errorExit (program : Program) : Bool :=
+  program.elements.any fun element =>
+    element.header.parent.isSome && !((element.envelope?.map (·.compensationHandlers)).getD []).isEmpty
+
+/-- Whether a Multi-Instance Task or Call has a compensation handler. -/
+def loopedHandler (program : Program) : Bool :=
+  program.elements.any fun element =>
+    element.activity?.any fun (_, payload) =>
+      payload.envelope.multiInstance.isSome && !payload.envelope.compensationHandlers.isEmpty
 
 /-- Whether a looping element's instances race one another where they begin: the closure is
 `Admission.Flow`'s, the loop's mode and condition `Admission.MultiInstance`'s. -/
@@ -272,7 +286,9 @@ flow's, an element's or a loop's own refusal names it, so a host can point at th
 def admitLocated (program : Program) : Option AdmissionRefusal :=
   let elementId (element : Element) : String := element.header.id.value
   unlocated (Admission.Flow.references program) <|> unlocated (Admission.Scopes.membership program) <|>
-    unlocated (Admission.Profile.options (abnormalScope program) (loops program) program.options) <|>
+    unlocated (Admission.Profile.options
+      { abnormalScope := abnormalScope program, loops := loops program, errorExit := errorExit program
+        loopedHandler := loopedHandler program } program.options) <|>
     unlocated (executable program) <|>
     unlocated (Admission.Work.Decision.resources program) <|>
     unlocated (program.processes.findSome? calledProcessBinding) <|>

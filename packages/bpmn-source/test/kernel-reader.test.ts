@@ -291,6 +291,11 @@ test("the profile options are the full record, each non-default selected by the 
     multiInstanceOutputs: "aggregates",
     compensationOrder: "dependency",
     compensationHandlerFailure: "failsInstance",
+    implicitCompensation: "refused",
+    errorExitCompensation: "drops",
+    multiInstanceCompensation: "perSubProcessInstance",
+    transactionMethods: "compensateOnly",
+    compensationReferenceScope: "visible",
     abnormalScopeEnd: "withoutOutflow",
     unhandledError: "failsInstance",
     errorCatchVariables: "refused",
@@ -336,6 +341,11 @@ test("the profile options are the full record, each non-default selected by the 
     multiInstanceOutputs: "none",
     compensationOrder: "dependency",
     compensationHandlerFailure: "failsInstance",
+    implicitCompensation: "refused",
+    errorExitCompensation: "drops",
+    multiInstanceCompensation: "perSubProcessInstance",
+    transactionMethods: "compensateOnly",
+    compensationReferenceScope: "visible",
     abnormalScopeEnd: "completesNormally",
     unhandledError: "endsThrowingPath",
     errorCatchVariables: "eventScope",
@@ -442,7 +452,9 @@ test("semantic choices are emitted in full shape and left to Kernel.Admission", 
     <bpmn:serviceTask id="H" isForCompensation="true"><bpmn:ioSpecification><bpmn:dataInput id="I"/><bpmn:inputSet/><bpmn:outputSet/></bpmn:ioSpecification>
       <bpmn:dataInputAssociation><bpmn:sourceRef>Prop</bpmn:sourceRef><bpmn:targetRef>I</bpmn:targetRef></bpmn:dataInputAssociation></bpmn:serviceTask>
     <bpmn:association id="A" sourceRef="B" targetRef="H"/>`));
-  assert.equal(element(compensationInput, "U").activity.payload.envelope.compensationHandler, "H");
+  assert.deepEqual(element(compensationInput, "U").activity.payload.envelope.compensationHandlers, ["H"]);
+  assert.equal(element(compensationInput, "U").activity.payload.envelope.forCompensation, false);
+  assert.equal(element(compensationInput, "H").activity.payload.envelope.forCompensation, true);
   assert.deepEqual(element(compensationInput, "H").activity.payload.envelope.inputs, [{ target: "I", source: { variable: { name: "Prop" } }, dialect: "dataAssociation" }]);
 });
 

@@ -9,15 +9,7 @@
  * `ElementId`/`FlowId` are plain strings as on the wire. A Lean query `T.f` is exported as `tF`, `?` dropped.
  */
 
-import {
-  AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
-  ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation, RaisedCallOutputs,
-  MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
-  UnhandledError, ErrorCatchVariables,
-  MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
-  multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
-  ScopeStart, SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms,
-} from "./types/options.js";
+import { CalledElementResolution, type ProfileOptions } from "./types/options.js";
 import {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
   type SimpleBoolean, type Value, type ValueSource,
@@ -34,13 +26,14 @@ export {
 } from "./types/multi-instance.js";
 export {
   AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
+  ImplicitCompensation, ErrorExitCompensation, MultiInstanceCompensation, TransactionMethods, CompensationReferenceScope,
   ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation, RaisedCallOutputs,
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
   multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
   ScopeStart, SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms,
-};
+} from "./types/options.js";
 export {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
   type SimpleBoolean, type Value, type ValueSource,
@@ -365,7 +358,13 @@ export interface Envelope {
   readonly outputs: readonly Mapping[];
   readonly boundaries: readonly Boundary[];
   readonly multiInstance: MultiInstance | null;
-  readonly compensationHandler: ElementId | null;
+  /**
+   * The Activities and Scopes an Association names as this element's compensation handlers; admission admits at most
+   * one (`compensation.handlerCount`), the list keeps a second for that refusal.
+   */
+  readonly compensationHandlers: readonly ElementId[];
+  /** BPMN `isForCompensation` (Table 10.3): the element is a compensation handler, outside the normal flow. */
+  readonly forCompensation: boolean;
   /** PC-CF-07. */
   readonly defaultFlow: FlowId | null;
   /** A transaction boundary before the element begins and after it completes (CIB-EXT-0027). */
@@ -828,14 +827,16 @@ export function programDecision(program: Program, key: string): Decision | null 
 
 /**
  * Whether an element begins when its parent Scope is entered without a none start Event: it has no incoming flow, is
- * no compensation handler, and is no Event Sub-Process (BPMN 2.0.2 §13.3.4, §13.5.5).
+ * no compensation handler, whether an Association names it or it is only marked `isForCompensation`, and is no Event
+ * Sub-Process (BPMN 2.0.2 §10.7.1, §13.3.4, §13.5.5).
  */
 export function programBeginsImplicitly(program: Program, element: Element): boolean {
   const id = elementHeader(element).id;
-  const handler = program.elements.some((other) => elementEnvelope(other)?.compensationHandler === id);
+  const handler = program.elements.some((other) => elementEnvelope(other)?.compensationHandlers.includes(id) ?? false);
+  const marked = elementEnvelope(element)?.forCompensation ?? false;
   const scope = elementScope(element);
   const eventSubProcess = scope !== null && scopeKindStart(scope[1].kind) !== null;
-  return elementIncoming(element).length === 0 && elementStart(element) === null && !handler && !eventSubProcess;
+  return elementIncoming(element).length === 0 && elementStart(element) === null && !handler && !marked && !eventSubProcess;
 }
 
 /** The process-level elements of a called process. */

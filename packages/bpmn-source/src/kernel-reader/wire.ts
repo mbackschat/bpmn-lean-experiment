@@ -62,8 +62,13 @@ export type KernelProfileOptions = Readonly<{
   deliveryVariables: "mappedOnly" | "installs";
   multiInstanceFinalBody: "conditionEveryCompletion" | "modeSpecific";
   multiInstanceOutputs: "aggregates" | "none";
-  compensationOrder: "dependency" | "reverseCreation";
-  compensationHandlerFailure: "failsInstance" | Readonly<{ selected: Readonly<{ code: string }> }>;
+  compensationOrder: "dependency" | "allAtOnce";
+  compensationHandlerFailure: "failsInstance" | "propagatesFromTrigger" | Readonly<{ selected: Readonly<{ code: string }> }>;
+  implicitCompensation: "refused" | "everySubProcess";
+  errorExitCompensation: "drops" | "compensatesContained";
+  multiInstanceCompensation: "perSubProcessInstance" | "perInstance";
+  transactionMethods: "compensateOnly" | "compatibilityAsCompensate";
+  compensationReferenceScope: "visible" | "eventSubProcessParent";
   abnormalScopeEnd: "withoutOutflow" | "completesNormally";
   unhandledError: "failsInstance" | "endsThrowingPath";
   errorCatchVariables: "refused" | "eventScope";
@@ -119,6 +124,11 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     multiInstanceOutputs: selects("CIB-LIM-0001") ? "none" : "aggregates",
     compensationOrder: "dependency",
     compensationHandlerFailure: "failsInstance",
+    implicitCompensation: "refused",
+    errorExitCompensation: "drops",
+    multiInstanceCompensation: "perSubProcessInstance",
+    transactionMethods: "compensateOnly",
+    compensationReferenceScope: "visible",
     abnormalScopeEnd: selects("CIB-INT-0007") ? "completesNormally" : "withoutOutflow",
     unhandledError: selects("CIB-INT-0013") ? "endsThrowingPath" : "failsInstance",
     errorCatchVariables: selects("CIB-EXT-0028") ? "eventScope" : "refused",

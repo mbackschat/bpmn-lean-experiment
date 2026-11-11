@@ -52,6 +52,11 @@
     "multiInstanceOutputs": "aggregates",
     "compensationOrder": "dependency",
     "compensationHandlerFailure": "failsInstance",
+    "implicitCompensation": "refused",
+    "errorExitCompensation": "drops",
+    "multiInstanceCompensation": "perSubProcessInstance",
+    "transactionMethods": "compensateOnly",
+    "compensationReferenceScope": "visible",
     "abnormalScopeEnd": "withoutOutflow",
     "unhandledError": "failsInstance",
     "errorCatchVariables": "refused",
@@ -164,7 +169,8 @@
               }
             ],
             "multiInstance": null,
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -210,7 +216,8 @@
             "outputs": [],
             "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -256,7 +263,8 @@
             "outputs": [],
             "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false

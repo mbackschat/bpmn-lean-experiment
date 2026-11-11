@@ -75,20 +75,82 @@ export enum MultiInstanceOutputs {
 }
 
 export enum CompensationOrder {
-  /** BPMN 2.0.2 §13.5.5. */
+  /** BPMN 2.0.2 §13.5.5: a handler whose subject a Sequence Flow leads to completes before its predecessor's starts. */
   Dependency = "dependency",
-  ReverseCreation = "reverseCreation",
+  /** CIB signals every handler of a trigger at once (`CompensationUtil.java:55-88`). */
+  AllAtOnce = "allAtOnce",
 }
 
 export enum CompensationHandlerFailureTag {
   /** COMPH-FAIL-01. */
   FailsInstance = "failsInstance",
   Selected = "selected",
+  /**
+   * An Error leaving a handler propagates from the scope occurrence the trigger ran in, as CIB's compensating execution
+   * is a child of the throwing one (`CompensationUtil.java:62-75`).
+   */
+  PropagatesFromTrigger = "propagatesFromTrigger",
 }
 
 export type CompensationHandlerFailure =
   | { readonly tag: CompensationHandlerFailureTag.FailsInstance }
-  | { readonly tag: CompensationHandlerFailureTag.Selected; readonly code: string };
+  | { readonly tag: CompensationHandlerFailureTag.Selected; readonly code: string }
+  | { readonly tag: CompensationHandlerFailureTag.PropagatesFromTrigger };
+
+/** Whether a completed Sub-Process without a compensation handler keeps its inner records as one group. */
+export enum ImplicitCompensation {
+  /**
+   * BPMN 2.0.2 Tables 10.88 and 10.89: only an Activity with a compensation handler is compensated, so a throw naming
+   * such a Sub-Process is refused (`compensation.implicit`).
+   */
+  Refused = "refused",
+  /**
+   * CIB retains the inner records of every completed Sub-Process and compensates them as one group
+   * (`CompensationUtil.java:100-152`, `CompensationEventHandler.java:61-64`).
+   */
+  EverySubProcess = "everySubProcess",
+}
+
+/** What an Error leaving a Sub-Process does to the compensable work completed inside it. */
+export enum ErrorExitCompensation {
+  /**
+   * BPMN 2.0.2 §10.3.5 and presumed abort: the records end with the Sub-Process, as in CIB
+   * (`SubProcessActivityBehavior.java:61-66` retains only on completion).
+   */
+  Drops = "drops",
+  /** BPMN 2.0.2 §10.7.3, §13.5.5: compensation of all contained Activities runs by default. */
+  CompensatesContained = "compensatesContained",
+}
+
+/** Which records a completed Multi-Instance Activity with a compensation handler leaves. */
+export enum MultiInstanceCompensation {
+  /** BPMN 2.0.2 §13.5.5: one per instance of a Multi-Instance Sub-Process, one for a Multi-Instance Task or Call. */
+  PerSubProcessInstance = "perSubProcessInstance",
+  /** CIB: one per completed instance of any Multi-Instance Activity (`AbstractBpmnActivityBehavior.java:69-74`). */
+  PerInstance = "perInstance",
+}
+
+/** Which BPMN `transactionMethod` values a Transaction runs. */
+export enum TransactionMethods {
+  /** `##Compensate` alone. */
+  CompensateOnly = "compensateOnly",
+  /**
+   * `##Store` and `##Image` run as `##Compensate`, as CIB reads no such attribute (`BpmnParse.java:3902-3915`); a
+   * protocol URI stays refused.
+   */
+  CompatibilityAsCompensate = "compatibilityAsCompensate",
+}
+
+/** Where a targeted Compensation throw resolves its `activityRef`. */
+export enum CompensationReferenceScope {
+  /**
+   * BPMN 2.0.2 Tables 10.88 and 10.89: an Activity visible from the throw, at its own level or, from a Compensation
+   * Event Sub-Process, at its parent's.
+   */
+  Visible = "visible",
+  /** CIB: a throw in any Event Sub-Process also names an Activity of its parent's level (`BpmnParse.java:1695-1720`). */
+  EventSubProcessParent = "eventSubProcessParent",
+}
 
 export enum AbnormalScopeEnd {
   /** BPMN 2.0.2 §13.3.4, §13.5.6. */
@@ -361,6 +423,11 @@ export interface ProfileOptions {
   readonly multiInstanceOutputs: MultiInstanceOutputs;
   readonly compensationOrder: CompensationOrder;
   readonly compensationHandlerFailure: CompensationHandlerFailure;
+  readonly implicitCompensation: ImplicitCompensation;
+  readonly errorExitCompensation: ErrorExitCompensation;
+  readonly multiInstanceCompensation: MultiInstanceCompensation;
+  readonly transactionMethods: TransactionMethods;
+  readonly compensationReferenceScope: CompensationReferenceScope;
   readonly abnormalScopeEnd: AbnormalScopeEnd;
   readonly unhandledError: UnhandledError;
   readonly errorCatchVariables: ErrorCatchVariables;

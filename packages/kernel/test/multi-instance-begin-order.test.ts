@@ -30,7 +30,7 @@ const header = (id: string, sourceType: string, parent: string | null = null): J
 const read = (name: string): Json => ({ variable: { name } });
 const io = (target: string, source: Json): Json => ({ target, source, dialect: "ioParameter" });
 const envelope = (incoming: string[], outgoing: string[], over: Json = {}): Json => ({
-  incoming, outgoing, inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandler: null,
+  incoming, outgoing, inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false,
   defaultFlow: null, asyncBefore: false, asyncAfter: false, ...over,
 });
 const user = { user: { payload: { name: null, assignee: null, candidateUsers: [], candidateGroups: [], formKey: null,

@@ -17,7 +17,7 @@ const slice = JSON.parse(readFileSync(new URL("./fixtures/simple-boolean.program
 
 const header = (id: string, sourceType: string): Json => ({ id, origin: { definition: null, sourceId: id }, sourceType, parent: null });
 const envelope = (incoming: string, outgoing: string): Json => ({
-  incoming: [incoming], outgoing: [outgoing], inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandler: null,
+  incoming: [incoming], outgoing: [outgoing], inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false,
   defaultFlow: null, asyncBefore: false, asyncAfter: false,
 });
 

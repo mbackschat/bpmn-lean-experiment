@@ -160,10 +160,8 @@ export function membership(program: Program): string | null {
     const scope = elementScope(element);
     return scope === null || scope[1].children.every((child) => parentOf(child) === scope[0].id);
   };
-  const handler = (element: Element): boolean => {
-    const id = elementEnvelope(element)?.compensationHandler ?? null;
-    return id === null || programElement(program, id) !== null;
-  };
+  const handler = (element: Element): boolean =>
+    (elementEnvelope(element)?.compensationHandlers ?? []).every((id) => programElement(program, id) !== null);
   const called = (process: CalledProcess): boolean => process.children.every((child) => parentOf(child) === null);
   const resolved = program.elements.every(member) && program.elements.every(lists) && program.elements.every(handler) &&
     program.processes.every(called);
@@ -189,9 +187,10 @@ function handOn(program: Program, throws: readonly Element[], fuel: number, scop
   if (fuel === 0 || scope === null) return null;
   const retaining = programElement(program, scope);
   if (retaining === null) return null;
-  const handler = elementEnvelope(retaining)?.compensationHandler ?? null;
-  if (handler !== null) {
-    return throws.some((thrower) => within(program, handler, program.elements.length + 1, elementHeader(thrower).id))
+  const handlers = elementEnvelope(retaining)?.compensationHandlers ?? [];
+  if (handlers.length > 0) {
+    return handlers.some((handler) =>
+      throws.some((thrower) => within(program, handler, program.elements.length + 1, elementHeader(thrower).id)))
       ? "compensation.recursive"
       : null;
   }
@@ -201,5 +200,5 @@ function handOn(program: Program, throws: readonly Element[], fuel: number, scop
 }
 
 export function nestedCompensation(program: Program, throws: readonly Element[], header: Header, envelope: Envelope): string | null {
-  return envelope.compensationHandler === null ? null : handOn(program, throws, program.elements.length + 1, header.parent);
+  return envelope.compensationHandlers.length === 0 ? null : handOn(program, throws, program.elements.length + 1, header.parent);
 }

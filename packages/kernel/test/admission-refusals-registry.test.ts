@@ -14,7 +14,7 @@ import type { Json, Row } from "./admission-refusal-support.ts";
 
 /** `T` is a User Task whose compensation handler is `H`, an unconnected Activity appended to the program. */
 const handledBy = (handler: Json) => (program: Json): Json =>
-  append(task(activity("T", userWork(), { compensationHandler: "H" }))(program), handler);
+  append(task(activity("T", userWork(), { compensationHandlers: ["H"] }))(program), handler);
 
 const handler = (work: Json | string, env: Json = {}): Json => activity("H", work, { incoming: [], outgoing: [], ...env });
 

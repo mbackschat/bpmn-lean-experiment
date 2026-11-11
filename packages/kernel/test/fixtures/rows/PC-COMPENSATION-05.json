@@ -147,6 +147,11 @@
     "multiInstanceOutputs": "none",
     "compensationOrder": "dependency",
     "compensationHandlerFailure": "failsInstance",
+    "implicitCompensation": "refused",
+    "errorExitCompensation": "drops",
+    "multiInstanceCompensation": "perSubProcessInstance",
+    "transactionMethods": "compensateOnly",
+    "compensationReferenceScope": "visible",
     "abnormalScopeEnd": "completesNormally",
     "unhandledError": "endsThrowingPath",
     "errorCatchVariables": "eventScope",
@@ -246,7 +251,10 @@
               "loopDataInputRef": null,
               "inputDataItemName": null
             },
-            "compensationHandler": "EventSubProcess_Visit",
+            "compensationHandlers": [
+              "EventSubProcess_Visit"
+            ],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -324,7 +332,10 @@
               }
             ],
             "multiInstance": null,
-            "compensationHandler": "UserTask_UndoVisit",
+            "compensationHandlers": [
+              "UserTask_UndoVisit"
+            ],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -396,7 +407,8 @@
             "outputs": [],
             "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -477,7 +489,8 @@
             "outputs": [],
             "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -551,7 +564,8 @@
             "outputs": [],
             "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -631,7 +645,8 @@
             "outputs": [],
             "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -800,7 +815,8 @@
             "outputs": [],
             "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": true,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false

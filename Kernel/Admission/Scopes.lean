@@ -102,7 +102,7 @@ def membership (program : Program) : Option String :=
     element.scope?.all fun (header, payload) =>
       payload.children.all fun child => parentOf child == some (some header.id)
   let handler (element : Element) : Bool :=
-    (element.envelope?.bind (·.compensationHandler)).all fun id => (program.element? id).isSome
+    ((element.envelope?.map (·.compensationHandlers)).getD []).all fun id => (program.element? id).isSome
   let called (process : CalledProcess) : Bool :=
     process.children.all fun child => parentOf child == some none
   if program.elements.all member && program.elements.all lists && program.elements.all handler &&
@@ -127,18 +127,19 @@ def handOn (program : Program) (throws : List Element) : Nat → Option ElementI
     match program.element? scope with
     | none => none
     | some retaining =>
-      match retaining.envelope?.bind (·.compensationHandler) with
-      | some handler =>
-        if throws.any fun thrower => within program handler (program.elements.length + 1) (some thrower.header.id) then
-          some "compensation.recursive"
-        else none
-      | none =>
+      match (retaining.envelope?.map (·.compensationHandlers)).getD [] with
+      | [] =>
         if throws.any (·.header.parent == retaining.header.parent) then some "compensation.implicit"
         else handOn program throws fuel retaining.header.parent
+      | handlers =>
+        if handlers.any fun handler =>
+            throws.any fun thrower => within program handler (program.elements.length + 1) (some thrower.header.id) then
+          some "compensation.recursive"
+        else none
 
 def nestedCompensation (program : Program) (throws : List Element) (header : Header) (envelope : Envelope) :
     Option String :=
-  if envelope.compensationHandler.isSome then handOn program throws (program.elements.length + 1) header.parent
+  if !envelope.compensationHandlers.isEmpty then handOn program throws (program.elements.length + 1) header.parent
   else none
 
 end Kernel.Admission.Scopes

@@ -147,6 +147,11 @@
     "multiInstanceOutputs": "none",
     "compensationOrder": "dependency",
     "compensationHandlerFailure": "failsInstance",
+    "implicitCompensation": "refused",
+    "errorExitCompensation": "drops",
+    "multiInstanceCompensation": "perSubProcessInstance",
+    "transactionMethods": "compensateOnly",
+    "compensationReferenceScope": "visible",
     "abnormalScopeEnd": "completesNormally",
     "unhandledError": "endsThrowingPath",
     "errorCatchVariables": "eventScope",
@@ -297,7 +302,8 @@
               "loopDataInputRef": null,
               "inputDataItemName": null
             },
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -343,7 +349,8 @@
             "outputs": [],
             "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -498,7 +505,8 @@
               "loopDataInputRef": null,
               "inputDataItemName": null
             },
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -544,7 +552,8 @@
             "outputs": [],
             "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false
@@ -655,7 +664,8 @@
             "outputs": [],
             "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null,
+            "compensationHandlers": [],
+            "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": true,
             "asyncAfter": false

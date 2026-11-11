@@ -40,7 +40,8 @@ compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the chil
 move to the parent. The record restores the variables visible inside a completed Scope ("snapshot data"), an Activity's
 handler none. -/
 def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
-  let handler := ((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.compensationHandler)
+  -- Admission admits at most one handler (`compensation.handlerCount`).
+  let handler := ((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.compensationHandlers.head?)
   let owned := ownedScope? ctx occurrence state
   let compensation := state.slots.compensation
   let (inner, outer) := compensation.retained.partition fun record => owned.any (·.id == record.scope)
@@ -55,8 +56,8 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
       { processInstanceId := state.instanceOf occurrence.scope, element := occurrence.element
         activation := occurrence.activation }
     let record : Compensable :=
-      { subject := occurrence.element, handler, scope := occurrence.scope, occurrence := some reference, completion,
-        snapshot, children := inner }
+      { subject := occurrence.element, handler := some handler, scope := occurrence.scope, occurrence := some reference,
+        completion, snapshot, children := inner }
     .ok (store state { compensation with retained := outer ++ [record] })
 
 /-- A Sequence Flow leads from `record`'s subject to `other`'s. -/
@@ -70,17 +71,20 @@ def position (ctx : Ctx) (element : ElementId) : Nat :=
 the ones a throw inside the handler compensates. -/
 def beginHandler (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) (record : Compensable) :
     Except Failure (State × ScopeOccurrenceId) := do
-  let element ← match ctx.program.element? record.handler with
+  -- Only a group lacks a handler, and no feature retains a group: an invariant failure.
+  let handler ← match record.handler with
+    | some handler => .ok handler
+    | none => .error (.semanticFailure "compensation-group-unretained")
+  let element ← match ctx.program.element? handler with
     | some element => .ok element
     | none => .error (.semanticFailure "compensation-handler-missing")
   if element.activity?.isNone && element.scope?.isNone then .error (.semanticFailure "compensation-handler-not-activity")
   else
-    let (state, context) := state.enterScope record.handler scope record.snapshot none
+    let (state, context) := state.enterScope handler scope record.snapshot none
     let compensation := state.slots.compensation
     let children := record.children.map fun child => { child with scope := context }
     let state := store state { compensation with retained := compensation.retained ++ children }
-    .ok (state.signal (.begin { element := record.handler, scope := context, continuation := .compensation scope }),
-      context)
+    .ok (state.signal (.begin { element := handler, scope := context, continuation := .compensation scope }), context)
 
 /-- Start every pending handler of the run in `scope` that no pending or running handler's subject succeeds; once
 none is pending or running, end the run: cancel the occurrence it leaves, if any, then complete its `resume`. -/
@@ -97,10 +101,12 @@ def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
     let state := match run.leave with
       | some occurrence => state.signal (.cancel occurrence)
       | none => state
-    .ok (match run.resume with
-      | some (.complete occurrence leave) => state.signal (.complete occurrence leave [] .outward)
-      | some (.occur element at_ leave) => state.signal (.occur element at_ leave [] .outward)
-      | none => state)
+    match run.resume with
+      | some (.complete occurrence leave) => .ok (state.signal (.complete occurrence leave [] .outward))
+      | some (.occur element at_ leave) => .ok (state.signal (.occur element at_ leave [] .outward))
+      -- Only a group's nested run resumes `group`, and no feature retains a group: an invariant failure.
+      | some (.group _ _) => .error (.semanticFailure "compensation-group-unretained")
+      | none => .ok state
   -- Dynamic-only: a dependency cycle needs the retained set, which depends on the run.
   else if ready.isEmpty && run.running.isEmpty then .error (.unsupported "compensation-dependency-cycle")
   else

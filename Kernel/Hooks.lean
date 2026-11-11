@@ -387,6 +387,9 @@ structure Hooks where
   /-- Compensation: a handler of the run in that scope occurrence completed. -/
   handlerCompleted : Ctx → ScopeOccurrenceId → Occurrence → State → Outcome :=
     fun _ _ _ => refuse "handlerCompleted"
+  /-- Compensation: a handler of the run in that scope occurrence left without completing, raised by an event. -/
+  handlerEnded : Ctx → ScopeOccurrenceId → Occurrence → State → Outcome :=
+    fun _ _ _ => refuse "handlerEnded"
   -- Notifications
   /-- A generic cancellation removed the occurrence; a feature that must react has this one place. -/
   cancelled : Ctx → Occurrence → State → Outcome := fun _ _ state => .ok state

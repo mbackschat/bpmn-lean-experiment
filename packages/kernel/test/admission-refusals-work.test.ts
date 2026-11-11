@@ -12,6 +12,7 @@ import type { Json, Row } from "./admission-refusal-support.ts";
 
 /** `H`, an unconnected Task that a compensation subject names as its handler. */
 const handlerTask = activity("H", "manual", { incoming: [], outgoing: [] });
+const secondHandlerTask = activity("H2", "manual", { incoming: [], outgoing: [] });
 
 const withTask = (work: Json | string, env: Json = {}) => task(activity("T", work, env));
 
@@ -91,16 +92,22 @@ export const rows: readonly Row[] = [
     control: withTask(userWork(), { multiInstance: loop() }),
   },
   {
+    code: "compensation.handlerCount",
+    description: "two compensation handlers on one User Task",
+    mutate: (program) => append(withTask(userWork(), { compensationHandlers: ["H", "H2"] })(program), handlerTask, secondHandlerTask),
+    control: (program) => append(withTask(userWork(), { compensationHandlers: ["H"] })(program), handlerTask),
+  },
+  {
     code: "activity.compensationHandler",
     description: "a compensation handler on a Task without work",
-    mutate: (program) => append(withTask("manual", { compensationHandler: "H" })(program), handlerTask),
-    control: (program) => append(withTask(userWork(), { compensationHandler: "H" })(program), handlerTask),
+    mutate: (program) => append(withTask("manual", { compensationHandlers: ["H"] })(program), handlerTask),
+    control: (program) => append(withTask(userWork(), { compensationHandlers: ["H"] })(program), handlerTask),
   },
   {
     code: "activity.compensationHandler",
     description: "a compensation handler on a Multi-Instance User Task",
-    mutate: (program) => append(withTask(userWork(), { compensationHandler: "H", multiInstance: loop() })(program), handlerTask),
-    control: (program) => append(withTask(userWork(), { compensationHandler: "H" })(program), handlerTask),
+    mutate: (program) => append(withTask(userWork(), { compensationHandlers: ["H"], multiInstance: loop() })(program), handlerTask),
+    control: (program) => append(withTask(userWork(), { compensationHandlers: ["H"] })(program), handlerTask),
   },
   {
     code: "work.receive.correlation",

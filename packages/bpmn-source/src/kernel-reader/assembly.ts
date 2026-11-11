@@ -128,7 +128,7 @@ function renameEnvelope(envelope: KernelJson | undefined, rename: Rename): Kerne
         ...boundary, id: rename(string(boundary["id"], "boundary id")), outgoing: strings(boundary["outgoing"], "outgoing").map(rename),
       };
     }),
-    compensationHandler: optional(own["compensationHandler"], rename, "compensation handler"),
+    compensationHandlers: strings(own["compensationHandlers"], "compensation handlers").map(rename),
     defaultFlow: optional(own["defaultFlow"], rename, "default flow"),
   };
 }

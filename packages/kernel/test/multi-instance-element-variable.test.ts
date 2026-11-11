@@ -36,7 +36,7 @@ function program(loop: Json): Json {
           completionCondition: { variable: { name: "flag" } }, inputDataItem: null, outputDataItem: null,
           outputCollection: null, mutableCollection: "entrySnapshot", asyncBefore: false, asyncAfter: false,
           loopDataInputRef: null, inputDataItemName: null, ...loop,
-        }, compensationHandler: null, defaultFlow: null, asyncBefore: false, asyncAfter: false } } } },
+        }, compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false } } } },
       { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish",
         incoming: ["To_End"], outgoing: [], alternativeThrows: [] } } },
     ],

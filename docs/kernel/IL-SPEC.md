@@ -49,7 +49,7 @@ Every element is `{"<kind>": {"header": …, "payload": …}}`; the header is `i
 | `gateway` | `kind` (`exclusive {candidates, default}`, `parallel`, `inclusive {candidates, default}`, `eventBased {instantiation}` with `none`, `exclusive` or `parallel`), `incoming`, `outgoing`; candidates keep document order, a flow's condition lives on the flow, and an Event-Based Gateway's arms are the targets of its outgoing flows |
 | `start` | optional `subscription`, `outgoing`; root or Event Sub-Process placement follows from the parent |
 
-The shared activity envelope, on Activity and Scope alike: `incoming` and `outgoing` (implicit merge and split), input and output `Mapping`s, `boundaries` (each `id`, `subscription`, `interrupting`, `outgoing`), optional `multiInstance`, optional `compensationHandler`, optional `defaultFlow`, and the transaction-boundary marks `asyncBefore` and `asyncAfter`, which on a Multi-Instance Activity mark its body.
+The shared activity envelope, on Activity and Scope alike: `incoming` and `outgoing` (implicit merge and split), input and output `Mapping`s, `boundaries` (each `id`, `subscription`, `interrupting`, `outgoing`), optional `multiInstance`, the `compensationHandlers` its Associations name (admission admits one, `compensation.handlerCount`), the `forCompensation` mark (BPMN `isForCompensation`), optional `defaultFlow`, and the transaction-boundary marks `asyncBefore` and `asyncAfter`, which on a Multi-Instance Activity mark its body.
 
 `MultiInstance` is `mode`, `count` (`collection` or `cardinality` expression), `elementVariable`, `completionCondition`, `inputDataItem`, `outputDataItem`, `outputCollection` and `mutableCollection`, read through the Data Associations; the loop characteristics' own transaction-boundary marks `asyncBefore` and `asyncAfter`, which mark each instance (CIB-EXT-0027); and the literal `loopDataInputRef` and `inputDataItemName`, which `multiInstanceBinding` may select instead (CIB-INT-0014).
 
@@ -86,8 +86,13 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `deliveryVariables` | `mappedOnly`, `installs` |
 | `multiInstanceFinalBody` | `conditionEveryCompletion`, `modeSpecific` |
 | `multiInstanceOutputs` | `aggregates`, `none` |
-| `compensationOrder` | `dependency`, `reverseCreation` |
-| `compensationHandlerFailure` | `failsInstance`, `selected {code}` |
+| `compensationOrder` | `dependency`, `allAtOnce` |
+| `compensationHandlerFailure` | `failsInstance`, `selected {code}`, `propagatesFromTrigger` |
+| `implicitCompensation` | `refused`, `everySubProcess` |
+| `errorExitCompensation` | `drops`, `compensatesContained` |
+| `multiInstanceCompensation` | `perSubProcessInstance`, `perInstance` |
+| `transactionMethods` | `compensateOnly`, `compatibilityAsCompensate` |
+| `compensationReferenceScope` | `visible`, `eventSubProcessParent` |
 | `abnormalScopeEnd` | `withoutOutflow`, `completesNormally` |
 | `unhandledError` | `failsInstance`, `endsThrowingPath` |
 | `errorCatchVariables` | `refused`, `eventScope` |

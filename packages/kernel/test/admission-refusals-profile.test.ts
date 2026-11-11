@@ -2,10 +2,12 @@
  * Refusal tests of `admission/profile.ts`: a profile may select only behaviour the kernel implements. Each option the
  * kernel has one reading of refuses its other value; `abnormalScopeEnd` is refused only for a program whose own shape
  * reaches an abnormal scope end (a Terminate in a Sub-Process or at a called process's level, or an interrupting Event
- * Sub-Process).
+ * Sub-Process), `errorExitCompensation` and `multiInstanceCompensation` only for a program their alternative would
+ * change, so their controls select the alternative for the base program.
  */
 import {
-  append, definitionRef, duration, end, eventSubProcess, flow, refusalTests, scope, start, task, withFlows, withOptions,
+  activity, append, definitionRef, duration, end, eventSubProcess, flow, loop, refusalTests, scope, start, task, userWork,
+  withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -27,11 +29,22 @@ const terminatingCalledProcess = (program: Json): Json =>
 
 const completesNormally = { abnormalScopeEnd: "completesNormally" };
 
+/** `T` becomes a Sub-Process `XS -> U -> XE` whose User Task `U` is compensable by the unconnected handler `H` inside it. */
+const compensableScope = (program: Json): Json =>
+  withFlows(append(task(scope("T", "embedded"))(program),
+    start("XS", null, [], "T"), activity("U", userWork(), { compensationHandlers: ["H"] }, "T"), end("XE", "none", "T"),
+    activity("H", "manual", { forCompensation: true }, "T")), flow("xu", "XS", "U"), flow("ux", "U", "XE"));
+
+/** `T` becomes a Multi-Instance User Task compensable by the unconnected handler `H`. */
+const loopedHandler = (program: Json): Json =>
+  append(task(activity("T", userWork(), { compensationHandlers: ["H"], multiInstance: loop() }))(program),
+    activity("H", "manual", { incoming: [], outgoing: [], forCompensation: true }));
+
 export const rows: readonly Row[] = [
   {
-    code: "profile.compensationOrder.reverseCreation",
-    description: "compensation in reverse creation order",
-    mutate: option({ compensationOrder: "reverseCreation" }),
+    code: "profile.compensationOrder.allAtOnce",
+    description: "every handler of a trigger started at once",
+    mutate: option({ compensationOrder: "allAtOnce" }),
     control: option({ compensationOrder: "dependency" }),
   },
   {
@@ -39,6 +52,42 @@ export const rows: readonly Row[] = [
     description: "a selected compensation handler failure",
     mutate: option({ compensationHandlerFailure: { selected: { code: "HandlerFailed" } } }),
     control: option({ compensationHandlerFailure: "failsInstance" }),
+  },
+  {
+    code: "profile.compensationHandlerFailure.propagatesFromTrigger",
+    description: "a handler failure propagating from its trigger",
+    mutate: option({ compensationHandlerFailure: "propagatesFromTrigger" }),
+    control: option({ compensationHandlerFailure: "failsInstance" }),
+  },
+  {
+    code: "profile.implicitCompensation.everySubProcess",
+    description: "implicit compensation of every Sub-Process",
+    mutate: option({ implicitCompensation: "everySubProcess" }),
+    control: option({ implicitCompensation: "refused" }),
+  },
+  {
+    code: "profile.errorExitCompensation.compensatesContained",
+    description: "compensating the contained work of a Sub-Process an Error leaves, for a Sub-Process retaining compensable work",
+    mutate: (program) => compensableScope(withOptions(program, { errorExitCompensation: "compensatesContained" })),
+    control: option({ errorExitCompensation: "compensatesContained" }),
+  },
+  {
+    code: "profile.multiInstanceCompensation.perInstance",
+    description: "a compensation record per instance, for a Multi-Instance User Task with a handler",
+    mutate: (program) => loopedHandler(withOptions(program, { multiInstanceCompensation: "perInstance" })),
+    control: option({ multiInstanceCompensation: "perInstance" }),
+  },
+  {
+    code: "profile.transactionMethods.compatibilityAsCompensate",
+    description: "the compatibility Transaction methods run as compensate",
+    mutate: option({ transactionMethods: "compatibilityAsCompensate" }),
+    control: option({ transactionMethods: "compensateOnly" }),
+  },
+  {
+    code: "profile.compensationReferenceScope.eventSubProcessParent",
+    description: "a Compensation throw in an Event Sub-Process naming an Activity of its parent's level",
+    mutate: option({ compensationReferenceScope: "eventSubProcessParent" }),
+    control: option({ compensationReferenceScope: "visible" }),
   },
   {
     code: "profile.callBindingTime.invocation",

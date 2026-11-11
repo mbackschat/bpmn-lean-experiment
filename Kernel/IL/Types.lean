@@ -273,7 +273,11 @@ structure Envelope where
   outputs : List Mapping := []
   boundaries : List Boundary := []
   multiInstance : Option MultiInstance := none
-  compensationHandler : Option ElementId := none
+  /-- The Activities and Scopes an Association names as this element's compensation handlers; admission admits at most
+  one (`compensation.handlerCount`), the list keeps a second for that refusal. -/
+  compensationHandlers : List ElementId := []
+  /-- BPMN `isForCompensation` (Table 10.3): the element is a compensation handler, outside the normal flow. -/
+  forCompensation : Bool := false
   /-- PC-CF-07. -/
   defaultFlow : Option FlowId := none
   /-- A transaction boundary before the element begins and after it completes (CIB-EXT-0027). -/
@@ -682,11 +686,14 @@ def decision? (program : Program) (key : String) : Option Decision :=
   (program.decisionResources.flatMap (·.decisions)).find? (·.id == key)
 
 /-- Whether an element begins when its parent Scope is entered without a none start Event: it has no incoming flow, is
-no compensation handler, and is no Event Sub-Process (BPMN 2.0.2 §13.3.4, §13.5.5). -/
+no compensation handler, whether an Association names it or it is only marked `isForCompensation`, and is no Event
+Sub-Process (BPMN 2.0.2 §10.7.1, §13.3.4, §13.5.5). -/
 def beginsImplicitly (program : Program) (element : Element) : Bool :=
-  let handler := program.elements.any fun other => (other.envelope?.bind (·.compensationHandler)) == some element.header.id
+  let handler := program.elements.any fun other =>
+    ((other.envelope?.map (·.compensationHandlers)).getD []).contains element.header.id
+  let marked := (element.envelope?.map (·.forCompensation)).getD false
   let eventSubProcess := ((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome
-  element.incoming.isEmpty && element.start?.isNone && !handler && !eventSubProcess
+  element.incoming.isEmpty && element.start?.isNone && !handler && !marked && !eventSubProcess
 
 /-- The process-level elements of a called process. -/
 def processChildren (program : Program) (process : CalledProcess) : List Element :=

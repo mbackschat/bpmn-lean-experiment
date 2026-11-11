@@ -73,9 +73,14 @@ def workEnvelope (options : ProfileOptions) (work : Traits) (envelope : Envelope
   else if !envelope.outputs.isEmpty && !work.mapsData && !(work.plainTask && readsOwnScope options envelope.outputs) then
     some "activity.outputMappings"
   else if envelope.multiInstance.isSome && work.instanceBody.isNone then some "activity.multiInstanceBody"
-  else if envelope.compensationHandler.isSome && (!work.compensable || envelope.multiInstance.isSome) then
+  else if !envelope.compensationHandlers.isEmpty && (!work.compensable || envelope.multiInstance.isSome) then
     some "activity.compensationHandler"
   else none
+
+/-- An Activity or Scope compensates through one handler. BPMN 2.0.2 states no limit; CIB keeps one per Activity or
+scope (`BpmnParse.java:913-920`, `:1199-1201`, `:1754`). -/
+def handlerCount (envelope : Envelope) : Option String :=
+  if envelope.compensationHandlers.length > 1 then some "compensation.handlerCount" else none
 
 /-- The names CIB installs from the model as variables an expression may read: every element's parameter targets and
 loop item names, and its work's names (`traits`). A process-level item is none, since CIB parses no Property, Data

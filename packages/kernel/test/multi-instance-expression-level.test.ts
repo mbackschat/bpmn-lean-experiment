@@ -45,7 +45,7 @@ function program(shape: Shape = {}): Json {
       { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_T"] } } },
       { activity: { header: header("T", shape.user === true ? "userTask" : "serviceTask"), payload: { work, envelope: {
         incoming: ["To_T"], outgoing: ["To_End"], inputs: [], outputs: [], boundaries: [], multiInstance: loop,
-        compensationHandler: null, defaultFlow: null, asyncBefore: false, asyncAfter: false } } } },
+        compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false } } } },
       { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish",
         incoming: ["To_End"], outgoing: [], alternativeThrows: [] } } },
     ],

@@ -33,7 +33,7 @@ const timerEventSubProcess = (env: Json = {}) => task(scope("T", eventSubProcess
  */
 const retaining = (over: Json = {}) => (program: Json): Json =>
   withFlows(append(task(scope("T", "embedded", {}, over))(program),
-    start("XS", null, [], "T"), activity("U", userWork(), { compensationHandler: "H" }, "T"), end("XE", "none", "T"),
+    start("XS", null, [], "T"), activity("U", userWork(), { compensationHandlers: ["H"] }, "T"), end("XE", "none", "T"),
     activity("H", "manual", {}, "T")), flow("xu", "XS", "U"), flow("ux", "U", "XE"));
 
 /** `E` becomes a Compensation End beside the Sub-Process. */
@@ -41,7 +41,7 @@ const compensatingEnd = (program: Json): Json => replace(program, "E", end("E", 
 
 /** `T` hands its records to its handler `K`, a Sub-Process `KS -> KE` whose End throws `record`. */
 const handledScope = (record: Json | string) => (program: Json): Json =>
-  withFlows(append(retaining({ compensationHandler: "K" })(program),
+  withFlows(append(retaining({ compensationHandlers: ["K"] })(program),
     scope("K", "embedded", {}, {}), start("KS", null, [], "K"), end("KE", record, "K")), flow("kk", "KS", "KE"));
 
 export const rows: readonly Row[] = [
@@ -56,6 +56,13 @@ export const rows: readonly Row[] = [
     description: "a Scope whose implicit start would begin a Receive Task",
     mutate: embedding(activity("R", receiveWork(), unconnected, "T")),
     control: embedding(activity("R", "manual", unconnected, "T")),
+  },
+  {
+    // BPMN 2.0.2 §10.7.1: an Activity marked `isForCompensation` is outside the normal flow, named by an Association or not.
+    code: "scope.implicitStart",
+    description: "a Scope whose implicit start would begin a Receive Task not marked for compensation",
+    mutate: embedding(activity("R", receiveWork(), unconnected, "T")),
+    control: embedding(activity("R", receiveWork(), { ...unconnected, forCompensation: true }, "T")),
   },
   {
     code: "scope.transaction.method",
@@ -113,5 +120,5 @@ test("scopes: an element its parent does not list, or a child naming another par
   assert.equal(refusalOf(listing(["XS"]), true), null);
   assert.equal(refusalOf(listing([]), true), "il.reference");
   assert.equal(refusalOf(listing(["XS", "E"]), true), "il.reference");
-  assert.equal(refusalOf(task(activity("T", userWork(), { compensationHandler: "Missing" }))(base())), "il.reference");
+  assert.equal(refusalOf(task(activity("T", userWork(), { compensationHandlers: ["Missing"] }))(base())), "il.reference");
 });

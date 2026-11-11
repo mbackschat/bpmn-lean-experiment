@@ -245,13 +245,44 @@
         "compensationOrder": {
           "enum": [
             "dependency",
-            "reverseCreation"
+            "allAtOnce"
           ]
         },
         "compensationHandlerFailure": {
           "enum": [
             "failsInstance",
-            "selected"
+            "selected",
+            "propagatesFromTrigger"
+          ]
+        },
+        "implicitCompensation": {
+          "enum": [
+            "refused",
+            "everySubProcess"
+          ]
+        },
+        "errorExitCompensation": {
+          "enum": [
+            "drops",
+            "compensatesContained"
+          ]
+        },
+        "multiInstanceCompensation": {
+          "enum": [
+            "perSubProcessInstance",
+            "perInstance"
+          ]
+        },
+        "transactionMethods": {
+          "enum": [
+            "compensateOnly",
+            "compatibilityAsCompensate"
+          ]
+        },
+        "compensationReferenceScope": {
+          "enum": [
+            "visible",
+            "eventSubProcessParent"
           ]
         },
         "abnormalScopeEnd": {
@@ -411,6 +442,7 @@
         "codec.malformed",
         "codec.missingField",
         "codec.unknownField",
+        "compensation.handlerCount",
         "compensation.handlerMultiInstance",
         "compensation.handlerWork",
         "compensation.implicit",
@@ -505,12 +537,18 @@
         "process.notExecutable",
         "profile.abnormalScopeEnd.withoutOutflow",
         "profile.callBindingTime.invocation",
+        "profile.compensationHandlerFailure.propagatesFromTrigger",
         "profile.compensationHandlerFailure.selected",
-        "profile.compensationOrder.reverseCreation",
+        "profile.compensationOrder.allAtOnce",
+        "profile.compensationReferenceScope.eventSubProcessParent",
+        "profile.errorExitCompensation.compensatesContained",
+        "profile.implicitCompensation.everySubProcess",
+        "profile.multiInstanceCompensation.perInstance",
         "profile.multiInstanceCounters.cibLocals",
         "profile.multiInstanceCounters.none",
         "profile.multiInstanceInputFailure.hold",
         "profile.timerZone",
+        "profile.transactionMethods.compatibilityAsCompensate",
         "reader.conditionExpressionType",
         "reader.dataAssociationShape",
         "reader.emptyLoopCardinality",

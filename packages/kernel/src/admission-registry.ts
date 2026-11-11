@@ -55,7 +55,7 @@ import * as Starts from "./admission/subscriptions/starts.js";
 
 /** Whether an element is some Activity's or Scope's compensation handler. */
 function isHandler(program: Program, id: ElementId): boolean {
-  return program.elements.some((element) => elementEnvelope(element)?.compensationHandler === id);
+  return program.elements.some((element) => elementEnvelope(element)?.compensationHandlers.includes(id) ?? false);
 }
 
 /** Refusals an Activity owes because of how it begins or of what its handler restores. */
@@ -296,6 +296,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
       return first(
         () => Data.origin(program, header),
         () => envelopeData(program, header, payload.envelope),
+        () => Work.handlerCount(payload.envelope),
         () => (call === null
           ? null
           : Data.mappings(program.options.evaluator, site(program, header.id), call.inputs) ??
@@ -317,6 +318,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
       return first(
         () => Data.origin(program, header),
         () => envelopeData(program, header, payload.envelope),
+        () => Work.handlerCount(payload.envelope),
         () => Scopes.scope(program, header, payload),
         // A Sub-Process instance submits no output data item, so `submits` is false (PC-MI-10).
         () => (payload.envelope.multiInstance === null
@@ -368,6 +370,23 @@ function abnormalScope(program: Program): boolean {
 /** Whether the program has a Multi-Instance loop, which `admission/profile.ts` reads. */
 function loops(program: Program): boolean {
   return program.elements.some((entry) => (elementEnvelope(entry)?.multiInstance ?? null) !== null);
+}
+
+/**
+ * Whether a Sub-Process an Error can leave retains compensable work: an element with a compensation handler lies in a
+ * Sub-Process. Any work may raise an Error, so every such Sub-Process counts.
+ */
+function errorExit(program: Program): boolean {
+  return program.elements.some((entry) =>
+    elementHeader(entry).parent !== null && (elementEnvelope(entry)?.compensationHandlers.length ?? 0) > 0);
+}
+
+/** Whether a Multi-Instance Task or Call has a compensation handler. */
+function loopedHandler(program: Program): boolean {
+  return program.elements.some((entry) => {
+    const activity = elementActivity(entry);
+    return activity !== null && activity[1].envelope.multiInstance !== null && activity[1].envelope.compensationHandlers.length > 0;
+  });
 }
 
 /**
@@ -443,7 +462,10 @@ export function admitLocated(program: Program): AdmissionRefusal | null {
   for (const check of [
     unlocated(() => FlowAdmission.references(program)),
     unlocated(() => Scopes.membership(program)),
-    unlocated(() => Profile.options(abnormalScope(program), loops(program), program.options)),
+    unlocated(() => Profile.options({
+      abnormalScope: abnormalScope(program), loops: loops(program), errorExit: errorExit(program),
+      loopedHandler: loopedHandler(program),
+    }, program.options)),
     unlocated(() => executable(program)),
     unlocated(() => Decision.resources(program)),
     unlocated(() => firstOf(program.processes, calledProcessBinding)),

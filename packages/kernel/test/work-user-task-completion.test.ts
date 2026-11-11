@@ -42,7 +42,7 @@ const userTask = (id: string, incoming: string[], outgoing: string[], over: Shap
       },
       envelope: {
         incoming, outgoing, inputs: over.inputs ?? [], outputs: over.outputs ?? [], boundaries: [], multiInstance: null,
-        compensationHandler: null, defaultFlow: null, asyncBefore: false, asyncAfter: false,
+        compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false,
       },
     },
   },

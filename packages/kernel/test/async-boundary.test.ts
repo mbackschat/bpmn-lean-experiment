@@ -31,7 +31,7 @@ function program(order: readonly ["Task" | "Choice", "Task" | "Choice"], marks: 
         work: "none",
         envelope: {
           incoming: [flowInto("Task")], outgoing: [outOf("Task")], inputs: [], outputs: [], boundaries: [], multiInstance: null,
-          compensationHandler: null, defaultFlow: null, asyncBefore: marks.before, asyncAfter: marks.after,
+          compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: marks.before, asyncAfter: marks.after,
         },
       },
     },

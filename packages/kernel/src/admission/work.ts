@@ -126,8 +126,16 @@ function workEnvelope(options: ProfileOptions, work: Traits, fields: Envelope): 
     return "activity.outputMappings";
   }
   if (fields.multiInstance !== null && work.instanceBody === null) return "activity.multiInstanceBody";
-  if (fields.compensationHandler !== null && (!work.compensable || fields.multiInstance !== null)) return "activity.compensationHandler";
+  if (fields.compensationHandlers.length > 0 && (!work.compensable || fields.multiInstance !== null)) return "activity.compensationHandler";
   return null;
+}
+
+/**
+ * An Activity or Scope compensates through one handler. BPMN 2.0.2 states no limit; CIB keeps one per Activity or scope
+ * (`BpmnParse.java:913-920`, `:1199-1201`, `:1754`).
+ */
+export function handlerCount(fields: Envelope): string | null {
+  return fields.compensationHandlers.length > 1 ? "compensation.handlerCount" : null;
 }
 
 /**

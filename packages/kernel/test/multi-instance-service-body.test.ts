@@ -54,7 +54,7 @@ function program(shape: Shape = {}): Json {
         work: { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null } } },
         envelope: {
           incoming: ["To_T"], outgoing: [outOf], inputs: [], outputs: [], boundaries: [], multiInstance: shape.plain === true ? null : loop,
-          compensationHandler: null, defaultFlow: null, asyncBefore: false, asyncAfter: false, ...shape.envelope,
+          compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false, ...shape.envelope,
         },
       },
     },

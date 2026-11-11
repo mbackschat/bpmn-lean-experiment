@@ -36,7 +36,7 @@ function program(mode: string, options: Json = cib): Json {
           completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: null, outputCollection: null,
           mutableCollection: "entrySnapshot", asyncBefore: false, asyncAfter: false, loopDataInputRef: null,
           inputDataItemName: "item",
-        }, compensationHandler: null, defaultFlow: null, asyncBefore: false, asyncAfter: false } } } },
+        }, compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false } } } },
       { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish",
         incoming: ["To_End"], outgoing: [], alternativeThrows: [] } } },
     ],

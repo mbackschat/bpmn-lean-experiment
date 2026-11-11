@@ -622,6 +622,8 @@ export interface Hooks {
   readonly instanceCompleted: (ctx: Ctx, body: number, occurrence: Occurrence, writes: readonly Binding[], state: State) => Outcome;
   /** Compensation: a handler of the run in that scope occurrence completed. */
   readonly handlerCompleted: (ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State) => Outcome;
+  /** Compensation: a handler of the run in that scope occurrence left without completing, raised by an event. */
+  readonly handlerEnded: (ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State) => Outcome;
   // Notifications
   /** A generic cancellation removed the occurrence; a feature that must react has this one place. */
   readonly cancelled: (ctx: Ctx, occurrence: Occurrence, state: State) => Outcome;
@@ -680,6 +682,7 @@ export const defaultHooks: Hooks = {
   outflow: () => refuse("outflow"),
   instanceCompleted: () => refuse("instanceCompleted"),
   handlerCompleted: () => refuse("handlerCompleted"),
+  handlerEnded: () => refuse("handlerEnded"),
   cancelled: (_ctx, _occurrence, state) => committed(state),
   written: (_ctx, _writes, state) => committed(state),
   evaluate: () => ({ tag: EvaluationTag.Failure, code: "no-evaluator" }),

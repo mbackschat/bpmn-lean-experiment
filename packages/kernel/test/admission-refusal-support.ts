@@ -62,7 +62,7 @@ const header = (id: string, sourceType: string, parent: string | null): Json =>
   ({ id, origin: { definition: null, sourceId: id }, sourceType, parent });
 
 export const envelope = (over: Json = {}): Json => ({
-  incoming: ["f1"], outgoing: ["f2"], inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandler: null,
+  incoming: ["f1"], outgoing: ["f2"], inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false,
   defaultFlow: null, asyncBefore: false, asyncAfter: false, ...over,
 });
 

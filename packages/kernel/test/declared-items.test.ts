@@ -39,7 +39,7 @@ function program(target: string, declared: readonly string[]): Json {
               },
             },
             envelope: {
-              incoming: ["To_Task"], outgoing: ["To_End"], inputs: [], boundaries: [], multiInstance: null, compensationHandler: null,
+              incoming: ["To_Task"], outgoing: ["To_End"], inputs: [], boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false,
               outputs: [{ target, source: { variable: { name: "Output_Decision" } }, dialect: "dataAssociation" }],
               defaultFlow: null, asyncBefore: false, asyncAfter: false,
             },

@@ -25,11 +25,13 @@ inductive Leave where
   | raised
   deriving Repr
 
-/-- What a compensation run does once its handlers have completed: complete an existing occurrence, or begin and
-complete a fresh one (a caught Cancel's boundary, which `Step` numbers when the run ends). -/
+/-- What a compensation run does once its handlers have completed: complete an existing occurrence, begin and complete
+a fresh one (a caught Cancel's boundary, which `Step` numbers when the run ends), or, for a group's nested run, leave
+the group's `context` and advance the run in `outer` as a completed handler does. -/
 inductive Resume where
   | complete (occurrence : Nat) (leave : Leave)
   | occur (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave)
+  | group (outer context : ScopeOccurrenceId)
   deriving Repr
 
 /-- One instance of a Multi-Instance Activity: waiting to start, running in its instance scope occurrence, or
@@ -57,10 +59,11 @@ structure MultiInstanceRun where
 /-- A completed Activity or Scope whose compensation handler may still run: it completed in `scope`, and its
 handler restores `snapshot` ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md)). `completion` orders the
 records of one scope. `children` keeps the records of a completed Sub-Process, for its handler to trigger recursively
-(§13.5.5; CIB moves them into an event-scope tree, `CompensationUtil.createEventScopeExecution`). -/
+(§13.5.5; CIB moves them into an event-scope tree, `CompensationUtil.createEventScopeExecution`). A record without a
+`handler` is a group whose compensation runs its `children`. -/
 structure Compensable where
   subject : ElementId
-  handler : ElementId
+  handler : Option ElementId
   scope : ScopeOccurrenceId
   occurrence : Option OccurrenceRef := none
   completion : Nat := 0

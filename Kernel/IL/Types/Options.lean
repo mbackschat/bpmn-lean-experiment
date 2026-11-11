@@ -82,15 +82,64 @@ inductive MultiInstanceOutputs where
   deriving DecidableEq, Repr
 
 inductive CompensationOrder where
-  /-- BPMN 2.0.2 §13.5.5. -/
+  /-- BPMN 2.0.2 §13.5.5: a handler whose subject a Sequence Flow leads to completes before its predecessor's starts. -/
   | dependency
-  | reverseCreation
+  /-- CIB signals every handler of a trigger at once (`CompensationUtil.java:55-88`). -/
+  | allAtOnce
   deriving DecidableEq, Repr
 
 inductive CompensationHandlerFailure where
   /-- COMPH-FAIL-01. -/
   | failsInstance
   | selected (code : String)
+  /-- An Error leaving a handler propagates from the scope occurrence the trigger ran in, as CIB's compensating
+  execution is a child of the throwing one (`CompensationUtil.java:62-75`). -/
+  | propagatesFromTrigger
+  deriving DecidableEq, Repr
+
+/-- Whether a completed Sub-Process without a compensation handler keeps its inner records as one group. -/
+inductive ImplicitCompensation where
+  /-- BPMN 2.0.2 Tables 10.88 and 10.89: only an Activity with a compensation handler is compensated, so a throw
+  naming such a Sub-Process is refused (`compensation.implicit`). -/
+  | refused
+  /-- CIB retains the inner records of every completed Sub-Process and compensates them as one group
+  (`CompensationUtil.java:100-152`, `CompensationEventHandler.java:61-64`). -/
+  | everySubProcess
+  deriving DecidableEq, Repr
+
+/-- What an Error leaving a Sub-Process does to the compensable work completed inside it. -/
+inductive ErrorExitCompensation where
+  /-- BPMN 2.0.2 §10.3.5 and presumed abort: the records end with the Sub-Process, as in CIB
+  (`SubProcessActivityBehavior.java:61-66` retains only on completion). -/
+  | drops
+  /-- BPMN 2.0.2 §10.7.3, §13.5.5: compensation of all contained Activities runs by default. -/
+  | compensatesContained
+  deriving DecidableEq, Repr
+
+/-- Which records a completed Multi-Instance Activity with a compensation handler leaves. -/
+inductive MultiInstanceCompensation where
+  /-- BPMN 2.0.2 §13.5.5: one per instance of a Multi-Instance Sub-Process, one for a Multi-Instance Task or Call. -/
+  | perSubProcessInstance
+  /-- CIB: one per completed instance of any Multi-Instance Activity (`AbstractBpmnActivityBehavior.java:69-74`). -/
+  | perInstance
+  deriving DecidableEq, Repr
+
+/-- Which BPMN `transactionMethod` values a Transaction runs. -/
+inductive TransactionMethods where
+  /-- `##Compensate` alone. -/
+  | compensateOnly
+  /-- `##Store` and `##Image` run as `##Compensate`, as CIB reads no such attribute (`BpmnParse.java:3902-3915`); a
+  protocol URI stays refused. -/
+  | compatibilityAsCompensate
+  deriving DecidableEq, Repr
+
+/-- Where a targeted Compensation throw resolves its `activityRef`. -/
+inductive CompensationReferenceScope where
+  /-- BPMN 2.0.2 Tables 10.88 and 10.89: an Activity visible from the throw, at its own level or, from a Compensation
+  Event Sub-Process, at its parent's. -/
+  | visible
+  /-- CIB: a throw in any Event Sub-Process also names an Activity of its parent's level (`BpmnParse.java:1695-1720`). -/
+  | eventSubProcessParent
   deriving DecidableEq, Repr
 
 inductive AbnormalScopeEnd where
@@ -337,6 +386,11 @@ structure ProfileOptions where
   multiInstanceOutputs : MultiInstanceOutputs := .aggregates
   compensationOrder : CompensationOrder := .dependency
   compensationHandlerFailure : CompensationHandlerFailure := .failsInstance
+  implicitCompensation : ImplicitCompensation := .refused
+  errorExitCompensation : ErrorExitCompensation := .drops
+  multiInstanceCompensation : MultiInstanceCompensation := .perSubProcessInstance
+  transactionMethods : TransactionMethods := .compensateOnly
+  compensationReferenceScope : CompensationReferenceScope := .visible
   abnormalScopeEnd : AbnormalScopeEnd := .withoutOutflow
   unhandledError : UnhandledError := .failsInstance
   errorCatchVariables : ErrorCatchVariables := .refused

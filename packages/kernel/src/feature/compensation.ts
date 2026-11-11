@@ -78,7 +78,8 @@ function ownedScope(ctx: Ctx, occurrence: Occurrence, state: State): ScopeOccurr
  */
 export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
   const element = programElement(ctx.program, occurrence.element);
-  const handler = (element === null ? null : elementEnvelope(element))?.compensationHandler ?? null;
+  // Admission admits at most one handler (`compensation.handlerCount`).
+  const handler = (element === null ? null : elementEnvelope(element))?.compensationHandlers[0] ?? null;
   const owned = ownedScope(ctx, occurrence, state);
   const compensation = state.slots.compensation;
   const isInner = (record: Compensable): boolean => owned !== null && owned.id === record.scope;
@@ -124,35 +125,41 @@ function position(ctx: Ctx, element: ElementId): number {
  * the ones a throw inside the handler compensates.
  */
 function beginHandler(ctx: Ctx, scope: ScopeOccurrenceId, state: State, record: Compensable): Result<readonly [State, ScopeOccurrenceId]> {
-  const element = programElement(ctx.program, record.handler);
+  const handler = record.handler;
+  // Only a group lacks a handler, and no feature retains a group: an invariant failure.
+  if (handler === null) return failed(FailureTag.SemanticFailure, "compensation-group-unretained");
+  const element = programElement(ctx.program, handler);
   if (element === null) return failed(FailureTag.SemanticFailure, "compensation-handler-missing");
   if (elementActivity(element) === null && elementScope(element) === null) {
     return failed(FailureTag.SemanticFailure, "compensation-handler-not-activity");
   }
-  const [entered, context] = enterScope(state, record.handler, scope, record.snapshot, null);
+  const [entered, context] = enterScope(state, handler, scope, record.snapshot, null);
   const compensation = entered.slots.compensation;
   const children = record.children.map((child) => ({ ...child, scope: context }));
   const stored = store(entered, { ...compensation, retained: [...compensation.retained, ...children] });
   return committed([signal(stored, {
     tag: SignalTag.Begin,
-    request: beginRequest({ element: record.handler, scope: context, continuation: { tag: ContinuationTag.Compensation, run: scope } }),
+    request: beginRequest({ element: handler, scope: context, continuation: { tag: ContinuationTag.Compensation, run: scope } }),
   }), context]);
 }
 
-function resumeRun(state: State, resume: Resume | null): State {
-  if (resume === null) return state;
+function resumeRun(state: State, resume: Resume | null): Outcome {
+  if (resume === null) return committed(state);
   switch (resume.tag) {
     case ResumeTag.Complete:
-      return signal(state, completeSignal(resume.occurrence, resume.leave, [], WriteRule.Outward));
+      return committed(signal(state, completeSignal(resume.occurrence, resume.leave, [], WriteRule.Outward)));
     case ResumeTag.Occur:
-      return signal(state, {
+      return committed(signal(state, {
         tag: SignalTag.Occur,
         element: resume.element,
         scope: resume.scope,
         leave: resume.leave,
         writes: [],
         rule: WriteRule.Outward,
-      });
+      }));
+    case ResumeTag.Group:
+      // Only a group's nested run resumes `group`, and no feature retains a group: an invariant failure.
+      return failed(FailureTag.SemanticFailure, "compensation-group-unretained");
   }
   return assertNever(resume);
 }
@@ -173,7 +180,7 @@ function advance(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outcome {
   if (run.pending.length === 0 && run.running.length === 0) {
     const ended = store(state, { ...compensation, runs: others });
     const left = run.leave === null ? ended : signal(ended, { tag: SignalTag.Cancel, occurrence: run.leave });
-    return committed(resumeRun(left, run.resume));
+    return resumeRun(left, run.resume);
   }
   // Dynamic-only: a dependency cycle needs the retained set, which depends on the run.
   if (ready.length === 0 && run.running.length === 0) return failed(FailureTag.Unsupported, "compensation-dependency-cycle");

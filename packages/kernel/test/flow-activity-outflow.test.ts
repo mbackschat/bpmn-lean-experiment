@@ -25,7 +25,7 @@ const literal = (value: boolean): Json => ({ simpleBoolean: { body: { literal: {
 const routeIs = (value: string): Json => ({ simpleBoolean: { body: { stringEquals: { name: "route", value } } } });
 
 const envelope = (incoming: string[], outgoing: string[], defaultFlow: string | null = null, outputs: Json[] = []): Json => ({
-  incoming, outgoing, inputs: [], outputs, boundaries: [], multiInstance: null, compensationHandler: null, defaultFlow,
+  incoming, outgoing, inputs: [], outputs, boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false, defaultFlow,
   asyncBefore: false, asyncAfter: false,
 });
 

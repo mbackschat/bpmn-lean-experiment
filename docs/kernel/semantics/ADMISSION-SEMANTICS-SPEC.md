@@ -41,8 +41,14 @@ A profile may select only behaviour the kernel implements ([`Kernel/Admission/Pr
 | Refusal code | Refused | Owning row |
 |---|---|---|
 | `profile.evaluator.juel` | the JUEL evaluator | PC-DATA-07 |
-| `profile.compensationOrder.reverseCreation` | reverse-creation compensation order | PC-COMPENSATION rows |
+| `profile.compensationOrder.allAtOnce` | starting every compensation handler of a trigger at once | PC-COMPENSATION rows |
 | `profile.compensationHandlerFailure.selected` | a selected handler-failure code | PC-COMPENSATION rows |
+| `profile.compensationHandlerFailure.propagatesFromTrigger` | an Error leaving a handler propagating from its trigger | PC-COMPENSATION rows |
+| `profile.implicitCompensation.everySubProcess` | compensating a handler-less Sub-Process as the group of its records | PC-COMPENSATION rows, PC-TX-01 |
+| `profile.errorExitCompensation.compensatesContained` | compensating the contained work of a Sub-Process an Error leaves, for a program with a Sub-Process retaining compensable work | PC-COMPENSATION rows, PC-TX-01 |
+| `profile.multiInstanceCompensation.perInstance` | a compensation record per instance, for a program with a Multi-Instance Task or Call with a handler | PC-COMPENSATION rows |
+| `profile.transactionMethods.compatibilityAsCompensate` | running `##Store` and `##Image` Transactions as `##Compensate` | PC-TX-01 |
+| `profile.compensationReferenceScope.eventSubProcessParent` | a targeted Compensation throw in any Event Sub-Process naming an Activity of its parent's level | PC-COMPENSATION rows |
 | `profile.callBindingTime.invocation` | binding the called definition at invocation | PC-SCOPE-03 |
 | `profile.timerZone` | a timer zone other than UTC | PC-TIMER-02 |
 | `profile.abnormalScopeEnd.withoutOutflow` | the standards reading of an abnormal Sub-Process end, for a program that reaches one (a Terminate in a Sub-Process or at a called process's level, or an interrupting Event Sub-Process): the kernel has only the normal continuation | PC-TERMINATE-01, PC-SCOPE rows |

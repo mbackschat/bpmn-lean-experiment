@@ -162,6 +162,7 @@ The deleted implementation admitted each work kind only in exact first-profile t
 | `activity.inputMappings`, `activity.outputMappings` | mappings on work other than User, Service and decision tasks, and a plain Task's outputs other than `camunda:outputParameter`s under `OutputContext.activityScope` | nothing would carry or submit them |
 | `activity.multiInstanceBody` | Multi-Instance on work other than a User, Service or Receive Task | [Multi-Instance rows](MULTI-INSTANCE-SEMANTICS-SPEC.md) |
 | `activity.compensationHandler`, `activity.compensationHandler.input`, `compensation.handlerWork` | compensation on work the pipeline cannot complete | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
+| `compensation.handlerCount` | more than one compensation handler of one Activity or Scope | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
 | `scope.implicitStart` | a Receive Task or Call begun by a Scope's implicit start | no flow to wait on |
 | dynamic: `effect-technical-failure` | technical failure without the incident profile | no BPMN meaning (§13.3.3) |
 | dynamic: `call-input-unavailable`, `call-output-unavailable` | an unavailable Data Association source at a Call | PC-DATA-09 |

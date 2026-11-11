@@ -133,7 +133,7 @@ test("a copy's boundaries are renamed with their flows and keep the author's ide
 
 test("a copy's compensation handler and compensation throw are renamed", async () => {
   const program = await assembled();
-  assert.equal(element(program, carriedId("Comp", 2)).payload.envelope.compensationHandler, carriedId("Handler", 2));
+  assert.deepEqual(element(program, carriedId("Comp", 2)).payload.envelope.compensationHandlers, [carriedId("Handler", 2)]);
   assert.equal(element(program, carriedId("Undo", 2)).payload.role.throw.record.compensation.payload.activity, carriedId("Comp", 2));
 });
 
