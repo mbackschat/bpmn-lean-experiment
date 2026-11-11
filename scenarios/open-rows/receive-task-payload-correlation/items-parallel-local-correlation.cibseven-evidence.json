@@ -30,6 +30,24 @@
         "processInstanceCount": 1,
         "engineClockTimeMs": 0,
         "variables": []
+      },
+      {
+        "afterCommandId": "deliver-body-2-counter-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "deliver-body-2-again",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "deliver-body-1-counter-0",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
       }
     ],
     "taskQueries": [
@@ -39,6 +57,18 @@
       },
       {
         "afterCommandId": "deliver-body-1-counter-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-body-2-counter-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-body-2-again",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-body-1-counter-0",
         "tasks": []
       }
     ],
@@ -80,6 +110,63 @@
             "executionIdPresent": true
           }
         ]
+      },
+      {
+        "afterCommandId": "deliver-body-2-counter-1",
+        "subscriptions": [
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-body-2-again",
+        "subscriptions": [
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-body-1-counter-0",
+        "subscriptions": [
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
       }
     ],
     "timerJobs": [
@@ -89,6 +176,18 @@
       },
       {
         "afterCommandId": "deliver-body-1-counter-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-body-2-counter-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-body-2-again",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-body-1-counter-0",
         "jobs": []
       }
     ],
@@ -100,6 +199,18 @@
       {
         "afterCommandId": "deliver-body-1-counter-1",
         "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-body-2-counter-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-body-2-again",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-body-1-counter-0",
+        "state": "ACTIVE"
       }
     ]
   },
@@ -109,7 +220,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rolledBack"
+      "outcome": "rejected"
     },
     "trace": [
       {
@@ -169,7 +280,157 @@
       {
         "kind": "command",
         "commandId": "deliver-body-1-counter-1",
-        "outcome": "rolledBack"
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-body-2-counter-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-body-2-again",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-body-1-counter-0",
+        "outcome": "rejected"
       },
       {
         "kind": "state",

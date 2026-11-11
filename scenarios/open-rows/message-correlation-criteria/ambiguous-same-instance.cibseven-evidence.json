@@ -46,6 +46,48 @@
             }
           }
         ]
+      },
+      {
+        "afterCommandId": "s03-deliver-B",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-FulfilPartA-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-FulfilPartB-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ]
       }
     ],
     "taskQueries": [
@@ -55,6 +97,18 @@
       },
       {
         "afterCommandId": "s02-deliver-A",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s03-deliver-B",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s04-complete-FulfilPartA-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s05-complete-FulfilPartB-1",
         "tasks": []
       }
     ],
@@ -96,6 +150,63 @@
             "executionIdPresent": true
           }
         ]
+      },
+      {
+        "afterCommandId": "s03-deliver-B",
+        "subscriptions": [
+          {
+            "elementId": "AwaitConfirmationA",
+            "eventName": "order-confirmed",
+            "messageId": "Message_OrderConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitConfirmationB",
+            "eventName": "order-confirmed",
+            "messageId": "Message_OrderConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-FulfilPartA-1",
+        "subscriptions": [
+          {
+            "elementId": "AwaitConfirmationA",
+            "eventName": "order-confirmed",
+            "messageId": "Message_OrderConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitConfirmationB",
+            "eventName": "order-confirmed",
+            "messageId": "Message_OrderConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-FulfilPartB-1",
+        "subscriptions": [
+          {
+            "elementId": "AwaitConfirmationA",
+            "eventName": "order-confirmed",
+            "messageId": "Message_OrderConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitConfirmationB",
+            "eventName": "order-confirmed",
+            "messageId": "Message_OrderConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
       }
     ],
     "timerJobs": [
@@ -105,6 +216,18 @@
       },
       {
         "afterCommandId": "s02-deliver-A",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-deliver-B",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-FulfilPartA-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-FulfilPartB-1",
         "jobs": []
       }
     ],
@@ -116,6 +239,18 @@
       {
         "afterCommandId": "s02-deliver-A",
         "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-deliver-B",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-FulfilPartA-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-FulfilPartB-1",
+        "state": "ACTIVE"
       }
     ]
   },
@@ -125,7 +260,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rolledBack"
+      "outcome": "rejected"
     },
     "trace": [
       {
@@ -193,7 +328,181 @@
       {
         "kind": "command",
         "commandId": "s02-deliver-A",
-        "outcome": "rolledBack"
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitConfirmationA",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_OrderConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitConfirmationB",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_OrderConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-deliver-B",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitConfirmationA",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_OrderConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitConfirmationB",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_OrderConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-FulfilPartA-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitConfirmationA",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_OrderConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitConfirmationB",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_OrderConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-FulfilPartB-1",
+        "outcome": "rejected"
       },
       {
         "kind": "state",

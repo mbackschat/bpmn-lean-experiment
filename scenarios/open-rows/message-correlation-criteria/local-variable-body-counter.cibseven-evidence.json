@@ -30,6 +30,18 @@
         "processInstanceCount": 1,
         "engineClockTimeMs": 0,
         "variables": []
+      },
+      {
+        "afterCommandId": "s03-deliver-counter-0",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s04-complete-PackItem-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
       }
     ],
     "taskQueries": [
@@ -39,6 +51,14 @@
       },
       {
         "afterCommandId": "s02-deliver-counter-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s03-deliver-counter-0",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s04-complete-PackItem-1",
         "tasks": []
       }
     ],
@@ -80,6 +100,44 @@
             "executionIdPresent": true
           }
         ]
+      },
+      {
+        "afterCommandId": "s03-deliver-counter-0",
+        "subscriptions": [
+          {
+            "elementId": "AwaitItemConfirmed",
+            "eventName": "item-confirmed",
+            "messageId": "Message_ItemConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitItemConfirmed",
+            "eventName": "item-confirmed",
+            "messageId": "Message_ItemConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-PackItem-1",
+        "subscriptions": [
+          {
+            "elementId": "AwaitItemConfirmed",
+            "eventName": "item-confirmed",
+            "messageId": "Message_ItemConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitItemConfirmed",
+            "eventName": "item-confirmed",
+            "messageId": "Message_ItemConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
       }
     ],
     "timerJobs": [
@@ -89,6 +147,14 @@
       },
       {
         "afterCommandId": "s02-deliver-counter-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-deliver-counter-0",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-PackItem-1",
         "jobs": []
       }
     ],
@@ -100,6 +166,14 @@
       {
         "afterCommandId": "s02-deliver-counter-1",
         "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-deliver-counter-0",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-PackItem-1",
+        "state": "ACTIVE"
       }
     ]
   },
@@ -109,7 +183,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rolledBack"
+      "outcome": "rejected"
     },
     "trace": [
       {
@@ -169,7 +243,107 @@
       {
         "kind": "command",
         "commandId": "s02-deliver-counter-1",
-        "outcome": "rolledBack"
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitItemConfirmed",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_ItemConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitItemConfirmed",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_ItemConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-deliver-counter-0",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitItemConfirmed",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_ItemConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitItemConfirmed",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_ItemConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-PackItem-1",
+        "outcome": "rejected"
       },
       {
         "kind": "state",
