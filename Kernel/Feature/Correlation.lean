@@ -23,27 +23,21 @@ public section
 
 namespace Kernel.Feature.Correlation
 
-/-- Exact equality of kind and value: `41` never equals `"41"`, nor `1.0` `1.00`, and list and map entries compare in
-order. -/
+/-- Whether CIB's variable query can compare a criterion's value: it refuses a value whose serializer is no primitive
+type ("Object values cannot be used to query", `SingleQueryVariableValueCondition.java:83-85`), and the runner hands a
+Decimal, a String list, a list and a map over as `BigDecimal`, `ArrayList` and `LinkedHashMap` (CIB-CFG-0009). -/
+def queryable : Value → Bool
+  | .null | .bool _ | .int _ | .string _ => true
+  | .decimal _ _ | .stringList _ | .list _ | .map _ => false
+
+/-- Exact equality of kind and value of a queryable criterion value: `41` never equals `"41"`, and a held value of
+another kind matches nothing. -/
 def sameKindAndValue : Value → Value → Bool
   | .null, .null => true
   | .bool left, .bool right => left == right
   | .int left, .int right => left == right
-  | .decimal left scale, .decimal right scale' => left == right && scale == scale'
   | .string left, .string right => left == right
-  | .stringList left, .stringList right => left == right
-  | .list left, .list right =>
-    left.length == right.length && (left.attach.zip right).all fun (⟨item, _⟩, other) => sameKindAndValue item other
-  | .map left, .map right =>
-    left.length == right.length && (left.attach.zip right).all fun (⟨entry, _⟩, other) =>
-      entry.1 == other.1 && sameKindAndValue entry.2 other.2
   | _, _ => false
-termination_by left => sizeOf left
-decreasing_by
-  all_goals simp_wf
-  · have := List.sizeOf_lt_of_mem ‹_ ∈ left›; omega
-  · have := List.sizeOf_lt_of_mem ‹entry ∈ left›
-    cases entry; simp_all; omega
 
 /-- Whether `criterion` holds for an item waiting in `scope`: `processVariable` names a variable the instance root holds
 and `localVariable` one `scope` holds itself, never one of an enclosing scope, each with an equal value
@@ -65,10 +59,20 @@ def criterionHolds (state : State) (scope : ScopeOccurrenceId) (criterion : Corr
   | .businessKey => names ((state.slots.instances.find? (·.root == root)).bind (·.businessKey))
   | .processInstance => names (some (state.instanceOf scope))
 
+/-- Whether a criterion names a variable, whose value CIB's variable query compares. -/
+def namesVariable (criterion : CorrelationMatch) : Bool :=
+  match criterion.target with
+  | .processVariable _ | .localVariable _ => true
+  | .businessKey | .processInstance => false
+
 /-- Whether every one of a delivery's API `criteria` holds for an item waiting in `scope` (`criterionHolds`), the empty
-list included; two naming one target are `criteria-duplicate` (`targetsRepeat`). -/
+list included; two naming one target are `criteria-duplicate` (`targetsRepeat`). A variable criterion whose value is not
+`queryable` is `unsupported`: CIB rolls the correlation back, which the profile does not select (CIB-EXT-0025). -/
 def criteriaHold (state : State) (scope : ScopeOccurrenceId) (criteria : List CorrelationMatch) : Except Failure Bool :=
   if targetsRepeat criteria then .error (.rejected "criteria-duplicate")
+  else if criteria.any fun criterion => namesVariable criterion && !queryable criterion.expected then
+    -- dynamic-only: a delivery's criteria are its caller's.
+    .error (.unsupported "correlation-criterion-not-primitive")
   else .ok (criteria.all (criterionHolds state scope))
 
 def criteria (trigger : Trigger) : List CorrelationCriterion :=

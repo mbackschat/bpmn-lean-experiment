@@ -42,7 +42,31 @@ import {
 } from "../state.js";
 import { EvaluationTag, evalContext, subscriptionOf, type Ctx } from "../hooks.js";
 
-/** Exact equality of kind and value: `41` never equals `"41"`, nor `1.0` `1.00`, and list and map entries compare in order. */
+/**
+ * Whether CIB's variable query can compare a criterion's value: it refuses a value whose serializer is no primitive type
+ * ("Object values cannot be used to query", `SingleQueryVariableValueCondition.java:83-85`), and the runner hands a
+ * Decimal, a String list, a list and a map over as `BigDecimal`, `ArrayList` and `LinkedHashMap` (CIB-CFG-0009).
+ */
+function queryable(value: Value): boolean {
+  switch (value.tag) {
+    case ValueTag.Null:
+    case ValueTag.Bool:
+    case ValueTag.Int:
+    case ValueTag.String:
+      return true;
+    case ValueTag.Decimal:
+    case ValueTag.StringList:
+    case ValueTag.List:
+    case ValueTag.Map:
+      return false;
+  }
+  return assertNever(value);
+}
+
+/**
+ * Exact equality of kind and value of a queryable criterion value: `41` never equals `"41"`, and a held value of another
+ * kind matches nothing.
+ */
 function sameKindAndValue(left: Value, right: Value): boolean {
   switch (left.tag) {
     case ValueTag.Null:
@@ -52,19 +76,10 @@ function sameKindAndValue(left: Value, right: Value): boolean {
     case ValueTag.String:
       return right.tag === left.tag && right.value === left.value;
     case ValueTag.Decimal:
-      return right.tag === ValueTag.Decimal && right.coefficient === left.coefficient && right.scale === left.scale;
     case ValueTag.StringList:
-      return right.tag === ValueTag.StringList && right.items.length === left.items.length &&
-        left.items.every((item, index) => item === right.items[index]);
     case ValueTag.List:
-      return right.tag === ValueTag.List && right.items.length === left.items.length &&
-        left.items.every((item, index) => sameKindAndValue(item, right.items[index] as Value));
     case ValueTag.Map:
-      return right.tag === ValueTag.Map && right.entries.length === left.entries.length &&
-        left.entries.every(([name, value], index) => {
-          const other = right.entries[index] as readonly [string, Value];
-          return name === other[0] && sameKindAndValue(value, other[1]);
-        });
+      return false;
   }
   return assertNever(left);
 }
@@ -97,12 +112,29 @@ function criterionHolds(state: State, scope: ScopeOccurrenceId, criterion: Corre
   return assertNever(target);
 }
 
+/** Whether a criterion names a variable, whose value CIB's variable query compares. */
+function namesVariable(criterion: CorrelationMatch): boolean {
+  switch (criterion.target.tag) {
+    case CriterionTargetTag.ProcessVariable:
+    case CriterionTargetTag.LocalVariable:
+      return true;
+    case CriterionTargetTag.BusinessKey:
+    case CriterionTargetTag.ProcessInstance:
+      return false;
+  }
+  return assertNever(criterion.target);
+}
+
 /**
  * Whether every one of a delivery's API `criteria` holds for an item waiting in `scope` (`criterionHolds`), the empty
- * list included; two naming one target are `criteria-duplicate` (`targetsRepeat`).
+ * list included; two naming one target are `criteria-duplicate` (`targetsRepeat`). A variable criterion whose value is
+ * not `queryable` is `unsupported`: CIB rolls the correlation back, which the profile does not select (CIB-EXT-0025).
  */
 export function criteriaHold(state: State, scope: ScopeOccurrenceId, criteria: readonly CorrelationMatch[]): Result<boolean> {
   if (targetsRepeat(criteria)) return failed(FailureTag.Rejected, "criteria-duplicate");
+  if (criteria.some((criterion) => namesVariable(criterion) && !queryable(criterion.expected))) {
+    return failed(FailureTag.Unsupported, "correlation-criterion-not-primitive"); // dynamic-only: a delivery's criteria are its caller's
+  }
   return committed(criteria.every((entry) => criterionHolds(state, scope, entry)));
 }
 

@@ -143,3 +143,20 @@ test("a Receive Task checks the criteria in its own scope and installs the deliv
   assert.deepEqual(completed.value.variables.find((entry) => entry.scope === 0)?.entries.find(([name]) => name === "confirmedBy"),
     ["confirmedBy", { tag: "string", value: "ops" }]);
 });
+
+/** CIB's variable query refuses an Object value ("Object values cannot be used to query"), and the runner hands a
+ * Decimal, a list and a map over as `BigDecimal`, `ArrayList` and `LinkedHashMap`, so CIB rolls such a correlation back. */
+const notPrimitive = { ok: false, failure: { tag: "unsupported", code: "correlation-criterion-not-primitive" } };
+const objectValues: ReadonlyArray<readonly [string, Json]> = [
+  ["a list", { kind: "list", value: [string("A-1")] }],
+  ["a decimal", { kind: "decimal", coefficient: "41", scale: 0 }],
+  ["a map", { kind: "map", value: [{ name: "id", value: string("A-1") }] }],
+];
+
+for (const [name, value] of objectValues) {
+  test(`a variable criterion holding ${name} is unsupported at a catch and a Receive Task`, () => {
+    assert.deepEqual(deliver(topLevel, started(topLevel), "T", [criterion(processVariable("orderId"), value)]), notPrimitive);
+    assert.deepEqual(deliver(topLevel, started(topLevel), "T", [criterion({ kind: "localVariable", name: "orderId" }, value)]), notPrimitive);
+    assert.deepEqual(deliver(receiving, started(receiving), "T", [criterion(processVariable("orderId"), value)]), notPrimitive);
+  });
+}
