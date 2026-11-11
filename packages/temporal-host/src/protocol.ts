@@ -90,6 +90,8 @@ export const populationCommandUpdate = defineUpdate<PopulationCommandOutcome, [P
 export const populationEmitUpdate = defineUpdate<void, [EmitReference]>("emit");
 /** A command's recorded answer, `{kind: "pending"}` while queued or in flight, `{kind: "unknown"}` otherwise. */
 export const populationResultQuery = defineQuery<JsonValue, [commandId: string]>("populationResult");
+/** The answer a deployment request received, `null` for a request never registered. */
+export const populationDeploymentQuery = defineQuery<DeploymentAnswer | null, [deploymentRequestId: string]>("deployment");
 /** How many commands and hand-offs the ingress has queued or in flight. */
 export const populationBacklogQuery = defineQuery<number>("populationBacklog");
 

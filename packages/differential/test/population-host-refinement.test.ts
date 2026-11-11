@@ -111,7 +111,11 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
         const { at: _at, ...command } = json;
         const answer = population.command(json["commandId"] as string, json["kind"] as string, command as JsonValue, stimulus.digest, stimulus.atMs);
         assert.ok(answer !== null, "the queue never fills in a scenario");
-        const { atMs, ...rest } = answer as Json;
+        const { atMs, chain, ...rest } = answer as Json;
+        // A Message delivery names its chain, which holds the target's instance; nothing else names one.
+        const target = (rest["resolution"] as Json)["target"] as Json | undefined;
+        assert.equal(chain !== null, target !== undefined && (rest["resolution"] as Json)["kind"] !== "fanOut");
+        if (typeof chain === "string") assert.ok(population.chains.has(chain), `${String(json["commandId"])}: chain ${chain}`);
         results.push({ ...rest, at: atMs } as JsonValue);
         break;
       }

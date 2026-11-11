@@ -43,15 +43,20 @@ export interface DeploymentArgs {
   readonly program: JsonValue;
 }
 
-/** A deployment to register: the caller's request identifier, its definition identity's digest and its program. */
+/**
+ * A deployment to register: the caller's request identifier, its definition identity's digest and its program; `config`
+ * is the chain configuration the caller expects the ingress to run with (`configurationConflict`).
+ */
 export interface DeploymentRequest {
+  readonly config: HostConfig;
   readonly deploymentRequestId: string;
   readonly digest: string;
   readonly program: JsonValue;
 }
 
-/** A population command in the population scenario contract's form; `digest` is its content's. */
+/** A population command in the population scenario contract's form; `digest` is its content's, `config` as above. */
 export interface PopulationCommandRequest {
+  readonly config: HostConfig;
   readonly commandId: string;
   readonly kind: string;
   readonly command: JsonValue;

@@ -70,8 +70,8 @@ export { PageKind, type Batch, type ExecutionTransition, type OccurrenceTransiti
 export type { HostView, JsonValue, OccurrenceId, Requirements, WaitView } from "./port.js";
 export type { ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";
 export { ScheduleClient } from "./schedule-client.js";
-export { PopulationClient, PopulationCommandRefused } from "./population-client.js";
-export { populationInstanceWorkflowId } from "./population-address.js";
+export { PopulationClient, PopulationRefused, type PopulationResult } from "./population-client.js";
+export { processInstanceWorkflowId } from "./population-address.js";
 export { ingressWorkflowId } from "./correlation-address.js";
 
 type ProcessWorkflow = (args: RunProcessArgs) => Promise<ProcessResult>;

@@ -17,7 +17,7 @@ import {
   deploymentWorkflowId,
   emitUpdateId,
   populationIngressWorkflowId,
-  populationInstanceWorkflowId,
+  processInstanceWorkflowId,
 } from "./population-address.js";
 import {
   deploymentWorkflowType,
@@ -25,6 +25,7 @@ import {
   type DeploymentArgs,
   type PopulationActivities,
   type PopulationIngressArgs,
+  type ScanRequest,
 } from "./population-contract.js";
 import type { JsonValue, ReachOutcome } from "./port.js";
 import {
@@ -45,7 +46,10 @@ import {
 
 type Ingress = (args: PopulationIngressArgs) => Promise<void>;
 
-/** `null` when the Workflow `read` addresses does not exist; any other failure is transport's, which Temporal retries. */
+/**
+ * `null` when the Workflow `read` addresses does not exist or refuses it as closed; any other failure is transport's,
+ * which Temporal retries.
+ */
 async function unlessGone<T>(read: () => Promise<T>): Promise<T | null> {
   try {
     return await read();
@@ -67,38 +71,48 @@ function ingress(client: Client, population: string) {
   return client.workflow.getHandle<Ingress>(populationIngressWorkflowId(population));
 }
 
-async function scan(client: Client, population: string, action: Parameters<PopulationActivities["scanPopulation"]>[0]["action"]): Promise<Answer> {
+type ScanAction = ScanRequest["action"];
+
+async function scan(client: Client, population: string, action: ScanAction): Promise<Answer> {
+  const chain = (workflowId: string) => client.workflow.getHandle(workflowId);
   const deployment = (deploymentId: number) => client.workflow.getHandle(deploymentWorkflowId(population, deploymentId));
   switch (action.kind) {
     case "scanSignal": {
+      const question = { address: action.address, emitter: action.emitter };
       const [chains, starts] = await Promise.all([
         Promise.all(action.chains.map(async (workflowId) => {
-          const answered = await unlessGone(() => client.workflow.getHandle(workflowId)
-            .query(populationSignalQuery, { address: action.address, emitter: action.emitter }));
-          return answered === null ? { workflowId, instanceId: null, receivers: [], refusesVariables: false } : { workflowId, ...answered };
+          const answered = await unlessGone(() => chain(workflowId).query(populationSignalQuery, question));
+          return answered === null
+            ? { workflowId, instanceId: null, receivers: [], refusesVariables: false }
+            : { workflowId, ...answered };
         })),
-        Promise.all(action.deployments.map(async (deploymentId) =>
-          ({ deploymentId, ...await deployment(deploymentId).query(deploymentSignalStartsQuery, action.address, action.variables) }))),
+        Promise.all(action.deployments.map(async (deploymentId) => {
+          const answered = await deployment(deploymentId)
+            .query(deploymentSignalStartsQuery, action.address, action.variables);
+          return { deploymentId, ...answered };
+        })),
       ]);
       return { kind: "signalScan", chains, starts };
     }
     case "scanMessage": {
-      const chains = await Promise.all(action.chains.map(async (workflowId) =>
-        ({ workflowId, receivers: await unlessGone(() => client.workflow.getHandle(workflowId).query(populationMessageQuery, action.publication)) ?? [] })));
+      const chains = await Promise.all(action.chains.map(async (workflowId) => {
+        const receivers = await unlessGone(() => chain(workflowId).query(populationMessageQuery, action.publication));
+        return { workflowId, receivers: receivers ?? [] };
+      }));
       return { kind: "messageScan", chains };
     }
-    case "scanMessageStarts":
-      return {
-        kind: "messageStarts",
-        starts: await Promise.all(action.deployments.map(async (deploymentId) =>
-          ({ deploymentId, candidates: await deployment(deploymentId).query(deploymentMessageStartsQuery, action.message) }))),
-      };
-    case "scanConditionalStarts":
-      return {
-        kind: "conditionalStarts",
-        starts: await Promise.all(action.deployments.map(async (deploymentId) =>
-          ({ deploymentId, startEvents: await deployment(deploymentId).query(deploymentConditionalStartsQuery) }))),
-      };
+    case "scanMessageStarts": {
+      const starts = await Promise.all(action.deployments.map(async (deploymentId) => {
+        const candidates = await deployment(deploymentId).query(deploymentMessageStartsQuery, action.message);
+        return { deploymentId, candidates };
+      }));
+      return { kind: "messageStarts", starts };
+    }
+    case "scanConditionalStarts": {
+      const starts = await Promise.all(action.deployments.map(async (deploymentId) =>
+        ({ deploymentId, startEvents: await deployment(deploymentId).query(deploymentConditionalStartsQuery) })));
+      return { kind: "conditionalStarts", starts };
+    }
   }
 }
 
@@ -107,14 +121,16 @@ export function createPopulationActivities(): PopulationActivities {
     scanPopulation: async (request) => scan(Context.current().client, request.population, request.action),
     deliverPopulation: async (request) => {
       const { client } = Context.current();
+      const delivery = { deliveryId: request.deliveryId, delivery: request.delivery };
       const outcome = await unlessGone(() => client.workflow.getHandle(request.workflowId)
-        .executeUpdate(populationDeliverUpdate, { args: [{ deliveryId: request.deliveryId, delivery: request.delivery }], updateId: request.deliveryId }));
+        .executeUpdate(populationDeliverUpdate, { args: [delivery], updateId: request.deliveryId }));
       return outcome ?? { kind: "gone" };
     },
     startPopulation: async (request) => {
       const { client, info } = Context.current();
-      const program: JsonValue = await client.workflow.getHandle(deploymentWorkflowId(request.population, request.deploymentId)).query(deploymentProgramQuery);
-      const workflowId = populationInstanceWorkflowId(request.population, request.instanceId);
+      const program: JsonValue = await client.workflow
+        .getHandle(deploymentWorkflowId(request.population, request.deploymentId)).query(deploymentProgramQuery);
+      const workflowId = processInstanceWorkflowId(request.instanceId);
       const start = new WithStartWorkflowOperation<(args: RunProcessArgs) => Promise<ProcessResult>>(workflowType, {
         workflowId,
         taskQueue: info.taskQueue,
@@ -130,25 +146,34 @@ export function createPopulationActivities(): PopulationActivities {
       } catch (error) {
         // The instance identity started once and its chain has closed: its recorded start answers again.
         if (!(error instanceof WorkflowExecutionAlreadyStartedError)) throw error;
-        const recorded: ReachOutcome | null = await client.workflow.getHandle(workflowId).query(populationStartOutcomeQuery);
-        if (recorded === null) throw ApplicationFailure.nonRetryable(`chain ${workflowId} recorded no population start`);
+        const recorded: ReachOutcome | null = await client.workflow.getHandle(workflowId)
+          .query(populationStartOutcomeQuery);
+        if (recorded === null) {
+          throw ApplicationFailure.nonRetryable(`chain ${workflowId} recorded no population start`);
+        }
         return recorded;
       }
     },
-    readPopulationIntents: async (request) =>
-      unlessGone(() => Context.current().client.workflow.getHandle(request.workflowId).query(pendingIntentsQuery, request.commandId)),
-    settlePopulationEmit: async (request) => {
-      await unlessGone(() => Context.current().client.workflow.getHandle(request.workflowId).executeUpdate(emitSettledUpdate, { args: [request.commandId] }));
+    readPopulationIntents: async (request) => {
+      const { client } = Context.current();
+      return unlessGone(() => client.workflow.getHandle(request.workflowId).query(pendingIntentsQuery, request.commandId));
     },
-    registerPopulation: async (request) =>
-      ingress(Context.current().client, request.population).executeUpdate(populationRegisterUpdate, { args: [request.registration] }),
+    settlePopulationEmit: async (request) => {
+      const { client } = Context.current();
+      await unlessGone(() => client.workflow.getHandle(request.workflowId)
+        .executeUpdate(emitSettledUpdate, { args: [request.commandId] }));
+    },
+    registerPopulation: async (request) => ingress(Context.current().client, request.population)
+      .executeUpdate(populationRegisterUpdate, { args: [request.registration] }),
     emitPopulation: async (request) => {
       await ingress(Context.current().client, request.population)
         .executeUpdate(populationEmitUpdate, { args: [request.reference], updateId: emitUpdateId(request.reference) });
     },
     startDeployment: async (request) => {
       const { client, info } = Context.current();
-      const args: DeploymentArgs = { population: request.population, deploymentId: request.deploymentId, program: request.program };
+      const args: DeploymentArgs = {
+        population: request.population, deploymentId: request.deploymentId, program: request.program,
+      };
       try {
         await client.workflow.start<(args: DeploymentArgs) => Promise<void>>(deploymentWorkflowType, {
           workflowId: deploymentWorkflowId(request.population, request.deploymentId), taskQueue: info.taskQueue,

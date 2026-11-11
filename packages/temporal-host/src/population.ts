@@ -11,6 +11,7 @@
  * deployments that hold them.
  */
 import { canonicalJson } from "./correlation.js";
+import type { HostConfig } from "./host-contract.js";
 import type { CommandView, JsonValue, OccurrenceId, PopulationPort, WaitAddressView, ReachOutcome, ResolutionParts, SelectorView, Wire } from "./port.js";
 
 /** Host restrictions of the ingress, each refused with a stable code, never a meaning of the construct. */
@@ -32,6 +33,8 @@ export const timerLedgerCapacityCode = "host.population.timerLedgerCapacity";
 export const deploymentRequestConflictCode = "host.population.deploymentRequestConflict";
 /** The code a delivery to a chain that no longer exists fails with. */
 export const chainGoneCode = "workflow-closed";
+/** A caller's chain configuration differs from the one its population's ingress runs with. */
+export const configurationConflictCode = "host.population.configurationConflict";
 
 /** A registered deployment, or a refused one (`summary` null), which still took its deploy ordinal. */
 export interface RegistryEntry {
@@ -43,8 +46,9 @@ export interface RegistryEntry {
   readonly summary: Wire | null;
 }
 
+/** A registered deployment's ordinal, each key's version and its deploy time, the origin of its Timer starts. */
 export type DeploymentAnswer =
-  | { readonly deploymentId: number; readonly versions: readonly (readonly [string, number])[] }
+  | { readonly deploymentId: number; readonly versions: readonly (readonly [string, number])[]; readonly deployedAtMs: number }
   | { readonly refused: string };
 
 /** What one process chain registered: the addresses of its open waits at its publication `revision`. */
@@ -64,18 +68,25 @@ export interface EmitReference {
   readonly digest: string;
 }
 
-/** `ticket` numbers accepted items, so each Update waits for its own answer. */
+/**
+ * `ticket` numbers accepted items, so each Update waits for its own answer; it is `null` once no Update waits, for an
+ * emit always and for a command whose Update the ingress released when it continued as new.
+ */
 export type Queued =
-  | { readonly kind: "command"; readonly ticket: number; readonly commandId: string; readonly commandKind: string; readonly command: JsonValue;
+  | { readonly kind: "command"; readonly ticket: number | null; readonly commandId: string; readonly commandKind: string; readonly command: JsonValue;
       readonly digest: string }
-  | { readonly kind: "emit"; readonly ticket: number; readonly reference: EmitReference };
+  | { readonly kind: "emit"; readonly ticket: null; readonly reference: EmitReference };
 
-/** A command's answer: its arrival ordinal, the ingress time it was taken at and its rendered resolution. */
+/**
+ * A command's answer: its arrival ordinal, the ingress time it was taken at and its rendered resolution; `chain` is the
+ * Workflow ID of the chain a Message delivery reached, which the resolution names only by occurrence.
+ */
 export interface CommandAnswer {
   readonly commandId: string;
   readonly ordinal: number;
   readonly atMs: number;
   readonly resolution: JsonValue;
+  readonly chain: string | null;
 }
 
 export type Settled =
@@ -90,7 +101,7 @@ export interface ConsumedTimer {
 
 /** How a finished fan-out answers: a delivery's cascade, a fan-out after its `prefix`, or an emitted hand-off. */
 type Finish =
-  | { readonly kind: "committed"; readonly target: Wire }
+  | { readonly kind: "committed"; readonly target: Wire; readonly chain: string }
   | { readonly kind: "fanOut"; readonly prefix: readonly Wire[] }
   | { readonly kind: "emit" };
 
@@ -129,7 +140,10 @@ export interface IngressState {
   readonly queue: readonly Queued[];
   readonly timers: readonly ConsumedTimer[];
   readonly tickets: number;
-  /** Answers not yet read by the Update that waits for them, by ticket; empty whenever no handler runs. */
+  /**
+   * Answers not yet read by the Update that waits for them, by ticket. Only a waiting Update's item has a ticket, so
+   * there are never more than the queue's capacity and the item in flight.
+   */
   readonly answers: readonly (readonly [number, JsonValue])[];
   readonly current: InFlight | null;
 }
@@ -203,7 +217,7 @@ export function registerDeployment<P, S>(port: PopulationPort<P, S>, state: Ingr
     const answer = { refused: outcome.refused };
     return [{ ...state, deployments: deploymentId, registry: [...state.registry, { ...base, answer, key: null, summary: null }] }, answer];
   }
-  const answer = { deploymentId, versions: outcome.versions };
+  const answer = { deploymentId, versions: outcome.versions, deployedAtMs: atMs };
   const superseded = new Set(state.registry.filter((entry) => entry.key === outcome.key).map((entry) => entry.deploymentId));
   return [{
     ...state,
@@ -246,7 +260,34 @@ export function enqueueEmit(state: IngressState, reference: EmitReference): Ingr
     return state;
   }
   const ticket = state.tickets + 1;
-  return { ...state, tickets: ticket, queue: [...state.queue, { kind: "emit", ticket, reference }] };
+  return { ...state, tickets: ticket, queue: [...state.queue, { kind: "emit", ticket: null, reference }] };
+}
+
+/**
+ * `state` once no Update waits for its items any more, when the ingress continues as new: their answers stay readable
+ * in the ledger only.
+ */
+export function releaseHandlers(state: IngressState): IngressState {
+  const released = (item: Queued): Queued => item.kind === "command" ? { ...item, ticket: null } : item;
+  return {
+    ...state,
+    answers: [],
+    queue: state.queue.map(released),
+    current: state.current === null ? null : { ...state.current, item: released(state.current.item) },
+  };
+}
+
+/** The answer a registered or refused deployment request received, `null` for a request never registered. */
+export function deploymentOf(state: IngressState, deploymentRequestId: string): DeploymentAnswer | null {
+  return state.registry.find((entry) => entry.deploymentRequestId === deploymentRequestId)?.answer ?? null;
+}
+
+/**
+ * The refusal of a caller whose chain configuration differs from the one the ingress was started with: the chains the
+ * ingress starts never run under a configuration their caller did not give.
+ */
+export function configurationConflict(held: HostConfig, requested: HostConfig): string | null {
+  return canonicalJson(held) === canonicalJson(requested) ? null : configurationConflictCode;
 }
 
 /** The answer of `ticket` once settled, and the state without it. */
@@ -285,11 +326,13 @@ function occurrenceKey(occurrence: OccurrenceId): string {
   return canonicalJson([occurrence.processInstanceId, occurrence.elementId, occurrence.activation]);
 }
 
-/** Settle the command in flight with `parts`. */
-function resolve<P, S>(port: PopulationPort<P, S>, state: IngressState, parts: ResolutionParts): IngressState {
+/** Settle the command in flight with `parts`; `chain` is the chain a Message delivery reached. */
+function resolve<P, S>(port: PopulationPort<P, S>, state: IngressState, parts: ResolutionParts, chain: string | null = null): IngressState {
   const current = inFlight(state);
   if (current.item.kind !== "command" || current.view === null) throw new TypeError("only a command resolves");
-  const answer: CommandAnswer = { commandId: current.view.commandId, ordinal: current.ordinal, atMs: current.atMs, resolution: port.renderResolution(parts) };
+  const answer: CommandAnswer = {
+    commandId: current.view.commandId, ordinal: current.ordinal, atMs: current.atMs, resolution: port.renderResolution(parts), chain,
+  };
   return settle(state, { kind: "command", commandId: answer.commandId, digest: current.item.digest, answer }, current.item.ticket,
     answer as unknown as JsonValue);
 }
@@ -389,7 +432,7 @@ function fanOutAction<P, S>(port: PopulationPort<P, S>, state: IngressState): re
       const entries = port.hostCapacityEntries(next.entries, next.stopped, phase.budget);
       const finish = phase.finish;
       switch (finish.kind) {
-        case "committed": return [resolve(port, state, { kind: "committed", target: finish.target, cascade: entries }), null];
+        case "committed": return [resolve(port, state, { kind: "committed", target: finish.target, cascade: entries }, finish.chain), null];
         case "fanOut": return [resolve(port, state, { kind: "fanOut", entries: [...finish.prefix, ...entries] }), null];
         case "emit": {
           const rendered = port.renderEntries(entries);
@@ -539,12 +582,12 @@ export function answer<P, S>(port: PopulationPort<P, S>, state: IngressState, gi
       switch (outcome.kind) {
         case "committed":
           return withPhase(state, { kind: "fanOut", machine: port.cascadeBegin(commandIdOfFlight(current), outcome.instanceId, outcome.intents, capacity),
-            budget: capacity, finish: { kind: "committed", target: phase.target } }, { reached });
+            budget: capacity, finish: { kind: "committed", target: phase.target, chain: phase.workflowId } }, { reached });
         case "failed":
-          return resolve(port, state, { kind: "failed", target: phase.target, failure: outcome.failure });
+          return resolve(port, state, { kind: "failed", target: phase.target, failure: outcome.failure }, phase.workflowId);
         case "skipped":
         case "gone":
-          return resolve(port, state, { kind: "failed", target: phase.target, failure: port.goneFailure(chainGoneCode) });
+          return resolve(port, state, { kind: "failed", target: phase.target, failure: port.goneFailure(chainGoneCode) }, phase.workflowId);
       }
       break;
     }

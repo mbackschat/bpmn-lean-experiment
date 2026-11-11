@@ -20,9 +20,13 @@ export function deploymentWorkflowId(population: string, deploymentId: number): 
   return `bpmn-deployment-sha256:${sha256(canonicalJson(["populationDeployment", population, deploymentId]))}`;
 }
 
-/** The chain of an instance a population start makes, named by the kernel-derived instance identity. */
-export function populationInstanceWorkflowId(population: string, instanceId: string): string {
-  return `bpmn-instance-sha256:${sha256(canonicalJson(["populationInstance", population, instanceId]))}`;
+/**
+ * The Workflow ID of the chain hosting the semantic process instance `instanceId`, whoever starts it: an engine client
+ * under the caller's identifier, or the population ingress under a kernel-derived one. Instance identities are
+ * engine-wide, so a population start and a direct start of one identity are one chain.
+ */
+export function processInstanceWorkflowId(instanceId: string): string {
+  return `bpmn-process-sha256:${sha256(canonicalJson(["semanticProcessInstance", instanceId]))}`;
 }
 
 /** The digest of a population command's content, which a repeat must equal (population contract §7). */

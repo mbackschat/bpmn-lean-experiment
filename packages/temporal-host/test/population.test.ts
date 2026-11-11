@@ -100,7 +100,7 @@ test("a deployment request answers once, conflicts with other content, and super
   });
   let state: import("../src/population.ts").IngressState = { ...emptyIngress, timers: [{ deploymentId: 1, startEvent: "T", dueMs: 60_000 }] };
   const [first, deployed] = registerDeployment(kernel, state, "r1", "d1", { summary: "Orders" }, 0);
-  assert.deepEqual(deployed, { deploymentId: 1, versions: [["Orders", 1]] });
+  assert.deepEqual(deployed, { deploymentId: 1, versions: [["Orders", 1]], deployedAtMs: 0 });
   assert.deepEqual(registerDeployment(kernel, first, "r1", "d1", { summary: "Orders" }, 5)[1], deployed);
   assert.deepEqual(registerDeployment(kernel, first, "r1", "other", { summary: "Orders" }, 5)[1], { refused: population.deploymentRequestConflictCode });
   const [refused, refusal] = registerDeployment(kernel, first, "r2", "d2", { refused: "deployment.messageStartName" }, 5);
@@ -109,7 +109,9 @@ test("a deployment request answers once, conflicts with other content, and super
   assert.equal(state.deployments, 2, "a refused deployment takes its ordinal");
   assert.equal(state.timers.length, 1);
   const [redeployed, again] = registerDeployment(kernel, state, "r3", "d3", { summary: "Orders" }, 10);
-  assert.deepEqual(again, { deploymentId: 3, versions: [["Orders", 3]] });
+  assert.deepEqual(again, { deploymentId: 3, versions: [["Orders", 3]], deployedAtMs: 10 });
+  assert.deepEqual(population.deploymentOf(redeployed, "r2"), refusal);
+  assert.equal(population.deploymentOf(redeployed, "never"), null);
   assert.deepEqual(redeployed.timers, [], "a superseded deployment's occurrences can never decide a verdict again");
 });
 
@@ -122,7 +124,7 @@ test("a Timer start firing that would add an occurrence past the ledger's capaci
   const [settled, action] = advance(kernel, state, 60_000);
   assert.equal(action, null);
   assert.deepEqual(takeAnswer(settled, ticket)?.[1],
-    { commandId: "fire", ordinal: 1, atMs: 60_000, resolution: { kind: "rejected", code: population.timerLedgerCapacityCode } });
+    { commandId: "fire", ordinal: 1, atMs: 60_000, resolution: { kind: "rejected", code: population.timerLedgerCapacityCode }, chain: null });
 });
 
 test("a broadcast whose first snapshot exceeds the receivers one command may reach is rejected before any receiver", () => {
@@ -137,5 +139,27 @@ test("a broadcast whose first snapshot exceeds the receivers one command may rea
   const [scanning, scan] = advance(kernel, state, 0);
   assert.equal(scan?.kind, "scanSignal");
   const answered = population.answer(kernel, scanning, { kind: "signalScan", chains: [], starts: [] });
-  assert.deepEqual(takeAnswer(answered, ticket)?.[1], { commandId: "b", ordinal: 1, atMs: 0, resolution: { kind: "rejected", code: population.fanOutCapacityCode } });
+  assert.deepEqual(takeAnswer(answered, ticket)?.[1], { commandId: "b", ordinal: 1, atMs: 0, resolution: { kind: "rejected", code: population.fanOutCapacityCode }, chain: null });
+});
+
+test("a caller whose chain configuration differs from the ingress's is refused, never run under the other", () => {
+  const held = { scheduling: "durable", effectStartToCloseMs: 10_000, historyEventBudget: null } as const;
+  assert.equal(population.configurationConflict(held as never, { ...held } as never), null);
+  assert.equal(population.configurationConflict(held as never, { ...held, effectStartToCloseMs: 5_000 } as never),
+    population.configurationConflictCode);
+});
+
+test("an ingress continuing as new releases every waiting Update, so no answer outlives the Update it was for", () => {
+  const view: CommandView = { kind: "broadcast", commandId: "b", address: { name: "S" }, hasVariables: false };
+  const kernel = port({ ...rendered, decodeCommand: () => ({ view, command: "broadcast" }), broadcastEmission: () => null,
+    emissionAddress: () => null, emissionVariables: () => null, currentDeployments: () => [], linearize: () => [],
+    broadcastBegin: () => null });
+  let [state] = enqueueCommand(emptyIngress, "b", "broadcast", {}, "d");
+  [state] = enqueueCommand(state, "c", "broadcast", {}, "d");
+  [state] = advance(kernel, state, 0);
+  const released = population.releaseHandlers(state);
+  assert.deepEqual([released.current?.item.ticket, ...released.queue.map((item) => item.ticket)], [null, null]);
+  const answered = population.answer(kernel, released, { kind: "signalScan", chains: [], starts: [] });
+  assert.deepEqual(answered.answers, [], "a released command settles into the ledger only");
+  assert.equal(answered.ledger.length, 1);
 });

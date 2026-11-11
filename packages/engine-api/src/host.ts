@@ -6,6 +6,7 @@ import {
   Scheduling,
   canonicalJson,
   createHostClientRuntime,
+  processInstanceWorkflowId,
   type HostConfig,
   type ProcessHost,
   type ScheduleHost,
@@ -40,8 +41,7 @@ export function engineCorrelationScope(definition: EngineDefinitionIdentity): st
 
 /** The Workflow ID of a semantic process instance: a digest, so no instance identifier shapes a host address. */
 export function engineProcessWorkflowId(processInstanceId: string): string {
-  const encoded = canonicalJson(["semanticProcessInstance", requireWireString(processInstanceId, "processInstanceId")]);
-  return `bpmn-process-sha256:${sha256Hex(encoded)}`;
+  return processInstanceWorkflowId(requireWireString(processInstanceId, "processInstanceId"));
 }
 
 export type EngineScheduleReference = Readonly<{ processId: string; version: number; scheduleId: string }>;

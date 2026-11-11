@@ -36,6 +36,8 @@ import type {
 import {
   advance,
   answer,
+  configurationConflict,
+  deploymentOf,
   emptyIngress,
   enqueueCommand,
   enqueueEmit,
@@ -44,6 +46,7 @@ import {
   queueFullCode,
   register,
   registerDeployment,
+  releaseHandlers,
   takeAnswer,
   type Action,
 } from "./population.js";
@@ -57,6 +60,7 @@ import {
   populationEmitUpdate,
   populationRegisterUpdate,
   populationBacklogQuery,
+  populationDeploymentQuery,
   populationResultQuery,
   registerDeploymentUpdate,
   rejectionType,
@@ -113,6 +117,7 @@ async function hostIngress<P, S, I>(kernel: KernelPort<P, S, I>, port: Populatio
   let registering: Promise<unknown> = Promise.resolve();
 
   setHandler(populationResultQuery, (commandId) => populationResult(state, commandId));
+  setHandler(populationDeploymentQuery, (deploymentRequestId) => deploymentOf(state, deploymentRequestId));
   setHandler(populationBacklogQuery, () => state.queue.length + (state.current === null ? 0 : 1));
 
   setHandler(registerDeploymentUpdate, (request) => {
@@ -134,6 +139,8 @@ async function hostIngress<P, S, I>(kernel: KernelPort<P, S, I>, port: Populatio
     return turn;
   }, {
     validator: (request) => {
+      const conflict = configurationConflict(args.config, request.config);
+      if (conflict !== null) throw rejection(conflict);
       try {
         kernel.decodeProgram(request.program);
       } catch (error) {
@@ -163,6 +170,8 @@ async function hostIngress<P, S, I>(kernel: KernelPort<P, S, I>, port: Populatio
     return { kind: "answered", answer: taken[1] as unknown as CommandAnswer };
   }, {
     validator: (request) => {
+      const conflict = configurationConflict(args.config, request.config);
+      if (conflict !== null) throw rejection(conflict);
       try {
         port.decodeCommand(request.kind, request.command);
       } catch (error) {
@@ -181,8 +190,8 @@ async function hostIngress<P, S, I>(kernel: KernelPort<P, S, I>, port: Populatio
       rolling = true;
       await registering;
       await condition(allHandlersFinished);
-      // Answers no handler waits for any more are recorded in the ledger, which `populationResult` reads.
-      return continueAsNew<(next: PopulationIngressArgs) => Promise<void>>({ ...args, carried: { ...state, answers: [] } });
+      // The released handlers' commands answer through the ledger, which `populationResult` reads.
+      return continueAsNew<(next: PopulationIngressArgs) => Promise<void>>({ ...args, carried: releaseHandlers(state) });
     }
     const [next, action] = advance(port, state, Date.now());
     state = next;

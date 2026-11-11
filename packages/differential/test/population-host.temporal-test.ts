@@ -11,7 +11,7 @@ import path from "node:path";
 import { after, before, test } from "node:test";
 
 import { runPopulation } from "@bpmn-lean/kernel";
-import { PopulationClient, ProcessClient, Scheduling, populationInstanceWorkflowId, type JsonValue } from "@bpmn-lean/temporal-host/client";
+import { PopulationClient, ProcessClient, Scheduling, processInstanceWorkflowId, type JsonValue } from "@bpmn-lean/temporal-host/client";
 import { createCachedLocalEnvironment } from "@bpmn-lean/temporal-host/testing";
 import { EffectResultKind, createHostWorker } from "@bpmn-lean/temporal-host/worker";
 
@@ -127,7 +127,7 @@ async function replay(relativePath: string, document: PopulationScenarioDocument
           chains.set(instanceId, workflowId);
           await processes.start({ workflowId, program: target.program, config, start: stimulus, population: { population: name, deploymentId: target.deploymentId } });
         } else {
-          const workflowId = chains.get(instanceId) ?? populationInstanceWorkflowId(name, instanceId);
+          const workflowId = chains.get(instanceId) ?? processInstanceWorkflowId(instanceId);
           await (stimulus["kind"] === "deliver" ? processes.deliver(workflowId, stimulus) : processes.command(workflowId, stimulus));
         }
         break;
@@ -150,7 +150,7 @@ async function witnessed(rolloverEvents: number | null, only: readonly string[])
     const { resolutions, chains, name } = await replay(scenario.relativePath, document, rolloverEvents);
     assert.deepEqual(resolutions, expected.steps.map((step) => step.resolution), scenario.relativePath);
     for (const state of expected.processStates) {
-      const observed = await processes.observation(chains.get(state.instanceId) ?? populationInstanceWorkflowId(name, state.instanceId)) as Expected["processStates"][number];
+      const observed = await processes.observation(chains.get(state.instanceId) ?? processInstanceWorkflowId(state.instanceId)) as Expected["processStates"][number];
       assert.deepEqual([observed.status, observed.openWaits.map((wait) => wait.id.elementId)],
         [state.status, state.openWaits.map((wait) => wait.id.elementId)], `${scenario.relativePath}: ${state.instanceId}`);
     }
