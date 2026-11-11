@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_LimitProbes" targetNamespace="urn:bpmn-lean:scenarios:juel-core-table:limit-probes">
+  <process id="Process_LimitProbes" name="One form beyond the kernel's evaluable subset per probe, selected by the start variable probe" isExecutable="true">
+    <startEvent id="StartEvent_Start" name="Probe selected" />
+    <sequenceFlow id="Flow_Start_Select" sourceRef="StartEvent_Start" targetRef="Gateway_Select" />
+    <exclusiveGateway id="Gateway_Select" name="Select probe" gatewayDirection="Diverging" default="Flow_NoProbe" />
+    <userTask id="UserTask_ListIndexOfInteger" name="list index of integer">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.indexOf(3)}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListEqualsIntegers" name="list equals integers">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.equals(nums)}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapEqualsIntegers" name="map equals integers">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${ints.equals(ints)}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapContainsValueInteger" name="map contains value integer">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${ints.containsValue(3)}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_OrderListText" name="order list text">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums &lt; 'a'}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_OrderTextList" name="order text list">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${'a' &lt; nums}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_EqualTextList" name="equal text list">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${'a' == nums}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_CompositePartList" name="composite part list">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">v=${nums}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_IndexNonAsciiText" name="index non ascii text">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums['é']}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_BooleanReceiverEquals" name="boolean receiver equals">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${flag.equals(true)}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_IntegerReceiverSize" name="integer receiver size">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${n.size()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_SubstringTextArgument" name="substring text argument">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${word.substring('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ReplaceIntegerArguments" name="replace integer arguments">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${word.replace(1, 2)}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListGetTextArgument" name="list get text argument">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.get('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_NegateFractionText" name="negate fraction text">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${-fraction}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DecimalPlusLargeInteger" name="decimal plus large integer">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price + 9007199254740993}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DecimalPlusNonAsciiText" name="decimal plus non ascii text">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price + 'é'}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_IntegerPlusNonAsciiText" name="integer plus non ascii text">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${'é' + 1}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DecimalPlusHugeExponent" name="decimal plus huge exponent">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price + '1e5000'}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_PropertyOfTextByList" name="property of text by list">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${word[nums]}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListIndexBoolean" name="list index boolean">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums[flag]}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DoublePlusEmpty" name="double plus empty">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${fraction + nothing}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="Gateway_Merge" name="Merge" gatewayDirection="Converging" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_ToListIndexOfInteger" sourceRef="Gateway_Select" targetRef="UserTask_ListIndexOfInteger">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-index-of-integer'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListEqualsIntegers" sourceRef="Gateway_Select" targetRef="UserTask_ListEqualsIntegers">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-equals-integers'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapEqualsIntegers" sourceRef="Gateway_Select" targetRef="UserTask_MapEqualsIntegers">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-equals-integers'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapContainsValueInteger" sourceRef="Gateway_Select" targetRef="UserTask_MapContainsValueInteger">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-contains-value-integer'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToOrderListText" sourceRef="Gateway_Select" targetRef="UserTask_OrderListText">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'order-list-text'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToOrderTextList" sourceRef="Gateway_Select" targetRef="UserTask_OrderTextList">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'order-text-list'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToEqualTextList" sourceRef="Gateway_Select" targetRef="UserTask_EqualTextList">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'equal-text-list'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToCompositePartList" sourceRef="Gateway_Select" targetRef="UserTask_CompositePartList">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'composite-part-list'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToIndexNonAsciiText" sourceRef="Gateway_Select" targetRef="UserTask_IndexNonAsciiText">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'index-non-ascii-text'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToBooleanReceiverEquals" sourceRef="Gateway_Select" targetRef="UserTask_BooleanReceiverEquals">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'boolean-receiver-equals'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToIntegerReceiverSize" sourceRef="Gateway_Select" targetRef="UserTask_IntegerReceiverSize">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'integer-receiver-size'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToSubstringTextArgument" sourceRef="Gateway_Select" targetRef="UserTask_SubstringTextArgument">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'substring-text-argument'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToReplaceIntegerArguments" sourceRef="Gateway_Select" targetRef="UserTask_ReplaceIntegerArguments">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'replace-integer-arguments'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListGetTextArgument" sourceRef="Gateway_Select" targetRef="UserTask_ListGetTextArgument">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-get-text-argument'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNegateFractionText" sourceRef="Gateway_Select" targetRef="UserTask_NegateFractionText">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'negate-fraction-text'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDecimalPlusLargeInteger" sourceRef="Gateway_Select" targetRef="UserTask_DecimalPlusLargeInteger">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'decimal-plus-large-integer'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDecimalPlusNonAsciiText" sourceRef="Gateway_Select" targetRef="UserTask_DecimalPlusNonAsciiText">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'decimal-plus-non-ascii-text'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToIntegerPlusNonAsciiText" sourceRef="Gateway_Select" targetRef="UserTask_IntegerPlusNonAsciiText">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'integer-plus-non-ascii-text'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDecimalPlusHugeExponent" sourceRef="Gateway_Select" targetRef="UserTask_DecimalPlusHugeExponent">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'decimal-plus-huge-exponent'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToPropertyOfTextByList" sourceRef="Gateway_Select" targetRef="UserTask_PropertyOfTextByList">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'property-of-text-by-list'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListIndexBoolean" sourceRef="Gateway_Select" targetRef="UserTask_ListIndexBoolean">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-index-boolean'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDoublePlusEmpty" sourceRef="Gateway_Select" targetRef="UserTask_DoublePlusEmpty">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'double-plus-empty'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoProbe" sourceRef="Gateway_Select" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListIndexOfInteger_Merge" sourceRef="UserTask_ListIndexOfInteger" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListEqualsIntegers_Merge" sourceRef="UserTask_ListEqualsIntegers" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapEqualsIntegers_Merge" sourceRef="UserTask_MapEqualsIntegers" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapContainsValueInteger_Merge" sourceRef="UserTask_MapContainsValueInteger" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_OrderListText_Merge" sourceRef="UserTask_OrderListText" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_OrderTextList_Merge" sourceRef="UserTask_OrderTextList" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_EqualTextList_Merge" sourceRef="UserTask_EqualTextList" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_CompositePartList_Merge" sourceRef="UserTask_CompositePartList" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_IndexNonAsciiText_Merge" sourceRef="UserTask_IndexNonAsciiText" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_BooleanReceiverEquals_Merge" sourceRef="UserTask_BooleanReceiverEquals" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_IntegerReceiverSize_Merge" sourceRef="UserTask_IntegerReceiverSize" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_SubstringTextArgument_Merge" sourceRef="UserTask_SubstringTextArgument" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ReplaceIntegerArguments_Merge" sourceRef="UserTask_ReplaceIntegerArguments" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListGetTextArgument_Merge" sourceRef="UserTask_ListGetTextArgument" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NegateFractionText_Merge" sourceRef="UserTask_NegateFractionText" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DecimalPlusLargeInteger_Merge" sourceRef="UserTask_DecimalPlusLargeInteger" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DecimalPlusNonAsciiText_Merge" sourceRef="UserTask_DecimalPlusNonAsciiText" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_IntegerPlusNonAsciiText_Merge" sourceRef="UserTask_IntegerPlusNonAsciiText" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DecimalPlusHugeExponent_Merge" sourceRef="UserTask_DecimalPlusHugeExponent" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_PropertyOfTextByList_Merge" sourceRef="UserTask_PropertyOfTextByList" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListIndexBoolean_Merge" sourceRef="UserTask_ListIndexBoolean" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DoublePlusEmpty_Merge" sourceRef="UserTask_DoublePlusEmpty" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Merge_Done" sourceRef="Gateway_Merge" targetRef="EndEvent_Done" />
+  </process>
+</definitions>
