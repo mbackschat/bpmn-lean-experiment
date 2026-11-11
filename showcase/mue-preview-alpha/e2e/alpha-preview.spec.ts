@@ -33,6 +33,9 @@ const captureFallbackFrames = readAlphaDemoCaptureEnabled(process.env);
 test.beforeAll(async () => {
   runtime = await MuePreviewAlphaShowcaseRuntime.create();
   await runtime.start();
+  // Deploying registers the version with the population ingress and a start resolves its deployment there, so the
+  // Worker polls before the first deploy and stays for both starts.
+  await runtime.startWorker();
 });
 
 test.afterAll(async () => {
@@ -56,7 +59,6 @@ test("shows both exact Alpha branches through the production browser and replays
     naturalPreview.getByRole("list").last().getByRole("listitem"),
   ).toHaveText([...exactNaturalResults]);
   await presentAudienceLandmark(page, AlphaDemoLandmark.NaturalCompleted);
-  await runtime.stopWorker();
 
   await navigate(page, "Definitions");
   const interrupted = await startExactDefinition(page);
@@ -159,9 +161,7 @@ async function openInitialExecution(
     name: `View details ${instance.processInstanceId}`,
   });
   await expect(details).toBeVisible();
-  const workerStart = runtime.startWorker();
   await details.click();
-  await workerStart;
   await expect(preview(page)).toBeVisible();
   await expect(preview(page).getByRole("heading", {
     name: "Committed progress",

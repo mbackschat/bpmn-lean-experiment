@@ -4,7 +4,7 @@ This package is the executable MUE Preview Alpha acceptance boundary. It deploys
 
 The natural journey shows exact committed iteration progress and the ordered `accepted`, `flagged`, `archived` aggregate. The interrupted journey waits for the production `PT5S` Boundary Timer, shows the committed `timerFire` input and published escalation task, and terminates without a partial output collection. Event History is read only after both journeys terminate, solely to verify exact Timer and Update facts and replay every actual Workflow Run.
 
-The harness starts its ephemeral Temporal service and the platform before any host Worker polls, so the browser can still inspect each initial queued execution before the Worker starts. Actor observations and replay collection use that service's default Namespace.
+The harness starts its ephemeral Temporal service, the platform and one host Worker before the first deploy, because registering a version and resolving a start's deployment both reach the population ingress Workflow; the browser inspects each initial execution at its first committed wait. Actor observations and replay collection use that service's default Namespace.
 
 Run the complete Alpha acceptance gate with `./scripts/pnpm.sh run test:release:mue-preview-alpha`. The visible `MUE Preview Alpha` label is a product-delivery boundary, not a claim that the other seven MUE programmes are implemented or closed.
 
