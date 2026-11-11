@@ -10,6 +10,10 @@ import {
 test("recovery candidate keys preserve full Unicode and composite Schedule identity", () => {
   const candidates = [
     {
+      family: DefinitionsRecoveryFamily.EngineRegistration,
+      processId: "process\u0000😀",
+    },
+    {
       family: DefinitionsRecoveryFamily.ConfirmedRegistration,
       processInstanceId: "confirmed\u0000😀",
     },

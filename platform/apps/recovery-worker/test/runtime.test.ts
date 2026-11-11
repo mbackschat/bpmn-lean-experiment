@@ -34,7 +34,7 @@ test("an observed loop error aborts every sibling and fails the run", async () =
     async () => undefined,
   );
   await assert.rejects(runtime.run(), RecoveryWorkerInfrastructureError);
-  assert.equal(settled.length, 10);
+  assert.equal(settled.length, 11);
 });
 
 test("permanent domain failures are reported without aborting siblings", async () => {
@@ -64,7 +64,7 @@ test("permanent domain failures are reported without aborting siblings", async (
   const run = runtime.run();
   await runtime.close();
   await run;
-  assert.equal(reports.length, 11);
+  assert.equal(reports.length, 12);
 });
 
 test("shutdown settles loops before attempting both owners and is idempotent", async () => {

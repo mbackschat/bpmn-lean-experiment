@@ -1,8 +1,5 @@
 import { createHash } from "node:crypto";
-import {
-  DefinitionCompilationStatus,
-  DefinitionRegistrationStatus,
-} from "@bpmn-lean/platform-engine-gateway";
+import { DefinitionCompilationStatus } from "@bpmn-lean/platform-engine-gateway";
 import type {
   DefinitionCompiler,
   DefinitionVersionRegistrar,
@@ -37,6 +34,8 @@ import {
   equalSourceOverlayIdentity,
 } from "./definition-values.js";
 import { cloneDefinitionStartCapabilities } from "./definition-capabilities.js";
+import { readRetainedDefinitionArtifacts } from "./definition-artifacts.js";
+import { registerRetainedDefinitionVersion } from "./definition-engine-registration.js";
 
 const structuredHumanWorkProfile =
   "bpmn-2.0.2";
@@ -222,32 +221,13 @@ export class DefinitionDeploymentService {
 
   /** Registers one stored version from its retained exact bytes and records the engine's answer. */
   async #register(definition: DefinitionMetadata): Promise<DefinitionEngineRegistration> {
-    const reference = { processId: definition.processId, version: definition.version };
-    const sourceBytes = await this.#retained(reference, definition.source.sha256);
-    const sourceOverlay = definition.sourceOverlay === null ? null : {
-      ...definition.sourceOverlay,
-      bytes: await this.#retained(reference, definition.sourceOverlay.sha256),
-    };
-    const result = await this.#compiler.registerDefinitionVersion({
-      bytes: sourceBytes,
-      sourceId: definition.source.id,
-      expectedSha256: definition.source.sha256,
-      semanticProfile: definition.semanticProfile,
-      expectedProcessId: definition.processId,
-      version: definition.version,
-      sourceOverlay,
-    });
-    const registration: DefinitionEngineRegistration = result.status === DefinitionRegistrationStatus.Registered
-      ? { state: "registered" }
-      : { state: "refused", code: result.failure.code };
-    await this.#repository.recordEngineRegistration(reference, registration);
+    const retained = await readRetainedDefinitionArtifacts(this.#artifacts, definition);
+    const registration = await registerRetainedDefinitionVersion(this.#compiler, definition, retained);
+    await this.#repository.recordEngineRegistration(
+      { processId: definition.processId, version: definition.version },
+      registration,
+    );
     return registration;
-  }
-
-  async #retained(reference: DefinitionReference, sha256: string): Promise<Uint8Array> {
-    const bytes = await this.#artifacts.get(sha256);
-    if (bytes === null) throw new DefinitionArtifactIntegrityError(reference, sha256);
-    return Uint8Array.from(bytes);
   }
 
   async #projectHumanTaskCatalog(

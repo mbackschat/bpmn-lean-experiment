@@ -12,5 +12,5 @@ test("publishes only the composition-facing recovery-worker entry point", () => 
   assert.equal(typeof createRecoveryWorker, "function");
   assert.equal(typeof readRecoveryWorkerConfig, "function");
   assert.equal(typeof RecoveryWorkerRuntime, "function");
-  assert.equal(recoveryWorkerFamilies.length, 11);
+  assert.equal(recoveryWorkerFamilies.length, 12);
 });

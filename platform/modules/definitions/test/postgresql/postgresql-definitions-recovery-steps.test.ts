@@ -3,9 +3,14 @@ import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { PostgresqlExactArtifactStore } from "@bpmn-lean/platform-artifact-store";
+import { DefinitionRegistrationStatus } from "@bpmn-lean/platform-engine-gateway";
 import {
+  DefinitionsRecoveryFamily,
+  encodeDefinitionsRecoveryCandidateKey,
   PostgresqlConfirmedProcessInstanceRepository,
+  PostgresqlDefinitionRepository,
   PostgresqlDefinitionScheduleRepository,
+  PostgresqlEngineRegistrationRecoveryStep,
   PostgresqlMessageStartPublicationRepository,
 } from "@bpmn-lean/platform-definitions";
 import { runPostgresqlMigrations } from "@bpmn-lean/platform-postgresql-runtime/migrations";
@@ -365,6 +370,55 @@ if (baseUrl === undefined) {
       assert.deepEqual(await value.schedules.get(value.record.reference), value.before);
     });
   }
+
+  test("engine-registration recovery registers pending versions in order and records every answer only when applied", async () => {
+    await resetDatabase(runtime);
+    const first = await seedDefinition(runtime, artifacts);
+    const second = await seedDefinition(runtime, artifacts);
+    const definitions = new PostgresqlDefinitionRepository(runtime);
+    const key = encodeDefinitionsRecoveryCandidateKey({
+      family: DefinitionsRecoveryFamily.EngineRegistration,
+      processId: first.processId,
+    });
+    const calls: number[] = [];
+    let unavailable = true;
+    const recovery = new PostgresqlEngineRegistrationRecoveryStep({
+      runtime,
+      artifacts,
+      registrar: {
+        registerDefinitionVersion: async (request) => {
+          calls.push(request.version);
+          if (unavailable && request.version === second.version) throw new Error("engine transport unavailable");
+          return request.version === first.version
+            ? { status: DefinitionRegistrationStatus.Registered }
+            : { status: DefinitionRegistrationStatus.Refused, failure: { code: "definition-host-unsupported", evidence: "refused" } };
+        },
+      },
+    });
+    const pending = async () => (await definitions.listPendingEngineRegistrations(first.processId)).map(({ version }) => version);
+
+    assert.deepEqual(await recovery.prepare(key), {
+      kind: PostgresqlDefinitionsRecoveryStepKind.Retry,
+      reason: PostgresqlDefinitionsRecoveryRetryReason.HostUnavailable,
+    });
+    assert.deepEqual(await pending(), [1, 2]);
+
+    unavailable = false;
+    const step = await recovery.prepare(key);
+    assert.deepEqual(calls, [1, 2, 1, 2]);
+    assert.deepEqual(await pending(), [1, 2]);
+    await apply(runtime, step);
+    assert.deepEqual(await pending(), []);
+    assert.deepEqual((await runtime.query({
+      text: "SELECT version::integer AS version, state, refusal_code FROM bpmn_platform.definition_engine_registrations ORDER BY version",
+    })).rows.map((row) => ({ ...row })), [
+      { version: 1, state: "registered", refusal_code: null },
+      { version: 2, state: "refused", refusal_code: "definition-host-unsupported" },
+    ]);
+
+    await apply(runtime, await recovery.prepare(key));
+    assert.deepEqual(calls, [1, 2, 1, 2]);
+  });
 
   test("Message Start recovery never redispatches and accepted repair performs zero host calls", async () => {
     await resetDatabase(runtime);

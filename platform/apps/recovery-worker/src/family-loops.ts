@@ -33,6 +33,7 @@ import {
 } from "@bpmn-lean/platform-work";
 
 export const RecoveryWorkerFamily = Object.freeze({
+  DefinitionsEngineRegistration: "definitions.engine-registration",
   DefinitionsConfirmedRegistration: "definitions.confirmed-registration",
   DefinitionsDirectStart: "definitions.direct-start",
   DefinitionsSchedule: "definitions.schedule",
@@ -51,6 +52,7 @@ export type RecoveryWorkerFamily = typeof RecoveryWorkerFamily[
 ];
 
 export const recoveryWorkerFamilies: readonly RecoveryWorkerFamily[] = Object.freeze([
+  RecoveryWorkerFamily.DefinitionsEngineRegistration,
   RecoveryWorkerFamily.DefinitionsConfirmedRegistration,
   RecoveryWorkerFamily.DefinitionsDirectStart,
   RecoveryWorkerFamily.DefinitionsSchedule,
@@ -224,7 +226,7 @@ function exactBindings(
   values: readonly RecoveryFamilyBinding[],
 ): ReadonlyMap<RecoveryWorkerFamily, RecoveryFamilyBinding> {
   if (values.length !== recoveryWorkerFamilies.length) {
-    throw new TypeError("recovery-worker requires exactly eleven family bindings");
+    throw new TypeError("recovery-worker requires exactly twelve family bindings");
   }
   const allowed = new Set<string>(recoveryWorkerFamilies);
   const result = new Map<RecoveryWorkerFamily, RecoveryFamilyBinding>();

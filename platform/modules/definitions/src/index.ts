@@ -226,6 +226,12 @@ export type {
   PostgresqlDirectStartRecoveryStepOptions,
 } from "./postgresql-direct-start-recovery-step.js";
 export {
+  PostgresqlEngineRegistrationRecoveryStep,
+} from "./postgresql-engine-registration-recovery-step.js";
+export type {
+  PostgresqlEngineRegistrationRecoveryStepOptions,
+} from "./postgresql-engine-registration-recovery-step.js";
+export {
   PostgresqlMessageStartRecoveryStep,
 } from "./postgresql-message-start-recovery-step.js";
 export type {

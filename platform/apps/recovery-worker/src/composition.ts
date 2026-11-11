@@ -11,6 +11,7 @@ import {
   DefinitionStartService,
   DefinitionsRecoveryFamily,
   PostgresqlConfirmedRegistrationRecoveryStep,
+  PostgresqlEngineRegistrationRecoveryStep,
   PostgresqlConfirmedProcessInstanceRepository,
   PostgresqlDefinitionRepository,
   PostgresqlDefinitionScheduleRecoveryStep,
@@ -252,6 +253,11 @@ function createDomainRecoveryBindings(
     incidentOutbox,
   );
 
+  const engineRegistration = new PostgresqlEngineRegistrationRecoveryStep({
+    runtime: database,
+    artifacts,
+    registrar: engine.gateway,
+  });
   const confirmed = new PostgresqlConfirmedRegistrationRecoveryStep({
     runtime: database,
     operate: {
@@ -310,6 +316,13 @@ function createDomainRecoveryBindings(
   });
 
   return [
+    definitionsBinding(
+      RecoveryWorkerFamily.DefinitionsEngineRegistration,
+      DefinitionsRecoveryFamily.EngineRegistration,
+      definitionsCandidates,
+      engineRegistration.prepare.bind(engineRegistration),
+      config.candidateLimit,
+    ),
     definitionsBinding(
       RecoveryWorkerFamily.DefinitionsConfirmedRegistration,
       DefinitionsRecoveryFamily.ConfirmedRegistration,

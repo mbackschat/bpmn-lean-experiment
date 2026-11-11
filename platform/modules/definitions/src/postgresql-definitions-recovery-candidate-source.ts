@@ -4,6 +4,8 @@ import type {
 } from "@bpmn-lean/platform-postgresql-runtime";
 
 export const DefinitionsRecoveryFamily = {
+  /** A process with versions whose engine registration has no recorded answer, registered in version order. */
+  EngineRegistration: "definitions.engine-registration",
   ConfirmedRegistration: "definitions.confirmed-registration",
   DirectStart: "definitions.direct-start",
   Schedule: "definitions.schedule",
@@ -14,6 +16,10 @@ export type DefinitionsRecoveryFamily =
   typeof DefinitionsRecoveryFamily[keyof typeof DefinitionsRecoveryFamily];
 
 export type DefinitionsRecoveryCandidate =
+  | Readonly<{
+      family: typeof DefinitionsRecoveryFamily.EngineRegistration;
+      processId: string;
+    }>
   | Readonly<{
       family: typeof DefinitionsRecoveryFamily.ConfirmedRegistration;
       processInstanceId: string;
@@ -64,6 +70,21 @@ export class PostgresqlDefinitionsRecoveryCandidateSource {
     limit: number,
   ): Promise<readonly PostgresqlRow[]> {
     switch (family) {
+      case DefinitionsRecoveryFamily.EngineRegistration:
+        return (await this.#runtime.query({
+          text: `
+            SELECT DISTINCT definition.process_id
+            FROM bpmn_platform.definition_versions AS definition
+            WHERE NOT EXISTS (
+              SELECT 1 FROM bpmn_platform.definition_engine_registrations AS registration
+              WHERE registration.process_id = definition.process_id
+                AND registration.version = definition.version
+            )
+            ORDER BY definition.process_id ASC
+            LIMIT $1
+          `,
+          values: [limit],
+        })).rows;
       case DefinitionsRecoveryFamily.ConfirmedRegistration:
         return (await this.#runtime.query({
           text: `
@@ -139,6 +160,10 @@ export function encodeDefinitionsRecoveryCandidateKey(
 ): Uint8Array {
   let value: readonly unknown[];
   switch (candidate.family) {
+    case DefinitionsRecoveryFamily.EngineRegistration:
+      requireIdentity(candidate.processId, "processId");
+      value = [candidate.processId];
+      break;
     case DefinitionsRecoveryFamily.ConfirmedRegistration:
     case DefinitionsRecoveryFamily.DirectStart:
       requireIdentity(candidate.processInstanceId, "processInstanceId");
@@ -192,6 +217,11 @@ export function decodeDefinitionsRecoveryCandidateKey(
   }
   let candidate: DefinitionsRecoveryCandidate;
   switch (family) {
+    case DefinitionsRecoveryFamily.EngineRegistration:
+      requireArrayLength(value, 1);
+      requireIdentity(value[0], "processId");
+      candidate = { family, processId: value[0] };
+      break;
     case DefinitionsRecoveryFamily.ConfirmedRegistration:
     case DefinitionsRecoveryFamily.DirectStart:
       requireArrayLength(value, 1);
@@ -231,6 +261,8 @@ function decodeCandidateRow(
   row: PostgresqlRow,
 ): DefinitionsRecoveryCandidate {
   switch (family) {
+    case DefinitionsRecoveryFamily.EngineRegistration:
+      return { family, processId: decodeByteText(row.process_id) };
     case DefinitionsRecoveryFamily.ConfirmedRegistration:
     case DefinitionsRecoveryFamily.DirectStart:
       return {

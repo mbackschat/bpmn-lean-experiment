@@ -126,7 +126,7 @@ function snapshotLoops(
   loops: readonly SupervisedRecoveryLoop[],
 ): readonly SupervisedRecoveryLoop[] {
   if (loops.length !== recoveryWorkerFamilies.length) {
-    throw new TypeError("recovery-worker runtime requires exactly eleven loops");
+    throw new TypeError("recovery-worker runtime requires exactly twelve loops");
   }
   const byFamily = new Map(loops.map((loop) => [loop.family, loop]));
   if (byFamily.size !== recoveryWorkerFamilies.length ||

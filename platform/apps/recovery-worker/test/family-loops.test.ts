@@ -21,8 +21,9 @@ import {
 
 const encoder = new TextEncoder();
 
-test("declares exactly the eleven closed recovery families", () => {
+test("declares exactly the twelve closed recovery families", () => {
   assert.deepEqual(recoveryWorkerFamilies, [
+    RecoveryWorkerFamily.DefinitionsEngineRegistration,
     RecoveryWorkerFamily.DefinitionsConfirmedRegistration,
     RecoveryWorkerFamily.DefinitionsDirectStart,
     RecoveryWorkerFamily.DefinitionsSchedule,
@@ -35,20 +36,20 @@ test("declares exactly the eleven closed recovery families", () => {
     RecoveryWorkerFamily.WorkAudit,
     RecoveryWorkerFamily.WorkSnapshot,
   ]);
-  assert.equal(recoveryWorkerFamilies.length, 11);
+  assert.equal(recoveryWorkerFamilies.length, 12);
 });
 
 test("refuses missing, duplicate, and additional bindings", () => {
   const bindings = recoveryWorkerFamilies.map((family) => binding(family));
   const options = loopOptions();
-  assert.equal(createRecoveryLoops({ ...options, bindings }).length, 11);
+  assert.equal(createRecoveryLoops({ ...options, bindings }).length, 12);
   assert.throws(
     () => createRecoveryLoops({ ...options, bindings: bindings.slice(1) }),
-    /exactly eleven/u,
+    /exactly twelve/u,
   );
   assert.throws(
     () => createRecoveryLoops({ ...options, bindings: [...bindings, binding("extra")] }),
-    /exactly eleven/u,
+    /exactly twelve/u,
   );
   assert.throws(
     () => createRecoveryLoops({ ...options, bindings: [bindings[0]!, ...bindings.slice(0, -1)] }),

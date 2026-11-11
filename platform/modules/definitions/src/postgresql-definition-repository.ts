@@ -131,19 +131,7 @@ export class PostgresqlDefinitionRepository implements
     reference: DefinitionReference,
     registration: DefinitionEngineRegistration,
   ): Promise<void> {
-    await this.#runtime.query({
-      text: `
-        INSERT INTO bpmn_platform.definition_engine_registrations (process_id, version, state, refusal_code)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (process_id, version) DO NOTHING
-      `,
-      values: [
-        encodePostgresqlText(reference.processId),
-        reference.version,
-        registration.state,
-        registration.state === "refused" ? registration.code : null,
-      ],
-    });
+    await recordPostgresqlEngineRegistration(this.#runtime, reference, registration);
   }
 
   async get(reference: DefinitionReference): Promise<DefinitionMetadata | null> {
@@ -195,4 +183,25 @@ async function allocateVersion(
     throw new TypeError("PostgreSQL definition allocation returned no version");
   }
   return requirePositiveSafeInteger(row, "version");
+}
+
+/** Records a version's engine registration answer in `session`; an answer once recorded is kept. */
+export async function recordPostgresqlEngineRegistration(
+  session: PostgresqlSession,
+  reference: DefinitionReference,
+  registration: DefinitionEngineRegistration,
+): Promise<void> {
+  await session.query({
+    text: `
+      INSERT INTO bpmn_platform.definition_engine_registrations (process_id, version, state, refusal_code)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (process_id, version) DO NOTHING
+    `,
+    values: [
+      encodePostgresqlText(reference.processId),
+      reference.version,
+      registration.state,
+      registration.state === "refused" ? registration.code : null,
+    ],
+  });
 }

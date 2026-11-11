@@ -1,6 +1,6 @@
 # PostgreSQL recovery worker
 
-This application is the thin shared-mode composition root for the eleven bounded Product 2 recovery families. It owns one PostgreSQL runtime, one engine-gateway runtime, one lease store, readiness, supervision, and shutdown. Business recovery decisions and candidate identity stay in their owning modules.
+This application is the thin shared-mode composition root for the twelve bounded Product 2 recovery families. It owns one PostgreSQL runtime, one engine-gateway runtime, one lease store, readiness, supervision, and shutdown. Business recovery decisions and candidate identity stay in their owning modules.
 
 The ordinary package loop is database-free:
 

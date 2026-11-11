@@ -195,6 +195,21 @@ if (baseUrl === undefined) {
     assert.equal(staleHostCalls, 0);
     assert.equal((await runtime.query({ text: "SELECT 1" })).rowCount, 1);
   });
+
+  test("discovers a process once while any of its versions has no recorded engine answer", async () => {
+    await resetDatabase(runtime);
+    const first = await seedDefinition(runtime, artifacts);
+    const second = await seedDefinition(runtime, artifacts);
+    assert.deepEqual([first.version, second.version], [1, 2]);
+    const definitions = new PostgresqlDefinitionRepository(runtime);
+    const source = new PostgresqlDefinitionsRecoveryCandidateSource(runtime);
+
+    assert.deepEqual(await decoded(source, DefinitionsRecoveryFamily.EngineRegistration), [first.processId]);
+    await definitions.recordEngineRegistration(first, { state: "registered" });
+    assert.deepEqual(await decoded(source, DefinitionsRecoveryFamily.EngineRegistration), [first.processId]);
+    await definitions.recordEngineRegistration(second, { state: "refused", code: "definition-host-unsupported" });
+    assert.deepEqual(await decoded(source, DefinitionsRecoveryFamily.EngineRegistration), []);
+  });
 }
 
 async function decoded(
@@ -204,6 +219,8 @@ async function decoded(
   return (await source.listCandidateKeys(family, 100)).map((key) => {
     const candidate = decodeDefinitionsRecoveryCandidateKey(family, key);
     switch (candidate.family) {
+      case DefinitionsRecoveryFamily.EngineRegistration:
+        return candidate.processId;
       case DefinitionsRecoveryFamily.ConfirmedRegistration:
       case DefinitionsRecoveryFamily.DirectStart:
         return candidate.processInstanceId;
