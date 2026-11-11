@@ -431,6 +431,28 @@ holdsItsGround("guard 19 (field liveness)", fieldLivenessFindings, {
   "packages/kernel/src/feature/data.ts": `import { setVariable } from "../state.js";\nexport function store(state) { return setVariable(state, "x"); }\n`,
 }, /IL field assignee is read by no non-codec module/u);
 
+test("guard 19 counts a member read in an IL type helper, never an IL declaration or a codec read", () => {
+  const unread = `import { setVariable } from "../state.js";\nexport function store(state) { return setVariable(state, "x"); }\n`;
+  const ilTypes = `export enum ElementTag { Task = "task", Gateway = "gateway" }
+export enum WorkTag { None = "none", User = "user" }
+export function assertNever(value: never): never { throw new Error(String(value)); }
+export interface Payload { readonly assignee: string; }
+export type Work = { readonly tag: WorkTag };
+`;
+  assert.deepEqual(fieldLivenessFindings(fixture({
+    "packages/kernel/src/feature/data.ts": unread,
+    "packages/kernel/src/il/types.ts": `${ilTypes}export function payloadAssignee(payload: Payload): string { return payload?.assignee; }\n`,
+  })), []);
+  seeded(fieldLivenessFindings, {
+    "packages/kernel/src/feature/data.ts": unread,
+    "packages/kernel/src/il/types.ts": `${ilTypes}export interface Other { assignee: string, tag: WorkTag }\nexport type Pair = { assignee: string };\n`,
+  }, /IL field assignee is read by no non-codec module/u);
+  seeded(fieldLivenessFindings, {
+    "packages/kernel/src/feature/data.ts": unread,
+    "packages/kernel/src/il/codec.ts": "export const decode = (payload) => payload.assignee;\n",
+  }, /IL field assignee is read by no non-codec module/u);
+});
+
 holdsItsGround("guard 20 (refusal parity)", refusalParityFindings, {
   "Kernel/Feature/Flow.lean": `module
 def f (x : Nat) : Except Failure Nat := .error (.unsupported "work-user-assignee")

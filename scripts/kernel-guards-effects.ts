@@ -102,8 +102,8 @@ function isIlTypes(file: string): boolean {
   return file === `${kernelPrefix}il/types.ts` || file.startsWith(`${kernelPrefix}il/types/`);
 }
 
-function isExcludedFromLiveness(file: string): boolean {
-  return isIlTypes(file) || file.startsWith(`${kernelPrefix}il/codec`);
+function isCodec(file: string): boolean {
+  return file.startsWith(`${kernelPrefix}il/codec`);
 }
 
 /** Field names of the interfaces in `il/types.ts`, with the line each is declared on. */
@@ -128,21 +128,26 @@ export function ilFieldNames(source: Source): Map<string, number> {
   return fields;
 }
 
-/** Guard 19: every IL field is read by a non-codec module (an admission refusal reads it too). */
+/**
+ * Guard 19: every IL field is read by a non-codec module (an admission refusal reads it too). A helper in the IL type
+ * modules reads a field as the Lean half counts a `Kernel.IL.Types` function, but there only a member access counts:
+ * the declarations `readonly x:` and `{ x:` share the shorthand and destructuring tokens.
+ */
 export function fieldLivenessFindings(tree: KernelTree): string[] {
   const ilFiles = tree.typeScript.filter((source) => isIlTypes(source.file));
   if (!ilFiles.some((source) => source.file === `${kernelPrefix}il/types.ts`)) return [emptyInputFinding(19, "packages/kernel/src/il/types.ts")];
   const fields = ilFiles.flatMap((il) => [...ilFieldNames(il)].map(([field, line]) => [field, il, line] as const));
   if (fields.length === 0) return [emptyInputFinding(19, "IL interface fields")];
-  const readers = tree.typeScript.filter((source) => !isExcludedFromLiveness(source.file));
+  const readers = tree.typeScript.filter((source) => !isCodec(source.file));
   const read = new Set<string>();
   for (const source of readers) {
     const { tokens } = source;
+    const declares = isIlTypes(source.file);
     for (let i = 0; i < tokens.length; i += 1) {
       const token = tokens[i];
       if (token === undefined || token.kind !== TokenKind.Word) continue;
       if (tokens[i - 1]?.text === "." || tokens[i - 1]?.text === "?.") read.add(token.text);
-      if (tokens[i - 1]?.text === "{" || tokens[i - 1]?.text === ",") {
+      if (!declares && (tokens[i - 1]?.text === "{" || tokens[i - 1]?.text === ",")) {
         const next = tokens[i + 1]?.text;
         if (next === "," || next === "}" || next === ":") read.add(token.text);
       }
