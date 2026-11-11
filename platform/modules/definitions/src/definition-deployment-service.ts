@@ -23,6 +23,8 @@ import type {
   DefinitionDeploymentRequest,
   DefinitionDeploymentResult,
   DefinitionDiagnostic,
+  DefinitionEngineRegistration,
+  DefinitionEngineRegistrationRepository,
   DefinitionMetadata,
   DefinitionReference,
   DefinitionRepository,
@@ -48,18 +50,23 @@ type HumanTaskCatalogProjector = Readonly<{
 
 /**
  * Admission and accepted-only persistence for one exact BPMN definition source, then its registration with the engine,
- * in version order, which every start of the version and publication to it needs.
+ * which every start of the version and publication to it needs.
+ *
+ * The engine orders a process's deployments by registration, not by the version a deployment's identity names: a later
+ * registration supersedes the earlier ones and numbers the key's next version (`Kernel.Population.deploy`). So the
+ * versions of one process register in version order: a deploy first registers every earlier pending version, and a
+ * transport failure stops the process's registrations, leaving that version and every later one pending.
  */
 export class DefinitionDeploymentService {
   readonly #compiler: DefinitionCompiler & DefinitionVersionRegistrar;
   readonly #artifacts: ExactArtifactStore;
-  readonly #repository: DefinitionRepository;
+  readonly #repository: DefinitionRepository & DefinitionEngineRegistrationRepository;
   readonly #catalogProjector: HumanTaskCatalogProjector | null;
 
   constructor(
     compiler: DefinitionCompiler & DefinitionVersionRegistrar,
     artifacts: ExactArtifactStore,
-    repository: DefinitionRepository,
+    repository: DefinitionRepository & DefinitionEngineRegistrationRepository,
     catalogProjector: HumanTaskCatalogProjector | null = null,
   ) {
     this.#compiler = compiler;
@@ -131,17 +138,9 @@ export class DefinitionDeploymentService {
           },
           catalog.catalog,
         );
-        const registration = await this.#compiler.registerDefinitionVersion({
-          bytes: Uint8Array.from(sourceBytes),
-          sourceId,
-          expectedSha256: source.sha256,
-          semanticProfile: acceptedSemanticProfile,
-          expectedProcessId: processId,
-          version: definition.version,
-          sourceOverlay: sourceOverlay === null ? null : { ...sourceOverlay, bytes: Uint8Array.from(sourceOverlay.bytes) },
-        });
-        if (registration.status !== DefinitionRegistrationStatus.Registered) {
-          throw new DefinitionEngineRegistrationError(definition, registration.failure.code);
+        const registration = await this.#registerThrough(definition);
+        if (registration.state === "refused") {
+          throw new DefinitionEngineRegistrationError(definition, registration.code);
         }
         return {
           status: DefinitionDeploymentStatus.Deployed,
@@ -159,6 +158,16 @@ export class DefinitionDeploymentService {
         };
       default:
         return assertNever(compilation);
+    }
+  }
+
+  /**
+   * Registers every pending version with the engine, each process's in version order, as recovery does before any
+   * start, Schedule or publication of a version is reconciled.
+   */
+  async reconcileAll(): Promise<void> {
+    for (const pending of await this.#repository.listPendingEngineRegistrations()) {
+      await this.#register(pending);
     }
   }
 
@@ -195,6 +204,49 @@ export class DefinitionDeploymentService {
         definition.source.sha256,
       );
     }
+    return Uint8Array.from(bytes);
+  }
+
+  /**
+   * Registers the earlier pending versions of `definition`'s process, then `definition` itself, and answers its
+   * registration. It registers even when a concurrent deploy of a later version registered it first, since the engine
+   * answers a repeated registration as the first.
+   */
+  async #registerThrough(definition: DefinitionMetadata): Promise<DefinitionEngineRegistration> {
+    for (const pending of await this.#repository.listPendingEngineRegistrations(definition.processId)) {
+      if (pending.version >= definition.version) break;
+      await this.#register(pending);
+    }
+    return await this.#register(definition);
+  }
+
+  /** Registers one stored version from its retained exact bytes and records the engine's answer. */
+  async #register(definition: DefinitionMetadata): Promise<DefinitionEngineRegistration> {
+    const reference = { processId: definition.processId, version: definition.version };
+    const sourceBytes = await this.#retained(reference, definition.source.sha256);
+    const sourceOverlay = definition.sourceOverlay === null ? null : {
+      ...definition.sourceOverlay,
+      bytes: await this.#retained(reference, definition.sourceOverlay.sha256),
+    };
+    const result = await this.#compiler.registerDefinitionVersion({
+      bytes: sourceBytes,
+      sourceId: definition.source.id,
+      expectedSha256: definition.source.sha256,
+      semanticProfile: definition.semanticProfile,
+      expectedProcessId: definition.processId,
+      version: definition.version,
+      sourceOverlay,
+    });
+    const registration: DefinitionEngineRegistration = result.status === DefinitionRegistrationStatus.Registered
+      ? { state: "registered" }
+      : { state: "refused", code: result.failure.code };
+    await this.#repository.recordEngineRegistration(reference, registration);
+    return registration;
+  }
+
+  async #retained(reference: DefinitionReference, sha256: string): Promise<Uint8Array> {
+    const bytes = await this.#artifacts.get(sha256);
+    if (bytes === null) throw new DefinitionArtifactIntegrityError(reference, sha256);
     return Uint8Array.from(bytes);
   }
 

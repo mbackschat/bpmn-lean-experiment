@@ -15,7 +15,7 @@ test("proves version and exact epoch in one query, a disposable lease, and engin
       assert.match(text, /server_version_num/u);
       assert.match(text, /schema_epoch/u);
       return {
-        rows: [{ server_major: 18, epoch_rows: 1, schema_epoch: 13 }],
+        rows: [{ server_major: 18, epoch_rows: 1, schema_epoch: 14 }],
         rowCount: 1,
       };
     },
@@ -53,10 +53,10 @@ test("proves version and exact epoch in one query, a disposable lease, and engin
 
 test("fails readiness for the wrong major, row cardinality, epoch, or lease result", async () => {
   for (const row of [
-    { server_major: 17, epoch_rows: 1, schema_epoch: 13 },
-    { server_major: 18, epoch_rows: 2, schema_epoch: 13 },
-    { server_major: 18, epoch_rows: 1, schema_epoch: 12 },
-    { server_major: 18, epoch_rows: 1, schema_epoch: 14 },
+    { server_major: 17, epoch_rows: 1, schema_epoch: 14 },
+    { server_major: 18, epoch_rows: 2, schema_epoch: 14 },
+    { server_major: 18, epoch_rows: 1, schema_epoch: 13 },
+    { server_major: 18, epoch_rows: 1, schema_epoch: 15 },
   ]) {
     await assert.rejects(
       checkRecoveryWorkerReadiness(readinessFixture(row).options),
@@ -66,7 +66,7 @@ test("fails readiness for the wrong major, row cardinality, epoch, or lease resu
   const fixture = readinessFixture({
     server_major: 18,
     epoch_rows: 1,
-    schema_epoch: 13,
+    schema_epoch: 14,
   }, LeaseMutationResult.LeaseLost);
   await assert.rejects(checkRecoveryWorkerReadiness(fixture.options), /readiness lease/u);
   assert.equal(fixture.engineCalls(), 0);

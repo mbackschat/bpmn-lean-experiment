@@ -280,6 +280,8 @@ async function createLocalPlatformServer(
       repository,
       { project: projectHumanTaskCatalog },
     );
+    // Every start, Schedule and publication reconciled below needs its version registered with the engine.
+    await service.reconcileAll();
     const startService = new DefinitionStartService(
       engineRuntime.gateway,
       artifacts,

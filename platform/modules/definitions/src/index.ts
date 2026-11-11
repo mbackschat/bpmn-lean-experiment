@@ -12,6 +12,8 @@ export type {
   DefinitionDeploymentRequest,
   DefinitionDeploymentResult,
   DefinitionDiagnostic,
+  DefinitionEngineRegistration,
+  DefinitionEngineRegistrationRepository,
   DefinitionMetadata,
   DefinitionReference,
   DefinitionRepository,

@@ -107,9 +107,9 @@ if (baseConnectionString === undefined) {
       await runtime.query({ text: "UPDATE bpmn_platform.work_snapshot_generation_items SET expected_public_instance_json = $1", values: [oldInstanceJson] });
     }
     const applied = await runPostgresqlMigrations({ connectionString, migrationDirectories });
-    assert.equal(applied.appliedNames.length, 13);
+    assert.equal(applied.appliedNames.length, 14);
     assert.match(applied.appliedNames[12] ?? "", /^0013_definitions-source-overlay__/u);
-    assert.deepEqual((await runtime.query({ text: "SELECT epoch FROM bpmn_platform_meta.schema_epoch" })).rows, [{ epoch: 13 }]);
+    assert.deepEqual((await runtime.query({ text: "SELECT epoch FROM bpmn_platform_meta.schema_epoch" })).rows, [{ epoch: 14 }]);
     assert.equal((await definitions.get(definition))?.sourceOverlay, null);
     assert.equal((await confirmed.get("reserved-🚀\u0000"))?.instance.definition.sourceOverlay, null);
     for (const [processInstanceId, prior] of priorSnapshots) {

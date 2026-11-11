@@ -19,6 +19,7 @@ import {
 } from "@bpmn-lean/platform-definitions";
 import type {
   ConfirmedProcessInstanceRepository,
+  DefinitionEngineRegistrationRepository,
   DefinitionMetadata,
   DefinitionPresentationRepository,
   DefinitionRepository,
@@ -31,7 +32,7 @@ import type {
 } from "@bpmn-lean/platform-definitions";
 
 export type DefinitionsRepositoryContractFixture = Readonly<{
-  definitions: DefinitionRepository & HumanTaskCatalogRepository;
+  definitions: DefinitionRepository & DefinitionEngineRegistrationRepository & HumanTaskCatalogRepository;
   presentations: DefinitionPresentationRepository;
   confirmed: ConfirmedProcessInstanceRepository;
   schedules: DefinitionScheduleRepository;
@@ -136,6 +137,25 @@ export function registerDefinitionsRepositoryContract(
         );
         assert.deepEqual(await definitions.listVersions(processId), []);
       }
+    });
+  });
+
+  test(`${label}: engine registrations keep the first answer, list pending versions in order and hide refused ones`, async () => {
+    await usingFixture(createFixture, async ({ definitions }) => {
+      for (const processId of ["B", "A", "A", "A"]) await definitions.allocateNext(metadata(processId));
+      const pending = async (processId?: string) =>
+        (await definitions.listPendingEngineRegistrations(processId)).map(({ processId: id, version }) => `${id}/${version}`);
+      assert.deepEqual(await pending(), ["A/1", "A/2", "A/3", "B/1"]);
+      await definitions.recordEngineRegistration({ processId: "A", version: 1 }, { state: "registered" });
+      await definitions.recordEngineRegistration({ processId: "A", version: 3 }, { state: "refused", code: "deployment.messageStartName" });
+      await definitions.recordEngineRegistration({ processId: "A", version: 3 }, { state: "registered" });
+      assert.deepEqual(await pending(), ["A/2", "B/1"]);
+      assert.deepEqual(await pending("A"), ["A/2"]);
+      assert.deepEqual((await definitions.listVersions("A")).map(({ version }) => version), [1, 2]);
+      assert.deepEqual((await definitions.listLatest()).map(({ processId, version }) => `${processId}/${version}`), ["A/2", "B/1"]);
+      // A refused version stays stored and readable; only the listings omit it.
+      assert.equal((await definitions.get({ processId: "A", version: 3 }))?.version, 3);
+      assert.equal((await definitions.allocateNext(metadata("A"))).version, 4);
     });
   });
 

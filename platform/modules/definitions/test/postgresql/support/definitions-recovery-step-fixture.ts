@@ -356,6 +356,7 @@ export async function resetDatabase(runtime: PostgresqlRuntime): Promise<void> {
         bpmn_platform.definition_schedules,
         bpmn_platform.confirmed_process_instances,
         bpmn_platform.definition_diagram_presentations,
+        bpmn_platform.definition_engine_registrations,
         bpmn_platform.definition_versions,
         bpmn_platform.definition_version_heads,
         bpmn_platform.exact_artifacts

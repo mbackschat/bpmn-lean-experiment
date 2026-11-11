@@ -5,6 +5,8 @@ import type {
 } from "@bpmn-lean/platform-postgresql-runtime";
 
 import type {
+  DefinitionEngineRegistration,
+  DefinitionEngineRegistrationRepository,
   DefinitionMetadata,
   DefinitionReference,
   DefinitionRepository,
@@ -21,9 +23,21 @@ import {
   snapshotNewDefinitionMetadata,
 } from "./postgresql-definition-values.js";
 
+/** The definitions a listing offers: every stored version but those the engine refused. */
+const listedDefinitionsSql = `
+  SELECT listed.* FROM bpmn_platform.definition_versions AS listed
+  WHERE NOT EXISTS (
+    SELECT 1 FROM bpmn_platform.definition_engine_registrations AS registration
+    WHERE registration.process_id = listed.process_id
+      AND registration.version = listed.version
+      AND registration.state = 'refused'
+  )
+`;
+
 /** Process-local, gap-free definition-version allocation in shared PostgreSQL. */
 export class PostgresqlDefinitionRepository implements
   DefinitionRepository,
+  DefinitionEngineRegistrationRepository,
   HumanTaskCatalogRepository
 {
   readonly #runtime: PostgresqlRuntime;
@@ -71,7 +85,7 @@ export class PostgresqlDefinitionRepository implements
           SELECT definition.*, row_number() OVER (
             PARTITION BY process_id ORDER BY version DESC
           ) AS process_version_rank
-          FROM bpmn_platform.definition_versions AS definition
+          FROM (${listedDefinitionsSql}) AS definition
         ) AS ranked
         WHERE process_version_rank = 1
         ORDER BY process_id ASC
@@ -85,13 +99,51 @@ export class PostgresqlDefinitionRepository implements
   ): Promise<ReadonlyArray<DefinitionMetadata>> {
     const result = await this.#runtime.query({
       text: `
-        SELECT * FROM bpmn_platform.definition_versions
+        SELECT * FROM (${listedDefinitionsSql}) AS definition
         WHERE process_id = $1
         ORDER BY version ASC
       `,
       values: [encodePostgresqlText(processId)],
     });
     return result.rows.map(decodeDefinitionMetadata);
+  }
+
+  async listPendingEngineRegistrations(
+    processId?: string,
+  ): Promise<ReadonlyArray<DefinitionMetadata>> {
+    const result = await this.#runtime.query({
+      text: `
+        SELECT definition.* FROM bpmn_platform.definition_versions AS definition
+        WHERE ($1::bytea IS NULL OR definition.process_id = $1)
+          AND NOT EXISTS (
+            SELECT 1 FROM bpmn_platform.definition_engine_registrations AS registration
+            WHERE registration.process_id = definition.process_id
+              AND registration.version = definition.version
+          )
+        ORDER BY definition.process_id ASC, definition.version ASC
+      `,
+      values: [processId === undefined ? null : encodePostgresqlText(processId)],
+    });
+    return result.rows.map(decodeDefinitionMetadata);
+  }
+
+  async recordEngineRegistration(
+    reference: DefinitionReference,
+    registration: DefinitionEngineRegistration,
+  ): Promise<void> {
+    await this.#runtime.query({
+      text: `
+        INSERT INTO bpmn_platform.definition_engine_registrations (process_id, version, state, refusal_code)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (process_id, version) DO NOTHING
+      `,
+      values: [
+        encodePostgresqlText(reference.processId),
+        reference.version,
+        registration.state,
+        registration.state === "refused" ? registration.code : null,
+      ],
+    });
   }
 
   async get(reference: DefinitionReference): Promise<DefinitionMetadata | null> {

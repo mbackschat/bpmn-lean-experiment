@@ -82,7 +82,7 @@ function fakeDatabase(statements: string[], events: string[]): PostgresqlRuntime
         rows: [{
           server_major: 18,
           epoch_rows: 1,
-          schema_epoch: 13,
+          schema_epoch: 14,
         } as unknown as Row],
         rowCount: 1,
       };

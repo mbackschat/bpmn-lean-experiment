@@ -9,7 +9,7 @@ const endpoint = "http://test/api/v1/definitions?sourceId=source&semanticProfile
 const source = new TextEncoder().encode("<bpmn/>");
 const overlay = new TextEncoder().encode("{}");
 const refuseServiceEntry = async (): Promise<never> => { assert.fail("transport refusal must precede service entry"); };
-const repository = { allocateNext: refuseServiceEntry, listLatest: refuseServiceEntry, listVersions: refuseServiceEntry, get: refuseServiceEntry };
+const repository = { allocateNext: refuseServiceEntry, listLatest: refuseServiceEntry, listVersions: refuseServiceEntry, get: refuseServiceEntry, listPendingEngineRegistrations: refuseServiceEntry, recordEngineRegistration: refuseServiceEntry };
 const artifacts = { put: refuseServiceEntry, get: refuseServiceEntry };
 const publication = new ConfirmedProcessInstancePublicationService({ repository: new InMemoryConfirmedProcessInstanceRepository(), operate: { recordConfirmedProcessInstance: refuseServiceEntry }, work: { recordConfirmedProcessInstance: refuseServiceEntry } });
 const deployment = new DefinitionDeploymentService({ ...registeringEngine(), compileDefinition: refuseServiceEntry }, artifacts, repository);

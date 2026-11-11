@@ -1,4 +1,4 @@
-import { definitionVersionsTableSql } from "./definition-sqlite-tables.js";
+import { definitionEngineRegistrationsTableSql, definitionVersionsTableSql } from "./definition-sqlite-tables.js";
 import { decodeStoredSourceOverlayIdentity, sourceOverlaySqlValues } from "./definition-overlay-values.js";
 import { DatabaseSync } from "node:sqlite";
 import type { SQLOutputValue } from "node:sqlite";
@@ -10,6 +10,8 @@ import {
 import type { HumanTaskCatalogV1 } from "@bpmn-lean/platform-contracts";
 
 import type {
+  DefinitionEngineRegistration,
+  DefinitionEngineRegistrationRepository,
   DefinitionMetadata,
   DefinitionReference,
   DefinitionRepository,
@@ -27,9 +29,34 @@ import {
 
 const defaultBusyTimeoutMs = 5_000;
 
+const metadataColumns = `
+  definition.process_id,
+  definition.version,
+  definition.source_kind,
+  definition.source_id,
+  definition.source_sha256,
+  definition.source_byte_length,
+  definition.source_declared_encoding,
+  definition.source_decoded_as,
+  definition.source_overlay_id, definition.source_overlay_sha256, definition.semantic_profile,
+  definition.start_capabilities_json
+`;
+
+/** The definitions a listing offers: every stored version but those the engine refused. */
+const listedDefinitionsSql = `
+  SELECT * FROM definition_versions AS listed
+  WHERE NOT EXISTS (
+    SELECT 1 FROM definition_engine_registrations AS registration
+    WHERE registration.process_id = listed.process_id
+      AND registration.version = listed.version
+      AND registration.state = 'refused'
+  )
+`;
+
 /** Durable process-local definition-version allocation backed by one SQLite database. */
 export class SqliteDefinitionRepository implements
   DefinitionRepository,
+  DefinitionEngineRegistrationRepository,
   HumanTaskCatalogRepository
 {
   readonly #database: DatabaseSync;
@@ -118,21 +145,11 @@ export class SqliteDefinitionRepository implements
 
   async listLatest(): Promise<ReadonlyArray<DefinitionMetadata>> {
     return this.#database.prepare(`
-      SELECT
-        definition.process_id,
-        definition.version,
-        definition.source_kind,
-        definition.source_id,
-        definition.source_sha256,
-        definition.source_byte_length,
-        definition.source_declared_encoding,
-        definition.source_decoded_as,
-        definition.source_overlay_id, definition.source_overlay_sha256, definition.semantic_profile,
-        definition.start_capabilities_json
-      FROM definition_versions AS definition
+      SELECT ${metadataColumns}
+      FROM (${listedDefinitionsSql}) AS definition
       INNER JOIN (
         SELECT process_id, MAX(version) AS version
-        FROM definition_versions
+        FROM (${listedDefinitionsSql})
         GROUP BY process_id
       ) AS current
         ON current.process_id = definition.process_id
@@ -145,21 +162,44 @@ export class SqliteDefinitionRepository implements
     processId: string,
   ): Promise<ReadonlyArray<DefinitionMetadata>> {
     return this.#database.prepare(`
-      SELECT
-        process_id,
-        version,
-        source_kind,
-        source_id,
-        source_sha256,
-        source_byte_length,
-        source_declared_encoding,
-        source_decoded_as,
-        source_overlay_id, source_overlay_sha256, semantic_profile,
-        start_capabilities_json
-      FROM definition_versions
-      WHERE process_id = ?
-      ORDER BY version ASC
+      SELECT ${metadataColumns}
+      FROM (${listedDefinitionsSql}) AS definition
+      WHERE definition.process_id = ?
+      ORDER BY definition.version ASC
     `).all(processId).map(decodeMetadata);
+  }
+
+  async listPendingEngineRegistrations(
+    processId?: string,
+  ): Promise<ReadonlyArray<DefinitionMetadata>> {
+    return this.#database.prepare(`
+      SELECT ${metadataColumns}
+      FROM definition_versions AS definition
+      WHERE (? IS NULL OR definition.process_id = ?)
+        AND NOT EXISTS (
+          SELECT 1 FROM definition_engine_registrations AS registration
+          WHERE registration.process_id = definition.process_id
+            AND registration.version = definition.version
+        )
+      ORDER BY definition.process_id ASC, definition.version ASC
+    `).all(processId ?? null, processId ?? null).map(decodeMetadata);
+  }
+
+  async recordEngineRegistration(
+    reference: DefinitionReference,
+    registration: DefinitionEngineRegistration,
+  ): Promise<void> {
+    requirePositiveSafeInteger(reference.version, "version");
+    this.#database.prepare(`
+      INSERT INTO definition_engine_registrations (process_id, version, state, refusal_code)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT (process_id, version) DO NOTHING
+    `).run(
+      reference.processId,
+      reference.version,
+      registration.state,
+      registration.state === "refused" ? registration.code : null,
+    );
   }
 
   async get(reference: DefinitionReference): Promise<DefinitionMetadata | null> {
@@ -224,10 +264,10 @@ function initializeSchema(database: DatabaseSync): void {
     `).get();
     if (existing !== undefined) {
       requireCurrentSchema(database);
-      database.exec("COMMIT");
-      return;
+    } else {
+      database.exec(definitionVersionsTableSql);
     }
-    database.exec(definitionVersionsTableSql);
+    database.exec(definitionEngineRegistrationsTableSql);
     database.exec("COMMIT");
   } catch (error: unknown) {
     if (database.isTransaction) {

@@ -31,6 +31,22 @@ export const definitionVersionsTableSql = `
       ) STRICT
     `;
 
+/** The engine's answer for a stored version; a version without a row is pending. */
+export const definitionEngineRegistrationsTableSql = `
+    CREATE TABLE IF NOT EXISTS definition_engine_registrations (
+      process_id TEXT NOT NULL,
+      version INTEGER NOT NULL CHECK (version > 0),
+      state TEXT NOT NULL CHECK (state IN ('registered', 'refused')),
+      refusal_code TEXT,
+      CHECK (
+        (state = 'registered' AND refusal_code IS NULL)
+        OR (state = 'refused' AND length(refusal_code) > 0)
+      ),
+      PRIMARY KEY (process_id, version),
+      FOREIGN KEY (process_id, version) REFERENCES definition_versions (process_id, version)
+    ) STRICT
+  `;
+
 export const definitionSchedulesTableSql = `
     CREATE TABLE IF NOT EXISTS definition_schedules (
       process_id TEXT NOT NULL,

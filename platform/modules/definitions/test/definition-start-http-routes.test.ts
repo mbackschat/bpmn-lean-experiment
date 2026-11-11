@@ -25,6 +25,7 @@ import {
 } from "@bpmn-lean/platform-definitions";
 import type {
   DefinitionMetadata,
+  DefinitionEngineRegistrationRepository,
   DefinitionRepository,
   ExactArtifactStore,
   NewDefinitionMetadata,
@@ -273,12 +274,18 @@ function createFixture(
   initialVariableCalls: unknown[];
 }> {
   let repositoryGets = 0;
-  const repository: DefinitionRepository = {
+  const repository: DefinitionRepository & DefinitionEngineRegistrationRepository = {
     allocateNext: async (_metadata: NewDefinitionMetadata) => {
       throw new Error("deployment is outside this fixture");
     },
     listLatest: async () => [],
     listVersions: async () => [],
+    listPendingEngineRegistrations: async () => {
+      throw new Error("deployment is outside this fixture");
+    },
+    recordEngineRegistration: async () => {
+      throw new Error("deployment is outside this fixture");
+    },
     get: async (reference) => {
       repositoryGets += 1;
       return definitions.find(

@@ -24,6 +24,7 @@ import {
 } from "@bpmn-lean/platform-definitions";
 import type {
   DefinitionMetadata,
+  DefinitionEngineRegistrationRepository,
   DefinitionRepository,
   ExactArtifactStore,
   NewDefinitionMetadata,
@@ -524,7 +525,8 @@ function createFixture(
   };
   const definitions: DefinitionMetadata[] = [];
   const versionListProcessIds: string[] = [];
-  const repository: DefinitionRepository = {
+  const answered = new Set<string>();
+  const repository: DefinitionRepository & DefinitionEngineRegistrationRepository = {
     allocateNext: async (metadata: NewDefinitionMetadata) => {
       const version = definitions.filter(
         (candidate) => candidate.processId === metadata.processId,
@@ -553,6 +555,12 @@ function createFixture(
         definition.processId === reference.processId &&
         definition.version === reference.version,
     ) ?? null,
+    listPendingEngineRegistrations: async (processId) => definitions.filter((definition) =>
+      (processId === undefined || definition.processId === processId) &&
+      !answered.has(`${definition.processId}/${definition.version}`)),
+    recordEngineRegistration: async (reference) => {
+      answered.add(`${reference.processId}/${reference.version}`);
+    },
   };
   const unusedStarter: DefinitionVersionStarter = {
     prepareDefinitionVersion: async () => {

@@ -28,6 +28,7 @@ const expectedMigrationNames = [
   "0011_definitions-start-command__681798219edab00a928b6289190b823aff6836027d40012d55707cb1ef332b8d",
   "0012_failed-process-publication__b0668bf6f541e5dd02f76021c9ffa63861e937ed430cb216e5f9fb7865c35a9a",
   "0013_definitions-source-overlay__ff4e6100a8c2623babacdad43ca474a49e29598b1ef37687ea2d6b23239d943b",
+  "0014_definitions-engine-registration__06aabace6867ec7acab06c22aefb07cb6416bf1119c9a09d63839e6600611fa5",
 ] as const;
 const requiredRelations = [
   "bpmn_platform.exact_artifacts",
@@ -126,7 +127,7 @@ test(
             WHERE singleton = true
           `,
         });
-        assert.deepEqual(schemaEpoch.rows, [{ epoch: 13 }]);
+        assert.deepEqual(schemaEpoch.rows, [{ epoch: 14 }]);
 
         const scheduleLocatorColumns = await database.query<
           Readonly<Record<string, unknown>> & Readonly<{ column_name: string }>

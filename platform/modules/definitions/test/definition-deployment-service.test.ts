@@ -390,7 +390,7 @@ test("registers each stored version with the engine under the version it was all
   });
 });
 
-test("a version the engine refuses to register stays stored and the deployment raises the engine's code", async () => {
+test("a version the engine refuses to register stays stored but unlisted, and the deployment raises the engine's code", async () => {
   await withRepository(async ({ repository }) => {
     const accepted = new AcceptedCompiler("Process_Refused");
     const refusing: DefinitionCompiler & DefinitionVersionRegistrar = {
@@ -404,7 +404,8 @@ test("a version the engine refuses to register stays stored and the deployment r
     await assert.rejects(deployText(service, "x-1"), (error: unknown) =>
       error instanceof DefinitionEngineRegistrationError && error.code === "deployment.messageStartName" &&
       error.definition.processId === "Process_Refused" && error.definition.version === 1);
-    assert.deepEqual(serviceKeys(await service.listLatestDefinitions()), ["Process_Refused/1"]);
+    assert.deepEqual(serviceKeys(await service.listLatestDefinitions()), []);
+    assert.equal((await service.getDefinitionMetadata({ processId: "Process_Refused", version: 1 }))?.version, 1);
   });
 });
 

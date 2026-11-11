@@ -168,6 +168,23 @@ export interface DefinitionRepository {
   get(reference: DefinitionReference): Promise<DefinitionMetadata | null>;
 }
 
+/** The engine's recorded answer to registering a stored version: registered, or refused with the engine's code. */
+export type DefinitionEngineRegistration =
+  | Readonly<{ state: "registered" }>
+  | Readonly<{ state: "refused"; code: string }>;
+
+/**
+ * The engine registration of stored versions. A version with no recorded answer is pending: allocated, but not yet
+ * answered by the engine, because the deploy that allocated it has not reached the engine yet or failed in transport.
+ * `listLatest` and `listVersions` omit a refused version, so it is never offered for a start.
+ */
+export interface DefinitionEngineRegistrationRepository {
+  /** The pending versions, of every process or of `processId` only, by process identifier and then version. */
+  listPendingEngineRegistrations(processId?: string): Promise<ReadonlyArray<DefinitionMetadata>>;
+  /** Records the engine's answer for a stored version; an answer once recorded is kept. */
+  recordEngineRegistration(reference: DefinitionReference, registration: DefinitionEngineRegistration): Promise<void>;
+}
+
 /** Exact source-bound catalog lookup consumed by Product 2 Work. */
 export interface HumanTaskCatalogRepository {
   getHumanTaskCatalog(

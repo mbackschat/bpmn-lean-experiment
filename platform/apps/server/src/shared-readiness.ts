@@ -3,7 +3,7 @@ import type {
   PostgresqlSession,
 } from "@bpmn-lean/platform-postgresql-runtime";
 
-export const SHARED_PLATFORM_SCHEMA_EPOCH = 13;
+export const SHARED_PLATFORM_SCHEMA_EPOCH = 14;
 
 type ReadinessRow = PostgresqlRow & Readonly<{
   server_major: unknown;
