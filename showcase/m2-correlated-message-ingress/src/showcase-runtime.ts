@@ -45,9 +45,10 @@ type Environment = Awaited<ReturnType<typeof createCachedLocalEnvironment>>;
 
 /**
  * The host Workflow ID engine-api gives a directly started instance: engine-api exports its instance-address rule only
- * under the Message Start name, and both starts derive the address from the instance alone.
+ * under the Message Start name, and both starts derive the address from the population and the instance.
  */
-const processWorkflowId = engineDefinitionMessageStartWorkflowId;
+const processWorkflowId = (processInstanceId: string): string =>
+  engineDefinitionMessageStartWorkflowId(taskQueue, processInstanceId);
 
 /**
  * What a Process waiting for the correlated Message publishes: the wait's channel and the correlation key it is

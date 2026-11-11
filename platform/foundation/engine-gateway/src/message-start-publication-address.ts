@@ -18,8 +18,9 @@ export function messageStartPublicationCommandId(publicationId: string): string 
   return `bpmn-platform-message-start-command-sha256:${publicationDigest(commandDomain, publicationId)}`;
 }
 
-export function messageStartPublicationWorkflowId(processInstanceId: string): string {
-  return engineDefinitionMessageStartWorkflowId(processInstanceId);
+/** The Workflow ID of a publication's process instance in `population`, the engine runtime's population name. */
+export function messageStartPublicationWorkflowId(population: string, processInstanceId: string): string {
+  return engineDefinitionMessageStartWorkflowId(population, processInstanceId);
 }
 
 function publicationDigest(domain: string, publicationId: string): string {

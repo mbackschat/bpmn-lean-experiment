@@ -235,7 +235,7 @@ function composeSharedPlatformServer(
     identities: {
       processInstanceId: messageStartPublicationProcessInstanceId,
       commandId: messageStartPublicationCommandId,
-      workflowId: messageStartPublicationWorkflowId,
+      workflowId: (processInstanceId) => messageStartPublicationWorkflowId(engine.population, processInstanceId),
     },
     confirmedInstances,
     locators: engine.processWork,

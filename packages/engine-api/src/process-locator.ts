@@ -7,9 +7,9 @@ declare const engineProcessLocatorBrand: unique symbol;
 
 export type EngineProcessLocator = string & Readonly<{ [engineProcessLocatorBrand]: "EngineProcessLocator" }>;
 
-/** The locator of a directly started or Message-started instance, from its semantic identity. */
-export function engineProcessLocatorForCanonicalProcess(processInstanceId: string): EngineProcessLocator {
-  return engineProcessLocatorForWorkflowId(engineProcessWorkflowId(processInstanceId));
+/** The locator of an instance of `population`, from its semantic identity. */
+export function engineProcessLocatorForCanonicalProcess(population: string, processInstanceId: string): EngineProcessLocator {
+  return engineProcessLocatorForWorkflowId(engineProcessWorkflowId(population, processInstanceId));
 }
 
 /** The locator of a host Workflow ID, such as the one a Schedule's action reports. */

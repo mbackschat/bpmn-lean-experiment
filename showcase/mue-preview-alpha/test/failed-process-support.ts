@@ -13,7 +13,7 @@ import type { ProcessClient } from "@bpmn-lean/temporal-host/client";
 import { EffectResultKind } from "@bpmn-lean/temporal-host/worker";
 
 import type { EffectHandler } from "../src/host-worker.ts";
-import { processWorkflowId } from "../src/process-address.ts";
+import { alphaTaskQueue, processWorkflowId } from "../src/process-address.ts";
 
 export const compensationProfile = "bpmn-2.0.2";
 export const compensationSourceSha256 = "516073af27fbe95c319918b248c2563c2505263e7542db6f3e8d981f82d8dc93";
@@ -68,7 +68,7 @@ export async function startCompensation(
 
 /** Labelled test actor uses current published identities; these tasks have no Product 2 Human Work metadata. */
 export async function completeCompensationTasks(processes: ProcessClient, instance: PublicProcessInstanceIdentity): Promise<void> {
-  const workflowId = processWorkflowId(instance.processInstanceId);
+  const workflowId = processWorkflowId(alphaTaskQueue, instance.processInstanceId);
   for (const elementId of ["Task_ReserveHotel", "Task_ArrangeGroundTravel", "Task_IssueInsurance"]) {
     const deadline = Date.now() + 10_000;
     while (true) {

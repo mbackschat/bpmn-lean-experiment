@@ -119,7 +119,7 @@ export class BpmnProcessWorkGateway {
   }
 
   canonicalLocator(processInstanceId: string): SerializedProcessWorkLocator {
-    return serializeEngineProcessLocator(engineProcessLocatorForCanonicalProcess(processInstanceId));
+    return serializeEngineProcessLocator(engineProcessLocatorForCanonicalProcess(this.#host.population.population, processInstanceId));
   }
 
   async observeOpenWork(request: ProcessWorkObservationRequest): Promise<ProcessWorkObservationResult> {

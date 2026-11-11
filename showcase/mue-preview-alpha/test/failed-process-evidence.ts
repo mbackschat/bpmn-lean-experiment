@@ -10,7 +10,7 @@ import type { Batch, ExecutionTransition, ProcessClient } from "@bpmn-lean/tempo
 import { withDeadline } from "../src/host-worker.ts";
 import type { TemporalEnvironment } from "../src/host-worker.ts";
 import { failureCode, failureMessage } from "./failed-process-support.ts";
-import { processWorkflowId } from "../src/process-address.ts";
+import { alphaTaskQueue, processWorkflowId } from "../src/process-address.ts";
 import { collectProcessRunHistories, replayEveryRun } from "./temporal-evidence.ts";
 
 /**
@@ -25,7 +25,7 @@ export async function collectCompensationPublication(
   instance: PublicProcessInstanceIdentity,
   failed: boolean,
 ): Promise<ExecutionPublicationExport> {
-  const workflowId = processWorkflowId(instance.processInstanceId);
+  const workflowId = processWorkflowId(alphaTaskQueue, instance.processInstanceId);
   const terminal = await withDeadline(client.workflow.getHandle(workflowId).result(), 20_000, "Compensation test terminal result");
   assert.equal(terminal.kind, ResultKind.Ended);
   assert.equal(terminal.status, failed ? "failed" : "completed");

@@ -5,7 +5,7 @@ import { replayHistory } from "@bpmn-lean/temporal-host/worker";
 
 import { withDeadline } from "../src/host-worker.ts";
 import type { TemporalEnvironment } from "../src/host-worker.ts";
-import { processWorkflowId } from "../src/process-address.ts";
+import { alphaTaskQueue, processWorkflowId } from "../src/process-address.ts";
 
 const operationDeadlineMs = 20_000;
 const replayDeadlineMs = 30_000;
@@ -58,7 +58,7 @@ export async function verifyMuePreviewAlphaEvidence(input: Readonly<{
 
 async function collectJourney(client: TemporalClient, processInstanceId: string): Promise<readonly TemporalHistory[]> {
   const result = await withDeadline(
-    client.workflow.getHandle(processWorkflowId(processInstanceId)).result(),
+    client.workflow.getHandle(processWorkflowId(alphaTaskQueue, processInstanceId)).result(),
     operationDeadlineMs,
     `MUE Preview Alpha ${processInstanceId} terminal result`,
   );
@@ -73,7 +73,7 @@ export async function collectProcessRunHistories(
   client: TemporalClient,
   processInstanceId: string,
 ): Promise<readonly TemporalHistory[]> {
-  const workflowId = processWorkflowId(processInstanceId);
+  const workflowId = processWorkflowId(alphaTaskQueue, processInstanceId);
   const runs = await withDeadline((async () => {
     const found: Array<Readonly<{ runId: string; startedAt: number }>> = [];
     for await (const execution of client.workflow.list()) {

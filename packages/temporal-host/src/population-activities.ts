@@ -133,7 +133,7 @@ export function createPopulationActivities(): PopulationActivities {
       const { client, info } = Context.current();
       const program: JsonValue = await client.workflow
         .getHandle(deploymentWorkflowId(request.population, request.deploymentId)).query(deploymentProgramQuery);
-      const workflowId = processInstanceWorkflowId(request.instanceId);
+      const workflowId = processInstanceWorkflowId(request.population, request.instanceId);
       const start = new WithStartWorkflowOperation<(args: RunProcessArgs) => Promise<ProcessResult>>(workflowType, {
         workflowId,
         taskQueue: info.taskQueue,

@@ -34,7 +34,7 @@ import {
   withDeadline,
 } from "./host-worker.ts";
 import type { EffectHandler, TemporalEnvironment } from "./host-worker.ts";
-import { processWorkflowId } from "./process-address.ts";
+import { alphaTaskQueue, processWorkflowId } from "./process-address.ts";
 import {
   verifyMuePreviewAlphaEvidence,
 } from "../test/temporal-evidence.ts";
@@ -44,7 +44,7 @@ import type {
 
 const operationDeadlineMs = 20_000;
 const environmentStartupDeadlineMs = 40_000;
-const taskQueue = "bpmn-mue-preview-alpha";
+const taskQueue = alphaTaskQueue;
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
@@ -208,7 +208,7 @@ export class MuePreviewAlphaShowcaseRuntime {
   #interactionPort(instance: PublicProcessInstanceIdentity): InteractionPort {
     this.#requireWorker();
     const processes = this.processes;
-    const workflowId = processWorkflowId(instance.processInstanceId);
+    const workflowId = processWorkflowId(taskQueue, instance.processInstanceId);
     return {
       readState: async () => await processes.observation(workflowId) as unknown as AlphaState,
       command: async (stimulus) => processes.command(workflowId, stimulus as JsonValue),

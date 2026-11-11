@@ -344,6 +344,11 @@ export class BpmnEngineGatewayRuntime {
     this.processFlowNodeOccurrences = new BpmnProcessFlowNodeOccurrenceGateway(host);
   }
 
+  /** The engine population this runtime serves, named by its Task Queue; it scopes every process-instance address. */
+  get population(): string {
+    return this.#runtime.host.population.population;
+  }
+
   /** Proves the shared lazy Temporal connection before this runtime is declared ready. */
   ensureConnected(): Promise<void> {
     return this.#runtime.ensureConnected();

@@ -99,7 +99,7 @@ A malformed command and reuse of one semantic command ID for a different well-fo
 
 The semantic Process-instance ID, Temporal Workflow ID, Run ID, semantic command ID, and Temporal Update ID remain distinct.
 
-The production adapter encodes the semantic Process-instance address as the typed tuple `["semanticProcessInstance", processInstanceId]`, hashes its UTF-8 JSON form with SHA-256, and prefixes the digest with `bpmn-process-sha256:`. It starts that Workflow ID with `workflowIdReusePolicy: "REJECT_DUPLICATE"`. The conformance harness may supply isolated Workflow IDs for independent disposable executions, but production start and command ingress derive the same ID from the semantic address. The encoding is host policy and never appears in canonical semantic state.
+The production adapter encodes the semantic Process-instance address as the typed tuple `["semanticProcessInstance", population, processInstanceId]`, where `population` is the engine population (named by its Task Queue) that hosts the instance: kernel-derived instance identities are unique only within one population, so two populations sharing a namespace never address one chain. It hashes its UTF-8 JSON form with SHA-256, and prefixes the digest with `bpmn-process-sha256:`. It starts that Workflow ID with `workflowIdReusePolicy: "REJECT_DUPLICATE"`. The conformance harness may supply isolated Workflow IDs for independent disposable executions, but production start and command ingress derive the same ID from the semantic address. The encoding is host policy and never appears in canonical semantic state.
 
 The Temporal Update ID for User Task completion, incident retry, and incident-gated root cancellation must be a deterministic content-bound key over:
 

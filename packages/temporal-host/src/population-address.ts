@@ -21,12 +21,13 @@ export function deploymentWorkflowId(population: string, deploymentId: number): 
 }
 
 /**
- * The Workflow ID of the chain hosting the semantic process instance `instanceId`, whoever starts it: an engine client
- * under the caller's identifier, or the population ingress under a kernel-derived one. Instance identities are
- * engine-wide, so a population start and a direct start of one identity are one chain.
+ * The Workflow ID of the chain hosting the semantic process instance `instanceId` of `population`, whoever starts it: an
+ * engine client under the caller's identifier, or the population ingress under a kernel-derived one. Instance
+ * identities are unique only within a population (two populations' kernels derive `timer:…` or `start:…` alike), so
+ * the address carries the population; within it a population start and a direct start of one identity are one chain.
  */
-export function processInstanceWorkflowId(instanceId: string): string {
-  return `bpmn-process-sha256:${sha256(canonicalJson(["semanticProcessInstance", instanceId]))}`;
+export function processInstanceWorkflowId(population: string, instanceId: string): string {
+  return `bpmn-process-sha256:${sha256(canonicalJson(["semanticProcessInstance", population, instanceId]))}`;
 }
 
 /**

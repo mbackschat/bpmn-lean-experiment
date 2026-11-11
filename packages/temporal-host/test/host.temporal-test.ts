@@ -247,7 +247,7 @@ test("schedule start: a one-shot Schedule fires the Timer start's occurrence thr
       kind: "fanOut",
       entries: [{ kind: "started", instanceId, deploymentId: firing.deploymentId, version: 1, startEvent: firing.startEvent }],
     });
-    const id = processInstanceWorkflowId(instanceId);
+    const id = processInstanceWorkflowId(name, instanceId);
     await until("the started instance", () => client.hostView(id), hasUserTask("UserTask_AfterTimer"));
     const complete = stimulus(scenario, 1) as Readonly<Record<string, JsonValue>>;
     const occurrence = complete["occurrence"] as Readonly<Record<string, JsonValue>>;
@@ -277,7 +277,7 @@ test("schedule superseded: a Schedule of a deployment a redeploy superseded fire
     assert.ok("deploymentId" in redeployed && redeployed.deploymentId > deployment.deploymentId);
     assert.deepEqual((await firedAnswer(schedules, scheduleId)).resolution, { kind: "rejected", code: "timer-start-superseded" });
     const instanceId = timerInstanceId(firing.deploymentId, firing.startEvent, firing.dueMs);
-    assert.equal(await client.describe(processInstanceWorkflowId(instanceId)), null);
+    assert.equal(await client.describe(processInstanceWorkflowId(name, instanceId)), null);
   } finally {
     await schedules.delete(scheduleId);
   }

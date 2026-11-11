@@ -21,7 +21,7 @@ import {
   type EngineDefinitionMessageStartPreparationRequest,
 } from "@bpmn-lean/engine-api";
 
-import { deployed, limits, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
+import { deployed, limits, scenarioBytes, sha256, standardProfile, testHost, testPopulation, type TestHost } from "./support.ts";
 
 const channel = {
   kind: "operationMessage",
@@ -47,7 +47,7 @@ async function request(host: TestHost): Promise<EngineDefinitionMessageStartPrep
     messageStart: { startEventId: "MessageStart_ApprovalRequest", channel },
     processInstanceId: "message-instance",
     commandId: "publication-command",
-    workflowId: engineDefinitionMessageStartWorkflowId("message-instance"),
+    workflowId: engineDefinitionMessageStartWorkflowId(testPopulation, "message-instance"),
     limits,
   });
 }
@@ -62,13 +62,13 @@ test("the selected Message start runs once under its address, opening the model'
   assert.deepEqual(await startBpmnDefinitionMessageStart({ ...await request(host), expectedIntent: prepared.intent }), started);
   const work = await observeOpenWork({
     host,
-    locator: engineProcessLocatorForCanonicalProcess("message-instance"),
+    locator: engineProcessLocatorForCanonicalProcess(testPopulation, "message-instance"),
     hostingProcessInstanceId: "message-instance",
   });
   assert.equal(work.status, EngineOpenWorkStatus.Open);
   if (work.status === EngineOpenWorkStatus.Open) assert.equal(work.openUserTasks[0]?.id.elementId, "UserTask_Approve");
   assert.equal(await describeBpmnDefinitionMessageStart({
-    host, workflowId: engineDefinitionMessageStartWorkflowId("message-instance"), expectedIntent: prepared.intent }),
+    host, workflowId: engineDefinitionMessageStartWorkflowId(testPopulation, "message-instance"), expectedIntent: prepared.intent }),
     EngineStartDescriptionStatus.Matching);
 });
 

@@ -16,10 +16,10 @@ import {
   submitEngineIncidentOperation,
 } from "@bpmn-lean/engine-api";
 
-import { deployed, incidentProfile, limits, scenarioBytes, sha256, testHost, type TestHost } from "./support.ts";
+import { deployed, incidentProfile, limits, scenarioBytes, sha256, testHost, testPopulation, type TestHost } from "./support.ts";
 
 const occurrence = { processInstanceId: "incident-instance", elementId: "ServiceTask_Record", activation: 1 };
-const locator = engineProcessLocatorForCanonicalProcess("incident-instance");
+const locator = engineProcessLocatorForCanonicalProcess(testPopulation, "incident-instance");
 const workflowId = decodeURIComponent(locator.slice("bpmn-process:".length));
 
 async function failed(): Promise<TestHost> {

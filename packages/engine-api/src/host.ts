@@ -44,9 +44,12 @@ export function engineDeploymentRequestId(definition: EngineDefinitionIdentity):
   return `bpmn-definition-deployment-sha256:${sha256Hex(canonicalJson(["definitionDeployment", definition]))}`;
 }
 
-/** The Workflow ID of a semantic process instance: a digest, so no instance identifier shapes a host address. */
-export function engineProcessWorkflowId(processInstanceId: string): string {
-  return processInstanceWorkflowId(requireWireString(processInstanceId, "processInstanceId"));
+/**
+ * The Workflow ID of a semantic process instance of `population` (an engine host's `population.population`): a digest,
+ * so no instance identifier shapes a host address.
+ */
+export function engineProcessWorkflowId(population: string, processInstanceId: string): string {
+  return processInstanceWorkflowId(requireWireString(population, "population"), requireWireString(processInstanceId, "processInstanceId"));
 }
 
 export type EngineScheduleReference = Readonly<{ processId: string; version: number; scheduleId: string }>;

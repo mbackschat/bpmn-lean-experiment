@@ -342,7 +342,7 @@ test("M2 schedules engine occurrences, refuses a superseded version, decides can
     await waitForScheduleCleanup(client, privateScheduleIdOne);
     await waitForScheduleCleanup(client, privateScheduleIdTwo);
 
-    const processWorkflowId = processInstanceWorkflowId(instance.processInstanceId);
+    const processWorkflowId = processInstanceWorkflowId(taskQueue, instance.processInstanceId);
     assert.deepEqual(
       await listWorkflowIds(client, [workflowType]),
       [processWorkflowId],

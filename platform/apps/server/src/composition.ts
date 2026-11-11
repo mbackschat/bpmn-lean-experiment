@@ -318,7 +318,7 @@ async function createLocalPlatformServer(
       identities: {
         processInstanceId: messageStartPublicationProcessInstanceId,
         commandId: messageStartPublicationCommandId,
-        workflowId: messageStartPublicationWorkflowId,
+        workflowId: (processInstanceId) => messageStartPublicationWorkflowId(engineRuntime.population, processInstanceId),
       },
       confirmedInstances,
       locators: engineRuntime.processWork,

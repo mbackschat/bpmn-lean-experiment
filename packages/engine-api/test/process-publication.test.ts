@@ -17,9 +17,9 @@ import {
   type EngineDefinitionIdentity,
 } from "@bpmn-lean/engine-api";
 
-import { deployed, limits, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
+import { deployed, limits, scenarioBytes, sha256, standardProfile, testHost, testPopulation, type TestHost } from "./support.ts";
 
-const locator = engineProcessLocatorForCanonicalProcess("published");
+const locator = engineProcessLocatorForCanonicalProcess(testPopulation, "published");
 
 async function started(): Promise<Readonly<{ host: TestHost; definition: EngineDefinitionIdentity }>> {
   const host = testHost();
@@ -84,6 +84,6 @@ test("a chain running another definition or instance is an integrity failure; an
     host, locator, definition, processInstanceId: "other", afterRevision: 0 });
   assert.equal(otherInstance.status, EnginePublicationStatus.IntegrityFailure);
   const unknown = await observeEngineProcessExecution({
-    host, locator: engineProcessLocatorForCanonicalProcess("nobody"), definition, processInstanceId: "nobody", afterRevision: 0 });
+    host, locator: engineProcessLocatorForCanonicalProcess(testPopulation, "nobody"), definition, processInstanceId: "nobody", afterRevision: 0 });
   assert.deepEqual(unknown, { status: EnginePublicationStatus.Unknown });
 });

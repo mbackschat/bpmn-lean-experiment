@@ -44,6 +44,7 @@ export class RcShowcaseRuntime {
   #environment: TemporalEnvironment | undefined;
   #worker: ShowcaseWorker | undefined;
   #processes: ProcessClient | undefined;
+  #taskQueue: string | undefined;
   #platform: PlatformServerRuntime | undefined;
   #origin: string | undefined;
   #polling: Promise<void> | undefined;
@@ -109,6 +110,7 @@ export class RcShowcaseRuntime {
         taskQueue: identity, identity, effects: configuredEffectHandler(mergeRcEffectHandlers(this.#bindings)),
       });
       this.#processes = new ProcessClient(this.#environment.client, identity);
+      this.#taskQueue = identity;
       const origin = `http://127.0.0.1:${this.#port}`;
       this.#platform = await createPlatformServer({
         ...readPlatformServerConfig(showcaseEngineDeploymentEnvironment()),
@@ -203,7 +205,7 @@ export class RcShowcaseRuntime {
   #interactionPort(instance: PublicProcessInstanceIdentity): InteractionPort {
     const processes = this.#processes!;
     const id = instance.processInstanceId;
-    const workflowId = processWorkflowId(id);
+    const workflowId = processWorkflowId(this.#taskQueue!, id);
     const signal = this.#stop.signal;
     return {
       readState: async () => {

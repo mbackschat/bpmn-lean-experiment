@@ -100,7 +100,7 @@ export async function prepareBpmnDefinitionVersionStart(
     source: prepared.compiled.compilation.source,
     definition: prepared.compiled.compilation.definition,
     processInstanceId: prepared.processInstanceId,
-    locator: engineProcessLocatorForCanonicalProcess(prepared.processInstanceId),
+    locator: engineProcessLocatorForCanonicalProcess(request.host.population.population, prepared.processInstanceId),
     intent: prepared.intent,
   };
 }
@@ -146,7 +146,7 @@ export async function startBpmnDefinitionVersion(request: EngineDefinitionStartR
 export function describeBpmnDefinitionVersionStart(
   request: EngineDefinitionStartDescriptionRequest,
 ): Promise<EngineStartDescriptionStatus> {
-  return describeStart(request.host, engineProcessWorkflowId(request.processInstanceId), {
+  return describeStart(request.host, engineProcessWorkflowId(request.host.population.population, request.processInstanceId), {
     protocol: request.expectedIntent.protocol,
     intentSha256: request.expectedIntent.intentSha256,
   });
@@ -202,7 +202,7 @@ async function prepare(snapshot: Snapshot, host: EngineHost): Promise<PreparedSt
     variables: snapshot.initialVariables as unknown as JsonValue,
   };
   const prepared = prepareStart(host, engineDirectStartProtocol, compiled,
-    engineProcessWorkflowId(snapshot.processInstanceId), snapshot.processInstanceId, stimulus);
+    engineProcessWorkflowId(host.population.population, snapshot.processInstanceId), snapshot.processInstanceId, stimulus);
   if ("code" in prepared) {
     return { status: EngineDefinitionStartStatus.Rejected, source: compiled.compilation.source, definition, failure: prepared };
   }

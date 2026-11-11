@@ -200,7 +200,7 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
     const made = {
       config: JSON.parse(canonicalJson(config)) as HostConfig,
       driver: new MemoryPopulation(this.populationPort, this.port.hostView, populationCapacity.receivers, this.#store(name, config),
-        processInstanceWorkflowId),
+        (instanceId) => processInstanceWorkflowId(name, instanceId)),
     };
     this.#populations.set(name, made);
     return made;

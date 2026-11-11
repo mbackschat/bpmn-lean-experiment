@@ -23,7 +23,7 @@ import {
   type EngineProfile,
 } from "@bpmn-lean/engine-api";
 
-import { deployed, limits, scenarioBytes, servesEverything, sha256, testHost, type TestHost } from "./support.ts";
+import { deployed, limits, scenarioBytes, servesEverything, sha256, testHost, testPopulation, type TestHost } from "./support.ts";
 
 const profile: EngineProfile = { id: "test-correlation", relations: ["CIB-AGR-0001", "CIB-OP-0001", "CIB-LIM-0002"] };
 const channel = {
@@ -34,7 +34,7 @@ const channel = {
 } as const;
 const correlationKey = "CorrelationKey_SettlementReference";
 const workflowIdOf = (instance: string): string =>
-  decodeURIComponent(engineProcessLocatorForCanonicalProcess(instance).slice("bpmn-process:".length));
+  decodeURIComponent(engineProcessLocatorForCanonicalProcess(testPopulation, instance).slice("bpmn-process:".length));
 
 async function definition(): Promise<EngineDefinitionIdentity> {
   const bytes = await scenarioBytes("message-key-correlation/process.bpmn");
@@ -73,7 +73,7 @@ test("a publication is delivered to the one instance whose correlation key match
   assert.deepEqual(await publish(host, "publication-1", "settlement-43"), {
     status: EngineCorrelatedMessageStatus.Delivered,
     ingressOrdinal: 1,
-    target: { processInstanceId: "settlement-1", locator: engineProcessLocatorForCanonicalProcess("settlement-1") },
+    target: { processInstanceId: "settlement-1", locator: engineProcessLocatorForCanonicalProcess(testPopulation, "settlement-1") },
   });
   assert.deepEqual(await publish(host, "publication-2", "settlement-43"), {
     status: EngineCorrelatedMessageStatus.Rejected,

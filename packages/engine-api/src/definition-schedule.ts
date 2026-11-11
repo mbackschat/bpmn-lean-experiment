@@ -189,14 +189,14 @@ async function inspect(host: EngineHost, prepared: PreparedSchedule, expectedPau
         case "failed":
           return integrityFailure(EngineDefinitionScheduleIntegrityCode.FiringUnanswered, outcome.evidence);
         case "answered":
-          return fired(outcome.answer, paused);
+          return fired(host.population.population, outcome.answer, paused);
       }
     }
   }
 }
 
 /** The firing's verdict: the root start entry of a committed fan-out, its failure, or the command's rejection. */
-function fired(answer: CommandAnswer, paused: boolean): EngineDefinitionScheduleResult {
+function fired(population: string, answer: CommandAnswer, paused: boolean): EngineDefinitionScheduleResult {
   const resolution = answer.resolution;
   const code = (json: unknown): string | null => {
     const value = member(json, "code");
@@ -217,7 +217,7 @@ function fired(answer: CommandAnswer, paused: boolean): EngineDefinitionSchedule
           status: EngineDefinitionScheduleStatus.Started,
           paused,
           processInstanceId: instanceId,
-          locator: engineProcessLocatorForCanonicalProcess(instanceId),
+          locator: engineProcessLocatorForCanonicalProcess(population, instanceId),
         };
       }
       const failure = code(entry);

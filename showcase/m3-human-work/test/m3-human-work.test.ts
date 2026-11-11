@@ -61,9 +61,10 @@ import {
 
 /**
  * The host Workflow ID engine-api gives a directly or Message-started instance: engine-api exports its instance-address
- * rule only under the Message Start name, and both starts derive the address from the instance alone.
+ * rule only under the Message Start name, and both starts derive the address from the population and the instance.
  */
-const processWorkflowId = engineDefinitionMessageStartWorkflowId;
+const processWorkflowId = (processInstanceId: string): string =>
+  engineDefinitionMessageStartWorkflowId(taskQueue, processInstanceId);
 
 test("runs the complete durable Human Work slice", async () => {
   const dataDirectory = await mkdtemp(join(tmpdir(), "bpmn-lean-m3-human-work-"));

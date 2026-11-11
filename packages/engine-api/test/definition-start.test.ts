@@ -19,7 +19,7 @@ import {
   type EngineDefinitionStartRequest,
 } from "@bpmn-lean/engine-api";
 
-import { deployed, limits, scenarioBytes, servesEverything, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
+import { deployed, limits, scenarioBytes, servesEverything, sha256, standardProfile, testHost, testPopulation, type TestHost } from "./support.ts";
 
 async function request(host: TestHost, processInstanceId = "instance-1"): Promise<EngineDefinitionStartRequest> {
   const bytes = await scenarioBytes("user-task-preserved-notation/process.bpmn");
@@ -95,7 +95,7 @@ test("a start of a definition version no registration holds is rejected before a
   const result = await startBpmnDefinitionVersion({ ...await request(testHost()), host: unregistered });
   assert.equal(result.status, EngineDefinitionStartStatus.Rejected);
   if (result.status === EngineDefinitionStartStatus.Rejected) assert.equal(result.failure.code, "definition-not-deployed");
-  assert.equal(await unregistered.processes.describe(engineDefinitionMessageStartWorkflowId("instance-1")), null);
+  assert.equal(await unregistered.processes.describe(engineDefinitionMessageStartWorkflowId(testPopulation, "instance-1")), null);
 });
 
 test("a stored definition that no longer compiles, or compiles to another identity, is an integrity failure", async () => {

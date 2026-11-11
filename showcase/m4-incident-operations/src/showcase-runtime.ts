@@ -80,7 +80,7 @@ export class IncidentOperationsShowcaseRuntime {
     const environment = this.#requireEnvironment();
     this.#worker = await withDeadline(
       ShowcaseWorker.start(environment, {
-        taskQueue: readPlatformServerConfig({ ...process.env, ...showcaseEngineDeploymentEnvironment() }).temporalTaskQueue,
+        taskQueue: engineTaskQueue(),
         identity: `bpmn-m4-incident-operations-worker-${process.pid}`,
         effects: this.#effects.handler,
       }),
@@ -93,6 +93,7 @@ export class IncidentOperationsShowcaseRuntime {
     if (this.#worker === undefined) throw new Error("M4 Worker must be running for evidence inspection");
     return verifyIncidentTerminalEvidence({
       client: this.#requireEnvironment().client,
+      population: engineTaskQueue(),
       retryProcessInstanceId: request.retryProcessInstanceId,
       cancelledProcessInstanceId: request.cancelledProcessInstanceId,
     });
@@ -218,6 +219,11 @@ class IncidentEffects {
       ? { kind: EffectResultKind.TechnicalFailure }
       : { kind: EffectResultKind.Success, outputs: [] };
   };
+}
+
+/** The platform's configured Task Queue, which its Worker serves and which names its engine population. */
+function engineTaskQueue(): string {
+  return readPlatformServerConfig({ ...process.env, ...showcaseEngineDeploymentEnvironment() }).temporalTaskQueue;
 }
 
 function controlPort(): number {

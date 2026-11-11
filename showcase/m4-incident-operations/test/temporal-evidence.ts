@@ -17,7 +17,7 @@ type HistoryEntry = NonNullable<TemporalHistory["events"]>[number];
 
 /**
  * The host Workflow ID engine-api gives a directly started instance: engine-api exports its instance-address rule only
- * under the Message Start name, and both starts derive the address from the instance alone.
+ * under the Message Start name, and both starts derive the address from the population and the instance.
  */
 const processWorkflowId = engineDefinitionMessageStartWorkflowId;
 
@@ -39,12 +39,13 @@ export type ShowcaseEvidence = Readonly<{
 export async function verifyIncidentTerminalEvidence(
   input: Readonly<{
     client: TemporalClient;
+    population: string;
     retryProcessInstanceId: string;
     cancelledProcessInstanceId: string;
   }>,
 ): Promise<ShowcaseEvidence> {
-  const retryHandle = input.client.workflow.getHandle(processWorkflowId(input.retryProcessInstanceId));
-  const cancellationHandle = input.client.workflow.getHandle(processWorkflowId(input.cancelledProcessInstanceId));
+  const retryHandle = input.client.workflow.getHandle(processWorkflowId(input.population, input.retryProcessInstanceId));
+  const cancellationHandle = input.client.workflow.getHandle(processWorkflowId(input.population, input.cancelledProcessInstanceId));
   const [retryResult, cancellationResult, retryHistory, cancellationHistory] = await Promise.all([
     withDeadline(retryHandle.result(), operationDeadlineMs, "M4 retried Process result"),
     withDeadline(cancellationHandle.result(), operationDeadlineMs, "M4 cancelled Process result"),

@@ -56,7 +56,7 @@ async function messageStart(host: MemoryEngineHost): Promise<DefinitionMessageSt
     messageStart: start,
     processInstanceId,
     commandId: messageStartPublicationCommandId("publication-1"),
-    workflowId: messageStartPublicationWorkflowId(processInstanceId),
+    workflowId: messageStartPublicationWorkflowId(host.population.population, processInstanceId),
   };
 }
 

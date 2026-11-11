@@ -91,8 +91,8 @@ export type EngineDefinitionMessageStartDescriptionRequest = Readonly<{
 }>;
 
 /** The canonical Workflow ID of a Message-started instance, the same address as a direct start's. */
-export function engineDefinitionMessageStartWorkflowId(processInstanceId: string): string {
-  return engineProcessWorkflowId(processInstanceId);
+export function engineDefinitionMessageStartWorkflowId(population: string, processInstanceId: string): string {
+  return engineProcessWorkflowId(population, processInstanceId);
 }
 
 export async function prepareBpmnDefinitionMessageStart(

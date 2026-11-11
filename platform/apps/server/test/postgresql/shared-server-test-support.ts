@@ -82,6 +82,9 @@ export function createCrossReplicaEngineRuntime(
     },
   });
   return {
+    // Both replicas serve the one population the shared configuration's Task Queue names, so a publication accepted by
+    // either derives the same process-instance Workflow ID.
+    population: "bpmn-semantic",
     gateway: {
       compileDefinition: async (request: Readonly<{
         bytes: Uint8Array;

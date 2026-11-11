@@ -16,10 +16,10 @@ import {
   startBpmnDefinitionVersion,
 } from "@bpmn-lean/engine-api";
 
-import { deployed, limits, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
+import { deployed, limits, scenarioBytes, sha256, standardProfile, testHost, testPopulation, type TestHost } from "./support.ts";
 
 const taskId = { processInstanceId: "work-instance", elementId: "UserTask_Approve", activation: 1 };
-const locator = engineProcessLocatorForCanonicalProcess("work-instance");
+const locator = engineProcessLocatorForCanonicalProcess(testPopulation, "work-instance");
 
 async function started(): Promise<TestHost> {
   const host = testHost();
@@ -90,7 +90,7 @@ test("a stale completion is the kernel's rejection with its code", async () => {
 test("a locator the host does not know, or one minted for another instance, is unknown", async () => {
   const host = await started();
   assert.deepEqual(await observeOpenWork({
-    host, locator: engineProcessLocatorForCanonicalProcess("nobody"), hostingProcessInstanceId: "nobody" }),
+    host, locator: engineProcessLocatorForCanonicalProcess(testPopulation, "nobody"), hostingProcessInstanceId: "nobody" }),
     { status: EngineOpenWorkStatus.Unknown });
   assert.deepEqual(await observeOpenWork({ host, locator, hostingProcessInstanceId: "someone-else" }),
     { status: EngineOpenWorkStatus.Unknown });

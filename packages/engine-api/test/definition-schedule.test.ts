@@ -24,7 +24,7 @@ import {
   type EngineDefinitionScheduleBindingRequest,
 } from "@bpmn-lean/engine-api";
 
-import { deployed, limits, pendingSchedule, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
+import { deployed, limits, pendingSchedule, scenarioBytes, sha256, standardProfile, testHost, testPopulation, type TestHost } from "./support.ts";
 
 /** The memory host deploys at 1,000 ms, so the PT1S start's one occurrence is due at 2,000 ms. */
 const due = 2_000;
@@ -113,9 +113,9 @@ test("a fired occurrence reports the instance the kernel started under its deriv
     status: EngineDefinitionScheduleStatus.Started,
     paused: false,
     processInstanceId,
-    locator: engineProcessLocatorForCanonicalProcess(processInstanceId),
+    locator: engineProcessLocatorForCanonicalProcess(testPopulation, processInstanceId),
   });
-  assert.equal((await host.processes.describe(processInstanceWorkflowId(processInstanceId)))?.running, true,
+  assert.equal((await host.processes.describe(processInstanceWorkflowId(testPopulation, processInstanceId)))?.running, true,
     "the population started the instance's chain");
 });
 

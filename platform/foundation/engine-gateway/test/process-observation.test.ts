@@ -144,7 +144,7 @@ test("a correlated Message is described from the definition and delivered to the
     bytes, sourceId: "s", expectedSha256: definition.source.sha256, semanticProfile: correlationProfile,
     expectedProcessId: definition.processId, version: 1, processInstanceId: "settlement-a", initialVariables: [] });
   assert.equal(started.status, DefinitionStartStatus.Started);
-  const workflowId = decodeURIComponent(engineProcessLocatorForCanonicalProcess("settlement-a").slice("bpmn-process:".length));
+  const workflowId = decodeURIComponent(engineProcessLocatorForCanonicalProcess(host.population.population, "settlement-a").slice("bpmn-process:".length));
   assert.equal((await host.processes.deliver(workflowId, {
     kind: "deliver", commandId: "initialize", trigger: { kind: "message", channel: settlementChannel },
     occurrence: { processInstanceId: "settlement-a", elementId: "MessageCatch_InitialSettlement", activation: 1 },

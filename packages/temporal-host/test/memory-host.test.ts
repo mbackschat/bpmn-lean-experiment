@@ -17,6 +17,8 @@ const { Scheduling } = await import(new URL("../dist/protocol.js", import.meta.u
   typeof import("../src/protocol.ts");
 const { PageKind } = await import(new URL("../dist/publication.js", import.meta.url).href) as
   typeof import("../src/publication.ts");
+const { processInstanceWorkflowId } = await import(new URL("../dist/population-address.js", import.meta.url).href) as
+  typeof import("../src/population-address.ts");
 
 const durable: HostConfig = { scheduling: Scheduling.Durable, effectStartToCloseMs: 1_000, historyEventBudget: null };
 
@@ -93,4 +95,36 @@ test("a stale command is rejected without a revision and changes nothing", async
   assert.equal(stale.outcome, "rejected");
   assert.equal(stale.revision, null);
   assert.equal((await host.hostView("W")).revision, head);
+});
+
+test("two populations of one host that derive the same kernel instance identity start two chains", async () => {
+  const read = await readKernelProgram({
+    bytes: await readFile(new URL("../../../scenarios/timer-start-event/process.bpmn", import.meta.url)),
+    overlay: null, profile: "test-profile", limits: { maxBytes: 1_048_576, parserDeadlineMs: 1_000 },
+  }, kernelProfileOptions([]));
+  if (read.kind !== "read") throw new Error(`reader refused ${read.code}`);
+  const program = JSON.parse(JSON.stringify(read.program)) as JsonValue;
+  // Each deployment registers at 5 s, so its PT1S occurrence is due at 6 s, when both fire.
+  let now = 5_000;
+  const host = createMemoryProcessHost({ taskQueue: "q", now: () => now });
+  const firing = { commandId: "fire", deploymentId: 1, startEvent: "TimerStart_PT1S", dueMs: 6_000 };
+  const chains: string[] = [];
+  for (const name of ["first", "second"]) {
+    now = 5_000;
+    const population = host.population(name, durable);
+    const deployed = await population.registerDeployment({ deploymentRequestId: "d", digest: "digest", program });
+    assert.ok("deploymentId" in deployed && deployed.deploymentId === 1);
+    now = 6_000;
+    const answer = await population.command("timerStart", firing) as { resolution: JsonValue };
+    // Both populations' kernels name the instance alike: the identity is unique only within a population.
+    assert.deepEqual(answer.resolution, {
+      kind: "fanOut",
+      entries: [{ kind: "started", instanceId: "timer:1:1:15:TimerStart_PT1S:6000", deploymentId: 1, version: 1, startEvent: "TimerStart_PT1S" }],
+    });
+    chains.push(processInstanceWorkflowId(name, "timer:1:1:15:TimerStart_PT1S:6000"));
+  }
+  assert.notEqual(chains[0], chains[1]);
+  for (const chain of chains) {
+    assert.equal((await host.describe(chain))?.running, true, "each population started the instance under its own chain");
+  }
 });

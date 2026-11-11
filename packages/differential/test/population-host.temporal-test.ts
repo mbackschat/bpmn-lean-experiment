@@ -134,7 +134,7 @@ async function replay(relativePath: string, document: PopulationScenarioDocument
           chains.set(instanceId, workflowId);
           await processes.start({ workflowId, program: target.program, config, start: stimulus, population: { population: name, deploymentId: target.deploymentId } });
         } else {
-          const workflowId = chains.get(instanceId) ?? processInstanceWorkflowId(instanceId);
+          const workflowId = chains.get(instanceId) ?? processInstanceWorkflowId(name, instanceId);
           await (stimulus["kind"] === "deliver" ? processes.deliver(workflowId, stimulus) : processes.command(workflowId, stimulus));
         }
         break;
@@ -147,17 +147,25 @@ async function replay(relativePath: string, document: PopulationScenarioDocument
   return { resolutions, chains, name };
 }
 
+async function populationScenarios(only: readonly string[]) {
+  return (await discoverScenarios()).flatMap((scenario) =>
+    scenario.kind === DiscoveredKind.PopulationScenario && only.includes(scenario.relativePath) ? [scenario] : []);
+}
+
+async function runnerExpected(relativePath: string, document: PopulationScenarioDocument): Promise<Expected> {
+  return JSON.parse(JSON.stringify(runPopulation(await populationPrograms(relativePath, document), document,
+    populationStepDigests(document.steps)))) as Expected;
+}
+
 async function witnessed(rolloverEvents: number | null, only: readonly string[]): Promise<number> {
   let compared = 0;
-  for (const scenario of await discoverScenarios()) {
-    if (scenario.kind !== DiscoveredKind.PopulationScenario || !only.includes(scenario.relativePath)) continue;
+  for (const scenario of await populationScenarios(only)) {
     const document = scenario.document;
-    const expected = JSON.parse(JSON.stringify(runPopulation(await populationPrograms(scenario.relativePath, document), document,
-      populationStepDigests(document.steps)))) as Expected;
+    const expected = await runnerExpected(scenario.relativePath, document);
     const { resolutions, chains, name } = await replay(scenario.relativePath, document, rolloverEvents);
     assert.deepEqual(resolutions, expected.steps.map((step) => step.resolution), scenario.relativePath);
     for (const state of expected.processStates) {
-      const observed = await processes.observation(chains.get(state.instanceId) ?? processInstanceWorkflowId(state.instanceId)) as Expected["processStates"][number];
+      const observed = await processes.observation(chains.get(state.instanceId) ?? processInstanceWorkflowId(name, state.instanceId)) as Expected["processStates"][number];
       assert.deepEqual([observed.status, observed.openWaits.map((wait) => wait.id.elementId)],
         [state.status, state.openWaits.map((wait) => wait.id.elementId)], `${scenario.relativePath}: ${state.instanceId}`);
     }
@@ -173,6 +181,15 @@ test("each population mechanism answers through the hosted ingress as through th
 test("commands settle with the runner's resolutions while the ingress continues as new between their receivers", async () => {
   const fanOuts = witnesses.filter((witness) => witness.includes("broadcast-two-definitions") || witness.includes("one-start-fails"));
   assert.equal(await witnessed(12, fanOuts), fanOuts.length);
+});
+
+test("two populations of one namespace that derive the same instance identity run two chains, each with its own waits", async () => {
+  const pair = witnesses.filter((witness) => witness.includes("one-start-fails") || witness.includes("two-definitions-one-request"));
+  const identities = await Promise.all((await populationScenarios(pair)).map(async (scenario) =>
+    (await runnerExpected(scenario.relativePath, scenario.document)).processStates.map((state) => state.instanceId)));
+  // The guard holds only while both scenarios' `s01-evaluate` starts deployment 1's StartLargeOrder under one identity.
+  assert.ok(identities.length === 2 && identities[0]?.some((id) => identities[1]?.includes(id)), "a shared instance identity");
+  assert.equal(await witnessed(null, pair), pair.length);
 });
 
 test("a population start onto a directly started chain of its instance identity is refused at once, never waited on", async () => {
@@ -191,7 +208,7 @@ test("a population start onto a directly started chain of its instance identity 
   const instanceId = timerInstanceId(deployed.deploymentId, startEvent, dueMs);
   // A direct start of the occurrence's identity, on time in its own single-instance reading.
   const direct = await processes.start({
-    workflowId: processInstanceWorkflowId(instanceId), program, config,
+    workflowId: processInstanceWorkflowId(name, instanceId), program, config,
     population: { population: name, deploymentId: deployed.deploymentId },
     start: { kind: "start", commandId: "direct", instanceId, startEvent, trigger: { kind: "timer", logicalTimeMs: 1_000 }, variables: [] },
   });

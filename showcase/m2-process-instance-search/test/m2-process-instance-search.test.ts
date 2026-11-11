@@ -179,7 +179,7 @@ test("searches three confirmed Product 2 starts without discovering private Temp
     // chain under the engine's address of the instance.
     const scheduleExecution = await waitForWorkflow(
       client,
-      processInstanceWorkflowId(scheduleInstance.processInstanceId),
+      processInstanceWorkflowId(taskQueue, scheduleInstance.processInstanceId),
       "one-action Timer Schedule",
     );
     assert.equal(scheduleExecution.type, workflowType);
