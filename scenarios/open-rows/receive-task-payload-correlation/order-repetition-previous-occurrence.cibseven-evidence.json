@@ -46,6 +46,48 @@
             }
           }
         ]
+      },
+      {
+        "afterCommandId": "review-card-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-card-previous",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-card-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
       }
     ],
     "taskQueries": [
@@ -55,6 +97,18 @@
       },
       {
         "afterCommandId": "deliver-card-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "review-card-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-card-previous",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-card-2",
         "tasks": []
       }
     ],
@@ -96,6 +150,63 @@
             "executionIdPresent": true
           }
         ]
+      },
+      {
+        "afterCommandId": "review-card-1",
+        "subscriptions": [
+          {
+            "elementId": "AwaitCard",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitBank",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-card-previous",
+        "subscriptions": [
+          {
+            "elementId": "AwaitCard",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitBank",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-card-2",
+        "subscriptions": [
+          {
+            "elementId": "AwaitCard",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitBank",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
       }
     ],
     "timerJobs": [
@@ -105,6 +216,18 @@
       },
       {
         "afterCommandId": "deliver-card-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review-card-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-card-previous",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-card-2",
         "jobs": []
       }
     ],
@@ -116,6 +239,18 @@
       {
         "afterCommandId": "deliver-card-1",
         "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "review-card-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-card-previous",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-card-2",
+        "state": "ACTIVE"
       }
     ]
   },
@@ -125,7 +260,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rolledBack"
+      "outcome": "rejected"
     },
     "trace": [
       {
@@ -193,7 +328,181 @@
       {
         "kind": "command",
         "commandId": "deliver-card-1",
-        "outcome": "rolledBack"
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "AwaitBank",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "AwaitCard",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "review-card-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "AwaitBank",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "AwaitCard",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-card-previous",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "AwaitBank",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "AwaitCard",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-card-2",
+        "outcome": "rejected"
       },
       {
         "kind": "state",

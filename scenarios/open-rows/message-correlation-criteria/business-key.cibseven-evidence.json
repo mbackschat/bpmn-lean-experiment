@@ -86,6 +86,74 @@
             }
           }
         ]
+      },
+      {
+        "afterCommandId": "s03-deliver-own-key",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          },
+          {
+            "name": "region",
+            "value": {
+              "kind": "string",
+              "value": "north"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "integer",
+              "value": 41
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-FulfilOrder-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          },
+          {
+            "name": "region",
+            "value": {
+              "kind": "string",
+              "value": "north"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "integer",
+              "value": 41
+            }
+          }
+        ]
       }
     ],
     "taskQueries": [
@@ -95,6 +163,19 @@
       },
       {
         "afterCommandId": "s02-deliver-other-key",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s03-deliver-own-key",
+        "tasks": [
+          {
+            "elementId": "FulfilOrder",
+            "name": "Fulfil the order"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-FulfilOrder-1",
         "tasks": []
       }
     ],
@@ -122,6 +203,14 @@
             "executionIdPresent": true
           }
         ]
+      },
+      {
+        "afterCommandId": "s03-deliver-own-key",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s04-complete-FulfilOrder-1",
+        "subscriptions": []
       }
     ],
     "timerJobs": [
@@ -131,6 +220,14 @@
       },
       {
         "afterCommandId": "s02-deliver-other-key",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-deliver-own-key",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-FulfilOrder-1",
         "jobs": []
       }
     ],
@@ -142,6 +239,14 @@
       {
         "afterCommandId": "s02-deliver-other-key",
         "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-deliver-own-key",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-FulfilOrder-1",
+        "state": "COMPLETED"
       }
     ]
   },
@@ -151,7 +256,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rolledBack"
+      "outcome": "committed"
     },
     "trace": [
       {
@@ -221,7 +326,7 @@
       {
         "kind": "command",
         "commandId": "s02-deliver-other-key",
-        "outcome": "rolledBack"
+        "outcome": "rejected"
       },
       {
         "kind": "state",
@@ -277,6 +382,111 @@
             "input": "deliver"
           }
         ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-deliver-own-key",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          },
+          {
+            "name": "region",
+            "value": {
+              "kind": "string",
+              "value": "north"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "integer",
+              "value": 41
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "FulfilOrder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Fulfil the order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-FulfilOrder-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          },
+          {
+            "name": "region",
+            "value": {
+              "kind": "string",
+              "value": "north"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "integer",
+              "value": 41
+            }
+          }
+        ],
+        "openWaits": []
       }
     ]
   }

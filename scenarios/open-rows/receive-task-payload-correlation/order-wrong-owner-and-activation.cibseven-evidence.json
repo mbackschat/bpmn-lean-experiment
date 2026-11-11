@@ -215,7 +215,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rolledBack"
+      "outcome": "rejected"
     },
     "trace": [
       {
@@ -399,7 +399,7 @@
       {
         "kind": "command",
         "commandId": "deliver-card",
-        "outcome": "rolledBack"
+        "outcome": "rejected"
       },
       {
         "kind": "state",

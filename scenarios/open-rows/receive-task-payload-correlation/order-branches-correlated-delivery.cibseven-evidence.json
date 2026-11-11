@@ -46,6 +46,34 @@
             }
           }
         ]
+      },
+      {
+        "afterCommandId": "deliver-card-again",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-bank",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
       }
     ],
     "taskQueries": [
@@ -55,6 +83,14 @@
       },
       {
         "afterCommandId": "deliver-card",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-card-again",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-bank",
         "tasks": []
       }
     ],
@@ -96,6 +132,44 @@
             "executionIdPresent": true
           }
         ]
+      },
+      {
+        "afterCommandId": "deliver-card-again",
+        "subscriptions": [
+          {
+            "elementId": "AwaitCard",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitBank",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-bank",
+        "subscriptions": [
+          {
+            "elementId": "AwaitCard",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitBank",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
       }
     ],
     "timerJobs": [
@@ -105,6 +179,14 @@
       },
       {
         "afterCommandId": "deliver-card",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-card-again",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-bank",
         "jobs": []
       }
     ],
@@ -116,6 +198,14 @@
       {
         "afterCommandId": "deliver-card",
         "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-card-again",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-bank",
+        "state": "ACTIVE"
       }
     ]
   },
@@ -125,7 +215,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rolledBack"
+      "outcome": "rejected"
     },
     "trace": [
       {
@@ -193,7 +283,123 @@
       {
         "kind": "command",
         "commandId": "deliver-card",
-        "outcome": "rolledBack"
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "AwaitBank",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "AwaitCard",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-card-again",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "AwaitBank",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "AwaitCard",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-bank",
+        "outcome": "rejected"
       },
       {
         "kind": "state",

@@ -125,7 +125,7 @@
             "definition": {
               "key": "Process_Callee",
               "version": null,
-              "versionTag": null,
+              "versionTag": "stable",
               "deployment": null,
               "tenant": null,
               "sourceSha256": null

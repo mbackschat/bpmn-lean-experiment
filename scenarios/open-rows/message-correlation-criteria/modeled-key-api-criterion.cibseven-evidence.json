@@ -36,6 +36,12 @@
         "processInstanceCount": 1,
         "engineClockTimeMs": 0,
         "variables": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_ReviewSettlement-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
       }
     ],
     "taskQueries": [
@@ -49,6 +55,10 @@
       },
       {
         "afterCommandId": "s03-deliver-correlated",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_ReviewSettlement-1",
         "tasks": []
       }
     ],
@@ -88,6 +98,18 @@
             "executionIdPresent": true
           }
         ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_ReviewSettlement-1",
+        "subscriptions": [
+          {
+            "elementId": "MessageCatch_CorrelatedSettlement",
+            "eventName": "Settlement confirmed",
+            "messageId": "Message_SettlementConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
       }
     ],
     "timerJobs": [
@@ -101,6 +123,10 @@
       },
       {
         "afterCommandId": "s03-deliver-correlated",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_ReviewSettlement-1",
         "jobs": []
       }
     ],
@@ -116,6 +142,10 @@
       {
         "afterCommandId": "s03-deliver-correlated",
         "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_ReviewSettlement-1",
+        "state": "ACTIVE"
       }
     ]
   },
@@ -125,7 +155,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rolledBack"
+      "outcome": "rejected"
     },
     "trace": [
       {
@@ -203,7 +233,41 @@
       {
         "kind": "command",
         "commandId": "s03-deliver-correlated",
-        "outcome": "rolledBack"
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "MessageCatch_CorrelatedSettlement",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "operationMessage",
+                "interfaceId": "Interface_ClearingHouse",
+                "interfaceOperationId": "Operation_ConfirmSettlement",
+                "messageId": "Message_SettlementConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_ReviewSettlement-1",
+        "outcome": "rejected"
       },
       {
         "kind": "state",
