@@ -21,6 +21,7 @@ import {
   headlineDemoTimeoutMs,
   readHeadlineDemoConfig,
 } from "../src/headline-demo.ts";
+import { historyInputs } from "./execution-history.ts";
 
 const apiOrigin = requireApiOrigin();
 const modelPath = fileURLToPath(new URL(
@@ -318,7 +319,10 @@ async function proveTerminalHistory(
   await detail.getByRole("tab", { name: "History", exact: true }).click();
   const history = detail.locator('[data-ui="execution-history"]');
   await expect(history).toContainText("ReviewException");
-  await expect(history).toContainText("completeUserTaskInstance");
+  expect(await historyInputs(history)).toEqual([
+    { input: "start", element: "Start_ExpenseException", completes: false },
+    { input: "command", element: "None", completes: true },
+  ]);
   const revisions = await history.locator("[data-revision]").evaluateAll((rows) =>
     rows.map((entry) => Number(entry.getAttribute("data-revision")))
   );

@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 
 import { readWorkAudit } from "../test/http-support.ts";
+import { historyInputs } from "./execution-history.ts";
 import { metadataProfile } from "../test/fixture.ts";
 
 const apiOrigin = requireApiOrigin();
@@ -83,9 +84,11 @@ test("corpus request-review-with-form completes its production user journey", as
 
   await detail.getByRole("tab", { name: "History", exact: true }).click();
   const history = detail.locator('[data-ui="execution-history"]');
-  await expect(history).toContainText("startProcess");
-  await expect(history).toContainText("completeUserTaskInstance");
   await expect(history).toContainText("UserTask_Approve");
+  expect(await historyInputs(history)).toEqual([
+    { input: "start", element: "StartEvent_1", completes: false },
+    { input: "command", element: "None", completes: true },
+  ]);
   const revisions = await history.locator("[data-revision]").evaluateAll((rows) =>
     rows.map((row) => Number(row.getAttribute("data-revision")))
   );
