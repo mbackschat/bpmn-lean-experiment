@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Population.Deploy
+public import Kernel.State.Criteria
 public import Kernel.Step
 
 /-! # Population: Message publications
@@ -104,23 +105,28 @@ def startFor (hooks : Hooks) (instances : List Instance) (publication : Publicat
       trigger := .message channel publication.payload, businessKey := publication.businessKey, atMs := some atMs }
   pure (instances ++ started.toList, .fanOut [entry])
 
+/-- A publication's command-level criteria refusal (`criteriaRefusal`, `startCriteriaRefusal`) as its resolution; both
+only reject or refuse as unsupported, so another failure is a harness defect. -/
+def refusalOf : Failure → Except String Resolution
+  | .rejected code => pure (.rejected code)
+  | .unsupported code => pure (.unsupported code)
+  | .rolledBack _ | .semanticFailure _ => throw "criteria-refusal-not-command-level"
+
 /-- Route one publication at `atMs` (PC-MESSAGE-02, PC-MESSAGE-08): unless start-only, deliver to its sole receiver
 among the instances of its selected deployment, or of every deployment without a selector; when there is none and it
 is not executions-only, start its sole start candidate. The delivery or start takes the command's logical time, so the
 step it causes evaluates `now` and arms Timers from it. Zero is `noMatch` and several are `ambiguous`, either leaving
 every instance unchanged; candidate order never picks a winner. Criteria `criteriaRefusal` refuses under the reading
-of any registered deployment refuse the command before any receiver or start is sought (`rejected criteria-duplicate`,
-or `unsupported`, which CIB answers by rolling the correlation back), a selector naming no registered deployment
-`rejected definition-not-deployed`. A delivery also answers its receiver's root instance, whose committed step's intents
+of any registered deployment refuse the command before any receiver or start is sought (`rejected criteria-duplicate`
+or `criteria-start-only`, or `unsupported`, which CIB answers by rolling the correlation back), a selector naming no
+registered deployment `rejected definition-not-deployed`; the sole start candidate it falls through to starts only if
+`startCriteriaRefusal` admits the criteria under that deployment's reading. A delivery also answers its receiver's root instance, whose committed step's intents
 cascade next. -/
 def publish (hooks : Hooks) (registry : List Deployment) (instances : List Instance) (atMs : Nat)
     (publication : Publication) : Except String (List Instance × Resolution × Option String) := do
-  match criteriaRefusal (registry.map (·.program.options.messageCorrelation)) publication.criteria with
-  | some (.rejected code) => return (instances, .rejected code, none)
-  | some (.unsupported code) => return (instances, .unsupported code, none)
-  -- `criteriaRefusal` only rejects or refuses as unsupported, so another failure is a harness defect.
-  | some (.rolledBack _) | some (.semanticFailure _) => throw "criteria-refusal-not-command-level"
-  | none => pure ()
+  let readings := registry.map (·.program.options.messageCorrelation)
+  if let some failure := criteriaRefusal readings (publication.mode == .startOnly) publication.criteria then
+    return (instances, ← refusalOf failure, none)
   let some scope := selected registry publication.definition | return (instances, .rejected "definition-not-deployed", none)
   let reached := if publication.mode == .startOnly then [] else
     instances.zipIdx.flatMap fun (member, index) =>
@@ -143,6 +149,8 @@ def publish (hooks : Hooks) (registry : List Deployment) (instances : List Insta
     match startCandidates registry scope publication.message with
     | [] => pure (instances, .noMatch, none)
     | [(deployment, startEvent, channel)] =>
+      if let some failure := startCriteriaRefusal deployment.program.options.messageCorrelation publication.criteria then
+        return (instances, ← refusalOf failure, none)
       let (instances, resolution) ← startFor hooks instances publication atMs deployment startEvent channel
       pure (instances, resolution, none)
     | _ :: _ :: _ => pure (instances, .ambiguous, none)

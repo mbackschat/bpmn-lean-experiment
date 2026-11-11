@@ -1,0 +1,86 @@
+{
+  "kind": "populationScenario",
+  "id": "message-start-population-start-only-with-criteria",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "confirmation-intake",
+      "bpmn": {
+        "id": "message-start-population-confirmation-intake",
+        "relativePath": "scenarios/open-rows/message-start-population/confirmation-intake.bpmn",
+        "sha256": "f7a8a387e6cc8ef04b6d581ce92b988fea4b052c4c088aa12718bd6c33a46804",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "publish",
+      "commandId": "s01-publish-start-only-by-order",
+      "address": {
+        "name": "order-confirmed"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "A-1"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "startOnly",
+      "at": 0
+    },
+    {
+      "kind": "publish",
+      "commandId": "s02-publish-start-only-by-business-key",
+      "address": {
+        "name": "order-confirmed"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "businessKey"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "ORD-7"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "startOnly",
+      "at": 10
+    },
+    {
+      "kind": "publish",
+      "commandId": "s03-publish-start-only-bare",
+      "address": {
+        "name": "order-confirmed"
+      },
+      "criteria": [],
+      "variables": [],
+      "mode": "startOnly",
+      "at": 20
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Table 10.84"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/MessageCorrelationBuilderImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/CorrelateMessageCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/AbstractCorrelateMessageCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultCorrelationHandler.java"
+    ]
+  }
+}

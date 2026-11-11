@@ -2,7 +2,7 @@
  * Kernel inputs, transcribed from `Kernel/State/Input.lean`: the inputs a host submits, the occurrence identities they
  * name and the start triggers and deliveries they carry. Part of `state.ts`, which re-exports it.
  */
-import { assertNever, type ElementId, type Value } from "../il/types.js";
+import { type ElementId, type Value } from "../il/types.js";
 import { type Binding, InputTag, type MessageChannel, type SignalAddress } from "./wait.js";
 
 /** The public identity of an occurrence: its process instance, the element and its activation number. */
@@ -68,28 +68,6 @@ export type CriterionTarget =
 
 /** A present null matches only a present null; an absent name matches nothing (PC-MESSAGE-08). */
 export interface CorrelationMatch { readonly target: CriterionTarget; readonly expected: Value; }
-
-/** Structural equality of two criterion targets, Lean's derived `DecidableEq`. */
-function criterionTargetEquals(left: CriterionTarget, right: CriterionTarget): boolean {
-  switch (left.tag) {
-    case CriterionTargetTag.ProcessVariable:
-    case CriterionTargetTag.LocalVariable:
-      return right.tag === left.tag && right.name === left.name;
-    case CriterionTargetTag.BusinessKey:
-    case CriterionTargetTag.ProcessInstance:
-      return right.tag === left.tag;
-  }
-  return assertNever(left);
-}
-
-/**
- * Whether two of `criteria` name one target. CIB's criteria are a map, so a delivery or publication naming one target
- * twice is `criteria-duplicate`.
- */
-export function targetsRepeat(criteria: readonly CorrelationMatch[]): boolean {
-  return criteria.some((criterion, index) =>
-    criteria.slice(0, index).some((earlier) => criterionTargetEquals(earlier.target, criterion.target)));
-}
 
 /**
  * A Message or Signal delivered to the subscription `occurrence` names. `variables` are the delivery's own variables

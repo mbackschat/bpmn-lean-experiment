@@ -288,7 +288,7 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
     const issued = decode<Command>(command);
     if (issued.tag !== CommandTag.Publish) throw new TypeError("not a publication");
     const readings = registry.map((wire) => decode<DeploymentSummary>(wire).messageCorrelation);
-    const refusal = criteriaRefusal(readings, issued.publication.criteria);
+    const refusal = criteriaRefusal(readings, issued.publication.mode === PublishMode.StartOnly, issued.publication.criteria);
     if (refusal === null) return null;
     switch (refusal.tag) {
       case FailureTag.Rejected: return { kind: "rejected", code: refusal.code };

@@ -16,7 +16,7 @@ import {
   openKindView,
   type CorrelationMatch,
   FailureTag,
-  criteriaRefusal,
+  type Failure,
   type Input,
   type MessageChannel,
   type OccurrenceRef,
@@ -24,6 +24,7 @@ import {
   type StartInput,
   type State,
 } from "../state.js";
+import { criteriaRefusal, startCriteriaRefusal } from "../state/criteria.js";
 import { context, step } from "../step.js";
 import {
   DefinitionSelectorTag,
@@ -229,14 +230,32 @@ function startFor(
 }
 
 /**
+ * A publication's command-level criteria refusal (`criteriaRefusal`, `startCriteriaRefusal`) as its resolution; both only
+ * reject or refuse as unsupported, so another failure is a harness defect.
+ */
+function refused(instances: readonly Instance[], failure: Failure): Refusable<readonly [readonly Instance[], Resolution, string | null]> {
+  switch (failure.tag) {
+    case FailureTag.Rejected:
+      return { ok: true, value: [instances, { tag: ResolutionTag.Rejected, code: failure.code }, null] };
+    case FailureTag.Unsupported:
+      return { ok: true, value: [instances, { tag: ResolutionTag.Unsupported, code: failure.code }, null] };
+    case FailureTag.RolledBack:
+    case FailureTag.SemanticFailure:
+      return { ok: false, error: "criteria-refusal-not-command-level" };
+  }
+  return assertNever(failure.tag);
+}
+
+/**
  * Route one publication at `atMs` (PC-MESSAGE-02, PC-MESSAGE-08): unless start-only, deliver to its sole receiver among
  * the instances of its selected deployment, or of every deployment without a selector; when there is none and it is not
  * executions-only, start its sole start candidate. The delivery or start takes the command's logical time, so the step it
  * causes evaluates `now` and arms Timers from it. Zero is `noMatch` and several are `ambiguous`, either leaving every
  * instance unchanged; candidate order never picks a winner. Criteria `criteriaRefusal` refuses under the reading of any
- * registered deployment refuse the command before any receiver or start is sought (`rejected criteria-duplicate`, or
- * `unsupported`, which CIB answers by rolling the correlation back), a selector naming no registered deployment
- * `rejected definition-not-deployed`. A delivery also answers its receiver's root instance, whose committed step's
+ * registered deployment refuse the command before any receiver or start is sought (`rejected criteria-duplicate` or
+ * `criteria-start-only`, or `unsupported`, which CIB answers by rolling the correlation back), a selector naming no
+ * registered deployment `rejected definition-not-deployed`; the sole start candidate it falls through to starts only if
+ * `startCriteriaRefusal` admits the criteria under that deployment's reading. A delivery also answers its receiver's root instance, whose committed step's
  * intents cascade next.
  */
 export function publish(
@@ -248,20 +267,9 @@ export function publish(
 ): Refusable<readonly [readonly Instance[], Resolution, string | null]> {
   const answer = (resolution: Resolution): Refusable<readonly [readonly Instance[], Resolution, string | null]> =>
     ({ ok: true, value: [instances, resolution, null] });
-  const refusal = criteriaRefusal(registry.map((deployment) => deployment.program.options.messageCorrelation), publication.criteria);
-  if (refusal !== null) {
-    switch (refusal.tag) {
-      case FailureTag.Rejected:
-        return answer({ tag: ResolutionTag.Rejected, code: refusal.code });
-      case FailureTag.Unsupported:
-        return answer({ tag: ResolutionTag.Unsupported, code: refusal.code });
-      // `criteriaRefusal` only rejects or refuses as unsupported, so another failure is a harness defect.
-      case FailureTag.RolledBack:
-      case FailureTag.SemanticFailure:
-        return { ok: false, error: "criteria-refusal-not-command-level" };
-    }
-    return assertNever(refusal.tag);
-  }
+  const readings = registry.map((deployment) => deployment.program.options.messageCorrelation);
+  const refusal = criteriaRefusal(readings, publication.mode === PublishMode.StartOnly, publication.criteria);
+  if (refusal !== null) return refused(instances, refusal);
   const scope = selected(registry, publication.definition);
   if (scope === undefined) return answer({ tag: ResolutionTag.Rejected, code: "definition-not-deployed" });
   const reached = publication.mode === PublishMode.StartOnly ? [] : instances.flatMap((member, index) =>
@@ -291,6 +299,8 @@ export function publish(
   const only = starts[0];
   if (only === undefined) return answer({ tag: ResolutionTag.NoMatch });
   if (starts.length > 1) return answer({ tag: ResolutionTag.Ambiguous });
+  const startRefusal = startCriteriaRefusal(only[0].program.options.messageCorrelation, publication.criteria);
+  if (startRefusal !== null) return refused(instances, startRefusal);
   const started = startFor(hooks, instances, publication, atMs, ...only);
   if (!started.ok) return started;
   return { ok: true, value: [...started.value, null] };

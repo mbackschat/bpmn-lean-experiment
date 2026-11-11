@@ -31,7 +31,6 @@ import {
   instanceRoot,
   messageChannelEquals,
   openKindView,
-  criteriaRefusal,
   type CorrelationMatch,
   type EvalContext,
   type MessageChannel,
@@ -41,6 +40,7 @@ import {
   type State,
 } from "../state.js";
 import { EvaluationTag, evalContext, subscriptionOf, type Ctx } from "../hooks.js";
+import { criteriaRefusal } from "../state/criteria.js";
 
 /**
  * Exact equality of kind and value of a queryable criterion value: `41` never equals `"41"`, and a held value of another
@@ -96,7 +96,7 @@ function criterionHolds(state: State, scope: ScopeOccurrenceId, criterion: Corre
  * list included, unless `criteriaRefusal` refuses the criteria under `ApiCriteria`.
  */
 export function criteriaHold(state: State, scope: ScopeOccurrenceId, criteria: readonly CorrelationMatch[]): Result<boolean> {
-  const refusal = criteriaRefusal([MessageCorrelation.ApiCriteria], criteria);
+  const refusal = criteriaRefusal([MessageCorrelation.ApiCriteria], false, criteria);
   if (refusal !== null) return failedWith(refusal);
   return committed(criteria.every((entry) => criterionHolds(state, scope, entry)));
 }
@@ -140,7 +140,7 @@ function correlationMatches(
   if (bound.length === 0 && correlation.length > 0) {
     return failed(FailureTag.Unsupported, "profile-message-correlation-api-criteria"); // dynamic-only: a delivery's criteria are its caller's
   }
-  const refusal = criteriaRefusal([MessageCorrelation.ModeledKey], correlation);
+  const refusal = criteriaRefusal([MessageCorrelation.ModeledKey], false, correlation);
   if (refusal !== null) return failedWith(refusal);
   if (bound.length !== correlation.length) return committed(false);
   for (const [index, criterion] of bound.entries()) {

@@ -221,7 +221,7 @@ test("criteria the reading refuses refuse the publication before any receiver or
     publish("p2", { channel: order }, "startOnly", { criteria: listed }),
     publish("p3", { channel: order }, "executionsOnly", { criteria: listed }),
   ]);
-  assert.deepEqual(resolutions(api), [notPrimitive, notPrimitive, notPrimitive]);
+  assert.deepEqual(resolutions(api), [notPrimitive, { kind: "rejected", code: "criteria-start-only" }, notPrimitive]);
   assert.deepEqual(api.processStates, []);
   const modeled = populate([definition("d1", waiting)], [waiting], [
     {
@@ -232,4 +232,36 @@ test("criteria the reading refuses refuse the publication before any receiver or
   ]);
   assert.deepEqual(resolutions(modeled), [{ kind: "unsupported", code: "profile-message-correlation-api-criteria" }]);
   assert.equal((modeled.processStates as Json[]).length, 1);
+});
+
+test("a start-only publication is rejected for a variable criterion and refused for any other criterion, starting nothing", () => {
+  const program = starting("Order", { messageCorrelation: "apiCriteria" });
+  const text = (value: string): Json => ({ kind: "string", value });
+  const targets: Json[] = [
+    { kind: "processVariable", name: "orderId" }, { kind: "localVariable", name: "orderId" }, { kind: "businessKey" }, { kind: "processInstance" },
+  ];
+  const result = populate([definition("d1", program)], [program], [
+    ...targets.map((target, index) =>
+      publish(`criterion-${String(index)}`, { channel: order }, "startOnly", { criteria: [{ target, expected: text("o-7") }] })),
+    publish("bare", { channel: order }, "startOnly"),
+  ]);
+  const rejected = { kind: "rejected", code: "criteria-start-only" };
+  const refused = { kind: "unsupported", code: "start-criterion-not-variable" };
+  assert.deepEqual(resolutions(result), [rejected, rejected, refused, refused, started("start:4:bare:1:1:1:S", 1, 1)]);
+  assert.equal((result.processStates as Json[]).length, 1);
+});
+
+test("a publication that falls through to a start is refused for a business-key or instance criterion and starts for a variable one", () => {
+  const program = starting("Order", { messageCorrelation: "apiCriteria" });
+  const text = (value: string): Json => ({ kind: "string", value });
+  const result = populate([definition("d1", program)], [program], [
+    publish("by-key", { channel: order }, "any", { criteria: [{ target: { kind: "businessKey" }, expected: text("ORD-7") }] }),
+    publish("by-instance", { channel: order }, "any", { criteria: [{ target: { kind: "processInstance" }, expected: text("I-1") }] }),
+    publish("by-variable", { channel: order }, "any", { criteria: [{ target: { kind: "processVariable", name: "orderId" }, expected: text("o-7") }] }),
+  ]);
+  const refused = { kind: "unsupported", code: "start-criterion-not-variable" };
+  assert.deepEqual(resolutions(result), [refused, refused, started("start:11:by-variable:1:1:1:S", 1, 1)]);
+  const states = result.processStates as Json[];
+  assert.equal(states.length, 1);
+  assert.deepEqual((states[0] as Json).variables, []);
 });

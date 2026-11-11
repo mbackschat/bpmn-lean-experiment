@@ -55,6 +55,7 @@ public import Kernel.Registry
 public import Kernel.Run.Population
 public import Kernel.Run.Wire
 public import Kernel.State
+public import Kernel.State.Criteria
 public import Kernel.State.Input
 public import Kernel.State.Journal
 public import Kernel.State.Raise

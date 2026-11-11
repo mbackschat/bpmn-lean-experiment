@@ -61,12 +61,6 @@ structure CorrelationMatch where
   expected : Value
   deriving Repr
 
-/-- Whether two of `criteria` name one target. CIB's criteria are a map, so a delivery or publication naming one target
-twice is `criteria-duplicate`. -/
-def targetsRepeat (criteria : List CorrelationMatch) : Bool :=
-  let targets := criteria.map (·.target)
-  targets.eraseDups.length != targets.length
-
 /-- A Message or Signal delivered to the subscription `occurrence` names. `variables` are the delivery's own variables
 beside its payload, which CIB installs in the receiving scope (CIB-EXT-0025); `Kernel.Step` rejects a non-empty list
 (`delivery-variables-not-admitted`) while no profile installs them. -/

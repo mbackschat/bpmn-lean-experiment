@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.State.Criteria
 
 /-! # Correlation: whether a Message delivery or publication reaches a waiting item
 
@@ -55,7 +56,7 @@ def criterionHolds (state : State) (scope : ScopeOccurrenceId) (criterion : Corr
 /-- Whether every one of a delivery's API `criteria` holds for an item waiting in `scope` (`criterionHolds`), the empty
 list included, unless `criteriaRefusal` refuses the criteria under `apiCriteria`. -/
 def criteriaHold (state : State) (scope : ScopeOccurrenceId) (criteria : List CorrelationMatch) : Except Failure Bool :=
-  match criteriaRefusal [.apiCriteria] criteria with
+  match criteriaRefusal [.apiCriteria] false criteria with
   | some failure => .error failure
   | none => .ok (criteria.all (criterionHolds state scope))
 
@@ -81,7 +82,7 @@ def correlationMatches (ctx : Ctx) (context : EvalContext) (bound : List Correla
     (correlation : List CorrelationMatch) : Except Failure Bool :=
   -- dynamic-only: a delivery's criteria are its caller's.
   if bound.isEmpty && !correlation.isEmpty then .error (.unsupported "profile-message-correlation-api-criteria")
-  else if let some failure := criteriaRefusal [.modeledKey] correlation then .error failure
+  else if let some failure := criteriaRefusal [.modeledKey] false correlation then .error failure
   else if bound.length != correlation.length then .ok false
   else (bound.zip correlation).allM fun (criterion, delivered) => do
     let expected ← keyValue ctx context criterion
