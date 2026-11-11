@@ -130,7 +130,7 @@ The boundary, Message start, Timer start and payload accounts select no CIB rela
 | `start.messageNameExpression` | a root Message start whose name is an expression | CIB refuses it at deployment |
 | `boundary.error.nonInterrupting`, `start.error.nonInterrupting` | a non-interrupting Error boundary or Error Event Sub-Process | stated in [propagation](PROPAGATION-SEMANTICS-SPEC.md); PC-ERROR-02 |
 | `boundary.cancel.host`, `boundary.cancel.nonInterrupting` | a Cancel boundary off a Transaction, or non-interrupting | stated in [compensation](COMPENSATION-SEMANTICS-SPEC.md); PC-TX-02 |
-| `message.correlation` | correlation on a boundary or start | PC-MESSAGE-08 (see [population](POPULATION-SEMANTICS-SPEC.md)) |
+| `message.correlation` | a modeled correlation key on a boundary or start | CIB executes no modeled key ([CIB-LIM-0002](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0002-modeled-bpmn-key-and-context-correlation-is-not-executed); see [population](POPULATION-SEMANTICS-SPEC.md)) |
 | `message.correlation.modeled` | under `messageCorrelation = apiCriteria`, a correlated catch | CIB executes no modeled key ([CIB-LIM-0002](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0002-modeled-bpmn-key-and-context-correlation-is-not-executed)); PC-MESSAGE-08 |
 | `scope.eventSubProcess.interruptingMessage` | an interrupting Message Event Sub-Process | PC-MESSAGE-06 (see [scopes](SCOPES-SEMANTICS-SPEC.md)) |
 | `event.outputs` | outputs on a non-Message trigger | only a Message carries data; on a Signal catch also under `signalPayload = variables`, whose variables install without outputs and where CIB ignores the association ([CIB-LIM-0013][r-lim-0013]) |
