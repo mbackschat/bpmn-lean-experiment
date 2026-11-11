@@ -220,6 +220,12 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/call-binding-population/nested-callee-binds-at-own-deployment-key-text.population-cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0031"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/call-binding-population/nested-callee-binds-at-own-deployment.population-cibseven-evidence.json",
     "owners": [
       "CIB-EXT-0045"
@@ -1278,6 +1284,12 @@
     "owners": [
       "PC-MESSAGE-03",
       "CIB-LIM-0013"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-payload-catches/payload-offered-without-data-output.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0037"
     ]
   },
   {
