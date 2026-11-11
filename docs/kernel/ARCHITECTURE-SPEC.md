@@ -187,7 +187,7 @@ Codecs and each type's own `Admission` module may also match it.
 7. Profiles as data, fails (cause 7). No profile identifier literal outside the profile catalog, in the kernel, any boundary package, `packages/differential/test` or the testkits.
 8. One rule, one place (causes 1, 7). Fails: Lean and TypeScript executable modules pair by name and change in the same commit; no checked-source type in the kernel; no duplicate helper names, in the kernel and `bpmn-source`. Reports: kernel and `bpmn-source` file pairs above 0.7 normalized-line similarity.
 9. Shape (causes 1, 3). Fails: an element kind, a top-level state field, a feature slot or a `Hooks` field added outside an accepted shape commit; a constructor with more than a header and a payload; an anonymous-constructor or explicit `.mk` pattern with more than four binders; `Step` above 600 lines. Reports: shape edits per track.
-10. Size (cause 3). Fails: a file above 1,200 nonblank lines in the kernel or `bpmn-source`; a function above 150 lines. Reports: files above 800, functions above 80 lines.
+10. Size (cause 3). Fails: a file above 1,200 nonblank lines in the kernel or `bpmn-source`; a function above 150 lines; a feature spanning more than three files in either language. Reports: files above 800, functions above 80 lines.
 11. Codec truth, fails (cause 1). Every schema variant has a fixture that round-trips through the Lean and TypeScript codecs and the platform decoder.
 12. Admission refusal, fails (cause 7). Every IL field outside the admitted surface, and every `bpmn-source` refusal, has a refusal test with its stable code.
 13. Single entry, fails (cause 1). One step function, which `Population` calls; no program-mode predicate; no second evaluator.

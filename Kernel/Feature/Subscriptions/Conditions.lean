@@ -52,18 +52,6 @@ def armed (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (state : S
   | some trigger => evaluateItem ctx none item trigger state
   | none => .ok state
 
-/-- The subscription an open item belongs to: a boundary's, a catch Event's or an Event Sub-Process start's; an
-Activity's own subscription (a Receive Task) is the work feature's. -/
-def subscription? (ctx : Ctx) (item : OpenItem) : Option Subscription :=
-  match ctx.program.boundary? item.element with
-  | some (_, boundary) => some boundary.subscription
-  | none =>
-    let element := ctx.program.element? item.element
-    let catchEvent := element.bind (·.event?) |>.bind fun (_, event) => event.catch?
-    let eventStart := element.bind (·.start?) |>.bind (·.1.parent) |>.bind ctx.program.element?
-      |>.bind (·.scope?) |>.bind fun (_, payload) => (ctx.eventStart payload).map (·.1)
-    catchEvent <|> eventStart
-
 /-- The Conditional trigger of an open item's subscription, if it has one. -/
 def itemCondition? (ctx : Ctx) (item : OpenItem) : Option ConditionTrigger :=
   (subscription? ctx item).bind (·.trigger.condition?)

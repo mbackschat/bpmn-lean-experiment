@@ -10,12 +10,19 @@ import * as MultiInstance from "./feature/multi-instance.js";
 import * as Propagation from "./feature/propagation.js";
 import * as Scopes from "./feature/scopes.js";
 import * as Subscriptions from "./feature/subscriptions.js";
-import * as Starts from "./feature/subscriptions/starts.js";
-import * as Correlation from "./feature/subscriptions/correlation.js";
+import * as Starts from "./feature/starts.js";
+import * as Correlation from "./feature/correlation.js";
 import * as Delivery from "./feature/subscriptions/delivery.js";
 import { WriteRule } from "./state.js";
 
-const workHooks: Work.WorkHooks = { ...Work.defaultWorkHooks, runDecision: Decision.runDecision };
+/** What Work reaches of its sub-features: Decision's tables and Correlation's API criteria. */
+const workHooks: Work.WorkHooks = { ...Work.defaultWorkHooks, runDecision: Decision.runDecision, criteriaHold: Correlation.criteriaHold };
+/** What Starts reaches of Subscriptions: whether a trigger fires a start, and a Message payload's bindings. */
+const startsHooks: Starts.StartsHooks = { ...Starts.defaultStartsHooks, fires: Subscriptions.fires, payloadBindings: Subscriptions.payloadBindings };
+/** What Subscriptions reaches of Correlation: the recheck of a Message firing's correlation. */
+const subscriptionsHooks: Subscriptions.SubscriptionsHooks = {
+  ...Subscriptions.defaultSubscriptionsHooks, correlationAccepts: Correlation.correlationAccepts,
+};
 const propagationHooks: Propagation.PropagationHooks = {
   ...Propagation.defaultPropagationHooks,
   mappedErrorOutputs: (ctx, origin, installed, state) => Work.mappedErrorOutputs(Data.writeOutputs, ctx, origin, installed, state),
@@ -28,7 +35,7 @@ const propagationHooks: Propagation.PropagationHooks = {
 
 export const hooks: Hooks = {
   ...defaultHooks,
-  arriveStart: Starts.arriveStart,
+  arriveStart: (ctx, header, payload, trigger, occurrence, state) => Starts.arriveStart(startsHooks, ctx, header, payload, trigger, occurrence, state),
   arriveActivity: (ctx, header, payload, occurrence, state) => Work.arriveActivity(workHooks, ctx, header, payload, occurrence, state),
   arriveMultiInstance: MultiInstance.arriveMultiInstance,
   arriveScope: Scopes.arriveScope,
@@ -42,8 +49,8 @@ export const hooks: Hooks = {
   completeUserTask: Work.completeUserTask,
   effectResult: Work.effectResult,
   resolveIncident: Work.resolveIncident,
-  triggerActivity: Work.triggerActivity,
-  trigger: Subscriptions.trigger,
+  triggerActivity: (ctx, header, payload, item, fired, state) => Work.triggerActivity(workHooks, ctx, header, payload, item, fired, state),
+  trigger: (ctx, item, fired, state) => Subscriptions.trigger(subscriptionsHooks, ctx, item, fired, state),
   arm: Subscriptions.arm,
   armScope: Subscriptions.armScope,
   armGateway: Subscriptions.armGateway,
@@ -62,7 +69,7 @@ export const hooks: Hooks = {
   evaluate: Data.evaluate,
   catches: Subscriptions.catches,
   correlates: Correlation.correlates,
-  startsFired: Starts.startsFired,
+  startsFired: (ctx, input) => Starts.startsFired(startsHooks, ctx, input),
   delivered: Delivery.delivered,
   eventStart: Scopes.eventStart,
 };

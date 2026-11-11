@@ -268,6 +268,19 @@ def item? {α : Type} (ctx : Ctx) (state : State) (occurrence : OccurrenceRef) (
       ((state.occurrence? item.occurrence).map (·.activation)) == some occurrence.activation &&
       (detail item.kind.view).isSome && state.instanceOf item.scope == occurrence.processInstanceId
 
+/-- The subscription an open item belongs to: a boundary's, a catch Event's or an Event Sub-Process start's; an
+Activity's own subscription (a Receive Task) is the work feature's. Subscriptions and Correlation
+share it here because features never import each other. -/
+def subscription? (ctx : Ctx) (item : OpenItem) : Option Subscription :=
+  match ctx.program.boundary? item.element with
+  | some (_, boundary) => some boundary.subscription
+  | none =>
+    let element := ctx.program.element? item.element
+    let catchEvent := element.bind (·.event?) |>.bind fun (_, event) => event.catch?
+    let eventStart := element.bind (·.start?) |>.bind (·.1.parent) |>.bind ctx.program.element?
+      |>.bind (·.scope?) |>.bind fun (_, payload) => (ctx.eventStart payload).map (·.1)
+    catchEvent <|> eventStart
+
 /-- The one way a boundary fires: an interrupting boundary first cancels the occurrence `host` it hangs on, if any; then
 the boundary's occurrence, the reservation `reserved` or a fresh one, begins and leaves on its flows in `scope`
 (BPMN 2.0.2 §13.5.3, §10.5.6). -/
@@ -293,7 +306,7 @@ structure ScopeEntry where
 def refuse {α : Type} (code : String) : α → Outcome := fun _ => .error (.unsupported code)
 
 structure Hooks where
-  /-- Subscriptions: a start Event's occurrence began, fired by the trigger. -/
+  /-- Starts: a start Event's occurrence began, fired by the trigger. -/
   arriveStart : Ctx → Header → StartPayload → StartTrigger → Occurrence → State → Outcome :=
     fun _ _ _ _ _ => refuse "start"
   /-- Work: an Activity's occurrence began. -/
@@ -385,10 +398,10 @@ structure Hooks where
   catches : Raised → Trigger → Option Catch := fun _ _ => none
   /-- Scopes: `Ctx.eventStart`. -/
   eventStart : ScopePayload → Option (Subscription × Bool) := fun _ => none
-  /-- Subscriptions: the root start Events a start input's trigger fires, in document order; `chooseStart` picks the one
+  /-- Starts: the root start Events a start input's trigger fires, in document order; `chooseStart` picks the one
   the input starts. `Kernel.Population` asks it too, to start every fired start. -/
   startsFired : Ctx → StartInput → Except Failure (List ElementId) := fun _ _ => .ok []
-  /-- Subscriptions: whether the open item is a correlated Message subscription on the channel whose criteria, evaluated
+  /-- Correlation: whether the open item is a correlated Message subscription on the channel whose criteria, evaluated
   in the current state, equal the delivered correlation; `false` for any other item. `Kernel.Population` asks it to
   find the candidates of a correlated publication. -/
   correlates : Ctx → OpenItem → MessageChannel → List CorrelationMatch → State → Except Failure Bool :=

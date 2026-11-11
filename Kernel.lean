@@ -12,6 +12,7 @@ public import Kernel.Admission.Work
 public import Kernel.Admission.Work.Decision
 public import Kernel.AdmissionRegistry
 public import Kernel.Feature.Compensation
+public import Kernel.Feature.Correlation
 public import Kernel.Feature.Data
 public import Kernel.Feature.Data.Juel
 public import Kernel.Feature.Data.Juel.Coercion
@@ -20,11 +21,10 @@ public import Kernel.Feature.Flow
 public import Kernel.Feature.MultiInstance
 public import Kernel.Feature.Propagation
 public import Kernel.Feature.Scopes
+public import Kernel.Feature.Starts
 public import Kernel.Feature.Subscriptions
 public import Kernel.Feature.Subscriptions.Conditions
-public import Kernel.Feature.Subscriptions.Correlation
 public import Kernel.Feature.Subscriptions.Delivery
-public import Kernel.Feature.Subscriptions.Starts
 public import Kernel.Feature.Work
 public import Kernel.Feature.Work.Call
 public import Kernel.Feature.Work.Submission
@@ -55,7 +55,6 @@ public import Kernel.Registry
 public import Kernel.Run.Population
 public import Kernel.Run.Wire
 public import Kernel.State
-public import Kernel.State.Criteria
 public import Kernel.State.Input
 public import Kernel.State.Journal
 public import Kernel.State.Raise

@@ -3,7 +3,6 @@ module
 public import Kernel.Hooks
 public import Kernel.IL.Timer
 public import Kernel.Feature.Subscriptions.Conditions
-public import Kernel.Feature.Subscriptions.Correlation
 
 /-! # Subscriptions: catch Events, boundaries, Event Sub-Process starts and Event-Based Gateway arms
 
@@ -26,6 +25,12 @@ find them closed (BPMN 2.0.2 §10.5.6: a gateway takes only its first event).
 public section
 
 namespace Kernel.Feature.Subscriptions
+
+/-- The Correlation rule a Message firing rechecks, which `Kernel.Registry` fills with
+`Kernel.Feature.Correlation.correlationAccepts`, since features never import each other. -/
+structure SubscriptionsHooks where
+  correlationAccepts : Ctx → State → ScopeOccurrenceId → Trigger → List CorrelationMatch → Except Failure Bool :=
+    fun _ _ _ _ _ => .error (.unsupported "subscriptions-correlation") -- dynamic-only: a registry without the hook
 
 /-- Where a subscription is armed: what a Timer value given by an expression reads (`values`), what a Message name
 given by an expression reads (`names`), and whether the subscription may fire again (`repeats`: a non-interrupting
@@ -187,6 +192,39 @@ def armScope (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome :
       | none, none => .ok state
       | none, some _ => .error (.semanticFailure "event-subprocess-without-start")) state
 
+/-! ## Root start triggers -/
+
+/-- The address a root Signal start subscribes to: its Signal's QName under `SignalNames.identifier` (BPMN 2.0.2
+Table 10.100), its name under `addresses`, which admission holds literal at a root start (`start.signalNameExpression`). -/
+def startAddress (options : ProfileOptions) (trigger : SignalTrigger) : Option SignalAddress :=
+  match options.signalNames with
+  | .identifier => trigger.signalRef.map .qualified
+  | .addresses => (trigger.name.bind ValueSource.literal?).map .named
+
+/-- Whether a Conditional root start holds for `input`: evaluated over the submitted variables alone, in a fresh
+instance's root scope, as CIB evaluates it in a temporary execution (`DefaultConditionHandler.java:121-134`); a
+`variableName` the input does not submit makes it false, and the predicate reads as every Conditional one does. -/
+def conditionHolds (ctx : Ctx) (input : StartInput) (trigger : ConditionTrigger) : Except Failure Bool :=
+  if trigger.variableName.any fun name => !input.variables.any (·.1 == name) then .ok false
+  else
+    let submitted := { State.initial input.instanceId input.variables input.businessKey with
+      logicalTimeMs := input.atMs.getD 0 }
+    predicateHolds ctx submitted State.root trigger.condition
+
+/-- Whether `input`'s trigger fires a start with `subscription` (`Kernel.Feature.Starts`, through `StartsHooks.fires`). A none trigger names its start by identifier and
+consumes its trigger itself. -/
+def fires (ctx : Ctx) (input : StartInput) (subscription : Option Subscription) : Except Failure Bool :=
+  match input.trigger, (subscription.map (·.trigger) : Option Trigger) with
+  | .none, _ => .ok true
+  | _, none => .ok false
+  | .timer _, some (.timer _) => .ok true
+  | .message channel _, some (.message subscribed) => .ok (subscribed.channel == channel)
+  | .signal address _, some (.signal subscribed) =>
+    .ok ((startAddress ctx.program.options subscribed).any address.matches)
+  | .condition, some (.condition trigger) => conditionHolds ctx input trigger
+  | _, some (.timer _) | _, some (.message _) | _, some (.signal _) | _, some (.condition _) | _, some (.error _)
+  | _, some (.escalation _) | _, some .compensation | _, some .cancel => .ok false
+
 /-! ## Firing -/
 
 /-- Bind the delivered payload to every data output an output mapping reads, then evaluate the mappings. -/
@@ -215,12 +253,12 @@ def signalVariables (ctx : Ctx) (variables : List (String × Value)) : Except Fa
   | .none => if variables.isEmpty then .ok [] else .error (.rejected "signal-variables-not-admitted")
 
 /-- Check that `fired` may fire `item` and return the state at the firing's logical time with the values the
-subscription writes. A Message delivery's correlation must be accepted (`correlationAccepts`); the target rechecks it
-rather than trusting the population's selection (specification, global command). Its own variables follow the mapped
-outputs, as CIB's `setVariables` follows the payload (CIB-EXT-0025); `delivered` admits them only under
-`DeliveryVariables.installs`. -/
-def admitFiring (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fired : Fired) (state : State) :
-    Except Failure (State × List (String × Value)) :=
+subscription writes. A Message delivery's correlation must be accepted (`SubscriptionsHooks.correlationAccepts`); the
+target rechecks it rather than trusting the population's selection (specification, global command). Its own variables
+follow the mapped outputs, as CIB's `setVariables` follows the payload (CIB-EXT-0025); `delivered` admits them only
+under `DeliveryVariables.installs`. -/
+def admitFiring (hooks : SubscriptionsHooks) (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fired : Fired)
+    (state : State) : Except Failure (State × List (String × Value)) :=
   let view := item.kind.view
   match fired with
   | .timer at_ =>
@@ -236,7 +274,7 @@ def admitFiring (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fir
     | some channel =>
       if delivery.trigger.channel? != some channel then .error (.rejected "message-channel-mismatch")
       else do
-        let correlated ← correlationAccepts ctx state item.scope (criteria subscription.trigger) delivery.correlation
+        let correlated ← hooks.correlationAccepts ctx state item.scope subscription.trigger delivery.correlation
         if !correlated then .error (.rejected "message-correlation-mismatch")
         else
           let mapped ← match view.payload, delivery.payload with
@@ -279,8 +317,8 @@ def afterFiring (state : State) (item : OpenItem) : State × Option Nat :=
 
 /-- A boundary fired: an interrupting one cancels its host, a non-interrupting one leaves it running; either way the
 boundary's occurrence begins and leaves on its flows in the host's scope (BPMN 2.0.2 §13.5.3, §10.5.6). -/
-def fireBoundary (ctx : Ctx) (boundary : Boundary) (item : OpenItem) (fired : Fired) (state : State) : Outcome := do
-  let (state, values) ← admitFiring ctx boundary.subscription item fired state
+def fireBoundary (hooks : SubscriptionsHooks) (ctx : Ctx) (boundary : Boundary) (item : OpenItem) (fired : Fired) (state : State) : Outcome := do
+  let (state, values) ← admitFiring hooks ctx boundary.subscription item fired state
   if boundary.interrupting then
     match item.attachedTo with
     | none => .error (.semanticFailure "boundary-without-host")
@@ -294,8 +332,8 @@ def fireBoundary (ctx : Ctx) (boundary : Boundary) (item : OpenItem) (fired : Fi
     .ok (boundary.fire none reserved item.scope values state)
 
 /-- A catch Event fired; an Event-Based Gateway arm also completes its gateway, which disarms the other arms. -/
-def fireCatch (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fired : Fired) (state : State) : Outcome := do
-  let (state, values) ← admitFiring ctx subscription item fired state
+def fireCatch (hooks : SubscriptionsHooks) (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fired : Fired) (state : State) : Outcome := do
+  let (state, values) ← admitFiring hooks ctx subscription item fired state
   let state := state.closeItem item.id
   let state := match item.attachedTo with
     | some gateway => (state.disarm gateway).signal (.complete gateway (.flows []) [] .outward)
@@ -304,29 +342,29 @@ def fireCatch (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fired
 
 /-- An Event Sub-Process start fired: an interrupting start closes, a non-interrupting one continues as `afterFiring`
 says. The scopes feature starts the occurrence, which begins the start Event with the reservation, if any. -/
-def fireEventStart (ctx : Ctx) (eventSubProcess : ElementId) (item : OpenItem) (fired : Fired) (state : State) :
+def fireEventStart (hooks : SubscriptionsHooks) (ctx : Ctx) (eventSubProcess : ElementId) (item : OpenItem) (fired : Fired) (state : State) :
     Outcome := do
   let start := (ctx.program.element? eventSubProcess).bind (·.scope?) |>.bind fun (_, payload) => ctx.eventStart payload
   match start with
   | none => .error (.semanticFailure "event-start-without-event-subprocess")
   | some (subscription, interrupting) =>
-    let (state, values) ← admitFiring ctx subscription item fired state
+    let (state, values) ← admitFiring hooks ctx subscription item fired state
     let (state, inner) :=
       if interrupting then ((state.closeItem item.id).withdrawInside item.scope, some item.occurrence)
       else afterFiring state item
     .ok (state.signal (.begin { element := eventSubProcess, scope := item.scope, locals := values, inner }))
 
 /-- `Hooks.trigger`: the item's element is a boundary, a catch Event or an Event Sub-Process start Event. -/
-def trigger (ctx : Ctx) (item : OpenItem) (fired : Fired) (state : State) : Outcome :=
+def trigger (hooks : SubscriptionsHooks) (ctx : Ctx) (item : OpenItem) (fired : Fired) (state : State) : Outcome :=
   match ctx.program.boundary? item.element with
-  | some (_, boundary) => fireBoundary ctx boundary item fired state
+  | some (_, boundary) => fireBoundary hooks ctx boundary item fired state
   | none =>
     let element := ctx.program.element? item.element
     let catchEvent := element.bind (·.event?) |>.bind fun (_, event) => event.catch?
     let eventStart := element.bind (·.start?) |>.bind fun (header, _) => header.parent
     match catchEvent, eventStart with
-    | some subscription, _ => fireCatch ctx subscription item fired state
-    | none, some eventSubProcess => fireEventStart ctx eventSubProcess item fired state
+    | some subscription, _ => fireCatch hooks ctx subscription item fired state
+    | none, some eventSubProcess => fireEventStart hooks ctx eventSubProcess item fired state
     | none, none => .error (.semanticFailure "trigger-without-subscription")
 
 /-- `Hooks.arriveCatch`: the catch Event's occurrence waits on its subscription. -/

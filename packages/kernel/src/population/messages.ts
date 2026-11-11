@@ -15,7 +15,7 @@ import {
   occurrenceOf,
   openKindView,
   type CorrelationMatch,
-  type CriterionTarget,
+  targetsRepeat,
   type Input,
   type MessageChannel,
   type OccurrenceRef,
@@ -205,14 +205,6 @@ function startFor(
   return { ok: true, value: [instance === null ? instances : [...instances, instance], resolution] };
 }
 
-/** Whether two criteria name one target: equal members, all of them primitive, as Lean compares their `reprStr`. */
-function sameTarget(left: CriterionTarget, right: CriterionTarget): boolean {
-  const leftMembers = left as Readonly<Record<string, unknown>>;
-  const rightMembers = right as Readonly<Record<string, unknown>>;
-  const keys = Object.keys(leftMembers);
-  return keys.length === Object.keys(rightMembers).length && keys.every((key) => leftMembers[key] === rightMembers[key]);
-}
-
 /**
  * Route one publication at `atMs` (PC-MESSAGE-02, PC-MESSAGE-08): unless start-only, deliver to its sole receiver among
  * the instances of its selected deployment, or of every deployment without a selector; when there is none and it is not
@@ -231,9 +223,7 @@ export function publish(
 ): Refusable<readonly [readonly Instance[], Resolution, string | null]> {
   const answer = (resolution: Resolution): Refusable<readonly [readonly Instance[], Resolution, string | null]> =>
     ({ ok: true, value: [instances, resolution, null] });
-  const targets = publication.criteria.map((criterion) => criterion.target);
-  const duplicate = targets.some((target, index) => targets.slice(0, index).some((earlier) => sameTarget(earlier, target)));
-  if (duplicate) return answer({ tag: ResolutionTag.Rejected, code: "criteria-duplicate" });
+  if (targetsRepeat(publication.criteria)) return answer({ tag: ResolutionTag.Rejected, code: "criteria-duplicate" });
   const scope = selected(registry, publication.definition);
   if (scope === undefined) return answer({ tag: ResolutionTag.Rejected, code: "definition-not-deployed" });
   const reached = publication.mode === PublishMode.StartOnly ? [] : instances.flatMap((member, index) =>

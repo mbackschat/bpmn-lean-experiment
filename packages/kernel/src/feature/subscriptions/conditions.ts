@@ -10,12 +10,6 @@ import {
   ConditionalRetrigger,
   ValueTag,
   assertNever,
-  elementEvent,
-  elementScope,
-  elementStart,
-  eventPayloadCatch,
-  programBoundary,
-  programElement,
   triggerCondition,
   type ConditionTrigger,
   type Expression,
@@ -40,7 +34,7 @@ import {
   type State,
   type WriteEvent,
 } from "../../state.js";
-import { EvaluationTag, evalContext, type Ctx } from "../../hooks.js";
+import { EvaluationTag, evalContext, subscriptionOf, type Ctx } from "../../hooks.js";
 
 /** `ownScope` of an open item: its host's own scope, else the item's scope. */
 function homeScope(state: State, item: OpenItem): ScopeOccurrenceId {
@@ -99,23 +93,6 @@ function evaluateItem(ctx: Ctx, write: WriteEvent | null, item: OpenItem, condit
 export function armed(ctx: Ctx, subscription: Subscription, item: OpenItem, state: State): Outcome {
   const condition = triggerCondition(subscription.trigger);
   return condition === null ? committed(state) : evaluateItem(ctx, null, item, condition, state);
-}
-
-/**
- * The subscription an open item belongs to: a boundary's, a catch Event's or an Event Sub-Process start's; an
- * Activity's own subscription (a Receive Task) is the work feature's.
- */
-export function subscriptionOf(ctx: Ctx, item: OpenItem): Subscription | null {
-  const boundary = programBoundary(ctx.program, item.element);
-  if (boundary !== null) return boundary[1].subscription;
-  const element = programElement(ctx.program, item.element);
-  const event = element === null ? null : elementEvent(element);
-  const catchEvent = event === null ? null : eventPayloadCatch(event[1]);
-  if (catchEvent !== null) return catchEvent;
-  const start = element === null ? null : elementStart(element);
-  const parent = start === null || start[0].parent === null ? null : programElement(ctx.program, start[0].parent);
-  const scope = parent === null ? null : elementScope(parent);
-  return (scope === null ? null : ctx.eventStart(scope[1]))?.[0] ?? null;
 }
 
 /** The Conditional trigger of an open item's subscription, if it has one. */

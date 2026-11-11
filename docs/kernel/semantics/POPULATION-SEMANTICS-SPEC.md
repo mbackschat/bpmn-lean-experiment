@@ -29,7 +29,7 @@ Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it
 
 ### Start selection
 
-- A root start input selects the start Event it names if its trigger fires it, else the one start its trigger fires, and for a none trigger the sole none start; several unnamed are `start-ambiguous`, none `no-start-event` ([`Subscriptions.startsFired`](../../../Kernel/Feature/Subscriptions/Starts.lean)). How a start trigger is admitted and fires is stated in [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md#starts).
+- A root start input selects the start Event it names if its trigger fires it, else the one start its trigger fires, and for a none trigger the sole none start; several unnamed are `start-ambiguous`, none `no-start-event` ([`Starts.startsFired`](../../../Kernel/Feature/Starts.lean)). How a start trigger is admitted and fires is stated in [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md#starts).
 
 ### Timer starts
 

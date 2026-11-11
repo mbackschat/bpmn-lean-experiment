@@ -38,11 +38,14 @@ import {
   programChildren,
   programElement,
   programTarget,
+  valueSourceLiteral,
   type Boundary,
   type ElementId,
   type EventPayload,
   type Header,
+  type ConditionTrigger,
   type Mapping,
+  type ProfileOptions,
   type SignalTrigger,
   type Subscription,
   type TimerTrigger,
@@ -53,6 +56,7 @@ import {
 import {
   FailureTag,
   FiredTag,
+  StartTriggerTag,
   OpenKindTag,
   DeliveryTriggerTag,
   RaisedTag,
@@ -66,8 +70,10 @@ import {
   disarm,
   failed,
   failedWith,
+  initial,
   leaveFlows,
   leaveOutgoing,
+  messageChannelEquals,
   occurrenceOf,
   openItem,
   openKindView,
@@ -75,9 +81,11 @@ import {
   ownScope,
   optionalChannelEquals,
   raisedIsCancel,
+  root,
   signal,
   signalAddressMatches,
   type Binding,
+  type CorrelationMatch,
   type DeliveryTrigger,
   type EvalContext,
   type Fired,
@@ -89,6 +97,7 @@ import {
   type Result,
   type ScopeOccurrenceId,
   type SignalAddress,
+  type StartInput,
   type State,
   type TimerDetail,
   calledRoot,
@@ -100,8 +109,7 @@ import {
   messageTriggerChannel, withdrawInside, withdrawOccurrence, type Catch, type Ctx,
 } from "../hooks.js";
 import { ClassifiedTag, TimerKind, armAt as armTimer, classify, dynamicCode, successor } from "../il/timer.js";
-import { armed, subscriptionOf } from "./subscriptions/conditions.js";
-import { correlationAccepts, criteria } from "./subscriptions/correlation.js";
+import { armed, predicateHolds } from "./subscriptions/conditions.js";
 
 export { offerWrites } from "./subscriptions/conditions.js";
 
@@ -400,6 +408,66 @@ export function armScope(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outc
   return committed(current);
 }
 
+// Root start triggers
+
+/**
+ * The address a root Signal start subscribes to: its Signal's QName under `SignalNames.identifier` (BPMN 2.0.2
+ * Table 10.100), its name under `addresses`, which admission holds literal at a root start (`start.signalNameExpression`).
+ */
+function startAddress(options: ProfileOptions, trigger: SignalTrigger): SignalAddress | null {
+  switch (options.signalNames) {
+    case SignalNames.Identifier:
+      return trigger.signalRef === null ? null : { tag: SignalAddressTag.Qualified, ref: trigger.signalRef };
+    case SignalNames.Addresses: {
+      const name = trigger.name === null ? null : valueSourceLiteral(trigger.name);
+      return name === null ? null : { tag: SignalAddressTag.Named, name };
+    }
+  }
+  return assertNever(options.signalNames);
+}
+
+/**
+ * Whether a Conditional root start holds for `input`: evaluated over the submitted variables alone, in a fresh
+ * instance's root scope, as CIB evaluates it in a temporary execution (`DefaultConditionHandler.java:121-134`); a
+ * `variableName` the input does not submit makes it false, and the predicate reads as every Conditional one does.
+ */
+function conditionHolds(ctx: Ctx, input: StartInput, trigger: ConditionTrigger): Result<boolean> {
+  const variableName = trigger.variableName;
+  if (variableName !== null && !input.variables.some(([name]) => name === variableName)) return committed(false);
+  const submitted: State = { ...initial(input.instanceId, input.variables, input.businessKey), logicalTimeMs: input.atMs ?? 0 };
+  return predicateHolds(ctx, submitted, root, trigger.condition);
+}
+
+/**
+ * Whether `input`'s trigger fires a start with `subscription` (`feature/starts.ts`, through `StartsHooks.fires`).
+ * A none trigger names its start by identifier and consumes its trigger itself.
+ */
+export function fires(ctx: Ctx, input: StartInput, subscription: Subscription | null): Result<boolean> {
+  const trigger = input.trigger;
+  if (trigger.tag === StartTriggerTag.None) return committed(true);
+  if (subscription === null) return committed(false);
+  const subscribed = subscription.trigger;
+  switch (subscribed.tag) {
+    case TriggerTag.Timer:
+      return committed(trigger.tag === StartTriggerTag.Timer);
+    case TriggerTag.Message:
+      return committed(trigger.tag === StartTriggerTag.Message &&
+        trigger.channel !== null && messageChannelEquals(messageTriggerChannel(subscribed.payload), trigger.channel));
+    case TriggerTag.Signal: {
+      const address = startAddress(ctx.program.options, subscribed.payload);
+      return committed(trigger.tag === StartTriggerTag.Signal && address !== null && signalAddressMatches(trigger.address, address));
+    }
+    case TriggerTag.Condition:
+      return trigger.tag === StartTriggerTag.Condition ? conditionHolds(ctx, input, subscribed.payload) : committed(false);
+    case TriggerTag.Error:
+    case TriggerTag.Escalation:
+    case TriggerTag.Compensation:
+    case TriggerTag.Cancel:
+      return committed(false);
+  }
+  return assertNever(subscribed);
+}
+
 // Firing
 
 /** Bind the delivered payload to every data output an output mapping reads, then evaluate the mappings. */
@@ -449,11 +517,24 @@ function signalVariables(ctx: Ctx, variables: readonly Binding[]): Result<readon
 }
 
 /**
- * Check that `fired` may fire `item` and return the state at the firing's logical time with the values the subscription
- * writes. A Message delivery must carry exactly the subscription's correlation, none for an uncorrelated one; the
- * target rechecks it rather than trusting the population's selection.
+ * The Correlation rule a Message firing rechecks, which `registry.ts` fills with `feature/correlation.ts#correlationAccepts`,
+ * since features never import each other.
  */
-function admitFiring(ctx: Ctx, subscription: Subscription, item: OpenItem, fired: Fired, state: State): Result<readonly [State, readonly Binding[]]> {
+export interface SubscriptionsHooks {
+  readonly correlationAccepts: (ctx: Ctx, state: State, scope: ScopeOccurrenceId, trigger: Trigger,
+    correlation: readonly CorrelationMatch[]) => Result<boolean>;
+}
+
+export const defaultSubscriptionsHooks: SubscriptionsHooks = {
+  correlationAccepts: () => failed(FailureTag.Unsupported, "subscriptions-correlation"), // dynamic-only: a registry without the hook
+};
+
+/**
+ * Check that `fired` may fire `item` and return the state at the firing's logical time with the values the subscription
+ * writes. A Message delivery's correlation must be accepted (`SubscriptionsHooks.correlationAccepts`); the target
+ * rechecks it rather than trusting the population's selection.
+ */
+function admitFiring(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscription, item: OpenItem, fired: Fired, state: State): Result<readonly [State, readonly Binding[]]> {
   const view = openKindView(item.kind);
   switch (fired.tag) {
     case FiredTag.Timer:
@@ -469,7 +550,7 @@ function admitFiring(ctx: Ctx, subscription: Subscription, item: OpenItem, fired
       if (!optionalChannelEquals(deliveryTriggerChannel(delivery.trigger), view.channel)) {
         return failed(FailureTag.Rejected, "message-channel-mismatch");
       }
-      const correlated = correlationAccepts(ctx, state, item.scope, criteria(subscription.trigger), delivery.correlation);
+      const correlated = hooks.correlationAccepts(ctx, state, item.scope, subscription.trigger, delivery.correlation);
       if (!correlated.ok) return failedWith(correlated.failure);
       if (!correlated.value) return failed(FailureTag.Rejected, "message-correlation-mismatch");
       let mapped: readonly Binding[] = [];
@@ -527,8 +608,8 @@ function afterFiring(state: State, item: OpenItem): readonly [State, number | nu
  * A boundary fired: an interrupting one cancels its host, a non-interrupting one leaves it running; either way the
  * boundary's occurrence begins and leaves on its flows in the host's scope (BPMN 2.0.2 §13.5.3, §10.5.6).
  */
-function fireBoundary(ctx: Ctx, boundary: Boundary, item: OpenItem, fired: Fired, state: State): Outcome {
-  const admitted = admitFiring(ctx, boundary.subscription, item, fired, state);
+function fireBoundary(hooks: SubscriptionsHooks, ctx: Ctx, boundary: Boundary, item: OpenItem, fired: Fired, state: State): Outcome {
+  const admitted = admitFiring(hooks, ctx, boundary.subscription, item, fired, state);
   if (!admitted.ok) return failedWith(admitted.failure);
   const [current, values] = admitted.value;
   if (boundary.interrupting) {
@@ -542,8 +623,8 @@ function fireBoundary(ctx: Ctx, boundary: Boundary, item: OpenItem, fired: Fired
 }
 
 /** A catch Event fired; an Event-Based Gateway arm also completes its gateway, which disarms the other arms. */
-function fireCatch(ctx: Ctx, subscription: Subscription, item: OpenItem, fired: Fired, state: State): Outcome {
-  const admitted = admitFiring(ctx, subscription, item, fired, state);
+function fireCatch(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscription, item: OpenItem, fired: Fired, state: State): Outcome {
+  const admitted = admitFiring(hooks, ctx, subscription, item, fired, state);
   if (!admitted.ok) return failedWith(admitted.failure);
   const [current, values] = admitted.value;
   const closed = closeItem(current, item.id);
@@ -557,13 +638,13 @@ function fireCatch(ctx: Ctx, subscription: Subscription, item: OpenItem, fired: 
  * An Event Sub-Process start fired: an interrupting start closes, a non-interrupting one continues as `afterFiring`
  * says. The scopes feature starts the occurrence, which begins the start Event with the reservation, if any.
  */
-function fireEventStart(ctx: Ctx, eventSubProcess: ElementId, item: OpenItem, fired: Fired, state: State): Outcome {
+function fireEventStart(hooks: SubscriptionsHooks, ctx: Ctx, eventSubProcess: ElementId, item: OpenItem, fired: Fired, state: State): Outcome {
   const element = programElement(ctx.program, eventSubProcess);
   const scope = element === null ? null : elementScope(element);
   const start = scope === null ? null : ctx.eventStart(scope[1]);
   if (start === null) return failed(FailureTag.SemanticFailure, "event-start-without-event-subprocess");
   const [subscription, interrupting] = start;
-  const admitted = admitFiring(ctx, subscription, item, fired, state);
+  const admitted = admitFiring(hooks, ctx, subscription, item, fired, state);
   if (!admitted.ok) return failedWith(admitted.failure);
   const [current, values] = admitted.value;
   const [after, inner] = interrupting
@@ -576,16 +657,16 @@ function fireEventStart(ctx: Ctx, eventSubProcess: ElementId, item: OpenItem, fi
 }
 
 /** `Hooks.trigger`: the item's element is a boundary, a catch Event or an Event Sub-Process start Event. */
-export function trigger(ctx: Ctx, item: OpenItem, fired: Fired, state: State): Outcome {
+export function trigger(hooks: SubscriptionsHooks, ctx: Ctx, item: OpenItem, fired: Fired, state: State): Outcome {
   const boundary = programBoundary(ctx.program, item.element);
-  if (boundary !== null) return fireBoundary(ctx, boundary[1], item, fired, state);
+  if (boundary !== null) return fireBoundary(hooks, ctx, boundary[1], item, fired, state);
   const element = programElement(ctx.program, item.element);
   const event = element === null ? null : elementEvent(element);
   const catchEvent = event === null ? null : eventPayloadCatch(event[1]);
-  if (catchEvent !== null) return fireCatch(ctx, catchEvent, item, fired, state);
+  if (catchEvent !== null) return fireCatch(hooks, ctx, catchEvent, item, fired, state);
   const start = element === null ? null : elementStart(element);
   const eventSubProcess = start === null ? null : start[0].parent;
-  if (eventSubProcess !== null) return fireEventStart(ctx, eventSubProcess, item, fired, state);
+  if (eventSubProcess !== null) return fireEventStart(hooks, ctx, eventSubProcess, item, fired, state);
   return failed(FailureTag.SemanticFailure, "trigger-without-subscription");
 }
 

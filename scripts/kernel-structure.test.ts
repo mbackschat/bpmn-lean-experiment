@@ -6,6 +6,7 @@ import { test } from "node:test";
 
 import {
   duplicateNameFindings,
+  featureFileFindings,
   Layer,
   layeringFindings,
   leanModules,
@@ -34,6 +35,21 @@ test("every Lean executable module has a TypeScript pair of the same name", () =
 
 test("a definition's short name appears once per language package", () => {
   assert.deepEqual(duplicateNameFindings(), []);
+});
+
+test("every feature spans at most three files in each language", () => {
+  assert.deepEqual(featureFileFindings(leanModules()), []);
+  assert.deepEqual(featureFileFindings(typeScriptModules()), []);
+});
+
+test("the feature file limit rejects a fourth file of one feature, counts a sub-feature apart and fails on no features", () => {
+  const module = (file: string, family: string): Module => ({ name: file, layer: Layer.Feature, family, file, imports: [] });
+  const work = ["Kernel/Feature/Work.lean", "Kernel/Feature/Work/Call.lean", "Kernel/Feature/Work/Submission.lean"];
+  assert.deepEqual(featureFileFindings([...work.map((file) => module(file, "work")), module("Kernel/Feature/Decision.lean", "decision")]), []);
+  assert.deepEqual(featureFileFindings([...work, "Kernel/Feature/Work/Effects.lean"].map((file) => module(file, "work"))), [
+    "feature work: 4 files, above three (Kernel/Feature/Work.lean, Kernel/Feature/Work/Call.lean, Kernel/Feature/Work/Effects.lean, Kernel/Feature/Work/Submission.lean)",
+  ]);
+  assert.notDeepEqual(featureFileFindings([]), []);
 });
 
 test("no profile identifier appears in the kernel", () => {

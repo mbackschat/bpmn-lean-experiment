@@ -10,7 +10,8 @@ public import Kernel.Feature.Propagation
 public import Kernel.Feature.Scopes
 public import Kernel.Feature.Subscriptions
 public import Kernel.Feature.Subscriptions.Delivery
-public import Kernel.Feature.Subscriptions.Starts
+public import Kernel.Feature.Starts
+public import Kernel.Feature.Correlation
 
 /-! # Registry: the hooks record the features fill. Only `Kernel.Run` imports it. -/
 
@@ -18,9 +19,21 @@ public section
 
 namespace Kernel.Registry
 
+/-- What Work reaches of its sub-features: Decision's tables and Correlation's API criteria. -/
+def workHooks : Feature.Work.WorkHooks :=
+  { runDecision := Feature.Decision.runDecision, criteriaHold := Feature.Correlation.criteriaHold }
+
+/-- What Starts reaches of Subscriptions: whether a trigger fires a start, and a Message payload's bindings. -/
+def startsHooks : Feature.Starts.StartsHooks :=
+  { fires := Feature.Subscriptions.fires, payloadBindings := Feature.Subscriptions.payloadBindings }
+
+/-- What Subscriptions reaches of Correlation: the recheck of a Message firing's correlation. -/
+def subscriptionsHooks : Feature.Subscriptions.SubscriptionsHooks :=
+  { correlationAccepts := Feature.Correlation.correlationAccepts }
+
 def hooks : Hooks :=
-  { arriveStart := Feature.Subscriptions.arriveStart
-    arriveActivity := Feature.Work.arriveActivity { runDecision := Feature.Decision.runDecision }
+  { arriveStart := Feature.Starts.arriveStart startsHooks
+    arriveActivity := Feature.Work.arriveActivity workHooks
     arriveMultiInstance := Feature.MultiInstance.arriveMultiInstance
     arriveScope := Feature.Scopes.arriveScope
     arriveGateway := Feature.Flow.arriveGateway
@@ -33,8 +46,8 @@ def hooks : Hooks :=
     completeUserTask := Feature.Work.completeUserTask
     effectResult := Feature.Work.effectResult
     resolveIncident := Feature.Work.resolveIncident
-    triggerActivity := Feature.Work.triggerActivity
-    trigger := Feature.Subscriptions.trigger
+    triggerActivity := Feature.Work.triggerActivity workHooks
+    trigger := Feature.Subscriptions.trigger subscriptionsHooks
     arm := Feature.Subscriptions.arm
     armScope := Feature.Subscriptions.armScope
     armGateway := Feature.Subscriptions.armGateway
@@ -57,8 +70,8 @@ def hooks : Hooks :=
     handlerCompleted := Feature.Compensation.handlerCompleted
     evaluate := Feature.Data.evaluate
     catches := Feature.Subscriptions.catches
-    correlates := Feature.Subscriptions.correlates
-    startsFired := Feature.Subscriptions.startsFired
+    correlates := Feature.Correlation.correlates
+    startsFired := Feature.Starts.startsFired startsHooks
     delivered := Feature.Subscriptions.delivered
     eventStart := Feature.Scopes.eventStart }
 

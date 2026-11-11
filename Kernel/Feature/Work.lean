@@ -3,7 +3,6 @@ module
 public import Kernel.Hooks
 public import Kernel.Feature.Work.Call
 public import Kernel.Feature.Work.Submission
-public import Kernel.State.Criteria
 
 /-! # Work: what an Activity does
 
@@ -24,10 +23,14 @@ namespace Kernel.Feature.Work
 
 /-- The sub-features Work joins through its own hooks record, since features never import each other
 (ARCHITECTURE-SPEC "Modules and build shape"); `Kernel.Registry` fills it. `runDecision` is `Kernel.Feature.Decision.runDecision`:
-the writes a decision task makes against the variables visible from its scope occurrence. -/
+the writes a decision task makes against the variables visible from its scope occurrence. `criteriaHold` is
+`Kernel.Feature.Correlation.criteriaHold`: whether a delivery's API criteria hold for a Receive Task waiting in a scope
+occurrence (CIB-EXT-0025). -/
 structure WorkHooks where
   runDecision : Program → RuleWork → List (String × Value) → Except Failure (List (String × Value)) :=
     fun _ _ _ => .error (.unsupported "work-rule")
+  criteriaHold : State → ScopeOccurrenceId → List CorrelationMatch → Except Failure Bool :=
+    fun _ _ _ => .error (.unsupported "work-criteria") -- dynamic-only: a registry without the hook
 
 /-- Open `kind` for the Activity and arm its boundaries on the occurrence. -/
 def openWork (kind : OpenKind) (header : Header) (payload : ActivityPayload) (occurrence : Occurrence)
@@ -323,9 +326,9 @@ def resolveIncident (_ : Ctx) (item : OpenItem) (action : CommandAction) (state 
 /-- A delivery completes a Receive Task only on the channel it waits on; the Message carries no payload here. The wait
 models no key, since admission refuses a Receive Task correlation (`work.receive.correlation`), so a criterion is an API
 criterion: `unsupported` under `modeledKey`, which does not select one, and checked in the task's own scope under
-`apiCriteria` (`State.criteriaHold`), as a Message subscription checks it. The delivery's own variables are the
+`apiCriteria` (`WorkHooks.criteriaHold`), as a Message subscription checks it. The delivery's own variables are the
 completion's writes; `Hooks.delivered` admits them only under `DeliveryVariables.installs`. -/
-def triggerActivity (ctx : Ctx) (_ : Header) (_ : ActivityPayload) (item : OpenItem) (fired : Fired)
+def triggerActivity (hooks : WorkHooks) (ctx : Ctx) (_ : Header) (_ : ActivityPayload) (item : OpenItem) (fired : Fired)
     (state : State) : Outcome :=
   match fired with
   | .timer _ => .error (.semanticFailure "activity-timer-without-timer")
@@ -341,7 +344,7 @@ def triggerActivity (ctx : Ctx) (_ : Header) (_ : ActivityPayload) (item : OpenI
         let accepted ← match ctx.program.options.messageCorrelation with
           -- dynamic-only: a delivery's criteria are its caller's.
           | .modeledKey => if delivery.correlation.isEmpty then .ok true else .error (.unsupported "profile-message-correlation-api-criteria")
-          | .apiCriteria => state.criteriaHold (state.ownScope item.occurrence item.scope) delivery.correlation
+          | .apiCriteria => hooks.criteriaHold state (state.ownScope item.occurrence item.scope) delivery.correlation
         if !accepted then .error (.rejected "message-correlation-mismatch")
         else if delivery.payload.isSome then .error (.rejected "unexpected-message-payload")
         else do

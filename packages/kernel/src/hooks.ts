@@ -14,6 +14,12 @@ import {
   assertNever,
   compareStrings,
   mergeSort,
+  elementEvent,
+  elementScope,
+  elementStart,
+  eventPayloadCatch,
+  programBoundary,
+  programElement,
   programPublicId,
   utf8ByteSize,
   type ActivityPayload,
@@ -477,6 +483,24 @@ export function itemOf(ctx: Ctx, state: State, occurrence: OccurrenceRef, detail
     occurrenceOf(state, item.occurrence)?.activation === occurrence.activation &&
     detail(openKindView(item.kind)) !== null &&
     instanceOf(state, item.scope) === occurrence.processInstanceId) ?? null;
+}
+
+/**
+ * The subscription an open item belongs to: a boundary's, a catch Event's or an Event Sub-Process start's; an
+ * Activity's own subscription (a Receive Task) is the work feature's. Subscriptions and Correlation share it here
+ * because features never import each other.
+ */
+export function subscriptionOf(ctx: Ctx, item: OpenItem): Subscription | null {
+  const boundary = programBoundary(ctx.program, item.element);
+  if (boundary !== null) return boundary[1].subscription;
+  const element = programElement(ctx.program, item.element);
+  const event = element === null ? null : elementEvent(element);
+  const catchEvent = event === null ? null : eventPayloadCatch(event[1]);
+  if (catchEvent !== null) return catchEvent;
+  const start = element === null ? null : elementStart(element);
+  const parent = start === null || start[0].parent === null ? null : programElement(ctx.program, start[0].parent);
+  const scope = parent === null ? null : elementScope(parent);
+  return (scope === null ? null : ctx.eventStart(scope[1]))?.[0] ?? null;
 }
 
 /**

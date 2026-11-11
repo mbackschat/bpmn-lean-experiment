@@ -64,6 +64,7 @@ import {
   visible,
   type Binding,
   type CommandAction,
+  type CorrelationMatch,
   type EffectOutcome,
   type Fired,
   type Occurrence,
@@ -82,7 +83,6 @@ import {
   admitValues, ctxEvaluateMappings, ctxEvaluateMappingsWith, ctxOutputReads, deliveryTriggerChannel, evalContext, hold, inValueDomain,
   messageTriggerChannel, ownVariables, type Ctx,
 } from "../hooks.js";
-import { criteriaHold } from "../state/criteria.js";
 import * as Call from "./work/call.js";
 import * as Submission from "./work/submission.js";
 
@@ -187,9 +187,13 @@ function enterLocal(header: Header, inputs: readonly Binding[], occurrence: Occu
  */
 export interface WorkHooks {
   readonly runDecision: (program: Program, work: RuleWork, variables: readonly Binding[]) => Result<readonly Binding[]>;
+  readonly criteriaHold: (state: State, scope: ScopeOccurrenceId, criteria: readonly CorrelationMatch[]) => Result<boolean>;
 }
 
-export const defaultWorkHooks: WorkHooks = { runDecision: () => failed(FailureTag.Unsupported, "work-rule") };
+export const defaultWorkHooks: WorkHooks = {
+  runDecision: () => failed(FailureTag.Unsupported, "work-rule"),
+  criteriaHold: () => failed(FailureTag.Unsupported, "work-criteria"), // dynamic-only: a registry without the hook
+};
 
 /**
  * An Activity's occurrence began. An input mapping whose source is unavailable makes the InputSet unavailable, and an
@@ -564,10 +568,11 @@ export function resolveIncident(_ctx: Ctx, item: OpenItem, action: CommandAction
  * A delivery completes a Receive Task only on the channel it waits on; the Message carries no payload here. The wait
  * models no key, since admission refuses a Receive Task correlation (`work.receive.correlation`), so a criterion is an API
  * criterion: `unsupported` under `ModeledKey`, which does not select one, and checked in the task's own scope under
- * `ApiCriteria` (`criteriaHold`), as a Message subscription checks it. The delivery's own variables are the completion's
+ * `ApiCriteria` (`WorkHooks.criteriaHold`), as a Message subscription checks it. The delivery's own variables are the completion's
  * writes; `Hooks.delivered` admits them only under `DeliveryVariables.Installs`.
  */
 export function triggerActivity(
+  hooks: WorkHooks,
   ctx: Ctx,
   _header: Header,
   _payload: ActivityPayload,
@@ -594,7 +599,7 @@ export function triggerActivity(
         ? (delivery.correlation.length === 0
           ? committed(true)
           : failed<boolean>(FailureTag.Unsupported, "profile-message-correlation-api-criteria")) // dynamic-only: a delivery's criteria are its caller's
-        : criteriaHold(state, ownScope(state, item.occurrence, item.scope), delivery.correlation);
+        : hooks.criteriaHold(state, ownScope(state, item.occurrence, item.scope), delivery.correlation);
       if (!accepted.ok) return failedWith(accepted.failure);
       if (!accepted.value) return failed(FailureTag.Rejected, "message-correlation-mismatch");
       if (delivery.payload !== null) return failed(FailureTag.Rejected, "unexpected-message-payload");

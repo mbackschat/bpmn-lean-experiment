@@ -103,8 +103,7 @@ every instance unchanged; candidate order never picks a winner. Criteria naming 
 also answers its receiver's root instance, whose committed step's intents cascade next. -/
 def publish (hooks : Hooks) (registry : List Deployment) (instances : List Instance) (atMs : Nat)
     (publication : Publication) : Except String (List Instance × Resolution × Option String) := do
-  let targets := publication.criteria.map (reprStr ·.target)
-  if targets.eraseDups.length != targets.length then return (instances, .rejected "criteria-duplicate", none)
+  if targetsRepeat publication.criteria then return (instances, .rejected "criteria-duplicate", none)
   let some scope := selected registry publication.definition | return (instances, .rejected "definition-not-deployed", none)
   let reached := if publication.mode == .startOnly then [] else
     instances.zipIdx.flatMap fun (member, index) =>

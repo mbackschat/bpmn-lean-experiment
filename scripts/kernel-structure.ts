@@ -1,7 +1,7 @@
 /**
  * Source scans for the structural guards of the kernel rewrite proposal
  * (docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation): layering (guard 4), the shape and size
- * ceilings (guards 9 and 10) and profiles as data (guard 7), over the Lean kernel and its TypeScript transcription.
+ * ceilings (guards 9 and 10), the feature file limit and profiles as data (guard 7), over the Lean kernel and its TypeScript transcription.
  * Closed dispatch and no catch-all (guards 1 and 2) read the built environment instead (`kernel-dispatch.lean`).
  */
 import { readdirSync, readFileSync } from "node:fs";
@@ -124,6 +124,22 @@ export function layeringFindings(modules: readonly Module[], isKernel: (name: st
     if (sameFamily || populationSteps || mayImport[module.layer].includes(target.layer)) return [];
     return [`${module.file}: ${module.layer} module imports ${target.layer} module ${imported}`];
   }));
+}
+
+/**
+ * The architecture's feature limit (docs/kernel/ARCHITECTURE-SPEC.md "Modules and build shape"): one feature's rules
+ * span at most three files in each language. A larger feature becomes sub-features, each a feature of its own that the
+ * others reach through their own hooks records, which `Kernel.Registry` fills.
+ */
+export function featureFileFindings(modules: readonly Module[]): string[] {
+  const counts = new Map<string, string[]>();
+  for (const module of modules) {
+    if (module.layer !== Layer.Feature) continue;
+    counts.set(module.family, [...(counts.get(module.family) ?? []), module.file]);
+  }
+  if (counts.size === 0) return ["feature file limit: read no feature modules"];
+  return [...counts].filter(([, files]) => files.length > 3)
+    .map(([family, files]) => `feature ${family}: ${files.length} files, above three (${[...files].sort().join(", ")})`);
 }
 
 /** Guards 9 and 10: a file above 1,200 nonblank lines, `Step` above 600, `import all` outside `Laws`, `export *`. */
