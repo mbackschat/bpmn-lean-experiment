@@ -9,13 +9,16 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import type { ValidateFunction } from "ajv/dist/2020.js";
+
 import { resolveCibSevenMavenTimeoutMs, wrapCibSevenMavenFailure } from "./cibseven-maven-budget.ts";
-import { populationEvidenceCases, populationEvidenceDocument } from "./cibseven-population-evidence.ts";
+import { populationEvidenceCases, populationEvidenceDocument, populationEvidenceValidator } from "./cibseven-population-evidence.ts";
 import type { CibPopulationResult } from "./cibseven-population-evidence.ts";
 import { oracleEvidenceCases } from "./contract-artifact-cases.ts";
 import { resolveJavaHome } from "./java-home.ts";
 import { CommandTimeoutError, runCommand } from "./run-command.ts";
 import { parseWireJson, parseWireJsonBytes } from "./strict-json.ts";
+import { scenarioEvidenceValidator } from "./contract-artifacts.ts";
 import type { CibSevenEvidence, ScenarioDocument } from "./contract-artifacts.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -361,6 +364,23 @@ export function cibEvidenceEffectSchedule(
 
 type Replacement = Readonly<{ relativePath: string; value: unknown }>;
 
+/**
+ * The replacements that meet their evidence schema, and one failure line for each that does not: evidence the runner
+ * wrote outside its contract is never retained, so the retake reports it beside the scenarios CIB could not run.
+ */
+export function admitReplacements(
+  replacements: ReadonlyArray<Replacement>,
+  validate: ValidateFunction,
+): Readonly<{ admitted: ReadonlyArray<Replacement>; failures: ReadonlyArray<string> }> {
+  const admitted: Replacement[] = [];
+  const failures: string[] = [];
+  for (const replacement of replacements) {
+    if (validate(replacement.value)) admitted.push(replacement);
+    else failures.push(`${replacement.relativePath}: evidence violates its schema: ${JSON.stringify(validate.errors)}`);
+  }
+  return { admitted, failures };
+}
+
 /** A population run removed everything it created, under the profile's pinned producer. */
 export function requireCleanPopulation(result: CibPopulationResult, profile: SemanticProfile): void {
   const { cleanup, engineVersion, databaseVersion } = result.diagnostics;
@@ -581,8 +601,12 @@ async function replaceEvidence() {
     );
     const population = await populationReplacements(temporaryDirectory);
     failures.push(...population.failures);
+    const scenarioAdmission = admitReplacements(replacements, await scenarioEvidenceValidator(projectRoot));
+    const populationAdmission = admitReplacements(population.replacements, await populationEvidenceValidator(projectRoot));
+    failures.push(...scenarioAdmission.failures, ...populationAdmission.failures);
+    const admitted = [...scenarioAdmission.admitted, ...populationAdmission.admitted];
     await Promise.all(
-      [...replacements, ...population.replacements].map(({ relativePath, value }) =>
+      admitted.map(({ relativePath, value }) =>
         writeFile(
           path.join(projectRoot, relativePath),
           `${JSON.stringify(value, null, 2)}\n`,
@@ -591,7 +615,7 @@ async function replaceEvidence() {
       ),
     );
     process.stdout.write(
-      `replaced ${replacements.length + population.replacements.length} content-bound CIB evidence artifacts\n`,
+      `replaced ${admitted.length} content-bound CIB evidence artifacts\n`,
     );
     if (failures.length > 0) {
       throw new Error(`CIB could not run ${String(failures.length)} scenarios:\n${failures.join("\n")}`);

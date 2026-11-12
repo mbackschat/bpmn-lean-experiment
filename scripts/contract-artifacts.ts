@@ -14,7 +14,7 @@ import type {
   NormativeArtifactCase,
 } from "./contract-artifact-cases.ts";
 import { verifyCanonicalBindingOrder } from "./scenario-binding-order.ts";
-import { Ajv2020 } from "ajv/dist/2020.js";
+import { Ajv2020, type ValidateFunction } from "ajv/dist/2020.js";
 import type {
   AnySchema,
 } from "ajv/dist/2020.js";
@@ -196,6 +196,13 @@ async function validatorFor(projectRoot: string): Promise<Ajv2020> {
     validatorsByRoot.set(resolvedRoot, validatorPromise);
   }
   return validatorPromise;
+}
+
+/** The validator of `cibseven-evidence.schema.json` with the schemas it references. */
+export async function scenarioEvidenceValidator(projectRoot: string): Promise<ValidateFunction> {
+  const validate = (await validatorFor(projectRoot)).getSchema(evidenceSchemaId);
+  if (validate === undefined) throw new Error(`schema is not registered: ${evidenceSchemaId}`);
+  return validate;
 }
 
 function validateWith(

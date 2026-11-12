@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { wrapCibSevenMavenFailure } from "./cibseven-maven-budget.ts";
+import { readFile } from "node:fs/promises";
+
+import { scenarioEvidenceValidator } from "./contract-artifacts.ts";
 import {
+  admitReplacements,
   bridgeOutcomes,
   CibHeapExhaustedError,
   exhaustedHeapScenario,
@@ -156,4 +160,23 @@ test("runs a batch inside its deadline in one bridge call", async () => {
   assert.deepEqual(outcome.failures, []);
   assert.deepEqual(invocations, [["a", "b", "c"]]);
   assert.deepEqual(logged, []);
+});
+
+// Run 43279665960 retained an evidence file whose unnamed User Tasks lacked the `name` the schema requires as an explicit
+// null; it surfaced only at the repository's contract gate. A replacement must meet its schema before it is written.
+test("a replacement outside its evidence schema is reported as a failure and never written", async () => {
+  const relativePath = "scenarios/open-rows/human-task-result-identity/called-task-identity.cibseven-evidence.json";
+  const valid = JSON.parse(await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8")) as {
+    producerObservations: { taskQueries: Array<{ tasks: Array<Record<string, unknown>> }> };
+  };
+  const invalid = structuredClone(valid);
+  delete invalid.producerObservations.taskQueries.find(({ tasks }) => tasks.length > 0)!.tasks[0]!["name"];
+  const validate = await scenarioEvidenceValidator(new URL("..", import.meta.url).pathname);
+  const { admitted, failures } = admitReplacements(
+    [{ relativePath, value: valid }, { relativePath: "elsewhere.cibseven-evidence.json", value: invalid }],
+    validate,
+  );
+  assert.deepEqual(admitted.map(({ relativePath: admittedPath }) => admittedPath), [relativePath]);
+  assert.equal(failures.length, 1);
+  assert.match(failures[0]!, /^elsewhere\.cibseven-evidence\.json: evidence violates its schema: .*name/u);
 });
