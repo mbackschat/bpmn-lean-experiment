@@ -382,21 +382,17 @@ The CIB runner's value projection carries Decimal as `BigDecimal` at the value's
 
 ## Witnesses and ledger the Core level settles
 
-Expected to agree with the retained answer, so their [disagreement ledger](../../../packages/differential/test/cib-disagreement-ledger.json) entries are removed when the code lands:
+Measured 2026-11-12 against the retained CIB Seven `2.2.0` answers: every witness of the [oracle plan](#oracle-plan-and-witness-table) that the Core and Multi-Instance levels admit and evaluate to a value or a failure agrees, including every condition-expression-routing, condition-whitespace, mapping-failure-sites and juel-unsupported-syntax schedule. No kernel value differs from a CIB value; each remaining disagreement is a kernel `unsupported`, and the [disagreement ledger](../../../packages/differential/test/cib-disagreement-ledger.json) owns it by its registered relation:
 
-- PC-DATA-07: juel-form-separations `structured-access`; juel-core-forms `arithmetic`, `coercion`, `lazy-operands`, `literals-and-text`, `logical`, `relational`, `string-methods`, `ternary-operator`; juel-evaluation-failures `missing-variable`, `empty-of-missing`, `text-in-arithmetic`, `modulo-by-zero`, `integer-as-boolean`, `unknown-property`, `index-on-text`; condition-language-declarations `formal-no-language`, `plain-no-language`; condition-expression-routing `context-written-after-start`, `context-below-limit`, given the `setVariables` command they use.
-- PC-DATA-08 and PC-DATA-09, branch half: every condition-expression-routing schedule, once `Feature.Flow.condition` rolls back.
-- PC-DATA-05 and PC-DATA-09: mapping-failure-sites `entry-missing`, `entry-null`, `entry-throws`, `call-in-absent`; the exit and scope-exit schedules also need the PC-DATA-04 and PC-DATA-06 mechanisms.
-- PC-CF-02: the expression half of exclusive-choice-compositions (`${fraud}`, `${amount > 1000}`, `${severity == 'severe'}`); the rows close with M1's flow mechanisms.
+| Owner | Witnesses |
+|---|---|
+| CIB-LIM-0009 (refused at admission) | the witnesses its register entry lists, among them the bundled refused probes of juel-evaluation-failures, whose engine-context forms answer the bundle's division refusal, and the dividing `multi-instance-sub-process` `sequential-computed-*` cardinalities |
+| CIB-LIM-0010 (`unsupported` at run time) | the witnesses its register entry lists, whether CIB returns a value or rolls back |
+| CIB-CFG-0011 | juel-evaluation-failures `bean-reference` |
+| CIB-EXT-0030 | the standards-profile witnesses [exclusive-gateway-simple-boolean](../../../scenarios/exclusive-gateway-simple-boolean/README.md) and [inclusive-gateway-selected-branches](../../../scenarios/inclusive-gateway-selected-branches/README.md), whose Definitions declare the Simple Boolean language; CIB ignores the declaration, reads `true` and `isPresent(…)` as JUEL text, a String, and rolls the start back (`el/UelExpressionCondition.java:52`) |
+| PC-DATA-09 | the 26 juel-evaluation-failures probes of a listed String, List or Map method on a receiver kind that does not list it (`juel.methodReceiver`), where CIB rolls back; they await the interpretation of a method the receiver's Java class lacks |
 
-Expected to stay in disagreement under a registered relation, so the root moves their owner from the row to the draft entry:
-
-- CIB-LIM-0009 (refused at admission where CIB evaluates): juel-core-forms `functions`, `division`, the floating-literal half of `decimal-operands` (table `decimal-against-double`); juel-evaluation-failures `unknown-method`, `execution-read`, `execution-mutation`, `authenticated-user-name`, `reflection-through-method`, `list-mutating-method`, `division-by-zero` (a division, refused at admission, never a run-time result); juel-form-separations `unknown-method`, `list-mutating-method`, `reflection-through-method`; condition-language-declarations `named-juel`, `definitions-xpath-default`.
-- CIB-LIM-0010 (`unsupported` at run time where CIB returns a value): juel-evaluation-failures `integer-overflow`, `negative-result`; juel-core-forms `access-structured-results` (List element equality over Integers of unknown carrier); table `integer-class`, `decimal-noncanonical-result`, `text-double-operand`, `string-over-limit`, `string-bean-property`.
-- CIB-CFG-0011: juel-evaluation-failures `bean-reference`.
-- CIB-EXT-0030: the standards-profile witnesses [exclusive-gateway-simple-boolean](../../../scenarios/exclusive-gateway-simple-boolean/README.md) and [inclusive-gateway-selected-branches](../../../scenarios/inclusive-gateway-selected-branches/README.md), whose Definitions declare the Simple Boolean language; CIB ignores the declaration, reads `true` and `isPresent(…)` as JUEL text, a String, and rolls the start back (`el/UelExpressionCondition.java:52`).
-
-juel-unsupported-syntax already agrees (`unsupported` on both sides) and has no entry. The Multi-Instance expression witnesses (expression-cardinality-and-collections, multi-instance-expressions) read the counters in the Activity's own inputs ([Witnesses](#witnesses)), so their entries belong to PC-MI-10, not to PC-DATA-08 or PC-DATA-09.
+The Multi-Instance expression witnesses that read the counters or the item in the Activity's own inputs (expression-cardinality-and-collections, multi-instance-expressions, multi-instance-user-task) are CIB-LIM-0019's refusal witnesses, not this level's.
 
 ## CIB relations
 
