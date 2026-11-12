@@ -11,8 +11,9 @@ The rules of [CIB-EXT-0025](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-ext-002
 and of the [subscriptions semantics](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md#messages) for a
 delivery's or publication's API criteria, independent of `Kernel.Feature.Correlation` and `Kernel.State.Criteria`: what
 one criterion means for a waiting item, that the criteria form a conjunction, which criteria the command is refused for
-before any waiting item or start is asked, which a start refuses, and that a criterion reaching a start installs
-nothing. Nothing executable imports this module.
+before any waiting item or start is asked, which a start refuses, that a criterion reaching a start installs
+nothing, and the verdict on a modeled key's value
+([population semantics](../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation)). Nothing executable imports this module.
 
 Each law is followed by its non-vacuity witness: values that satisfy it and, where the law could otherwise hold of
 everything, values that violate it.
@@ -117,6 +118,22 @@ start writes, its delivered variables and its payload by the catch rule (`writte
 only to seek a waiting execution and starts with the delivered variables alone. -/
 def StartInstallsOnly (written : List (String × Value)) (started : State) (root : ScopeOccurrenceId) : Prop :=
   ∀ locals ∈ started.variables, locals.scope = root → ∀ entry ∈ locals.entries, entry ∈ written
+
+/-! ## A modeled key's value -/
+
+/-- The verdict on a modeled key evaluated when a delivery is matched (`messageCorrelation = modeledKey`): a non-empty
+String is the key; an empty String, another value and an unbound variable, BPMN's uninitialized key (§8.3.3), lie
+outside the key domain and are `unsupported`, never a mismatch or a semantic failure; any other evaluation failure
+rolls the command back, and an unsupported evaluation stays unsupported. -/
+def KeyVerdict (evaluation : Evaluation) (verdict : Except Failure String) : Prop :=
+  match evaluation with
+  | .value (.string key) =>
+    (key ≠ "" ∧ verdict = .ok key) ∨ (key = "" ∧ verdict = .error (.unsupported "correlation-key-empty"))
+  | .value _ => verdict = .error (.unsupported "correlation-key-type")
+  | .failure code =>
+    (code = "unknown-variable" ∧ verdict = .error (.unsupported "correlation-key-unbound")) ∨
+      (code ≠ "unknown-variable" ∧ verdict = .error (.rolledBack code))
+  | .unsupported code => verdict = .error (.unsupported code)
 
 /-! ## Non-vacuity
 
@@ -226,5 +243,22 @@ theorem criterion_installed_rejected :
     ¬ StartInstallsOnly [("amount", .int 3)] { started with variables := [{ scope := root, entries := [("order", .int 1)] }] }
       root := fun only => by
   simpa using only { scope := root, entries := [("order", .int 1)] } (by simp) rfl ("order", .int 1) (by simp)
+
+theorem unbound_key_unsupported :
+    KeyVerdict (.failure "unknown-variable") (.error (.unsupported "correlation-key-unbound")) :=
+  .inl ⟨rfl, rfl⟩
+
+theorem bound_key_taken : KeyVerdict (.value (.string "o-7")) (.ok "o-7") :=
+  .inl ⟨by decide +kernel, rfl⟩
+
+/-- An unbound key read as a semantic failure, as the kernel once answered, is rejected. -/
+theorem unbound_failure_rejected :
+    ¬ KeyVerdict (.failure "unknown-variable") (.error (.semanticFailure "unknown-variable")) := by
+  simp [KeyVerdict]
+
+/-- An unbound key read as a mismatch, a key that matches nothing, is rejected. -/
+theorem unbound_mismatch_rejected :
+    ¬ KeyVerdict (.failure "unknown-variable") (.error (.rejected "message-correlation-mismatch")) := by
+  simp [KeyVerdict]
 
 end Kernel.Laws.Correlation

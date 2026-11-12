@@ -139,11 +139,14 @@ def reachAnswers (hooks : Hooks) (program : Program) (state : State) (input : Js
     | .stepped (.error failure) => (state, answers ++ [Json.mkObj (failureFields failure)])
   pure (Json.arr answers.toArray)
 
-/-- `messageReceivers` of an instance's state for a `publication`: each reached occurrence with its channel. -/
+/-- `messageReceivers` of an instance's state for a `publication`: each reached occurrence with its channel, or the
+refusal's `{outcome, code}`. -/
 def messageReceiversAnswer (hooks : Hooks) (program : Program) (state : State) (input : Json) : Except String Json := do
   let publication ← publicationFromJson (← input.getObjVal? "publication")
-  pure (Json.arr ((Population.messageReceivers hooks program state publication).map fun (ref, channel) =>
-    Json.mkObj [("occurrence", referenceJson ref), ("channel", Codec.channelToJson channel)]).toArray)
+  pure <| match Population.messageReceivers hooks program state publication with
+    | .ok receivers => Json.arr (receivers.map fun (ref, channel) =>
+      Json.mkObj [("occurrence", referenceJson ref), ("channel", Codec.channelToJson channel)]).toArray
+    | .error failure => Json.mkObj (failureFields failure)
 
 /-- `messageStartCandidates` of a program for the address of a `publication`: each start with its channel. -/
 def startCandidatesAnswer (program : Program) (input : Json) : Except String Json := do

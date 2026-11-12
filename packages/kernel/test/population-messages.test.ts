@@ -139,6 +139,31 @@ test("a publication delivers to its sole open subscription before any start, and
   ]);
 });
 
+test("a reached candidate whose modeled key is outside the key domain refuses the publication, beside a matching one too", () => {
+  const begin = (instanceId: string, businessKey: string, orderId: Json | null): Json => ({
+    kind: "instance", definitionRef: "d1", instanceId,
+    stimulus: {
+      kind: "start", commandId: `start-${instanceId}`, instanceId, businessKey,
+      variables: orderId === null ? [] : [{ name: "orderId", value: orderId }],
+    },
+  });
+  const refused = (orderId: Json | null): unknown[] => resolutions(populate([definition("d1", waiting)], [waiting], [
+    begin("W1", "bk-1", orderId),
+    begin("W2", "bk-2", { kind: "string", value: "o-7" }),
+    publish("q1", { channel: ordered }, "executionsOnly", { criteria: keyed("o-7") }),
+    publish("q2", { channel: ordered }, "any", { criteria: keyed("o-9") }),
+    publish("q3", { channel: ordered }, "executionsOnly", { criteria: keyed("o-7"), businessKey: "bk-2" }),
+  ]));
+  const committed = { kind: "committed", target: { processInstanceId: "W2", elementId: "C", activation: 1 } };
+  for (const [orderId, code] of [
+    [null, "correlation-key-unbound"], [{ kind: "string", value: "" }, "correlation-key-empty"], [{ kind: "integer", value: 7 }, "correlation-key-type"],
+  ] as const) {
+    const refusal = { kind: "unsupported", code };
+    // A candidate the business key excludes is not reached, so its key is never evaluated.
+    assert.deepEqual(refused(orderId), [refusal, refusal, committed], code);
+  }
+});
+
 test("a replayed command answers its recorded resolution and one of different content is rejected, changing nothing", () => {
   const program = starting("Order");
   const sent = publish("p1", { channel: order }, "startOnly");

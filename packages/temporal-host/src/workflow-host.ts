@@ -196,7 +196,7 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
         receivers: populationPort.signalReceivers(program, instance.state, question.address, question.emitter),
         refusesVariables: populationPort.refusesSignalVariables(program),
       });
-  setHandler(populationMessageQuery, (publication) => instance === null || halt !== null ? []
+  setHandler(populationMessageQuery, (publication) => instance === null || halt !== null ? { kind: "receivers", receivers: [] } as const
     : populationPort.messageReceivers(program, instance.state, publication));
   setHandler(pendingIntentsQuery, (commandId) => emits.find((emit) => emit.commandId === commandId)?.held ?? null);
   setHandler(populationStartOutcomeQuery, () => startOutcome);

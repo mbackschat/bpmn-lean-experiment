@@ -105,7 +105,10 @@ function criteria(trigger: Trigger): readonly CorrelationCriterion[] {
   return triggerMessage(trigger)?.correlation ?? [];
 }
 
-/** The key a criterion binds, evaluated in `variables`. */
+/**
+ * The key a criterion binds, evaluated in `variables`. An unbound key is BPMN's uninitialized key (§8.3.3), which the
+ * key domain excludes, so it is refused like an empty or non-String one, never read as a mismatch.
+ */
 function keyValue(ctx: Ctx, context: EvalContext, criterion: CorrelationCriterion): Result<string> {
   const evaluation = ctx.evaluate(context, criterion.value);
   switch (evaluation.tag) {
@@ -118,7 +121,11 @@ function keyValue(ctx: Ctx, context: EvalContext, criterion: CorrelationCriterio
       }
       return committed(evaluation.result.value);
     case EvaluationTag.Failure:
-      return failed(FailureTag.SemanticFailure, evaluation.code);
+      if (evaluation.code === "unknown-variable") {
+        return failed(FailureTag.Unsupported, "correlation-key-unbound"); // dynamic-only: whether a key's variable is bound is the run's data
+      }
+      // Unreachable: `message.correlation.value` admits only a variable read, which fails only as `unknown-variable`.
+      return failed(FailureTag.RolledBack, evaluation.code);
     case EvaluationTag.Unsupported:
       return failed(FailureTag.Unsupported, evaluation.code);
   }

@@ -261,17 +261,19 @@ function startRequest(request: StartRequest): Wire {
 
 /** A publication's criteria refusal as resolution parts; the kernel's criteria refusals only reject or refuse as
  * unsupported, as `publish` relies on too. */
-function refusalParts(refusal: Failure | null): ResolutionParts | null {
-  if (refusal === null) return null;
+/** A publication's command-level refusal; it only rejects or refuses as unsupported, so another failure is a defect. */
+function refusalParts(refusal: Failure): ResolutionParts {
   switch (refusal.tag) {
     case FailureTag.Rejected: return { kind: "rejected", code: refusal.code };
     case FailureTag.Unsupported: return { kind: "unsupported", code: refusal.code };
     case FailureTag.RolledBack:
     case FailureTag.SemanticFailure:
-      throw new TypeError(`criteria refusal ${refusal.code} is not command-level`);
+      throw new TypeError(`publication refusal ${refusal.code} is not command-level`);
   }
   return assertNever(refusal.tag);
 }
+
+const criteriaRefusalParts = (refusal: Failure | null): ResolutionParts | null => refusal === null ? null : refusalParts(refusal);
 
 export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
   decodeCommand: (kind, json) => {
@@ -303,12 +305,12 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
     const issued = decode<Command>(command);
     if (issued.tag !== CommandTag.Publish) throw new TypeError("not a publication");
     const readings = registry.map((wire) => decode<DeploymentSummary>(wire).messageCorrelation);
-    return refusalParts(criteriaRefusal(readings, issued.publication.mode === PublishMode.StartOnly, issued.publication.criteria));
+    return criteriaRefusalParts(criteriaRefusal(readings, issued.publication.mode === PublishMode.StartOnly, issued.publication.criteria));
   },
   startRefusal: (summary, command) => {
     const issued = decode<Command>(command);
     if (issued.tag !== CommandTag.Publish) throw new TypeError("not a publication");
-    return refusalParts(startCriteriaRefusal(decode<DeploymentSummary>(summary).messageCorrelation, issued.publication.criteria));
+    return criteriaRefusalParts(startCriteriaRefusal(decode<DeploymentSummary>(summary).messageCorrelation, issued.publication.criteria));
   },
   timerStartCheck: (registry, deploymentId, startEvent, dueMs, atMs, consumed) =>
     timerStartCheck(registry.map((wire) => decode<DeploymentSummary>(wire)), deploymentId, startEvent, dueMs, atMs, consumed),
@@ -417,8 +419,12 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
   },
   signalReceivers: (program, state, address, emitter) =>
     signalReceiversOf(program, state, decode<SignalAddress>(address), emitter).map(toWire),
-  messageReceivers: (program, state, publication) =>
-    messageReceivers(hooks, program, state, decode<Publication>(publication)).map(([ref, channel]) => [toWire(ref), toWire(channel)] as const),
+  messageReceivers: (program, state, publication) => {
+    const scanned = messageReceivers(hooks, program, state, decode<Publication>(publication));
+    return scanned.ok
+      ? { kind: "receivers", receivers: scanned.value.map(([ref, channel]) => [toWire(ref), toWire(channel)] as const) }
+      : { kind: "refused", refusal: refusalParts(scanned.failure) };
+  },
   populationReach: (program, state, delivery, atMs) => {
     const sent = decode<Delivery>(delivery);
     if ("signal" in sent) {

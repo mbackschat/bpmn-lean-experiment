@@ -13,7 +13,9 @@
  */
 import { canonicalJson } from "./canonical-json.js";
 import type { HostConfig } from "./host-contract.js";
-import type { CommandView, JsonValue, OccurrenceId, PopulationPort, WaitAddressView, ReachOutcome, ResolutionParts, SelectorView, Wire } from "./port.js";
+import type {
+  CommandView, JsonValue, MessageScan, OccurrenceId, PopulationPort, WaitAddressView, ReachOutcome, ResolutionParts, SelectorView, Wire,
+} from "./port.js";
 
 /** Host restrictions of the ingress, each refused with a stable code, never a meaning of the construct. */
 export const populationCapacity = {
@@ -214,7 +216,7 @@ export type Answer =
   | { readonly kind: "intents"; readonly instanceId: string | null; readonly intents: readonly Wire[] }
   | { readonly kind: "settled" }
   | { readonly kind: "signalScan"; readonly chains: readonly ChainSignals[]; readonly starts: readonly DeploymentSignals[] }
-  | { readonly kind: "messageScan"; readonly chains: readonly { readonly workflowId: string; readonly receivers: readonly (readonly [Wire, Wire])[] }[] }
+  | { readonly kind: "messageScan"; readonly chains: readonly { readonly workflowId: string; readonly scan: MessageScan }[] }
   | { readonly kind: "messageStarts"; readonly starts: readonly { readonly deploymentId: number; readonly candidates: readonly (readonly [string, Wire])[] }[] }
   /** Each deployment's root Conditional starts by public identifier, in the order the action named the deployments. */
   | { readonly kind: "conditionalStarts"; readonly starts: readonly { readonly deploymentId: number; readonly startEvents: readonly string[] }[] }
@@ -610,7 +612,11 @@ export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressSta
     }
     case "messageScan": {
       if (given.kind !== "messageScan" || view?.kind !== "publish") break;
-      const matches = given.chains.flatMap((chain) => chain.receivers.map(([target, channel]) => ({ workflowId: chain.workflowId, target, channel })));
+      // A reached wait's refusal is the command's, whatever the other chains reach (`Population.publish`).
+      const refused = given.chains.find((chain) => chain.scan.kind === "refused")?.scan;
+      if (refused?.kind === "refused") return resolve(port, state, refused.refusal);
+      const matches = given.chains.flatMap((chain) => chain.scan.kind === "receivers"
+        ? chain.scan.receivers.map(([target, channel]) => ({ workflowId: chain.workflowId, target, channel })) : []);
       if (matches.length > 1) return resolve(port, state, { kind: "ambiguous" });
       const [only] = matches;
       if (only !== undefined) return withPhase(state, { kind: "messageDeliver", ...only });

@@ -198,10 +198,15 @@ export function reachAnswers(hooks: Hooks, program: Program, state: State, input
   });
 }
 
-/** `messageReceivers` of an instance's state for a `publication`: each reached occurrence with its channel. */
+/**
+ * `messageReceivers` of an instance's state for a `publication`: each reached occurrence with its channel, or the
+ * refusal's `{outcome, code}`.
+ */
 export function messageReceiversAnswer(hooks: Hooks, program: Program, state: State, input: unknown): JsonValue {
-  return messageReceivers(hooks, program, state, publicationFromJson(field(input, "publication", where), where))
-    .map(([ref, channel]) => ({ occurrence: referenceJson(ref), channel: channelToJson(channel) }));
+  const receivers = messageReceivers(hooks, program, state, publicationFromJson(field(input, "publication", where), where));
+  return receivers.ok
+    ? receivers.value.map(([ref, channel]) => ({ occurrence: referenceJson(ref), channel: channelToJson(channel) }))
+    : failureFields(receivers.failure);
 }
 
 /** `messageStartCandidates` of a program for the address of a `publication`: each start with its channel. */

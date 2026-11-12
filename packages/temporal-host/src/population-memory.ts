@@ -172,7 +172,7 @@ export class MemoryPopulation<P, S, M> {
           kind: "messageScan",
           chains: action.chains.flatMap((workflowId) => {
             const chain = this.chains.get(workflowId);
-            return chain === undefined ? [] : [{ workflowId, receivers: port.messageReceivers(chain.program, chain.state, action.publication) }];
+            return chain === undefined ? [] : [{ workflowId, scan: port.messageReceivers(chain.program, chain.state, action.publication) }];
           }),
         };
       case "scanMessageStarts":

@@ -63,7 +63,8 @@ def criteriaHold (state : State) (scope : ScopeOccurrenceId) (criteria : List Co
 def criteria (trigger : Trigger) : List CorrelationCriterion :=
   (trigger.message?.map (·.correlation)).getD []
 
-/-- The key a criterion binds, evaluated in `variables`. -/
+/-- The key a criterion binds, evaluated in `variables`. An unbound key is BPMN's uninitialized key (§8.3.3), which
+the key domain excludes, so it is refused like an empty or non-String one, never read as a mismatch. -/
 def keyValue (ctx : Ctx) (context : EvalContext) (criterion : CorrelationCriterion) :
     Except Failure String :=
   match ctx.evaluate context criterion.value with
@@ -71,7 +72,10 @@ def keyValue (ctx : Ctx) (context : EvalContext) (criterion : CorrelationCriteri
   | .value (.string key) => if key.isEmpty then .error (.unsupported "correlation-key-empty") else .ok key
   -- dynamic-only: a key's value type is the run's data.
   | .value _ => .error (.unsupported "correlation-key-type")
-  | .failure code => .error (.semanticFailure code)
+  -- dynamic-only: whether a key's variable is bound is the run's data.
+  | .failure "unknown-variable" => .error (.unsupported "correlation-key-unbound")
+  -- Unreachable: `message.correlation.value` admits only a variable read, which fails only as `unknown-variable`.
+  | .failure code => .error (.rolledBack code)
   | .unsupported code => .error (.unsupported code)
 
 /-- Whether the delivered `correlation` names exactly the criteria's keys, in order, each with the String its criterion

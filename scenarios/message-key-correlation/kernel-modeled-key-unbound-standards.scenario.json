@@ -1,0 +1,57 @@
+{
+  "kind": "scenario",
+  "id": "message-key-correlation-kernel-modeled-key-unbound-standards",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "message-key-correlation-unbound-key",
+    "relativePath": "scenarios/message-key-correlation/unbound-key.bpmn",
+    "sha256": "08e2798c5799ee010c383103deb4b4a2f84d6164285e9718140774ca3526e993",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-unbound",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "deliver-while-unbound",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "MessageCatch_CorrelatedSettlement",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ClearingHouse",
+          "interfaceOperationId": "Operation_ConfirmSettlement",
+          "messageId": "Message_SettlementConfirmed"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "CorrelationKey_SettlementReference"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "settlement-42"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.3.3",
+      "BPMN 2.0.2 Clause 8.4.2"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

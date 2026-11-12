@@ -11,7 +11,7 @@ import { defineQuery, defineUpdate } from "@temporalio/workflow";
 import type { CommandResult, HostSnapshot } from "./host-contract.js";
 import type { EffectRequest, ScriptRequest } from "./host-machine.js";
 import type { PublicationPage } from "./publication.js";
-import type { EffectResult, JsonValue, ReachOutcome, Wire } from "./port.js";
+import type { EffectResult, JsonValue, MessageScan, ReachOutcome, Wire } from "./port.js";
 import type {
   ChainRegistration,
   ChainSignalAnswer,
@@ -84,7 +84,7 @@ export const deploymentMessageStartsQuery = defineQuery<readonly (readonly [stri
 export const deploymentConditionalStartsQuery = defineQuery<readonly string[]>("conditionalStarts");
 
 export const populationSignalQuery = defineQuery<ChainSignalAnswer, [SignalQuestion]>("signalReceivers");
-export const populationMessageQuery = defineQuery<readonly (readonly [Wire, Wire])[], [publication: Wire]>("messageReceivers");
+export const populationMessageQuery = defineQuery<MessageScan, [publication: Wire]>("messageReceivers");
 export const pendingIntentsQuery = defineQuery<HeldIntents | null, [commandId: string]>("pendingIntents");
 export const populationDeliverUpdate = defineUpdate<ReachOutcome, [PopulationDelivery]>("populationDeliver");
 export const emitSettledUpdate = defineUpdate<void, [commandId: string]>("emitSettled");

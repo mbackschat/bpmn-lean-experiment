@@ -99,8 +99,8 @@ async function scan(client: Client, population: string, action: ScanAction): Pro
     }
     case "scanMessage": {
       const chains = await Promise.all(action.chains.map(async (workflowId) => {
-        const receivers = await unlessGone(() => chain(workflowId).query(populationMessageQuery, action.publication));
-        return { workflowId, receivers: receivers ?? [] };
+        const scan = await unlessGone(() => chain(workflowId).query(populationMessageQuery, action.publication));
+        return { workflowId, scan: scan ?? { kind: "receivers", receivers: [] } as const };
       }));
       return { kind: "messageScan", chains };
     }

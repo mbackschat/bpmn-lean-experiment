@@ -1,0 +1,160 @@
+{
+  "kind": "populationScenario",
+  "id": "message-key-correlation-kernel-unbound-key-publication-standards",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "message-key-correlation-unbound-key",
+      "bpmn": {
+        "id": "message-key-correlation-unbound-key",
+        "relativePath": "scenarios/message-key-correlation/unbound-key.bpmn",
+        "sha256": "08e2798c5799ee010c383103deb4b4a2f84d6164285e9718140774ca3526e993",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "message-key-correlation-unbound-key",
+      "instanceId": "SettlementUnboundA",
+      "stimulus": {
+        "kind": "start",
+        "commandId": "start-SettlementUnboundA",
+        "instanceId": "SettlementUnboundA",
+        "variables": []
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "message-key-correlation-unbound-key",
+      "instanceId": "SettlementUnboundB",
+      "stimulus": {
+        "kind": "start",
+        "commandId": "start-SettlementUnboundB",
+        "instanceId": "SettlementUnboundB",
+        "variables": []
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "message-key-correlation-unbound-key",
+      "instanceId": "SettlementUnboundB",
+      "stimulus": {
+        "kind": "deliver",
+        "commandId": "initialize-settlement-unbound-b",
+        "occurrence": {
+          "processInstanceId": "SettlementUnboundB",
+          "elementId": "MessageCatch_InitialSettlement",
+          "activation": 1
+        },
+        "trigger": {
+          "kind": "message",
+          "channel": {
+            "kind": "operationMessage",
+            "interfaceId": "Interface_ClearingHouse",
+            "interfaceOperationId": "Operation_ConfirmSettlement",
+            "messageId": "Message_SettlementConfirmed"
+          }
+        },
+        "payload": {
+          "kind": "string",
+          "value": "settlement-42"
+        }
+      }
+    },
+    {
+      "kind": "publish",
+      "commandId": "publish-while-one-key-unbound",
+      "address": {
+        "definition": {
+          "deploymentId": 1
+        },
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ClearingHouse",
+          "interfaceOperationId": "Operation_ConfirmSettlement",
+          "messageId": "Message_SettlementConfirmed"
+        }
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "CorrelationKey_SettlementReference"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "settlement-42"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly"
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "message-key-correlation-unbound-key",
+      "instanceId": "SettlementUnboundA",
+      "stimulus": {
+        "kind": "deliver",
+        "commandId": "initialize-settlement-unbound-a",
+        "occurrence": {
+          "processInstanceId": "SettlementUnboundA",
+          "elementId": "MessageCatch_InitialSettlement",
+          "activation": 1
+        },
+        "trigger": {
+          "kind": "message",
+          "channel": {
+            "kind": "operationMessage",
+            "interfaceId": "Interface_ClearingHouse",
+            "interfaceOperationId": "Operation_ConfirmSettlement",
+            "messageId": "Message_SettlementConfirmed"
+          }
+        },
+        "payload": {
+          "kind": "string",
+          "value": "settlement-7"
+        }
+      }
+    },
+    {
+      "kind": "publish",
+      "commandId": "publish-after-every-key-bound",
+      "address": {
+        "definition": {
+          "deploymentId": 1
+        },
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ClearingHouse",
+          "interfaceOperationId": "Operation_ConfirmSettlement",
+          "messageId": "Message_SettlementConfirmed"
+        }
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "CorrelationKey_SettlementReference"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "settlement-42"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly"
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.3.3",
+      "BPMN 2.0.2 Clause 8.4.2"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

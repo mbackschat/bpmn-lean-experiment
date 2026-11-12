@@ -10,8 +10,8 @@ import { test } from "node:test";
 import { fixture } from "./lean-paired.ts";
 
 import {
-  activity, base, catchEvent, duration, end, eventBased, flow, gateway, juel, message, qName, start, text, userWork, wired,
-  withOptions,
+  activity, base, catchEvent, criterion, duration, end, eventBased, flow, gateway, juel, message, qName, start, text, userWork,
+  variable, wired, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
@@ -111,6 +111,21 @@ test("messageReceivers reaches a waiting catch by channel, by name only under na
   assert.deepEqual(names(addressed, "bk-1", publication({ channel: order }, "bk-1")), ["C"]);
   assert.deepEqual(names(addressed, "bk-1", publication({ channel: order }, "bk-2")), []);
   assert.deepEqual(names(waiter(), null, publication({ name: "Order" })), []);
+});
+
+test("messageReceivers answers a reached catch's modeled key outside the key domain as the publication's refusal", () => {
+  const keyedOrder = message({ messageRef: "M_Order", name: text("Order"), interfaceRef: "I", operationRef: "O", correlation: [criterion("OrderKey", variable("orderId"))] });
+  const deployed = { ...program("Keyed", [start("S"), catchEvent("C", keyedOrder), end("E")], [flow("f1", "S", "C"), flow("f2", "C", "E")]), variables: ["orderId"] };
+  const sent: Json = {
+    ...publication({ channel: { kind: "operationMessage", messageId: "M_Order", interfaceId: "I", interfaceOperationId: "O" } }),
+    criteria: [{ target: { kind: "processVariable", name: "OrderKey" }, expected: { kind: "string", value: "o-7" } }],
+  };
+  const answer = (variables: Json[], businessKey: string | null = null): unknown =>
+    fixture("messageReceivers", [deployed], { stimuli: [{ ...begin("bk-1"), variables }], publication: { ...sent, ...(businessKey === null ? {} : { businessKey }) } });
+  assert.deepEqual(answer([]), { outcome: "unsupported", code: "correlation-key-unbound" });
+  assert.deepEqual(answer([{ name: "orderId", value: { kind: "string", value: "" } }]), { outcome: "unsupported", code: "correlation-key-empty" });
+  assert.deepEqual(answer([], "bk-2"), [], "a catch the business key excludes is not reached");
+  assert.deepEqual((answer([{ name: "orderId", value: { kind: "string", value: "o-7" } }]) as Json[]).map((found) => (found.occurrence as Json).elementId), ["C"]);
 });
 
 test("messageStartCandidates reaches a deployment's Message starts by channel, and by name only under name addressing", () => {

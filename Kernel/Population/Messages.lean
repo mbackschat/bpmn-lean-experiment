@@ -33,25 +33,29 @@ def matching (hooks : Hooks) (program : Program) (state : State) (channel : Mess
 
 /-- The open Message subscriptions of one instance of `program` a publication reaches, each with the channel its
 delivery names: those on the publication's channel, or, for a name, those that resolved that name when they opened
-(only under `MessageNames.addresses`, CIB-LIM-0022), on their own channel. Each must accept the criteria
-(`Hooks.correlates`; a modeled key that does not evaluate to a non-empty String is no match) and, when the publication
-carries a business key, belong to an instance with that key, a called instance's own (CIB `processInstanceBusinessKey`).
-Criteria `criteriaRefusal` refuses are the command's refusal, which the caller decides before this scan: here they
-would read as no match. -/
+(only under `MessageNames.addresses`, CIB-LIM-0022), that belong, when the publication carries a business key, to an
+instance with that key, a called instance's own (CIB `processInstanceBusinessKey`), and that accept the criteria
+(`Hooks.correlates`). A reached subscription whose acceptance is refused, a modeled key outside the key domain, refuses
+the publication: the refusal is the command's, never read as no match. Criteria `criteriaRefusal` refuses are the
+command's refusal too, which the caller decides before this scan. -/
 def messageReceivers (hooks : Hooks) (program : Program) (state : State) (publication : Publication) :
-    List (OccurrenceRef × MessageChannel) :=
+    Except Failure (List (OccurrenceRef × MessageChannel)) :=
   let ctx := Step.context hooks program
-  state.openItems.filterMap fun item =>
+  state.openItems.filterMapM fun item => do
     let view := item.kind.view
     let channel? := match publication.message with
       | .channel channel => some channel
       | .name name => if view.name == some name then view.channel else none
     let keyed := publication.businessKey.all fun key =>
       ((state.slots.instances.find? (·.root == state.instanceRoot item.scope)).bind (·.businessKey)) == some key
-    channel?.bind fun channel =>
-      match hooks.correlates ctx item channel publication.criteria state with
-      | .ok true => if keyed then some (occurrence program state item, channel) else none
-      | .ok false | .error _ => none
+    match channel? with
+    | some channel =>
+      -- A wait the business key excludes is not reached, so its key is never evaluated.
+      if !keyed then pure none
+      else if ← hooks.correlates ctx item channel publication.criteria state then
+        pure (some (occurrence program state item, channel))
+      else pure none
+    | none => pure none
 
 /-- The root Message starts of `program` a publication of `message` reaches, in document order, each with its channel:
 those on the channel, or, for a name, those whose literal name it is under the program's `MessageNames.addresses`
@@ -105,8 +109,9 @@ def startFor (hooks : Hooks) (instances : List Instance) (publication : Publicat
       trigger := .message channel publication.payload, businessKey := publication.businessKey, atMs := some atMs }
   pure (instances ++ started.toList, .fanOut [entry])
 
-/-- A publication's command-level criteria refusal (`criteriaRefusal`, `startCriteriaRefusal`) as its resolution; both
-only reject or refuse as unsupported, so another failure is a harness defect. -/
+/-- A publication's command-level refusal as its resolution: its criteria's (`criteriaRefusal`, `startCriteriaRefusal`)
+or a reached subscription's (`messageReceivers`). Each only rejects or refuses as unsupported, so another failure is a
+harness defect. -/
 def refusalOf : Failure → Except String Resolution
   | .rejected code => pure (.rejected code)
   | .unsupported code => pure (.unsupported code)
@@ -119,7 +124,8 @@ step it causes evaluates `now` and arms Timers from it. Zero is `noMatch` and se
 every instance unchanged; candidate order never picks a winner. Criteria `criteriaRefusal` refuses under the reading
 of any registered deployment refuse the command before any receiver or start is sought (`rejected criteria-duplicate`
 or `criteria-start-only`, or `unsupported`, which CIB answers by rolling the correlation back), a selector naming no
-registered deployment `rejected definition-not-deployed`; the sole start candidate it falls through to starts only if
+registered deployment `rejected definition-not-deployed`, and a reached subscription whose modeled key lies outside the
+key domain `unsupported` with its code (`messageReceivers`); the sole start candidate it falls through to starts only if
 `startCriteriaRefusal` admits the criteria under that deployment's reading. A delivery also answers its receiver's root instance, whose committed step's intents
 cascade next. -/
 def publish (hooks : Hooks) (registry : List Deployment) (instances : List Instance) (atMs : Nat)
@@ -128,10 +134,14 @@ def publish (hooks : Hooks) (registry : List Deployment) (instances : List Insta
   if let some failure := criteriaRefusal readings (publication.mode == .startOnly) publication.criteria then
     return (instances, ← refusalOf failure, none)
   let some scope := selected registry publication.definition | return (instances, .rejected "definition-not-deployed", none)
-  let reached := if publication.mode == .startOnly then [] else
-    instances.zipIdx.flatMap fun (member, index) =>
-      if scope.any (·.deploymentId != member.deployment.deploymentId) then []
-      else (messageReceivers hooks member.deployment.program member.state publication).map (index, ·)
+  let scanned : Except Failure (List (List (Nat × OccurrenceRef × MessageChannel))) :=
+    if publication.mode == .startOnly then pure [] else
+    instances.zipIdx.mapM fun (member, index) =>
+      if scope.any (·.deploymentId != member.deployment.deploymentId) then pure []
+      else (·.map (index, ·)) <$> messageReceivers hooks member.deployment.program member.state publication
+  let reached ← match scanned with
+    | .ok lists => pure lists.flatten
+    | .error failure => return (instances, ← refusalOf failure, none)
   match reached with
   | [(index, target, channel)] =>
     let delivery : Input := .deliver { occurrence := target, trigger := .message channel
