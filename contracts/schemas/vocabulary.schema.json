@@ -443,6 +443,7 @@
         "codec.malformed",
         "codec.missingField",
         "codec.unknownField",
+        "compensation.dependency.boundary",
         "compensation.handlerCount",
         "compensation.handlerMultiInstance",
         "compensation.handlerWork",

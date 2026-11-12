@@ -45,6 +45,15 @@ const handledScope = (record: Json | string) => (program: Json): Json =>
   withFlows(append(retaining({ compensationHandlers: ["K"] })(program),
     scope("K", "embedded", {}, {}), start("KS", null, [], "K"), end("KE", record, "K")), flow("kk", "KS", "KE"));
 
+/**
+ * `T` becomes a User Task compensable by `HT`, whose Timer boundary `BT` leads to `B`, a User Task compensable by `HB`
+ * that leads to `E`; `alsoFromTask` adds a flow from `T` itself to `B`.
+ */
+const boundaryConnected = (alsoFromTask: boolean) => (program: Json): Json =>
+  withFlows(append(task(activity("T", userWork(), { compensationHandlers: ["HT"], boundaries: [boundary("BT", duration("PT1S"))] }))(program),
+    activity("B", userWork(), { compensationHandlers: ["HB"] }), activity("HT", "manual"), activity("HB", "manual")),
+  flow("bb", "BT", "B"), flow("be", "B", "E"), ...(alsoFromTask ? [flow("tb", "T", "B")] : []));
+
 export const rows: readonly Row[] = [
   {
     code: "scope.implicitStart",
@@ -119,6 +128,13 @@ export const rows: readonly Row[] = [
     description: "a compensable Task in a Sub-Process whose handler throws Compensation",
     mutate: handledScope(compensate),
     control: handledScope("none"),
+  },
+  {
+    // BPMN 2.0.2 §13.5.5: B's record shows that the boundary Event occurred only when B has no other way in.
+    code: "compensation.dependency.boundary",
+    description: "a compensable Task reached from a compensable Task's boundary and from another flow",
+    mutate: boundaryConnected(true),
+    control: boundaryConnected(false),
   },
 ];
 

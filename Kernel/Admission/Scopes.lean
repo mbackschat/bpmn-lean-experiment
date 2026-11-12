@@ -149,4 +149,18 @@ def nestedCompensation (program : Program) (throws : List Element) (header : Hea
   if !envelope.compensationHandlers.isEmpty then handOn program throws (program.elements.length + 1) header.parent
   else none
 
+/-- BPMN 2.0.2 §13.5.5: "If a Sub-Process A has a boundary Event connected to Activity B, then compensation of B MUST be
+performed before compensation of A if that particular Event occurred." B's record shows only that B completed, so it
+shows the Event occurred only when every incoming flow of B leaves a boundary of A; a compensable B with another
+incoming flow beside one from a compensable A's boundary is refused, since its record cannot show which arrival it stems
+from. -/
+def boundaryDependency (program : Program) (envelope : Envelope) : Option String :=
+  let hosts := envelope.incoming.map fun flow => ((program.source? flow).bind program.boundary?).map (·.1.header.id)
+  let compensable (host : ElementId) : Bool :=
+    ((program.element? host).bind (·.envelope?)).any fun hostEnvelope => !hostEnvelope.compensationHandlers.isEmpty
+  if !envelope.compensationHandlers.isEmpty &&
+      hosts.any fun host => host.any compensable && hosts.any (· != host) then
+    some "compensation.dependency.boundary"
+  else none
+
 end Kernel.Admission.Scopes

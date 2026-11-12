@@ -313,6 +313,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
           { transaction: false, escalation: workIsUser(payload.work) || call !== null }, payload.envelope.boundaries),
         () => boundaryData(program, header, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
+        () => Scopes.boundaryDependency(program, payload.envelope),
       );
     }
     case ElementTag.Scope: {
@@ -335,6 +336,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
           payload.envelope.boundaries),
         () => boundaryData(program, header, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
+        () => Scopes.boundaryDependency(program, payload.envelope),
       );
     }
     case ElementTag.Event:

@@ -14,6 +14,7 @@ import {
   programBoundary,
   programChildren,
   programElement,
+  programSource,
   type CalledProcess,
   type Element,
   type ElementId,
@@ -214,4 +215,27 @@ function handOn(program: Program, throws: readonly Element[], fuel: number, scop
 
 export function nestedCompensation(program: Program, throws: readonly Element[], header: Header, envelope: Envelope): string | null {
   return envelope.compensationHandlers.length === 0 ? null : handOn(program, throws, program.elements.length + 1, header.parent);
+}
+
+/**
+ * BPMN 2.0.2 §13.5.5: "If a Sub-Process A has a boundary Event connected to Activity B, then compensation of B MUST be
+ * performed before compensation of A if that particular Event occurred." B's record shows only that B completed, so it
+ * shows the Event occurred only when every incoming flow of B leaves a boundary of A; a compensable B with another
+ * incoming flow beside one from a compensable A's boundary is refused, since its record cannot show which arrival it
+ * stems from.
+ */
+export function boundaryDependency(program: Program, envelope: Envelope): string | null {
+  const hosts = envelope.incoming.map((flow) => {
+    const source = programSource(program, flow);
+    const found = source === null ? null : programBoundary(program, source);
+    return found === null ? null : elementHeader(found[0]).id;
+  });
+  const compensable = (host: ElementId): boolean => {
+    const element = programElement(program, host);
+    return element !== null && (elementEnvelope(element)?.compensationHandlers.length ?? 0) > 0;
+  };
+  return envelope.compensationHandlers.length > 0 &&
+      hosts.some((host) => host !== null && compensable(host) && hosts.some((other) => other !== host))
+    ? "compensation.dependency.boundary"
+    : null;
 }
