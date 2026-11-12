@@ -151,6 +151,22 @@ test("a broadcast whose first snapshot exceeds the receivers one command may rea
   assert.deepEqual(takeAnswer(answered, ticket)?.[1], { commandId: "b", ordinal: 1, atMs: 0, resolution: { kind: "rejected", code: population.fanOutCapacityCode }, chain: null });
 });
 
+test("a publication two chains refuse answers the least refusal code, not the first registered chain's", () => {
+  const view: CommandView = { kind: "publish", commandId: "p", definition: null, executions: true, starts: false, channel: null, name: "M" };
+  const kernel = port({ ...rendered, decodeCommand: () => ({ view, command: "publish" }), publicationRefusal: () => null,
+    currentDeployments: () => [], publication: () => "publication" });
+  const [state, ticket] = enqueueCommand(emptyIngress, "p", "publish", {}, "d");
+  assert.ok(ticket !== null);
+  const [scanning, scan] = advance(kernel, state, 0);
+  assert.equal(scan?.kind, "scanMessage");
+  const answered = population.answer(kernel, scanning, { kind: "messageScan", chains: [
+    { workflowId: "W1", scan: { kind: "refused", refusal: { kind: "unsupported", code: "correlation-key-type" } } },
+    { workflowId: "W2", scan: { kind: "refused", refusal: { kind: "unsupported", code: "correlation-key-empty" } } },
+  ] }, populationCapacity.receivers);
+  assert.deepEqual(takeAnswer(answered, ticket)?.[1],
+    { commandId: "p", ordinal: 1, atMs: 0, resolution: { kind: "unsupported", code: "correlation-key-empty" }, chain: null });
+});
+
 test("a caller whose chain configuration differs from the ingress's is refused, never run under the other", () => {
   const held = { scheduling: "durable", effectStartToCloseMs: 10_000, historyEventBudget: null } as const;
   assert.equal(population.configurationConflict(held as never, { ...held } as never), null);
