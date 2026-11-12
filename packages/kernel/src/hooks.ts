@@ -56,7 +56,7 @@ import {
   signal,
   visible,
   type Binding,
-  type CommandAction,
+  type IncidentDetail,
   type CorrelationMatch,
   type DeliveryInput,
   type DeliveryTrigger,
@@ -478,13 +478,23 @@ export function ctxRequireMappings(ctx: Ctx, context: EvalContext, mappings: rea
   return ctxRequireMappingsWith(ctx, () => context, mappings);
 }
 
+/** The open item with the public identity `occurrence` whose view has the detail `detail` reads, with that detail. */
+export function itemDetailOf<T>(
+  ctx: Ctx, state: State, occurrence: OccurrenceRef, detail: (view: WaitView) => T | null,
+): readonly [OpenItem, T] | null {
+  for (const item of state.openItems) {
+    if (programPublicId(ctx.program, item.element) !== occurrence.element ||
+      occurrenceOf(state, item.occurrence)?.activation !== occurrence.activation ||
+      instanceOf(state, item.scope) !== occurrence.processInstanceId) continue;
+    const found = detail(openKindView(item.kind));
+    if (found !== null) return [item, found];
+  }
+  return null;
+}
+
 /** The open item with the public identity `occurrence` whose view has the detail `detail` reads. */
 export function itemOf(ctx: Ctx, state: State, occurrence: OccurrenceRef, detail: (view: WaitView) => unknown): OpenItem | null {
-  return state.openItems.find((item) =>
-    programPublicId(ctx.program, item.element) === occurrence.element &&
-    occurrenceOf(state, item.occurrence)?.activation === occurrence.activation &&
-    detail(openKindView(item.kind)) !== null &&
-    instanceOf(state, item.scope) === occurrence.processInstanceId) ?? null;
+  return itemDetailOf(ctx, state, occurrence, detail)?.[0] ?? null;
 }
 
 /**
@@ -576,8 +586,10 @@ export interface Hooks {
     ctx: Ctx, header: Header, payload: ActivityPayload, item: OpenItem, values: readonly Binding[], state: State) => Outcome;
   /** Work: the outcome of an open effect. */
   readonly effectResult: (ctx: Ctx, item: OpenItem, outcome: EffectOutcome, state: State) => Outcome;
-  /** Work: retry an open incident or cancel its process. */
-  readonly resolveIncident: (ctx: Ctx, item: OpenItem, action: CommandAction, state: State) => Outcome;
+  /** Work: retry the open incident `item`, whose detail is given, for the generation the command names. */
+  readonly retryIncident: (ctx: Ctx, item: OpenItem, incident: IncidentDetail, generation: number, state: State) => Outcome;
+  /** Work: cancel the process of the open incident whose detail is given, for the generation the command names. */
+  readonly cancelIncidentProcess: (ctx: Ctx, incident: IncidentDetail, generation: number, state: State) => Outcome;
   /** Work: a message or timer subscription an Activity opened itself (a Receive Task) fired. */
   readonly triggerActivity: (
     ctx: Ctx, header: Header, payload: ActivityPayload, item: OpenItem, fired: Fired, state: State) => Outcome;
@@ -667,7 +679,8 @@ export const defaultHooks: Hooks = {
   completeBody: () => refuse("completeBody"),
   completeUserTask: () => refuse("completeUserTask"),
   effectResult: () => refuse("effectResult"),
-  resolveIncident: () => refuse("resolveIncident"),
+  retryIncident: () => refuse("retryIncident"),
+  cancelIncidentProcess: () => refuse("cancelIncidentProcess"),
   triggerActivity: () => refuse("triggerActivity"),
   trigger: () => refuse("trigger"),
   arm: () => refuse("arm"),

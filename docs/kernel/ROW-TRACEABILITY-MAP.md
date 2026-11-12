@@ -720,7 +720,7 @@ The evaluator needs no change. An expression outside Simple Boolean is refused a
 | `Work.arriveActivity`, `MultiInstance.arriveMultiInstance` | an unavailable InputSet holds the token | §10.4.2, §13.3.2 for Data Associations; for `camunda:inputParameter`, CIB-EXT-0024 (inferred) | `Mapping.dialect`; publishing and release land with their rows |
 | `Work.effectResult` | a business failure writes outputs, then raises | CIB-EXT-0004, -0009, -0016; BPMN writes none (§13.3.2) | `O.errorPathOutputs` |
 | `Work.effectResult` | a technical failure opens an incident | CIB-EXT-0013, CIB-CFG-0008 | `O.technicalFailure` |
-| `Work.resolveIncident` | cancel ends the root as cancelled | CIB-EXT-0014, CIB-OP-0009 | `O.incidentProcessCancellation` |
+| `Work.cancelIncidentProcess` | cancel ends the root as cancelled | CIB-EXT-0014, CIB-OP-0009 | `O.incidentProcessCancellation` |
 | `Work.completeUserTask` | no outputs: install the submission | CIB-EXT-0005, -0010 | `O.submission` |
 | `Submission.check` | names on the scope chain, byte limit | CIB-EXT-0020, `NSD-TASK-01` | `O.scopeChainSubmissionBytes` |
 | `CallWork.unsetSourceReadsNull` | a `camunda:in` copy reads an unset source as null | CIB-EXT-0021 | `Mapping.dialect` |

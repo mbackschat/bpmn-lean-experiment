@@ -26,13 +26,13 @@ import {
   InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence, beginRequest,
   busyScopes, closeOwnItems, committed, crossed, emptyDraft, entryCount, failed, failedWith, idle, initial, instanceOf,
   keyOf, occurrenceOf, ownScope, recordEnd, reserve, root, signal as enqueue, startReserved, type BeginRequest,
-  type Binding, type Cause, type CommandAction, type CommandInput, type EffectInput, type Fired, type Input,
+  type Binding, type Cause, type CommandInput, type EffectInput, type Fired, type IncidentDetail, type Input,
   type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceRef, type OpenItem, type Outcome,
   type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartTrigger, type State, type Token,
   type Transition,
 } from "./state.js";
 import {
-  ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
+  ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemDetailOf, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
 } from "./hooks.js";
 
 /** The name a transition records for a signal: its tag, which spells the Lean constructor. */
@@ -480,9 +480,9 @@ function occurrenceOfRef(ctx: Ctx, state: State, ref: OccurrenceRef): Occurrence
 }
 
 function command(hooks: Hooks, ctx: Ctx, input: CommandInput, state: State): Outcome {
-  const incident = (action: CommandAction): Outcome => {
-    const item = itemOf(ctx, state, input.occurrence, (view) => view.incident);
-    return item === null ? failed(FailureTag.Rejected, "unknown-incident") : hooks.resolveIncident(ctx, item, action, state);
+  const incident = (resolve: (item: OpenItem, detail: IncidentDetail) => Outcome): Outcome => {
+    const found = itemDetailOf(ctx, state, input.occurrence, (view) => view.incident);
+    return found === null ? failed(FailureTag.Rejected, "unknown-incident") : resolve(found[0], found[1]);
   };
   // A variable command acts from the occurrence's own scope outward, its input-mapped locals first, as CIB's
   // `setVariables` on the waiting activity's execution does (`AbstractVariableScope#setVariable`).
@@ -503,8 +503,9 @@ function command(hooks: Hooks, ctx: Ctx, input: CommandInput, state: State): Out
       return hooks.completeUserTask(ctx, activity[0], activity[1], item, action.values, state);
     }
     case CommandActionTag.RetryIncident:
+      return incident((item, detail) => hooks.retryIncident(ctx, item, detail, action.generation, state));
     case CommandActionTag.CancelIncidentProcess:
-      return incident(action);
+      return incident((_item, detail) => hooks.cancelIncidentProcess(ctx, detail, action.generation, state));
     case CommandActionTag.SetVariables:
       return admitThen(action.values.map(([, value]) => value), () => variables((scope) => ({ tag: SignalTag.Write, scope, writes: action.values, rule: WriteRule.Outward })));
     case CommandActionTag.RemoveVariables:

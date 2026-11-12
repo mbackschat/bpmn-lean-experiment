@@ -266,13 +266,19 @@ def Ctx.requireMappings (ctx : Ctx) (context : EvalContext) (mappings : List Map
     Except Failure (List (String × Value)) :=
   ctx.requireMappingsWith (fun _ => context) mappings
 
+/-- The open item with the public identity `occurrence` whose view has the detail `detail` reads, with that detail. -/
+def itemDetail? {α : Type} (ctx : Ctx) (state : State) (occurrence : OccurrenceRef) (detail : WaitView → Option α) :
+    Option (OpenItem × α) :=
+  state.openItems.findSome? fun item =>
+    if ctx.program.publicId item.element == occurrence.element &&
+        ((state.occurrence? item.occurrence).map (·.activation)) == some occurrence.activation &&
+        state.instanceOf item.scope == occurrence.processInstanceId
+    then (detail item.kind.view).map (item, ·) else none
+
 /-- The open item with the public identity `occurrence` whose view has the detail `detail` reads. -/
 def item? {α : Type} (ctx : Ctx) (state : State) (occurrence : OccurrenceRef) (detail : WaitView → Option α) :
     Option OpenItem :=
-  state.openItems.find? fun item =>
-    ctx.program.publicId item.element == occurrence.element &&
-      ((state.occurrence? item.occurrence).map (·.activation)) == some occurrence.activation &&
-      (detail item.kind.view).isSome && state.instanceOf item.scope == occurrence.processInstanceId
+  (itemDetail? ctx state occurrence detail).map (·.1)
 
 /-- The subscription an open item belongs to: a boundary's, a catch Event's or an Event Sub-Process start's; an
 Activity's own subscription (a Receive Task) is the work feature's. Subscriptions and Correlation
@@ -348,9 +354,10 @@ structure Hooks where
     fun _ _ _ _ _ => refuse "completeUserTask"
   /-- Work: the outcome of an open effect. -/
   effectResult : Ctx → OpenItem → EffectOutcome → State → Outcome := fun _ _ _ => refuse "effectResult"
-  /-- Work: retry an open incident or cancel its process (`CommandAction.retryIncident` or
-  `.cancelIncidentProcess`). -/
-  resolveIncident : Ctx → OpenItem → CommandAction → State → Outcome := fun _ _ _ => refuse "resolveIncident"
+  /-- Work: retry the open incident `OpenItem`, whose detail is given, for the generation the command names. -/
+  retryIncident : Ctx → OpenItem → IncidentDetail → Nat → State → Outcome := fun _ _ _ _ => refuse "retryIncident"
+  /-- Work: cancel the process of the open incident whose detail is given, for the generation the command names. -/
+  cancelIncidentProcess : Ctx → IncidentDetail → Nat → State → Outcome := fun _ _ _ => refuse "cancelIncidentProcess"
   /-- Work: a message or timer subscription an Activity opened itself (a Receive Task) fired. -/
   triggerActivity : Ctx → Header → ActivityPayload → OpenItem → Fired → State → Outcome :=
     fun _ _ _ _ _ => refuse "triggerActivity"

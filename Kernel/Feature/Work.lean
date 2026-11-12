@@ -325,25 +325,23 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
   -- Dynamic-only: what a host could not represent is known only once the effect ran.
   | .unsupported code => .error (.unsupported code)
 
+/-- An incident command naming another generation than the open incident's. -/
+def staleIncident : Outcome := .error (.rejected "incident-generation-stale")
+
 /-- A retry reopens the failed effect with the same occurrence (CIB-EXT-0013); cancelling the incident's process
 ends the whole instance as cancelled, keeping its root's Process variables, under a profile that selects it
 (CIB-EXT-0014, CIB-OP-0009). An incident inside a called instance cancels the root too: the operator deletes the root
 Process instance, which deletes its called instances with it (`CibSevenCommandExecutor`, `deleteProcessInstance(root)`).
 A command naming another generation than the open incident's is stale and rejected, so it never resolves an incident its
 issuer did not observe. -/
-def resolveIncident (_ : Ctx) (item : OpenItem) (action : CommandAction) (state : State) : Outcome :=
-  let stale : Outcome := .error (.rejected "incident-generation-stale")
-  match item.kind.view.incident, action with
-  | none, _ => .error (.semanticFailure "incident-command-without-incident")
-  | some incident, .retryIncident generation =>
-    if generation != incident.generation then stale else .ok (reopen state item.id (.effect incident.effect))
-  | some incident, .cancelIncidentProcess generation =>
-    if generation != incident.generation then stale
-    else if !incident.cancellable then .error (.rejected "incident-process-cancellation-unavailable")
-    else .ok (state.signal (.endInstance .cancelled none))
-  | some _, .completeUserTask _ => .error (.semanticFailure "incident-user-task-completion")
-  | some _, .setVariables _ => .error (.semanticFailure "incident-variable-command")
-  | some _, .removeVariables _ => .error (.semanticFailure "incident-variable-command")
+def retryIncident (_ : Ctx) (item : OpenItem) (incident : IncidentDetail) (generation : Nat) (state : State) : Outcome :=
+  if generation != incident.generation then staleIncident else .ok (reopen state item.id (.effect incident.effect))
+
+/-- See `retryIncident`. -/
+def cancelIncidentProcess (_ : Ctx) (incident : IncidentDetail) (generation : Nat) (state : State) : Outcome :=
+  if generation != incident.generation then staleIncident
+  else if !incident.cancellable then .error (.rejected "incident-process-cancellation-unavailable")
+  else .ok (state.signal (.endInstance .cancelled none))
 
 /-- A delivery completes a Receive Task only on the channel it waits on; the Message carries no payload here. The wait
 models no key, since admission refuses a Receive Task correlation (`work.receive.correlation`), so a criterion is an API

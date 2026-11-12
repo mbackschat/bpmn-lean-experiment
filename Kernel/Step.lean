@@ -377,10 +377,10 @@ def atActivity (ctx : Ctx) (item : OpenItem) (onActivity : Header → ActivityPa
   | none => .error (.semanticFailure "activity-item-without-activity")
 
 def command (hooks : Hooks) (ctx : Ctx) (input : CommandInput) (state : State) : Outcome :=
-  let incident (action : CommandAction) : Outcome :=
-    match item? ctx state input.occurrence (·.incident) with
+  let incident (resolve : OpenItem → IncidentDetail → Outcome) : Outcome :=
+    match itemDetail? ctx state input.occurrence (·.incident) with
     | none => .error (.rejected "unknown-incident")
-    | some item => hooks.resolveIncident ctx item action state
+    | some (item, detail) => resolve item detail
   -- A variable command acts from the occurrence's own scope outward, its input-mapped locals first (DATA-SEMANTICS-SPEC,
   -- Scope data), as CIB's `setVariables` on the waiting activity's execution does (`AbstractVariableScope#setVariable`).
   let variables (act : ScopeOccurrenceId → Signal) : Outcome :=
@@ -393,8 +393,8 @@ def command (hooks : Hooks) (ctx : Ctx) (input : CommandInput) (state : State) :
     | none => .error (.rejected "unknown-user-task")
     | some item => atActivity ctx item fun header payload =>
       hooks.completeUserTask ctx header payload item values state
-  | .retryIncident generation => incident (.retryIncident generation)
-  | .cancelIncidentProcess generation => incident (.cancelIncidentProcess generation)
+  | .retryIncident generation => incident fun item detail => hooks.retryIncident ctx item detail generation state
+  | .cancelIncidentProcess generation => incident fun _ detail => hooks.cancelIncidentProcess ctx detail generation state
   | .setVariables values =>
     admitValues (values.map (·.2)) *> variables fun scope => .write scope values .outward
   | .removeVariables names => variables fun scope => .remove scope names

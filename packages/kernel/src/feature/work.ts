@@ -41,7 +41,6 @@ import {
   workResults,
 } from "../il/types.js";
 import {
-  CommandActionTag,
   EffectOutcomeTag,
   FailureTag,
   FiredTag,
@@ -66,7 +65,7 @@ import {
   signal,
   visible,
   type Binding,
-  type CommandAction,
+  type IncidentDetail,
   type CorrelationMatch,
   type EffectOutcome,
   type Fired,
@@ -567,6 +566,11 @@ function technicalFailure(ctx: Ctx, item: OpenItem, state: State): Outcome {
   return assertNever(ctx.program.options.technicalFailure);
 }
 
+/** An incident command naming another generation than the open incident's. */
+function staleIncident(): Outcome {
+  return failed(FailureTag.Rejected, "incident-generation-stale");
+}
+
 /**
  * A retry reopens the failed effect with the same occurrence (CIB-EXT-0013); cancelling the incident's process ends the
  * whole instance as cancelled, keeping its root's Process variables, under a profile that selects it (CIB-EXT-0014,
@@ -575,25 +579,16 @@ function technicalFailure(ctx: Ctx, item: OpenItem, state: State): Outcome {
  * command naming another generation than the open incident's is stale and rejected, so it never resolves an incident its
  * issuer did not observe.
  */
-export function resolveIncident(_ctx: Ctx, item: OpenItem, action: CommandAction, state: State): Outcome {
-  const incident = openKindView(item.kind).incident;
-  if (incident === null) return failed(FailureTag.SemanticFailure, "incident-command-without-incident");
-  const stale: Outcome = failed(FailureTag.Rejected, "incident-generation-stale");
-  switch (action.tag) {
-    case CommandActionTag.RetryIncident:
-      if (action.generation !== incident.generation) return stale;
-      return committed(reopen(state, item.id, { tag: OpenKindTag.Effect, detail: incident.effect }));
-    case CommandActionTag.CancelIncidentProcess:
-      if (action.generation !== incident.generation) return stale;
-      if (!incident.cancellable) return failed(FailureTag.Rejected, "incident-process-cancellation-unavailable");
-      return committed(signal(state, { tag: SignalTag.EndInstance, status: InstanceStatus.Cancelled, failure: null }));
-    case CommandActionTag.CompleteUserTask:
-      return failed(FailureTag.SemanticFailure, "incident-user-task-completion");
-    case CommandActionTag.SetVariables:
-    case CommandActionTag.RemoveVariables:
-      return failed(FailureTag.SemanticFailure, "incident-variable-command");
-  }
-  return assertNever(action);
+export function retryIncident(_ctx: Ctx, item: OpenItem, incident: IncidentDetail, generation: number, state: State): Outcome {
+  if (generation !== incident.generation) return staleIncident();
+  return committed(reopen(state, item.id, { tag: OpenKindTag.Effect, detail: incident.effect }));
+}
+
+/** See `retryIncident`. */
+export function cancelIncidentProcess(_ctx: Ctx, incident: IncidentDetail, generation: number, state: State): Outcome {
+  if (generation !== incident.generation) return staleIncident();
+  if (!incident.cancellable) return failed(FailureTag.Rejected, "incident-process-cancellation-unavailable");
+  return committed(signal(state, { tag: SignalTag.EndInstance, status: InstanceStatus.Cancelled, failure: null }));
 }
 
 /**
