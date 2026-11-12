@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions
   xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-  id="Definitions_MessageKeySignalled"
-  targetNamespace="https://bpmn-lean.org/scenarios/message-key-correlation/signalled-key">
+  id="Definitions_MessageKeyTasked"
+  targetNamespace="https://bpmn-lean.org/scenarios/message-key-correlation/tasked-key">
   <bpmn:itemDefinition id="ItemDefinition_SettlementReference" />
   <bpmn:message
     id="Message_SettlementConfirmed"
     name="Settlement confirmed"
     itemRef="ItemDefinition_SettlementReference" />
-  <bpmn:signal id="Signal_PaymentReleased" name="Payment released" />
   <bpmn:interface id="Interface_ClearingHouse" name="Clearing house">
     <bpmn:operation id="Operation_ConfirmSettlement" name="Confirm settlement">
       <bpmn:inMessageRef>Message_SettlementConfirmed</bpmn:inMessageRef>
@@ -26,9 +25,9 @@
     </bpmn:correlationPropertyRetrievalExpression>
   </bpmn:correlationProperty>
   <bpmn:process
-    id="Process_SettlementSignalled"
+    id="Process_SettlementTasked"
     isExecutable="true"
-    definitionalCollaborationRef="Collaboration_SettlementSignalled">
+    definitionalCollaborationRef="Collaboration_SettlementTasked">
     <bpmn:property id="Property_SettlementReference" />
     <bpmn:startEvent id="StartEvent_PaymentInstructed">
       <bpmn:outgoing>Flow_Instructed_Fork</bpmn:outgoing>
@@ -39,25 +38,48 @@
       targetRef="Gateway_Fork" />
     <bpmn:parallelGateway id="Gateway_Fork">
       <bpmn:incoming>Flow_Instructed_Fork</bpmn:incoming>
-      <bpmn:outgoing>Flow_Fork_PaymentReleased</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Fork_ReleasePayment</bpmn:outgoing>
       <bpmn:outgoing>Flow_Fork_CorrelatedSettlement</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:sequenceFlow
-      id="Flow_Fork_PaymentReleased"
+      id="Flow_Fork_ReleasePayment"
       sourceRef="Gateway_Fork"
-      targetRef="SignalCatch_PaymentReleased" />
+      targetRef="UserTask_ReleasePayment" />
     <bpmn:sequenceFlow
       id="Flow_Fork_CorrelatedSettlement"
       sourceRef="Gateway_Fork"
       targetRef="MessageCatch_CorrelatedSettlement" />
-    <bpmn:intermediateCatchEvent id="SignalCatch_PaymentReleased">
-      <bpmn:incoming>Flow_Fork_PaymentReleased</bpmn:incoming>
-      <bpmn:outgoing>Flow_Released_Join</bpmn:outgoing>
-      <bpmn:signalEventDefinition id="SignalEventDefinition_PaymentReleased" signalRef="Signal_PaymentReleased" />
+    <bpmn:userTask id="UserTask_ReleasePayment" name="Release payment">
+      <bpmn:incoming>Flow_Fork_ReleasePayment</bpmn:incoming>
+      <bpmn:outgoing>Flow_Released_InitialSettlement</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow
+      id="Flow_Released_InitialSettlement"
+      sourceRef="UserTask_ReleasePayment"
+      targetRef="MessageCatch_InitialSettlement" />
+    <bpmn:intermediateCatchEvent id="MessageCatch_InitialSettlement">
+      <bpmn:incoming>Flow_Released_InitialSettlement</bpmn:incoming>
+      <bpmn:outgoing>Flow_Initial_Join</bpmn:outgoing>
+      <bpmn:dataOutput
+        id="DataOutput_InitialSettlementReference"
+        name="Initial settlement reference"
+        itemSubjectRef="ItemDefinition_SettlementReference" />
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_SettlementReference">
+        <bpmn:sourceRef>DataOutput_InitialSettlementReference</bpmn:sourceRef>
+        <bpmn:targetRef>Property_SettlementReference</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:outputSet id="OutputSet_InitialSettlement">
+        <bpmn:dataOutputRefs>DataOutput_InitialSettlementReference</bpmn:dataOutputRefs>
+      </bpmn:outputSet>
+      <bpmn:messageEventDefinition
+        id="MessageEventDefinition_InitialSettlement"
+        messageRef="Message_SettlementConfirmed">
+        <bpmn:operationRef>Operation_ConfirmSettlement</bpmn:operationRef>
+      </bpmn:messageEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow
-      id="Flow_Released_Join"
-      sourceRef="SignalCatch_PaymentReleased"
+      id="Flow_Initial_Join"
+      sourceRef="MessageCatch_InitialSettlement"
       targetRef="Gateway_Join" />
     <bpmn:intermediateCatchEvent id="MessageCatch_CorrelatedSettlement">
       <bpmn:incoming>Flow_Fork_CorrelatedSettlement</bpmn:incoming>
@@ -73,7 +95,7 @@
       sourceRef="MessageCatch_CorrelatedSettlement"
       targetRef="Gateway_Join" />
     <bpmn:parallelGateway id="Gateway_Join">
-      <bpmn:incoming>Flow_Released_Join</bpmn:incoming>
+      <bpmn:incoming>Flow_Initial_Join</bpmn:incoming>
       <bpmn:incoming>Flow_Correlated_Join</bpmn:incoming>
       <bpmn:outgoing>Flow_Join_Recorded</bpmn:outgoing>
     </bpmn:parallelGateway>
@@ -96,14 +118,19 @@
       </bpmn:correlationPropertyBinding>
     </bpmn:correlationSubscription>
   </bpmn:process>
-  <bpmn:collaboration id="Collaboration_SettlementSignalled">
+  <bpmn:collaboration id="Collaboration_SettlementTasked">
     <bpmn:participant
       id="Participant_ExternalClearingHouse"
       name="External clearing house" />
     <bpmn:participant
       id="Participant_SettlementProcess"
       name="Settlement process"
-      processRef="Process_SettlementSignalled" />
+      processRef="Process_SettlementTasked" />
+    <bpmn:messageFlow
+      id="MessageFlow_InitialSettlement"
+      sourceRef="Participant_ExternalClearingHouse"
+      targetRef="MessageCatch_InitialSettlement"
+      messageRef="Message_SettlementConfirmed" />
     <bpmn:messageFlow
       id="MessageFlow_CorrelatedSettlement"
       sourceRef="Participant_ExternalClearingHouse"
@@ -112,6 +139,7 @@
     <bpmn:conversation id="Conversation_Settlement">
       <bpmn:participantRef>Participant_ExternalClearingHouse</bpmn:participantRef>
       <bpmn:participantRef>Participant_SettlementProcess</bpmn:participantRef>
+      <bpmn:messageFlowRef>MessageFlow_InitialSettlement</bpmn:messageFlowRef>
       <bpmn:messageFlowRef>MessageFlow_CorrelatedSettlement</bpmn:messageFlowRef>
       <bpmn:correlationKey
         id="CorrelationKey_SettlementReference"

@@ -4,11 +4,11 @@
   "profile": "bpmn-2.0.2",
   "definitions": [
     {
-      "definitionRef": "message-key-correlation-signalled-key",
+      "definitionRef": "message-key-correlation-tasked-key",
       "bpmn": {
-        "id": "message-key-correlation-signalled-key",
-        "relativePath": "scenarios/message-key-correlation/signalled-key.bpmn",
-        "sha256": "1de129e297bb138c5859c4ab5eddecb3808da21f96c39acccfed779dca45045c",
+        "id": "message-key-correlation-tasked-key",
+        "relativePath": "scenarios/message-key-correlation/tasked-key.bpmn",
+        "sha256": "a00a77dd20c129ddd139fab6590dabb34e573a1ce8c664efadfd49bd043ca02d",
         "sourceOverlay": null
       }
     },
@@ -25,12 +25,12 @@
   "steps": [
     {
       "kind": "instance",
-      "definitionRef": "message-key-correlation-signalled-key",
-      "instanceId": "SettlementSignalled",
+      "definitionRef": "message-key-correlation-tasked-key",
+      "instanceId": "SettlementTasked",
       "stimulus": {
         "kind": "start",
-        "commandId": "start-SettlementSignalled",
-        "instanceId": "SettlementSignalled",
+        "commandId": "start-SettlementTasked",
+        "instanceId": "SettlementTasked",
         "variables": [
           {
             "name": "Property_SettlementReference",
@@ -45,11 +45,11 @@
     {
       "kind": "instance",
       "definitionRef": "message-key-correlation-unbound-key",
-      "instanceId": "SettlementUnsignalled",
+      "instanceId": "SettlementUnbound",
       "stimulus": {
         "kind": "start",
-        "commandId": "start-SettlementUnsignalled",
-        "instanceId": "SettlementUnsignalled",
+        "commandId": "start-SettlementUnbound",
+        "instanceId": "SettlementUnbound",
         "variables": [
           {
             "name": "Property_SettlementReference",
@@ -62,15 +62,22 @@
       }
     },
     {
-      "kind": "broadcast",
-      "commandId": "broadcast-payment-released",
-      "address": {
-        "signalRef": {
-          "id": "Signal_PaymentReleased",
-          "namespace": "https://bpmn-lean.org/scenarios/message-key-correlation/signalled-key"
+      "kind": "instance",
+      "definitionRef": "message-key-correlation-tasked-key",
+      "instanceId": "SettlementTasked",
+      "stimulus": {
+        "kind": "command",
+        "commandId": "release-payment",
+        "occurrence": {
+          "processInstanceId": "SettlementTasked",
+          "elementId": "UserTask_ReleasePayment",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
         }
-      },
-      "variables": []
+      }
     },
     {
       "kind": "publish",
