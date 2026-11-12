@@ -1,13 +1,15 @@
 /**
  * Seeded mutations of scope completion, interruption and Terminate that the retained CIB witnesses of PC-SCOPE-01,
- * PC-SCOPE-07 and PC-TERMINATE-01 must notice (ENGINEERING-POLICY "Red/green semantic workflow", step 6). Each test
+ * PC-SCOPE-07, PC-TERMINATE-01 and PC-TERMINATE-02 must notice (ENGINEERING-POLICY "Red/green semantic workflow", step 6). Each test
  * runs one witness twice through `step`: with the registered hooks, which must agree with the retained evidence, and
  * with one realistic wrong account, which must disagree with it. A mutant either wraps one hook or rewrites the state a
  * committed input left, so it stays outside the kernel's modules.
  *
  * The rows' acceptance names the mutants: a first End completing its Sub-Process and a child continuing in the wrong
  * parent (PC-SCOPE-01); interruption that removes only the host's own work or deletes beyond it (PC-SCOPE-07); a
- * Terminate that clears the whole instance or leaves waits of its region open (PC-TERMINATE-01).
+ * Terminate that clears the whole instance or leaves waits of its region open (PC-TERMINATE-01); an inner Terminate
+ * that acts like an outer Multi-Instance Cancel boundary, or ends the caller of its called instance or the host of its
+ * Event Sub-Process instance (PC-TERMINATE-02).
  */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -247,4 +249,46 @@ test("PC-TERMINATE-01: a nested Terminate that leaves a wait of its region open 
     },
   };
   await noticed("terminate-containing-region", ["inner-scope-terminate"], { hooks: incomplete });
+});
+
+/** A Terminate whose region is moved from its own scope occurrence to the one `widen` names, all else unchanged. */
+async function widenedTerminate(widen: (state: State, scope: number) => number): Promise<Hooks> {
+  const terminate = await terminateThrow();
+  return {
+    ...hooks,
+    arriveThrow: (ctx, header, payload, thrown, occurrence, state) =>
+      hooks.arriveThrow(ctx, header, payload, thrown,
+        thrown.tag === terminate.tag ? { ...occurrence, scope: widen(state, occurrence.scope) } : occurrence, state),
+  };
+}
+
+const elementOf = (state: State, scope: number): string | null =>
+  state.scopes.find((candidate) => candidate.id === scope)?.element ?? null;
+
+test("PC-TERMINATE-02: a Terminate in a Multi-Instance instance that ends the whole Multi-Instance body is noticed", async () => {
+  // An instance's Sub-Process occurrence sits below its instance scope and the body occurrence, all of one element; the
+  // mutant clears the outermost of them, as an interrupting boundary on the Multi-Instance Activity would.
+  const outer = await widenedTerminate((state, scope) => {
+    let current = scope;
+    for (let parent = parentOf(state, current); parent !== null && elementOf(state, parent) === elementOf(state, scope);
+      parent = parentOf(state, current)) current = parent;
+    return current;
+  });
+  await noticed("terminate-multi-instance-bodies",
+    ["parallel-first-body-terminates", "parallel-second-body-terminates", "sequential-first-body-terminates"], { hooks: outer });
+});
+
+test("PC-TERMINATE-02: a Terminate in a called instance that also ends its caller's region is noticed", async () => {
+  // The called root's parent is the scope occurrence the Call Activity runs in.
+  const caller = await widenedTerminate((state, scope) => parentOf(state, scope) ?? scope);
+  await noticed("terminate-called-child", ["terminate-one-call-sibling-survives", "terminate-both-calls-reversed"], { hooks: caller });
+});
+
+test("PC-TERMINATE-02: a Terminate in an Event Sub-Process instance that ends its host Sub-Process is noticed", async () => {
+  const host = await widenedTerminate((state, scope) => {
+    const parent = parentOf(state, scope);
+    return parent !== null && embedded(state, parent) ? parent : scope;
+  });
+  await noticed("terminate-event-subprocess-instances",
+    ["first-handler-instance-terminates", "second-handler-instance-ordinary-first"], { hooks: host });
 });

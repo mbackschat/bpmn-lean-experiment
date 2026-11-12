@@ -1,0 +1,137 @@
+{
+  "kind": "scenario",
+  "id": "terminate-multi-instance-bodies-sequential-first-body-completes-loop",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "terminate-multi-instance-bodies-packing-completion",
+    "relativePath": "scenarios/open-rows/terminate-multi-instance-bodies/packing-completion.bpmn",
+    "sha256": "05403fc72fa22073563f300cb3b20cf2f7dc4842e649e2b1409d30afd866c21e",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "batches",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "b1",
+              "b2"
+            ]
+          }
+        },
+        {
+          "name": "parcels",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "p1",
+              "p2"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-seal-first-batch",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_BatchTrigger",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-late-label-first-batch",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_BatchOther",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-label-second-batch",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_BatchOther",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-seal-second-batch",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_BatchTrigger",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-release-batches",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_AfterBatches",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-update-log",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Outside",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.2",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 §13.5.6"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/TerminateEndEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SequentialMultiInstanceActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/end/TerminateEndEventTest.java#testTerminateInSubProcessConcurrentMultiInstance",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/end/TerminateEndEventTest.java#testTerminateInSubProcessSequentialConcurrentMultiInstance"
+    ]
+  }
+}

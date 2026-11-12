@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_PackingCompletion"
+  targetNamespace="urn:bpmn-lean:scenarios:terminate-multi-instance-bodies">
+  <bpmn:process id="Process_Packing" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_OrdersReady" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="SubProcess_Parcels" name="Pack the parcels at the same time">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="parcels" camunda:elementVariable="parcel"><bpmn:completionCondition>${nrOfCompletedInstances &gt;= 1}</bpmn:completionCondition></bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="StartEvent_Parcel" />
+      <bpmn:parallelGateway id="Gateway_ParcelFork" gatewayDirection="Diverging" />
+      <bpmn:userTask id="UserTask_ParcelTrigger" name="Seal the parcel">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenParcel">${parcel}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_ParcelTerminate">
+        <bpmn:terminateEventDefinition />
+      </bpmn:endEvent>
+      <bpmn:userTask id="UserTask_ParcelOther" name="Label the parcel">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenParcel">${parcel}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_ParcelLabelled" />
+      <bpmn:sequenceFlow id="Flow_Parcel_Start_Fork" sourceRef="StartEvent_Parcel" targetRef="Gateway_ParcelFork" />
+      <bpmn:sequenceFlow id="Flow_Parcel_Fork_Trigger" sourceRef="Gateway_ParcelFork" targetRef="UserTask_ParcelTrigger" />
+      <bpmn:sequenceFlow id="Flow_Parcel_Fork_Other" sourceRef="Gateway_ParcelFork" targetRef="UserTask_ParcelOther" />
+      <bpmn:sequenceFlow id="Flow_Parcel_Trigger_End" sourceRef="UserTask_ParcelTrigger" targetRef="EndEvent_ParcelTerminate" />
+      <bpmn:sequenceFlow id="Flow_Parcel_Other_End" sourceRef="UserTask_ParcelOther" targetRef="EndEvent_ParcelLabelled" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_AfterParcels" name="Release the parcels" />
+    <bpmn:endEvent id="EndEvent_ParcelsReleased" />
+
+    <bpmn:subProcess id="SubProcess_Batches" name="Pack the batches one after another">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="batches" camunda:elementVariable="batch"><bpmn:completionCondition>${nrOfCompletedInstances &gt;= 1}</bpmn:completionCondition></bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="StartEvent_Batch" />
+      <bpmn:parallelGateway id="Gateway_BatchFork" gatewayDirection="Diverging" />
+      <bpmn:userTask id="UserTask_BatchTrigger" name="Seal the batch">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenBatch">${batch}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_BatchTerminate">
+        <bpmn:terminateEventDefinition />
+      </bpmn:endEvent>
+      <bpmn:userTask id="UserTask_BatchOther" name="Label the batch">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenBatch">${batch}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_BatchLabelled" />
+      <bpmn:sequenceFlow id="Flow_Batch_Start_Fork" sourceRef="StartEvent_Batch" targetRef="Gateway_BatchFork" />
+      <bpmn:sequenceFlow id="Flow_Batch_Fork_Trigger" sourceRef="Gateway_BatchFork" targetRef="UserTask_BatchTrigger" />
+      <bpmn:sequenceFlow id="Flow_Batch_Fork_Other" sourceRef="Gateway_BatchFork" targetRef="UserTask_BatchOther" />
+      <bpmn:sequenceFlow id="Flow_Batch_Trigger_End" sourceRef="UserTask_BatchTrigger" targetRef="EndEvent_BatchTerminate" />
+      <bpmn:sequenceFlow id="Flow_Batch_Other_End" sourceRef="UserTask_BatchOther" targetRef="EndEvent_BatchLabelled" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_AfterBatches" name="Release the batches" />
+    <bpmn:endEvent id="EndEvent_BatchesReleased" />
+
+    <bpmn:userTask id="UserTask_Outside" name="Update the packing log" />
+    <bpmn:endEvent id="EndEvent_Logged" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_OrdersReady" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Parcels" sourceRef="Gateway_Fork" targetRef="SubProcess_Parcels" />
+    <bpmn:sequenceFlow id="Flow_Fork_Batches" sourceRef="Gateway_Fork" targetRef="SubProcess_Batches" />
+    <bpmn:sequenceFlow id="Flow_Fork_Outside" sourceRef="Gateway_Fork" targetRef="UserTask_Outside" />
+    <bpmn:sequenceFlow id="Flow_Parcels_After" sourceRef="SubProcess_Parcels" targetRef="UserTask_AfterParcels" />
+    <bpmn:sequenceFlow id="Flow_AfterParcels_End" sourceRef="UserTask_AfterParcels" targetRef="EndEvent_ParcelsReleased" />
+    <bpmn:sequenceFlow id="Flow_Batches_After" sourceRef="SubProcess_Batches" targetRef="UserTask_AfterBatches" />
+    <bpmn:sequenceFlow id="Flow_AfterBatches_End" sourceRef="UserTask_AfterBatches" targetRef="EndEvent_BatchesReleased" />
+    <bpmn:sequenceFlow id="Flow_Outside_End" sourceRef="UserTask_Outside" targetRef="EndEvent_Logged" />
+  </bpmn:process>
+</bpmn:definitions>
