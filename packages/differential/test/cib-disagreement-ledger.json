@@ -1223,6 +1223,12 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/message-name-addressing/expression-names-resolve-equal.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0038"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/message-payload-catches/branches-each-own-destination.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0013"
@@ -1397,6 +1403,12 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/multi-instance-mutable-collection/sequential-collection-removed.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0054"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-parallel-equal-items.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0019"
@@ -1484,6 +1496,12 @@
     "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-two.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0009"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-decimal-fractional.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0010"
     ]
   },
   {
@@ -1586,6 +1604,12 @@
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-zero-items.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0019"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/portable-sequential-collection-removed.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0054"
     ]
   },
   {
@@ -1744,6 +1768,18 @@
     "evidence": "scenarios/open-rows/receive-task-payload-correlation/order-wrong-owner-and-activation.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0038"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/receive-task-payload/into-scope.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0013"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/receive-task-payload/payload-required.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0013"
     ]
   },
   {
