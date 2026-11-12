@@ -43,34 +43,54 @@ def ownedScope? (ctx : Ctx) (occurrence : Occurrence) (state : State) : Option S
     state.scopes.find? (·.occurrence == some occurrence.id)
   else none
 
+/-- Where a completion retains its record, and with which handler (D6, I9): an instance of a Multi-Instance Activity
+completes in its own scope occurrence, which `MultiInstance.instanceCompleted` leaves, so a Sub-Process instance's
+record goes to that occurrence's parent, the body's instance-holding `MultiInstanceRun.scope`, and a Task or Call
+instance retains none (`none`), since §13.5.5 compensates a Multi-Instance Activity "only once", by its body's record;
+a completed Multi-Instance Sub-Process body retains the group of its instance records without the handler, which they
+carry (§10.7.2: compensation "individually triggers compensation for all instances"). -/
+def placement (ctx : Ctx) (occurrence : Occurrence) (state : State) : Option (Option ElementId × ScopeOccurrenceId) :=
+  let element := ctx.program.element? occurrence.element
+  -- Admission admits at most one handler (`compensation.handlerCount`).
+  let handler := (element.bind (·.envelope?)).bind (·.compensationHandlers.head?)
+  let looping := ((element.bind (·.envelope?)).bind (·.multiInstance)).isSome
+  let isScope := (element.bind (·.scope?)).isSome
+  if looping && ctx.scopeRole state occurrence.scope == .multiInstanceInstance then
+    if isScope then some (handler, ((state.scopes.find? (·.id == occurrence.scope)).bind (·.parent)).getD occurrence.scope)
+    else none
+  else if looping && isScope then some (none, occurrence.scope)
+  else some (handler, occurrence.scope)
+
 /-- `Hooks.completed`, before the pipeline disposes of the owned scope: a completed Scope's inner records stay
 compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the children its handler may trigger; one
-without keeps them as a group under `ImplicitCompensation.everySubProcess` (I5), else they move to the parent. A
-Compensation Event Sub-Process, the handler inside its subject, and a group restore the completed Scope's own variables
-("snapshot data"); a boundary handler restores none (§13.5.5: it "can only perform black-box compensation"). -/
+without keeps them as a group under `ImplicitCompensation.everySubProcess` (I5) or as a Multi-Instance body (I9), else
+they move to the parent. A Compensation Event Sub-Process, the handler inside its subject, and a group restore the
+completed Scope's own variables ("snapshot data"); a boundary handler restores none (§13.5.5: it "can only perform
+black-box compensation"). -/
 def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
-  -- Admission admits at most one handler (`compensation.handlerCount`).
-  let handler := ((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.compensationHandlers.head?)
-  let owned := ownedScope? ctx occurrence state
-  let compensation := state.slots.compensation
-  let (inner, outer) := compensation.retained.partition fun record => owned.any (·.id == record.scope)
-  let grouped := ctx.program.options.implicitCompensation == .everySubProcess && !inner.isEmpty
-  if handler.isNone && !grouped then
-    .ok (store state { compensation with
-      retained := outer ++ inner.map fun record => { record with scope := occurrence.scope } })
-  else
-    let (state, completion) := state.issue
-    let inside := handler.all fun handler =>
-      ((ctx.program.element? handler).bind (·.header.parent)) == some occurrence.element
-    let own := (owned.map fun scope => ((state.variables.find? (·.scope == scope.id)).map (·.entries)).getD []).getD []
-    let snapshot := if inside then own else []
-    let reference : OccurrenceRef :=
-      { processInstanceId := state.instanceOf occurrence.scope, element := occurrence.element
-        activation := occurrence.activation }
-    let record : Compensable :=
-      { subject := occurrence.element, handler, scope := occurrence.scope, occurrence := some reference, completion,
-        snapshot, children := inner }
-    .ok (store state { compensation with retained := outer ++ [record] })
+  match placement ctx occurrence state with
+  | none => .ok state
+  | some (handler, target) =>
+    let owned := ownedScope? ctx occurrence state
+    let compensation := state.slots.compensation
+    let (inner, outer) := compensation.retained.partition fun record => owned.any (·.id == record.scope)
+    let body := ((ctx.program.element? occurrence.element).bind (·.envelope?)).any (·.multiInstance.isSome)
+    let grouped := (ctx.program.options.implicitCompensation == .everySubProcess || body) && !inner.isEmpty
+    if handler.isNone && !grouped then
+      .ok (store state { compensation with retained := outer ++ inner.map fun record => { record with scope := target } })
+    else
+      let (state, completion) := state.issue
+      let inside := handler.all fun handler =>
+        ((ctx.program.element? handler).bind (·.header.parent)) == some occurrence.element
+      let own := (owned.map fun scope => ((state.variables.find? (·.scope == scope.id)).map (·.entries)).getD []).getD []
+      let snapshot := if inside then own else []
+      let reference : OccurrenceRef :=
+        { processInstanceId := state.instanceOf occurrence.scope, element := occurrence.element
+          activation := occurrence.activation }
+      let record : Compensable :=
+        { subject := occurrence.element, handler, scope := target, occurrence := some reference, completion, snapshot,
+          children := inner }
+      .ok (store state { compensation with retained := outer ++ [record] })
 
 /-- Every element declared inside `element`, at any depth. -/
 def interior (ctx : Ctx) (element : Element) : List Element :=

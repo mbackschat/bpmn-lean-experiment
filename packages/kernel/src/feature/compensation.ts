@@ -75,7 +75,7 @@ import {
   type ScopeOccurrenceId,
   type State,
 } from "../state.js";
-import { leaveScope, type Ctx } from "../hooks.js";
+import { ScopeRole, leaveScope, type Ctx } from "../hooks.js";
 
 function store(state: State, compensation: Compensations): State {
   return { ...state, slots: { ...state.slots, compensation } };
@@ -89,28 +89,50 @@ function ownedScope(ctx: Ctx, occurrence: Occurrence, state: State): ScopeOccurr
 }
 
 /**
+ * Where a completion retains its record, and with which handler (D6, I9): an instance of a Multi-Instance Activity
+ * completes in its own scope occurrence, which `MultiInstance.instanceCompleted` leaves, so a Sub-Process instance's
+ * record goes to that occurrence's parent, the body's instance-holding `MultiInstanceRun.scope`, and a Task or Call
+ * instance retains none (`null`), since §13.5.5 compensates a Multi-Instance Activity "only once", by its body's record;
+ * a completed Multi-Instance Sub-Process body retains the group of its instance records without the handler, which
+ * they carry (§10.7.2: compensation "individually triggers compensation for all instances").
+ */
+function placement(ctx: Ctx, occurrence: Occurrence, state: State): readonly [ElementId | null, ScopeOccurrenceId] | null {
+  const element = programElement(ctx.program, occurrence.element);
+  const envelope = element === null ? null : elementEnvelope(element);
+  // Admission admits at most one handler (`compensation.handlerCount`).
+  const handler = envelope?.compensationHandlers[0] ?? null;
+  const looping = (envelope?.multiInstance ?? null) !== null;
+  const isScope = element !== null && elementScope(element) !== null;
+  if (looping && ctx.scopeRole(state, occurrence.scope) === ScopeRole.MultiInstanceInstance) {
+    if (!isScope) return null;
+    return [handler, state.scopes.find((scope) => scope.id === occurrence.scope)?.parent ?? occurrence.scope];
+  }
+  if (looping && isScope) return [null, occurrence.scope];
+  return [handler, occurrence.scope];
+}
+
+/**
  * `Hooks.completed`, before the pipeline disposes of the owned scope: a completed Scope's inner records stay
  * compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the children its handler may trigger; one
- * without keeps them as a group under `ImplicitCompensation.EverySubProcess` (I5), else they move to the parent. A
- * Compensation Event Sub-Process, the handler inside its subject, and a group restore the completed Scope's own
- * variables ("snapshot data"); a boundary handler restores none (§13.5.5: it "can only perform black-box
- * compensation").
+ * without keeps them as a group under `ImplicitCompensation.EverySubProcess` (I5) or as a Multi-Instance body (I9),
+ * else they move to the parent. A Compensation Event Sub-Process, the handler inside its subject, and a group restore
+ * the completed Scope's own variables ("snapshot data"); a boundary handler restores none (§13.5.5: it "can only
+ * perform black-box compensation").
  */
 export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
-  const element = programElement(ctx.program, occurrence.element);
-  // Admission admits at most one handler (`compensation.handlerCount`).
-  const handler = (element === null ? null : elementEnvelope(element))?.compensationHandlers[0] ?? null;
+  const placed = placement(ctx, occurrence, state);
+  if (placed === null) return committed(state);
+  const [handler, target] = placed;
   const owned = ownedScope(ctx, occurrence, state);
   const compensation = state.slots.compensation;
   const isInner = (record: Compensable): boolean => owned !== null && owned.id === record.scope;
   const inner = compensation.retained.filter(isInner);
   const outer = compensation.retained.filter((record) => !isInner(record));
-  const grouped = ctx.program.options.implicitCompensation === ImplicitCompensation.EverySubProcess && inner.length > 0;
+  const element = programElement(ctx.program, occurrence.element);
+  const body = ((element === null ? null : elementEnvelope(element))?.multiInstance ?? null) !== null;
+  const grouped = (ctx.program.options.implicitCompensation === ImplicitCompensation.EverySubProcess || body) && inner.length > 0;
   if (handler === null && !grouped) {
-    return committed(store(state, {
-      ...compensation,
-      retained: [...outer, ...inner.map((record) => ({ ...record, scope: occurrence.scope }))],
-    }));
+    return committed(store(state, { ...compensation, retained: [...outer, ...inner.map((record) => ({ ...record, scope: target }))] }));
   }
   const [issued, completion] = issue(state);
   const handlerElement = handler === null ? null : programElement(ctx.program, handler);
@@ -121,15 +143,7 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
     element: occurrence.element,
     activation: occurrence.activation,
   };
-  const record: Compensable = {
-    subject: occurrence.element,
-    handler,
-    scope: occurrence.scope,
-    occurrence: reference,
-    completion,
-    snapshot,
-    children: inner,
-  };
+  const record: Compensable = { subject: occurrence.element, handler, scope: target, occurrence: reference, completion, snapshot, children: inner };
   return committed(store(issued, { ...compensation, retained: [...outer, record] }));
 }
 
