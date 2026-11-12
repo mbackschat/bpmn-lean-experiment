@@ -142,7 +142,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     multiInstanceInputFailure: selects("CIB-INT-0019") ? "rollback" : "hold",
     multiInstanceCount: selects("CIB-EXT-0033") ? "javaInt" : "integer",
     businessRuleTask: selects("CIB-EXT-0032") ? "decisionTable" : "refused",
-    scriptTask: "refused",
+    scriptTask: selects("CIB-EXT-0048") ? "javascript" : "refused",
     inclusiveJoinReach: selects("CIB-INT-0020") ? "outgoingOnly" : "withBoundaries",
     branchSchedule: selects("CIB-OP-0016") ? "declarationDepthFirst" : "orderInvariant",
     conditionalRetrigger: selects("CIB-EXT-0035") ? "eachWrite" : "edge",

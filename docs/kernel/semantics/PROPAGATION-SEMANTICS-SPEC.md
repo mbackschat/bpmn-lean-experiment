@@ -118,7 +118,7 @@ The [scopes semantics](SCOPES-SEMANTICS-SPEC.md#pc-scope-06-exceptional-call-ret
 
 **Reader.** `tMessageEventDefinition` has no `implementation` attribute, so `binding.ts#boundBy` matches an event definition's binding on its `delegateExpression` alone, the built-in probe binding included.
 
-**Witnesses.** [message-throw-bound](../../../scenarios/open-rows/message-throw-bound/README.md) (3), [message-throw-unbound](../../../scenarios/open-rows/message-throw-unbound/README.md) (1); [message-throw-retry](../../../scenarios/open-rows/message-throw-retry/README.md) has no CIB answer (no asynchronous continuation) and checks the single occurrence in both kernels only.
+**Witnesses.** [message-throw-bound](../../../scenarios/open-rows/message-throw-bound/README.md) (3), [message-throw-unbound](../../../scenarios/open-rows/message-throw-unbound/README.md) (1); [message-throw-retry](../../../scenarios/open-rows/message-throw-retry/README.md) is CIB-EXT-0049's: CIB rolls the starting command back, the kernel opens an incident on the single occurrence.
 
 ### PC-SIGNAL-01: a Signal throw and its broadcast intent
 

@@ -26,9 +26,9 @@ The counts below cover only entries recorded by this project, including the sepa
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 13 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 40 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| CIB extension records | 45 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
-| Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 48 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| CIB extension records | 47 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
+| Configuration-specific realizations | 14 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
+| Known CIB limitations within reviewed scope | 49 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1496,6 +1496,16 @@ BPMN 2.0.2 Table 10.8 lets a Service Task name its technology by `implementation
 
 **Boundary:** A declared delegate expression, class or expression that no overlay or built-in binding matches. A registered binding is unaffected, an external task's `camunda:topic` is refused by the reader (`reader.factNotCarried`), and a Message throw's `class`, `expression` or `type` is refused there as well (`throw.message.implementation`).
 
+### CIB-LIM-0052 — the profile binds no host object and types a Script result by its value
+
+**Status:** Known limitation within reviewed scope; selected by the cibseven profiles
+
+CIB Seven `2.2.0` binds `execution` and, through GraalJS host access, every Java class (`scripting/engine/CamundaScriptEngineManager.java:195-203`, `cfg/ProcessEngineConfigurationImpl.java:609`), hands a List or Map variable to the script as a host object whose members and `Object.keys` differ from a JavaScript array or object, and types a number result by GraalJS's internal representation: an integer GraalJS keeps as an `int` becomes an `Integer`, one reached through negation, division or a `Math` function a `Double` (P1). The profile binds neither host object (`script-host-object`), freezes collections as plain arrays and null-prototype objects, and types an integer-valued result in 0..2^31−1 as Integer.
+
+**Evidence:** The cited source and probe P1 ([script semantics](kernel/semantics/SCRIPT-SEMANTICS-SPEC.md#probe-p1-2026-11-12)); witness `probe-host-mutation` of the [JavaScript Script Task witnesses](../scenarios/open-rows/script-task-javascript/README.md).
+
+**Boundary:** Scripts that reference `execution` or `Java`, read a List, Map or `stringList` variable, or return a number whose Java type the source does not fix. This entry owns the ledger entry of `probe-host-mutation`.
+
 ## Extension register
 
 ### CIB-LIM-0025 — CIB admits two interrupting Error Event Sub-Processes of one code in one scope
@@ -1947,9 +1957,9 @@ Under CIB-EXT-0001 (CIB-EXT-0023 for a Send Task) CIB's effect wait is its `asyn
 
 **Status:** Selected bounded extension for `MessageThrowForms.cibForms`; selected by the cibseven profiles
 
-BPMN 2.0.2 names no sending technology for a Message throw Event (Tables 10.88 and 10.89; `tMessageEventDefinition`, `Semantic.xsd:999-1008`, has no `implementation`). CIB Seven `2.2.0` parses a Message throw whose event definition declares `camunda:class`, `delegateExpression`, `expression` or `type` as a Service Task, "same behavior as service task" (CAM-436; `BpmnParse.java:1643-1653`, `3174-3184`), without reading `messageRef`, `operationRef` or a Message Flow. Under `cibForms` the kernel reads the event definition's `camunda:delegateExpression` into an effect binding as for a Send Task under [CIB-EXT-0023](#cib-ext-0023--send-task-performed-by-a-configured-handler), matched on the delegate alone since an event definition has no `implementation`. The throw's occurrence opens one effect item with no arguments and waits for its result: a success, which carries no values since a throw Event has no output mappings, passes the token on or consumes it at an End; a business failure raises its Error from the throw's occurrence, which has no boundaries, so the search starts at the throw's scope; a technical failure opens an incident under CIB-EXT-0013 whose retry reopens the same item, so one modeled send keeps one occurrence. CIB runs the delegate inside the command that reaches the throw; the kernel's effect wait is the mapping [CIB-OP-0002](#cib-op-0002--synchronous-cib-delegate-transaction-mapped-to-a-durable-effect-boundary) makes for a Service Task. The standards profile refuses the form (`throw.message.bound`).
+BPMN 2.0.2 names no sending technology for a Message throw Event (Tables 10.88 and 10.89; `tMessageEventDefinition`, `Semantic.xsd:999-1008`, has no `implementation`). CIB Seven `2.2.0` parses a Message throw whose event definition declares `camunda:class`, `delegateExpression`, `expression` or `type` as a Service Task, "same behavior as service task" (CAM-436; `BpmnParse.java:1643-1653`, `3174-3184`), without reading `messageRef`, `operationRef` or a Message Flow. Under `cibForms` the kernel reads the event definition's `camunda:delegateExpression` into an effect binding as for a Send Task under [CIB-EXT-0023](#cib-ext-0023--send-task-performed-by-a-configured-handler), matched on the delegate alone since an event definition has no `implementation`. The throw's occurrence opens one effect item with no arguments and waits for its result: a success, which carries no values since a throw Event has no output mappings, passes the token on or consumes it at an End; a business failure raises its Error from the throw's occurrence, which has no boundaries, so the search starts at the throw's scope; a technical failure opens an incident whose retry reopens the same item, so one modeled send keeps one occurrence. CIB runs the delegate inside the command that reaches the throw, and the kernel's effect wait is the mapping [CIB-OP-0002](#cib-op-0002--synchronous-cib-delegate-transaction-mapped-to-a-durable-effect-boundary) makes for a Service Task's success; a technical failure, which rolls CIB's reaching command back, is [CIB-EXT-0049](#cib-ext-0049--a-technical-failure-of-an-effect-without-a-job-boundary-opens-the-incident-cibs-asynchronous-case-opens). The standards profile refuses the form (`throw.message.bound`).
 
-**Evidence:** The cited source; the retained [message-throw-bound](../scenarios/open-rows/message-throw-bound/README.md) answers `both-sends-succeed`, `intermediate-send-refused` and `end-send-refused`; `packages/kernel/test/message-throw.test.ts`. The [retry witness](../scenarios/open-rows/message-throw-retry/README.md) has no CIB answer, since a throw without an asynchronous continuation fails its command, and checks the single occurrence in both kernels.
+**Evidence:** The cited source; the retained [message-throw-bound](../scenarios/open-rows/message-throw-bound/README.md) answers `both-sends-succeed`, `intermediate-send-refused` and `end-send-refused`; `packages/kernel/test/message-throw.test.ts`. The [retry witness](../scenarios/open-rows/message-throw-retry/README.md) is CIB-EXT-0049's.
 
 **Boundary:** A `camunda:delegateExpression` on a Message Intermediate throw's or Message End's event definition. `camunda:class`, `expression` and `type` (`throw.message.implementation`), `camunda:resultVariable` (`throw.message.resultVariable`), `camunda:inputOutput`, asynchronous continuations, execution listeners and Data Input Associations are refused. CIB resolves the delegate as a Service Task's, so a declared name equal to its root identifier is refused as one (`work.handlerKeyName`, CIB-LIM-0017), and a delegate no binding matches is refused (`throw.message.unboundImplementation`, [CIB-LIM-0051](#cib-lim-0051--cib-deploys-a-service-task-whose-implementation-no-binding-matches)).
 
@@ -2033,6 +2043,26 @@ BPMN 2.0.2 Tables 10.88 and 10.89 require the Activity a Compensation throw refe
 
 **Boundary:** Targeted throws inside a non-Compensation Event Sub-Process naming an Activity of its parent's level.
 
+### CIB-EXT-0048 — a JavaScript Script Task is an effect the host evaluates over a committed snapshot
+
+**Status:** Selected bounded extension for `ScriptTask.javascript`; selected by the cibseven profiles
+
+BPMN 2.0.2 §10.3.3 (Table 10.12) gives a Script Task a `scriptFormat` and a `script`, and §13.3.3 runs the script when the Task is activated, but BPMN names no script language, no binding of the scope's data to script names (§10.4.1 "Script Task Mapping" only gives the script access to them) and no result assignment. CIB Seven `2.2.0` runs `javascript`, `ecmascript` and `js` on GraalJS, binds every variable visible from the execution by bare name and `execution` to the execution itself, discards assignments unless `autoStoreScriptVariables`, and writes a non-null result with `execution.setVariable(resultVariable, result)` (`bpmn/behavior/ScriptTaskActivityBehavior.java:56-59`). Under `ScriptTask.javascript` the kernel admits an inline JavaScript source and opens one effect item with the neutral descriptor `(urn:bpmn-lean:effect-protocol:script-v1, javascript)` whose arguments are every visible variable, nearest owner first, one per name; the host evaluates the source in a host-object-free Node `vm` context with the ECMAScript 2021 library, and the kernel writes the recorded result to `resultVariable` by the nearest-owner rule, as `setVariable` does. The [script semantics](kernel/semantics/SCRIPT-SEMANTICS-SPEC.md) are the contract. The standards profile refuses every Script Task (`work.script`).
+
+**Evidence:** The cited source and the root's GraalJS probe P1 (2026-11-12, [script semantics](kernel/semantics/SCRIPT-SEMANTICS-SPEC.md#probe-p1-2026-11-12)); `packages/kernel/test/script-effect.test.ts` and `packages/temporal-host/test/script-handler.test.ts`; the [JavaScript Script Task witnesses](../scenarios/open-rows/script-task-javascript/README.md) (no CIB answer before the batch run).
+
+**Boundary:** An inline source whose `scriptFormat` is `javascript`, `ecmascript` or `js` ignoring ASCII case, read through String, Boolean, Null and Integer snapshot names, with a boolean, an integer in 0..2^31−1 or a well-formed String of at most 1,024 UTF-8 bytes as its result. Refused: any other language, `juel` and the absent format included (`work.script.language`), an absent source (`work.script.source`), a source starting with `${` or `#{` after Java's `trim` (`work.script.sourceExpression`), `camunda:resource` (`work.script.resource`), input and output mappings (`activity.inputMappings`, `activity.outputMappings`) and a Multi-Instance body (`activity.multiInstanceBody`). Dynamic `unsupported`: a result outside the domain (`script-result-unrepresentable`), a read of a variable of another kind (`script-value-unrepresentable`), a reference to `execution` or `Java` (`script-host-object`). An incident retry evaluates the activation's snapshot, where CIB's retried job reads the variables live. A failing synchronous script is [CIB-EXT-0049](#cib-ext-0049--a-technical-failure-of-an-effect-without-a-job-boundary-opens-the-incident-cibs-asynchronous-case-opens)'s. This entry owns the ledger entries of `probe-other-language-juel` and `multi-instance-body`, the kernel's refusals against CIB's execution.
+
+### CIB-EXT-0049 — a technical failure of an effect without a job boundary opens the incident CIB's asynchronous case opens
+
+**Status:** Selected bounded extension, a consequence of CIB-EXT-0013 and CIB-OP-0002; selected by the cibseven profiles through `TechnicalFailure.incident`
+
+BPMN 2.0.2 defines no technical failure of an Activity's work (§13.3.3 defines only a fault), no incident and no command atomicity, so no clause decides what a failure inside the command that reached the work means. CIB Seven `2.2.0` runs a delegate without `asyncBefore`, a Script Task's script included, inside the command that reaches it, and a failure there goes through `executeWithErrorPropagation` and rolls that command back (`bpmn/behavior/AbstractBpmnActivityBehavior.java:87-109`); only an `asyncBefore` job fails on its own, with retries and a `failedJob` incident (CIB-EXT-0013). The kernel's effects run after the reaching command commits, since the effect result is a later input ([CIB-OP-0002](#cib-op-0002--synchronous-cib-delegate-transaction-mapped-to-a-durable-effect-boundary)), so the kernel cannot roll that command back and does not imitate it: under `TechnicalFailure.incident` it opens the incident the asynchronous case opens, whose retry reopens the same effect occurrence, and under `TechnicalFailure.hostFailure` it answers `unsupported` (`effect-technical-failure`) as for every effect.
+
+**Evidence:** The cited source; the CIB runner realizes a synchronous technical failure as an engine exception from its delegate (`CibSevenScriptedEffect`), which rolls the reaching command back. Witnesses, no CIB answer before the batch run: [service-task-failure-then-retry and send-task-failure-then-retry](../scenarios/open-rows/synchronous-effect-failure/README.md), [technical-failure-then-retry](../scenarios/open-rows/message-throw-retry/README.md), and the synchronous script failures `probe-unknown-name` and `probe-thrown-error` of the [JavaScript Script Task witnesses](../scenarios/open-rows/script-task-javascript/README.md); `packages/kernel/test/message-throw.test.ts`.
+
+**Boundary:** A technical failure of a Service Task or configured Send Task without `camunda:asyncBefore` on the Activity or on its Multi-Instance loop, of every bound Message throw ([CIB-EXT-0039](#cib-ext-0039--a-message-throw-performed-by-a-configured-handler); asynchronous throws are refused), and of a Script Task without `camunda:asyncBefore` (CIB-EXT-0048). The CIB comparison for such a run holds for nothing after the reaching command; this entry owns the ledger entries of the five witnesses above. An `asyncBefore` effect's failure is CIB-EXT-0013's and agrees.
+
 ## Permitted operational-detail register
 
 ### CIB-OP-0001 — CIB host task identity mapped to project semantic task identity
@@ -2051,7 +2081,7 @@ This mapping preserves the BPMN-visible lifecycle under `CIB-AGR-0002` while avo
 
 CIB Seven `2.0.0` executes the selected CreateDocument delegate and its input/output mappings synchronously inside the command transaction. It exposes no committed intermediate state corresponding to the project's effect intent or in-flight Temporal Activity. The project semantic core instead commits an effect wait and immutable arguments before the Temporal adapter performs the external effect, then applies one validated result patch and output mapping. This `2.0.0` observation is the frozen A12 CreateDocument evidence, which the profile consolidation (#42) neither retires nor regenerates.
 
-For the approved success-only capsule, both accounts agree on admitted input and final Process variables. The CIB execution is a host-realization check for those boundary observations, not an independent derivation of the project intermediate state. Failure atomicity, rollback after an external mutation, cancellation, and fault delivery are deliberately excluded and require separate semantic decisions.
+For the approved success-only capsule, both accounts agree on admitted input and final Process variables. The CIB execution is a host-realization check for those boundary observations, not an independent derivation of the project intermediate state. Failure atomicity, rollback after an external mutation, cancellation, and fault delivery are deliberately excluded and require separate semantic decisions. The same mapping covers a JavaScript Script Task without `asyncBefore` ([CIB-EXT-0048](#cib-ext-0048--a-javascript-script-task-is-an-effect-the-host-evaluates-over-a-committed-snapshot)): CIB evaluates it inside the reaching command, the project commits the effect at activation and its recorded result as the next input, and the differential folds a successful result into the reaching command (`foldSynchronousEffects`), since the CIB runner reports the script's execution as it reports a synchronous delegate's.
 
 **Evidence:** [CreateDocument specification](kernel/semantics/DATA-SEMANTICS-SPEC.md), [frozen packaged-engine runner test](../adoption/a12/legacy/source-tree/runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenCreateDocumentScenarioRunnerTest.java), [frozen content-bound `2.0.0` evidence](../adoption/a12/legacy/source-tree/scenarios/create-document-data/cibseven-evidence.json), and the [frozen A12 target profile](../adoption/a12/legacy/source-tree/profiles/cibseven-2.0.0-a12-create-document-draft/README.md).
 
@@ -2396,6 +2426,16 @@ With the default `cronType = QUARTZ` and `supportLegacyQuartzSyntax = true` (`Pr
 **Evidence:** The cited pinned source; retained `timer-recurrence/cron-seconds-field` (30,000 then 60,000) and `cron-on-catch`.
 
 **Boundary:** The default Cron configuration; another `cronType` is outside every claim.
+
+### CIB-CFG-0015 — CIB evaluates JavaScript only with GraalJS on its classpath
+
+**Status:** Configuration-specific realization; selected by the cibseven profiles
+
+CIB Seven `2.2.0`'s engine module has GraalJS in test scope only (`engine/pom.xml:332-342`); without it a JavaScript Script Task fails when it runs (`scripting/engine/ScriptingEngines.java:143`). The CIB Run distribution and the project's CIB runner add GraalJS `21.3.12` (`distro/run/pom.xml:32`, `parent/pom.xml:32`; owner approval 2026-11-12, runner only), whose library is ECMAScript 2021 (P1, [script semantics](kernel/semantics/SCRIPT-SEMANTICS-SPEC.md#probe-p1-2026-11-12)).
+
+**Evidence:** The cited source; [SOURCES](SOURCES.md) records the dependency.
+
+**Boundary:** The pinned GraalJS `21.3.12` and its default host access; another JavaScript engine is outside the claim.
 
 ## Audit of previously visited findings
 

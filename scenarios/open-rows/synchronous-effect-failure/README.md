@@ -11,5 +11,5 @@ Answer-free schedules for [PC-AUTO-02](../../../docs/PRACTICAL-CIB7-COVERAGE-TAR
 
 Notes for the target runners:
 
-- CIB runs both delegates inside the starting command, so each consumes its schedule's next `effectResult` for its element and the runner skips that stimulus later; a technical failure throws from the delegate and rolls the starting command back (`AbstractBpmnActivityBehavior.java:87-109`).
+- CIB runs both delegates inside the starting command, so each consumes its schedule's next `effectResult` for its element and the runner skips that stimulus later; a technical failure throws from the delegate and rolls the starting command back (`AbstractBpmnActivityBehavior.java:87-109`; CIB-EXT-0049).
 - The kernel commits the start with the effect open and takes each result as an input of its own, so a technical failure opens an incident that the retry resolves.

@@ -4,7 +4,7 @@ This directory serves [PC-MESSAGE-09](../../../docs/PRACTICAL-CIB7-COVERAGE-TARG
 
 The Process starts directly in the Intermediate throw `Throw_ShippedNotice` and ends in the Message End `MessageEnd_Closed`; both carry `camunda:delegateExpression="${bpmnLeanEffectHandler}"` on their `messageEventDefinition`. The schedule reports one technical failure of the Intermediate throw, retries its incident and answers it and the Message End by success, with incidents enabled.
 
-The model declares no asynchronous continuation, so CIB runs the throw's delegate inside the starting command: the delegate consumes the schedule's technical failure and throws, which rolls the starting command back (`AbstractBpmnActivityBehavior.java:87-109`), while the kernel commits the start with the effect open and opens an incident on the failure. The [synchronous effect failure](../synchronous-effect-failure/README.md) schedules cover a Service Task and a Send Task the same way.
+The model declares no asynchronous continuation, so CIB runs the throw's delegate inside the starting command: the delegate consumes the schedule's technical failure and throws, which rolls the starting command back (`AbstractBpmnActivityBehavior.java:87-109`; CIB-EXT-0049), while the kernel commits the start with the effect open and opens an incident on the failure. The [synchronous effect failure](../synchronous-effect-failure/README.md) schedules cover a Service Task and a Send Task the same way.
 
 | Scenario | Case it exercises |
 |---|---|

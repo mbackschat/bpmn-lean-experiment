@@ -24,6 +24,7 @@ The [profile artifact](profile.json) is the CIB Seven 2.2.0 compatibility profil
 | `conditionOrder` | `beforeOutputs` | `CIB-INT-0011` |
 | `evaluator` | `juel` | `CIB-CFG-0011`, `CIB-EXT-0030` |
 | `businessRuleTask` | `decisionTable` | `CIB-EXT-0032` |
+| `scriptTask` | `javascript` | `CIB-EXT-0048` |
 | `inclusiveJoinReach` | `outgoingOnly` | `CIB-INT-0020` |
 | `branchSchedule` | `declarationDepthFirst` | `CIB-OP-0016` |
 | `conditionalRetrigger` | `eachWrite` | `CIB-EXT-0035` |
@@ -43,13 +44,14 @@ The [profile artifact](profile.json) is the CIB Seven 2.2.0 compatibility profil
 
 Every other option keeps the standards reading, including `scopeChainSubmissionBytes`, and the relationships the profile lists without an option row are provenance. A relationship whose option is mutually exclusive with one above is a decision point for a second cumulative profile, not a switch inside this one: the [scope-chain profile](../cibseven-2.2.0-scope-chain/README.md) is the first, because `CIB-EXT-0020` restricts User Task submissions that `CIB-EXT-0005` installs at the root.
 
-Four CIB behaviours inside this profile's admitted surface are knowingly not imitated, so a run there differs from CIB's:
+Five CIB behaviours inside this profile's admitted surface are knowingly not imitated, so a run there differs from CIB's:
 
 - **Unconsumed results of a task CIB makes no scope** (`CIB-EXT-0015`, owner `PC-DATA-06`). `effectResultValues = activityLocals` applies to the tasks CIB makes a scope, Multi-Instance instances and tasks with output parameters, where CIB discards the value. On a task without either, an effect result value no output mapping consumes is rejected as `undeclared-output`, while CIB keeps it as a Process variable (`BpmnParse.java:4797-4814`).
 
 - **Java exception-class codes** (`CIB-EXT-0029`, unselected). CIB lets an Error code name a Java exception class that a technical failure then matches; the kernel catches only business failures by code, so such a technical failure becomes an incident instead of taking the boundary.
 - **A parked Inclusive join without a new arrival** (`CIB-DEV-0002`, candidate deviation). CIB re-examines a waiting join only when another execution arrives, so the instance stalls when the last blocking path ends elsewhere; the kernel fires the join as soon as BPMN 2.0.2 Table 13.3's condition holds, under every profile.
 - **Intermediate Sub-Processes on the error path** (`CIB-EXT-0016`). When an Error is caught by a boundary of an ancestor more than one level out, CIB runs the output parameters of every Sub-Process it destroys between the thrower and the catching host; the kernel writes only the thrower's and the interrupted host's.
+- **A synchronous effect's technical failure** (`CIB-EXT-0049`). CIB rolls back the command that reaches a Service Task, Send Task, bound Message throw or Script Task without `asyncBefore` when its work fails; the kernel has committed that command before the effect runs and opens the incident CIB opens for the asynchronous case.
 
 [BPMN 2.0.2](../../docs/BPMN-CONFORMANCE-TARGET.md) stays the normative authority for the meaning the options do not change. The profile's clause and table references are the union of those every retired profile cited.
 

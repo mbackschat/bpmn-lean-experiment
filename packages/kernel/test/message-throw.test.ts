@@ -1,8 +1,8 @@
 /**
  * Message throws under `MessageThrowForms.cibForms` (PC-MESSAGE-09; CIB-EXT-0039, CIB-INT-0027): a bound throw opens one
  * effect item with no arguments and is answered like a Service Task's effect, an unbound one passes its token on. The
- * retry expectations are the project-owned contract of the propagation specification: CIB has no answer for a
- * technical failure of a throw without an asynchronous continuation, which rolls its command back.
+ * retry expectations are the kernel's account of a synchronous effect's technical failure, CIB-EXT-0049: CIB rolls the
+ * command that reached the throw back.
  *
  * `Start -> T -> E`, `T` an Intermediate Message throw and `E` a Message End; the nested form puts `PS -> X -> PE`, `X`
  * the bound throw, inside the Sub-Process `T`, whose Error boundary `B` catches `REFUSED` and leads to the User Task `W`.

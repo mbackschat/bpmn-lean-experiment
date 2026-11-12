@@ -26,8 +26,9 @@ import org.cibseven.bpm.engine.delegate.JavaDelegate;
  * consumes the scenario's next unconsumed `effectResult` for its element, and the runner later skips that stimulus
  * with no trace entry (the differential compensates through `CibCaseRelation.SynchronousFinalState` and
  * `SynchronousBoundaryError`). A synchronous technical failure throws an engine exception from the delegate, which
- * rolls the reaching command back as any failing delegate does (`AbstractBpmnActivityBehavior.java:87-109`). Outputs become Activity-local variables, so the
- * model's output mappings, not the adapter, decide what reaches the process.
+ * rolls the reaching command back as any failing delegate does (`AbstractBpmnActivityBehavior.java:87-109`); the
+ * kernel opens an incident instead (CIB-EXT-0049). Outputs become Activity-local variables, so the model's output
+ * mappings, not the adapter, decide what reaches the process.
  */
 final class CibSevenScriptedEffect {
 
