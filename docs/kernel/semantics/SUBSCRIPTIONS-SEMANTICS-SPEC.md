@@ -171,10 +171,10 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 |---|---|
 | PC-TIMER-03 | Acceptance of data-derived values; the clock after a rolled-back firing ([CIB-OP-0017][r-op-0017]). |
 | PC-TIMER-08 | Timer lifetimes across Transaction owners, which consume the PC-TX contracts. |
-| PC-MESSAGE-01 | Expression names on different Messages of one event scope, refused as `message.expressionNames` also where CIB deploys them; a nameless Receive Task under `messageNames = addresses` (work admission). |
-| PC-MESSAGE-03 | Payload catches in branches and nested work; the runner does not yet deliver payloads, so no CIB evidence. |
+| PC-MESSAGE-01 | The M6 track review: expression names compare by their parsed form ([CIB-LIM-0022][r-lim-0022]), and a nameless Receive Task under `messageNames = addresses` is refused (`message.unnamed`). |
+| PC-MESSAGE-03 | The acceptance review of the amended row text: a payload-free or out-of-domain delivery is rejected, as the catch and Receive arms answer; CIB writes no payload target ([CIB-LIM-0013][r-lim-0013]). |
 | PC-SIGNAL-01, PC-SIGNAL-03 | Signal throws; Signal boundaries and Event Sub-Process starts. |
-| PC-CONDITION-03, PC-CONDITION-04 | Event-Based Gateway arms true at once, which CIB picks in a per-JVM arbitrary order ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)); a completion's writes read by its own boundaries ([CIB-INT-0042][r-int-0042]); Event Sub-Process starts of one scope with one condition, which both CIB and the kernel deploy (CIB's duplicate-condition check covers root starts only, `BpmnParse.java:1289`, `:1042`). |
+| PC-CONDITION-03, PC-CONDITION-04 | Event-Based Gateway arms, or interrupting items of one host or scope, true at once are refused where CIB picks in a per-JVM arbitrary order ([CIB-LIM-0053][r-lim-0053], [#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)); a completion's writes read by its own boundaries ([CIB-INT-0042][r-int-0042]); Event Sub-Process starts of one scope with one condition, which both CIB and the kernel deploy (CIB's duplicate-condition check covers root starts only, `BpmnParse.java:1289`, `:1042`). |
 
 ## Sources
 
@@ -194,6 +194,7 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 [r-op-0017]: ../../CIB-BPMN-RELATION-REGISTER.md#cib-op-0017--the-engine-clock-after-a-rolled-back-input-is-the-runners-environment-clock
 [r-int-0024]: ../../CIB-BPMN-RELATION-REGISTER.md#cib-int-0024--a-message-name-given-by-an-expression-is-resolved-when-its-subscription-opens
 [r-lim-0022]: ../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0022--cib-addresses-a-message-subscription-by-a-required-scope-unique-name
+[r-lim-0053]: ../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0053--the-kernel-refuses-competing-conditional-items-true-at-one-evaluation-cib-fires-one-of-them
 [r-lim-0023]: ../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0023--cib-ignores-a-message-events-operationref
 [r-ext-0035]: ../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0035--cib-fires-a-conditional-event-on-each-matching-variable-write-filtered-by-its-variable-name-and-events
 [r-dev-0004]: ../../CIB-BPMN-RELATION-REGISTER.md#cib-dev-0004--a-non-interrupting-conditional-event-fires-again-while-its-condition-stays-true
