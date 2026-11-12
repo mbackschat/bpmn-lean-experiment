@@ -329,7 +329,6 @@ Superseded first-profile restrictions: the old checkpoints fixed one flat root w
 [cds-basis]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-SPEC.md#bpmn-and-cib-boundary
 [cesp-normative]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md#normative-account-and-selected-interpretation
 [cesp-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md#required-optional-and-excluded-scope
-[cesp-contract]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md#runtime-context-and-lifecycle-contract
 [cesp-cib]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md#cib-seven-relationship-boundary
 [csl-normative]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/COMPENSATION-SOURCE-LOWERING-PROPOSAL.md#normative-account-and-selected-interpretation
 [csl-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/COMPENSATION-SOURCE-LOWERING-PROPOSAL.md#required-optional-and-excluded-scope

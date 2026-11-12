@@ -226,7 +226,6 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 [icm-cib]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md#cib-seven-classification
 [icm-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md#maintained-optional-and-excluded
 [ict-claim]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md#claim-boundary
-[ict-source]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md#source-profile
 [ict-il]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md#semantic-process-il
 [ict-time]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md#semantic-time-and-timer-identity
 [ict-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md#stable-semantic-rules
@@ -264,8 +263,6 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 [ted-normative]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md#normative-basis-and-cib-classification
 [ted-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md#required-optional-and-excluded-scope
 [ted-contract]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md#profile-and-public-contract
-[ted-admission]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md#admission
-[ted-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md#stable-rules
 [tst-contract]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-START-EVENT-SPEC.md#contract
 [tst-normative]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-START-EVENT-SPEC.md#normative-basis
 [tst-account]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-START-EVENT-SPEC.md#selected-account-and-rejected-alternatives
