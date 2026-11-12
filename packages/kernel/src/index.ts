@@ -13,7 +13,6 @@ export {
   runStep,
   unsupportedDeploymentResult,
 } from "./run.js";
-export { compareStrings } from "./il/types.js";
 export {
   CodecRefusalCode,
   bindingsFromJson,
@@ -53,7 +52,7 @@ export type {
   Binding, BroadcastIntent, CorrelationMatch, EffectOutcome, Failure, Input, Leave, MessageChannel, OccurrenceRef,
   Outcome, SignalAddress, StartInput, StartTrigger, State,
 } from "./state.js";
-export { messageReceivers, messageStartCandidates } from "./population/messages.js";
+export { leastRefusal, messageReceivers, messageStartCandidates } from "./population/messages.js";
 export {
   FanOutNextTag,
   PendingTag,

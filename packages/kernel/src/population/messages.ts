@@ -87,14 +87,15 @@ export function occurrence(program: Program, state: State, item: OpenItem): Occu
 }
 
 /**
- * The refusal with the least code in the codes' string order, so the code a publication reports never depends on the
- * order its candidates are scanned in; of two refusals with one code the first is kept, which only a scan's refusal kinds
- * could tell apart, and a scan refuses only as `unsupported`. The codes are ASCII, so UTF-16 order is code-point order.
+ * The refusal with the least code in the codes' string order (`compareStrings`, Lean's `String` order), so the code a
+ * publication reports never depends on the order its candidates are scanned in; of two refusals with one code the first
+ * is kept, which only a scan's refusal kinds could tell apart, and a scan refuses only as `unsupported`. Generic over the
+ * refusal's form, so the hosted driver orders its chains' refusals by this one rule.
  */
-export function leastRefusal(refusals: readonly Failure[]): Failure | null {
-  let least: Failure | null = null;
-  for (const failure of refusals) {
-    if (least === null || compareStrings(failure.code, least.code) < 0) least = failure;
+export function leastRefusal<R extends { readonly code: string }>(refusals: readonly R[]): R | null {
+  let least: R | null = null;
+  for (const refusal of refusals) {
+    if (least === null || compareStrings(refusal.code, least.code) < 0) least = refusal;
   }
   return least;
 }
