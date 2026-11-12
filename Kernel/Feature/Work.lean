@@ -119,20 +119,25 @@ def evaluateDecision (hooks : WorkHooks) (ctx : Ctx) (payload : ActivityPayload)
 /-- An Activity's occurrence began. An input mapping whose source is unavailable makes the InputSet unavailable, and
 an occurrence a token began waits for it ([BPMN 2.0.2 §10.4.2](../../docs/reference/bpmn-2.0.2/README.md)), held in
 `FeatureSlots.held` until its scope occurrence is cleared. An occurrence no token began has no flow to hold on, which
-is refused; it may do a task without work, a User Task or a Service Task (`scope.implicitStart` and
+is refused: a compensation handler, which its run begins in its context (`ScopeRole.compensationHandler`), as the
+dynamic-only `compensation.handlerInputUnavailable` (I10), any other as `started-activity-input-unavailable`. A handler
+and a Multi-Instance instance count as begun by a token, so they may receive a Message or call a process; another
+occurrence no token began may do a task without work, a User Task or a Service Task (`scope.implicitStart` and
 `compensation.handlerWork` at admission). A `camunda:inputParameter`, whose unresolved expression is no unavailable
 Data Input, rolls the command back instead of holding (`Ctx.evaluateMappings`). -/
 def arriveActivity (hooks : WorkHooks) (ctx : Ctx) (header : Header) (payload : ActivityPayload) (occurrence : Occurrence)
     (state : State) : Outcome := do
+  let handler := ctx.scopeRole state occurrence.scope == .compensationHandler
   let some inputs ← ctx.evaluateMappings (state.evalContext occurrence.scope) payload.envelope.inputs
     | match occurrence.incoming with
       | some flow => .ok (state.hold { occurrence := occurrence.id, flow, scope := occurrence.scope })
       -- Dynamic-only: whether the source is set depends on the run.
-      | none => .error (.unsupported "started-activity-input-unavailable")
+      | none => .error (.unsupported
+        (if handler then "compensation.handlerInputUnavailable" else "started-activity-input-unavailable"))
   let state := enterLocal header inputs occurrence state
   -- An instance of a Multi-Instance body, the only occurrence of a looping Activity this hook sees, follows the token
-  -- its body began on; admission refuses a looping compensation handler (`activity.compensationHandler`).
-  let begunByToken := occurrence.incoming.isSome || payload.envelope.multiInstance.isSome
+  -- its body began on; admission refuses a looping compensation handler (`compensation.handlerMultiInstance`).
+  let begunByToken := occurrence.incoming.isSome || payload.envelope.multiInstance.isSome || handler
   let complete (state : State) : State := state.signal (.complete occurrence.id .outgoing [] .outward)
   match payload.work with
   | .none => do

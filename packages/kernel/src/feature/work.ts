@@ -80,8 +80,8 @@ import {
   type UserTaskDetail,
 } from "../state.js";
 import {
-  admitValues, ctxEvaluateMappings, ctxEvaluateMappingsWith, ctxOutputReads, deliveryTriggerChannel, evalContext, hold, inValueDomain,
-  messageTriggerChannel, ownVariables, type Ctx,
+  ScopeRole, admitValues, ctxEvaluateMappings, ctxEvaluateMappingsWith, ctxOutputReads, deliveryTriggerChannel, evalContext, hold,
+  inValueDomain, messageTriggerChannel, ownVariables, type Ctx,
 } from "../hooks.js";
 import * as Call from "./work/call.js";
 import * as Submission from "./work/submission.js";
@@ -198,25 +198,29 @@ export const defaultWorkHooks: WorkHooks = {
 /**
  * An Activity's occurrence began. An input mapping whose source is unavailable makes the InputSet unavailable, and an
  * occurrence a token began waits for it (BPMN 2.0.2 §10.4.2), held in `FeatureSlots.held` until its scope occurrence
- * is cleared. An occurrence no token began has no flow to hold on, which is refused; it may do a task without work, a
- * User Task or a Service Task (`scope.implicitStart` and `compensation.handlerWork` at admission). A
- * `camunda:inputParameter`, whose unresolved expression is no unavailable Data Input, rolls the command back instead
- * of holding (`ctxEvaluateMappings`).
+ * is cleared. An occurrence no token began has no flow to hold on, which is refused: a compensation handler, which its
+ * run begins in its context (`ScopeRole.CompensationHandler`), as the dynamic-only
+ * `compensation.handlerInputUnavailable` (I10), any other as `started-activity-input-unavailable`. A handler and a
+ * Multi-Instance instance count as begun by a token, so they may receive a Message or call a process; another
+ * occurrence no token began may do a task without work, a User Task or a Service Task (`scope.implicitStart` and
+ * `compensation.handlerWork` at admission). A `camunda:inputParameter`, whose unresolved expression is no unavailable
+ * Data Input, rolls the command back instead of holding (`ctxEvaluateMappings`).
  */
 export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, payload: ActivityPayload, occurrence: Occurrence,
   state: State): Outcome {
+  const handler = ctx.scopeRole(state, occurrence.scope) === ScopeRole.CompensationHandler;
   const evaluated = ctxEvaluateMappings(ctx, evalContext(state, occurrence.scope), payload.envelope.inputs);
   if (!evaluated.ok) return failedWith(evaluated.failure);
   if (evaluated.value === null) {
     if (occurrence.incoming !== null) return committed(hold(state, { occurrence: occurrence.id, flow: occurrence.incoming, scope: occurrence.scope }));
     // Dynamic-only: whether the source is set depends on the run.
-    return failed(FailureTag.Unsupported, "started-activity-input-unavailable");
+    return failed(FailureTag.Unsupported, handler ? "compensation.handlerInputUnavailable" : "started-activity-input-unavailable");
   }
   const inputs = evaluated.value;
   const entered = enterLocal(header, inputs, occurrence, state);
   // An instance of a Multi-Instance body, the only occurrence of a looping Activity this hook sees, follows the token
-  // its body began on; admission refuses a looping compensation handler (`activity.compensationHandler`).
-  const begunByToken = occurrence.incoming !== null || payload.envelope.multiInstance !== null;
+  // its body began on; admission refuses a looping compensation handler (`compensation.handlerMultiInstance`).
+  const begunByToken = occurrence.incoming !== null || payload.envelope.multiInstance !== null || handler;
   const complete = (current: State): State => signal(current, completeSignal(occurrence.id, leaveOutgoing, [], WriteRule.Outward));
   const work = payload.work;
   switch (work.tag) {
