@@ -16,7 +16,8 @@
  * instance, removing the passive items left in it. An Activity's local-variable scope occurrence has no completion of
  * its own: the completion pipeline disposes of it with its Activity.
  *
- * How a closure's failure becomes its input's outcome where CIB runs the work in a job is `step/jobs.ts`.
+ * How a closure's failure becomes its input's outcome where CIB runs the work in a job is `step/jobs.ts`; what becomes of
+ * a queued signal whose target an interruption removed is `step/stale.ts`.
  */
 import {
   BranchSchedule, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementGateway,
@@ -37,6 +38,7 @@ import {
   ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemDetailOf, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
 } from "./hooks.js";
 import { deferred, effectContinuation, timerJob } from "./step/jobs.js";
+import { perform, requireScope, type SignalRun } from "./step/stale.js";
 
 /** The name a transition records for a signal: its tag, which spells the Lean constructor. */
 export function signalName(next: Signal): string {
@@ -102,15 +104,6 @@ function roleOf(program: Program, request: BeginRequest): ActivationRole {
       return loops ? ActivationRole.MultiInstanceBody : ActivationRole.Element;
   }
   return assertNever(request.continuation);
-}
-
-/**
- * An occurrence begins only in a scope occurrence that stands: a begin into one that is gone is an invariant failure,
- * never a silent begin, since whatever removes a scope occurrence also drops what would begin in it (a run an
- * interrupting catcher removes, `Compensation.dropWithin`; a queued signal, `stale`). `null` when it stands.
- */
-function requireScope(state: State, scope: ScopeOccurrenceId): Outcome | null {
-  return state.scopes.some((entry) => entry.id === scope) ? null : failed(FailureTag.SemanticFailure, "begin-into-missing-scope");
 }
 
 /** Begin the occurrence `request` names and hand it to its feature (`requireScope`). */
@@ -202,25 +195,10 @@ function endInstance(status: InstanceStatus, failure: InstanceFailure | null, st
   return { ...clearInside(state, root), status, failure };
 }
 
-/**
- * A signal's transition, whether it is a completion, the one kind `absorb` runs inside the micro-step, and the scope
- * occurrences and occurrences it works in or on (`stale`): Lean's `SignalWork`.
- */
-type SignalRun = Readonly<{
-  completion: boolean; run: (state: State) => Outcome; scopes: readonly ScopeOccurrenceId[]; occurrences: readonly number[];
-}>;
 const other = (run: (state: State) => Outcome, scopes: readonly ScopeOccurrenceId[] = [], occurrences: readonly number[] = []): SignalRun =>
   ({ completion: false, run, scopes, occurrences });
 
-/**
- * `Kernel.Step.stale`: whether a queued signal names a scope occurrence or an occurrence issued and since removed, which
- * an interruption's queued cancellation or interrupting begin removed after a micro-step enqueued the signal.
- */
-function stale(state: State, work: SignalRun): boolean {
-  return work.scopes.some((scope) => scope < state.nextIssue && !state.scopes.some((entry) => entry.id === scope)) ||
-    work.occurrences.some((id) => id < state.nextIssue && !state.occurrences.some((occurrence) => occurrence.id === id));
-}
-
+/** `Kernel.Step.signalWork`: what a queued signal does and the targets it names (`step/stale.ts`). */
 function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
   switch (next.tag) {
     case SignalTag.Arm:
@@ -266,10 +244,10 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
   return assertNever(next);
 }
 
-/** `Kernel.Step.dispatchSignal`: run a queued signal, unless what it names is gone (`stale`). */
+/** `Kernel.Step.dispatchSignal`: run a queued signal, unless what it names is gone (`perform`). */
 function dispatchSignal(hooks: Hooks, ctx: Ctx, next: Signal): (state: State) => Outcome {
   const work = signalRun(hooks, ctx, next);
-  return (state) => (stale(state, work) ? committed(state) : work.run(state));
+  return (state) => perform(work, state);
 }
 
 /** Run a completion when it is the only signal the micro-step enqueued, inside the micro-step. */

@@ -2,6 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Step.Jobs
+public import Kernel.Step.Stale
 
 /-! # Step
 
@@ -20,7 +21,8 @@ by its Call Activity's, an idle Multi-Instance body by its feature; an idle proc
 removing the passive items left in it. An Activity's local-variable scope occurrence has no completion of its own: the
 completion pipeline disposes of it with its Activity.
 
-How a closure's failure becomes its input's outcome where CIB runs the work in a job is `Kernel.Step.Jobs`.
+How a closure's failure becomes its input's outcome where CIB runs the work in a job is `Kernel.Step.Jobs`; what becomes
+of a queued signal whose target an interruption removed is `Kernel.Step.Stale`.
 -/
 
 public section
@@ -112,30 +114,6 @@ def roleOf (program : Program) (request : BeginRequest) : ActivationRole :=
   | .flow => if loops then .multiInstanceBody else .element
   | .compensation _ => if loops then .multiInstanceBody else .element
 
-/-- An occurrence begins only in a scope occurrence that stands: a begin into one that is gone is an invariant failure,
-never a silent begin, since whatever removes a scope occurrence also drops what would begin in it (a run an
-interrupting catcher removes, `Compensation.dropWithin`; a queued signal, `stale`). -/
-def requireScope (state : State) (scope : ScopeOccurrenceId) : Except Failure Unit :=
-  if state.scopes.any (·.id == scope) then .ok () else .error (.semanticFailure "begin-into-missing-scope")
-
-/-- What a queued signal does, and the scope occurrences and occurrences it does it in or on (`stale`). -/
-structure SignalWork where
-  scopes : List ScopeOccurrenceId := []
-  occurrences : List Nat := []
-  run : State → Outcome
-
-/-- Whether `work` names a scope occurrence or an occurrence that was issued and has since been removed. Signals run
-first in, first out, and an interruption removes in two steps: its firing withdraws the open items at once, its queued
-cancellation or interrupting Event Sub-Process begin removes the occurrences and scope occurrences later. A signal a
-micro-step between the two enqueued runs after the removal: the begin of what entering a scope occurrence queued, or the
-arming of an Activity a queued begin started. Such work goes with what it names, as a firing that finds no item does
-(`Signal.fire`); a target that never existed stays an invariant failure (`requireScope`). A `raise` names its origin
-only as provenance and runs at the head of a queue a token emptied; a firing names an item; `endInstance` names
-nothing. -/
-def stale (state : State) (work : SignalWork) : Bool :=
-  work.scopes.any (fun scope => scope.value < state.nextIssue && !state.scopes.any (·.id == scope)) ||
-    work.occurrences.any fun id => id < state.nextIssue && (state.occurrence? id).isNone
-
 /-- Begin the occurrence `request` names and hand it to its feature (`requireScope`). -/
 def begin (hooks : Hooks) (ctx : Ctx) (request : BeginRequest) (state : State) : Outcome := do
   let some sourceType := ctx.program.sourceType? request.element | .error (.semanticFailure "begin-without-element")
@@ -193,6 +171,7 @@ def fireItem (hooks : Hooks) (ctx : Ctx) (item : OpenItem) (fired : Fired) (stat
 def endInstance (status : InstanceStatus) (failure : Option InstanceFailure) (state : State) : State :=
   { state.clearInside State.root with status, failure }
 
+/-- What a queued signal does and the targets it names (`Kernel.Step.Stale`). -/
 def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
   | .arm host element scope => { scopes := [scope], occurrences := [host], run := hooks.arm ctx host element scope }
   | .armScope scope => { scopes := [scope], run := hooks.armScope ctx scope }
@@ -219,10 +198,9 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
   | .compensationFailed handler code message origin =>
     { scopes := [handler], run := hooks.failCompensation ctx handler code message origin }
 
-/-- Run a queued signal, unless what it names is gone (`stale`). -/
+/-- Run a queued signal, unless what it names is gone (`SignalWork.perform`). -/
 def dispatchSignal (hooks : Hooks) (ctx : Ctx) (signal : Signal) (state : State) : Outcome :=
-  let work := signalWork hooks ctx signal
-  if stale state work then .ok state else work.run state
+  (signalWork hooks ctx signal).perform state
 
 /-- Run a completion when it is the only signal the micro-step enqueued, inside the micro-step. -/
 def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome :=
