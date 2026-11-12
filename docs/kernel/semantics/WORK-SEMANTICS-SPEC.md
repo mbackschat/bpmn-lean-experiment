@@ -180,10 +180,7 @@ Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `u
 
 ## Open rows
 
-| Row | Decision owed or not yet implemented |
-|---|---|
-| PC-HUM-03 | A correlated Receive Task stays refused (`work.receive.correlation`); witnesses of a payload in branching, repeated, called and Multi-Instance ownership, a previous occurrence's delivery and one after cancellation, beyond the Sub-Process [receive-task-payload](../../../scenarios/open-rows/receive-task-payload/README.md) pair; the hosted P5 probe of where CIB installs a delivery's variables |
-| PC-AUTO-06 | A durable-scheduling Script witness on the Temporal host whose recovery reuses the committed result; the kernel's Script effect, its result rule, the host evaluator, the Multi-Instance body context, the cibseven profiles' selection and the retained CIB evidence are in place |
+None: every row this document owns is closed.
 
 ## Sources
 

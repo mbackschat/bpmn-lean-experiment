@@ -130,9 +130,7 @@ Superseded first-profile restrictions: the sequential and parallel User Task pro
 
 ## Open rows
 
-| Row | Decision owed or not yet implemented |
-|---|---|
-| PC-MI-04, PC-MI-05 | Sequential and parallel Multi-Instance Sub-Processes are admitted, and PC-HUM-01, the row their closure was joint with, closed on the M11 track review; under the standards profile racing parallel instances are refused (`multiInstance.concurrentInstances`). |
+None: every row this document owns is closed.
 
 ## Sources
 
