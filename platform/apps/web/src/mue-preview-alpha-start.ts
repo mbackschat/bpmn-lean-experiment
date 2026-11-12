@@ -29,7 +29,7 @@ export function resolveMuePreviewAlphaStart(
     label: "MUE Preview Alpha input: contract, invoice, receipt",
     command: {
       initialVariables: [{
-        name: "DataObjectReference_InputItems",
+        name: "DataObject_InputItems",
         value: {
           kind: VariableValueKind.StringList,
           value: ["contract", "invoice", "receipt"],

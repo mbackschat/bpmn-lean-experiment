@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "mi-user-parallel-output-collection-standards",
-    "sha256": "8e192c8ca32d306d1406259ee3cd83e22543b999b4e2edb52ade5d95064c5852"
+    "sha256": "eaad105ecc25dcd83cae61cde39d656ad7cfeb7d001e91a72cf0b4977ccb5caf"
   },
   "profile": {
     "id": "bpmn-2.0.2",

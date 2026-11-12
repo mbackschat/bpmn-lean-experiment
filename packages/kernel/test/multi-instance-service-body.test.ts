@@ -35,12 +35,13 @@ type Shape = Readonly<{
 
 /**
  * `Start → T → End`, `T` a Service Task looping over `DataInput_Items` the way the reader writes the standard form:
- * the associations name the collection `DataObjectReference_Items` and the item `DataInput_Item`.
+ * the associations read the collection from the Data Object `DataObject_Items`, which a Data Object Reference names, and
+ * the item from `DataInput_Item`.
  */
 function program(shape: Shape = {}): Json {
   const loop = {
     mode: shape.mode ?? "parallel",
-    count: { collection: { items: { variable: { name: "DataObjectReference_Items" } } } },
+    count: { collection: { items: { variable: { name: "DataObject_Items" } } } },
     elementVariable: null, completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: null,
     outputCollection: null, asyncBefore: false, asyncAfter: false,
     loopDataInputRef: "DataInput_Items", inputDataItemName: "item", ...shape.loop,

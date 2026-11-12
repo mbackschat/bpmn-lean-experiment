@@ -44,7 +44,7 @@ Every element is `{"<kind>": {"header": …, "payload": …}}`; the header is `i
 | Kind | Payload |
 |---|---|
 | `activity` | `work` and the shared `envelope` |
-| `scope` | `kind` (`embedded`, `transaction {method}`, `eventSubProcess {start, interrupting}`), `children`, `localVariables`, `items` (the Properties, Data Objects and Data Object references it declares), `envelope` |
+| `scope` | `kind` (`embedded`, `transaction {method}`, `eventSubProcess {start, interrupting}`), `children`, `localVariables`, `items` (the Properties and Data Objects it declares; a Data Object reference declares none, it names its Data Object's item), `envelope` |
 | `event` | `role` (`catch {subscription}`, `throw {record}`, `linkCatch {name}`, `linkThrow {name}`), `placement` (`intermediate`, `finish`), `incoming`, `outgoing`, `alternativeThrows` (a Multiple throw's records after the first) |
 | `gateway` | `kind` (`exclusive {candidates, default}`, `parallel`, `inclusive {candidates, default}`, `eventBased {instantiation}` with `none`, `exclusive` or `parallel`), `incoming`, `outgoing`; candidates keep document order, a flow's condition lives on the flow, and an Event-Based Gateway's arms are the targets of its outgoing flows |
 | `start` | optional `subscription`, `outgoing`; root or Event Sub-Process placement follows from the parent |

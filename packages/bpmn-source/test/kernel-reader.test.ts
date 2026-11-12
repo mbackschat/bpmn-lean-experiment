@@ -95,7 +95,7 @@ test("a process's camunda:versionTag is carried: a called process's in its defin
   assert.equal(((await read(xml(""))) as Extract<KernelRead, { kind: "read" }>).versionTag, null);
 });
 
-test("each process and Sub-Process declares its Properties, Data Objects, their references and a process its Data Inputs and Outputs", async () => {
+test("each process and Sub-Process declares its Properties, Data Objects and a process its Data Inputs and Outputs", async () => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="D" targetNamespace="urn:t">
 <bpmn:process id="P" isExecutable="true"><bpmn:property id="Prop"/><bpmn:dataObject id="Obj"/>
@@ -107,10 +107,22 @@ test("each process and Sub-Process declares its Properties, Data Objects, their 
   <bpmn:inputSet><bpmn:dataInputRefs>In</bpmn:dataInputRefs></bpmn:inputSet><bpmn:outputSet><bpmn:dataOutputRefs>Out</bpmn:dataOutputRefs></bpmn:outputSet>
   </bpmn:ioSpecification><bpmn:property id="QProp"/><bpmn:task id="T"/></bpmn:process></bpmn:definitions>`;
   const p = await program(xml);
-  assert.deepEqual(p.variables, ["Obj", "ObjRef", "Prop"]);
+  assert.deepEqual(p.variables, ["Obj", "Prop"]);
   assert.deepEqual(element(p, "Sub").scope.payload.items, ["Inner", "SubProp"]);
   assert.deepEqual(element(p, "Nested").scope.payload.items, ["Deep"]);
   assert.deepEqual(p.processes[0].variables, ["In", "Out", "QProp"]);
+});
+
+test("a Data Object reference names the Data Object it references wherever it stands", async () => {
+  const p = await program(model(`<bpmn:dataObject id="Obj"/>
+    <bpmn:subProcess id="Sub"><bpmn:dataObjectReference id="Ref" dataObjectRef="Obj"/>
+      <bpmn:userTask id="U"><bpmn:ioSpecification><bpmn:dataInput id="I"/><bpmn:dataOutput id="O"/><bpmn:inputSet/><bpmn:outputSet/></bpmn:ioSpecification>
+        <bpmn:dataInputAssociation><bpmn:sourceRef>Ref</bpmn:sourceRef><bpmn:targetRef>I</bpmn:targetRef></bpmn:dataInputAssociation>
+        <bpmn:dataOutputAssociation><bpmn:sourceRef>O</bpmn:sourceRef><bpmn:targetRef>Ref</bpmn:targetRef></bpmn:dataOutputAssociation></bpmn:userTask>
+    </bpmn:subProcess>`));
+  assert.deepEqual(element(p, "Sub").scope.payload.items, []);
+  const envelope = element(p, "U").activity.payload.envelope;
+  assert.deepEqual([envelope.inputs[0].source, envelope.outputs[0].target], [{ variable: { name: "Obj" } }, "Obj"]);
 });
 
 test("each mapping names the syntax that wrote it", async () => {
@@ -163,7 +175,7 @@ test("a Multi-Instance loop carries its own asynchronous continuations and the l
   const u = element(p, "U").activity.payload.envelope;
   assert.deepEqual([u.asyncBefore, u.asyncAfter], [true, false]);
   assert.deepEqual(u.multiInstance, {
-    mode: "parallel", count: { collection: { items: { variable: { name: "R" } } } }, elementVariable: null,
+    mode: "parallel", count: { collection: { items: { variable: { name: "O" } } } }, elementVariable: null,
     completionCondition: null, inputDataItem: "In", outputDataItem: null, outputCollection: null,
     asyncBefore: true, asyncAfter: true, loopDataInputRef: "Ins", inputDataItemName: "item",
   });

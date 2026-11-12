@@ -31,7 +31,7 @@ test("supplies the exact Alpha input only to the content-bound registered defini
     label: "MUE Preview Alpha input: contract, invoice, receipt",
     command: {
       initialVariables: [{
-        name: "DataObjectReference_InputItems",
+        name: "DataObject_InputItems",
         value: {
           kind: "stringList",
           value: ["contract", "invoice", "receipt"],

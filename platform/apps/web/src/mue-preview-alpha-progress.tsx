@@ -15,7 +15,7 @@ import type {
 import { isMuePreviewAlphaDefinition, type MuePreviewAlphaIdentity } from "./mue-preview-alpha-start.ts";
 import styles from "./mue-preview-alpha-progress.module.css";
 
-const terminalOutputName = "DataObjectReference_OutputResults";
+const terminalOutputName = "DataObject_OutputResults";
 
 export type MuePreviewAlphaProgressProps = Readonly<{
   batches: readonly CommittedTransitionBatch[];

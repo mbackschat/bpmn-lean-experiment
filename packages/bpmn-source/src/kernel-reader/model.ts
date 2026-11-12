@@ -29,8 +29,8 @@ export enum ReadRefusalCode {
   StandardLoop = "reader.standardLoop",
   EventSubProcessStart = "reader.eventSubProcessStart",
   DataAssociationShape = "reader.dataAssociationShape",
-  /** A Data Object reference inside a Scope, whose item the reader would declare per occurrence (`scopeItems`). */
-  ScopedDataObjectReference = "reader.scopedDataObjectReference",
+  /** A Data Object Reference whose `dataObjectRef` names no Data Object, so it reads as no item. */
+  DataObjectReferenceWithoutObject = "reader.dataObjectReferenceWithoutObject",
   SignalWithoutReference = "reader.signalWithoutReference",
   ThrowWithoutCode = "reader.throwWithoutCode",
   /** A Message throw's CIB attributes the IL has no field for, which CIB would run (PC-MESSAGE-09). */
@@ -153,13 +153,26 @@ export const list = (element: ElementRecord, key: string): ReadonlyArray<Element
 
 /**
  * The item names a process or Sub-Process declares for each of its occurrences (BPMN 2.0.2 §10.4.1): its Properties
- * and the Data Objects and Data Object references among its own flow elements. A Data Store holds no instance data,
- * and a nested Sub-Process's items are its own.
+ * and the Data Objects among its own flow elements. A Data Object reference declares nothing (`itemName`), a Data Store
+ * holds no instance data, and a nested Sub-Process's items are its own.
  */
 export function containerItems(container: ElementRecord): string[] {
-  const data = list(container, "flowElements")
-    .filter((element) => element.$type === "bpmn:DataObject" || element.$type === "bpmn:DataObjectReference");
+  const data = list(container, "flowElements").filter((element) => element.$type === "bpmn:DataObject");
   return [...list(container, "properties"), ...data].map(requireId).sort(compareIds);
+}
+
+/**
+ * The item a reference to an item-aware element names: a Data Object reference names the Data Object it references,
+ * which it reuses wherever it stands (BPMN 2.0.2 §10.4.1, `dataObjectRef`); any other element names itself. A reference
+ * without its Data Object is refused, since no item backs it.
+ */
+export function itemName(element: ElementRecord): string {
+  if (element.$type !== "bpmn:DataObjectReference") return requireId(element);
+  const object = reference(element, "dataObjectRef", "bpmn:DataObject");
+  if (object === null) {
+    throw new ReadRefusal(ReadRefusalCode.DataObjectReferenceWithoutObject, optionalId(element), "no dataObjectRef");
+  }
+  return requireId(object);
 }
 
 /** A resolved reference of the expected BPMN type; a reference to another type is malformed source. */

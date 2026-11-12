@@ -1,13 +1,16 @@
 import { asElement } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { asyncContinuations } from "./build.js";
-import { associationSourceId, associationTargetId, conditionExpression, valueExpression } from "./data.js";
-import { ReadRefusal, ReadRefusalCode, list, optionalId, text } from "./model.js";
+import { associationSourceId, associationSourceItem, associationTargetId, associationTargetItem, conditionExpression, valueExpression } from "./data.js";
+import { ReadRefusal, ReadRefusalCode, itemName, list, optionalId, text } from "./model.js";
 import { scan } from "./schema.js";
 import type { XmlElement } from "./schema.js";
 import type { ReadContext } from "./model.js";
 import { ctor, variable } from "./wire.js";
 import type { KernelJson } from "./wire.js";
+
+const optionalItem = (element: ElementRecord | undefined): string | null =>
+  element === undefined || optionalId(element) === null ? null : itemName(element);
 
 export type MultiInstanceRead = Readonly<{
   multiInstance: KernelJson;
@@ -45,7 +48,7 @@ export function readMultiInstance(ctx: ReadContext, activity: ElementRecord): Mu
   }
 
   const cibCollection = ctx.attribute(loop, "collection");
-  const collectionVariable = collectionAssociation === undefined ? optionalId(inputCollection ?? {}) : associationSourceId(collectionAssociation);
+  const collectionVariable = collectionAssociation === undefined ? optionalItem(inputCollection) : associationSourceItem(collectionAssociation);
   const cardinality = asElement(loop.loopCardinality);
   const count = loopCount(ctx, activity, cibCollection, collectionVariable, cardinality);
 
@@ -62,9 +65,9 @@ export function readMultiInstance(ctx: ReadContext, activity: ElementRecord): Mu
       completionCondition: completion === undefined ? null : conditionExpression(ctx, completion),
       inputDataItem: itemInputName,
       outputDataItem: itemOutputName,
-      outputCollection: collectionOutput === undefined ? optionalId(outputCollection ?? {}) : associationTargetId(collectionOutput),
+      outputCollection: collectionOutput === undefined ? optionalItem(outputCollection) : associationTargetItem(collectionOutput),
       ...asyncContinuations(ctx, loop),
-      loopDataInputRef: optionalId(inputCollection ?? {}),
+      loopDataInputRef: optionalItem(inputCollection),
       inputDataItemName: inputDataItem === undefined ? null : text(inputDataItem, "name"),
     },
   };

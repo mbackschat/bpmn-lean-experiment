@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "mi-completion-failures-standards-reads-item",
-    "sha256": "97c46d1d8feddb212a298d81dc3b9fd43f54b9001a1a5658a6cc7fe0c965f479"
+    "sha256": "bf0149f83a9267984a38d388d3e17132849ab56c783a8bbf2a153c2e6a289639"
   },
   "profile": {
     "id": "bpmn-2.0.2",

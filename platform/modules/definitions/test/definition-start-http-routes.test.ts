@@ -62,7 +62,7 @@ test("starts an exact definition version and returns only the public instance id
   const fixture = createFixture();
   const command = {
     initialVariables: [{
-      name: "DataObjectReference_InputItems",
+      name: "DataObject_InputItems",
       value: { kind: "stringList", value: ["contract", "invoice", "receipt"] },
     }],
   } as const;

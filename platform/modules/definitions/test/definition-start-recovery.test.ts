@@ -213,7 +213,7 @@ test("restart dispatches the exact command captured before a caller mutation", a
   ] as const;
   const mutableCommand = {
     initialVariables: [{
-      name: "DataObjectReference_InputItems",
+      name: "DataObject_InputItems",
       value: {
         kind: "stringList" as const,
         value: ["contract", "invoice", "receipt"],
@@ -233,7 +233,7 @@ test("restart dispatches the exact command captured before a caller mutation", a
   );
 
   assert.deepEqual(dispatchedVariables, [[{
-    name: "DataObjectReference_InputItems",
+    name: "DataObject_InputItems",
     value: {
       kind: "stringList",
       value: ["contract", "invoice", "receipt"],

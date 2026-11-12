@@ -76,7 +76,7 @@ function buildFixtures(base: MuePreviewAlphaFixtureBase) {
       status: "completed",
       openWaits: [],
       variables: [{
-        name: "DataObjectReference_OutputResults",
+        name: "DataObject_OutputResults",
         value: { kind: "stringList", value: ["accepted", "flagged", "archived"] },
       }, ...base.current.state.variables],
     },

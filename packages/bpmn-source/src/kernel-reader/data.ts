@@ -1,7 +1,7 @@
 import { asElement, asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { parseJuel } from "./juel.js";
-import { ReadRefusal, ReadRefusalCode, list, namespaceOf, optionalId, reference, requireId, text } from "./model.js";
+import { ReadRefusal, ReadRefusalCode, itemName, list, namespaceOf, optionalId, reference, requireId, text } from "./model.js";
 import type { ReadContext } from "./model.js";
 import { ctor, expressionSource, foreign, literalSource, mapping, MappingSyntax, stringLiteral, variable } from "./wire.js";
 import type { KernelJson } from "./wire.js";
@@ -177,9 +177,9 @@ function associationSource(association: ElementRecord): ElementRecord {
   return source;
 }
 
-/** `source.schema` requires the `targetRef` and `source.reference` resolves it, so it names an element by its id. */
+/** `source.schema` requires the `targetRef` and `source.reference` resolves it, so it names an item (`itemName`). */
 function associationTarget(association: ElementRecord): string {
-  return String((association.targetRef as ElementRecord).id);
+  return itemName(association.targetRef as ElementRecord);
 }
 
 /** How one association's source value is read: its transformation when given, otherwise the source element. */
@@ -200,7 +200,7 @@ const associationMapping = (ctx: ReadContext, association: ElementRecord, source
   mapping(associationTarget(association), associationValue(ctx, association, sourceName), MappingSyntax.DataAssociation);
 
 export const associationMappings = (ctx: ReadContext, associations: ReadonlyArray<ElementRecord>): KernelJson[] =>
-  associations.map((association) => associationMapping(ctx, association, elementId));
+  associations.map((association) => associationMapping(ctx, association, itemName));
 
 export const eventOutputs = (ctx: ReadContext, element: ElementRecord): KernelJson[] =>
   list(element, "dataOutputAssociations").map((association) => associationMapping(ctx, association, eventOutputName));
@@ -226,6 +226,18 @@ export const associationSourceId = (association: ElementRecord): string | null =
 export const associationTargetId = (association: ElementRecord): string | null => {
   const target = association.targetRef as ElementRecord | undefined;
   return target === undefined ? null : optionalId(target);
+};
+
+/** The item an association reads (`itemName`), `null` without a source. */
+export const associationSourceItem = (association: ElementRecord): string | null => {
+  const source = list(association, "sourceRef")[0];
+  return source === undefined ? null : itemName(source);
+};
+
+/** The item an association writes (`itemName`), `null` without a target. */
+export const associationTargetItem = (association: ElementRecord): string | null => {
+  const target = association.targetRef as ElementRecord | undefined;
+  return target === undefined ? null : itemName(target);
 };
 
 /** The text of a CIB business key: a value expression when it carries an expression marker, else a string literal. */

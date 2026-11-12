@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "sequential-multi-instance-natural",
-    "sha256": "9b5d3c3f479f108dc8d843d9ee71e17fec449fa3c04b3479b7aec63425eff345"
+    "sha256": "cfce01ffba888a3f95ddb14caabdf0348aa95e0960a4cc736b737947e7e9f390"
   },
   "profile": {
     "id": "bpmn-2.0.2",

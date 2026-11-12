@@ -276,7 +276,7 @@ test("starts the selected exact version and rejects response identity drift", as
   const client = new DefinitionApiClient("https://platform.test/ignored/", fetcher);
   const command = {
     initialVariables: [{
-      name: "DataObjectReference_InputItems",
+      name: "DataObject_InputItems",
       value: { kind: "stringList" as const, value: ["contract", "invoice", "receipt"] },
     }],
   };
@@ -303,7 +303,7 @@ test("starts the selected exact version and rejects response identity drift", as
   assert.equal(new Headers(capturedInit?.headers).get("content-type"), "application/json");
   assert.equal(
     new TextDecoder().decode(new Uint8Array(capturedInit?.body as ArrayBuffer)),
-    '{"initialVariables":[{"name":"DataObjectReference_InputItems","value":{"kind":"stringList","value":["contract","invoice","receipt"]}}]}',
+    '{"initialVariables":[{"name":"DataObject_InputItems","value":{"kind":"stringList","value":["contract","invoice","receipt"]}}]}',
   );
 
   const driftedClient = new DefinitionApiClient(

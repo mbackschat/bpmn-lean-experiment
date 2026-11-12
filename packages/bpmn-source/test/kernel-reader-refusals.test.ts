@@ -63,8 +63,8 @@ const operation = `<bpmn:message id="M"/><bpmn:interface id="If" name="If"><bpmn
 const timerDuration = `<bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>`;
 const catching = (definition: string, roots = ""): string => model(`<bpmn:intermediateCatchEvent id="C">${definition}</bpmn:intermediateCatchEvent>`, roots);
 const ending = (definition: string, roots = ""): string => model(`<bpmn:endEvent id="E">${definition}</bpmn:endEvent>`, roots);
-const inputAssociation = (association: string): string =>
-  model(`<bpmn:property id="Prop"/><bpmn:userTask id="U"><bpmn:ioSpecification><bpmn:dataInput id="I"/><bpmn:inputSet/><bpmn:outputSet/></bpmn:ioSpecification>${association}</bpmn:userTask>`);
+const inputAssociation = (association: string, data = ""): string =>
+  model(`<bpmn:property id="Prop"/><bpmn:dataObject id="Obj"/>${data}<bpmn:userTask id="U"><bpmn:ioSpecification><bpmn:dataInput id="I"/><bpmn:inputSet/><bpmn:outputSet/></bpmn:ioSpecification>${association}</bpmn:userTask>`);
 
 export const rows: readonly Row[] = [
   // Preservation of the source bytes.
@@ -291,11 +291,13 @@ export const rows: readonly Row[] = [
     },
   },
   {
-    code: "reader.scopedDataObjectReference",
-    description: "a Data Object reference inside a Sub-Process",
-    evidence: "in Sub",
-    refused: { xml: model(`<bpmn:dataObject id="Obj"/><bpmn:subProcess id="Sub"><bpmn:dataObjectReference id="Ref" dataObjectRef="Obj"/></bpmn:subProcess>`) },
-    control: { xml: model(`<bpmn:dataObject id="Obj"/><bpmn:dataObjectReference id="Ref" dataObjectRef="Obj"/><bpmn:subProcess id="Sub"/>`) },
+    code: "reader.dataObjectReferenceWithoutObject",
+    description: "a Data Association naming a Data Object reference that references no Data Object",
+    evidence: "no dataObjectRef",
+    refused: { xml: inputAssociation(`<bpmn:dataInputAssociation><bpmn:sourceRef>Ref</bpmn:sourceRef><bpmn:targetRef>I</bpmn:targetRef></bpmn:dataInputAssociation>`, `<bpmn:dataObjectReference id="Ref"/>`) },
+    control: {
+      xml: inputAssociation(`<bpmn:dataInputAssociation><bpmn:sourceRef>Ref</bpmn:sourceRef><bpmn:targetRef>I</bpmn:targetRef></bpmn:dataInputAssociation>`, `<bpmn:dataObjectReference id="Ref" dataObjectRef="Obj"/>`),
+    },
   },
   {
     code: "source.schema",

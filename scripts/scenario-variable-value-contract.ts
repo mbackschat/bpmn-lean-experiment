@@ -103,9 +103,9 @@ function verifyParallelMultiInstanceStimulus(
       }
       requireExactBinding(
         [bindings[0]],
-        "DataObjectReference_InputItems",
+        "DataObject_InputItems",
         "stringList",
-        "parallel Multi-Instance Process start requires DataObjectReference_InputItems first",
+        "parallel Multi-Instance Process start requires DataObject_InputItems first",
       );
       requireExactBinding(
         [bindings[1]],
@@ -165,9 +165,9 @@ function verifySequentialMultiInstanceStimulus(
     case "start":
       requireExactBinding(
         stimulus.variables,
-        "DataObjectReference_InputItems",
+        "DataObject_InputItems",
         "stringList",
-        "sequential Multi-Instance Process start requires exactly one DataObjectReference_InputItems stringList binding",
+        "sequential Multi-Instance Process start requires exactly one DataObject_InputItems stringList binding",
       );
       return;
     case "command": {

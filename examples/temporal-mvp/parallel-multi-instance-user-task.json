@@ -13,7 +13,7 @@
     "instanceId": "MvpExample_parallel_multi_instance_1",
     "initialVariables": [
       {
-        "name": "DataObjectReference_InputItems",
+        "name": "DataObject_InputItems",
         "value": {
           "kind": "stringList",
           "value": [

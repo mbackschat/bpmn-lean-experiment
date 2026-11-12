@@ -47,7 +47,7 @@ test("starts the exact requested stored version instead of the latest version", 
 
   const command = {
     initialVariables: [{
-      name: "DataObjectReference_InputItems",
+      name: "DataObject_InputItems",
       value: { kind: "stringList", value: ["contract", "invoice", "receipt"] },
     }],
   } as const;

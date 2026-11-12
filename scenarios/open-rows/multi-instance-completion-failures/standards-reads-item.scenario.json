@@ -15,7 +15,7 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "DataObjectReference_Items",
+          "name": "DataObject_Items",
           "value": {
             "kind": "stringList",
             "value": [

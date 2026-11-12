@@ -3,7 +3,7 @@ import type { ElementRecord } from "../moddle-graph.js";
 import { envelopeFor, headerOf } from "./build.js";
 import { activityProtocol, declaredImplementation, effectBinding, handlerKey, operation } from "./binding.js";
 import {
-  associationMappings, associationSourceId, associationTargetId, dataOutputDecl, inputOutputParameters, valueSource, variableCopies,
+  associationMappings, associationSourceId, associationSourceItem, associationTargetId, associationTargetItem, dataOutputDecl, inputOutputParameters, valueSource, variableCopies,
 } from "./data.js";
 import { messageTrigger } from "./events.js";
 import {
@@ -116,11 +116,11 @@ function callWork(ctx: ReadContext, element: ElementRecord): KernelJson {
   }
   const dataInputs = list(element, "dataInputAssociations").map((association) => ({
     target: correspondingData(element, called, "dataInputs", associationTargetId(association)),
-    source: associationSourceId(association),
+    source: associationSourceItem(association),
   }));
   const dataOutputs = list(element, "dataOutputAssociations").map((association) => ({
     source: correspondingData(element, called, "dataOutputs", associationSourceId(association)),
-    target: associationTargetId(association),
+    target: associationTargetItem(association),
   }));
   const associated = (entry: Readonly<{ target: string | null; source: string | null }>): KernelJson =>
     mapping(String(entry.target), variable(String(entry.source)), MappingSyntax.DataAssociation);

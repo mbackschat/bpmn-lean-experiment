@@ -57,7 +57,7 @@ test("Alpha polling retains exact running and natural terminal samples @responsi
   const preview = page.locator('[data-ui="mue-preview-alpha"]');
   await expect(preview.getByRole("list", { name: "Observed committed revisions" })).toContainText("Revision 5: running");
   await expect(preview.getByRole("list", { name: "Observed committed revisions" })).toContainText("Revision 6: completed");
-  await expect(preview.getByText("DataObjectReference_OutputResults", { exact: true })).toBeVisible();
+  await expect(preview.getByText("DataObject_OutputResults", { exact: true })).toBeVisible();
   await expect(preview.getByText("accepted", { exact: true })).toBeVisible();
   await expect(preview.getByText("flagged", { exact: true })).toBeVisible();
   await expect(preview.getByText("archived", { exact: true })).toBeVisible();

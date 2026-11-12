@@ -55,20 +55,6 @@ function scopeKind(ctx: ReadContext, node: ModelNode, kind: ScopeKind): KernelJs
   return assertNever(kind);
 }
 
-/**
- * The items a Scope declares (`containerItems`). A Data Object reference reuses the Data Object it references, wherever
- * that is declared (BPMN 2.0.2 §10.4.1), while `containerItems` reads it as an item of the container it stands in; in a
- * Scope that item would be created and disposed with each occurrence instead of reaching the Data Object, so such a
- * reference is refused.
- */
-function scopeItems(scope: ElementRecord): string[] {
-  const reference = list(scope, "flowElements").find((element) => element.$type === "bpmn:DataObjectReference");
-  if (reference !== undefined) {
-    throw new ReadRefusal(ReadRefusalCode.ScopedDataObjectReference, optionalId(reference), `in ${requireId(scope)}`);
-  }
-  return containerItems(scope);
-}
-
 export function readScope(ctx: ReadContext, node: ModelNode, kind: ScopeKind): Built {
   const id = requireId(node.element);
   const data = readActivityData(ctx, node.element, true);
@@ -76,7 +62,7 @@ export function readScope(ctx: ReadContext, node: ModelNode, kind: ScopeKind): B
     kind: scopeKind(ctx, node, kind),
     children: childIds(ctx, node.element),
     localVariables: inputOutputParameters(ctx, node.element).targets,
-    items: scopeItems(node.element),
+    items: containerItems(node.element),
   };
   return {
     kind: "element",

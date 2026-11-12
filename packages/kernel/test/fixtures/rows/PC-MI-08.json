@@ -147,7 +147,7 @@
                 "collection": {
                   "items": {
                     "variable": {
-                      "name": "DataObjectReference_Items"
+                      "name": "DataObject_Items"
                     }
                   }
                 }
@@ -156,7 +156,7 @@
               "completionCondition": null,
               "inputDataItem": "DataInput_Item",
               "outputDataItem": "DataOutput_Result",
-              "outputCollection": "DataObjectReference_Results",
+              "outputCollection": "DataObject_Results",
               "asyncBefore": false,
               "asyncAfter": false,
               "loopDataInputRef": "DataInput_Items",
@@ -266,8 +266,6 @@
     }
   ],
   "variables": [
-    "DataObjectReference_Items",
-    "DataObjectReference_Results",
     "DataObject_Items",
     "DataObject_Results"
   ],

@@ -12,7 +12,7 @@ function startScenario(items: ReadonlyArray<string>) {
     stimuli: [{
       kind: "start",
       variables: [{
-        name: "DataObjectReference_InputItems",
+        name: "DataObject_InputItems",
         value: { kind: "stringList", value: items },
       }],
     }],
@@ -31,16 +31,16 @@ test("admits only the operation-bound Process input name and cardinality", () =>
   for (const initialVariables of [
     [],
     [{
-      name: "DataObject_InputItems",
+      name: "DataObjectReference_InputItems",
       value: { kind: "stringList", value: ["item"] },
     }],
     [
       {
-        name: "DataObjectReference_InputItems",
+        name: "DataObject_InputItems",
         value: { kind: "stringList", value: ["item"] },
       },
       {
-        name: "DataObjectReference_Extra",
+        name: "DataObject_Extra",
         value: { kind: "stringList", value: ["item"] },
       },
     ],
@@ -51,7 +51,7 @@ test("admits only the operation-bound Process input name and cardinality", () =>
           ...scenarioIdentity,
           stimuli: [{ kind: "start", variables: initialVariables }],
         }),
-      /exactly one DataObjectReference_InputItems stringList binding/u,
+      /exactly one DataObject_InputItems stringList binding/u,
     );
   }
 });
