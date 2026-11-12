@@ -383,12 +383,6 @@ export const rows: readonly Row[] = [
     mutate: task(activity("T", userWork(), { boundaries: [boundary("B", escalationTrigger({ codeVariable: "code" }))] })),
     control: task(activity("T", userWork(), { boundaries: [boundary("B", escalationTrigger({ code: "Warning" }))] })),
   },
-  {
-    code: "scope.eventSubProcess.interruptingMessage",
-    description: "an interrupting Event Sub-Process started by a Message",
-    mutate: eventSubProcessOn(named, true),
-    control: eventSubProcessOn(named, false),
-  },
   // Catch Events.
   {
     code: "signal.unspecified",

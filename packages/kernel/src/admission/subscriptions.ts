@@ -357,8 +357,8 @@ function errorDeclared(refusal: string, earlier: Set<string>, code: string | nul
 }
 
 /**
- * An interrupting Event Sub-Process started by a Message has no selected meaning for the Scope it interrupts; an Error
- * Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4) (PC-ERROR-02).
+ * An Error Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4)
+ * (PC-ERROR-02); every other trigger interrupts or not through the shared interrupting path (`feature/scopes.ts`).
  * `seen` holds the Error and Escalation codes of the Event Sub-Processes the same scope declared before this one
  * (`errorDeclared`, `escalationDeclared`).
  */
@@ -368,7 +368,6 @@ function eventSubProcessAfter(seen: Declared, start: Subscription, interrupting:
   const trigger = start.trigger;
   switch (trigger.tag) {
     case TriggerTag.Message:
-      return interrupting ? "scope.eventSubProcess.interruptingMessage" : null;
     case TriggerTag.Timer:
       return null;
     case TriggerTag.Error:

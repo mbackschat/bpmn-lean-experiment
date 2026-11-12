@@ -579,7 +579,6 @@
         "scope.eventSubProcess.boundary",
         "scope.eventSubProcess.errorDuplicateCode",
         "scope.eventSubProcess.escalationDuplicate",
-        "scope.eventSubProcess.interruptingMessage",
         "scope.implicitStart",
         "scope.localVariableWithoutInput",
         "scope.multiInstance",

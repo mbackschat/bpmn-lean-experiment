@@ -217,8 +217,8 @@ def errorDeclared (refusal : String) (earlier : List String) : Option String →
   | some code => if earlier.contains code then .error refusal else .ok (code :: earlier)
   | none => .ok earlier
 
-/-- An interrupting Event Sub-Process started by a Message has no selected meaning for the Scope it interrupts; an Error
-Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4) (PC-ERROR-02).
+/-- An Error Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4)
+(PC-ERROR-02); every other trigger interrupts or not through the shared interrupting path (`Kernel.Feature.Scopes`).
 `seen` holds the Error and Escalation codes of the Event Sub-Processes the same scope declared before this one
 (`errorDeclared`, `escalationDeclared`). -/
 def eventSubProcessAfter (seen : Declared) (start : Subscription) (interrupting : Bool) : Except String Declared :=
@@ -229,7 +229,7 @@ def eventSubProcessAfter (seen : Declared) (start : Subscription) (interrupting 
   | some code => .error code
   | none =>
     match start.trigger with
-    | .message _ => refused (if interrupting then some "scope.eventSubProcess.interruptingMessage" else none)
+    | .message _ => .ok seen
     | .timer _ => .ok seen
     | .error trigger => do
       let seen ← refused (if interrupting then none else some "start.error.nonInterrupting")

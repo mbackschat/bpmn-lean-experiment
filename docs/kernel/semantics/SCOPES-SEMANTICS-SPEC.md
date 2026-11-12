@@ -122,7 +122,6 @@ with `programInCalledProcess` added to the registry's `./il/types.js` import, "a
 | Refusal code | Refused | Reason or owning row |
 |---|---|---|
 | `profile.abnormalScopeEnd.withoutOutflow` | under the standards reading, a program with a Terminate End inside a Sub-Process or at a called process's level, or any interrupting Event Sub-Process | the kernel has only the normal continuation of CIB-INT-0007; see the Terminate reading above; a Multi-Instance instance's Sub-Process and an Event Sub-Process are Sub-Processes, so the refusal covers them |
-| `scope.eventSubProcess.interruptingMessage` | an interrupting Message Event Sub-Process | the kernel treats its meaning for the interrupted Scope as unselected; adopting the reviewed account above is PC-MESSAGE-06 |
 | `scope.eventSubProcess.boundary` | a boundary on an Event Sub-Process | it is outside normal flow (§10.3.5), so a boundary's exception flow has nowhere to lead (§13.5.4); no row lifts it ([CIB-LIM-0005](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0005-a-boundary-event-on-an-event-sub-process-is-refused)) |
 | `compensation.implicit`, `compensation.dependency.boundary` | records a completed Sub-Process would hand on; a compensable Activity whose record cannot show that the boundary Event leading to it occurred | stated in [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
 | `scope.multiInstance` | a looping Event Sub-Process | BPMN 2.0.2 §10.3.5 starts an Event Sub-Process by its event ([Multi-Instance](MULTI-INSTANCE-SEMANTICS-SPEC.md)) |
@@ -136,9 +135,7 @@ Superseded first-profile restrictions: the embedded, nested, concurrent and re-e
 
 ## Open rows
 
-| Row | Decision owed or not yet implemented |
-|---|---|
-| PC-MESSAGE-06 | Interrupting Message Event Sub-Process (refused); stated in [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md). |
+None: the interrupting Message Event Sub-Process of PC-MESSAGE-06 takes the shared interrupting path and is stated in [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md).
 
 ## Sources
 
