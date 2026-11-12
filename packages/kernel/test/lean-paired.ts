@@ -18,6 +18,7 @@ import path from "node:path";
 import { beforeEach } from "node:test";
 
 import * as kernel from "@bpmn-lean/kernel";
+import * as kernelTesting from "@bpmn-lean/kernel/testing";
 import type {
   Decoded, Input, JsonValue, Outcome, Program, State, TimerFiring,
 } from "@bpmn-lean/kernel";
@@ -41,7 +42,7 @@ if (sink !== undefined) {
 /** The TypeScript answer to a batch case, in the form `kernelRun --batch` prints it. */
 function batchAnswer(batchCase: Json): Json {
   try {
-    return { answer: JSON.parse(JSON.stringify(kernel.runBatchCase(batchCase))) as unknown };
+    return { answer: JSON.parse(JSON.stringify(kernelTesting.runBatchCase(batchCase))) as unknown };
   } catch (error: unknown) {
     return { error: error instanceof Error ? error.message : String(error) };
   }
@@ -199,7 +200,7 @@ export function refusesSignalVariables(program: Program): boolean {
 export function evaluate(expression: unknown, variables: readonly unknown[], nowMs = 0): unknown {
   const batchCase = { entry: "evaluate", expression, variables, nowMs };
   record(batchCase);
-  return kernel.runBatchCase(batchCase);
+  return kernelTesting.runBatchCase(batchCase);
 }
 
 export type { Json as PairedJson };

@@ -5,7 +5,11 @@
   "type": "module",
   "license": "MIT",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./testing": {
+      "types": "./dist/run.d.ts",
+      "import": "./dist/run.js"
+    }
   },
   "types": "./dist/index.d.ts",
   "files": [

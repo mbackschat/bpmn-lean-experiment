@@ -24,7 +24,9 @@
  *
  * `runBatchCase` returns the answer of one `kernelRun --batch` case: the mode its `entry` names over inline documents,
  * besides the modes above `ungated` (`ungatedRun`), `evaluate` (`evaluationAnswer`) and `stimulus` (the stimulus codec's
- * refusal), so the unit cases replay against the Lean kernel in one process.
+ * refusal), so the unit cases replay against the Lean kernel in one process. Because `ungated` runs a program past an
+ * admission refusal, the published entry (`index.ts`) leaves it out: the package's test-only `./testing` export, this
+ * module, offers it to the unit tests' pairing helper (`packages/kernel/test/lean-paired.ts`).
  */
 import { assertNever, compareStrings, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
 import {

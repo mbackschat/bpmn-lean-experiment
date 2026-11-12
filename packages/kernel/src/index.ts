@@ -6,7 +6,6 @@ export {
   capabilitiesJson,
   hostViewJson,
   observationJson,
-  runBatchCase,
   runFixture,
   runHostView,
   runPopulation,

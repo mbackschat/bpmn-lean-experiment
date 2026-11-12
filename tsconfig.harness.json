@@ -30,6 +30,9 @@
       "@bpmn-lean/kernel": [
         "./packages/kernel/src/index.ts"
       ],
+      "@bpmn-lean/kernel/testing": [
+        "./packages/kernel/src/run.ts"
+      ],
       "@bpmn-lean/temporal-host/client": [
         "./packages/temporal-host/src/client.ts"
       ],
