@@ -37,7 +37,7 @@ The propagation feature owns throw Events and the search for a catcher of a rais
 
 ### Interpretation M9 (draft)
 
-Track M9's draft in [compensation](COMPENSATION-SEMANTICS-SPEC.md#interpretation-m9) changes where the search stops at a compensation handler: under `compensationHandlerFailure = propagatesFromTrigger` (the cibseven profiles) an Error or Escalation leaving a handler continues the search from the compensation trigger's occurrence, and one no catcher takes follows `unhandledError`; under `failsInstance` (standards) an Error End and an Escalation fail the instance as an effect's Error does (I11, D8). An uncaught Cancel becomes the static refusal `throw.cancel.uncaught` (I13, D10).
+Track M9's [compensation interpretation](COMPENSATION-SEMANTICS-SPEC.md#interpretation-m9) changes where the search stops at a compensation handler: under `compensationHandlerFailure = propagatesFromTrigger` (the cibseven profiles) an Error or Escalation leaving a handler continues the search from the compensation trigger's occurrence, and one no catcher takes follows `unhandledError`; under `failsInstance` (standards) an Error End and an Escalation fail the instance as an effect's Error does (I11, D8). An uncaught Cancel becomes the static refusal `throw.cancel.uncaught` (I13, D10).
 
 ## Interpretations reviewed (M7, 2026-11-10)
 

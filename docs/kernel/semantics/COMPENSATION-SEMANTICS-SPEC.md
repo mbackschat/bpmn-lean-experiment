@@ -315,14 +315,8 @@ Superseded first-profile restrictions: the old checkpoints fixed one flat root w
 
 | Row | Decision owed or not yet implemented |
 |---|---|
-| PC-COMPENSATION-01 | The CIB relation for invocation order, visibility, context capture and handler failure; separating observations of completion chronology versus dependency order. |
-| PC-COMPENSATION-02 | Targeted and asynchronous throws, repeated throws, Compensation End and explicit visibility through nested regions. |
-| PC-COMPENSATION-03 | Eligibility for repeated subjects, effects, Calls and Multi-Instance bodies: the old account retains a Multi-Instance User Task once for the outer Activity, including zero items and a one-item early completion, while a sibling-cancelling early completion retains nothing ([CBR account][cbr-normative], [experiment record][cre-record]); §10.7.2's per-instance handlers for a Multi-Instance Sub-Process versus §13.5.5's once. |
-| PC-COMPENSATION-04 | Handler bodies with human, Receive, effect, Call and Sub-Process work, typed data and handler failure other than an effect Error. |
-| PC-COMPENSATION-05 | Compensation Event Sub-Processes for nested and Multi-Instance parents with one snapshot per instance, and handler precedence and explicit rethrow. |
-| PC-TX-01 | The successful Transaction path and its retention. |
-| PC-TX-02 | Cancel over data-bearing work with several subjects and waiting handlers. |
-| PC-TX-03 | Nested and Multi-Instance Transaction cancellation. |
+| PC-COMPENSATION-02 | A repeated throw while a run is in progress in the same scope, refused as `compensation-concurrent-trigger` ([#103](https://github.com/mbackschat/bpmn-lean-experiment/issues/103)). |
+| PC-COMPENSATION-04 | A handler whose Data Input is unavailable at its begin, refused as `compensation.handlerInputUnavailable` ([#104](https://github.com/mbackschat/bpmn-lean-experiment/issues/104)). |
 
 ## Sources
 
@@ -350,4 +344,3 @@ Superseded first-profile restrictions: the old checkpoints fixed one flat root w
 [txc-public]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TRANSACTION-CANCELLATION-SPEC.md#public-contract-and-observations
 [cre-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/experiments/COMPENSATION-RETENTION-EXPERIMENT.md#scope-and-exclusions
 [cre-result]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/experiments/COMPENSATION-RETENTION-EXPERIMENT.md#result
-[cre-record]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/experiments/COMPENSATION-RETENTION-EXPERIMENT.md#recorded-for-the-compensation-capsules

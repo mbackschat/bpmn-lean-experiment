@@ -39,7 +39,7 @@ Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it
 
 ### Interpretation M9 (draft)
 
-Track M9's draft in [compensation](COMPENSATION-SEMANTICS-SPEC.md#interpretation-m9) touches scopes in three items: an untargeted Compensation throw inside an Event Sub-Process compensates the records of the Sub-Process holding it (I2, D15); a completed Sub-Process or Transaction without a handler is retained as one implicit group under the cibseven profiles (I5, `implicitCompensation`); and a Multi-Instance Transaction is admitted, a body's Cancel ending the whole Activity through its Cancel boundary (I15).
+Track M9's [compensation interpretation](COMPENSATION-SEMANTICS-SPEC.md#interpretation-m9) touches scopes in three items: an untargeted Compensation throw inside an Event Sub-Process compensates the records of the Sub-Process holding it (I2, D15); a completed Sub-Process or Transaction without a handler is retained as one implicit group under the cibseven profiles (I5, `implicitCompensation`); and a Multi-Instance Transaction is admitted, a body's Cancel ending the whole Activity through its Cancel boundary (I15).
 
 ## Interpretations reviewed (M4, 2026-11-10)
 
