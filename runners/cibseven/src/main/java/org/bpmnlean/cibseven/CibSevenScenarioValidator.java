@@ -86,11 +86,12 @@ final class CibSevenScenarioValidator {
   }
 
   /**
-   * Refuses a model whose behaviour this runner's environment cannot give faithfully. The engine has no JSR-223 script
-   * engine (adding one is a dependency decision), and a scenario that binds no DMN resource deploys none, so a
-   * referenced DMN decision is never deployed. CIB would answer both with an engine exception that the runner records as
-   * a rolled-back command, an answer of this environment, not of CIB; refusing here keeps them harness failures. A
-   * scenario that binds DMN resources deploys them with the model, so a decision it still lacks is CIB's answer.
+   * Refuses a model whose behaviour this runner's environment cannot give faithfully. The engine evaluates JUEL and,
+   * through GraalJS `21.3.12` (owner approval 2026-11-12), JavaScript, but has no JSR-223 engine for any other script
+   * language, and a scenario that binds no DMN resource deploys none, so a referenced DMN decision is never deployed.
+   * CIB would answer both with an engine exception that the runner records as a rolled-back command, an answer of this
+   * environment, not of CIB; refusing here keeps them harness failures. A scenario that binds DMN resources deploys them
+   * with the model, so a decision it still lacks is CIB's answer.
    */
   private static void requireRealizable(Path bpmnPath, boolean decisionsDeployed) throws IOException {
     // A streaming scan, not the model API: the model API validates against the XSD and refuses documents CIB's own
@@ -110,13 +111,14 @@ final class CibSevenScenarioValidator {
           var namespace = reader.getNamespaceURI();
           var name = reader.getLocalName();
           if (BPMN_MODEL.equals(namespace)) {
-            var language = reader.getAttributeValue(null, "language");
-            script |= "scriptTask".equals(name)
-                || (("conditionExpression".equals(name) || "condition".equals(name))
-                    && language != null && !"juel".equalsIgnoreCase(language));
+            if ("scriptTask".equals(name)) {
+              script |= !realizableLanguage(reader.getAttributeValue(null, "scriptFormat"));
+            } else if ("conditionExpression".equals(name) || "condition".equals(name)) {
+              script |= !realizableLanguage(reader.getAttributeValue(null, "language"));
+            }
             decision |= "businessRuleTask".equals(name) && reader.getAttributeValue(CAMUNDA, "decisionRef") != null;
           } else if (CAMUNDA.equals(namespace) && "script".equals(name)) {
-            script = true;
+            script |= !realizableLanguage(reader.getAttributeValue(null, "scriptFormat"));
           }
         }
       } finally {
@@ -127,11 +129,25 @@ final class CibSevenScenarioValidator {
       return;
     }
     if (script) {
-      throw new IllegalStateException("A script has no realization in this runner: " + bpmnPath.getFileName());
+      throw new IllegalStateException(
+          "A script language has no realization in this runner: " + bpmnPath.getFileName());
     }
     if (decision && !decisionsDeployed) {
       throw new IllegalStateException("A DMN decision has no realization in this runner: " + bpmnPath.getFileName());
     }
+  }
+
+  /**
+   * Whether the runner's engine evaluates a script or expression of this language: none stated, which CIB reads as JUEL
+   * (`ScriptingEngines.java:54`), JUEL, or the JavaScript names CIB resolves to GraalJS
+   * (`DefaultScriptEngineResolver.java:76-89`; `js` through the engine's own names).
+   */
+  private static boolean realizableLanguage(String language) {
+    return language == null
+        || "juel".equalsIgnoreCase(language)
+        || "javascript".equalsIgnoreCase(language)
+        || "ecmascript".equalsIgnoreCase(language)
+        || "js".equalsIgnoreCase(language);
   }
 
   private static void requireContainedByProject(Path projectRoot, Path resource)

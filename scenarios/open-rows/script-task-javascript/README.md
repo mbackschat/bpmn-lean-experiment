@@ -26,6 +26,6 @@ Two models place a Script Task in a scope, one each, so that a refusal of one co
 
 Notes for the target runners:
 
-- The retained CIB runner has no JavaScript engine on its classpath and no Script Task realization; a JavaScript engine is a dependency decision, and a Script Task that is not asynchronous needs no wait or `effectResult`.
+- The CIB runner evaluates JavaScript through GraalJS `21.3.12` and JUEL natively, and reports each completed Script Task as an execution of the command that reached it; no schedule supplies a Script's result, which the differential records once with the host evaluator and folds into that command.
 - `probe-unknown-name` and `probe-thrown-error` have an engine step that can fail inside the starting command, and `probe-host-mutation` may do so under an engine that denies host access; the runner must record such a step as the command outcome rather than as a harness failure.
 - Lost local ownership of an asynchronous script result is not authored: the scenario schema has no input that executes a Script Task's job, and `effectResult` answers delegated effects only.
