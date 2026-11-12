@@ -698,9 +698,11 @@ export function startCombination(program: Program, header: Header): string | nul
 // Links.
 
 /**
- * A throwing Link has exactly one catching Link of its name among its siblings, and one name has one target in the whole
- * definition (BPMN 2.0.2 §10.5.5, Table 10.89; CIB pairs names resource-wide, CIB-AGR-0018). A catching Link that a flow
- * also reaches passes that token on like any intermediate Event (PC-BASIC-02).
+ * A throwing Link has exactly one catching Link of its name among its siblings: BPMN 2.0.2 §10.5.4 (Table 10.89) and
+ * §10.5.5 keep a Link within one Process level and give a name one target there. A second catching Link of one name
+ * anywhere in the definition is refused as a restriction CIB shares, refusing a second catch resource-wide
+ * (CIB-AGR-0018); the standard scopes the name to one Process level, so two levels may each hold one. A catching Link
+ * that a flow also reaches passes that token on like any intermediate Event (PC-BASIC-02).
  */
 export function link(program: Program, header: Header, payload: EventPayload): string | null {
   const catches = (name: string) => (element: Element): boolean => {
