@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_EnabledTogetherStandards"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-contests:enabled-together-standards"
+  expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:process id="Process_EnabledTogetherStandards" name="A host whose boundary and inner Event Sub-Process start one activation enables (Simple Boolean)" isExecutable="true">
+    <bpmn:property id="level" name="Alert level" />
+    <bpmn:startEvent id="Start_Enabled" />
+    <bpmn:parallelGateway id="Fork_Enabled" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Enter_Sub" name="Open the sub work" />
+    <bpmn:subProcess id="Host_Sub" name="Do the sub work">
+      <bpmn:startEvent id="Sub_Start" />
+      <bpmn:userTask id="Sub_Work" name="Work on one sub item" />
+      <bpmn:endEvent id="Sub_End" />
+      <bpmn:sequenceFlow id="Flow_Sub_Start_Sub_Work" sourceRef="Sub_Start" targetRef="Sub_Work" />
+      <bpmn:sequenceFlow id="Flow_Sub_Work_Sub_End" sourceRef="Sub_Work" targetRef="Sub_End" />
+      <bpmn:subProcess id="Sub_Alert" triggeredByEvent="true">
+        <bpmn:startEvent id="Sub_Alert_Start" isInterrupting="false">
+          <bpmn:conditionalEventDefinition id="CED_Sub_Alert">
+            <bpmn:condition xsi:type="bpmn:tFormalExpression">isPresent(level)</bpmn:condition>
+          </bpmn:conditionalEventDefinition>
+        </bpmn:startEvent>
+        <bpmn:userTask id="Sub_Alert_Work" name="Handle the sub alert" />
+        <bpmn:endEvent id="Sub_Alert_End" />
+        <bpmn:sequenceFlow id="Flow_Sub_Alert_Start_Sub_Alert_Work" sourceRef="Sub_Alert_Start" targetRef="Sub_Alert_Work" />
+        <bpmn:sequenceFlow id="Flow_Sub_Alert_Work_Sub_Alert_End" sourceRef="Sub_Alert_Work" targetRef="Sub_Alert_End" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Sub" />
+    <bpmn:boundaryEvent id="Sub_Stop" attachedToRef="Host_Sub">
+      <bpmn:conditionalEventDefinition id="CED_Sub_Stop">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">stringEquals(level,"stop")</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Sub_Stop" name="Handle the sub stop" />
+    <bpmn:endEvent id="End_Handle_Sub_Stop" />
+    <bpmn:sequenceFlow id="Flow_Start_Enabled_Fork_Enabled" sourceRef="Start_Enabled" targetRef="Fork_Enabled" />
+    <bpmn:sequenceFlow id="Flow_Fork_Enabled_Enter_Sub" sourceRef="Fork_Enabled" targetRef="Enter_Sub" />
+    <bpmn:sequenceFlow id="Flow_Enter_Sub_Host_Sub" sourceRef="Enter_Sub" targetRef="Host_Sub" />
+    <bpmn:sequenceFlow id="Flow_Host_Sub_End_Sub" sourceRef="Host_Sub" targetRef="End_Sub" />
+    <bpmn:sequenceFlow id="Flow_Sub_Stop_Handle_Sub_Stop" sourceRef="Sub_Stop" targetRef="Handle_Sub_Stop" />
+    <bpmn:sequenceFlow id="Flow_Handle_Sub_Stop_End_Handle_Sub_Stop" sourceRef="Handle_Sub_Stop" targetRef="End_Handle_Sub_Stop" />
+  </bpmn:process>
+</bpmn:definitions>

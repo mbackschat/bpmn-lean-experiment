@@ -308,6 +308,36 @@ theorem nested_inner_then_outer :
 theorem nested_outermost_default_rejected : ¬ ContestWalk key nested [] [] [outer, inner] (.ok [outer]) :=
   fun law => by have := law.chosen _ rfl; revert this; decide +kernel
 
+/-- Enabled by one activation: a Sub-Process host's interrupting boundary `BO` withdraws the start `SN` of an Event
+Sub-Process in the scope the host opened, and the scope's arming evaluates both (`Feature.Subscriptions.enabledWith`). -/
+def hostBoundary : OpenItem := member 5 "BO"
+def innerStart : OpenItem := member 6 "SN"
+def enabledTogether (a b : OpenItem) : Bool := a.id == 5 && b.id == 6
+
+theorem enabled_start_then_boundary :
+    ContestWalk key enabledTogether [] [6, 5] [hostBoundary, innerStart] (.ok [innerStart, hostBoundary]) where
+  chosen _ h := by cases h; decide +kernel
+  ordered _ h := by cases h; decide +kernel
+  live _ h := by cases h; decide +kernel
+  decided _ h := by cases h; decide +kernel
+  onlyMembers _ h := by cases h; decide +kernel
+  refused _ h := by cases h
+
+theorem enabled_boundary_chosen :
+    ContestWalk key enabledTogether [] [5] [hostBoundary, innerStart] (.ok [hostBoundary]) where
+  chosen _ h := by cases h; decide +kernel
+  ordered _ h := by cases h; decide +kernel
+  live _ h := by cases h; decide +kernel
+  decided _ h := by cases h; decide +kernel
+  onlyMembers _ h := by cases h; decide +kernel
+  refused _ h := by cases h
+
+/-- The arming order the kernel once took unranked, the host's boundaries before the starts of the scope it opened, is
+rejected. -/
+theorem enabled_arming_order_rejected :
+    ¬ ContestWalk key enabledTogether [] [] [hostBoundary, innerStart] (.ok [hostBoundary]) :=
+  fun law => by have := law.chosen _ rfl; revert this; decide +kernel
+
 /-- A resolver that answers in the order it met the members is not order-free. -/
 theorem evaluation_order_rejected : ¬ OrderFree key .ok [warn, stop] :=
   fun law => by have := law [stop, warn] (.swap _ _ []); simp [Except.map, key, warn, stop, member] at this

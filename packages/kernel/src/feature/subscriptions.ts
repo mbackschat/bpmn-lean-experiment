@@ -110,7 +110,7 @@ import {
   messageTriggerChannel, withdrawInside, withdrawOccurrence, type Catch, type Ctx,
 } from "../hooks.js";
 import { ClassifiedTag, TimerKind, armAt as armTimer, classify, dynamicCode, successor } from "../il/timer.js";
-import { armed, fireAll, predicateHolds, resolveContests } from "./subscriptions/conditions.js";
+import { armed, conditionOf, evaluateItem, fireAll, predicateHolds, resolveContests } from "./subscriptions/conditions.js";
 
 export { competes, offerWrites } from "./subscriptions/conditions.js";
 
@@ -315,7 +315,10 @@ function waitKind(ctx: Ctx, arming: Arming, subscription: Subscription): Result<
   return assertNever(trigger);
 }
 
-/** Open a subscription's item and evaluate it once if Conditional; the item comes back when that evaluation fired it. */
+/**
+ * Open a subscription's item and, when `evaluate`, evaluate it once if Conditional; the item comes back when that
+ * evaluation fired it.
+ */
 function subscribe(
   ctx: Ctx,
   arming: Arming,
@@ -325,22 +328,28 @@ function subscribe(
   scope: ScopeOccurrenceId,
   host: number | null,
   passive: boolean,
+  evaluate = true,
 ): Result<readonly [State, OpenItem | null]> {
   const kind = waitKind(ctx, arming, subscription);
   if (!kind.ok) return failedWith(kind.failure);
   if (kind.value === null) return committed([state, null]);
   const [opened, item] = openSubscription(state, kind.value, element, scope, host, passive);
+  if (!evaluate) return committed([opened, null]);
   const evaluated = armed(ctx, subscription, item, opened);
   if (!evaluated.ok) return failedWith(evaluated.failure);
   return committed([evaluated.value[0], evaluated.value[1] ? item : null]);
 }
 
-/** Subscribe each of one arming's subscriptions in order, then fire what its contests resolve to (`resolveContests`). */
+/**
+ * Subscribe each of one arming's subscriptions in order, then fire what its contests resolve to (`resolveContests`),
+ * `prior` the items the same evaluation already found true.
+ */
 function subscribeAll<T>(
-  ctx: Ctx, state: State, entries: readonly T[], each: (state: State, entry: T) => Result<readonly [State, OpenItem | null]>,
+  ctx: Ctx, state: State, prior: readonly OpenItem[], entries: readonly T[],
+  each: (state: State, entry: T) => Result<readonly [State, OpenItem | null]>,
 ): Outcome {
   let current = state;
-  const fired: OpenItem[] = [];
+  const fired: OpenItem[] = [...prior];
   for (const entry of entries) {
     const next = each(current, entry);
     if (!next.ok) return failedWith(next.failure);
@@ -351,17 +360,56 @@ function subscribeAll<T>(
   return firings.ok ? committed(fireAll(null, firings.value, current)) : failedWith(firings.failure);
 }
 
-/** `Signal.arm`: open the boundaries of `element`, attached to `host`, in the host's scope `scope`. */
+/**
+ * The scope occurrence the occurrence `host` opened whose Event Sub-Process starts a `Signal.armScope` of the same
+ * activation arms, transcribed from `Kernel.Feature.Subscriptions.enabledWith`: a Sub-Process's own scope or a Call's
+ * called root, whose arming evaluates the host's boundaries with those starts as one evaluation.
+ */
+function enabledWith(ctx: Ctx, state: State, host: number): ScopeOccurrenceId | null {
+  const opened = state.scopes.find((entry) => {
+    if (entry.occurrence !== host) return false;
+    const declared = entry.element === null ? null : programElement(ctx.program, entry.element);
+    return calledRoot(state, entry.id) || (declared !== null && elementScope(declared) !== null);
+  });
+  return opened === undefined ? null : opened.id;
+}
+
+/**
+ * `Signal.arm`: open the boundaries of `element`, attached to `host`, in the host's scope `scope`. A host whose
+ * boundaries are enabled with the starts of a scope it opened leaves their Conditional evaluation to that scope's
+ * arming (`enabledWith`).
+ */
 export function arm(ctx: Ctx, host: number, element: ElementId, scope: ScopeOccurrenceId, state: State): Outcome {
   const found = programElement(ctx.program, element);
   const envelope = found === null ? null : elementEnvelope(found);
   if (envelope === null) return failed(FailureTag.SemanticFailure, "arm-without-envelope");
-  return subscribeAll(ctx, state, envelope.boundaries, (current, boundary) => {
+  const evaluate = envelope.multiInstance !== null || enabledWith(ctx, state, host) === null;
+  return subscribeAll(ctx, state, [], envelope.boundaries, (current, boundary) => {
     const arming = {
       values: evalContext(current, ctx.program, ownScope(current, host, scope)), names: evalContext(current, ctx.program, scope), repeats: !boundary.interrupting,
     };
-    return subscribe(ctx, arming, current, boundary.subscription, boundary.id, scope, host, false);
+    return subscribe(ctx, arming, current, boundary.subscription, boundary.id, scope, host, false, evaluate);
   });
+}
+
+/**
+ * The Conditional boundaries of the occurrence that opened `scope`, evaluated at `scope`'s arming when they are enabled
+ * with its Event Sub-Process starts (`enabledWith`); the ones that hold come back in declaration order.
+ */
+function enabledBoundaries(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Result<readonly [State, readonly OpenItem[]]> {
+  const host = state.scopes.find((entry) => entry.id === scope)?.occurrence ?? null;
+  if (host === null || enabledWith(ctx, state, host) !== scope) return committed([state, []]);
+  let current = state;
+  const fired: OpenItem[] = [];
+  for (const item of state.openItems.filter((open) => open.attachedTo === host && programBoundary(ctx.program, open.element) !== null)) {
+    const condition = conditionOf(ctx, item);
+    if (condition === null) continue;
+    const next = evaluateItem(ctx, item, condition, current);
+    if (!next.ok) return failedWith(next.failure);
+    [current] = next.value;
+    if (next.value[1]) fired.push(item);
+  }
+  return committed([current, fired]);
 }
 
 /**
@@ -373,7 +421,7 @@ export function armGateway(ctx: Ctx, occurrence: number, gateway: ElementId, sco
   const found = programElement(ctx.program, gateway);
   const payload = found === null ? null : elementGateway(found);
   if (payload === null) return failed(FailureTag.SemanticFailure, "arm-gateway-without-gateway");
-  return subscribeAll(ctx, state, payload[1].outgoing, (current, flow) => {
+  return subscribeAll(ctx, state, [], payload[1].outgoing, (current, flow) => {
     const target = programTarget(ctx.program, flow);
     const element = target === null ? null : programElement(ctx.program, target);
     const event = element === null ? null : elementEvent(element);
@@ -399,7 +447,10 @@ function startEvent(ctx: Ctx, eventSubProcess: ElementId): ElementId | null {
  * Sub-Process's trigger is carried by its `ScopeKind`.
  */
 export function armScope(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outcome {
-  return subscribeAll(ctx, state, childrenOf(state, ctx.program, scope), (current, child): Result<readonly [State, OpenItem | null]> => {
+  const boundaries = enabledBoundaries(ctx, scope, state);
+  if (!boundaries.ok) return failedWith(boundaries.failure);
+  const [enabled, prior] = boundaries.value;
+  return subscribeAll(ctx, enabled, prior, childrenOf(enabled, ctx.program, scope), (current, child): Result<readonly [State, OpenItem | null]> => {
     const declared = elementScope(child);
     const start = declared === null ? null : ctx.eventStart(declared[1]);
     if (declared === null || start === null) return committed([current, null]);

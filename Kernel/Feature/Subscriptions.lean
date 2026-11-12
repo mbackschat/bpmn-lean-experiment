@@ -133,34 +133,64 @@ def waitKind (ctx : Ctx) (arming : Arming) (subscription : Subscription) : Excep
   | .compensation => .ok none
   | .cancel => .ok none
 
-/-- Open a subscription's item and evaluate it once if Conditional; the item comes back when that evaluation fired it. -/
+/-- Open a subscription's item and, when `evaluate`, evaluate it once if Conditional; the item comes back when that
+evaluation fired it. -/
 def subscribe (ctx : Ctx) (arming : Arming) (state : State) (subscription : Subscription) (element : ElementId)
-    (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool) : Except Failure (State × Option OpenItem) := do
+    (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool) (evaluate : Bool := true) :
+    Except Failure (State × Option OpenItem) := do
   match ← waitKind ctx arming subscription with
   | none => pure (state, none)
   | some kind =>
     let (state, item) := state.openSubscription kind element scope host passive
-    let (state, fired) ← armed ctx subscription item state
+    let (state, fired) ← if evaluate then armed ctx subscription item state else pure (state, false)
     pure (state, if fired then some item else none)
 
-/-- Subscribe each of one arming's subscriptions in order, then fire what its contests resolve to (`resolveContests`). -/
-def subscribeAll {α : Type} (ctx : Ctx) (state : State) (entries : List α)
+/-- Subscribe each of one arming's subscriptions in order, then fire what its contests resolve to (`resolveContests`),
+`prior` the items the same evaluation already found true. -/
+def subscribeAll {α : Type} (ctx : Ctx) (state : State) (prior : List OpenItem) (entries : List α)
     (each : State → α → Except Failure (State × Option OpenItem)) : Outcome := do
   let (state, fired) ← entries.foldlM (fun (state, fired) entry => do
     let (state, item) ← each state entry
-    pure (state, fired ++ item.toList)) (state, [])
+    pure (state, fired ++ item.toList)) (state, prior)
   pure (fireAll none (← resolveContests ctx state [] fired) state)
 
-/-- `Signal.arm`: open the boundaries of `element`, attached to `host`, in the host's scope `scope`. -/
+/-- The scope occurrence the occurrence `host` opened whose Event Sub-Process starts a `Signal.armScope` of the same
+activation arms: a Sub-Process's own scope (`Scopes.enter`) or a Call's called root (`Call.invoke`). The host's
+boundaries and those starts are enabled together (BPMN 2.0.2 §13.5.3, §13.5.4), so `armScope` evaluates them as one
+evaluation, and their contests join (SUBSCRIPTIONS-SPEC "Conditions", CIB-LIM-0053). A Multi-Instance body opens no
+such scope: its instances' scopes are armed when the instances begin, in later micro-steps. -/
+def enabledWith (ctx : Ctx) (state : State) (host : Nat) : Option ScopeOccurrenceId :=
+  (state.scopes.find? fun opened => opened.occurrence == some host &&
+    (state.calledRoot opened.id || ((opened.element.bind ctx.program.element?).bind (·.scope?)).isSome)).map (·.id)
+
+/-- `Signal.arm`: open the boundaries of `element`, attached to `host`, in the host's scope `scope`. A host whose
+boundaries are enabled with the starts of a scope it opened leaves their Conditional evaluation to that scope's
+arming (`enabledWith`). -/
 def arm (ctx : Ctx) (host : Nat) (element : ElementId) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
   match (ctx.program.element? element).bind (·.envelope?) with
   | none => .error (.semanticFailure "arm-without-envelope")
   | some envelope =>
-    subscribeAll ctx state envelope.boundaries fun state boundary =>
+    let evaluate := envelope.multiInstance.isSome || (enabledWith ctx state host).isNone
+    subscribeAll ctx state [] envelope.boundaries fun state boundary =>
       let arming : Arming :=
         { values := state.evalContext ctx.program (state.ownScope host scope), names := state.evalContext ctx.program scope
           repeats := !boundary.interrupting }
-      subscribe ctx arming state boundary.subscription boundary.id scope (some host) false
+      subscribe ctx arming state boundary.subscription boundary.id scope (some host) false evaluate
+
+/-- The Conditional boundaries of the occurrence that opened `scope`, evaluated at `scope`'s arming when they are
+enabled with its Event Sub-Process starts (`enabledWith`); the ones that hold come back in declaration order. -/
+def enabledBoundaries (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Except Failure (State × List OpenItem) :=
+  match (state.scopes.find? (·.id == scope)).bind (·.occurrence) with
+  | some host =>
+    if enabledWith ctx state host != some scope then .ok (state, []) else
+    (state.openItems.filter fun item => item.attachedTo == some host && (ctx.program.boundary? item.element).isSome).foldlM
+      (fun (state, fired) item =>
+        match itemCondition? ctx item with
+        | none => pure (state, fired)
+        | some trigger => do
+          let (state, fires) ← evaluateItem ctx item trigger state
+          pure (state, if fires then fired ++ [item] else fired)) (state, [])
+  | none => .ok (state, [])
 
 /-- `Signal.armGateway`: open one subscription per arm, the catch Events the gateway's outgoing flows reach, attached
 to the gateway's occurrence. A Receive Task arm would need the work feature's wait and is refused
@@ -170,7 +200,7 @@ def armGateway (ctx : Ctx) (occurrence : Nat) (gateway : ElementId) (scope : Sco
   match (ctx.program.element? gateway).bind (·.gateway?) with
   | none => .error (.semanticFailure "arm-gateway-without-gateway")
   | some (_, payload) =>
-    subscribeAll ctx state payload.outgoing fun state flow =>
+    subscribeAll ctx state [] payload.outgoing fun state flow =>
       let arm := (ctx.program.target? flow).bind ctx.program.element? |>.bind fun target =>
         target.event?.bind fun (header, event) => event.catch?.map (header.id, ·)
       match arm with
@@ -191,8 +221,9 @@ def startEvent? (ctx : Ctx) (eventSubProcess : ElementId) : Option ElementId :=
 /-- `Signal.armScope`: open the start subscriptions of the Event Sub-Processes declared in the scope occurrence
 (`State.childrenOf`: a called root's are its called process's) as passive items on their start Events. A start that opens no item needs no start Event: a Compensation Event
 Sub-Process's trigger is carried by its `ScopeKind`. -/
-def armScope (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
-  subscribeAll ctx state (state.childrenOf ctx.program scope) fun state child =>
+def armScope (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome := do
+  let (state, boundaries) ← enabledBoundaries ctx scope state
+  subscribeAll ctx state boundaries (state.childrenOf ctx.program scope) fun state child =>
     match child.scope?.bind fun (header, payload) => (ctx.eventStart payload).map (header.id, ·) with
     | none => .ok (state, none)
     | some (eventSubProcess, subscription, interrupting) => do

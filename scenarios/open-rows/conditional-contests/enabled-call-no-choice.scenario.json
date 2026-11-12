@@ -1,0 +1,51 @@
+{
+  "kind": "scenario",
+  "id": "conditional-contests-enabled-call-no-choice",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-contests-enabled-together",
+    "relativePath": "scenarios/open-rows/conditional-contests/enabled-together.bpmn",
+    "sha256": "30fc7b8cc5ae7d93e5b1025ebd168a882a6c9a80c255595bf4b2d4102e7b5c42",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Enter_Call",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Enter_Call",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "call",
+            "value": {
+              "kind": "integer",
+              "value": 9
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

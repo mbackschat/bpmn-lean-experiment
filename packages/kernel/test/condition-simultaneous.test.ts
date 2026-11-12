@@ -202,6 +202,26 @@ test("an outer boundary and an inner one inside its host true at one write fire 
   assert.deepEqual(begun(run(nested(true), [begin(), complete("W", amount(700))]), ["BO", "BI"]), ["BO"], "only the outer is true");
 });
 
+/** `S -> R`, the Sub-Process `R` with the interrupting boundary `BO` (`>= 500`) around the User Task `T2`, inside which
+ * the Event Sub-Process `HN` (non-interrupting unless stated) starts at `SN` (`>= 1000`) and begins `WN`. */
+const crossArming = (innerInterrupts: boolean): Program => admitted(withFlows(
+  append(replace(base(), "T", scope("R", "embedded", {}, { boundaries: [boundary("BO", atLeast(500), { outgoing: ["bo"] })] })),
+    activity("HO", userWork()), end("EHO"), start("RS", null, [], "R"), activity("T2", userWork(), {}, "R"), end("RE", "none", "R"),
+    scope("HN", eventSubProcess(atLeast(1000), innerInterrupts), {}, {}, "R"), start("SN", atLeast(1000), [], "HN"),
+    activity("WN", userWork(), {}, "HN"), end("EN", "none", "HN")),
+  flow("s1", "S", "R"), flow("r1", "R", "E"), flow("bo", "BO", "HO"), flow("ho", "HO", "EHO"), flow("rs", "RS", "T2"),
+  flow("t2", "T2", "RE"), flow("n1", "SN", "WN"), flow("n2", "WN", "EN")));
+
+test("a host's boundary and an Event Sub-Process start of the scope it opens, true when it is entered, are one contest", () => {
+  for (const inner of [false, true]) {
+    assert.deepEqual(run(crossArming(inner), [begin(amount(2000))]), refused("conditions-simultaneous"), "unranked");
+    assert.deepEqual(begun(run(crossArming(inner), [begin(amount(2000), ranked("SN", "BO"))]), ["HN", "BO"]), ["HN", "BO"]);
+    assert.deepEqual(begun(run(crossArming(inner), [begin(amount(2000), ranked("BO"))]), ["HN", "BO"]), ["BO"]);
+    assert.deepEqual(run(crossArming(inner), [begin(amount(2000), ranked("SN"))]), refused("conditions-simultaneous"));
+  }
+  assert.deepEqual(open(run(crossArming(false), [begin(amount(700))])), ["HO"], "only the boundary is true");
+});
+
 /** The User Task `T` with the interrupting boundaries `B1` (`${a}`, every write) and `B2` (`${b}`, writes of `b` only). */
 const filtered = admitted(withFlows(
   append(replace(base(), "T", activity("T", userWork(), {

@@ -1,0 +1,82 @@
+{
+  "kind": "scenario",
+  "id": "conditional-contests-standards-enabled-boundary-first",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "conditional-contests-enabled-together-standards",
+    "relativePath": "scenarios/open-rows/conditional-contests/enabled-together-standards.bpmn",
+    "sha256": "badf38d9b2bb5bbcface45e93dc576bd757163f29fb7746fee476b39e2873031",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Enter_Sub",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "stop"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Enter_Sub",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Enter_Sub",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      },
+      "conditionChoices": [
+        {
+          "elementId": "Sub_Stop"
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Handle_Sub_Stop",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Sub_Stop",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

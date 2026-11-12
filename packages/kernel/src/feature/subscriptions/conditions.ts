@@ -77,7 +77,7 @@ export function predicateHolds(ctx: Ctx, state: State, scope: ScopeOccurrenceId,
  * holds after an evaluation that did not, which the item records. The flag says whether the item fires; its firing is
  * enqueued once the evaluation's contests are resolved (`resolveContests`).
  */
-function evaluateItem(ctx: Ctx, item: OpenItem, condition: ConditionTrigger, state: State): Result<readonly [State, boolean]> {
+export function evaluateItem(ctx: Ctx, item: OpenItem, condition: ConditionTrigger, state: State): Result<readonly [State, boolean]> {
   const detail = openKindView(item.kind).conditional;
   if (detail === null) return committed([state, false]);
   const value = predicateHolds(ctx, state, homeScope(state, item), condition.condition);
@@ -226,7 +226,7 @@ function conditionOfElement(ctx: Ctx, id: ElementId): ConditionTrigger | null {
 }
 
 /** The Conditional trigger of an open item's subscription, if it has one. */
-function conditionOf(ctx: Ctx, item: OpenItem): ConditionTrigger | null {
+export function conditionOf(ctx: Ctx, item: OpenItem): ConditionTrigger | null {
   return conditionOfElement(ctx, item.element);
 }
 

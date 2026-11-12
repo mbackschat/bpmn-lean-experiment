@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_EnabledTogether"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-contests:enabled-together">
+  <bpmn:process id="Process_EnabledTogether" name="Hosts whose boundaries and inner Event Sub-Process starts one activation enables" isExecutable="true">
+    <bpmn:startEvent id="Start_Enabled" />
+    <bpmn:parallelGateway id="Fork_Enabled" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Enter_Sub" name="Open the sub work" />
+    <bpmn:subProcess id="Host_Sub" name="Do the sub work">
+      <bpmn:startEvent id="Sub_Start" />
+      <bpmn:userTask id="Sub_Work" name="Work on one sub item" />
+      <bpmn:endEvent id="Sub_End" />
+      <bpmn:sequenceFlow id="Flow_Sub_Start_Sub_Work" sourceRef="Sub_Start" targetRef="Sub_Work" />
+      <bpmn:sequenceFlow id="Flow_Sub_Work_Sub_End" sourceRef="Sub_Work" targetRef="Sub_End" />
+      <bpmn:subProcess id="Sub_Alert" triggeredByEvent="true">
+        <bpmn:startEvent id="Sub_Alert_Start" isInterrupting="false">
+          <bpmn:conditionalEventDefinition id="CED_Sub_Alert" camunda:variableName="sub">
+            <bpmn:condition xsi:type="bpmn:tFormalExpression">${sub &gt; 1}</bpmn:condition>
+          </bpmn:conditionalEventDefinition>
+        </bpmn:startEvent>
+        <bpmn:userTask id="Sub_Alert_Work" name="Handle the sub alert" />
+        <bpmn:endEvent id="Sub_Alert_End" />
+        <bpmn:sequenceFlow id="Flow_Sub_Alert_Start_Sub_Alert_Work" sourceRef="Sub_Alert_Start" targetRef="Sub_Alert_Work" />
+        <bpmn:sequenceFlow id="Flow_Sub_Alert_Work_Sub_Alert_End" sourceRef="Sub_Alert_Work" targetRef="Sub_Alert_End" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Sub" />
+    <bpmn:boundaryEvent id="Sub_Stop" attachedToRef="Host_Sub">
+      <bpmn:conditionalEventDefinition id="CED_Sub_Stop" camunda:variableName="sub">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${sub &gt; 2}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Sub_Stop" name="Handle the sub stop" />
+    <bpmn:endEvent id="End_Handle_Sub_Stop" />
+    <bpmn:userTask id="Enter_Fx" name="Open the fx work" />
+    <bpmn:subProcess id="Host_Fx" name="Do the fx work">
+      <bpmn:startEvent id="Fx_Start" />
+      <bpmn:userTask id="Fx_Work" name="Work on one fx item" />
+      <bpmn:endEvent id="Fx_End" />
+      <bpmn:sequenceFlow id="Flow_Fx_Start_Fx_Work" sourceRef="Fx_Start" targetRef="Fx_Work" />
+      <bpmn:sequenceFlow id="Flow_Fx_Work_Fx_End" sourceRef="Fx_Work" targetRef="Fx_End" />
+      <bpmn:subProcess id="Fx_Alert" triggeredByEvent="true">
+        <bpmn:startEvent id="Fx_Alert_Start" isInterrupting="false">
+          <bpmn:conditionalEventDefinition id="CED_Fx_Alert" camunda:variableName="fx">
+            <bpmn:condition xsi:type="bpmn:tFormalExpression">${fx &gt; 1}</bpmn:condition>
+          </bpmn:conditionalEventDefinition>
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="Fx_Alert_Work" name="Report the alert" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+        <bpmn:endEvent id="Fx_Alert_End" />
+        <bpmn:sequenceFlow id="Flow_Fx_Alert_Start_Fx_Alert_Work" sourceRef="Fx_Alert_Start" targetRef="Fx_Alert_Work" />
+        <bpmn:sequenceFlow id="Flow_Fx_Alert_Work_Fx_Alert_End" sourceRef="Fx_Alert_Work" targetRef="Fx_Alert_End" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Fx" />
+    <bpmn:boundaryEvent id="Fx_Stop" attachedToRef="Host_Fx">
+      <bpmn:conditionalEventDefinition id="CED_Fx_Stop" camunda:variableName="fx">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${fx &gt; 2}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Fx_Stop" name="Handle the fx stop" />
+    <bpmn:endEvent id="End_Handle_Fx_Stop" />
+    <bpmn:userTask id="Enter_Call" name="Open the external check" />
+    <bpmn:callActivity id="Host_Call" name="Run the external check" calledElement="Process_EnabledChild">
+      <bpmn:extensionElements>
+        <camunda:in source="call" target="call" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="End_Call" />
+    <bpmn:boundaryEvent id="Call_Stop" attachedToRef="Host_Call">
+      <bpmn:conditionalEventDefinition id="CED_Call_Stop" camunda:variableName="call">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${call &gt; 2}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Call_Stop" name="Handle the check stop" />
+    <bpmn:endEvent id="End_Handle_Call_Stop" />
+    <bpmn:sequenceFlow id="Flow_Start_Enabled_Fork_Enabled" sourceRef="Start_Enabled" targetRef="Fork_Enabled" />
+    <bpmn:sequenceFlow id="Flow_Fork_Enabled_Enter_Sub" sourceRef="Fork_Enabled" targetRef="Enter_Sub" />
+    <bpmn:sequenceFlow id="Flow_Enter_Sub_Host_Sub" sourceRef="Enter_Sub" targetRef="Host_Sub" />
+    <bpmn:sequenceFlow id="Flow_Host_Sub_End_Sub" sourceRef="Host_Sub" targetRef="End_Sub" />
+    <bpmn:sequenceFlow id="Flow_Sub_Stop_Handle_Sub_Stop" sourceRef="Sub_Stop" targetRef="Handle_Sub_Stop" />
+    <bpmn:sequenceFlow id="Flow_Handle_Sub_Stop_End_Handle_Sub_Stop" sourceRef="Handle_Sub_Stop" targetRef="End_Handle_Sub_Stop" />
+    <bpmn:sequenceFlow id="Flow_Fork_Enabled_Enter_Fx" sourceRef="Fork_Enabled" targetRef="Enter_Fx" />
+    <bpmn:sequenceFlow id="Flow_Enter_Fx_Host_Fx" sourceRef="Enter_Fx" targetRef="Host_Fx" />
+    <bpmn:sequenceFlow id="Flow_Host_Fx_End_Fx" sourceRef="Host_Fx" targetRef="End_Fx" />
+    <bpmn:sequenceFlow id="Flow_Fx_Stop_Handle_Fx_Stop" sourceRef="Fx_Stop" targetRef="Handle_Fx_Stop" />
+    <bpmn:sequenceFlow id="Flow_Handle_Fx_Stop_End_Handle_Fx_Stop" sourceRef="Handle_Fx_Stop" targetRef="End_Handle_Fx_Stop" />
+    <bpmn:sequenceFlow id="Flow_Fork_Enabled_Enter_Call" sourceRef="Fork_Enabled" targetRef="Enter_Call" />
+    <bpmn:sequenceFlow id="Flow_Enter_Call_Host_Call" sourceRef="Enter_Call" targetRef="Host_Call" />
+    <bpmn:sequenceFlow id="Flow_Host_Call_End_Call" sourceRef="Host_Call" targetRef="End_Call" />
+    <bpmn:sequenceFlow id="Flow_Call_Stop_Handle_Call_Stop" sourceRef="Call_Stop" targetRef="Handle_Call_Stop" />
+    <bpmn:sequenceFlow id="Flow_Handle_Call_Stop_End_Handle_Call_Stop" sourceRef="Handle_Call_Stop" targetRef="End_Handle_Call_Stop" />
+  </bpmn:process>
+  <bpmn:process id="Process_EnabledChild" isExecutable="true">
+    <bpmn:startEvent id="Start_Child" />
+    <bpmn:userTask id="Child_Work" name="Carry out the check" />
+    <bpmn:endEvent id="End_Child" />
+    <bpmn:subProcess id="Child_Alert" triggeredByEvent="true">
+      <bpmn:startEvent id="Child_Alert_Start" isInterrupting="false">
+        <bpmn:conditionalEventDefinition id="CED_Child_Alert" camunda:variableName="call">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${call &gt; 1}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Child_Alert_Work" name="Handle the check alert" />
+      <bpmn:endEvent id="Child_Alert_End" />
+      <bpmn:sequenceFlow id="Flow_Child_Alert_Start_Child_Alert_Work" sourceRef="Child_Alert_Start" targetRef="Child_Alert_Work" />
+      <bpmn:sequenceFlow id="Flow_Child_Alert_Work_Child_Alert_End" sourceRef="Child_Alert_Work" targetRef="Child_Alert_End" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Start_Child_Child_Work" sourceRef="Start_Child" targetRef="Child_Work" />
+    <bpmn:sequenceFlow id="Flow_Child_Work_End_Child" sourceRef="Child_Work" targetRef="End_Child" />
+  </bpmn:process>
+</bpmn:definitions>
