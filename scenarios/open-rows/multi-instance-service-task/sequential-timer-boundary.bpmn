@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiServiceSequentialTimerBoundary"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-service-task:sequential-timer-boundary">
+  <bpmn:itemDefinition id="ItemDefinition_String" itemKind="Information" structureRef="xsd:string" isCollection="false" />
+  <bpmn:itemDefinition id="ItemDefinition_StringList" itemKind="Information" isCollection="true" />
+  <bpmn:process id="Process_MiServiceSequentialTimerBoundary" isExecutable="true">
+    <bpmn:dataObject id="DataObject_Recipients" itemSubjectRef="ItemDefinition_StringList" isCollection="true" />
+    <bpmn:dataObjectReference id="DataObjectReference_Recipients" dataObjectRef="DataObject_Recipients" />
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Notify" sourceRef="StartEvent_Start" targetRef="ServiceTask_Notify" />
+    <bpmn:serviceTask
+      id="ServiceTask_Notify"
+      name="Notify recipient"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}">
+      <bpmn:ioSpecification id="IoSpecification_Notify">
+        <bpmn:dataInput id="DataInput_Recipients" itemSubjectRef="ItemDefinition_StringList" isCollection="true" />
+        <bpmn:dataInput id="DataInput_Recipient" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+        <bpmn:inputSet id="InputSet_Notify">
+          <bpmn:dataInputRefs>DataInput_Recipients</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>DataInput_Recipient</bpmn:dataInputRefs>
+          <bpmn:outputSetRefs>OutputSet_Notify</bpmn:outputSetRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="OutputSet_Notify">
+          <bpmn:inputSetRefs>InputSet_Notify</bpmn:inputSetRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="DataInputAssociation_Recipients">
+        <bpmn:sourceRef>DataObjectReference_Recipients</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_Recipients</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_Recipient">
+        <bpmn:sourceRef>InputDataItem_Recipient</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_Recipient</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:multiInstanceLoopCharacteristics camunda:asyncBefore="true" isSequential="true">
+        <bpmn:loopDataInputRef>DataInput_Recipients</bpmn:loopDataInputRef>
+        <bpmn:inputDataItem id="InputDataItem_Recipient" name="recipient" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_Notify_Close" sourceRef="ServiceTask_Notify" targetRef="UserTask_Close" />
+    <bpmn:userTask id="UserTask_Close" name="Close notification run" />
+    <bpmn:sequenceFlow id="Flow_Close_End" sourceRef="UserTask_Close" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:boundaryEvent id="BoundaryTimer_Notify" attachedToRef="ServiceTask_Notify">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_Timer_Handle" sourceRef="BoundaryTimer_Notify" targetRef="UserTask_TimedOut" />
+    <bpmn:userTask id="UserTask_TimedOut" name="Handle timed-out notification run" />
+    <bpmn:sequenceFlow id="Flow_Handle_TimedOut_End" sourceRef="UserTask_TimedOut" targetRef="EndEvent_TimedOut" />
+    <bpmn:endEvent id="EndEvent_TimedOut" />
+  </bpmn:process>
+</bpmn:definitions>

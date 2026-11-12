@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiExpressionsPortableParallelStructured"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-expressions:portable-parallel-structured">
+  <bpmn:process id="Process_MiExpressionsPortableParallelStructured" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_Start" targetRef="UserTask_Review" />
+    <bpmn:userTask id="UserTask_Review" name="Review order line">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="${order.lines}" camunda:elementVariable="line">
+        <bpmn:completionCondition>${line.sku == 'B'}</bpmn:completionCondition>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Review_Publish" sourceRef="UserTask_Review" targetRef="UserTask_Publish" />
+    <bpmn:userTask id="UserTask_Publish" name="Publish outcome">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="outerLine">${line}</camunda:inputParameter>
+          <camunda:inputParameter name="outerSku">${sku}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="UserTask_Publish" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

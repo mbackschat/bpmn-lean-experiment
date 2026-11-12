@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiCallParallelStructured"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-call-activity:call-parallel-structured">
+  <bpmn:process id="Process_MiCallParallelStructured" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_Start" targetRef="CallActivity_Review" />
+    <bpmn:callActivity id="CallActivity_Review" name="Review one order line" calledElement="Process_Review">
+      <bpmn:extensionElements>
+        <camunda:in sourceExpression="${line.sku}" target="sku" />
+        <camunda:in sourceExpression="${line.quantity}" target="quantity" />
+        <camunda:out source="verdict" target="lastVerdict" />
+      </bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="${order.lines}" camunda:elementVariable="line" />
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_Review_Publish" sourceRef="CallActivity_Review" targetRef="UserTask_Publish" />
+    <bpmn:userTask id="UserTask_Publish" name="Publish outcome">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="outerLine">${line}</camunda:inputParameter>
+          <camunda:inputParameter name="outerSku">${sku}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="UserTask_Publish" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+  <bpmn:process id="Process_Review" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Check" />
+    <bpmn:sequenceFlow id="Flow_Check_Start" sourceRef="StartEvent_Check" targetRef="UserTask_Check" />
+    <bpmn:userTask id="UserTask_Check" name="Check one order line">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="skuSeen">${sku}</camunda:inputParameter>
+          <camunda:inputParameter name="quantitySeen">${quantity}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Check_End" sourceRef="UserTask_Check" targetRef="EndEvent_Checked" />
+    <bpmn:endEvent id="EndEvent_Checked" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,126 @@
+{
+  "kind": "scenario",
+  "id": "mi-service-parallel-completion-then-timer",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mi-service-parallel-timer-boundary",
+    "relativePath": "scenarios/open-rows/multi-instance-service-task/parallel-timer-boundary.bpmn",
+    "sha256": "c9877a27788f0a419afd00b8ec6660d726d845274be9b9ded32a39b62706c164",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "DataInput_Recipients",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s02-effect-ServiceTask_Notify-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Notify",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r2"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s03-effect-ServiceTask_Notify-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Notify",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s04-fire-timer-BoundaryTimer_Notify-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "BoundaryTimer_Notify",
+        "activation": 1
+      },
+      "logicalTimeMs": 5000
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-UserTask_Close-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Close",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30",
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §13.3.3",
+      "BPMN 2.0.2 §10.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

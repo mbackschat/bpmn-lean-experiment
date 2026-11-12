@@ -17,6 +17,8 @@ No `camunda:inputOutput` mapping is declared on a Multi-Instance Service Task he
 | [sequential-quorum](sequential-quorum.bpmn), [parallel-quorum](parallel-quorum.bpmn) | sequential, parallel | collection | completion condition `${nrOfCompletedInstances >= quorum}` |
 | [sequential-boundary](sequential-boundary.bpmn), [parallel-boundary](parallel-boundary.bpmn) | sequential, parallel | collection | Error Boundary Event `E-REJECTED` on the body, routed to `UserTask_Rejected` |
 | [sequential-output-parameter](sequential-output-parameter.bpmn) | sequential | collection | an output mapping declared on the body |
+| [sequential-result-locals](sequential-result-locals.bpmn), [parallel-result-locals](parallel-result-locals.bpmn) | sequential, parallel | collection | `UserTask_Close` publishes `seenDelivered` (`${delivered}`) and `seenReceipt` (`${receipt}`), the names of the effect results, which the Process also holds as variables |
+| [sequential-timer-boundary](sequential-timer-boundary.bpmn), [parallel-timer-boundary](parallel-timer-boundary.bpmn) | sequential, parallel | collection | interrupting `PT5S` Timer Boundary Event `BoundaryTimer_Notify` on the body, routed to `UserTask_TimedOut` |
 
 ## Schedules
 
@@ -43,5 +45,12 @@ Effect results are addressed by the Service Task's activation, counted per begun
 | [parallel-business-error](parallel-business-error.scenario.json) | parallel-boundary | result 1, then body 3 raises `E-REJECTED`, then body 2's result is sent | PC-MI-12 |
 | [sequential-collection-shrunk-then-restored](sequential-collection-shrunk-then-restored.scenario.json) | sequential | the collection is replaced by `[a]` before the first result, restored to `[a, b]`, and the first result is sent again | PC-MI-08 |
 | [sequential-output-parameter-on-body](sequential-output-parameter-on-body.scenario.json) | sequential-output-parameter | one recipient; a body-level output mapping is declared | PC-MI-10 |
+| [sequential-result-locals-discarded](sequential-result-locals-discarded.scenario.json) | sequential-result-locals | recipients `a, b`, the Process variables `delivered = false` and `receipt = "process-receipt"`; the first result carries `delivered` and `receipt`, the second only `receipt`; the close task then shows whether any result value outlived its instance | PC-MI-10 |
+| [parallel-result-locals-discarded](parallel-result-locals-discarded.scenario.json) | parallel-result-locals | the same inputs; the second body's result (`receipt` only) arrives before the first's (`delivered` and `receipt`) | PC-MI-10 |
+| [sequential-timer-while-effect-pending](sequential-timer-while-effect-pending.scenario.json) | sequential-timer-boundary | recipients `a, b, c`; the first result arrives, the Timer fires with the second body's effect pending, the second body's result is sent late, then the timed-out task | PC-MI-12 |
+| [parallel-timer-while-effect-pending](parallel-timer-while-effect-pending.scenario.json) | parallel-timer-boundary | recipients `a, b, c`; the second result arrives, the Timer fires, the first and third bodies' results are sent late, then the timed-out task | PC-MI-12 |
+| [sequential-completion-then-timer](sequential-completion-then-timer.scenario.json) | sequential-timer-boundary | recipients `a, b`; both results arrive, then the Timer is fired | PC-MI-12 |
+| [parallel-completion-then-timer](parallel-completion-then-timer.scenario.json) | parallel-timer-boundary | recipients `a, b`; the results arrive in reverse, then the Timer is fired | PC-MI-12 |
+| [sequential-zero-items-timer](sequential-zero-items-timer.scenario.json) | sequential-timer-boundary | no recipients, then the Timer is fired | PC-MI-12 |
 
 Argument and result ownership is carried by the effect occurrence each stimulus addresses; the schedules keep the effect results typed (`delivered` Boolean and `receipt` String) and distinct per body.
