@@ -1,6 +1,6 @@
 /**
- * Source scans for proof placement (guard 6), shape (guard 9), single entry (guard 13), discovery by convention
- * (guard 14), the kernel's option and derivation limits (guard 15) and justified rules (guard 24) of
+ * Source scans for bounded wire numbers (guard 11), proof placement (guard 6), shape (guard 9), single entry (guard 13),
+ * discovery by convention (guard 14), the kernel's option and derivation limits (guard 15) and justified rules (guard 24) of
  * docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation, plus the size reports of guard 10.
  */
 import { existsSync, readdirSync } from "node:fs";
@@ -334,6 +334,25 @@ export function justifiedRuleFindings(tree: KernelTree): string[] {
       if (citedAuthority.test(block) || isJustified(source, line, 24) || seen.has(block)) continue;
       seen.add(block);
       findings.push(finding(24, source, line, `rule justified by "${match[0]}" without a BPMN clause or register identifier`));
+    }
+  }
+  return findings;
+}
+
+const rawNumberRead = /(?:^|\.)get(?:Nat|Int|Num)\?$/u;
+
+/**
+ * Guard 11, bounded wire numbers: a Lean decode reads a JSON number only through `FromJson`, whose `Nat` and `Int`
+ * instances in `Kernel.IL.Codec.Value` refuse a magnitude past 2^53 − 1 as the TypeScript codec does. A raw
+ * `getNat?`, `getInt?` or `getNum?` bypasses them, so it fails unless marked as the bounded decoder itself.
+ */
+export function boundedNumberFindings(tree: KernelTree): string[] {
+  if (tree.lean.length === 0) return [emptyInputFinding(11, "Lean modules")];
+  const findings: string[] = [];
+  for (const source of tree.lean) {
+    for (const token of source.tokens) {
+      if (token.kind !== TokenKind.Word || !rawNumberRead.test(token.text) || isJustified(source, token.line, 11)) continue;
+      findings.push(finding(11, source, token.line, `raw JSON number read ${token.text} bypasses the bounded FromJson Nat and Int`));
     }
   }
   return findings;

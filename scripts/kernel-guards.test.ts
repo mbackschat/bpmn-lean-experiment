@@ -24,6 +24,7 @@ import {
 } from "./kernel-guards-dispatch.ts";
 import { effectWriterFindings, fieldLivenessFindings } from "./kernel-guards-effects.ts";
 import {
+  boundedNumberFindings,
   discoveryFindings,
   justifiedRuleFindings,
   kernelOptionFindings,
@@ -483,6 +484,16 @@ def Stop (entry : Failure) : Prop := entry = .unsupported "never-admitted"
   })), []);
 });
 
+holdsItsGround("guard 11 (bounded wire numbers)", boundedNumberFindings, {
+  "Kernel/Run.lean": "module\ndef deployedAt (input : Json) := input.getNat?\n",
+}, /G11 Kernel\/Run\.lean:2: raw JSON number read input\.getNat\?/u);
+
+test("guard 11 honours the bounded decoder's justified read", () => {
+  assert.deepEqual(boundedNumberFindings(fixture({
+    "Kernel/Run.lean": "module\n-- guard-exception(11): the bounded decoder itself reads the number\ndef bounded (json : Json) := json.getInt?\n",
+  })), []);
+});
+
 holdsItsGround("guard 24 (justified rules)", justifiedRuleFindings, {
   "packages/kernel/src/feature/flow.ts": `// The frozen evaluator orders the arrivals this way.\nexport function gateway(state) { return state; }\n`,
 }, /rule justified by "frozen evaluator"/u);
@@ -570,6 +581,7 @@ for (const [name, guard] of [
   ["guard 19", fieldLivenessFindings],
   ["guard 20", refusalParityFindings],
   ["guard 23 (structural inputs)", structureInputFindings],
+  ["guard 11 (bounded wire numbers)", boundedNumberFindings],
   ["guard 24", justifiedRuleFindings],
 ] as const) {
   test(`the tree passes ${name}`, () => assert.deepEqual(guard(tree), []));

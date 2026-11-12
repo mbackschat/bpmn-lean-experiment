@@ -36,12 +36,13 @@ import {
   populationClockMs,
 } from "@bpmn-lean/differential";
 import type { PopulationResultDocument, ScenarioDisagreement, ValueDisagreement } from "@bpmn-lean/differential";
-import { parseStrict, runFixture, runHostView, runPopulation, runScenario } from "@bpmn-lean/kernel";
+import { decodeProgram, parseStrict, runFixture, runHostView, runPopulation, runScenario } from "@bpmn-lean/kernel";
 
 import { pipelineTestTimeoutMs } from "../../../scripts/pipeline-budget.ts";
 import { ledgerViolations, readCibDisagreementLedger } from "./cib-disagreement-ledger.ts";
 import {
-  runLeanKernelFixtures, runLeanKernelHostView, runLeanKernelPopulation, runLeanKernelScenario, writeProgram,
+  decodeLeanPrograms, runLeanKernelFixtures, runLeanKernelHostView, runLeanKernelPopulation, runLeanKernelScenario,
+  writeProgram,
 } from "./kernel-targets.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 import { populationStepDigests } from "./population-digest.ts";
@@ -260,6 +261,88 @@ test("the Lean and TypeScript kernels refuse the same malformed inputs with the 
         return runScenario(decoded[0], decoded[1]);
       });
       assert.deepEqual({ name, lean, typeScript }, { name, lean: expected, typeScript: expected });
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+// TypeScript reads a JSON number as a double, exact only to 2^53 − 1, and refuses a larger one; Lean reads any integer
+// unless its decoders bound it too. One case per class of decode site: the program's derived IL fields, a decision's
+// FEEL scale, a stimulus, a kernel fixture's input and a population step.
+test("the Lean and TypeScript kernels read every wire number class up to 2^53 − 1 and refuse it beyond", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "bpmn-kernel-number-bound-"));
+  const verdict = (outcome: unknown): string =>
+    outcome === null ? "accepted" : /(?:Natural number|Nat|Integer) expected/u.test(String(outcome)) ? "refused" : `other: ${String(outcome)}`;
+  const thrown = (run: () => unknown): Promise<string> =>
+    Promise.resolve().then(run).then(() => "accepted", (error: unknown) => verdict(error));
+  const file = async (name: string, json: unknown): Promise<string> => {
+    const target = path.join(directory, name);
+    await writeFile(target, JSON.stringify(json), "utf8");
+    return target;
+  };
+  const rowProgram = JSON.parse(await readFile(path.join(projectRoot, "packages/kernel/test/fixtures/rows/PC-AUTO-08.json"), "utf8")) as
+    Record<string, unknown>;
+  const literal = `"number":{"coefficient":"40","scale":0}`;
+  assert.ok(JSON.stringify(rowProgram).includes(literal), "the row program keeps its FEEL number literal");
+  const scenarioPath = "packages/differential/test/fixtures/serial-classification.scenario.json";
+  const scenario = JSON.parse(await readFile(path.join(projectRoot, scenarioPath), "utf8")) as ScenarioDocument &
+    Readonly<{ stimuli: ReadonlyArray<Record<string, unknown>> }>;
+  const scenarioProgram = await kernelProgramFor(scenarioPath, { ...scenario.bpmn, sourceOverlay: null }, scenario.profile);
+  const scenarioProgramPath = await file("scenario-program.json", scenarioProgram);
+  const registerFixture = JSON.parse(await readFile(path.join(kernelFixtures, "register-summary-ordinal-from-identity.kernel-fixture.json"), "utf8")) as
+    Record<string, unknown>;
+  const populationProgram = JSON.parse(await readFile(path.join(projectRoot, "packages/kernel/test/fixtures/simple-boolean.program.json"), "utf8")) as
+    Record<string, unknown>;
+  const identity = populationProgram.identity as Record<string, unknown>;
+  const populationProgramPath = await file("population-program.json", populationProgram);
+  const decoded = async (name: string, program: unknown): Promise<readonly [string, string]> => {
+    const programPath = await file(`${name}.json`, program);
+    const lean = (await decodeLeanPrograms([programPath])).get(programPath);
+    const typeScript = decodeProgram(program);
+    return [verdict(lean ?? null), typeScript.ok ? "accepted" : verdict(typeScript.refusal)];
+  };
+  const probed = async (name: string, stimulus: Record<string, unknown>): Promise<readonly [string, string]> => {
+    const document = { ...scenario, stimuli: [...scenario.stimuli, stimulus] };
+    const documentPath = await file(`${name}.json`, document);
+    return [await thrown(() => runLeanKernelScenario(scenarioProgramPath, documentPath)),
+      await thrown(() => runScenario(wireValue(scenarioProgram), wireValue(document)))];
+  };
+  const fixture = async (name: string, deploymentId: number): Promise<readonly [string, string]> => {
+    const text = JSON.stringify({ ...registerFixture, input: { deploymentIds: [deploymentId] } });
+    const fixturePath = path.join(directory, `${name}.json`);
+    await writeFile(fixturePath, text, "utf8");
+    return [await thrown(() => runLeanKernelFixtures([fixturePath])), await thrown(() => typeScriptFixtureAnswer(text))];
+  };
+  const population = async (name: string, step: Record<string, unknown>): Promise<readonly [string, string]> => {
+    const definitions = [{ definitionRef: "a", bpmn: { id: "a", relativePath: "scenarios/a.bpmn", sha256: identity.sourceSha256, sourceOverlay: null } }];
+    const document = { kind: "populationScenario", id: name, profile: identity.profile, definitions, steps: [step] };
+    const digests = populationStepDigests(document.steps);
+    const documentPath = await file(`${name}.json`, document);
+    const digestsPath = await file(`${name}.digests.json`, digests);
+    return [await thrown(() => runLeanKernelPopulation(digestsPath, [populationProgramPath], documentPath)),
+      await thrown(() => runPopulation([populationProgram], document, digests))];
+  };
+  const occurrence = (activation: number) => ({ processInstanceId: "invoice", elementId: "Unknown", activation });
+  const command = (activation: number, generation: number) =>
+    ({ kind: "command", commandId: "number-probe", occurrence: occurrence(activation), action: { kind: "retryIncident", generation } });
+  const timerStart = (dueMs: number) =>
+    ({ kind: "timerStart", commandId: "timer", deploymentId: 1, startEvent: "Start", dueMs, at: 7 });
+  const cases: ReadonlyArray<readonly [string, (value: number) => Promise<readonly [string, string]>]> = [
+    ["program IL Nat", (value) => decoded("identity", { ...rowProgram, identity: { ...(rowProgram.identity as object), deployment: value } })],
+    ["decision FEEL scale", (value) => decoded("scale", JSON.parse(JSON.stringify(rowProgram).replace(literal, `"number":{"coefficient":"40","scale":${String(value)}}`)))],
+    ["stimulus activation", (value) => probed("activation", command(value, 1))],
+    ["stimulus generation", (value) => probed("generation", command(1, value))],
+    ["fixture input", (value) => fixture("fixture", value)],
+    ["population step time", (value) => population("step-at", { kind: "deploy", definitionRef: "a", at: value })],
+    ["population due time", (value) => population("timer", timerStart(value))],
+  ];
+  try {
+    for (const [name, run] of cases) {
+      for (const [value, expected] of [[9007199254740991, "accepted"], [9007199254740992, "refused"]] as const) {
+        const [lean, typeScript] = await run(value);
+        assert.deepEqual({ name, value, lean, typeScript }, { name, value, lean: expected, typeScript: expected });
+      }
     }
   } finally {
     await rm(directory, { recursive: true, force: true });

@@ -1,5 +1,6 @@
 module
 
+public import Kernel.IL.Codec.Value
 public import Kernel.IL.Types.Decision
 public import Lean.Data.Json
 

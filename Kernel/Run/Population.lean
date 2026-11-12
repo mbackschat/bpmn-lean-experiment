@@ -153,7 +153,7 @@ def populationCommandFromJson (json : Json) : String → Except String (Option P
 def instanceInput (stimulus : Json) (stepAt : Option Nat) : Except String (String × Input) :=
   match stepAt, optional stimulus "at" with
   | some stepAt, some own =>
-    if (own.getNat?).toOption == some stepAt then Codec.stimulusFromJson stimulus
+    if (Lean.fromJson? (α := Nat) own).toOption == some stepAt then Codec.stimulusFromJson stimulus
     else harnessRefusal "population-time-mismatch" s!"stimulus at {own.compress}, step at {stepAt}"
   | some stepAt, none => Codec.stimulusFromJson (stimulus.setObjVal! "at" (toJson stepAt))
   | none, _ => Codec.stimulusFromJson stimulus

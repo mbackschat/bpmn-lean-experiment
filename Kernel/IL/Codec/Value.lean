@@ -34,26 +34,30 @@ partial def valueToJson : Value → Json
       Json.mkObj [("name", Json.str name), ("value", valueToJson value)]).toArray)]
 
 /-- The bound of a wire number: TypeScript reads a JSON number as a double, exact only up to `2^53 − 1`, and its
-decoders refuse a larger magnitude, so the Lean decoders refuse it too and both kernels decode the same wire. -/
+decoders refuse a larger magnitude. These instances outrank Lean's own `FromJson Nat` and `FromJson Int`, so every
+decode that reaches a number through `FromJson` (the derived IL decoders, `getObjValAs?` and `fromJson?`) refuses it
+too and both kernels decode the same wire; a raw `Json.getNat?` or `Json.getInt?` would bypass them, which guard 11 refuses. -/
 def maxSafeInteger : Nat := 9007199254740991
 
-def safeInt (json : Json) (key : String) : Except String Int := do
-  let value ← json.getObjValAs? Int key
-  if value.natAbs ≤ maxSafeInteger then pure value else throw s!"Integer expected at {key}"
+instance (priority := high) boundedNat : FromJson Nat := ⟨fun json => do
+  -- guard-exception(11): the bounded decoder itself reads the raw number.
+  let value ← json.getNat?
+  if value ≤ maxSafeInteger then pure value else throw s!"Natural number expected, got {value}"⟩
 
-def safeNat (json : Json) (key : String) : Except String Nat := do
-  let value ← json.getObjValAs? Nat key
-  if value ≤ maxSafeInteger then pure value else throw s!"Natural number expected at {key}"
+instance (priority := high) boundedInt : FromJson Int := ⟨fun json => do
+  -- guard-exception(11): the bounded decoder itself reads the raw number.
+  let value ← json.getInt?
+  if value.natAbs ≤ maxSafeInteger then pure value else throw s!"Integer expected, got {value}"⟩
 
 partial def valueFromJson (json : Json) : Except String Value := do
   match ← json.getObjValAs? String "kind" with
   | "null" => pure .null
   | "boolean" => .bool <$> json.getObjValAs? Bool "value"
-  | "integer" => .int <$> safeInt json "value"
+  | "integer" => .int <$> json.getObjValAs? Int "value"
   | "decimal" =>
     let coefficient ← json.getObjValAs? String "coefficient"
     match coefficient.toInt? with
-    | some value => .decimal value <$> safeNat json "scale"
+    | some value => .decimal value <$> json.getObjValAs? Nat "scale"
     | none => throw s!"invalid decimal coefficient {coefficient}"
   | "string" => .string <$> json.getObjValAs? String "value"
   | "stringList" => .stringList <$> json.getObjValAs? (List String) "value"
