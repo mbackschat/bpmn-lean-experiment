@@ -36,6 +36,7 @@ import {
   type Throw,
   type Work,
 } from "./il/types.js";
+import { programPublishesOccurrences } from "./il/paths.js";
 import { resolve, type Resolved } from "./il/timer.js";
 import {
   instanceOf,
@@ -310,6 +311,20 @@ function openWait(program: Program, state: State, item: OpenItem): OpenWait {
   };
 }
 
+/**
+ * The journal as published: no start or end of an occurrence its element does not publish (`programPublishesOccurrences`,
+ * the observation contract's Link exception), and no transition acting on such an element once nothing is left in it.
+ */
+function publicJournal(program: Program, journal: readonly Transition[]): Transition[] {
+  return journal.flatMap((transition) => {
+    const started = transition.started.filter((fact) => programPublishesOccurrences(program, fact.occurrence.element));
+    const ended = transition.ended.filter(([key]) => programPublishesOccurrences(program, key.element));
+    const kept = transition.element === null || programPublishesOccurrences(program, transition.element) ||
+      started.length > 0 || ended.length > 0;
+    return kept ? [publicTransition(program, { ...transition, started, ended })] : [];
+  });
+}
+
 export function hostView(program: Program, state: State): View {
   const openWaits = state.openItems.map((item) => openWait(program, state, item));
   return {
@@ -317,7 +332,7 @@ export function hostView(program: Program, state: State): View {
     failure: state.failure === null ? null : publicFailure(program, state.failure),
     openWaits,
     addresses: addressesOf(openWaits),
-    journal: state.journal.map((transition) => publicTransition(program, transition)),
+    journal: publicJournal(program, state.journal),
     broadcasts: state.outbox.map((intent) => ({ ...intent, origin: publicRef(program, intent.origin) })),
   };
 }

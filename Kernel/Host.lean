@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.IL.Paths
 public import Kernel.IL.Timer
 
 /-! # Host interface
@@ -194,11 +195,21 @@ def openWait (program : Program) (state : State) (item : OpenItem) : OpenWait :=
     definition := (state.slots.instances.find? (·.root == state.instanceRoot item.scope)).bind (·.definition)
     view := currentInputs state item item.kind.view }
 
+/-- The journal as published: no start or end of an occurrence its element does not publish (`Program.publishesOccurrences`,
+the observation contract's Link exception), and no transition acting on such an element once nothing is left in it. -/
+def publicJournal (program : Program) (journal : List Transition) : List Transition :=
+  journal.filterMap fun transition =>
+    let started := transition.started.filter (program.publishesOccurrences ·.occurrence.element)
+    let ended := transition.ended.filter (program.publishesOccurrences ·.1.element)
+    if transition.element.all program.publishesOccurrences || !started.isEmpty || !ended.isEmpty then
+      some (publicTransition program { transition with started, ended })
+    else none
+
 def hostView (program : Program) (state : State) : View :=
   let openWaits := state.openItems.map (openWait program state)
   { status := state.status, failure := state.failure.map (publicFailure program), openWaits
     addresses := addressesOf openWaits
-    journal := state.journal.map (publicTransition program)
+    journal := publicJournal program state.journal
     broadcasts := state.outbox.map fun intent => { intent with origin := publicRef program intent.origin } }
 
 end Kernel.Host

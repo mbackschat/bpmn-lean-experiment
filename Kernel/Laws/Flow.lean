@@ -300,4 +300,24 @@ theorem nothing_upstream_ready : InclusiveReady diagram (fun _ _ => False) [flow
     simp at parent
   · simp [doneAtC, waitingAtC] at token
 
+/-! ## Link Events -/
+
+/-- A Link Event passes its token on within the micro-step that began it: no state between micro-steps holds an
+occurrence of an element whose occurrences are unpublished, `unpublished` standing for the negation of
+`Program.publishesOccurrences`. So the publication boundary, which leaves out such an occurrence's start and end and a
+transition acting on its element, drops no fact of an occurrence that lives on (the observation contract's Link
+exception, [flow, Link Events](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#link-events)). -/
+def LinkPassesThrough (unpublished : ElementId → Bool) (between : State) : Prop :=
+  ∀ occurrence ∈ between.occurrences, unpublished occurrence.element = false
+
+theorem no_link_held : LinkPassesThrough (· == ⟨"L"⟩) waitingAtC := by
+  intro occurrence member
+  simp only [waitingAtC, List.mem_cons, List.mem_singleton, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl <;> simp [atJoin, atC, joinGateway]
+
+/-- A state still holding the occurrence of an unpublished element breaks the rule. -/
+theorem held_link_rejected : ¬ LinkPassesThrough (· == ⟨"C"⟩) waitingAtC := fun passes => by
+  have := passes atC (by simp [waitingAtC])
+  simp [atC] at this
+
 end Kernel.Laws.Flow
