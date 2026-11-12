@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_TwoHandlersOneCondition"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-esp:two-handlers-one-condition">
+  <bpmn:process id="Process_TwoHandlersOneCondition" name="File work with two alert handlers of one condition" isExecutable="true">
+    <bpmn:startEvent id="Start_Root" />
+    <bpmn:userTask id="Work" name="Prepare the file" />
+    <bpmn:endEvent id="End_Root" />
+    <bpmn:sequenceFlow id="Flow_Start_Root_Work" sourceRef="Start_Root" targetRef="Work" />
+    <bpmn:sequenceFlow id="Flow_Work_End_Root" sourceRef="Work" targetRef="End_Root" />
+    <bpmn:subProcess id="ESP_NotifyOwner" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_NotifyOwner" isInterrupting="false">
+        <bpmn:conditionalEventDefinition id="CED_NotifyOwner">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${level &gt; 5}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Notify_Owner" name="Notify the owner" />
+      <bpmn:endEvent id="End_NotifyOwner" />
+      <bpmn:sequenceFlow id="Flow_Start_NotifyOwner_Notify_Owner" sourceRef="Start_NotifyOwner" targetRef="Notify_Owner" />
+      <bpmn:sequenceFlow id="Flow_Notify_Owner_End_NotifyOwner" sourceRef="Notify_Owner" targetRef="End_NotifyOwner" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="ESP_NotifyAuditor" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_NotifyAuditor" isInterrupting="false">
+        <bpmn:conditionalEventDefinition id="CED_NotifyAuditor">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${level &gt; 5}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Notify_Auditor" name="Notify the auditor" />
+      <bpmn:endEvent id="End_NotifyAuditor" />
+      <bpmn:sequenceFlow id="Flow_Start_NotifyAuditor_Notify_Auditor" sourceRef="Start_NotifyAuditor" targetRef="Notify_Auditor" />
+      <bpmn:sequenceFlow id="Flow_Notify_Auditor_End_NotifyAuditor" sourceRef="Notify_Auditor" targetRef="End_NotifyAuditor" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

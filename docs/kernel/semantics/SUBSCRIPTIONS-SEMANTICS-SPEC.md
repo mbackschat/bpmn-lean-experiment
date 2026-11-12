@@ -174,7 +174,7 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 | PC-MESSAGE-03 | Payload catches in branches and nested work; the runner does not yet deliver payloads, so no CIB evidence. |
 | PC-MESSAGE-06 | Interrupting Message Event Sub-Processes (refused). |
 | PC-SIGNAL-01, PC-SIGNAL-03 | Signal throws; Signal boundaries and Event Sub-Process starts. |
-| PC-CONDITION-03, PC-CONDITION-04 | Event-Based Gateway arms true at once, which CIB picks in a per-JVM arbitrary order ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)); a completion's writes read by its own boundaries ([CIB-DEV-0005][r-dev-0005]); Event Sub-Process starts of one scope with one condition, which CIB refuses at deployment. |
+| PC-CONDITION-03, PC-CONDITION-04 | Event-Based Gateway arms true at once, which CIB picks in a per-JVM arbitrary order ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)); a completion's writes read by its own boundaries ([CIB-DEV-0005][r-dev-0005]); Event Sub-Process starts of one scope with one condition, which both CIB and the kernel deploy (CIB's duplicate-condition check covers root starts only, `BpmnParse.java:1289`, `:1042`). |
 
 ## Sources
 
