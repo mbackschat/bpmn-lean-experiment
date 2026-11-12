@@ -493,21 +493,19 @@ function boundary(options: ProfileOptions, reading: Reading, host: Host, seen: D
 
 /**
  * What a catcher's trigger is read for outside its admission: whether it catches a raised Error, Escalation or Cancel,
- * whether that is Cancel, whether it starts a Compensation Event Sub-Process, and the variables its catch writes besides
- * its output mappings, an Error's code and message and an Escalation's code (CIB-EXT-0028).
+ * whether that is Cancel, and whether it starts a Compensation Event Sub-Process. What a catch writes is
+ * `il/footprint.ts` `catchWrites`'s.
  */
-export type CatchView = Readonly<{ raised: boolean; cancel: boolean; compensation: boolean; variables: readonly string[] }>;
+export type CatchView = Readonly<{ raised: boolean; cancel: boolean; compensation: boolean }>;
 
-const noCatch: CatchView = { raised: false, cancel: false, compensation: false, variables: [] };
+const noCatch: CatchView = { raised: false, cancel: false, compensation: false };
 
 export function catchView(subscription: Subscription): CatchView {
   const trigger = subscription.trigger;
   switch (trigger.tag) {
     case TriggerTag.Error:
-      return { ...noCatch, raised: true,
-        variables: [trigger.payload.codeVariable, trigger.payload.messageVariable].filter((name) => name !== null) };
     case TriggerTag.Escalation:
-      return { ...noCatch, raised: true, variables: trigger.payload.codeVariable === null ? [] : [trigger.payload.codeVariable] };
+      return { ...noCatch, raised: true };
     case TriggerTag.Cancel:
       return { ...noCatch, raised: true, cancel: true };
     case TriggerTag.Compensation:
@@ -526,10 +524,6 @@ export const cancels = (attached: Boundary): boolean => catchView(attached.subsc
 
 /** Whether a subscription catches Compensation: the start of a Compensation Event Sub-Process. */
 export const compensates = (subscription: Subscription): boolean => catchView(subscription).compensation;
-
-/** The names a catch writes when it fires: its output mappings' targets and its trigger's variables. */
-export const writes = (subscription: Subscription): readonly string[] =>
-  [...subscription.outputs.map((mapping) => mapping.target), ...catchView(subscription).variables];
 
 export function boundaries(options: ProfileOptions, reading: Reading, host: Host, list: readonly Boundary[]): string | null {
   const seen: Declared = { errorCodes: new Set<string>(), escalations: [], cancels: [] };

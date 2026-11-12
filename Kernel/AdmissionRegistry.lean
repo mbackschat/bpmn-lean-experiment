@@ -285,25 +285,20 @@ def loopedHandler (program : Program) : Bool :=
     element.activity?.any fun (_, payload) =>
       payload.envelope.multiInstance.isSome && !payload.envelope.compensationHandlers.isEmpty
 
-/-- What `Admission.Flow`'s closure walk reads beyond the IL, each part from its owner: a work's result names and whether
-it may raise (`Admission.Work.traits`), a catch's writes and whether it catches a raise or starts compensation
-(`Admission.Subscriptions`), what a Signal throw's receivers install and whether a throw raises or begins compensation
-handlers (`Admission.Propagation.throwReading`), and a loop's output collection, its own names and whether it may run no
-instance (`Admission.MultiInstance`). -/
+/-- What `Admission.Flow`'s closure walk reads beyond the IL's footprints, each part from its owner: what an element
+and a fired boundary write (`Kernel.writes`, `Kernel.catchWrites`), whether a work may raise (`Admission.Work.traits`),
+whether a catch catches a raise or starts compensation (`Admission.Subscriptions`), whether a throw raises or begins
+compensation handlers (`Admission.Propagation.throwReading`), and a loop's own names and whether it may run no instance
+(`Admission.MultiInstance`). -/
 def reading (program : Program) : Admission.Flow.Reading :=
   let thrownOf (element : Element) : Option Admission.Propagation.Thrown :=
     element.event?.bind fun (_, payload) => payload.throw?.map (Admission.Propagation.throwReading program.options {} .caught)
-  let caught (element : Element) : List Subscription :=
-    (element.event?.bind (·.2.catch?)).toList ++ (element.start?.bind (·.2.subscription)).toList ++
-      ((element.scope?).bind fun (_, payload) => payload.kind.start?).toList
   let traits (element : Element) : Option Admission.Work.Traits :=
     element.activity?.map fun (_, payload) => Admission.Work.traits payload.work
   let loop (element : Element) : Option MultiInstance := element.envelope?.bind (·.multiInstance)
-  { writes := fun element =>
-      ({ names := ((traits element).map (·.names)).getD [] ++ (caught element).flatMap Admission.Subscriptions.writes ++
-          ((loop element).bind (·.outputCollection)).toList } : NameSet).union (((thrownOf element).map (·.installs)).getD {})
+  { writes := Kernel.writes
     locals := fun element => ((loop element).map Admission.MultiInstance.loopLocals).getD []
-    fires := fun boundary => Admission.Subscriptions.writes boundary.subscription
+    fires := fun boundary => catchWrites boundary.subscription
     raises := fun element => (traits element).any (·.raises) || (thrownOf element).any (·.raises)
     catchesRaise := fun subscription => (Admission.Subscriptions.catchView subscription).raised
     compensates := fun element => (thrownOf element).any (·.compensates)

@@ -136,6 +136,25 @@ export function workIsUser(work: Work): boolean {
   return assertNever(work);
 }
 
+/**
+ * The names a work's own result writes, beside its element's mappings: a User Task's form fields and a Script or Business
+ * Rule Task's result variable.
+ */
+export function workResults(work: Work): readonly string[] {
+  switch (work.tag) {
+    case WorkTag.User: return work.payload.formFields.map(([name]) => name);
+    case WorkTag.Script: case WorkTag.Rule: return work.payload.resultVariable === null ? [] : [work.payload.resultVariable];
+    case WorkTag.None:
+    case WorkTag.Manual:
+    case WorkTag.Receive:
+    case WorkTag.Service:
+    case WorkTag.Send:
+    case WorkTag.Call:
+      return [];
+  }
+  return assertNever(work);
+}
+
 /** The Message a work record waits for, if it does. */
 export function workReceive(work: Work): MessageTrigger | null {
   switch (work.tag) {

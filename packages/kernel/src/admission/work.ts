@@ -25,6 +25,7 @@ import {
   programCallsRoot,
   programProcessOf,
   workCall,
+  workResults,
   elementActivity,
   elementEnvelope,
   multiInstanceCounterNames,
@@ -63,14 +64,12 @@ export interface Traits {
   readonly compensable: boolean;
   readonly instanceBody: boolean | null;
   readonly beginsWithoutToken: boolean;
-  readonly names: readonly string[];
   readonly raises: boolean;
   readonly handlerKey: string | null;
 }
 
 const noTraits: Traits = {
-  mapsData: false, plainTask: false, compensable: false, instanceBody: null, beginsWithoutToken: false, names: [], raises: false,
-  handlerKey: null,
+  mapsData: false, plainTask: false, compensable: false, instanceBody: null, beginsWithoutToken: false, raises: false, handlerKey: null,
 };
 
 /** The targets of the mappings CIB itself performs: every one except a BPMN Data Association, which it never runs. */
@@ -89,8 +88,7 @@ export function traits(work: Work): Traits {
     case WorkTag.Manual:
       return { ...noTraits, beginsWithoutToken: true };
     case WorkTag.User:
-      return { ...noTraits, mapsData: true, compensable: true, instanceBody: true, beginsWithoutToken: true,
-        names: work.payload.formFields.map(([key]) => key) };
+      return { ...noTraits, mapsData: true, compensable: true, instanceBody: true, beginsWithoutToken: true };
     case WorkTag.Receive:
       return { ...noTraits, instanceBody: false };
     case WorkTag.Service:
@@ -99,13 +97,22 @@ export function traits(work: Work): Traits {
     case WorkTag.Send:
       return { ...noTraits, raises: true, handlerKey: work.payload.handlerKey };
     case WorkTag.Script:
-      return { ...noTraits, names: work.payload.resultVariable === null ? [] : [work.payload.resultVariable] };
+      return noTraits;
     case WorkTag.Rule:
-      return { ...noTraits, mapsData: true, names: work.payload.resultVariable === null ? [] : [work.payload.resultVariable] };
+      return { ...noTraits, mapsData: true };
     case WorkTag.Call:
-      return { ...noTraits, compensable: true, raises: true, names: writtenTargets([...work.payload.inputs, ...work.payload.outputs]) };
+      return { ...noTraits, compensable: true, raises: true };
   }
   return assertNever(work);
+}
+
+/**
+ * The names CIB installs from a work: its results (`workResults`) and a Call's mapping targets, those of its input
+ * mappings among them, which the called instance receives.
+ */
+export function workNames(work: Work): readonly string[] {
+  const call = workCall(work);
+  return [...workResults(work), ...(call === null ? [] : writtenTargets([...call.inputs, ...call.outputs]))];
 }
 
 /** The work one instance of a Multi-Instance Activity may do: whether it submits the output data item, else `null`. */
@@ -144,7 +151,7 @@ export function handlerCount(fields: Envelope): string | null {
 
 /**
  * The names CIB installs from the model as variables an expression may read: every element's parameter targets and
- * loop item names, and its work's names (`traits`). A process-level item is none, since CIB parses no Property, Data
+ * loop item names, and its work's names (`workNames`). A process-level item is none, since CIB parses no Property, Data
  * Object or process I/O specification (`BpmnParse.java:726`).
  */
 function declaredNames(program: Program): string[] {
@@ -155,7 +162,7 @@ function declaredNames(program: Program): string[] {
     return [
       ...(fields === null ? [] : writtenTargets([...fields.inputs, ...fields.outputs])),
       ...(loop === null ? [] : [loop.elementVariable, loop.inputDataItem, loop.inputDataItemName].filter((name): name is string => name !== null)),
-      ...(performed === null ? [] : traits(performed[1].work).names),
+      ...(performed === null ? [] : workNames(performed[1].work)),
     ];
   });
 }

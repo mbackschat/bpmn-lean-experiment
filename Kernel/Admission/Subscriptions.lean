@@ -325,18 +325,17 @@ def boundary (options : ProfileOptions) (reading : Reading) (host : Host) (seen 
       .ok { seen with cancel := true }
 
 /-- What a catcher's trigger is read for outside its admission: whether it catches a raised Error, Escalation or Cancel,
-whether that is Cancel, whether it starts a Compensation Event Sub-Process, and the variables its catch writes besides
-its output mappings, an Error's code and message and an Escalation's code (CIB-EXT-0028). -/
+whether that is Cancel, and whether it starts a Compensation Event Sub-Process. What a catch writes is
+`Kernel.catchWrites`'s. -/
 structure CatchView where
   raised : Bool := false
   cancel : Bool := false
   compensation : Bool := false
-  variables : List String := []
 
 def catchView (subscription : Subscription) : CatchView :=
   match subscription.trigger with
-  | .error trigger => { raised := true, variables := trigger.codeVariable.toList ++ trigger.messageVariable.toList }
-  | .escalation trigger => { raised := true, variables := trigger.codeVariable.toList }
+  | .error _ => { raised := true }
+  | .escalation _ => { raised := true }
   | .cancel => { raised := true, cancel := true }
   | .compensation => { compensation := true }
   | .timer _ => {}
@@ -349,10 +348,6 @@ def cancels (boundary : Boundary) : Bool := (catchView boundary.subscription).ca
 
 /-- Whether a subscription catches Compensation: the start of a Compensation Event Sub-Process. -/
 def compensates (subscription : Subscription) : Bool := (catchView subscription).compensation
-
-/-- The names a catch writes when it fires: its output mappings' targets and its trigger's variables. -/
-def writes (subscription : Subscription) : List String :=
-  subscription.outputs.map (·.target) ++ (catchView subscription).variables
 
 def boundaries (options : ProfileOptions) (reading : Reading) (host : Host) (list : List Boundary) :
     Option String :=

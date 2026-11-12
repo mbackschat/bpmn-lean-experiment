@@ -425,18 +425,23 @@ def EventPayload.linkCatch? (payload : EventPayload) : Option String :=
   | .linkThrow _ => none
 
 /-- What a throw is read for outside its owners: whether it terminates its scope or throws Compensation, the Signal it
-references, whose name `Kernel.Admission.Subscriptions.signalDefinitionNames` compares, and the effect a bound Message
-throw opens (PC-MESSAGE-09). The IL's one match on `Throw`. -/
+references, whose name `Kernel.Admission.Subscriptions.signalDefinitionNames` compares, what that Signal's receivers
+install (its payload targets, and every visible name under `propagateAll`), and the effect a bound Message throw opens
+(PC-MESSAGE-09). The IL's one match on `Throw`. -/
 structure ThrowView where
   terminates : Bool := false
   compensates : Bool := false
   signal : Option SignalTrigger := none
+  installs : List String := []
+  installsAll : Bool := false
   effect : Option EffectBinding := none
 
 def throwView : Throw → ThrowView
   | .terminate => { terminates := true }
   | .compensation _ => { compensates := true }
-  | .signal record => { signal := some { signalRef := record.signalRef, name := record.name } }
+  | .signal record =>
+    { signal := some { signalRef := record.signalRef, name := record.name }, installs := record.payload.map (·.target)
+      installsAll := record.propagateAll.isSome }
   | .message record => { effect := record.binding }
   | .none => {}
   | .error _ => {}
@@ -469,14 +474,16 @@ structure TriggerView where
   message : Option MessageTrigger := none
   signal : Option SignalTrigger := none
   condition : Option ConditionTrigger := none
+  /-- The variables a catch of an Error or Escalation sets from what it caught. -/
+  variables : List String := []
 
 def triggerView : Trigger → TriggerView
   | .timer payload => { timer := some payload }
   | .message payload => { message := some payload }
   | .signal payload => { signal := some payload }
   | .condition payload => { condition := some payload }
-  | .error _ => {}
-  | .escalation _ => {}
+  | .error payload => { variables := payload.codeVariable.toList ++ payload.messageVariable.toList }
+  | .escalation payload => { variables := payload.codeVariable.toList }
   | .compensation => {}
   | .cancel => {}
 

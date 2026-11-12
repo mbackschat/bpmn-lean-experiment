@@ -1,7 +1,6 @@
 module
 
 public import Kernel.IL.Types
-public import Kernel.IL.Footprint
 
 /-! # Admission of throw Events. A refusal carries a stable code. -/
 
@@ -90,13 +89,12 @@ inductive CancelSite where
 
 /-- What a throw is read for besides its refusal: whether its raise may reach a catcher (an Error, Escalation or Cancel,
 or a bound Message throw, whose effect may fail with a business Error), whether it begins compensation handlers (a
-Compensation throw, or a Cancel End, which compensates its Transaction, §10.3.5), and the names its receivers install,
-a Signal's `camunda:in` targets or every name (CIB-EXT-0043), which `Kernel.Admission.Flow`'s closure walk counts. -/
+Compensation throw, or a Cancel End, which compensates its Transaction, §10.3.5). What its receivers install is
+`Kernel.writes`'s. -/
 structure Thrown where
   refusal : Option String := none
   raises : Bool := false
   compensates : Bool := false
-  installs : NameSet := {}
 
 /-- `cancelSite` says where the throw sits: a Cancel End is used only within a Transaction Sub-Process (BPMN 2.0.2
 §10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere), whose Cancel boundary directs the flow
@@ -113,9 +111,7 @@ def throwReading (options : ProfileOptions) (site : ThrowSite) (cancelSite : Can
   | .escalation _ => { raises := true }
   | .terminate => {}
   | .message record => { refusal := messageThrow options site record, raises := record.binding.isSome }
-  | .signal record =>
-    { refusal := signalThrow options site record
-      installs := { names := record.payload.map (·.target), all := record.propagateAll.isSome } }
+  | .signal record => { refusal := signalThrow options site record }
   | .compensation record =>
     { compensates := true
       refusal := (record.activity.bind fun target => compensationReference options (site.reference target)) <|>

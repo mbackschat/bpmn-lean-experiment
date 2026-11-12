@@ -8,7 +8,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, base, boundary, end, escalationTrigger, flow, gateway, literalValue, loop, mapping, scope, start, userWork, variable, wired,
+  activity, base, boundary, end, errorTrigger, escalationTrigger, flow, gateway, literalValue, loop, mapping, qName, scope, start, userWork,
+  variable, wired, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 import { chain, compensateAll, complete, drive, driveFrom, handlerTask, parts, userTask, waiting } from "./compensation-support.ts";
@@ -108,13 +109,13 @@ test("a later subject that reads no name an earlier one writes is compensated co
   assert.deepEqual(waiting(started), ["HA", "HB"]);
 });
 
-/** `A`, a Sub-Process holding `inner` between `AS` and `AE`, beside `B`, which reads `y`. */
-function aroundScope(inner: Json): Json {
+/** `A`, a Sub-Process holding `inner` between `AS` and `AE` and `extra`, beside `B`, which reads `y`. */
+function aroundScope(inner: Json, extra: Json[] = [], extraFlows: Json[] = []): Json {
   const id = ((Object.values(inner)[0] as Json).header as Json).id as string;
   return forked(
     [scope("A", "embedded", {}, { compensationHandlers: ["HA"] }), reading("B", "HB", "y")],
-    [start("AS", null, [], "A"), inner, end("AE", "none", "A"), handlerTask("HA"), handlerTask("HB")],
-    [flow("i0", "AS", id), flow("i1", id, "AE")],
+    [start("AS", null, [], "A"), inner, end("AE", "none", "A"), ...extra, handlerTask("HA"), handlerTask("HB")],
+    [flow("i0", "AS", id), flow("i1", id, "AE"), ...extraFlows],
   );
 }
 
@@ -136,4 +137,28 @@ test("a Multi-Instance element writes its output collection", () => {
   const items = [{ name: "items", value: { kind: "list", value: [{ kind: "string", value: "i" }] } }, ...bound];
   const submitted = complete("M", 1, [["result", { kind: "string", value: "r" }]]);
   assert.deepEqual(waiting(driveFrom(program, items, submitted, complete("B"), complete("X"))), ["HB"]);
+});
+
+test("a Sub-Process whose inner Error boundary sets a name a later subject reads is compensated after it", () => {
+  // `BM` would set `y` from a caught Error's code; `M` completes, so the boundary never fires.
+  const caught = boundary("BM", errorTrigger({ codeVariable: "y" }));
+  const program = aroundScope(activity("M", userWork(), { boundaries: [caught] }, "A"), [end("EM", "none", "A")], [flow("m0", "BM", "EM")]);
+  const compensating = [complete("M"), complete("B"), complete("X")];
+  assert.deepEqual(waiting(driveFrom(program, bound, ...compensating)), ["HB"]);
+  assert.deepEqual(waiting(driveFrom(program, bound, ...compensating, complete("HB"))), ["HA"]);
+});
+
+test("a Sub-Process whose inner Signal throw installs a name a later subject reads is compensated after it", () => {
+  const signal: Json = {
+    signal: {
+      payload: {
+        signalRef: qName("Sig"), name: { literal: { value: "S" } }, payload: [mapping("y", text("s"))], propagateAll: null,
+        localOnly: false, businessKey: null, asynchronous: false,
+      },
+    },
+  };
+  const program = withOptions(aroundScope(throwing("M", signal, "A")), { signalPayload: "variables" });
+  const compensating = [complete("B"), complete("X")];
+  assert.deepEqual(waiting(driveFrom(program, bound, ...compensating)), ["HB"]);
+  assert.deepEqual(waiting(driveFrom(program, bound, ...compensating, complete("HB"))), ["HA"]);
 });

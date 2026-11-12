@@ -49,7 +49,7 @@ export { assertNever };
 export type { CorrelationCriterion, EffectBinding, MessageTrigger } from "./types/message.js";
 export {
   DecisionResultMapping, type ReceiveWork, type RuleWork, type ScriptWork, type SendWork, type ServiceWork, type UserWork, type Work,
-  WorkTag, workCall, workIsService, workIsUser, workReceive,
+  WorkTag, workCall, workIsService, workIsUser, workReceive, workResults,
 } from "./types/work.js";
 
 export type ElementId = string;
@@ -528,16 +528,24 @@ export function eventPayloadLinkCatch(payload: EventPayload): string | null {
   return assertNever(payload.role);
 }
 
-/** A throw as read outside its owners, the IL's one match on `Throw`; `effect` is a bound Message throw's (PC-MESSAGE-09). */
+/**
+ * A throw as read outside its owners, the IL's one match on `Throw`; `installs` and `installsAll` are what a Signal's
+ * receivers install (its payload targets, and every visible name under `propagateAll`), `effect` is a bound Message
+ * throw's (PC-MESSAGE-09).
+ */
 export interface ThrowView { readonly terminates: boolean; readonly compensates: boolean; readonly signal: SignalTrigger | null;
-  readonly effect: EffectBinding | null; }
+  readonly installs: readonly string[]; readonly installsAll: boolean; readonly effect: EffectBinding | null; }
 
 export function throwView(thrown: Throw): ThrowView {
-  const none: ThrowView = { terminates: false, compensates: false, signal: null, effect: null };
+  const none: ThrowView = { terminates: false, compensates: false, signal: null, installs: [], installsAll: false, effect: null };
   switch (thrown.tag) {
     case ThrowTag.Terminate: return { ...none, terminates: true };
     case ThrowTag.Compensation: return { ...none, compensates: true };
-    case ThrowTag.Signal: return { ...none, signal: { signalRef: thrown.payload.signalRef, name: thrown.payload.name } };
+    case ThrowTag.Signal:
+      return {
+        ...none, signal: { signalRef: thrown.payload.signalRef, name: thrown.payload.name },
+        installs: thrown.payload.payload.map((mapping) => mapping.target), installsAll: thrown.payload.propagateAll !== null,
+      };
     case ThrowTag.Message: return { ...none, effect: thrown.payload.binding };
     case ThrowTag.None: case ThrowTag.Error: case ThrowTag.Escalation: case ThrowTag.Cancel: return none;
   }
@@ -566,18 +574,24 @@ export function elementIncoming(element: Element): readonly FlowId[] {
   return assertNever(element);
 }
 
-/** A trigger's payload under its kind, `null` under every other: the IL's one match on `Trigger` (`triggerTimer` and so on). */
+/**
+ * A trigger's payload under its kind, `null` under every other: the IL's one match on `Trigger` (`triggerTimer` and so
+ * on); `variables` are what a catch of an Error or Escalation sets from what it caught.
+ */
 export interface TriggerView { readonly timer: TimerTrigger | null; readonly message: MessageTrigger | null;
-  readonly signal: SignalTrigger | null; readonly condition: ConditionTrigger | null; }
+  readonly signal: SignalTrigger | null; readonly condition: ConditionTrigger | null; readonly variables: readonly string[]; }
 
 export function triggerView(trigger: Trigger): TriggerView {
-  const none: TriggerView = { timer: null, message: null, signal: null, condition: null };
+  const none: TriggerView = { timer: null, message: null, signal: null, condition: null, variables: [] };
   switch (trigger.tag) {
     case TriggerTag.Timer: return { ...none, timer: trigger.payload };
     case TriggerTag.Message: return { ...none, message: trigger.payload };
     case TriggerTag.Signal: return { ...none, signal: trigger.payload };
     case TriggerTag.Condition: return { ...none, condition: trigger.payload };
-    case TriggerTag.Error: case TriggerTag.Escalation: case TriggerTag.Compensation: case TriggerTag.Cancel: return none;
+    case TriggerTag.Error:
+      return { ...none, variables: [trigger.payload.codeVariable, trigger.payload.messageVariable].filter((name) => name !== null) };
+    case TriggerTag.Escalation: return { ...none, variables: [trigger.payload.codeVariable].filter((name) => name !== null) };
+    case TriggerTag.Compensation: case TriggerTag.Cancel: return none;
   }
   return assertNever(trigger);
 }

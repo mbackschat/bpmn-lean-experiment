@@ -4,7 +4,6 @@ import {
   type ElementId, type Expression,
   type Mapping, type MessageThrow, type ProfileOptions, type QName, type SignalThrow, type Throw, type ValueSource,
 } from "../il/types.js";
-import { noNames, type NameSet } from "../il/footprint.js";
 
 /**
  * Where a Compensation throw's `activityRef` names an element: at the throw's own level or, from inside a Compensation
@@ -134,12 +133,12 @@ function cancelRecord(cancelSite: CancelSite): string | null {
 /**
  * What a throw is read for besides its refusal: whether its raise may reach a catcher (an Error, Escalation or Cancel,
  * or a bound Message throw, whose effect may fail with a business Error), whether it begins compensation handlers (a
- * Compensation throw, or a Cancel End, which compensates its Transaction, §10.3.5), and the names its receivers install,
- * a Signal's `camunda:in` targets or every name (CIB-EXT-0043), which `admission/flow.ts`'s closure walk counts.
+ * Compensation throw, or a Cancel End, which compensates its Transaction, §10.3.5). What its receivers install is
+ * `il/footprint.ts` `writes`'s.
  */
-export type Thrown = Readonly<{ refusal: string | null; raises: boolean; compensates: boolean; installs: NameSet }>;
+export type Thrown = Readonly<{ refusal: string | null; raises: boolean; compensates: boolean }>;
 
-const nothingThrown: Thrown = { refusal: null, raises: false, compensates: false, installs: noNames };
+const nothingThrown: Thrown = { refusal: null, raises: false, compensates: false };
 
 /**
  * `cancelSite` says where the throw sits: a Cancel End is used only within a Transaction Sub-Process (BPMN 2.0.2
@@ -162,8 +161,7 @@ export function throwReading(options: ProfileOptions, site: ThrowSite, cancelSit
     case ThrowTag.Message:
       return { ...nothingThrown, refusal: messageThrow(options, site, record.payload), raises: record.payload.binding !== null };
     case ThrowTag.Signal:
-      return { ...nothingThrown, refusal: signalThrow(options, site, record.payload),
-        installs: { names: record.payload.payload.map((mapping) => mapping.target), all: record.payload.propagateAll !== null } };
+      return { ...nothingThrown, refusal: signalThrow(options, site, record.payload) };
     case ThrowTag.Compensation:
       return { ...nothingThrown, compensates: true,
         refusal: (record.payload.activity === null ? null : compensationReference(options, site.reference(record.payload.activity))) ??

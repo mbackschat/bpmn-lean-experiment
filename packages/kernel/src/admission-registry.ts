@@ -21,7 +21,6 @@ import {
   programInCalledProcess,
   programSiblings,
   programSource,
-  scopeKindStart,
   throwView,
   triggerMessage,
   workCall,
@@ -55,7 +54,7 @@ import * as Propagation from "./admission/propagation.js";
 import * as Scopes from "./admission/scopes.js";
 import * as Subscriptions from "./admission/subscriptions.js";
 import * as Starts from "./admission/subscriptions/starts.js";
-import { noNames, union } from "./il/footprint.js";
+import { catchWrites, writes } from "./il/footprint.js";
 
 /** Whether an element is some Activity's or Scope's compensation handler. */
 function isHandler(program: Program, id: ElementId): boolean {
@@ -454,11 +453,11 @@ const neutralSite: Propagation.ThrowSite = {
 };
 
 /**
- * What `admission/flow.ts`'s closure walk reads beyond the IL, each part from its owner: a work's result names and
- * whether it may raise (`admission/work.ts` `traits`), a catch's writes and whether it catches a raise or starts
- * compensation (`admission/subscriptions.ts`), what a Signal throw's receivers install and whether a throw raises or
- * begins compensation handlers (`admission/propagation.ts` `throwReading`), and a loop's output collection, its own names
- * and whether it may run no instance (`admission/multi-instance.ts`).
+ * What `admission/flow.ts`'s closure walk reads beyond the IL's footprints, each part from its owner: what an element
+ * and a fired boundary write (`il/footprint.ts` `writes`, `catchWrites`), whether a work may raise (`admission/work.ts`
+ * `traits`), whether a catch catches a raise or starts compensation (`admission/subscriptions.ts`), whether a throw
+ * raises or begins compensation handlers (`admission/propagation.ts` `throwReading`), and a loop's own names and whether
+ * it may run no instance (`admission/multi-instance.ts`).
  */
 function reading(program: Program): FlowAdmission.Reading {
   const thrownOf = (element: Element): Propagation.Thrown | null => {
@@ -466,29 +465,18 @@ function reading(program: Program): FlowAdmission.Reading {
     const record = event === null ? null : eventPayloadThrow(event[1]);
     return record === null ? null : Propagation.throwReading(program.options, neutralSite, Propagation.CancelSite.Caught, record);
   };
-  const caught = (element: Element): Subscription[] => {
-    const event = elementEvent(element);
-    const start = elementStart(element);
-    const scope = elementScope(element);
-    return [event === null ? null : eventPayloadCatch(event[1]), start === null ? null : start[1].subscription,
-      scope === null ? null : scopeKindStart(scope[1].kind)].filter((subscription) => subscription !== null);
-  };
   const traits = (element: Element): Work.Traits | null => {
     const activity = elementActivity(element);
     return activity === null ? null : Work.traits(activity[1].work);
   };
   const loop = (element: Element) => elementEnvelope(element)?.multiInstance ?? null;
   return {
-    writes: (element) => {
-      const collection = loop(element)?.outputCollection ?? null;
-      const names = [...(traits(element)?.names ?? []), ...caught(element).flatMap(Subscriptions.writes), ...(collection === null ? [] : [collection])];
-      return union({ names, all: false }, thrownOf(element)?.installs ?? noNames);
-    },
+    writes,
     locals: (element) => {
       const found = loop(element);
       return found === null ? [] : MultiInstance.loopLocals(found);
     },
-    fires: (attached) => Subscriptions.writes(attached.subscription),
+    fires: (attached) => catchWrites(attached.subscription),
     raises: (element) => traits(element)?.raises === true || thrownOf(element)?.raises === true,
     catchesRaise: (subscription) => Subscriptions.catchView(subscription).raised,
     compensates: (element) => thrownOf(element)?.compensates === true,

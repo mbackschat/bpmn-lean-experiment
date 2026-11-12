@@ -38,8 +38,6 @@ import {
   elementGateway,
   elementHeader,
   elementScope,
-  elementStart,
-  eventPayloadCatch,
   mergeSort,
   programElement,
   workCall,
@@ -48,9 +46,8 @@ import {
   workReceive,
   type Element,
   type ElementId,
-  type Subscription,
 } from "../il/types.js";
-import { footprint, joined, meets, noNames, type Footprint } from "../il/footprint.js";
+import { catchWrites, footprint, joined, meets, noNames, union, writes, type Footprint } from "../il/footprint.js";
 import {
   ContinuationTag,
   FailureTag,
@@ -169,8 +166,6 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   return committed(store(issued, { ...compensation, retained: [...outer, record] }));
 }
 
-const optional = <T>(value: T | null): T[] => (value === null ? [] : [value]);
-
 /** Every element declared inside `element`, at any depth. */
 function interior(ctx: Ctx, element: Element): Element[] {
   const go = (fuel: number, ids: readonly ElementId[]): Element[] =>
@@ -183,28 +178,14 @@ function interior(ctx: Ctx, element: Element): Element[] {
 
 /**
  * What `element` itself reads and writes over its whole run, over-approximated: its envelope and outgoing conditions
- * (`footprint`), the outputs of the subscriptions it catches with, a Multi-Instance element's output collection and
- * data item, every name a User Task installs under
- * `SubmissionRule.InstallsVariables`, and every name for a task kind this feature cannot inspect (none of User, Service,
- * Call or Receive work).
+ * (`footprint`), what it writes when it runs (`writes`) and what its boundaries write when they fire (`catchWrites`), a
+ * Multi-Instance element's output data item, every name a User Task installs under `SubmissionRule.InstallsVariables`,
+ * and every name for a task kind this feature cannot inspect (none of User, Service, Call or Receive work).
  */
 function ownData(ctx: Ctx, element: Element): Footprint {
-  const event = elementEvent(element);
-  const start = elementStart(element);
-  const scope = elementScope(element);
-  const subscriptions: Subscription[] = [
-    ...(elementEnvelope(element)?.boundaries ?? []).map((boundary) => boundary.subscription),
-    ...optional(event === null ? null : eventPayloadCatch(event[1])),
-    ...optional(start === null ? null : start[1].subscription),
-    ...optional(scope === null ? null : ctx.eventStart(scope[1])?.[0] ?? null),
-  ];
-  // `footprint` leaves out a Multi-Instance element's output collection and data item (issue #99).
-  const loop = elementEnvelope(element)?.multiInstance ?? null;
-  const looped = loop === null ? [] : [...optional(loop.outputCollection), ...optional(loop.outputDataItem)];
-  const caught: Footprint = {
-    reads: noNames,
-    writes: { names: [...subscriptions.flatMap((subscription) => subscription.outputs.map((mapping) => mapping.target)), ...looped], all: false },
-  };
+  const boundaries = (elementEnvelope(element)?.boundaries ?? []).flatMap((boundary) => catchWrites(boundary.subscription));
+  const item = elementEnvelope(element)?.multiInstance?.outputDataItem ?? null;
+  const caught: Footprint = { reads: noNames, writes: union(writes(element), { names: [...boundaries, ...(item === null ? [] : [item])], all: false }) };
   const activity = elementActivity(element);
   let work: Footprint = { reads: noNames, writes: noNames };
   if (activity !== null) {

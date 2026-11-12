@@ -2,7 +2,8 @@
  * Read and write footprints, transcribed from `Kernel/IL/Footprint.lean`: what an expression, a mapping list or an
  * element reads and writes, over-approximated where the text cannot show it: a JUEL or foreign expression reads every
  * name, and a Multi-Instance definition reads every name when its element begins. `admission/flow.ts` compares branch
- * footprints for `BranchSchedule.OrderInvariant`.
+ * footprints for `BranchSchedule.OrderInvariant`, and `writes` is the one account of what an element writes, which that
+ * closure walk and `feature/compensation.ts`'s data dependency both read.
  */
 import {
   ExpressionTag,
@@ -10,13 +11,23 @@ import {
   assertNever,
   elementActivity,
   elementEnvelope,
+  elementEvent,
   elementOutgoing,
+  elementScope,
+  elementStart,
+  eventPayloadCatch,
+  eventPayloadThrow,
   programFlow,
+  scopeKindStart,
+  throwView,
+  triggerView,
   workCall,
+  workResults,
   type Element,
   type Expression,
   type Mapping,
   type Program,
+  type Subscription,
 } from "./types.js";
 
 /** A set of variable names, or every name. */
@@ -89,5 +100,36 @@ export function footprint(program: Program, element: Element): Footprint {
       names: [...outputs.map((mapping) => mapping.target), ...(call?.outputs ?? []).map((mapping) => mapping.target)],
       all: call?.propagateAllOutputs === true,
     },
+  };
+}
+
+/**
+ * The names a catch writes when it fires: its output mappings' targets and the variables its trigger sets from what it
+ * caught, an Error's code and message and an Escalation's code (CIB-EXT-0028).
+ */
+export function catchWrites(subscription: Subscription): readonly string[] {
+  return [...subscription.outputs.map((mapping) => mapping.target), ...triggerView(subscription.trigger).variables];
+}
+
+/**
+ * What `element` writes when it runs, beside its envelope's and a Call's outputs (`footprint`) and what a boundary
+ * writes when it fires (`catchWrites`): its work's results, its catch's or start's writes, what its Signal throw's
+ * receivers install, a Signal's `camunda:in` targets or every name (CIB-EXT-0043), and its loop's output collection. A
+ * loop's counters and items stay in scope occurrences of its own.
+ */
+export function writes(element: Element): NameSet {
+  const activity = elementActivity(element);
+  const event = elementEvent(element);
+  const start = elementStart(element);
+  const scope = elementScope(element);
+  const caught = [event === null ? null : eventPayloadCatch(event[1]), start === null ? null : start[1].subscription,
+    scope === null ? null : scopeKindStart(scope[1].kind)].filter((subscription) => subscription !== null);
+  const record = event === null ? null : eventPayloadThrow(event[1]);
+  const thrown = record === null ? null : throwView(record);
+  const collection = elementEnvelope(element)?.multiInstance?.outputCollection ?? null;
+  return {
+    names: [...(activity === null ? [] : workResults(activity[1].work)), ...caught.flatMap(catchWrites), ...(thrown?.installs ?? []),
+      ...(collection === null ? [] : [collection])],
+    all: thrown?.installsAll === true,
   };
 }

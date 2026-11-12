@@ -115,19 +115,13 @@ def interior (ctx : Ctx) (element : Element) : List Element :=
   go ctx.program.elements.length ((element.scope?.map (·.2.children)).getD [])
 
 /-- What `element` itself reads and writes over its whole run, over-approximated: its envelope and outgoing conditions
-(`footprint`), the outputs of the subscriptions it catches with, a Multi-Instance element's output collection and data
-item, every name a User Task installs under
-`SubmissionRule.installsVariables`, and every name for a task kind this feature cannot inspect (none of User, Service,
-Call or Receive work). -/
+(`footprint`), what it writes when it runs (`writes`) and what its boundaries write when they fire (`catchWrites`), a
+Multi-Instance element's output data item, every name a User Task installs under `SubmissionRule.installsVariables`,
+and every name for a task kind this feature cannot inspect (none of User, Service, Call or Receive work). -/
 def ownData (ctx : Ctx) (element : Element) : Footprint :=
-  let subscriptions := ((element.envelope?.map (·.boundaries)).getD []).map (·.subscription) ++
-    ((element.event?.bind (·.2.catch?)).toList) ++ ((element.start?.bind (·.2.subscription)).toList) ++
-    ((element.scope?.bind fun (_, payload) => (ctx.eventStart payload).map (·.1)).toList)
-  -- `footprint` leaves out a Multi-Instance element's output collection and data item (issue #99).
-  let looped := ((element.envelope?.bind (·.multiInstance)).map fun loop =>
-    loop.outputCollection.toList ++ loop.outputDataItem.toList).getD []
-  let caught : Footprint :=
-    { writes := { names := subscriptions.flatMap (fun subscription => subscription.outputs.map (·.target)) ++ looped } }
+  let boundaries := ((element.envelope?.map (·.boundaries)).getD []).flatMap (catchWrites ·.subscription)
+  let item := ((element.envelope?.bind (·.multiInstance)).bind (·.outputDataItem)).toList
+  let caught : Footprint := { writes := (writes element).union { names := boundaries ++ item } }
   let work : Footprint := match element.activity? with
     | some (_, payload) =>
       let uninspected := !(payload.work.isUser || payload.work.isService || payload.work.call?.isSome ||

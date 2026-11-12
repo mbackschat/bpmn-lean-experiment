@@ -119,6 +119,19 @@ def Work.isUser : Work → Bool
   | .rule _ => false
   | .call _ => false
 
+/-- The names a work's own result writes, beside its element's mappings: a User Task's form fields and a Script or
+Business Rule Task's result variable. -/
+def Work.results : Work → List String
+  | .user task => task.formFields.map (·.1)
+  | .script work => work.resultVariable.toList
+  | .rule work => work.resultVariable.toList
+  | Work.none => []
+  | .manual => []
+  | .receive _ => []
+  | .service _ => []
+  | .send _ => []
+  | .call _ => []
+
 /-- The Message a work record waits for, if it does. -/
 def Work.receive? : Work → Option MessageTrigger
   | .receive work => some work.message

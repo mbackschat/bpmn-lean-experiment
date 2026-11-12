@@ -22,7 +22,7 @@ Task's only where `readsOwnScope` holds; a decision task's, since `Kernel.Featur
 result and maps its outputs, PC-AUTO-08), whether it may be a compensation subject (a User Task, Service Task or
 Call Activity, single or Multi-Instance, whose body's completion retains one record, §13.5.5), what one
 Multi-Instance instance submits (`instanceBody`), whether an occurrence no token began may do it
-(`beginsWithoutToken`), the names CIB installs from it (`declaredNames`), whether its run may raise an Error or
+(`beginsWithoutToken`), whether its run may raise an Error or
 Escalation in the closure that completes it (an effect's business failure, a called instance's raise), which
 `Kernel.Admission.Flow`'s closure walk follows, and the delegate token it binds. -/
 structure Traits where
@@ -31,7 +31,6 @@ structure Traits where
   compensable : Bool := false
   instanceBody : Option Bool := none
   beginsWithoutToken : Bool := false
-  names : List String := []
   raises : Bool := false
   handlerKey : Option String := none
 
@@ -46,16 +45,20 @@ def traits : Work → Traits
   | .none => { plainTask := true, beginsWithoutToken := true }
   | .manual => { beginsWithoutToken := true }
   | .user task =>
-    { mapsData := true, compensable := true, instanceBody := some true, beginsWithoutToken := true
-      names := task.formFields.map (·.1) }
+    { mapsData := true, compensable := true, instanceBody := some true, beginsWithoutToken := true }
   | .receive _ => { instanceBody := some false }
   | .service work =>
     { mapsData := true, compensable := true, instanceBody := some false, beginsWithoutToken := true, raises := true
       handlerKey := work.handlerKey }
   | .send work => { raises := true, handlerKey := work.handlerKey }
-  | .script work => { names := work.resultVariable.toList }
-  | .rule work => { mapsData := true, names := work.resultVariable.toList }
-  | .call work => { compensable := true, raises := true, names := writtenTargets (work.inputs ++ work.outputs) }
+  | .script _ => {}
+  | .rule _ => { mapsData := true }
+  | .call _ => { compensable := true, raises := true }
+
+/-- The names CIB installs from a work: its results (`Work.results`) and a Call's mapping targets, those of its input
+mappings among them, which the called instance receives. -/
+def workNames (work : Work) : List String :=
+  work.results ++ ((work.call?).map fun call => writtenTargets (call.inputs ++ call.outputs)).getD []
 
 /-- The work one instance of a Multi-Instance Activity may do: `some submits`, where `submits` says whether its
 completion submits the loop's output data item, or `none` for work no instance may do. -/
@@ -85,7 +88,7 @@ def handlerCount (envelope : Envelope) : Option String :=
   if envelope.compensationHandlers.length > 1 then some "compensation.handlerCount" else none
 
 /-- The names CIB installs from the model as variables an expression may read: every element's parameter targets and
-loop item names, and its work's names (`traits`). A process-level item is none, since CIB parses no Property, Data
+loop item names, and its work's names (`workNames`). A process-level item is none, since CIB parses no Property, Data
 Object or process I/O specification (`BpmnParse.java:726`). -/
 def declaredNames (program : Program) : List String :=
   program.elements.flatMap fun element =>
@@ -93,7 +96,7 @@ def declaredNames (program : Program) : List String :=
     ((element.envelope?).map (fun envelope => writtenTargets (envelope.inputs ++ envelope.outputs))).getD [] ++
       ((loop.map fun loop => loop.elementVariable.toList ++ loop.inputDataItem.toList ++
         loop.inputDataItemName.toList).getD []) ++
-      ((element.activity?).map (fun (_, payload) => (traits payload.work).names)).getD []
+      ((element.activity?).map (fun (_, payload) => workNames payload.work)).getD []
 
 /-- CIB resolves a delegate token against the variables before its beans (`JuelExpressionManager.java:144-150`), so a
 declared name equal to it shadows the handler and the job fails (CIB-LIM-0017). -/
