@@ -123,19 +123,37 @@ export const rows: readonly Row[] = [
     control: withTask(receiveWork({ name: text("M") })),
   },
   {
-    // BPMN 2.0.2 §10.4.1, "Receive Task Mapping": equivalence is read as the same ItemDefinition identifier. No control:
-    // an equivalent Data Output meets `work.receive.dataOutputs`, which refuses every one while the arm maps no payload.
+    // BPMN 2.0.2 §10.4.1, "Receive Task Mapping": equivalence is read as the same ItemDefinition identifier.
     code: "work.receive.dataOutputItem",
     description: "a Receive Task Data Output whose ItemDefinition is not the Message's",
     mutate: withTask(receiveWork({ messageRef: "M", name: text("M"), itemRef: "Item_A" }, false,
       { dataOutputs: [{ id: "Out", itemRef: "Item_B" }], outputSets: 1 })),
+    control: withTask(receiveWork({ messageRef: "M", name: text("M"), itemRef: "Item_A" }, false,
+      { dataOutputs: [{ id: "Out", itemRef: "Item_A" }], outputSets: 1 })),
   },
   {
+    // BPMN 2.0.2 §10.4.1, "Receive Task Mapping": "at most one Data Output".
     code: "work.receive.dataOutputs",
-    description: "a Receive Task that declares a Data Output",
+    description: "a Receive Task that declares a second Data Output",
     mutate: withTask(receiveWork({ messageRef: "M", name: text("M"), itemRef: "Item_A" }, false,
+      { dataOutputs: [{ id: "Out", itemRef: "Item_A" }, { id: "Other", itemRef: "Item_A" }], outputSets: 1 })),
+    control: withTask(receiveWork({ messageRef: "M", name: text("M"), itemRef: "Item_A" }, false,
       { dataOutputs: [{ id: "Out", itemRef: "Item_A" }], outputSets: 1 })),
-    control: withTask(receiveWork({ messageRef: "M", name: text("M"), itemRef: "Item_A" }, false, { outputSets: 1 })),
+  },
+  {
+    // The payload reaches scope only through its Data Output's associations; the control keeps the target.
+    code: "activity.outputMappings",
+    description: "a Receive Task output mapping that does not read its Data Output",
+    mutate: withTask(receiveWork({ name: text("M") }, false, { dataOutputs: [{ id: "Out", itemRef: null }], outputSets: 1 }),
+      { outputs: [mapping("note", variable("other"), "dataAssociation")] }),
+    control: withTask(receiveWork({ name: text("M") }, false, { dataOutputs: [{ id: "Out", itemRef: null }], outputSets: 1 }),
+      { outputs: [mapping("note", variable("Out"), "dataAssociation")] }),
+  },
+  {
+    code: "activity.inputMappings",
+    description: "a Receive Task with an input mapping",
+    mutate: withTask(receiveWork({ name: text("M") }), { inputs: [mapping("x", variable("y"), "dataAssociation")] }),
+    control: withTask(receiveWork({ name: text("M") })),
   },
   {
     code: "work.receive.dataOutputs",

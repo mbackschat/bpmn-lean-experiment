@@ -219,6 +219,35 @@ theorem two_arms_committed_rejected (kind : OpenKind) : ¬ OneWinner sameGateway
     obtain ⟨_, refused⟩ := law ⟨armItem 1 kind, by simp, second⟩
     cases refused
 
+/-! ## Message delivery order
+
+A Message catch and a Receive Task check a delivery in one order (`Kernel.Feature.Subscriptions.admitFiring`,
+`Kernel.Feature.Work.triggerActivity`; [work semantics](../../docs/kernel/semantics/WORK-SEMANTICS-SPEC.md#receive-tasks)):
+the payload's value domain, the channel, the correlation, then the payload against the wait's Data Output, which
+requires one when declared (§13.3.3) and accepts none otherwise (account P1). -/
+
+/-- `verdict` is the rejection of the first check a delivery fails, `none` when it passes all four; `declares` says the
+wait declares a Data Output, `carries` that the delivery carries a payload. -/
+def DeliveryVerdict (inDomain sameChannel correlated declares carries : Bool) (verdict : Option String) : Prop :=
+  verdict = if !inDomain then some "value-outside-domain"
+    else if !sameChannel then some "message-channel-mismatch"
+    else if !correlated then some "message-correlation-mismatch"
+    else if declares && !carries then some "message-payload-required"
+    else if !declares && carries then some "message-payload-not-accepted"
+    else none
+
+/-- A payload-free delivery on another channel to a wait with a Data Output answers its channel first. -/
+theorem channel_before_payload : DeliveryVerdict true false true true false (some "message-channel-mismatch") := by
+  unfold DeliveryVerdict; decide +kernel
+
+/-- Answering the payload before the channel is rejected. -/
+theorem payload_before_channel_rejected :
+    ¬ DeliveryVerdict true false true true false (some "message-payload-required") := by
+  unfold DeliveryVerdict; decide +kernel
+
+theorem payload_into_data_output : DeliveryVerdict true true true true true none := by
+  unfold DeliveryVerdict; decide +kernel
+
 /-! ## Timer lexemes
 
 A lexeme is malformed only where CIB's parser certainly fails, and outside wherever that is uncertain (I-T1;

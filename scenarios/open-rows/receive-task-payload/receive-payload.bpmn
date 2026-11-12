@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_ReceivePayload"
+  targetNamespace="urn:bpmn-lean:scenarios:receive-task-payload">
+  <bpmn:itemDefinition id="ItemDefinition_Note" structureRef="xsd:string" />
+  <bpmn:message id="Message_Note" name="note" itemRef="ItemDefinition_Note" />
+  <bpmn:process id="Process_ReceivePayload" name="A Receive Task writing its payload into a Sub-Process Property" isExecutable="true">
+    <bpmn:startEvent id="Start_Receive" />
+    <bpmn:subProcess id="Region" name="Payload destination">
+      <bpmn:property id="Property_Note" itemSubjectRef="ItemDefinition_Note" />
+      <bpmn:startEvent id="Start_Region" />
+      <bpmn:receiveTask id="Await_Note" name="Await the note" messageRef="Message_Note">
+        <bpmn:ioSpecification>
+          <bpmn:dataOutput id="DataOutput_Await_Note" name="Await_Note payload" itemSubjectRef="ItemDefinition_Note" />
+          <bpmn:inputSet id="InputSet_Await_Note" />
+          <bpmn:outputSet id="OutputSet_Await_Note">
+            <bpmn:dataOutputRefs>DataOutput_Await_Note</bpmn:dataOutputRefs>
+          </bpmn:outputSet>
+        </bpmn:ioSpecification>
+        <bpmn:dataOutputAssociation id="DataOutputAssociation_Await_Note">
+          <bpmn:sourceRef>DataOutput_Await_Note</bpmn:sourceRef>
+          <bpmn:targetRef>Property_Note</bpmn:targetRef>
+        </bpmn:dataOutputAssociation>
+      </bpmn:receiveTask>
+      <bpmn:userTask id="Inspect_Note" name="Inspect the note">
+        <bpmn:ioSpecification>
+          <bpmn:dataInput id="DataInput_Inspect_Note" name="note" itemSubjectRef="ItemDefinition_Note" />
+          <bpmn:inputSet id="InputSet_Inspect_Note">
+            <bpmn:dataInputRefs>DataInput_Inspect_Note</bpmn:dataInputRefs>
+          </bpmn:inputSet>
+          <bpmn:outputSet id="OutputSet_Inspect_Note" />
+        </bpmn:ioSpecification>
+        <bpmn:dataInputAssociation id="DataInputAssociation_Inspect_Note">
+          <bpmn:sourceRef>Property_Note</bpmn:sourceRef>
+          <bpmn:targetRef>DataInput_Inspect_Note</bpmn:targetRef>
+        </bpmn:dataInputAssociation>
+      </bpmn:userTask>
+      <bpmn:endEvent id="End_Region" />
+      <bpmn:sequenceFlow id="Flow_Start_Region_Await_Note" sourceRef="Start_Region" targetRef="Await_Note" />
+      <bpmn:sequenceFlow id="Flow_Await_Note_Inspect_Note" sourceRef="Await_Note" targetRef="Inspect_Note" />
+      <bpmn:sequenceFlow id="Flow_Inspect_Note_End_Region" sourceRef="Inspect_Note" targetRef="End_Region" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Receive" />
+    <bpmn:sequenceFlow id="Flow_Start_Receive_Region" sourceRef="Start_Receive" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Region_End_Receive" sourceRef="Region" targetRef="End_Receive" />
+  </bpmn:process>
+</bpmn:definitions>

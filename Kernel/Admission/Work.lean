@@ -39,16 +39,17 @@ def writtenTargets (mappings : List Mapping) : List String :=
   (mappings.filter (·.dialect != .dataAssociation)).map (·.target)
 
 /-- A User Task submits the loop's output data item; a Service Task's effect result is the empty OutputSet, since a
-Multi-Instance Activity has no mappings (PC-MI-02); a Receive Task's delivery carries no payload (PC-HUM-06); a Script
-Task's result is its result variable, which it writes as `execution.setVariable` does (PC-AUTO-06); a Call returns
-through its output mappings, which write from the instance (PC-MI-03, `CallableElementActivityBehavior.java:132-139`).
-The Multi-Instance shape itself is admitted by `Kernel.Admission.MultiInstance`. -/
+Multi-Instance Activity has no mappings (PC-MI-02); a Receive Task's instance submits no output data item (PC-HUM-06),
+and its own mappings are the payload outputs `receive` admits; a Script Task's result is its result variable, which it
+writes as `execution.setVariable` does (PC-AUTO-06); a Call returns through its output mappings, which write from the
+instance (PC-MI-03, `CallableElementActivityBehavior.java:132-139`). The Multi-Instance shape itself is admitted by
+`Kernel.Admission.MultiInstance`. -/
 def traits : Work → Traits
   | .none => { plainTask := true, beginsWithoutToken := true }
   | .manual => { beginsWithoutToken := true }
   | .user _ =>
     { mapsData := true, compensable := true, instanceBody := some true, beginsWithoutToken := true }
-  | .receive _ => { instanceBody := some false }
+  | .receive _ => { mapsData := true, instanceBody := some false }
   | .service work =>
     { mapsData := true, compensable := true, instanceBody := some false, beginsWithoutToken := true, raises := true
       handlerKey := work.handlerKey }
@@ -110,16 +111,28 @@ def handlerKey (program : Program) : Option String → Option String
 (CIB-LIM-0008) (PC-BASIC-04). A Data Output of a Receive Task with a Message must be equivalent to the Message's
 ItemDefinition (§10.4.1, "Receive Task Mapping"); equivalence is read narrowly as the same ItemDefinition identifier,
 both absent included, and any other pair is refused (`work.receive.dataOutputItem`), a forward-compatible restriction
-the carried identifiers keep open. The Receive arm maps no payload, so a declared Data Output or a second OutputSet is
-refused (`work.receive.dataOutputs`). Under name addressing a Receive Task with a Message subscribes by its name as a
-Message Event does (`BpmnParse.java:2753-2759`), so a missing or blank name is refused (CIB-LIM-0022). -/
-def receive (options : ProfileOptions) (work : ReceiveWork) : Option String :=
+the carried identifiers keep open. The task has "at most outputSet set and at most one Data Output" (§10.4.1), so a
+second of either is refused (`work.receive.dataOutputs`). Its payload reaches scope only through Data Associations that
+read its Data Output (`Kernel.Feature.Work.triggerActivity`); an input mapping, or an output mapping of another kind
+or source, is refused as on work that maps no data (`activity.inputMappings`, `activity.outputMappings`). Under name
+addressing a Receive Task with a Message subscribes by its name as a Message Event does (`BpmnParse.java:2753-2759`),
+so a missing or blank name is refused (CIB-LIM-0022). -/
+def receive (options : ProfileOptions) (work : ReceiveWork) (envelope : Envelope) : Option String :=
   let unnamed := options.messageNames == .addresses && work.message.messageRef.isSome
+  let readsDataOutput (mapping : Mapping) : Bool :=
+    mapping.dialect == .dataAssociation && match mapping.source with
+      | .variable name => work.dataOutputs.any (·.id == name)
+      | .juel _ => false
+      | .simpleBoolean _ => false
+      | .literal _ => false
+      | .foreign _ _ => false
   if work.instantiate then some "work.receive.instantiate"
   else if !work.message.correlation.isEmpty then some "work.receive.correlation"
   else if work.message.messageRef.isSome && work.dataOutputs.any (·.itemRef != work.message.itemRef) then
     some "work.receive.dataOutputItem"
-  else if !work.dataOutputs.isEmpty || work.outputSets > 1 then some "work.receive.dataOutputs"
+  else if work.dataOutputs.length > 1 || work.outputSets > 1 then some "work.receive.dataOutputs"
+  else if !envelope.inputs.isEmpty then some "activity.inputMappings"
+  else if !envelope.outputs.all readsDataOutput then some "activity.outputMappings"
   else
     match work.message.name with
     | none => if unnamed then some "message.unnamed" else none
@@ -342,7 +355,7 @@ def activity (program : Program) (header : Header) (payload : ActivityPayload) :
     | .none => none
     | .manual => none
     | .user task => userTask task
-    | .receive work => receive program.options work
+    | .receive work => receive program.options work payload.envelope
     | .service work => service work
     | .send _ => some "work.send"
     | .script work => script program.options work

@@ -37,6 +37,7 @@ import {
   type Program,
   type RuleWork,
   type UserWork,
+  type Value,
   type ValueSource,
   workResults,
 } from "../il/types.js";
@@ -206,11 +207,14 @@ function enterLocal(header: Header, inputs: readonly Binding[], occurrence: Occu
 export interface WorkHooks {
   readonly runDecision: (program: Program, work: RuleWork, variables: readonly Binding[]) => Result<readonly Binding[]>;
   readonly criteriaHold: (state: State, scope: ScopeOccurrenceId, criteria: readonly CorrelationMatch[]) => Result<boolean>;
+  /** `feature/subscriptions.ts#payloadBindings`: what a Message payload writes through the outputs that read it. */
+  readonly payloadBindings: (ctx: Ctx, nowMs: number, outputs: readonly Mapping[], payload: Value) => Result<readonly Binding[]>;
 }
 
 export const defaultWorkHooks: WorkHooks = {
   runDecision: () => failed(FailureTag.Unsupported, "work-rule"),
   criteriaHold: () => failed(FailureTag.Unsupported, "work-criteria"), // dynamic-only: a registry without the hook
+  payloadBindings: () => failed(FailureTag.Unsupported, "work-payload"), // dynamic-only: a registry without the hook
 };
 
 /**
@@ -251,7 +255,8 @@ export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, paylo
     case WorkTag.Receive: {
       if (!begunByToken) return failed(FailureTag.Unsupported, "scope-implicit-start");
       const channel = messageTriggerChannel(work.payload.message);
-      return committed(openWork({ tag: OpenKindTag.Message, detail: { channel, payload: false, criteria: [], name: null } }, header, payload, occurrence, entered));
+      const detail = { channel, payload: work.payload.dataOutputs.length > 0, criteria: [], name: null };
+      return committed(openWork({ tag: OpenKindTag.Message, detail }, header, payload, occurrence, entered));
     }
     case WorkTag.Service:
       return committed(openWork({
@@ -592,17 +597,22 @@ export function cancelIncidentProcess(_ctx: Ctx, incident: IncidentDetail, gener
 }
 
 /**
- * A delivery completes a Receive Task only on the channel it waits on; the Message carries no payload here. The wait
- * models no key, since admission refuses a Receive Task correlation (`work.receive.correlation`), so a criterion is an API
+ * A delivery completes a Receive Task in the order a Message catch checks one (`feature/subscriptions.ts#admitFiring`):
+ * its payload's domain, its channel, its correlation, then its payload against the task's one Data Output (BPMN 2.0.2
+ * §13.3.3; §10.4.1 "Receive Task Mapping"). A task with a Data Output requires a payload (`message-payload-required`) and
+ * writes it through its outputs (`WorkHooks.payloadBindings`); a task without one rejects a payload
+ * (`message-payload-not-accepted`), where BPMN lets it "not flow" (§10.4.1), account P1's restriction. The wait models no
+ * key, since admission refuses a Receive Task correlation (`work.receive.correlation`), so a criterion is an API
  * criterion: `unsupported` under `ModeledKey`, which does not select one, and checked in the task's own scope under
- * `ApiCriteria` (`WorkHooks.criteriaHold`), as a Message subscription checks it. The delivery's own variables are the completion's
- * writes; `Hooks.delivered` admits them only under `DeliveryVariables.Installs`.
+ * `ApiCriteria` (`WorkHooks.criteriaHold`), as a Message subscription checks it. The delivery's own variables follow the
+ * mapped outputs among the completion's writes, as on a catch (CIB-EXT-0025); `Hooks.delivered` admits them only under
+ * `DeliveryVariables.Installs`.
  */
 export function triggerActivity(
   hooks: WorkHooks,
   ctx: Ctx,
   _header: Header,
-  _payload: ActivityPayload,
+  payload: ActivityPayload,
   item: OpenItem,
   fired: Fired,
   state: State,
@@ -629,10 +639,19 @@ export function triggerActivity(
         : hooks.criteriaHold(state, ownScope(state, item.occurrence, item.scope), delivery.correlation);
       if (!accepted.ok) return failedWith(accepted.failure);
       if (!accepted.value) return failed(FailureTag.Rejected, "message-correlation-mismatch");
-      if (delivery.payload !== null) return failed(FailureTag.Rejected, "unexpected-message-payload");
+      let mapped: readonly Binding[] = [];
+      if (openKindView(item.kind).payload && delivery.payload !== null) {
+        const values = hooks.payloadBindings(ctx, state.logicalTimeMs, payload.envelope.outputs, delivery.payload);
+        if (!values.ok) return failedWith(values.failure);
+        mapped = values.value;
+      } else if (openKindView(item.kind).payload) {
+        return failed(FailureTag.Rejected, "message-payload-required");
+      } else if (delivery.payload !== null) {
+        return failed(FailureTag.Rejected, "message-payload-not-accepted");
+      }
       const installed = admitValues(delivery.variables.map(([, value]) => value));
       if (!installed.ok) return failedWith(installed.failure);
-      return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, delivery.variables, WriteRule.Outward)));
+      return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, [...mapped, ...delivery.variables], WriteRule.Outward)));
     }
   }
   return assertNever(fired);

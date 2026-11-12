@@ -15,8 +15,11 @@ import * as Correlation from "./feature/correlation.js";
 import * as Delivery from "./feature/subscriptions/delivery.js";
 import { WriteRule } from "./state.js";
 
-/** What Work reaches of its sub-features: Decision's tables and Correlation's API criteria. */
-const workHooks: Work.WorkHooks = { ...Work.defaultWorkHooks, runDecision: Decision.runDecision, criteriaHold: Correlation.criteriaHold };
+/** What Work reaches of its sub-features: Decision's tables, Correlation's API criteria and a Message payload's bindings. */
+const workHooks: Work.WorkHooks = {
+  ...Work.defaultWorkHooks, runDecision: Decision.runDecision, criteriaHold: Correlation.criteriaHold,
+  payloadBindings: Subscriptions.payloadBindings,
+};
 /** What Starts reaches of Subscriptions: whether a trigger fires a start, and a Message payload's bindings. */
 const startsHooks: Starts.StartsHooks = { ...Starts.defaultStartsHooks, fires: Subscriptions.fires, payloadBindings: Subscriptions.payloadBindings };
 /** What Subscriptions reaches of Correlation: the recheck of a Message firing's correlation. */

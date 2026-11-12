@@ -19,9 +19,11 @@ public section
 
 namespace Kernel.Registry
 
-/-- What Work reaches of its sub-features: Decision's tables and Correlation's API criteria. -/
+/-- What Work reaches of its sub-features: Decision's tables, Correlation's API criteria and a Message payload's
+bindings. -/
 def workHooks : Feature.Work.WorkHooks :=
-  { runDecision := Feature.Decision.runDecision, criteriaHold := Feature.Correlation.criteriaHold }
+  { runDecision := Feature.Decision.runDecision, criteriaHold := Feature.Correlation.criteriaHold
+    payloadBindings := Feature.Subscriptions.payloadBindings }
 
 /-- What Starts reaches of Subscriptions: whether a trigger fires a start, and a Message payload's bindings. -/
 def startsHooks : Feature.Starts.StartsHooks :=

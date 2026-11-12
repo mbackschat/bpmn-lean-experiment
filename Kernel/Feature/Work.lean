@@ -31,6 +31,9 @@ structure WorkHooks where
     fun _ _ _ => .error (.unsupported "work-rule")
   criteriaHold : State → ScopeOccurrenceId → List CorrelationMatch → Except Failure Bool :=
     fun _ _ _ => .error (.unsupported "work-criteria") -- dynamic-only: a registry without the hook
+  /-- `Kernel.Feature.Subscriptions.payloadBindings`: what a Message payload writes through the outputs that read it. -/
+  payloadBindings : Ctx → Nat → List Mapping → Value → Except Failure (List (String × Value)) :=
+    fun _ _ _ _ => .error (.unsupported "work-payload") -- dynamic-only: a registry without the hook
 
 /-- The neutral descriptor of a Script Task's effect
 ([script semantics](../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). -/
@@ -154,7 +157,8 @@ def arriveActivity (hooks : WorkHooks) (ctx : Ctx) (header : Header) (payload : 
   | .user task => .ok (openWork (.userTask (userTaskDetail task inputs)) header payload occurrence state)
   | .receive work => do
     if !begunByToken then .error (.unsupported "scope-implicit-start") else
-    .ok (openWork (.message { channel := work.message.channel }) header payload occurrence state)
+    .ok (openWork (.message { channel := work.message.channel, payload := !work.dataOutputs.isEmpty }) header payload
+      occurrence state)
   | .service work =>
     .ok (openWork (.effect { protocol := work.protocol, operation := work.operation, arguments := inputs })
       header payload occurrence state)
@@ -343,13 +347,18 @@ def cancelIncidentProcess (_ : Ctx) (incident : IncidentDetail) (generation : Na
   else if !incident.cancellable then .error (.rejected "incident-process-cancellation-unavailable")
   else .ok (state.signal (.endInstance .cancelled none))
 
-/-- A delivery completes a Receive Task only on the channel it waits on; the Message carries no payload here. The wait
-models no key, since admission refuses a Receive Task correlation (`work.receive.correlation`), so a criterion is an API
-criterion: `unsupported` under `modeledKey`, which does not select one, and checked in the task's own scope under
-`apiCriteria` (`WorkHooks.criteriaHold`), as a Message subscription checks it. The delivery's own variables are the
-completion's writes; `Hooks.delivered` admits them only under `DeliveryVariables.installs`. -/
-def triggerActivity (hooks : WorkHooks) (ctx : Ctx) (_ : Header) (_ : ActivityPayload) (item : OpenItem) (fired : Fired)
-    (state : State) : Outcome :=
+/-- A delivery completes a Receive Task in the order a Message catch checks one
+(`Kernel.Feature.Subscriptions.admitFiring`): its payload's domain, its channel, its correlation, then its payload
+against the task's one Data Output (BPMN 2.0.2 §13.3.3; §10.4.1 "Receive Task Mapping"). A task with a Data Output
+requires a payload (`message-payload-required`) and writes it through its outputs (`WorkHooks.payloadBindings`); a task
+without one rejects a payload (`message-payload-not-accepted`), where BPMN lets it "not flow" (§10.4.1), account P1's
+restriction. The wait models no key, since admission refuses a Receive Task correlation (`work.receive.correlation`),
+so a criterion is an API criterion: `unsupported` under `modeledKey`, which does not select one, and checked in the
+task's own scope under `apiCriteria` (`WorkHooks.criteriaHold`), as a Message subscription checks it. The delivery's own
+variables follow the mapped outputs among the completion's writes, as on a catch (CIB-EXT-0025); `Hooks.delivered`
+admits them only under `DeliveryVariables.installs`. -/
+def triggerActivity (hooks : WorkHooks) (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item : OpenItem)
+    (fired : Fired) (state : State) : Outcome :=
   match fired with
   | .timer _ => .error (.semanticFailure "activity-timer-without-timer")
   | .signal _ => .error (.semanticFailure "activity-signal-without-signal")
@@ -366,10 +375,14 @@ def triggerActivity (hooks : WorkHooks) (ctx : Ctx) (_ : Header) (_ : ActivityPa
           | .modeledKey => if delivery.correlation.isEmpty then .ok true else .error (.unsupported "profile-message-correlation-api-criteria")
           | .apiCriteria => hooks.criteriaHold state (state.ownScope item.occurrence item.scope) delivery.correlation
         if !accepted then .error (.rejected "message-correlation-mismatch")
-        else if delivery.payload.isSome then .error (.rejected "unexpected-message-payload")
         else do
+          let mapped ← match item.kind.view.payload, delivery.payload with
+            | true, some value => hooks.payloadBindings ctx state.logicalTimeMs payload.envelope.outputs value
+            | true, none => .error (.rejected "message-payload-required")
+            | false, some _ => .error (.rejected "message-payload-not-accepted")
+            | false, none => .ok []
           admitValues (delivery.variables.map (·.2))
-          .ok (state.signal (.complete item.occurrence .outgoing delivery.variables .outward))
+          .ok (state.signal (.complete item.occurrence .outgoing (mapped ++ delivery.variables) .outward))
 
 /-- `Hooks.completeCall`: only a Call Activity starts a called instance. -/
 def completeCall (ctx : Ctx) (header : Header) (payload : ActivityPayload) (root : ScopeOccurrence)

@@ -9,6 +9,7 @@
  */
 import {
   CallBindingTag,
+  ExpressionTag,
   MappingDialect,
   MessageNames,
   OutputContext,
@@ -80,8 +81,9 @@ const writtenTargets = (mappings: readonly Mapping[]): string[] =>
 
 /**
  * A User Task submits the loop's output data item; a Service Task's effect result is the empty OutputSet, since a
- * Multi-Instance Activity has no mappings (PC-MI-02); a Receive Task's delivery carries no payload (PC-HUM-06). The
- * Multi-Instance shape itself is admitted by `admission/multi-instance.ts`.
+ * Multi-Instance Activity has no mappings (PC-MI-02); a Receive Task's instance submits no output data item
+ * (PC-HUM-06), and its own mappings are the payload outputs `receive` admits. The Multi-Instance shape itself is
+ * admitted by `admission/multi-instance.ts`.
  */
 export function traits(work: Work): Traits {
   switch (work.tag) {
@@ -92,7 +94,7 @@ export function traits(work: Work): Traits {
     case WorkTag.User:
       return { ...noTraits, mapsData: true, compensable: true, instanceBody: true, beginsWithoutToken: true };
     case WorkTag.Receive:
-      return { ...noTraits, instanceBody: false };
+      return { ...noTraits, mapsData: true, instanceBody: false };
     case WorkTag.Service:
       return { ...noTraits, mapsData: true, compensable: true, instanceBody: false, beginsWithoutToken: true, raises: true,
         handlerKey: work.payload.handlerKey };
@@ -182,17 +184,27 @@ export function handlerKey(program: Program, token: string | null): string | nul
  * (CIB-LIM-0008) (PC-BASIC-04). A Data Output of a Receive Task with a Message must be equivalent to the Message's
  * ItemDefinition (§10.4.1, "Receive Task Mapping"); equivalence is read narrowly as the same ItemDefinition identifier,
  * both absent included, and any other pair is refused (`work.receive.dataOutputItem`), a forward-compatible restriction
- * the carried identifiers keep open. The Receive arm maps no payload, so a declared Data Output or a second OutputSet is
- * refused (`work.receive.dataOutputs`). Under name addressing a Receive Task with a Message subscribes by its name as a
- * Message Event does (`BpmnParse.java:2753-2759`), so a missing or blank name is refused (CIB-LIM-0022).
+ * the carried identifiers keep open. The task has "at most outputSet set and at most one Data Output" (§10.4.1), so a
+ * second of either is refused (`work.receive.dataOutputs`). Its payload reaches scope only through Data Associations
+ * that read its Data Output (`feature/work.ts#triggerActivity`); an input mapping, or an output mapping of another kind
+ * or source, is refused as on work that maps no data (`activity.inputMappings`, `activity.outputMappings`). Under name
+ * addressing a Receive Task with a Message subscribes by its name as a Message Event does (`BpmnParse.java:2753-2759`),
+ * so a missing or blank name is refused (CIB-LIM-0022).
  */
-function receive(options: ProfileOptions, work: ReceiveWork): string | null {
+function receive(options: ProfileOptions, work: ReceiveWork, envelope: Envelope): string | null {
   if (work.instantiate) return "work.receive.instantiate";
   if (work.message.correlation.length > 0) return "work.receive.correlation";
   if (work.message.messageRef !== null && work.dataOutputs.some((output) => output.itemRef !== work.message.itemRef)) {
     return "work.receive.dataOutputItem";
   }
-  if (work.dataOutputs.length > 0 || work.outputSets > 1) return "work.receive.dataOutputs";
+  if (work.dataOutputs.length > 1 || work.outputSets > 1) return "work.receive.dataOutputs";
+  if (envelope.inputs.length > 0) return "activity.inputMappings";
+  const readsDataOutput = (mapping: Mapping): boolean => {
+    const source = mapping.source;
+    return mapping.dialect === MappingDialect.DataAssociation && source.tag === ExpressionTag.Variable &&
+      work.dataOutputs.some((output) => output.id === source.name);
+  };
+  if (!envelope.outputs.every(readsDataOutput)) return "activity.outputMappings";
   const unnamed = options.messageNames === MessageNames.Addresses && work.message.messageRef !== null;
   const name = work.message.name;
   if (name === null) return unnamed ? "message.unnamed" : null;
@@ -495,7 +507,7 @@ function work(program: Program, header: Header, payload: ActivityPayload): strin
     case WorkTag.User:
       return userTask(assigned.payload);
     case WorkTag.Receive:
-      return receive(program.options, assigned.payload);
+      return receive(program.options, assigned.payload, payload.envelope);
     case WorkTag.Service:
       return service(assigned.payload);
     case WorkTag.Send:
