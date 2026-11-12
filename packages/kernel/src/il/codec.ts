@@ -106,7 +106,6 @@ import {
   type TimerSchedule,
   type TransactionMethod,
   type Trigger,
-  type Value,
   type ValueSource,
   type Work,
 } from "./types.js";
