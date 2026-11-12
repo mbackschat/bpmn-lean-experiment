@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, State } from "@bpmn-lean/kernel";
 
 import { activity, base, end, flow, scope, start, userWork, wired } from "./admission-refusal-support.ts";
@@ -86,7 +86,7 @@ export function driveFrom(json: Json, variables: Json[], ...stimuli: Json[]): Ou
   for (const [index, raw] of [{ kind: "start", instanceId: instance, variables }, ...stimuli].entries()) {
     const parsed = stimulusFromJson({ commandId: `c${index}`, ...raw });
     assert.ok(parsed.ok, parsed.ok ? "" : parsed.refusal);
-    outcome = step(hooks, decoded.value, state, parsed.value[1]);
+    outcome = step(decoded.value, state, parsed.value[1]);
     if (!outcome.ok) return outcome;
     state = outcome.value;
   }

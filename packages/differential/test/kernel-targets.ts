@@ -5,7 +5,7 @@ import type { KernelJson } from "@bpmn-lean/bpmn-source";
 
 import { prepareNativeLeanDriver } from "../../../scripts/lean-native-driver.ts";
 import { leanDriverBatchTimeoutMsFor } from "../../../scripts/pipeline-budget.ts";
-import { parseWireJson } from "../../../scripts/strict-json.ts";
+import { parseStrictJson, parseWireJson } from "../../../scripts/strict-json.ts";
 import { runProcess } from "./pipeline-target-support.ts";
 
 const kernelDriver = "Kernel/Run.lean";
@@ -65,6 +65,15 @@ export async function runLeanKernelFixtures(fixturePaths: ReadonlyArray<string>)
   const answers = parseWireJson<ReadonlyArray<Readonly<{ fixture: string; answer: unknown }>>>(
     await runKernelDriver(["--fixture", ...fixturePaths], fixturePaths.length), "kernelRun --fixture");
   return new Map(answers.map(({ fixture, answer }) => [fixture, answer]));
+}
+
+/**
+ * The Lean answer to each case of a batch file (`kernelRun --batch`), in file order: `{answer}`, or `{error}` with the
+ * harness error that case raised. Its answers echo the cases' variable values, which may be negative Integers, so it is
+ * read as strict JSON rather than as a wire document of unsigned integers.
+ */
+export async function runLeanKernelBatch(casesPath: string, caseCount: number): Promise<ReadonlyArray<unknown>> {
+  return parseStrictJson<ReadonlyArray<unknown>>(await runKernelDriver(["--batch", casesPath], caseCount), casesPath);
 }
 
 export function writeProgram(programPath: string, program: KernelJson): Promise<void> {
