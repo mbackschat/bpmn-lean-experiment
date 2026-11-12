@@ -193,25 +193,39 @@ CIB-LIM-0053), and is `unsupported` where the ranking leaves it undecided, never
 
 /-- Where a contest member stands in the walk: a member whose withdrawing firing an earlier write of the micro-step
 enqueued (`pending`) first, then by the first ranking entry naming its element. -/
-def walkRank {κ : Type} [BEq κ] (element : OpenItem → κ) (pending : List Nat) (ranking : List κ) (item : OpenItem) : Nat :=
-  if pending.contains item.id then 0 else ranking.idxOf (element item) + 1
+def walkRank {κ : Type} [BEq κ] (element : OpenItem → κ) (pending : List OpenItem) (ranking : List κ) (item : OpenItem) :
+    Nat :=
+  if pending.any (·.id == item.id) then 0 else ranking.idxOf (element item) + 1
 
-/-- One contest's verdict: `members` are its items, `withdraws a b` says firing `a` withdraws `b`, `pending` names the
-members an earlier write already fired with withdrawal, `ranking` is the input's elements and `element` an item's public
-identity, of any type `κ` with an equality (`ElementId` in the kernel). A committed verdict is the contest's firing
-sequence: only pending or listed members fire, in walk order, none after a firing that withdrew it, each member fired
-or withdrawn; any other answer is an `unsupported` refusal. -/
+/-- A firing sequence one contest may commit: `members` are its items, `withdraws a b` says firing `a` withdraws `b`,
+`pending` are the firings with withdrawal earlier writes of the micro-step enqueued, `ranking` is the input's elements
+and `element` an item's public identity, of any type `κ` with an equality (`ElementId` in the kernel). Only pending or
+listed members fire, in walk order, none after a firing that withdrew it, each member fired or withdrawn, and every
+pending or listed member that no firing ranked strictly before it withdraws fires. -/
+structure Commits {κ : Type} [BEq κ] (element : OpenItem → κ) (withdraws : OpenItem → OpenItem → Bool)
+    (pending : List OpenItem) (ranking : List κ) (members firings : List OpenItem) : Prop where
+  chosen : firings.all (fun item => pending.any (·.id == item.id) || ranking.contains (element item)) = true
+  ordered : firings.Pairwise fun a b => walkRank element pending ranking a ≤ walkRank element pending ranking b
+  live : firings.Pairwise fun a b => withdraws a b = false
+  decided : members.all (fun member => firings.any (·.id == member.id) || firings.any (withdraws · member)) = true
+  onlyMembers : firings.all (fun item => members.any (·.id == item.id)) = true
+  complete : members.all (fun member =>
+    !(pending.any (·.id == member.id) || ranking.contains (element member)) || firings.any (·.id == member.id) ||
+      firings.any fun earlier =>
+        decide (walkRank element pending ranking earlier < walkRank element pending ranking member) &&
+          withdraws earlier member) = true
+
+/-- One contest's verdict. No member is one a pending firing withdraws: that firing leaves it nothing to fire, so it
+takes part in no contest of the later write. A committed verdict is a sequence the contest `Commits`, which then
+determines it; a refusal is `unsupported`, and only where no sequence commits: some member no ranked or pending
+firing withdraws is unlisted, or two members one entry names withdraw each other. -/
 structure ContestWalk {κ : Type} [BEq κ] (element : OpenItem → κ) (withdraws : OpenItem → OpenItem → Bool)
-    (pending : List Nat) (ranking : List κ) (members : List OpenItem) (verdict : Except Failure (List OpenItem)) : Prop where
-  chosen : ∀ firings, verdict = .ok firings →
-    firings.all (fun item => pending.contains item.id || ranking.contains (element item)) = true
-  ordered : ∀ firings, verdict = .ok firings →
-    firings.Pairwise fun a b => walkRank element pending ranking a ≤ walkRank element pending ranking b
-  live : ∀ firings, verdict = .ok firings → firings.Pairwise fun a b => withdraws a b = false
-  decided : ∀ firings, verdict = .ok firings →
-    members.all (fun member => firings.any (·.id == member.id) || firings.any (withdraws · member)) = true
-  onlyMembers : ∀ firings, verdict = .ok firings → firings.all (fun item => members.any (·.id == item.id)) = true
-  refused : ∀ failure, verdict = .error failure → ∃ code, failure = .unsupported code
+    (pending : List OpenItem) (ranking : List κ) (members : List OpenItem) (verdict : Except Failure (List OpenItem)) :
+    Prop where
+  apart : members.all (fun member => !pending.any (withdraws · member)) = true
+  commits : ∀ firings, verdict = .ok firings → Commits element withdraws pending ranking members firings
+  refused : ∀ failure, verdict = .error failure →
+    (∃ code, failure = .unsupported code) ∧ ∀ firings, ¬ Commits element withdraws pending ranking members firings
 
 /-- The ranking, not the order in which the evaluation met the contest's members, decides: `resolve` answers every
 order of `members` with the same firing sequence, read as elements. -/
@@ -237,76 +251,98 @@ def outer : OpenItem := member 3 "BO"
 def inner : OpenItem := member 4 "BI"
 def nested (a b : OpenItem) : Bool := a.id == 3 && b.id == 4
 
-theorem mixed_both_fire :
-    ContestWalk key mixed [] [1, 2] [warn, stop] (.ok [warn, stop]) where
-  chosen _ h := by cases h; decide +kernel
-  ordered _ h := by cases h; decide +kernel
-  live _ h := by cases h; decide +kernel
-  decided _ h := by cases h; decide +kernel
-  onlyMembers _ h := by cases h; decide +kernel
+/-- A committed verdict whose sequence the contest commits, proved by evaluation. -/
+macro "commits_by_decide" : tactic =>
+  `(tactic| (intro _ h; cases h; exact ⟨by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel,
+    by decide +kernel, by decide +kernel⟩))
+
+theorem mixed_both_fire : ContestWalk key mixed [] [1, 2] [warn, stop] (.ok [warn, stop]) where
+  apart := by decide +kernel
+  commits := by commits_by_decide
   refused _ h := by cases h
 
-theorem mixed_interrupting_first :
-    ContestWalk key mixed [] [2, 1] [warn, stop] (.ok [stop]) where
-  chosen _ h := by cases h; decide +kernel
-  ordered _ h := by cases h; decide +kernel
-  live _ h := by cases h; decide +kernel
-  decided _ h := by cases h; decide +kernel
-  onlyMembers _ h := by cases h; decide +kernel
+theorem mixed_interrupting_first : ContestWalk key mixed [] [2, 1] [warn, stop] (.ok [stop]) where
+  apart := by decide +kernel
+  commits := by commits_by_decide
   refused _ h := by cases h
+
+/-- Under `[Warn, Stop]` both fire: the interrupting member alone leaves the listed non-interrupting one, which no
+earlier firing withdraws, unfired, and is rejected. -/
+theorem mixed_listed_member_skipped_rejected : ¬ ContestWalk key mixed [] [1, 2] [warn, stop] (.ok [stop]) :=
+  fun law => by have := (law.commits _ rfl).complete; revert this; decide +kernel
+
+/-- Under `[Warn, Stop]` the contest is decided, so a refusal is rejected. -/
+theorem mixed_decided_refusal_rejected :
+    ¬ ContestWalk key mixed [] [1, 2] [warn, stop] (.error (.unsupported "conditions-simultaneous")) :=
+  fun law => (law.refused _ rfl).2 [warn, stop]
+    ⟨by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel⟩
 
 theorem mixed_unlisted_refused :
     ContestWalk key mixed [] [1] [warn, stop] (.error (.unsupported "conditions-simultaneous")) where
-  chosen _ h := by cases h
-  ordered _ h := by cases h
-  live _ h := by cases h
-  decided _ h := by cases h
-  onlyMembers _ h := by cases h
-  refused _ h := by cases h; exact ⟨_, rfl⟩
+  apart := by decide +kernel
+  commits _ h := by cases h
+  refused _ h := by
+    cases h
+    refine ⟨⟨_, rfl⟩, fun firings commits => ?_⟩
+    have fired : (firings.any (·.id == stop.id) || firings.any (mixed · stop)) = true :=
+      List.all_eq_true.mp commits.decided stop (by simp)
+    have unwithdrawn : firings.any (mixed · stop) = false := by simp [mixed, stop, member]
+    rw [unwithdrawn, Bool.or_false, List.any_eq_true] at fired
+    obtain ⟨item, mem, isStop⟩ := fired
+    have listed := List.all_eq_true.mp commits.chosen item mem
+    simp [key, stop, member] at isStop listed
+    omega
 
 /-- Firing the listed non-interrupting member and leaving the unlisted interrupting one is rejected. -/
 theorem mixed_unlisted_committed_rejected :
     ¬ ContestWalk key mixed [] [1] [warn, stop] (.ok [warn]) :=
-  fun law => by have := law.decided _ rfl; revert this; decide +kernel
+  fun law => by have := (law.commits _ rfl).decided; revert this; decide +kernel
 
 /-- An empty ranking that fires the interrupting member by default is rejected. -/
 theorem default_winner_rejected : ¬ ContestWalk key mixed [] [] [warn, stop] (.ok [stop]) :=
-  fun law => by have := law.chosen _ rfl; revert this; decide +kernel
+  fun law => by have := (law.commits _ rfl).chosen; revert this; decide +kernel
 
 /-- A firing after one that withdrew it is rejected. -/
 theorem withdrawn_fires_rejected :
     ¬ ContestWalk key mixed [] [2, 1] [warn, stop] (.ok [stop, warn]) :=
-  fun law => by have := law.live _ rfl; revert this; decide +kernel
+  fun law => by have := (law.commits _ rfl).live; revert this; decide +kernel
 
-/-- A pending member fires first and decides what it withdraws with no ranking. -/
-theorem pending_decides : ContestWalk key mixed [2] [] [warn, stop] (.ok [stop]) where
-  chosen _ h := by cases h; decide +kernel
-  ordered _ h := by cases h; decide +kernel
-  live _ h := by cases h; decide +kernel
-  decided _ h := by cases h; decide +kernel
-  onlyMembers _ h := by cases h; decide +kernel
+/-- A pending inner member fires first, and the ranking decides the outer one that withdraws it. -/
+theorem pending_fires_first : ContestWalk key nested [inner] [3] [outer, inner] (.ok [inner, outer]) where
+  apart := by decide +kernel
+  commits := by commits_by_decide
   refused _ h := by cases h
+
+/-- `pending-pair-*`: the pending `Pair_A`, which the later write does not offer, withdraws `Pair_B` and `Pair_C`,
+which withdraw each other. They are no contest of the later write, so a contest of them is rejected whatever its
+verdict, the refusal the kernel gave before (CIB-LIM-0053). -/
+def pairA : OpenItem := member 7 "Pair_A"
+def pairB : OpenItem := member 8 "Pair_B"
+def pairC : OpenItem := member 9 "Pair_C"
+def pair (a b : OpenItem) : Bool := (a.id == 7 && (b.id == 8 || b.id == 9)) || (a.id == 8 && b.id == 9) || (a.id == 9 && b.id == 8)
+
+theorem pending_non_member_withdraws : ContestWalk key pair [pairA] [] [] (.ok []) where
+  apart := by decide +kernel
+  commits := by commits_by_decide
+  refused _ h := by cases h
+
+theorem pending_withdrawn_member_rejected :
+    ¬ ContestWalk key pair [pairA] [] [pairB, pairC] (.error (.unsupported "conditions-simultaneous")) :=
+  fun law => by have := law.apart; revert this; decide +kernel
 
 theorem nested_outer_chosen : ContestWalk key nested [] [3] [outer, inner] (.ok [outer]) where
-  chosen _ h := by cases h; decide +kernel
-  ordered _ h := by cases h; decide +kernel
-  live _ h := by cases h; decide +kernel
-  decided _ h := by cases h; decide +kernel
-  onlyMembers _ h := by cases h; decide +kernel
+  apart := by decide +kernel
+  commits := by commits_by_decide
   refused _ h := by cases h
 
-theorem nested_inner_then_outer :
-    ContestWalk key nested [] [4, 3] [outer, inner] (.ok [inner, outer]) where
-  chosen _ h := by cases h; decide +kernel
-  ordered _ h := by cases h; decide +kernel
-  live _ h := by cases h; decide +kernel
-  decided _ h := by cases h; decide +kernel
-  onlyMembers _ h := by cases h; decide +kernel
+theorem nested_inner_then_outer : ContestWalk key nested [] [4, 3] [outer, inner] (.ok [inner, outer]) where
+  apart := by decide +kernel
+  commits := by commits_by_decide
   refused _ h := by cases h
 
 /-- The outermost-first order the kernel once took, unranked, is rejected. -/
 theorem nested_outermost_default_rejected : ¬ ContestWalk key nested [] [] [outer, inner] (.ok [outer]) :=
-  fun law => by have := law.chosen _ rfl; revert this; decide +kernel
+  fun law => by have := (law.commits _ rfl).chosen; revert this; decide +kernel
 
 /-- Enabled by one activation: a Sub-Process host's interrupting boundary `BO` withdraws the start `SN` of an Event
 Sub-Process in the scope the host opened, and the scope's arming evaluates both (`Feature.Subscriptions.enabledWith`). -/
@@ -316,27 +352,21 @@ def enabledTogether (a b : OpenItem) : Bool := a.id == 5 && b.id == 6
 
 theorem enabled_start_then_boundary :
     ContestWalk key enabledTogether [] [6, 5] [hostBoundary, innerStart] (.ok [innerStart, hostBoundary]) where
-  chosen _ h := by cases h; decide +kernel
-  ordered _ h := by cases h; decide +kernel
-  live _ h := by cases h; decide +kernel
-  decided _ h := by cases h; decide +kernel
-  onlyMembers _ h := by cases h; decide +kernel
+  apart := by decide +kernel
+  commits := by commits_by_decide
   refused _ h := by cases h
 
 theorem enabled_boundary_chosen :
     ContestWalk key enabledTogether [] [5] [hostBoundary, innerStart] (.ok [hostBoundary]) where
-  chosen _ h := by cases h; decide +kernel
-  ordered _ h := by cases h; decide +kernel
-  live _ h := by cases h; decide +kernel
-  decided _ h := by cases h; decide +kernel
-  onlyMembers _ h := by cases h; decide +kernel
+  apart := by decide +kernel
+  commits := by commits_by_decide
   refused _ h := by cases h
 
 /-- The arming order the kernel once took unranked, the host's boundaries before the starts of the scope it opened, is
 rejected. -/
 theorem enabled_arming_order_rejected :
     ¬ ContestWalk key enabledTogether [] [] [hostBoundary, innerStart] (.ok [hostBoundary]) :=
-  fun law => by have := law.chosen _ rfl; revert this; decide +kernel
+  fun law => by have := (law.commits _ rfl).chosen; revert this; decide +kernel
 
 /-- A resolver that answers in the order it met the members is not order-free. -/
 theorem evaluation_order_rejected : ¬ OrderFree key .ok [warn, stop] :=
