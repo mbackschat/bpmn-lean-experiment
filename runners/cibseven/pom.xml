@@ -26,6 +26,7 @@
     <cibseven.version>2.2.0</cibseven.version>
     <h2.version>2.3.232</h2.version>
     <jackson.version>2.21.5</jackson.version>
+    <graal.js.version>21.3.12</graal.js.version>
     <junit.version>4.13.2</junit.version>
     <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
     <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
@@ -53,6 +54,20 @@
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>${jackson.version}</version>
+    </dependency>
+    <!-- The JavaScript engine CIB Run ships (cibseven parent/pom.xml version.graal.js), so the oracle executes Script
+         Tasks as a CIB installation does; owner-approved 2026-11-12 for this runner only. -->
+    <dependency>
+      <groupId>org.graalvm.js</groupId>
+      <artifactId>js</artifactId>
+      <version>${graal.js.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.graalvm.js</groupId>
+      <artifactId>js-scriptengine</artifactId>
+      <version>${graal.js.version}</version>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
