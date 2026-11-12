@@ -24,11 +24,11 @@ The counts below cover only entries recorded by this project, including the sepa
 |---|---:|---:|---|
 | Normative agreement records | 23 | 0 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
-| Confirmed normative deviations | 0 | 11 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 37 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| Confirmed normative deviations | 0 | 12 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
+| CIB interpretations of BPMN gaps or inconsistencies | 38 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 45 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 42 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 46 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -232,9 +232,9 @@ CIB arms a Service Task's boundaries exactly while the Task is active, and its d
 
 BPMN 2.0.2 §13.5.5 runs default compensation "in reverse order of the execution of the original Activities, allowing for concurrency when there was no dependency": a Sequence Flow from A to B, a boundary Event of A connected to B, or a data dependency of B on A compensates B before A, and the records of one looping Activity run in reverse order of their forward completion. CIB Seven `2.2.0` creates a concurrent execution for every retained compensation subscription of the trigger and signals them all, in reverse creation order, within the triggering command, so every waiting handler is open at once whatever the dependencies.
 
-**Evidence:** Pinned `bpmn/helper/CompensationUtil.java:55-88`; the retained answers of [compensation-order-chronology](../scenarios/open-rows/compensation-order-chronology/README.md) (all five schedules), [with-message-before-a-completes](../scenarios/open-rows/compensation-order-and-multiplicity/README.md), [end-untargeted](../scenarios/open-rows/compensation-targeting/README.md) [late-third-second-throw, two-records-live-data and unfinished-third-ineligible](../scenarios/open-rows/compensation-eligibility/README.md), and, where the ordered subject is a Sub-Process's group (CIB-INT-0036), [compensation-regions](../scenarios/open-rows/compensation-regions/README.md) (all four schedules), [cancel-end and success-then-outer-throw](../scenarios/open-rows/transaction-paths/README.md), [outer-cancel-after-inner-completed](../scenarios/open-rows/transaction-nested/README.md) and the sequential Multi-Instance Sub-Process [regions-sequential-in-turn](../scenarios/open-rows/compensation-multi-instance-bodies/README.md) (profile `cibseven-2.2.0`), where CIB opens a handler the kernel holds until the handlers of its dependents, or of the later instances, complete. A Multi-Instance Task or Call runs its handler once in the kernel, which CIB-DEV-0012 records. Parallel instances are outside the entry: §13.5.5 lets them be compensated in parallel, as CIB does.
+**Evidence:** Pinned `bpmn/helper/CompensationUtil.java:55-88`; the retained answers of [compensation-order-chronology](../scenarios/open-rows/compensation-order-chronology/README.md) (all five schedules), [with-message-before-a-completes](../scenarios/open-rows/compensation-order-and-multiplicity/README.md), [end-untargeted](../scenarios/open-rows/compensation-targeting/README.md) [late-third-second-throw, two-records-live-data and unfinished-third-ineligible](../scenarios/open-rows/compensation-eligibility/README.md), and, where the ordered subject is a Sub-Process's group (CIB-INT-0036), [compensation-regions](../scenarios/open-rows/compensation-regions/README.md) (all four schedules), [cancel-end and success-then-outer-throw](../scenarios/open-rows/transaction-paths/README.md), [outer-cancel-after-inner-completed](../scenarios/open-rows/transaction-nested/README.md) the sequential Multi-Instance Sub-Process [regions-sequential-in-turn](../scenarios/open-rows/compensation-multi-instance-bodies/README.md) and, up to CIB-LIM-0045's failure, the sequential Multi-Instance Sub-Process's Compensation Event Sub-Process [sequential-in-turn-consumed and sequential-in-turn-rethrown](../scenarios/open-rows/compensation-event-subprocess-multi-instance/README.md) (profile `cibseven-2.2.0`), where CIB opens a handler the kernel holds until the handlers of its dependents, or of the later instances, complete. A Multi-Instance Task or Call runs its handler once in the kernel, which CIB-DEV-0012 records. Parallel instances are outside the entry: §13.5.5 lets them be compensated in parallel, as CIB does.
 
-**Boundary:** Triggers retaining two subjects that a §13.5.5 dependency orders, or repeated records of one subject; this entry owns the witnesses above whose only difference is CIB opening the ordered handlers together.
+**Boundary:** Triggers retaining two subjects that a §13.5.5 dependency orders, or repeated records of one subject; this entry owns the witnesses above whose only difference is CIB opening the ordered handlers together, and is the first owner of the two whose later difference is CIB-LIM-0045's.
 
 ### CIB-DEV-0012 — CIB compensates a Multi-Instance Task or Call once per instance
 
@@ -245,6 +245,16 @@ BPMN 2.0.2 §13.5.5 says "In case the Activity is a multi-instance or loop, the 
 **Evidence:** Pinned `bpmn/behavior/AbstractBpmnActivityBehavior.java:53-62` and `:69-74`; the retained answers of [user-handler-two-items and user-handler-zero-items](../scenarios/open-rows/compensation-order-and-multiplicity/README.md) and [tasks-parallel-out-of-order and tasks-sequential-in-turn](../scenarios/open-rows/compensation-multi-instance-bodies/README.md) (profile `cibseven-2.2.0`), where CIB opens one handler per completed instance, or none, and the kernel one. The Multi-Instance Call witnesses `call-parallel-three-reviewers` and `call-sequential-three-reviewers` fall under the same source reading; the kernel refuses a Multi-Instance Call body (`activity.multiInstanceBody`, PC-MI-03).
 
 **Boundary:** Multi-Instance Tasks and Call Activities with a compensation handler; this entry owns the witnesses above.
+
+### CIB-DEV-0013 — CIB runs a Sub-Process's boundary compensation handler beside, or instead of, black-box compensation
+
+**Status:** Deviation candidate from the pinned source and retained evidence; selected by no profile, since the kernel runs the boundary handler once as the Sub-Process's black-box compensation under every profile
+
+BPMN 2.0.2 §10.7.1 and §13.5.5 let a handler connected by a boundary Event "only perform black-box compensation of the original Activity", and activate the associated Compensation Activity once when compensation is triggered for that Activity. CIB Seven `2.2.0` subscribes a completed Sub-Process with a boundary handler twice: once with the boundary handler itself, and once through the event scope of CIB-INT-0036, whose handler resolves to the boundary handler when that handler is a Sub-Process and to the Sub-Process otherwise. A Task handler therefore runs beside the inner records' handlers, and a Sub-Process handler runs twice while the inner records never run. The kernel runs the handler once and keeps the inner records as its children, which only the handler's own throw compensates ([compensation semantics](kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md#i8--a-boundary-handler-on-a-sub-process-pc-compensation-05)).
+
+**Evidence:** Pinned `bpmn/behavior/AbstractBpmnActivityBehavior.java:53-61` and `:69-74` (the boundary handler's subscription) and `bpmn/helper/CompensationUtil.java:143-151` and `:167-178` (the event scope's subscription and its handler); the retained answers of [task-handler-over-inner-record and subprocess-handler-over-inner-record](../scenarios/open-rows/compensation-handler-consumption/README.md) (profile `cibseven-2.2.0`), where CIB opens `UserTask_UndoGroup` beside `UserTask_UndoInner`, and `UserTask_UndoGroupReview` twice and never `UserTask_UndoInner`, and the kernel opens the handler once.
+
+**Boundary:** Sub-Processes and Transactions with a Compensation Boundary Event; this entry owns those two witnesses in the ledger.
 
 A candidate must appear here immediately when evidence suggests conflict with a clear BPMN requirement. It remains a candidate until the evidence threshold below is satisfied. Implementation of the disputed profile-dependent behavior pauses unless the capsule explicitly preserves competing accounts as an unresolved experiment.
 
@@ -912,6 +922,16 @@ BPMN 2.0.2 is inconsistent here. §10.5.1 says "The compensation handler is eith
 
 **Boundary:** Completed Sub-Processes and Transactions without a compensation handler that retain records.
 
+### CIB-INT-0037 — CIB compensates nothing inside a Sub-Process an Error leaves
+
+**Status:** Recorded interpretation from the pinned source and retained evidence; the kernel's meaning under every profile (`ProfileOptions.errorExitCompensation = drops`, which every profile keeps; `compensatesContained` is refused as `profile.errorExitCompensation.compensatesContained` for a program with a Sub-Process that retains compensable work and that an Error can leave); not a deviation
+
+BPMN 2.0.2 is inconsistent here. §10.7.3 and §13.5.5 make compensation of all contained Activities the default "if no error Event Sub-Process is specified for a particular Sub-Process and a particular error", while §10.3.5 (Transaction outcome 2) states that an Error interrupting a Transaction or a non-Transaction Activity causes no compensation, and presumed abort makes "compensation of a failed Activity" a null operation. CIB Seven `2.2.0` keeps the inner records of a Sub-Process only when it completes, so an Error leaving it deletes them with the interrupted Sub-Process and nothing is compensated. The kernel drops the records retained in a scope occurrence it leaves without completing it ([compensation semantics](kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md#i6--an-error-leaving-a-sub-process-with-completed-compensable-work-pc-compensation-03-pc-tx-01)).
+
+**Evidence:** Pinned `bpmn/behavior/SubProcessActivityBehavior.java:61-66` (the event scope is created on completion only); the retained answers of [error-end-in-subprocess and error-end-in-transaction](../scenarios/open-rows/transaction-and-error-exits/README.md) and [error-end](../scenarios/open-rows/transaction-paths/README.md) (profile `cibseven-2.2.0`), which never open the inner handler and agree with the kernel.
+
+**Boundary:** Sub-Processes and Transactions left by an Error, whether or not a catcher takes it.
+
 ### CIB-INT-0038 — CIB propagates a compensation handler's Error or Escalation from the compensation trigger
 
 **Status:** Recorded interpretation from the pinned source and retained evidence; selected by `ProfileOptions.compensationHandlerFailure = propagatesFromTrigger` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile; not a deviation
@@ -1373,6 +1393,46 @@ BPMN 2.0.2 states no limit of one compensation handler per Activity, and §13.5.
 **Evidence:** Pinned `bpmn/parser/BpmnParse.java:913-920`, `:1187-1190`, `:1199-1201` and `:1754`; the retained answers of [esp-and-boundary-same-scope, two-esps-same-scope, two-compensation-boundaries and esp-at-process-level](../scenarios/open-rows/compensation-handler-form-refusals/README.md) (profile `cibseven-2.2.0`), refused at deployment as the kernel refuses them.
 
 **Boundary:** Those four forms. An Association to an Activity without `isForCompensation` and a Sequence Flow into or out of a handler are BPMN-invalid (§10.7.1, Table 10.3), and both CIB and the kernel refuse them.
+
+### CIB-LIM-0045 — CIB fails the compensation join of a Multi-Instance Sub-Process's Compensation Event Sub-Process
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile: CIB cannot execute the model, and the rolled-back command is an engine failure, not CIB's answer; not a deviation
+
+BPMN 2.0.2 §10.7.2 compensates every instance of a Multi-Instance Sub-Process, and §13.5.5 lets its Compensation Event Sub-Process carry that compensation. CIB Seven `2.2.0` opens one parent handler per instance and fails the command that completes one: leaving the Event Sub-Process ends compensation, which supplies a missing activity to the immediate parent only; that parent's join signals its own parent, which has no current activity, and `PvmExecutionImpl.signal` throws `PvmException` "cannot signal execution …: it has no current activity".
+
+**Evidence:** Pinned `bpmn/behavior/BpmnActivityBehavior.java:122`, `pvm/runtime/PvmExecutionImpl.java:415-426` (ending compensation), `bpmn/behavior/AbstractBpmnActivityBehavior.java:120-135` (the join) and `pvm/runtime/PvmExecutionImpl.java:776-779` (the exception); the root's probe P1 of 2026-11-11 on [sequential-in-turn-consumed](../scenarios/open-rows/compensation-event-subprocess-multi-instance/README.md) step `s06`: `PvmExecutionImpl.signal:778` ← `AbstractBpmnActivityBehavior.signalCompensationDone:130` ← `signal:114` ← `PvmExecutionImpl.signal:783` ← `endCompensation:425` ← `BpmnActivityBehavior.performOutgoingBehavior:122` ← `SubProcessActivityBehavior.doLeave:65`. The retained rollbacks of `parallel-out-of-order-consumed` step `s06` and of `sequential-in-turn-rethrown` and `parallel-out-of-order-rethrown` step `s09` carry no cause; the two `s09` steps complete the inner handler, so their membership is an inference.
+
+**Boundary:** Multi-Instance Sub-Processes with a Compensation Event Sub-Process, from the command that completes a handler; the observations before it stay CIB answers. This entry is the second owner of the sequential witnesses, whose first difference is CIB-DEV-0011's.
+
+### CIB-LIM-0046 — CIB fails the interruption a synchronous compensation handler's caught Error starts
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile: CIB cannot execute the model, and the rolled-back command is an engine failure, not CIB's answer; not a deviation
+
+BPMN 2.0.2 §13.3.2 states no disposition for a failing handler; under CIB-INT-0038 the Error propagates from the trigger, where the Process's interrupting Error Event Sub-Process catches it. CIB Seven `2.2.0` runs the Service Task handler inside the triggering command (CIB-LIM-0042) and fails in the delete cascade that ends the interrupted work: firing an activity end asks `LegacyBehavior.isCompensationThrowing` for an activity-execution mapping, whose construction finds the scope it extends already mapped from the compensation-throwing ancestor, so its scope list is empty and taking its last element throws `IndexOutOfBoundsException`, which `CompensationEventHandler` wraps in `ProcessEngineException` "Error while handling compensation event".
+
+**Evidence:** Pinned `pvm/runtime/operation/PvmAtomicOperationDeleteCascadeFireActivityEnd.java:35-40`, `PvmAtomicOperationActivityInstanceEnd.java:49`, `pvm/runtime/LegacyBehavior.java:624-626`, `pvm/runtime/PvmExecutionImpl.java:1559`, `:1572` and `:1643-1647`, and `event/CompensationEventHandler.java:82`; the root's probe P2 of 2026-11-11 on [one-fails-caught](../scenarios/open-rows/compensation-handler-failures/README.md) step `s02`: `ArrayList.get` ← `PvmExecutionImpl.createActivityExecutionMapping:1647` ← `:1559` ← `:1572` ← `LegacyBehavior.isCompensationThrowing:625` ← `PvmAtomicOperationActivityInstanceEnd.eventNotificationsStarted:49` ← `PvmAtomicOperationDeleteCascadeFireActivityEnd.eventNotificationsStarted:40`, below `CompensationEventHandler.handleEvent:82`. The retained `late-failure-after-success`, where the failing handler runs before the other one completes, commits and opens `UserTask_Recover`; the retained rollback of [refund-business-failure](../scenarios/open-rows/transaction-cancel-mixed/README.md) step `s04` carries no cause, so its membership is an inference.
+
+**Boundary:** A synchronous compensation handler's Error caught by an interrupting catcher after another handler of the same trigger completed (the second condition is inferred from the two witnesses); this entry owns `one-fails-caught` and `refund-business-failure` in the ledger.
+
+### CIB-LIM-0047 — CIB fails a Sub-Process compensation handler that forks
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile: CIB cannot execute the model, and the rolled-back command is an engine failure, not CIB's answer; not a deviation
+
+BPMN 2.0.2 §10.7.1 lets a Compensation Activity be a Sub-Process, whose content is ordinary flow. CIB Seven `2.2.0` starts a Sub-Process handler on the compensating execution itself, which `throwCompensationEvent` made concurrent, and fails at the first fork inside it: the transition prepares one outgoing execution per flow, the tree expansion of the second replaces the first, and the replacement carries no transition, so `PvmExecutionImpl.take` throws `PvmException` "no transition to take specified".
+
+**Evidence:** Pinned `event/CompensationEventHandler.java:73-78`, `bpmn/helper/CompensationUtil.java:75`, `pvm/runtime/operation/PvmAtomicOperationTransitionDestroyScope.java:89-133`, `pvm/runtime/OutgoingExecution.java:41-46` and `pvm/runtime/PvmExecutionImpl.java:791-793`; the root's probe P3 of 2026-11-11 on [terminate-first](../scenarios/open-rows/compensation-handler-terminate/README.md) step `s01`: `PvmExecutionImpl.take:793` ← `OutgoingExecution.take:46` ← `PvmAtomicOperationTransitionDestroyScope.execute:133` ← `PvmAtomicOperationTransitionNotifyListenerEnd:54`; the retained rollback of `slow-first` step `s01`, the same command on the same model, carries no cause.
+
+**Boundary:** Sub-Process compensation handlers whose flow forks; CIB gives no answer on a Terminate End inside a handler. This entry owns `terminate-first` and `slow-first` in the ledger.
+
+### CIB-LIM-0048 — CIB cannot build the activity-instance tree of some compensation states
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile: CIB cannot render the state the oracle observes, and the harness failure is no CIB answer; not a deviation
+
+CIB Seven `2.2.0`'s `RuntimeService.getActivityInstance` builds an activity-execution mapping from every leaf execution; below a compensation-throwing ancestor it finds the scope it extends already mapped and takes the last element of an empty scope list, CIB-LIM-0046's site. CIB's own suite ignores activity-instance-tree assertions for compensation (CAM-4387 and CAM-4903). The oracle's runner derives occurrence identities from that tree, so it cannot observe these states; whether it re-sources them from executions, history or other CIB APIs that build no mapping is a separate decision, and such an observation is not excluded.
+
+**Evidence:** Pinned `cmd/GetActivityInstanceCmd.java:123`, `pvm/runtime/PvmExecutionImpl.java:1559`, `:1572` and `:1643-1647`, and `engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensateEventTest.java`; hosted run 43073432420's twelve harness failures `java.lang.IndexOutOfBoundsException: Index -1 out of bounds for length 0`: [late-data-after-completion and no-late-data](../scenarios/open-rows/compensation-context/README.md), [esp-handler-reads-and-writes-outer](../scenarios/open-rows/compensation-context-live-outer/README.md), [compensation-event-subprocess-nesting](../scenarios/open-rows/compensation-event-subprocess-nesting/README.md) (four schedules), [throws-parent-activity](../scenarios/open-rows/compensation-event-subprocess-throws/README.md), [typed-data-reaches-handlers](../scenarios/open-rows/compensation-handler-bodies/README.md), [esp-consumes-one-of-two](../scenarios/open-rows/compensation-handler-consumption/README.md), and [subjects-effect-first and subjects-user-first](../scenarios/open-rows/transaction-cancel-mixed/README.md); the root's observation probe of 2026-11-12: `ArrayList.get` ← `PvmExecutionImpl.createActivityExecutionMapping:1647` ← `:1559` ← `:1572` ← `GetActivityInstanceCmd.execute:123`, reached from the runner's state observation (`CibSevenOccurrences.instance`, `CibSevenOccurrences.java:157`).
+
+**Boundary:** Observations of those states through the activity-instance tree; the twelve witnesses retain no evidence, so the ledger holds none of them.
 
 ### CIB-LIM-0049 — CIB never subscribes a Receive Task compensation handler to its Message
 

@@ -312,13 +312,15 @@
   {
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/sequential-in-turn-consumed.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-05"
+      "CIB-DEV-0011",
+      "CIB-LIM-0045"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/sequential-in-turn-rethrown.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-05"
+      "CIB-DEV-0011",
+      "CIB-LIM-0045"
     ]
   },
   {
@@ -342,13 +344,13 @@
   {
     "evidence": "scenarios/open-rows/compensation-handler-consumption/subprocess-handler-over-inner-record.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-05"
+      "CIB-DEV-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-consumption/task-handler-over-inner-record.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-05"
+      "CIB-DEV-0013"
     ]
   },
   {
@@ -366,8 +368,7 @@
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/one-fails-caught.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
+      "CIB-LIM-0046"
     ]
   },
   {
@@ -391,13 +392,13 @@
   {
     "evidence": "scenarios/open-rows/compensation-handler-terminate/slow-first.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-04"
+      "CIB-LIM-0047"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-terminate/terminate-first.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-04"
+      "CIB-LIM-0047"
     ]
   },
   {
@@ -2301,7 +2302,7 @@
   {
     "evidence": "scenarios/open-rows/transaction-cancel-mixed/refund-business-failure.cibseven-evidence.json",
     "owners": [
-      "PC-TX-02"
+      "CIB-LIM-0046"
     ]
   },
   {
