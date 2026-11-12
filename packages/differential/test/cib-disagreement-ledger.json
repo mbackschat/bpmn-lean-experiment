@@ -300,14 +300,16 @@
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/parallel-out-of-order-consumed.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0014",
-      "PC-COMPENSATION-05"
+      "CIB-INT-0040",
+      "CIB-LIM-0045"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/parallel-out-of-order-rethrown.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0014",
-      "PC-COMPENSATION-05"
+      "CIB-INT-0040",
+      "CIB-LIM-0045"
     ]
   },
   {
@@ -408,7 +410,7 @@
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/regions-parallel-out-of-order.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0014",
-      "PC-COMPENSATION-03"
+      "CIB-INT-0040"
     ]
   },
   {
@@ -434,15 +436,16 @@
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/call-parallel-three-reviewers.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-03"
+      "CIB-DEV-0012",
+      "PC-MI-03"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/call-sequential-three-reviewers.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-03"
+      "CIB-DEV-0012",
+      "CIB-DEV-0014",
+      "PC-MI-03"
     ]
   },
   {
@@ -2339,7 +2342,7 @@
     "evidence": "scenarios/open-rows/transaction-multi-instance/parallel-complete-then-compensate.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0014",
-      "PC-COMPENSATION-03"
+      "CIB-INT-0040"
     ]
   },
   {
