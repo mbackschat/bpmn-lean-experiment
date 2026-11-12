@@ -10,6 +10,10 @@
  * `node scripts/row-fixtures.ts --write` regenerates the fixtures; `--check` fails on a stale, missing or extra one.
  * `packages/differential/test/row-fixtures.integration-test.ts` runs the check in the oracle's lane, so the guard
  * verifies the generator's complete output. Both need the built packages (`pnpm build:differential`).
+ *
+ * The hand-written host-function kernel fixtures take their programs' options from the same place: `--write` sets each
+ * program's options to the ones its `identity.profile` selects, as a read source's are, and `--check` fails on a fixture
+ * whose options are stale, so a relation a profile gains reaches them (#110). Their expected answers stay hand-checked.
  */
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -18,7 +22,7 @@ import { fileURLToPath } from "node:url";
 
 import type { KernelJson } from "../packages/bpmn-source/src/index.ts";
 
-import { canonicalKernelProgram, readCaseSource } from "../packages/differential/test/kernel-program.ts";
+import { canonicalKernelProgram, profileKernelOptions, readCaseSource } from "../packages/differential/test/kernel-program.ts";
 import { readSourceFor, type SourceDefinition } from "../packages/differential/test/scenario-discovery.ts";
 import { traceabilityEntries } from "./kernel-guards-refusal.ts";
 import { compareCanonicalStrings, parseWireJson } from "./strict-json.ts";
@@ -26,6 +30,7 @@ import { compareCanonicalStrings, parseWireJson } from "./strict-json.ts";
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 export const rowFixtureDirectory = "packages/kernel/test/fixtures/rows";
+export const hostFunctionFixtureDirectory = "packages/kernel/test/fixtures/host-functions";
 const manifestName = "sources.json";
 const modelDirectory = "models";
 
@@ -129,15 +134,46 @@ export function rowFixtureDrift(expected: ReadonlyMap<string, string>, directory
   ].sort(compareCanonicalStrings);
 }
 
+type HostFunctionFixture = Readonly<{
+  entry: string;
+  input: unknown;
+  programs: ReadonlyArray<Readonly<{ identity: Readonly<{ profile: string }>; options: unknown }>>;
+}>;
+
+/**
+ * File name to text of every host-function fixture in `directory`, each program's options replaced by the ones its
+ * profile in `root` selects, in the fixtures' layout: one line per program.
+ */
+export function generateHostFunctionFixtures(
+  root: string = projectRoot, directory: string = path.join(root, hostFunctionFixtureDirectory),
+): ReadonlyMap<string, string> {
+  const names = readdirSync(directory).filter((name) => name.endsWith(".kernel-fixture.json")).sort(compareCanonicalStrings);
+  return new Map(names.map((name) => {
+    const { entry, input, programs } = parseWireJson<HostFunctionFixture>(readFileSync(path.join(directory, name), "utf8"), name);
+    const lines = programs.map((program) => `    ${JSON.stringify({ ...program, options: profileKernelOptions(program.identity.profile, root) })}`);
+    const text = `{\n  "entry": ${JSON.stringify(entry)},\n  "input": ${JSON.stringify(input)},\n  "programs": [\n${lines.join(",\n")}\n  ]\n}\n`;
+    return [name, text] as const;
+  }));
+}
+
+/** The host-function fixtures in `directory` whose text is not `expected`'s. */
+export function hostFunctionFixtureDrift(expected: ReadonlyMap<string, string>, directory: string): string[] {
+  return [...expected].filter(([name, text]) => readFileSync(path.join(directory, name), "utf8") !== text)
+    .map(([name]) => `${name} is stale`);
+}
+
 if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const mode = process.argv[2];
   if (mode !== "--write" && mode !== "--check") throw new TypeError("usage: node scripts/row-fixtures.ts --write|--check");
   const expected = await generateRowFixtures();
   const directory = path.join(projectRoot, rowFixtureDirectory);
+  const hostFunctions = generateHostFunctionFixtures();
+  const hostDirectory = path.join(projectRoot, hostFunctionFixtureDirectory);
   if (mode === "--write") {
     for (const [name, text] of expected) writeFileSync(path.join(directory, name), text);
+    for (const [name, text] of hostFunctions) writeFileSync(path.join(hostDirectory, name), text);
   } else {
-    const drift = rowFixtureDrift(expected, directory);
+    const drift = [...rowFixtureDrift(expected, directory), ...hostFunctionFixtureDrift(hostFunctions, hostDirectory)];
     for (const line of drift) process.stderr.write(`${line}\n`);
     process.exitCode = drift.length === 0 ? 0 : 1;
   }

@@ -1,11 +1,13 @@
 /** The kernel IL a differential case feeds both kernels. */
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { kernelProfileOptions, readKernelProgram } from "@bpmn-lean/bpmn-source";
-import type { KernelJson, KernelRead, KernelSource } from "@bpmn-lean/bpmn-source";
+import type { KernelJson, KernelProfileOptions, KernelRead, KernelSource } from "@bpmn-lean/bpmn-source";
 import { admit, decodeProgram, encodeProgram, type JsonValue } from "@bpmn-lean/kernel";
 
-import { projectRoot, readJson } from "./pipeline-target-support.ts";
+import { parseWireJson } from "../../../scripts/strict-json.ts";
+import { projectRoot } from "./pipeline-target-support.ts";
 
 type ProfileDocument = Readonly<{ bpmn?: Readonly<{ relationships?: ReadonlyArray<string> }> }>;
 
@@ -19,9 +21,15 @@ export type CaseSource = Readonly<{
   decisions?: KernelSource["decisions"];
 }>;
 
+/** The kernel options profile `profileId` selects, derived from its CIB relations. */
+export function profileKernelOptions(profileId: string, root: string = projectRoot): KernelProfileOptions {
+  const file = path.join(root, "profiles", profileId, "profile.json");
+  const profile = parseWireJson<ProfileDocument>(readFileSync(file, "utf8"), file);
+  return kernelProfileOptions(profile.bpmn?.relationships ?? []);
+}
+
 /** Reads one BPMN source with the relations its profile selects; a refusal is returned, not thrown. */
 export async function readCaseSource(source: CaseSource, profileId: string): Promise<KernelRead> {
-  const profile = await readJson<ProfileDocument>(path.join(projectRoot, "profiles", profileId, "profile.json"));
   return readKernelProgram({
     bytes: source.bytes,
     expectedSha256: source.sha256,
@@ -29,7 +37,7 @@ export async function readCaseSource(source: CaseSource, profileId: string): Pro
     profile: profileId,
     limits: readLimits,
     ...(source.decisions === undefined ? {} : { decisions: source.decisions }),
-  }, kernelProfileOptions(profile.bpmn?.relationships ?? []));
+  }, profileKernelOptions(profileId));
 }
 
 /**

@@ -69,7 +69,32 @@
     }
   ],
   "relations": [
+    "CIB-AGR-0001",
+    "CIB-AGR-0002",
+    "CIB-AGR-0003",
+    "CIB-AGR-0004",
     "CIB-AGR-0006",
-    "CIB-INT-0001"
+    "CIB-AGR-0007",
+    "CIB-AGR-0021",
+    "CIB-CFG-0001",
+    "CIB-CFG-0013",
+    "CIB-CFG-0014",
+    "CIB-DEV-0001",
+    "CIB-DEV-0002",
+    "CIB-EXT-0011",
+    "CIB-INT-0001",
+    "CIB-INT-0008",
+    "CIB-INT-0012",
+    "CIB-INT-0015",
+    "CIB-INT-0016",
+    "CIB-INT-0025",
+    "CIB-INT-0026",
+    "CIB-INT-0029",
+    "CIB-INT-0030",
+    "CIB-INT-0031",
+    "CIB-INT-0032",
+    "CIB-LIM-0002",
+    "CIB-LIM-0003",
+    "CIB-OP-0001"
   ]
 }

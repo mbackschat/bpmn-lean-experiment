@@ -11,10 +11,14 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
+import { kernelProfileOptions } from "@bpmn-lean/bpmn-source";
 import { decodeProgram, parseStrict } from "@bpmn-lean/kernel";
 
 import { existingRowFixtures, shapeSufficiencyFindings, type RowDecoders } from "../../../scripts/kernel-guards-refusal.ts";
-import { generateRowFixtures, rowFixtureDirectory, rowFixtureDrift } from "../../../scripts/row-fixtures.ts";
+import {
+  generateHostFunctionFixtures, generateRowFixtures, hostFunctionFixtureDirectory, hostFunctionFixtureDrift, rowFixtureDirectory,
+  rowFixtureDrift,
+} from "../../../scripts/row-fixtures.ts";
 import { decodeLeanPrograms } from "./kernel-targets.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 
@@ -108,4 +112,30 @@ test("the row fixture check fails on a stale, missing or extra fixture", async (
 
 test("the committed row fixtures are exactly the generator's output", async () => {
   assert.deepEqual(rowFixtureDrift(await generateRowFixtures(), path.join(projectRoot, rowFixtureDirectory)), []);
+});
+
+// Guard 23 for the host-function fixtures: a program whose options its profile no longer selects must fail.
+test("the host-function fixture check fails on options its profile does not select", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "host-function-fixtures-"));
+  try {
+    await mkdir(path.join(root, "profiles", "seeded"), { recursive: true });
+    await writeFile(path.join(root, "profiles", "seeded", "profile.json"), JSON.stringify({ bpmn: { relationships: ["CIB-EXT-0005"] } }));
+    const directory = path.join(root, "fixtures");
+    await mkdir(directory);
+    const program = { identity: { profile: "seeded" }, options: kernelProfileOptions([]) };
+    const stale = `{\n  "entry": "rootStarts",\n  "input": null,\n  "programs": [\n    ${JSON.stringify(program)}\n  ]\n}\n`;
+    await writeFile(path.join(directory, "seeded.kernel-fixture.json"), stale);
+    await writeFile(path.join(directory, "seeded.kernel-fixture.expected.json"), "[]\n");
+    const expected = generateHostFunctionFixtures(root, directory);
+    assert.deepEqual([...expected.keys()], ["seeded.kernel-fixture.json"]);
+    assert.deepEqual(hostFunctionFixtureDrift(expected, directory), ["seeded.kernel-fixture.json is stale"]);
+    await writeFile(path.join(directory, "seeded.kernel-fixture.json"), expected.get("seeded.kernel-fixture.json") ?? "");
+    assert.deepEqual(hostFunctionFixtureDrift(expected, directory), []);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("the committed host-function fixtures carry the options their profiles select", () => {
+  assert.deepEqual(hostFunctionFixtureDrift(generateHostFunctionFixtures(), path.join(projectRoot, hostFunctionFixtureDirectory)), []);
 });
