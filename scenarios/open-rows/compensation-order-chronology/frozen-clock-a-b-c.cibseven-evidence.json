@@ -96,16 +96,16 @@
         "afterCommandId": "s01-complete-UserTask_BookA-1",
         "tasks": [
           {
+            "elementId": "UserTask_BookB",
+            "name": "Book B, which follows A"
+          },
+          {
             "elementId": "UserTask_BookC",
             "name": "Book C, independent of A and B"
           },
           {
             "elementId": "UserTask_Clock",
             "name": "Hold the clock open"
-          },
-          {
-            "elementId": "UserTask_BookB",
-            "name": "Book B, which follows A"
           }
         ]
       },
@@ -130,16 +130,16 @@
             "name": "Hold the clock open"
           },
           {
+            "elementId": "UserTask_UndoA",
+            "name": "Undo A"
+          },
+          {
             "elementId": "UserTask_UndoB",
             "name": "Undo B"
           },
           {
             "elementId": "UserTask_UndoC",
             "name": "Undo C"
-          },
-          {
-            "elementId": "UserTask_UndoA",
-            "name": "Undo A"
           }
         ]
       },
@@ -151,12 +151,12 @@
             "name": "Hold the clock open"
           },
           {
-            "elementId": "UserTask_UndoB",
-            "name": "Undo B"
-          },
-          {
             "elementId": "UserTask_UndoA",
             "name": "Undo A"
+          },
+          {
+            "elementId": "UserTask_UndoB",
+            "name": "Undo B"
           }
         ]
       },
@@ -177,12 +177,12 @@
         "afterCommandId": "s06-complete-UserTask_UndoA-1",
         "tasks": [
           {
-            "elementId": "UserTask_Clock",
-            "name": "Hold the clock open"
-          },
-          {
             "elementId": "UserTask_After",
             "name": "Continue after compensation"
+          },
+          {
+            "elementId": "UserTask_Clock",
+            "name": "Hold the clock open"
           }
         ]
       },

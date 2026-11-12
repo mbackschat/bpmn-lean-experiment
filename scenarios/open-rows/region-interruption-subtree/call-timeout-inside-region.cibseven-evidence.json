@@ -203,16 +203,16 @@
         "afterCommandId": "s02-open-north",
         "tasks": [
           {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
             "elementId": "UserTask_IntakeSouth",
             "name": "Open the south region"
           },
           {
             "elementId": "UserTask_Outside",
             "name": "Run the unrelated audit"
-          },
-          {
-            "elementId": "UserTask_Draft",
-            "name": "Draft the offer"
           },
           {
             "elementId": "UserTask_Review",
@@ -224,20 +224,20 @@
         "afterCommandId": "s03-open-south",
         "tasks": [
           {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
             "elementId": "UserTask_Outside",
             "name": "Run the unrelated audit"
           },
           {
-            "elementId": "UserTask_Draft",
-            "name": "Draft the offer"
-          },
-          {
             "elementId": "UserTask_Review",
             "name": "Review the offer"
-          },
-          {
-            "elementId": "UserTask_Draft",
-            "name": "Draft the offer"
           },
           {
             "elementId": "UserTask_Review",
@@ -249,16 +249,16 @@
         "afterCommandId": "s04-review-first",
         "tasks": [
           {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
             "elementId": "UserTask_Outside",
             "name": "Run the unrelated audit"
-          },
-          {
-            "elementId": "UserTask_Draft",
-            "name": "Draft the offer"
-          },
-          {
-            "elementId": "UserTask_Draft",
-            "name": "Draft the offer"
           },
           {
             "elementId": "UserTask_Review",
@@ -274,16 +274,16 @@
         "afterCommandId": "s05-review-second",
         "tasks": [
           {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
             "elementId": "UserTask_Outside",
             "name": "Run the unrelated audit"
-          },
-          {
-            "elementId": "UserTask_Draft",
-            "name": "Draft the offer"
-          },
-          {
-            "elementId": "UserTask_Draft",
-            "name": "Draft the offer"
           },
           {
             "elementId": "UserTask_Sign",
@@ -299,10 +299,6 @@
         "afterCommandId": "s06-approve-timeout-first",
         "tasks": [
           {
-            "elementId": "UserTask_Outside",
-            "name": "Run the unrelated audit"
-          },
-          {
             "elementId": "UserTask_Draft",
             "name": "Draft the offer"
           },
@@ -313,6 +309,10 @@
           {
             "elementId": "UserTask_Escalate",
             "name": "Escalate the approval"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
           },
           {
             "elementId": "UserTask_Sign",
@@ -324,10 +324,6 @@
         "afterCommandId": "s07-late-sign-first",
         "tasks": [
           {
-            "elementId": "UserTask_Outside",
-            "name": "Run the unrelated audit"
-          },
-          {
             "elementId": "UserTask_Draft",
             "name": "Draft the offer"
           },
@@ -338,6 +334,10 @@
           {
             "elementId": "UserTask_Escalate",
             "name": "Escalate the approval"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
           },
           {
             "elementId": "UserTask_Sign",
@@ -349,10 +349,6 @@
         "afterCommandId": "s08-sign-second",
         "tasks": [
           {
-            "elementId": "UserTask_Outside",
-            "name": "Run the unrelated audit"
-          },
-          {
             "elementId": "UserTask_Draft",
             "name": "Draft the offer"
           },
@@ -363,6 +359,10 @@
           {
             "elementId": "UserTask_Escalate",
             "name": "Escalate the approval"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
           }
         ]
       },
@@ -370,16 +370,16 @@
         "afterCommandId": "s09-escalate-first",
         "tasks": [
           {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
             "elementId": "UserTask_Outside",
             "name": "Run the unrelated audit"
-          },
-          {
-            "elementId": "UserTask_Draft",
-            "name": "Draft the offer"
-          },
-          {
-            "elementId": "UserTask_Draft",
-            "name": "Draft the offer"
           }
         ]
       },
@@ -387,16 +387,16 @@
         "afterCommandId": "s10-quote-first",
         "tasks": [
           {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
             "elementId": "UserTask_Outside",
             "name": "Run the unrelated audit"
-          },
-          {
-            "elementId": "UserTask_Draft",
-            "name": "Draft the offer"
-          },
-          {
-            "elementId": "UserTask_Draft",
-            "name": "Draft the offer"
           }
         ]
       }
@@ -436,16 +436,16 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "ReceiveTask_Quote",
-            "eventName": "quoteReceived",
-            "messageId": "Message_Quote",
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Boundary_Region_Abort",
-            "eventName": "abortRegion",
-            "messageId": "Message_Abort",
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -469,16 +469,16 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "ReceiveTask_Quote",
-            "eventName": "quoteReceived",
-            "messageId": "Message_Quote",
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Boundary_Region_Abort",
-            "eventName": "abortRegion",
-            "messageId": "Message_Abort",
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -502,16 +502,16 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "ReceiveTask_Quote",
-            "eventName": "quoteReceived",
-            "messageId": "Message_Quote",
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Boundary_Region_Abort",
-            "eventName": "abortRegion",
-            "messageId": "Message_Abort",
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -535,16 +535,16 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "ReceiveTask_Quote",
-            "eventName": "quoteReceived",
-            "messageId": "Message_Quote",
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Boundary_Region_Abort",
-            "eventName": "abortRegion",
-            "messageId": "Message_Abort",
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -568,16 +568,16 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "ReceiveTask_Quote",
-            "eventName": "quoteReceived",
-            "messageId": "Message_Quote",
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Boundary_Region_Abort",
-            "eventName": "abortRegion",
-            "messageId": "Message_Abort",
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -601,16 +601,16 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "ReceiveTask_Quote",
-            "eventName": "quoteReceived",
-            "messageId": "Message_Quote",
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Boundary_Region_Abort",
-            "eventName": "abortRegion",
-            "messageId": "Message_Abort",
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -634,16 +634,16 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "ReceiveTask_Quote",
-            "eventName": "quoteReceived",
-            "messageId": "Message_Quote",
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Boundary_Region_Abort",
-            "eventName": "abortRegion",
-            "messageId": "Message_Abort",
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },

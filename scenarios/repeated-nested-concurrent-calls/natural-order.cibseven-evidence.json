@@ -106,12 +106,12 @@
         "afterCommandId": "complete-register-supplier",
         "tasks": [
           {
-            "elementId": "UserTask_CollectTaxDocuments",
-            "name": "Collect tax documents"
-          },
-          {
             "elementId": "UserTask_CollectBankDetails",
             "name": "Collect bank details"
+          },
+          {
+            "elementId": "UserTask_CollectTaxDocuments",
+            "name": "Collect tax documents"
           }
         ]
       },

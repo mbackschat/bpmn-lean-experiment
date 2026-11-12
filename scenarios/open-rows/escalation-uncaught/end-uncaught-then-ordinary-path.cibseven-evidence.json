@@ -43,12 +43,12 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
-            "elementId": "Draft",
-            "name": "Draft notice"
-          },
-          {
             "elementId": "Check",
             "name": "Check notice"
+          },
+          {
+            "elementId": "Draft",
+            "name": "Draft notice"
           },
           {
             "elementId": "Wait",
@@ -73,12 +73,12 @@
         "afterCommandId": "complete-draft",
         "tasks": [
           {
-            "elementId": "Wait",
-            "name": "Wait for the unrelated region"
-          },
-          {
             "elementId": "Publish",
             "name": "Publish notice"
+          },
+          {
+            "elementId": "Wait",
+            "name": "Wait for the unrelated region"
           }
         ]
       }

@@ -118,16 +118,16 @@
             "name": "Decide in the region"
           },
           {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
             "elementId": "Work_Esp",
             "name": "Work in the guarded region"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
           },
           {
             "elementId": "Child_Work",
@@ -147,10 +147,6 @@
             "name": "Decide in the region"
           },
           {
-            "elementId": "Work_Esp",
-            "name": "Work in the guarded region"
-          },
-          {
             "elementId": "Inner_Body",
             "name": "Inspect one lot"
           },
@@ -161,6 +157,10 @@
           {
             "elementId": "Proceed_Stop",
             "name": "Proceed after stop"
+          },
+          {
+            "elementId": "Work_Esp",
+            "name": "Work in the guarded region"
           },
           {
             "elementId": "Child_Work",
@@ -172,12 +172,12 @@
         "afterCommandId": "s03-complete-Inner",
         "tasks": [
           {
-            "elementId": "Host_User",
-            "name": "Review the case"
+            "elementId": "Handle_Stop",
+            "name": "Handle the stop"
           },
           {
-            "elementId": "Work_Esp",
-            "name": "Work in the guarded region"
+            "elementId": "Host_User",
+            "name": "Review the case"
           },
           {
             "elementId": "Inner_Body",
@@ -192,8 +192,8 @@
             "name": "Proceed after stop"
           },
           {
-            "elementId": "Handle_Stop",
-            "name": "Handle the stop"
+            "elementId": "Work_Esp",
+            "name": "Work in the guarded region"
           },
           {
             "elementId": "Child_Work",
@@ -209,10 +209,6 @@
             "name": "Review the case"
           },
           {
-            "elementId": "Work_Esp",
-            "name": "Work in the guarded region"
-          },
-          {
             "elementId": "Inner_Body",
             "name": "Inspect one lot"
           },
@@ -223,6 +219,10 @@
           {
             "elementId": "Proceed_Stop",
             "name": "Proceed after stop"
+          },
+          {
+            "elementId": "Work_Esp",
+            "name": "Work in the guarded region"
           },
           {
             "elementId": "Child_Work",
@@ -238,10 +238,6 @@
             "name": "Review the case"
           },
           {
-            "elementId": "Work_Esp",
-            "name": "Work in the guarded region"
-          },
-          {
             "elementId": "Inner_Body",
             "name": "Inspect one lot"
           },
@@ -252,6 +248,10 @@
           {
             "elementId": "Proceed_Stop",
             "name": "Proceed after stop"
+          },
+          {
+            "elementId": "Work_Esp",
+            "name": "Work in the guarded region"
           },
           {
             "elementId": "Child_Work",

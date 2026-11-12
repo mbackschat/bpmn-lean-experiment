@@ -43,12 +43,12 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Trigger"
-          },
-          {
             "elementId": "UserTask_Sibling",
             "name": "Sibling"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Trigger"
           }
         ]
       },

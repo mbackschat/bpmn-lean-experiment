@@ -130,16 +130,16 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "WrapGift",
-            "name": "Wrap gift"
-          },
-          {
             "elementId": "AddCard",
             "name": "Add card"
           },
           {
             "elementId": "InsureParcel",
             "name": "Insure parcel"
+          },
+          {
+            "elementId": "WrapGift",
+            "name": "Wrap gift"
           }
         ]
       },

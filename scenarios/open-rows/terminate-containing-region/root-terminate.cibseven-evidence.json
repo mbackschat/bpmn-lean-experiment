@@ -73,12 +73,8 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Close the region"
-          },
-          {
-            "elementId": "UserTask_Review",
-            "name": "Review the file"
+            "elementId": "UserTask_Abort",
+            "name": "Abort the whole review"
           },
           {
             "elementId": "UserTask_ChildTrigger",
@@ -89,16 +85,20 @@
             "name": "Check one attachment"
           },
           {
-            "elementId": "UserTask_Raise",
-            "name": "Raise an alert"
-          },
-          {
             "elementId": "UserTask_Outside",
             "name": "Handle the unrelated request"
           },
           {
-            "elementId": "UserTask_Abort",
-            "name": "Abort the whole review"
+            "elementId": "UserTask_Raise",
+            "name": "Raise an alert"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the file"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Close the region"
           }
         ]
       },
@@ -106,12 +106,8 @@
         "afterCommandId": "s02-raise-alert",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Close the region"
-          },
-          {
-            "elementId": "UserTask_Review",
-            "name": "Review the file"
+            "elementId": "UserTask_Abort",
+            "name": "Abort the whole review"
           },
           {
             "elementId": "UserTask_ChildTrigger",
@@ -122,16 +118,20 @@
             "name": "Check one attachment"
           },
           {
+            "elementId": "UserTask_Handle",
+            "name": "Handle the alert"
+          },
+          {
             "elementId": "UserTask_Outside",
             "name": "Handle the unrelated request"
           },
           {
-            "elementId": "UserTask_Abort",
-            "name": "Abort the whole review"
+            "elementId": "UserTask_Review",
+            "name": "Review the file"
           },
           {
-            "elementId": "UserTask_Handle",
-            "name": "Handle the alert"
+            "elementId": "UserTask_Trigger",
+            "name": "Close the region"
           }
         ]
       },
@@ -139,12 +139,8 @@
         "afterCommandId": "s03-archive-fails",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Close the region"
-          },
-          {
-            "elementId": "UserTask_Review",
-            "name": "Review the file"
+            "elementId": "UserTask_Abort",
+            "name": "Abort the whole review"
           },
           {
             "elementId": "UserTask_ChildTrigger",
@@ -155,16 +151,20 @@
             "name": "Check one attachment"
           },
           {
+            "elementId": "UserTask_Handle",
+            "name": "Handle the alert"
+          },
+          {
             "elementId": "UserTask_Outside",
             "name": "Handle the unrelated request"
           },
           {
-            "elementId": "UserTask_Abort",
-            "name": "Abort the whole review"
+            "elementId": "UserTask_Review",
+            "name": "Review the file"
           },
           {
-            "elementId": "UserTask_Handle",
-            "name": "Handle the alert"
+            "elementId": "UserTask_Trigger",
+            "name": "Close the region"
           }
         ]
       },
@@ -396,21 +396,21 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "35",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false,
-            "processInstanceId": "7",
-            "elementId": "ServiceTask_Notify",
-            "incident": null
-          },
-          {
             "publicJobId": "36",
             "retries": 3,
             "executable": true,
             "dueDatePresent": false,
             "processInstanceId": "7",
             "elementId": "ServiceTask_Archive",
+            "incident": null
+          },
+          {
+            "publicJobId": "35",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "7",
+            "elementId": "ServiceTask_Notify",
             "incident": null
           }
         ]
@@ -420,21 +420,21 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "35",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false,
-            "processInstanceId": "7",
-            "elementId": "ServiceTask_Notify",
-            "incident": null
-          },
-          {
             "publicJobId": "36",
             "retries": 3,
             "executable": true,
             "dueDatePresent": false,
             "processInstanceId": "7",
             "elementId": "ServiceTask_Archive",
+            "incident": null
+          },
+          {
+            "publicJobId": "35",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "7",
+            "elementId": "ServiceTask_Notify",
             "incident": null
           }
         ]
@@ -443,15 +443,6 @@
         "afterCommandId": "s03-archive-fails",
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
-          {
-            "publicJobId": "35",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false,
-            "processInstanceId": "7",
-            "elementId": "ServiceTask_Notify",
-            "incident": null
-          },
           {
             "publicJobId": "36",
             "retries": 0,
@@ -468,6 +459,15 @@
               "causeIncidentId": "65",
               "rootCauseIncidentId": "65"
             }
+          },
+          {
+            "publicJobId": "35",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "7",
+            "elementId": "ServiceTask_Notify",
+            "incident": null
           }
         ]
       },

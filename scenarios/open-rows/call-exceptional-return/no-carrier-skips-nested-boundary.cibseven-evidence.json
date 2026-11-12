@@ -225,12 +225,12 @@
         "afterCommandId": "s04-reserve-spare",
         "tasks": [
           {
-            "elementId": "UserTask_Reassign",
-            "name": "Reassign the carrier"
-          },
-          {
             "elementId": "UserTask_AfterSpare",
             "name": "File the spare booking"
+          },
+          {
+            "elementId": "UserTask_Reassign",
+            "name": "Reassign the carrier"
           }
         ]
       },

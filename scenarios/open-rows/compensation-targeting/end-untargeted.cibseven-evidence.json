@@ -150,16 +150,16 @@
         "afterCommandId": "s03-complete-UserTask_Bill-1",
         "tasks": [
           {
-            "elementId": "UserTask_UndoShip",
-            "name": "Undo ship"
-          },
-          {
             "elementId": "UserTask_UndoBill",
             "name": "Undo bill"
           },
           {
             "elementId": "UserTask_UndoReserve",
             "name": "Undo reserve"
+          },
+          {
+            "elementId": "UserTask_UndoShip",
+            "name": "Undo ship"
           }
         ]
       },
@@ -167,12 +167,12 @@
         "afterCommandId": "s04-complete-UserTask_UndoBill-1",
         "tasks": [
           {
-            "elementId": "UserTask_UndoShip",
-            "name": "Undo ship"
-          },
-          {
             "elementId": "UserTask_UndoReserve",
             "name": "Undo reserve"
+          },
+          {
+            "elementId": "UserTask_UndoShip",
+            "name": "Undo ship"
           }
         ]
       },

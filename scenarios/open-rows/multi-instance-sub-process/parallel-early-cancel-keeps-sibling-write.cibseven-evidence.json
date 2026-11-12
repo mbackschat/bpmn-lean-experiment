@@ -309,12 +309,12 @@
             "name": "Check commercial terms"
           },
           {
-            "elementId": "UserTask_Compliance",
-            "name": "Check invoice compliance"
-          },
-          {
             "elementId": "UserTask_Commercial",
             "name": "Check commercial terms"
+          },
+          {
+            "elementId": "UserTask_Compliance",
+            "name": "Check invoice compliance"
           },
           {
             "elementId": "UserTask_Compliance",
@@ -326,12 +326,12 @@
         "afterCommandId": "s02-complete-UserTask_Commercial-1",
         "tasks": [
           {
-            "elementId": "UserTask_Compliance",
-            "name": "Check invoice compliance"
-          },
-          {
             "elementId": "UserTask_Commercial",
             "name": "Check commercial terms"
+          },
+          {
+            "elementId": "UserTask_Compliance",
+            "name": "Check invoice compliance"
           },
           {
             "elementId": "UserTask_Compliance",

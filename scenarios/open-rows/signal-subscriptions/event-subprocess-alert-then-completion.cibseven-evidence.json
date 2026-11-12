@@ -118,16 +118,16 @@
             "name": "Decide in the region"
           },
           {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
             "elementId": "Work_Esp",
             "name": "Work in the guarded region"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
           },
           {
             "elementId": "Child_Work",
@@ -139,6 +139,10 @@
         "afterCommandId": "s02-signal-Start_Alert",
         "tasks": [
           {
+            "elementId": "Handle_Alert",
+            "name": "Handle the alert"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the case"
           },
@@ -147,20 +151,16 @@
             "name": "Decide in the region"
           },
           {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
             "elementId": "Work_Esp",
             "name": "Work in the guarded region"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Handle_Alert",
-            "name": "Handle the alert"
           },
           {
             "elementId": "Child_Work",
@@ -172,6 +172,10 @@
         "afterCommandId": "s03-complete-Work_Esp",
         "tasks": [
           {
+            "elementId": "Handle_Alert",
+            "name": "Handle the alert"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the case"
           },
@@ -186,10 +190,6 @@
           {
             "elementId": "Inner_Body",
             "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Handle_Alert",
-            "name": "Handle the alert"
           },
           {
             "elementId": "Child_Work",
@@ -201,6 +201,10 @@
         "afterCommandId": "s04-signal-Start_Abort",
         "tasks": [
           {
+            "elementId": "Handle_Abort",
+            "name": "Handle the abort"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the case"
           },
@@ -215,10 +219,6 @@
           {
             "elementId": "Inner_Body",
             "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Handle_Abort",
-            "name": "Handle the abort"
           },
           {
             "elementId": "Child_Work",
@@ -230,6 +230,10 @@
         "afterCommandId": "s05-complete-Handle_Alert",
         "tasks": [
           {
+            "elementId": "Handle_Abort",
+            "name": "Handle the abort"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the case"
           },
@@ -244,10 +248,6 @@
           {
             "elementId": "Inner_Body",
             "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Handle_Abort",
-            "name": "Handle the abort"
           },
           {
             "elementId": "Child_Work",

@@ -76,12 +76,12 @@
         "afterCommandId": "s02-fire-Cycle_Last",
         "tasks": [
           {
-            "elementId": "Host_Last",
-            "name": "Review (two firings)"
-          },
-          {
             "elementId": "Handler_Last",
             "name": "Respond to the reminder (two firings)"
+          },
+          {
+            "elementId": "Host_Last",
+            "name": "Review (two firings)"
           }
         ]
       },
@@ -89,16 +89,16 @@
         "afterCommandId": "s03-fire-Cycle_Last",
         "tasks": [
           {
+            "elementId": "Handler_Last",
+            "name": "Respond to the reminder (two firings)"
+          },
+          {
+            "elementId": "Handler_Last",
+            "name": "Respond to the reminder (two firings)"
+          },
+          {
             "elementId": "Host_Last",
             "name": "Review (two firings)"
-          },
-          {
-            "elementId": "Handler_Last",
-            "name": "Respond to the reminder (two firings)"
-          },
-          {
-            "elementId": "Handler_Last",
-            "name": "Respond to the reminder (two firings)"
           }
         ]
       }

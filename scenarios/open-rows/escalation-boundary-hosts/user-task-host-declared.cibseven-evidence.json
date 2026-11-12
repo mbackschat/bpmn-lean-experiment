@@ -37,6 +37,10 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
+            "elementId": "Approve",
+            "name": "Approve the release"
+          },
+          {
             "elementId": "Compile",
             "name": "Compile"
           },
@@ -45,16 +49,12 @@
             "name": "Run the tests"
           },
           {
-            "elementId": "Approve",
-            "name": "Approve the release"
+            "elementId": "Probe",
+            "name": "Probe the service"
           },
           {
             "elementId": "Release",
             "name": "Release the build"
-          },
-          {
-            "elementId": "Probe",
-            "name": "Probe the service"
           }
         ]
       },
@@ -70,12 +70,12 @@
             "name": "Run the tests"
           },
           {
-            "elementId": "Release",
-            "name": "Release the build"
-          },
-          {
             "elementId": "Probe",
             "name": "Probe the service"
+          },
+          {
+            "elementId": "Release",
+            "name": "Release the build"
           }
         ]
       }

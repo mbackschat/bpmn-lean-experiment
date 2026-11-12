@@ -55,12 +55,12 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "InspectRoof",
-            "name": "Inspect roof"
-          },
-          {
             "elementId": "InspectCellar",
             "name": "Inspect cellar"
+          },
+          {
+            "elementId": "InspectRoof",
+            "name": "Inspect roof"
           }
         ]
       },

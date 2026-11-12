@@ -68,12 +68,12 @@
         "afterCommandId": "s02-report-damage",
         "tasks": [
           {
-            "elementId": "UserTask_Ordinary",
-            "name": "Deliver the parcel"
-          },
-          {
             "elementId": "UserTask_Inspect",
             "name": "Inspect the damage"
+          },
+          {
+            "elementId": "UserTask_Ordinary",
+            "name": "Deliver the parcel"
           }
         ]
       },

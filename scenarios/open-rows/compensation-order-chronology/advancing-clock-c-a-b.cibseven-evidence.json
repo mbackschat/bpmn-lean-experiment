@@ -134,12 +134,12 @@
         "afterCommandId": "s03-complete-UserTask_BookA-1",
         "tasks": [
           {
-            "elementId": "UserTask_Clock",
-            "name": "Hold the clock open"
-          },
-          {
             "elementId": "UserTask_BookB",
             "name": "Book B, which follows A"
+          },
+          {
+            "elementId": "UserTask_Clock",
+            "name": "Hold the clock open"
           }
         ]
       },
@@ -147,12 +147,12 @@
         "afterCommandId": "s04-fire-timer-Boundary_Tick2-1",
         "tasks": [
           {
-            "elementId": "UserTask_Clock",
-            "name": "Hold the clock open"
-          },
-          {
             "elementId": "UserTask_BookB",
             "name": "Book B, which follows A"
+          },
+          {
+            "elementId": "UserTask_Clock",
+            "name": "Hold the clock open"
           }
         ]
       },
@@ -164,12 +164,12 @@
             "name": "Hold the clock open"
           },
           {
-            "elementId": "UserTask_UndoB",
-            "name": "Undo B"
-          },
-          {
             "elementId": "UserTask_UndoA",
             "name": "Undo A"
+          },
+          {
+            "elementId": "UserTask_UndoB",
+            "name": "Undo B"
           },
           {
             "elementId": "UserTask_UndoC",
@@ -185,12 +185,12 @@
             "name": "Hold the clock open"
           },
           {
-            "elementId": "UserTask_UndoB",
-            "name": "Undo B"
-          },
-          {
             "elementId": "UserTask_UndoA",
             "name": "Undo A"
+          },
+          {
+            "elementId": "UserTask_UndoB",
+            "name": "Undo B"
           }
         ]
       },
@@ -211,12 +211,12 @@
         "afterCommandId": "s08-complete-UserTask_UndoA-1",
         "tasks": [
           {
-            "elementId": "UserTask_Clock",
-            "name": "Hold the clock open"
-          },
-          {
             "elementId": "UserTask_After",
             "name": "Continue after compensation"
+          },
+          {
+            "elementId": "UserTask_Clock",
+            "name": "Hold the clock open"
           }
         ]
       },

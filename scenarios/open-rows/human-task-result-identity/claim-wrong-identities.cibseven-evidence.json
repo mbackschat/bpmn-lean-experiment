@@ -240,10 +240,6 @@
         "afterCommandId": "review-2-approve",
         "tasks": [
           {
-            "elementId": "Sign",
-            "name": "Sign claim"
-          },
-          {
             "elementId": "Collect",
             "name": "Collect notes",
             "identityLinks": [],
@@ -253,6 +249,10 @@
                 "typeName": "string"
               }
             ]
+          },
+          {
+            "elementId": "Sign",
+            "name": "Sign claim"
           }
         ]
       }

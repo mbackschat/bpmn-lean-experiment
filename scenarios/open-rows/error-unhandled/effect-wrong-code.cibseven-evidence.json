@@ -52,12 +52,12 @@
         "afterCommandId": "fail-pay-out",
         "tasks": [
           {
-            "elementId": "Audit",
-            "name": "Audit claim"
-          },
-          {
             "elementId": "Archive",
             "name": "Archive claim"
+          },
+          {
+            "elementId": "Audit",
+            "name": "Audit claim"
           }
         ]
       },

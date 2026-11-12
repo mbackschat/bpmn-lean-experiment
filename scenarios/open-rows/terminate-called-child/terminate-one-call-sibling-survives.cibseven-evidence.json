@@ -154,12 +154,12 @@
         "afterCommandId": "s02-finish-north",
         "tasks": [
           {
-            "elementId": "UserTask_CallerOutside",
-            "name": "Update the pickup log"
-          },
-          {
             "elementId": "UserTask_AfterA",
             "name": "File the north receipt"
+          },
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
           },
           {
             "elementId": "UserTask_Finish",
@@ -175,12 +175,12 @@
         "afterCommandId": "s03-late-count-north",
         "tasks": [
           {
-            "elementId": "UserTask_CallerOutside",
-            "name": "Update the pickup log"
-          },
-          {
             "elementId": "UserTask_AfterA",
             "name": "File the north receipt"
+          },
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
           },
           {
             "elementId": "UserTask_Finish",
@@ -196,12 +196,12 @@
         "afterCommandId": "s04-late-notify-north",
         "tasks": [
           {
-            "elementId": "UserTask_CallerOutside",
-            "name": "Update the pickup log"
-          },
-          {
             "elementId": "UserTask_AfterA",
             "name": "File the north receipt"
+          },
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
           },
           {
             "elementId": "UserTask_Finish",
@@ -217,12 +217,12 @@
         "afterCommandId": "s05-late-ack-north",
         "tasks": [
           {
-            "elementId": "UserTask_CallerOutside",
-            "name": "Update the pickup log"
-          },
-          {
             "elementId": "UserTask_AfterA",
             "name": "File the north receipt"
+          },
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
           },
           {
             "elementId": "UserTask_Finish",
@@ -238,12 +238,12 @@
         "afterCommandId": "s06-count-south",
         "tasks": [
           {
-            "elementId": "UserTask_CallerOutside",
-            "name": "Update the pickup log"
-          },
-          {
             "elementId": "UserTask_AfterA",
             "name": "File the north receipt"
+          },
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
           },
           {
             "elementId": "UserTask_Finish",

@@ -62,12 +62,12 @@
             "name": "Assess case"
           },
           {
-            "elementId": "Wrapup",
-            "name": "Wrap up audit"
-          },
-          {
             "elementId": "Notify",
             "name": "Notify auditor"
+          },
+          {
+            "elementId": "Wrapup",
+            "name": "Wrap up audit"
           }
         ]
       }

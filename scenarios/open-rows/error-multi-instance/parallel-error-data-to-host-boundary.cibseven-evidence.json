@@ -1,0 +1,318 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "error-multi-instance-parallel-error-data-to-host-boundary",
+    "sha256": "f88916e1f2437cb09811997482df1a26a8276816fd1043c8ccfaf242f3946e7d"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "fail-assess-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "rejectedCode",
+            "value": {
+              "kind": "string",
+              "value": "REVIEW_REJECTED"
+            }
+          },
+          {
+            "name": "rejectedMessage",
+            "value": {
+              "kind": "string",
+              "value": "batch 2 incomplete"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-resolve",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "rejectedCode",
+            "value": {
+              "kind": "string",
+              "value": "REVIEW_REJECTED"
+            }
+          },
+          {
+            "name": "rejectedMessage",
+            "value": {
+              "kind": "string",
+              "value": "batch 2 incomplete"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "fail-assess-2",
+        "tasks": [
+          {
+            "elementId": "ResolveReview",
+            "name": "Resolve rejected review"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-resolve",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "fail-assess-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-resolve",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": [
+          {
+            "elementId": "Assess",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "Assess",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-assess-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-resolve",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fail-assess-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-resolve",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "fail-assess-2",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:ReviewEach:1",
+              "elementId": "Assess",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_AssessBatchErrorData",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:ReviewEach:2",
+              "elementId": "Assess",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_AssessBatchErrorData",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fail-assess-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "rejectedCode",
+            "value": {
+              "kind": "string",
+              "value": "REVIEW_REJECTED"
+            }
+          },
+          {
+            "name": "rejectedMessage",
+            "value": {
+              "kind": "string",
+              "value": "batch 2 incomplete"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ResolveReview",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Resolve rejected review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-resolve",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "rejectedCode",
+            "value": {
+              "kind": "string",
+              "value": "REVIEW_REJECTED"
+            }
+          },
+          {
+            "name": "rejectedMessage",
+            "value": {
+              "kind": "string",
+              "value": "batch 2 incomplete"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -109,12 +109,12 @@
         "afterCommandId": "s02-complete-UserTask_BookA-1",
         "tasks": [
           {
-            "elementId": "UserTask_Clock",
-            "name": "Hold the clock open"
-          },
-          {
             "elementId": "UserTask_BookB",
             "name": "Book B, which follows A"
+          },
+          {
+            "elementId": "UserTask_Clock",
+            "name": "Hold the clock open"
           }
         ]
       },
@@ -173,12 +173,12 @@
         "afterCommandId": "s06-complete-UserTask_UndoA-1",
         "tasks": [
           {
-            "elementId": "UserTask_Clock",
-            "name": "Hold the clock open"
-          },
-          {
             "elementId": "UserTask_After",
             "name": "Continue after compensation"
+          },
+          {
+            "elementId": "UserTask_Clock",
+            "name": "Hold the clock open"
           }
         ]
       },

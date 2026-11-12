@@ -138,40 +138,40 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "Body_Task",
+            "name": "Review one lot"
+          },
+          {
+            "elementId": "Body_Task",
+            "name": "Review one lot"
+          },
+          {
             "elementId": "Host_Level",
             "name": "Work against a level"
           },
           {
-            "elementId": "Writer",
-            "name": "Record the outcome"
+            "elementId": "Host_MiUser",
+            "name": "Review every lot together"
           },
           {
-            "elementId": "Watcher",
-            "name": "Watch the outcome"
+            "elementId": "Host_MiUser",
+            "name": "Review every lot together"
           },
           {
             "elementId": "Host_Self",
             "name": "Close the file"
           },
           {
-            "elementId": "Body_Task",
-            "name": "Review one lot"
-          },
-          {
-            "elementId": "Body_Task",
-            "name": "Review one lot"
+            "elementId": "Watcher",
+            "name": "Watch the outcome"
           },
           {
             "elementId": "Watcher_Call",
             "name": "Watch the approval"
           },
           {
-            "elementId": "Host_MiUser",
-            "name": "Review every lot together"
-          },
-          {
-            "elementId": "Host_MiUser",
-            "name": "Review every lot together"
+            "elementId": "Writer",
+            "name": "Record the outcome"
           },
           {
             "elementId": "Child_Work",
@@ -183,18 +183,6 @@
         "afterCommandId": "s02-set-level",
         "tasks": [
           {
-            "elementId": "Writer",
-            "name": "Record the outcome"
-          },
-          {
-            "elementId": "Watcher",
-            "name": "Watch the outcome"
-          },
-          {
-            "elementId": "Host_Self",
-            "name": "Close the file"
-          },
-          {
             "elementId": "Body_Task",
             "name": "Review one lot"
           },
@@ -203,24 +191,36 @@
             "name": "Review one lot"
           },
           {
-            "elementId": "Watcher_Call",
-            "name": "Watch the approval"
-          },
-          {
-            "elementId": "Host_MiUser",
-            "name": "Review every lot together"
-          },
-          {
-            "elementId": "Host_MiUser",
-            "name": "Review every lot together"
+            "elementId": "Handle_Stop_Level",
+            "name": "Handle the stop"
           },
           {
             "elementId": "Handle_Warn",
             "name": "Handle the warning"
           },
           {
-            "elementId": "Handle_Stop_Level",
-            "name": "Handle the stop"
+            "elementId": "Host_MiUser",
+            "name": "Review every lot together"
+          },
+          {
+            "elementId": "Host_MiUser",
+            "name": "Review every lot together"
+          },
+          {
+            "elementId": "Host_Self",
+            "name": "Close the file"
+          },
+          {
+            "elementId": "Watcher",
+            "name": "Watch the outcome"
+          },
+          {
+            "elementId": "Watcher_Call",
+            "name": "Watch the approval"
+          },
+          {
+            "elementId": "Writer",
+            "name": "Record the outcome"
           },
           {
             "elementId": "Child_Work",
@@ -232,40 +232,40 @@
         "afterCommandId": "s03-complete-Handle_Warn",
         "tasks": [
           {
-            "elementId": "Writer",
-            "name": "Record the outcome"
+            "elementId": "Body_Task",
+            "name": "Review one lot"
           },
           {
-            "elementId": "Watcher",
-            "name": "Watch the outcome"
+            "elementId": "Body_Task",
+            "name": "Review one lot"
+          },
+          {
+            "elementId": "Handle_Stop_Level",
+            "name": "Handle the stop"
+          },
+          {
+            "elementId": "Host_MiUser",
+            "name": "Review every lot together"
+          },
+          {
+            "elementId": "Host_MiUser",
+            "name": "Review every lot together"
           },
           {
             "elementId": "Host_Self",
             "name": "Close the file"
           },
           {
-            "elementId": "Body_Task",
-            "name": "Review one lot"
-          },
-          {
-            "elementId": "Body_Task",
-            "name": "Review one lot"
+            "elementId": "Watcher",
+            "name": "Watch the outcome"
           },
           {
             "elementId": "Watcher_Call",
             "name": "Watch the approval"
           },
           {
-            "elementId": "Host_MiUser",
-            "name": "Review every lot together"
-          },
-          {
-            "elementId": "Host_MiUser",
-            "name": "Review every lot together"
-          },
-          {
-            "elementId": "Handle_Stop_Level",
-            "name": "Handle the stop"
+            "elementId": "Writer",
+            "name": "Record the outcome"
           },
           {
             "elementId": "Child_Work",
@@ -277,36 +277,36 @@
         "afterCommandId": "s04-complete-Handle_Stop_Level",
         "tasks": [
           {
-            "elementId": "Writer",
-            "name": "Record the outcome"
+            "elementId": "Body_Task",
+            "name": "Review one lot"
           },
           {
-            "elementId": "Watcher",
-            "name": "Watch the outcome"
+            "elementId": "Body_Task",
+            "name": "Review one lot"
+          },
+          {
+            "elementId": "Host_MiUser",
+            "name": "Review every lot together"
+          },
+          {
+            "elementId": "Host_MiUser",
+            "name": "Review every lot together"
           },
           {
             "elementId": "Host_Self",
             "name": "Close the file"
           },
           {
-            "elementId": "Body_Task",
-            "name": "Review one lot"
-          },
-          {
-            "elementId": "Body_Task",
-            "name": "Review one lot"
+            "elementId": "Watcher",
+            "name": "Watch the outcome"
           },
           {
             "elementId": "Watcher_Call",
             "name": "Watch the approval"
           },
           {
-            "elementId": "Host_MiUser",
-            "name": "Review every lot together"
-          },
-          {
-            "elementId": "Host_MiUser",
-            "name": "Review every lot together"
+            "elementId": "Writer",
+            "name": "Record the outcome"
           },
           {
             "elementId": "Child_Work",
@@ -318,36 +318,36 @@
         "afterCommandId": "s05-complete-Host_Level",
         "tasks": [
           {
-            "elementId": "Writer",
-            "name": "Record the outcome"
+            "elementId": "Body_Task",
+            "name": "Review one lot"
           },
           {
-            "elementId": "Watcher",
-            "name": "Watch the outcome"
+            "elementId": "Body_Task",
+            "name": "Review one lot"
+          },
+          {
+            "elementId": "Host_MiUser",
+            "name": "Review every lot together"
+          },
+          {
+            "elementId": "Host_MiUser",
+            "name": "Review every lot together"
           },
           {
             "elementId": "Host_Self",
             "name": "Close the file"
           },
           {
-            "elementId": "Body_Task",
-            "name": "Review one lot"
-          },
-          {
-            "elementId": "Body_Task",
-            "name": "Review one lot"
+            "elementId": "Watcher",
+            "name": "Watch the outcome"
           },
           {
             "elementId": "Watcher_Call",
             "name": "Watch the approval"
           },
           {
-            "elementId": "Host_MiUser",
-            "name": "Review every lot together"
-          },
-          {
-            "elementId": "Host_MiUser",
-            "name": "Review every lot together"
+            "elementId": "Writer",
+            "name": "Record the outcome"
           },
           {
             "elementId": "Child_Work",

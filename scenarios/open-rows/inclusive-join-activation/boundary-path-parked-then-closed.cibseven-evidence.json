@@ -56,12 +56,12 @@
         "afterCommandId": "s02-complete-ReviewA-1",
         "tasks": [
           {
-            "elementId": "ReviewB",
-            "name": "Review B"
-          },
-          {
             "elementId": "Decide",
             "name": "Decide"
+          },
+          {
+            "elementId": "ReviewB",
+            "name": "Review B"
           }
         ]
       },

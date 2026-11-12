@@ -86,9 +86,16 @@
         "afterCommandId": "s01-start",
         "subscriptions": [
           {
-            "elementId": "Catch_Plain",
-            "eventName": "plain notice",
-            "messageId": "Message_Plain",
+            "elementId": "Catch_Alpha",
+            "eventName": "Message_Beta",
+            "messageId": "Message_Alpha",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Catch_Beta",
+            "eventName": "Message_Alpha",
+            "messageId": "Message_Beta",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -100,16 +107,9 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Catch_Alpha",
-            "eventName": "Message_Beta",
-            "messageId": "Message_Alpha",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
-            "elementId": "Catch_Beta",
-            "eventName": "Message_Alpha",
-            "messageId": "Message_Beta",
+            "elementId": "Catch_Plain",
+            "eventName": "plain notice",
+            "messageId": "Message_Plain",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -119,13 +119,6 @@
         "afterCommandId": "s02-deliver-Catch_Expr",
         "subscriptions": [
           {
-            "elementId": "Catch_Plain",
-            "eventName": "plain notice",
-            "messageId": "Message_Plain",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Catch_Alpha",
             "eventName": "Message_Beta",
             "messageId": "Message_Alpha",
@@ -136,6 +129,13 @@
             "elementId": "Catch_Beta",
             "eventName": "Message_Alpha",
             "messageId": "Message_Beta",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Catch_Plain",
+            "eventName": "plain notice",
+            "messageId": "Message_Plain",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -145,13 +145,6 @@
         "afterCommandId": "s03-complete-Proceed_Expr",
         "subscriptions": [
           {
-            "elementId": "Catch_Plain",
-            "eventName": "plain notice",
-            "messageId": "Message_Plain",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Catch_Alpha",
             "eventName": "Message_Beta",
             "messageId": "Message_Alpha",
@@ -162,6 +155,13 @@
             "elementId": "Catch_Beta",
             "eventName": "Message_Alpha",
             "messageId": "Message_Beta",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Catch_Plain",
+            "eventName": "plain notice",
+            "messageId": "Message_Plain",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }

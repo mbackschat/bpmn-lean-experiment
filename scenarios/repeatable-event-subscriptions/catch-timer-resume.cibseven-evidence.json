@@ -55,12 +55,12 @@
         "afterCommandId": "start-subscription",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
-          },
-          {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },
@@ -68,12 +68,12 @@
         "afterCommandId": "fire-timer-sha256:59892933ea71cd1e016b4846eddf913c3bb22e6004b85190b0bc0cfe99ed1825",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
-          },
-          {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },

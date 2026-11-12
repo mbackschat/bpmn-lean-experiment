@@ -407,16 +407,16 @@
         "afterCommandId": "s06-complete-UserTask_UndoVisitParent-3",
         "tasks": [
           {
-            "elementId": "UserTask_UndoVisitParent",
-            "name": "Undo the stop"
-          },
-          {
-            "elementId": "UserTask_UndoVisitParent",
-            "name": "Undo the stop"
-          },
-          {
             "elementId": "UserTask_UndoVisit",
             "name": "Undo the work"
+          },
+          {
+            "elementId": "UserTask_UndoVisitParent",
+            "name": "Undo the stop"
+          },
+          {
+            "elementId": "UserTask_UndoVisitParent",
+            "name": "Undo the stop"
           }
         ]
       },
@@ -428,12 +428,12 @@
             "name": "Undo the work"
           },
           {
-            "elementId": "UserTask_UndoVisitParent",
-            "name": "Undo the stop"
-          },
-          {
             "elementId": "UserTask_UndoVisit",
             "name": "Undo the work"
+          },
+          {
+            "elementId": "UserTask_UndoVisitParent",
+            "name": "Undo the stop"
           }
         ]
       },

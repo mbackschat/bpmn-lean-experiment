@@ -61,6 +61,10 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -71,10 +75,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",
@@ -86,8 +86,16 @@
         "afterCommandId": "s02-fire-Soft_User",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Nudge_User",
+            "name": "Send a nudge"
           },
           {
             "elementId": "Scope_A",
@@ -96,14 +104,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Nudge_User",
-            "name": "Send a nudge"
           },
           {
             "elementId": "Child_Work",
@@ -115,12 +115,8 @@
         "afterCommandId": "s03-fire-Hard_User",
         "tasks": [
           {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
+            "elementId": "Escalate_User",
+            "name": "Escalate the review"
           },
           {
             "elementId": "Host_Loop",
@@ -131,8 +127,12 @@
             "name": "Send a nudge"
           },
           {
-            "elementId": "Escalate_User",
-            "name": "Escalate the review"
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -144,12 +144,8 @@
         "afterCommandId": "s04-fire-Final_User",
         "tasks": [
           {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
+            "elementId": "Escalate_User",
+            "name": "Escalate the review"
           },
           {
             "elementId": "Host_Loop",
@@ -160,8 +156,12 @@
             "name": "Send a nudge"
           },
           {
-            "elementId": "Escalate_User",
-            "name": "Escalate the review"
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -173,20 +173,20 @@
         "afterCommandId": "s05-complete-Escalate_User",
         "tasks": [
           {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
-          },
-          {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
             "elementId": "Nudge_User",
             "name": "Send a nudge"
+          },
+          {
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -198,16 +198,16 @@
         "afterCommandId": "s06-complete-Nudge_User",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Scope_A",
             "name": "Inspect the north wing"
           },
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",

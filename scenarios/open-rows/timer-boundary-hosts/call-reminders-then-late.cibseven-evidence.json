@@ -73,6 +73,10 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -83,10 +87,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",
@@ -98,8 +98,16 @@
         "afterCommandId": "s02-fire-Remind_Call",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
           },
           {
             "elementId": "Scope_A",
@@ -108,14 +116,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Ping_Call",
-            "name": "Ping the checker"
           },
           {
             "elementId": "Child_Work",
@@ -127,8 +127,20 @@
         "afterCommandId": "s03-fire-Remind_Call",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
           },
           {
             "elementId": "Scope_A",
@@ -137,18 +149,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Ping_Call",
-            "name": "Ping the checker"
-          },
-          {
-            "elementId": "Ping_Call",
-            "name": "Ping the checker"
           },
           {
             "elementId": "Child_Work",
@@ -160,8 +160,24 @@
         "afterCommandId": "s04-fire-Late_Call",
         "tasks": [
           {
+            "elementId": "Chase_Call",
+            "name": "Chase the checker"
+          },
+          {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
           },
           {
             "elementId": "Scope_A",
@@ -170,22 +186,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Ping_Call",
-            "name": "Ping the checker"
-          },
-          {
-            "elementId": "Ping_Call",
-            "name": "Ping the checker"
-          },
-          {
-            "elementId": "Chase_Call",
-            "name": "Chase the checker"
           }
         ]
       },
@@ -193,8 +193,24 @@
         "afterCommandId": "s05-complete-Child_Work",
         "tasks": [
           {
+            "elementId": "Chase_Call",
+            "name": "Chase the checker"
+          },
+          {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
           },
           {
             "elementId": "Scope_A",
@@ -203,22 +219,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Ping_Call",
-            "name": "Ping the checker"
-          },
-          {
-            "elementId": "Ping_Call",
-            "name": "Ping the checker"
-          },
-          {
-            "elementId": "Chase_Call",
-            "name": "Chase the checker"
           }
         ]
       },
@@ -226,8 +226,20 @@
         "afterCommandId": "s06-complete-Chase_Call",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
           },
           {
             "elementId": "Scope_A",
@@ -236,18 +248,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Ping_Call",
-            "name": "Ping the checker"
-          },
-          {
-            "elementId": "Ping_Call",
-            "name": "Ping the checker"
           }
         ]
       },
@@ -255,8 +255,16 @@
         "afterCommandId": "s07-complete-Ping_Call",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
           },
           {
             "elementId": "Scope_A",
@@ -265,14 +273,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Ping_Call",
-            "name": "Ping the checker"
           }
         ]
       },
@@ -280,6 +280,10 @@
         "afterCommandId": "s08-complete-Ping_Call",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -290,10 +294,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           }
         ]
       }

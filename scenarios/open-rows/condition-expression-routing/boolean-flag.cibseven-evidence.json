@@ -39,12 +39,12 @@
         "afterCommandId": "start",
         "tasks": [
           {
-            "elementId": "UserTask_Equals",
-            "name": "equals branch"
-          },
-          {
             "elementId": "UserTask_Conjunction",
             "name": "conjunction branch"
+          },
+          {
+            "elementId": "UserTask_Equals",
+            "name": "equals branch"
           }
         ]
       }

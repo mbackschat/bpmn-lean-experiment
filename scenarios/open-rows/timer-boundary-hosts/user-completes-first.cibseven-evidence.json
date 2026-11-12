@@ -61,6 +61,10 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -73,10 +77,6 @@
             "name": "Inspect the south wing"
           },
           {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
             "elementId": "Child_Work",
             "name": "Carry out the check"
           }
@@ -86,20 +86,20 @@
         "afterCommandId": "s02-complete-Host_User",
         "tasks": [
           {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
+            "elementId": "After_User",
+            "name": "File the review"
           },
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
-            "elementId": "After_User",
-            "name": "File the review"
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -111,20 +111,20 @@
         "afterCommandId": "s03-fire-Soft_User",
         "tasks": [
           {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
+            "elementId": "After_User",
+            "name": "File the review"
           },
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
-            "elementId": "After_User",
-            "name": "File the review"
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -136,20 +136,20 @@
         "afterCommandId": "s04-fire-Hard_User",
         "tasks": [
           {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
+            "elementId": "After_User",
+            "name": "File the review"
           },
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
-            "elementId": "After_User",
-            "name": "File the review"
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -161,20 +161,20 @@
         "afterCommandId": "s05-fire-Final_User",
         "tasks": [
           {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
+            "elementId": "After_User",
+            "name": "File the review"
           },
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
-            "elementId": "After_User",
-            "name": "File the review"
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -186,16 +186,16 @@
         "afterCommandId": "s06-complete-After_User",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Scope_A",
             "name": "Inspect the north wing"
           },
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",

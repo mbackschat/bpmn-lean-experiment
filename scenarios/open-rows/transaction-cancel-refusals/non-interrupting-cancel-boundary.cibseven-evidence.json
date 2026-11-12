@@ -61,12 +61,12 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_Step",
-            "name": "Do the step"
-          },
-          {
             "elementId": "UserTask_Other",
             "name": "Do the other work"
+          },
+          {
+            "elementId": "UserTask_Step",
+            "name": "Do the step"
           }
         ]
       },

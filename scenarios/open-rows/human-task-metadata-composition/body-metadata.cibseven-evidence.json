@@ -63,14 +63,14 @@
             "name": "Assess item",
             "identityLinks": [
               {
-                "type": "candidate",
-                "userId": null,
-                "groupId": "assessors"
-              },
-              {
                 "type": "assignee",
                 "userId": "erin",
                 "groupId": null
+              },
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "assessors"
               }
             ],
             "formFields": [
@@ -85,14 +85,14 @@
             "name": "Assess item",
             "identityLinks": [
               {
-                "type": "candidate",
-                "userId": null,
-                "groupId": "assessors"
-              },
-              {
                 "type": "assignee",
                 "userId": "erin",
                 "groupId": null
+              },
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "assessors"
               }
             ],
             "formFields": [
@@ -112,14 +112,14 @@
             "name": "Assess item",
             "identityLinks": [
               {
-                "type": "candidate",
-                "userId": null,
-                "groupId": "assessors"
-              },
-              {
                 "type": "assignee",
                 "userId": "erin",
                 "groupId": null
+              },
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "assessors"
               }
             ],
             "formFields": [

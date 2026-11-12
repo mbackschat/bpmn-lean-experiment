@@ -41,14 +41,14 @@
             "name": "Assess request",
             "identityLinks": [
               {
-                "type": "candidate",
-                "userId": null,
-                "groupId": "reviewers"
-              },
-              {
                 "type": "assignee",
                 "userId": "alice",
                 "groupId": null
+              },
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "reviewers"
               }
             ],
             "formFields": [
@@ -68,14 +68,14 @@
             "name": "Assess request",
             "identityLinks": [
               {
-                "type": "candidate",
-                "userId": null,
-                "groupId": "reviewers"
-              },
-              {
                 "type": "assignee",
                 "userId": "alice",
                 "groupId": null
+              },
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "reviewers"
               }
             ],
             "formFields": [

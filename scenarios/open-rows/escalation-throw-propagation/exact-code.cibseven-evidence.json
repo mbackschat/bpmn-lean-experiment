@@ -54,20 +54,20 @@
         "afterCommandId": "complete-assess",
         "tasks": [
           {
-            "elementId": "Inspect",
-            "name": "Inspect records"
-          },
-          {
-            "elementId": "Work",
-            "name": "Work on the phase"
+            "elementId": "Approve",
+            "name": "Approve over the limit"
           },
           {
             "elementId": "Finalize",
             "name": "Finalize review"
           },
           {
-            "elementId": "Approve",
-            "name": "Approve over the limit"
+            "elementId": "Inspect",
+            "name": "Inspect records"
+          },
+          {
+            "elementId": "Work",
+            "name": "Work on the phase"
           }
         ]
       }

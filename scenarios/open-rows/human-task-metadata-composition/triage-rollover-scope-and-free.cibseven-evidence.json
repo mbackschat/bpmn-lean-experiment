@@ -133,8 +133,8 @@
             "name": "Triage case",
             "identityLinks": [
               {
-                "type": "candidate",
-                "userId": "carol",
+                "type": "assignee",
+                "userId": "alice",
                 "groupId": null
               },
               {
@@ -153,8 +153,8 @@
                 "groupId": null
               },
               {
-                "type": "assignee",
-                "userId": "alice",
+                "type": "candidate",
+                "userId": "carol",
                 "groupId": null
               }
             ],
@@ -179,13 +179,8 @@
             "name": "Triage case",
             "identityLinks": [
               {
-                "type": "candidate",
-                "userId": "bob",
-                "groupId": null
-              },
-              {
-                "type": "candidate",
-                "userId": "carol",
+                "type": "assignee",
+                "userId": "alice",
                 "groupId": null
               },
               {
@@ -199,8 +194,13 @@
                 "groupId": "triagers"
               },
               {
-                "type": "assignee",
-                "userId": "alice",
+                "type": "candidate",
+                "userId": "bob",
+                "groupId": null
+              },
+              {
+                "type": "candidate",
+                "userId": "carol",
                 "groupId": null
               }
             ],

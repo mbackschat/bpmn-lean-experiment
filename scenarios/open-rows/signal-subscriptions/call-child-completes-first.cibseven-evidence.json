@@ -101,16 +101,16 @@
             "name": "Decide in the region"
           },
           {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
             "elementId": "Work_Esp",
             "name": "Work in the guarded region"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
           },
           {
             "elementId": "Child_Work",
@@ -122,6 +122,10 @@
         "afterCommandId": "s02-complete-Child_Work",
         "tasks": [
           {
+            "elementId": "After_Call",
+            "name": "File the check"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the case"
           },
@@ -130,20 +134,16 @@
             "name": "Decide in the region"
           },
           {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
             "elementId": "Work_Esp",
             "name": "Work in the guarded region"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "After_Call",
-            "name": "File the check"
           }
         ]
       },
@@ -151,6 +151,10 @@
         "afterCommandId": "s03-signal-Quit_Call",
         "tasks": [
           {
+            "elementId": "After_Call",
+            "name": "File the check"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the case"
           },
@@ -159,20 +163,16 @@
             "name": "Decide in the region"
           },
           {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
             "elementId": "Work_Esp",
             "name": "Work in the guarded region"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "After_Call",
-            "name": "File the check"
           }
         ]
       },
@@ -188,16 +188,16 @@
             "name": "Decide in the region"
           },
           {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
             "elementId": "Work_Esp",
             "name": "Work in the guarded region"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
           }
         ]
       }

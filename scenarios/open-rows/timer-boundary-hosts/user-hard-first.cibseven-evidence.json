@@ -49,6 +49,10 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -61,10 +65,6 @@
             "name": "Inspect the south wing"
           },
           {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
             "elementId": "Child_Work",
             "name": "Carry out the check"
           }
@@ -74,20 +74,20 @@
         "afterCommandId": "s02-fire-Hard_User",
         "tasks": [
           {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
+            "elementId": "Escalate_User",
+            "name": "Escalate the review"
           },
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
-            "elementId": "Escalate_User",
-            "name": "Escalate the review"
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -99,20 +99,20 @@
         "afterCommandId": "s03-fire-Soft_User",
         "tasks": [
           {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
+            "elementId": "Escalate_User",
+            "name": "Escalate the review"
           },
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
-            "elementId": "Escalate_User",
-            "name": "Escalate the review"
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -124,16 +124,16 @@
         "afterCommandId": "s04-complete-Escalate_User",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Scope_A",
             "name": "Inspect the north wing"
           },
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",

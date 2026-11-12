@@ -73,16 +73,16 @@
         "afterCommandId": "s02-set-amount",
         "tasks": [
           {
+            "elementId": "Handle_Create",
+            "name": "Handle the create condition"
+          },
+          {
             "elementId": "Host",
             "name": "Review the account"
           },
           {
             "elementId": "Host_Local",
             "name": "Review the local account"
-          },
-          {
-            "elementId": "Handle_Create",
-            "name": "Handle the create condition"
           }
         ]
       }

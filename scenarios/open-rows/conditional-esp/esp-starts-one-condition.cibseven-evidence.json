@@ -1,0 +1,574 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "conditional-esp-esp-starts-one-condition",
+    "sha256": "fb7e2516d1413db8d9b21fde36b664918d8e3132f097a9495e76e25735ce9605"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 6
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Notify_Owner",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 6
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Notify_Auditor",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 6
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Work",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 6
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "tasks": [
+          {
+            "elementId": "Notify_Auditor",
+            "name": "Notify the auditor"
+          },
+          {
+            "elementId": "Notify_Owner",
+            "name": "Notify the owner"
+          },
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Notify_Owner",
+        "tasks": [
+          {
+            "elementId": "Notify_Auditor",
+            "name": "Notify the auditor"
+          },
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Notify_Auditor",
+        "tasks": [
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Work",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-Notify_Owner",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-Notify_Auditor",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-Work",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-Notify_Owner",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-Notify_Auditor",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-Work",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_NotifyAuditor",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_NotifyOwner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare the file",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-set-level",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 6
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Notify_Auditor",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Notify the auditor",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Notify_Owner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Notify the owner",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_NotifyAuditor",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_NotifyOwner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare the file",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-Notify_Owner",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 6
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Notify_Auditor",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Notify the auditor",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_NotifyAuditor",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_NotifyOwner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare the file",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-Notify_Auditor",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 6
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_NotifyAuditor",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_NotifyOwner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare the file",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-Work",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 6
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

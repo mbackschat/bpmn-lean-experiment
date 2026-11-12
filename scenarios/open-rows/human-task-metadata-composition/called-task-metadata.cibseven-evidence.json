@@ -71,14 +71,14 @@
             "name": "Verify the case",
             "identityLinks": [
               {
-                "type": "candidate",
-                "userId": null,
-                "groupId": "verifiers"
-              },
-              {
                 "type": "assignee",
                 "userId": "dana",
                 "groupId": null
+              },
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "verifiers"
               }
             ],
             "formFields": [

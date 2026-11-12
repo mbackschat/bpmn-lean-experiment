@@ -67,16 +67,16 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "Host",
-            "name": "Review the account"
+            "elementId": "Handle_Create",
+            "name": "Handle the create condition"
           },
           {
             "elementId": "Handle_Update",
             "name": "Handle the update condition"
           },
           {
-            "elementId": "Handle_Create",
-            "name": "Handle the create condition"
+            "elementId": "Host",
+            "name": "Review the account"
           },
           {
             "elementId": "Host_Local",
@@ -88,12 +88,12 @@
         "afterCommandId": "s02-complete-Host",
         "tasks": [
           {
-            "elementId": "Handle_Update",
-            "name": "Handle the update condition"
-          },
-          {
             "elementId": "Handle_Create",
             "name": "Handle the create condition"
+          },
+          {
+            "elementId": "Handle_Update",
+            "name": "Handle the update condition"
           },
           {
             "elementId": "Host_Local",

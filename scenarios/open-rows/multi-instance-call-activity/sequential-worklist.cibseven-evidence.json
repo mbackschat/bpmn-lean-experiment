@@ -1,0 +1,371 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mi-call-sequential-worklist",
+    "sha256": "80ad45df8e95e78a28c3673982e37c616eeb528d76336b86cb2d0e00f8e2d4e7"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "reviewers",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Check-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "reviewers",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "z"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Check-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "reviewers",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "z"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Publish-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "reviewers",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "z"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check one reviewer"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Check-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check one reviewer"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Check-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish outcome"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Publish-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Check-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Check-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Publish-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Check-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Check-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Publish-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "reviewers",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:19:CallActivity_Review:1",
+              "elementId": "UserTask_Check",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Review",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Check one reviewer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "a"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Check-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "reviewers",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "z"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:19:CallActivity_Review:2",
+              "elementId": "UserTask_Check",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Review",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Check one reviewer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "z"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_Check-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "reviewers",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "z"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Publish-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "reviewers",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "z"
+              ]
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

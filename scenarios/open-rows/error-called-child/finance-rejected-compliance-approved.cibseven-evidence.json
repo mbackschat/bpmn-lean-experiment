@@ -202,12 +202,12 @@
         "afterCommandId": "complete-assess-compliance",
         "tasks": [
           {
-            "elementId": "ResolveFinance",
-            "name": "Resolve finance rejection"
-          },
-          {
             "elementId": "ConfirmCompliance",
             "name": "Confirm compliance review"
+          },
+          {
+            "elementId": "ResolveFinance",
+            "name": "Resolve finance rejection"
           }
         ]
       }

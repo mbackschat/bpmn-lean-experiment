@@ -65,12 +65,12 @@
         "afterCommandId": "complete-close",
         "tasks": [
           {
-            "elementId": "Notify",
-            "name": "Notify the customer"
-          },
-          {
             "elementId": "Archive",
             "name": "Archive the order"
+          },
+          {
+            "elementId": "Notify",
+            "name": "Notify the customer"
           }
         ]
       }

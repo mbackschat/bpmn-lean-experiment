@@ -61,16 +61,16 @@
         "afterCommandId": "start-subscription",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
           },
           {
             "elementId": "UserTask_Sibling",
             "name": "Review application"
           },
           {
-            "elementId": "IndependentAudit",
-            "name": "Complete independent audit"
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },
@@ -78,20 +78,20 @@
         "afterCommandId": "fire-timer-sha256:bc2da8fdbf5a294132aac7bbb00c01e4e005171d48dde763a5fb74e4251e6cdc",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
-          },
-          {
-            "elementId": "UserTask_Sibling",
-            "name": "Review application"
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
           },
           {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
           },
           {
-            "elementId": "HandleReminder",
-            "name": "Respond to application reminder"
+            "elementId": "UserTask_Sibling",
+            "name": "Review application"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },
@@ -99,12 +99,12 @@
         "afterCommandId": "complete-UserTask_Trigger-1",
         "tasks": [
           {
-            "elementId": "IndependentAudit",
-            "name": "Complete independent audit"
-          },
-          {
             "elementId": "HandleReminder",
             "name": "Respond to application reminder"
+          },
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
           },
           {
             "elementId": "UserTask_Outer",

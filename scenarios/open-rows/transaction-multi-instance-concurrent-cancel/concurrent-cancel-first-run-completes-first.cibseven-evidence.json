@@ -362,16 +362,16 @@
         "afterCommandId": "s01-complete-UserTask_Process-1",
         "tasks": [
           {
-            "elementId": "UserTask_Process",
-            "name": "Process the lot"
-          },
-          {
-            "elementId": "UserTask_Process",
-            "name": "Process the lot"
-          },
-          {
             "elementId": "UserTask_Check",
             "name": "Check the lot"
+          },
+          {
+            "elementId": "UserTask_Process",
+            "name": "Process the lot"
+          },
+          {
+            "elementId": "UserTask_Process",
+            "name": "Process the lot"
           }
         ]
       },
@@ -379,16 +379,16 @@
         "afterCommandId": "s02-complete-UserTask_Process-2",
         "tasks": [
           {
+            "elementId": "UserTask_Check",
+            "name": "Check the lot"
+          },
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the lot"
+          },
+          {
             "elementId": "UserTask_Process",
             "name": "Process the lot"
-          },
-          {
-            "elementId": "UserTask_Check",
-            "name": "Check the lot"
-          },
-          {
-            "elementId": "UserTask_Check",
-            "name": "Check the lot"
           }
         ]
       },

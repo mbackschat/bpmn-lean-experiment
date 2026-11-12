@@ -43,12 +43,12 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
-            "elementId": "UserTask_TriggerError",
-            "name": "Trigger Error"
-          },
-          {
             "elementId": "UserTask_SiblingWork",
             "name": "Sibling Work"
+          },
+          {
+            "elementId": "UserTask_TriggerError",
+            "name": "Trigger Error"
           }
         ]
       },

@@ -43,32 +43,32 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
             "elementId": "Check",
             "name": "Check the batch"
           },
           {
             "elementId": "Check",
             "name": "Check the batch"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
           },
           {
             "elementId": "Verify",
             "name": "Verify the batch"
-          },
-          {
-            "elementId": "Approve",
-            "name": "Approve a batch"
-          },
-          {
-            "elementId": "Approve",
-            "name": "Approve a batch"
-          },
-          {
-            "elementId": "Step",
-            "name": "Take a step"
-          },
-          {
-            "elementId": "Step",
-            "name": "Take a step"
           }
         ]
       },
@@ -76,18 +76,6 @@
         "afterCommandId": "complete-step-1",
         "tasks": [
           {
-            "elementId": "Check",
-            "name": "Check the batch"
-          },
-          {
-            "elementId": "Check",
-            "name": "Check the batch"
-          },
-          {
-            "elementId": "Verify",
-            "name": "Verify the batch"
-          },
-          {
             "elementId": "Approve",
             "name": "Approve a batch"
           },
@@ -96,8 +84,12 @@
             "name": "Approve a batch"
           },
           {
-            "elementId": "Step",
-            "name": "Take a step"
+            "elementId": "Check",
+            "name": "Check the batch"
+          },
+          {
+            "elementId": "Check",
+            "name": "Check the batch"
           },
           {
             "elementId": "FinishStep",
@@ -106,6 +98,14 @@
           {
             "elementId": "Replan",
             "name": "Replan the campaign"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
+          },
+          {
+            "elementId": "Verify",
+            "name": "Verify the batch"
           }
         ]
       },
@@ -113,40 +113,40 @@
         "afterCommandId": "complete-step-2",
         "tasks": [
           {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
             "elementId": "Check",
             "name": "Check the batch"
           },
           {
             "elementId": "Check",
             "name": "Check the batch"
+          },
+          {
+            "elementId": "FinishStep",
+            "name": "Finish the step"
+          },
+          {
+            "elementId": "FinishStep",
+            "name": "Finish the step"
+          },
+          {
+            "elementId": "Replan",
+            "name": "Replan the campaign"
+          },
+          {
+            "elementId": "Replan",
+            "name": "Replan the campaign"
           },
           {
             "elementId": "Verify",
             "name": "Verify the batch"
-          },
-          {
-            "elementId": "Approve",
-            "name": "Approve a batch"
-          },
-          {
-            "elementId": "Approve",
-            "name": "Approve a batch"
-          },
-          {
-            "elementId": "FinishStep",
-            "name": "Finish the step"
-          },
-          {
-            "elementId": "Replan",
-            "name": "Replan the campaign"
-          },
-          {
-            "elementId": "FinishStep",
-            "name": "Finish the step"
-          },
-          {
-            "elementId": "Replan",
-            "name": "Replan the campaign"
           }
         ]
       }

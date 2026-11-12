@@ -214,12 +214,12 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_Visit",
-            "name": "Visit"
-          },
-          {
             "elementId": "UserTask_Trigger",
             "name": "Trigger the first compensation"
+          },
+          {
+            "elementId": "UserTask_Visit",
+            "name": "Visit"
           }
         ]
       },
@@ -253,16 +253,16 @@
         "afterCommandId": "s03-complete-UserTask_Trigger-1",
         "tasks": [
           {
+            "elementId": "UserTask_UndoVisit",
+            "name": "Undo visit"
+          },
+          {
+            "elementId": "UserTask_UndoVisit",
+            "name": "Undo visit"
+          },
+          {
             "elementId": "UserTask_Visit",
             "name": "Visit"
-          },
-          {
-            "elementId": "UserTask_UndoVisit",
-            "name": "Undo visit"
-          },
-          {
-            "elementId": "UserTask_UndoVisit",
-            "name": "Undo visit"
           }
         ]
       },
@@ -270,12 +270,12 @@
         "afterCommandId": "s04-complete-UserTask_UndoVisit-1",
         "tasks": [
           {
-            "elementId": "UserTask_Visit",
-            "name": "Visit"
-          },
-          {
             "elementId": "UserTask_UndoVisit",
             "name": "Undo visit"
+          },
+          {
+            "elementId": "UserTask_Visit",
+            "name": "Visit"
           }
         ]
       },
@@ -283,12 +283,12 @@
         "afterCommandId": "s05-complete-UserTask_UndoVisit-2",
         "tasks": [
           {
-            "elementId": "UserTask_Visit",
-            "name": "Visit"
-          },
-          {
             "elementId": "UserTask_Checkpoint",
             "name": "Checkpoint"
+          },
+          {
+            "elementId": "UserTask_Visit",
+            "name": "Visit"
           }
         ]
       },
@@ -296,12 +296,12 @@
         "afterCommandId": "s06-complete-UserTask_Checkpoint-1",
         "tasks": [
           {
-            "elementId": "UserTask_Visit",
-            "name": "Visit"
-          },
-          {
             "elementId": "UserTask_Done",
             "name": "Done"
+          },
+          {
+            "elementId": "UserTask_Visit",
+            "name": "Visit"
           }
         ]
       },

@@ -64,12 +64,12 @@
         "afterCommandId": "s01-fire-timer-Boundary_Slow-1",
         "tasks": [
           {
-            "elementId": "UserTask_Work",
-            "name": "Do the work"
-          },
-          {
             "elementId": "UserTask_Side",
             "name": "Follow up on the slow work"
+          },
+          {
+            "elementId": "UserTask_Work",
+            "name": "Do the work"
           }
         ]
       },
@@ -77,12 +77,12 @@
         "afterCommandId": "s02-complete-UserTask_Work-1",
         "tasks": [
           {
-            "elementId": "UserTask_Side",
-            "name": "Follow up on the slow work"
-          },
-          {
             "elementId": "UserTask_Done",
             "name": "Finish after the transaction"
+          },
+          {
+            "elementId": "UserTask_Side",
+            "name": "Follow up on the slow work"
           }
         ]
       },

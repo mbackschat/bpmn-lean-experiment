@@ -187,32 +187,32 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_ParcelTrigger",
-            "name": "Seal the parcel"
-          },
-          {
-            "elementId": "UserTask_ParcelOther",
-            "name": "Label the parcel"
-          },
-          {
-            "elementId": "UserTask_ParcelTrigger",
-            "name": "Seal the parcel"
-          },
-          {
-            "elementId": "UserTask_ParcelOther",
-            "name": "Label the parcel"
+            "elementId": "UserTask_BatchOther",
+            "name": "Label the batch"
           },
           {
             "elementId": "UserTask_BatchTrigger",
             "name": "Seal the batch"
           },
           {
-            "elementId": "UserTask_BatchOther",
-            "name": "Label the batch"
-          },
-          {
             "elementId": "UserTask_Outside",
             "name": "Update the packing log"
+          },
+          {
+            "elementId": "UserTask_ParcelOther",
+            "name": "Label the parcel"
+          },
+          {
+            "elementId": "UserTask_ParcelOther",
+            "name": "Label the parcel"
+          },
+          {
+            "elementId": "UserTask_ParcelTrigger",
+            "name": "Seal the parcel"
+          },
+          {
+            "elementId": "UserTask_ParcelTrigger",
+            "name": "Seal the parcel"
           }
         ]
       },
@@ -220,24 +220,24 @@
         "afterCommandId": "s02-seal-second-parcel",
         "tasks": [
           {
-            "elementId": "UserTask_ParcelTrigger",
-            "name": "Seal the parcel"
-          },
-          {
-            "elementId": "UserTask_ParcelOther",
-            "name": "Label the parcel"
+            "elementId": "UserTask_BatchOther",
+            "name": "Label the batch"
           },
           {
             "elementId": "UserTask_BatchTrigger",
             "name": "Seal the batch"
           },
           {
-            "elementId": "UserTask_BatchOther",
-            "name": "Label the batch"
-          },
-          {
             "elementId": "UserTask_Outside",
             "name": "Update the packing log"
+          },
+          {
+            "elementId": "UserTask_ParcelOther",
+            "name": "Label the parcel"
+          },
+          {
+            "elementId": "UserTask_ParcelTrigger",
+            "name": "Seal the parcel"
           }
         ]
       },
@@ -245,24 +245,24 @@
         "afterCommandId": "s03-late-label-second-parcel",
         "tasks": [
           {
-            "elementId": "UserTask_ParcelTrigger",
-            "name": "Seal the parcel"
-          },
-          {
-            "elementId": "UserTask_ParcelOther",
-            "name": "Label the parcel"
+            "elementId": "UserTask_BatchOther",
+            "name": "Label the batch"
           },
           {
             "elementId": "UserTask_BatchTrigger",
             "name": "Seal the batch"
           },
           {
-            "elementId": "UserTask_BatchOther",
-            "name": "Label the batch"
-          },
-          {
             "elementId": "UserTask_Outside",
             "name": "Update the packing log"
+          },
+          {
+            "elementId": "UserTask_ParcelOther",
+            "name": "Label the parcel"
+          },
+          {
+            "elementId": "UserTask_ParcelTrigger",
+            "name": "Seal the parcel"
           }
         ]
       },
@@ -270,20 +270,20 @@
         "afterCommandId": "s04-label-first-parcel",
         "tasks": [
           {
-            "elementId": "UserTask_ParcelTrigger",
-            "name": "Seal the parcel"
+            "elementId": "UserTask_BatchOther",
+            "name": "Label the batch"
           },
           {
             "elementId": "UserTask_BatchTrigger",
             "name": "Seal the batch"
           },
           {
-            "elementId": "UserTask_BatchOther",
-            "name": "Label the batch"
-          },
-          {
             "elementId": "UserTask_Outside",
             "name": "Update the packing log"
+          },
+          {
+            "elementId": "UserTask_ParcelTrigger",
+            "name": "Seal the parcel"
           }
         ]
       },
@@ -291,20 +291,20 @@
         "afterCommandId": "s05-seal-first-parcel",
         "tasks": [
           {
-            "elementId": "UserTask_BatchTrigger",
-            "name": "Seal the batch"
+            "elementId": "UserTask_AfterParcels",
+            "name": "Release the parcels"
           },
           {
             "elementId": "UserTask_BatchOther",
             "name": "Label the batch"
           },
           {
-            "elementId": "UserTask_Outside",
-            "name": "Update the packing log"
+            "elementId": "UserTask_BatchTrigger",
+            "name": "Seal the batch"
           },
           {
-            "elementId": "UserTask_AfterParcels",
-            "name": "Release the parcels"
+            "elementId": "UserTask_Outside",
+            "name": "Update the packing log"
           }
         ]
       },
@@ -312,12 +312,12 @@
         "afterCommandId": "s06-release-parcels",
         "tasks": [
           {
-            "elementId": "UserTask_BatchTrigger",
-            "name": "Seal the batch"
-          },
-          {
             "elementId": "UserTask_BatchOther",
             "name": "Label the batch"
+          },
+          {
+            "elementId": "UserTask_BatchTrigger",
+            "name": "Seal the batch"
           },
           {
             "elementId": "UserTask_Outside",

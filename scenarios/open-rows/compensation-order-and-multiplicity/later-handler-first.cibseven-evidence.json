@@ -100,12 +100,12 @@
         "afterCommandId": "s03-complete-UserTask_B-1",
         "tasks": [
           {
-            "elementId": "UserTask_UndoB",
-            "name": "Undo B"
-          },
-          {
             "elementId": "UserTask_UndoA",
             "name": "Undo A"
+          },
+          {
+            "elementId": "UserTask_UndoB",
+            "name": "Undo B"
           }
         ]
       },

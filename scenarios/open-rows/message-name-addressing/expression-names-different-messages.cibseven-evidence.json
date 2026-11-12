@@ -1,0 +1,349 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-name-addressing-expression-names-different-messages",
+    "sha256": "b5e002df3161e4cf22759497322d194732c00404952503bff285c3c94938ec64"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-A-1"
+            }
+          },
+          {
+            "name": "ticketRef",
+            "value": {
+              "kind": "string",
+              "value": "ticket-T-9"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Notice_Order",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-A-1"
+            }
+          },
+          {
+            "name": "ticketRef",
+            "value": {
+              "kind": "string",
+              "value": "ticket-T-9"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Handler_Order",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-A-1"
+            }
+          },
+          {
+            "name": "ticketRef",
+            "value": {
+              "kind": "string",
+              "value": "ticket-T-9"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Host_Pair",
+            "name": "Work with two notices"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Notice_Order",
+        "tasks": [
+          {
+            "elementId": "Handler_Order",
+            "name": "Handle the order notice"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Handler_Order",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": [
+          {
+            "elementId": "Notice_Order",
+            "eventName": "order-A-1",
+            "messageId": "Message_ByOrder",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Notice_Ticket",
+            "eventName": "ticket-T-9",
+            "messageId": "Message_ByTicket",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Notice_Order",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s03-complete-Handler_Order",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-deliver-Notice_Order",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-Handler_Order",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-deliver-Notice_Order",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-Handler_Order",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-A-1"
+            }
+          },
+          {
+            "name": "ticketRef",
+            "value": {
+              "kind": "string",
+              "value": "ticket-T-9"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Pair",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work with two notices",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Notice_Order",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_ByOrder"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Notice_Ticket",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_ByTicket"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-deliver-Notice_Order",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-A-1"
+            }
+          },
+          {
+            "name": "ticketRef",
+            "value": {
+              "kind": "string",
+              "value": "ticket-T-9"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Order",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the order notice",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-Handler_Order",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-A-1"
+            }
+          },
+          {
+            "name": "ticketRef",
+            "value": {
+              "kind": "string",
+              "value": "ticket-T-9"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

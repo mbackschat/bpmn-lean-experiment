@@ -79,16 +79,16 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_Unload",
-            "name": "Unload the containers"
+            "elementId": "UserTask_Outside",
+            "name": "Update the berth schedule"
           },
           {
             "elementId": "UserTask_Raise",
             "name": "Report delays"
           },
           {
-            "elementId": "UserTask_Outside",
-            "name": "Update the berth schedule"
+            "elementId": "UserTask_Unload",
+            "name": "Unload the containers"
           }
         ]
       },
@@ -96,12 +96,12 @@
         "afterCommandId": "s02-unload",
         "tasks": [
           {
-            "elementId": "UserTask_Raise",
-            "name": "Report delays"
-          },
-          {
             "elementId": "UserTask_Outside",
             "name": "Update the berth schedule"
+          },
+          {
+            "elementId": "UserTask_Raise",
+            "name": "Report delays"
           }
         ]
       },
@@ -109,24 +109,24 @@
         "afterCommandId": "s03-report-delays",
         "tasks": [
           {
+            "elementId": "UserTask_Cut",
+            "name": "Cut the delay short"
+          },
+          {
+            "elementId": "UserTask_Cut",
+            "name": "Cut the delay short"
+          },
+          {
+            "elementId": "UserTask_Keep",
+            "name": "Keep the delay notice"
+          },
+          {
+            "elementId": "UserTask_Keep",
+            "name": "Keep the delay notice"
+          },
+          {
             "elementId": "UserTask_Outside",
             "name": "Update the berth schedule"
-          },
-          {
-            "elementId": "UserTask_Cut",
-            "name": "Cut the delay short"
-          },
-          {
-            "elementId": "UserTask_Keep",
-            "name": "Keep the delay notice"
-          },
-          {
-            "elementId": "UserTask_Cut",
-            "name": "Cut the delay short"
-          },
-          {
-            "elementId": "UserTask_Keep",
-            "name": "Keep the delay notice"
           }
         ]
       },
@@ -134,16 +134,16 @@
         "afterCommandId": "s04-cut-second-delay",
         "tasks": [
           {
-            "elementId": "UserTask_Outside",
-            "name": "Update the berth schedule"
-          },
-          {
             "elementId": "UserTask_Cut",
             "name": "Cut the delay short"
           },
           {
             "elementId": "UserTask_Keep",
             "name": "Keep the delay notice"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Update the berth schedule"
           }
         ]
       },
@@ -151,16 +151,16 @@
         "afterCommandId": "s05-late-keep-second-delay",
         "tasks": [
           {
-            "elementId": "UserTask_Outside",
-            "name": "Update the berth schedule"
-          },
-          {
             "elementId": "UserTask_Cut",
             "name": "Cut the delay short"
           },
           {
             "elementId": "UserTask_Keep",
             "name": "Keep the delay notice"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Update the berth schedule"
           }
         ]
       },
@@ -168,16 +168,16 @@
         "afterCommandId": "s06-premature-sign-off",
         "tasks": [
           {
-            "elementId": "UserTask_Outside",
-            "name": "Update the berth schedule"
-          },
-          {
             "elementId": "UserTask_Cut",
             "name": "Cut the delay short"
           },
           {
             "elementId": "UserTask_Keep",
             "name": "Keep the delay notice"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Update the berth schedule"
           }
         ]
       },
@@ -185,12 +185,12 @@
         "afterCommandId": "s07-keep-first-delay",
         "tasks": [
           {
-            "elementId": "UserTask_Outside",
-            "name": "Update the berth schedule"
-          },
-          {
             "elementId": "UserTask_Cut",
             "name": "Cut the delay short"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Update the berth schedule"
           }
         ]
       },
@@ -198,12 +198,12 @@
         "afterCommandId": "s08-cut-first-delay",
         "tasks": [
           {
-            "elementId": "UserTask_Outside",
-            "name": "Update the berth schedule"
-          },
-          {
             "elementId": "UserTask_AfterBay",
             "name": "Sign off the bay"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Update the berth schedule"
           }
         ]
       },

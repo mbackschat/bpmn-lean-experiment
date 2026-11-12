@@ -43,32 +43,32 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
             "elementId": "Check",
             "name": "Check the batch"
           },
           {
             "elementId": "Check",
             "name": "Check the batch"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
           },
           {
             "elementId": "Verify",
             "name": "Verify the batch"
-          },
-          {
-            "elementId": "Approve",
-            "name": "Approve a batch"
-          },
-          {
-            "elementId": "Approve",
-            "name": "Approve a batch"
-          },
-          {
-            "elementId": "Step",
-            "name": "Take a step"
-          },
-          {
-            "elementId": "Step",
-            "name": "Take a step"
           }
         ]
       },
@@ -76,28 +76,28 @@
         "afterCommandId": "complete-approve-1",
         "tasks": [
           {
-            "elementId": "Check",
-            "name": "Check the batch"
-          },
-          {
-            "elementId": "Check",
-            "name": "Check the batch"
-          },
-          {
-            "elementId": "Verify",
-            "name": "Verify the batch"
-          },
-          {
             "elementId": "Approve",
             "name": "Approve a batch"
           },
           {
+            "elementId": "Check",
+            "name": "Check the batch"
+          },
+          {
+            "elementId": "Check",
+            "name": "Check the batch"
+          },
+          {
             "elementId": "Step",
             "name": "Take a step"
           },
           {
             "elementId": "Step",
             "name": "Take a step"
+          },
+          {
+            "elementId": "Verify",
+            "name": "Verify the batch"
           }
         ]
       },
@@ -113,16 +113,16 @@
             "name": "Check the batch"
           },
           {
+            "elementId": "Step",
+            "name": "Take a step"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
+          },
+          {
             "elementId": "Verify",
             "name": "Verify the batch"
-          },
-          {
-            "elementId": "Step",
-            "name": "Take a step"
-          },
-          {
-            "elementId": "Step",
-            "name": "Take a step"
           }
         ]
       }

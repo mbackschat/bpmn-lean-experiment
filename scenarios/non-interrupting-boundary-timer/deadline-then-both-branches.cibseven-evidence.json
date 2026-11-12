@@ -64,12 +64,12 @@
         "afterCommandId": "fire-timer-sha256:efac82c65e7a4148fd35cd27adbdd192a6a346f4cf7d04d4131e67188ffe4212",
         "tasks": [
           {
-            "elementId": "MonitoredTask",
-            "name": "Monitored work"
-          },
-          {
             "elementId": "HandlerTask",
             "name": "Reminder handled"
+          },
+          {
+            "elementId": "MonitoredTask",
+            "name": "Monitored work"
           }
         ]
       },

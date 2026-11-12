@@ -214,16 +214,16 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_OuterWork",
-            "name": "Outer work"
-          },
-          {
             "elementId": "UserTask_InnerWork",
             "name": "Inner work"
           },
           {
             "elementId": "UserTask_OuterDecide",
             "name": "Decide whether to cancel the outer transaction"
+          },
+          {
+            "elementId": "UserTask_OuterWork",
+            "name": "Outer work"
           }
         ]
       },
@@ -244,12 +244,12 @@
         "afterCommandId": "s02-complete-UserTask_InnerWork-1",
         "tasks": [
           {
-            "elementId": "UserTask_OuterDecide",
-            "name": "Decide whether to cancel the outer transaction"
-          },
-          {
             "elementId": "UserTask_InnerDecide",
             "name": "Decide whether to cancel the inner transaction"
+          },
+          {
+            "elementId": "UserTask_OuterDecide",
+            "name": "Decide whether to cancel the outer transaction"
           }
         ]
       },
@@ -270,12 +270,12 @@
         "afterCommandId": "s04-complete-UserTask_UndoInnerWork-1",
         "tasks": [
           {
-            "elementId": "UserTask_OuterDecide",
-            "name": "Decide whether to cancel the outer transaction"
-          },
-          {
             "elementId": "UserTask_InnerCancelled",
             "name": "Handle the inner cancellation"
+          },
+          {
+            "elementId": "UserTask_OuterDecide",
+            "name": "Decide whether to cancel the outer transaction"
           }
         ]
       },
@@ -283,12 +283,12 @@
         "afterCommandId": "s05-complete-UserTask_UndoInnerWork-1",
         "tasks": [
           {
-            "elementId": "UserTask_OuterDecide",
-            "name": "Decide whether to cancel the outer transaction"
-          },
-          {
             "elementId": "UserTask_InnerCancelled",
             "name": "Handle the inner cancellation"
+          },
+          {
+            "elementId": "UserTask_OuterDecide",
+            "name": "Decide whether to cancel the outer transaction"
           }
         ]
       },

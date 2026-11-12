@@ -49,32 +49,32 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
             "elementId": "Check",
             "name": "Check the batch"
           },
           {
             "elementId": "Check",
             "name": "Check the batch"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
           },
           {
             "elementId": "Verify",
             "name": "Verify the batch"
-          },
-          {
-            "elementId": "Approve",
-            "name": "Approve a batch"
-          },
-          {
-            "elementId": "Approve",
-            "name": "Approve a batch"
-          },
-          {
-            "elementId": "Step",
-            "name": "Take a step"
-          },
-          {
-            "elementId": "Step",
-            "name": "Take a step"
           }
         ]
       },
@@ -82,14 +82,6 @@
         "afterCommandId": "complete-verify-1",
         "tasks": [
           {
-            "elementId": "Check",
-            "name": "Check the batch"
-          },
-          {
-            "elementId": "Check",
-            "name": "Check the batch"
-          },
-          {
             "elementId": "Approve",
             "name": "Approve a batch"
           },
@@ -98,16 +90,24 @@
             "name": "Approve a batch"
           },
           {
-            "elementId": "Step",
-            "name": "Take a step"
+            "elementId": "Check",
+            "name": "Check the batch"
           },
           {
-            "elementId": "Step",
-            "name": "Take a step"
+            "elementId": "Check",
+            "name": "Check the batch"
           },
           {
             "elementId": "FinishVerify",
             "name": "Finish the verification"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
           },
           {
             "elementId": "TriageBatch",
@@ -119,20 +119,20 @@
         "afterCommandId": "complete-finish-verify-1",
         "tasks": [
           {
-            "elementId": "Check",
-            "name": "Check the batch"
-          },
-          {
-            "elementId": "Check",
-            "name": "Check the batch"
-          },
-          {
             "elementId": "Approve",
             "name": "Approve a batch"
           },
           {
             "elementId": "Approve",
             "name": "Approve a batch"
+          },
+          {
+            "elementId": "Check",
+            "name": "Check the batch"
+          },
+          {
+            "elementId": "Check",
+            "name": "Check the batch"
           },
           {
             "elementId": "Step",
@@ -156,6 +156,14 @@
         "afterCommandId": "complete-verify-2",
         "tasks": [
           {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
             "elementId": "Check",
             "name": "Check the batch"
           },
@@ -164,12 +172,8 @@
             "name": "Check the batch"
           },
           {
-            "elementId": "Approve",
-            "name": "Approve a batch"
-          },
-          {
-            "elementId": "Approve",
-            "name": "Approve a batch"
+            "elementId": "FinishVerify",
+            "name": "Finish the verification"
           },
           {
             "elementId": "Step",
@@ -182,10 +186,6 @@
           {
             "elementId": "TriageBatch",
             "name": "Triage the sequential batches"
-          },
-          {
-            "elementId": "FinishVerify",
-            "name": "Finish the verification"
           },
           {
             "elementId": "TriageBatch",

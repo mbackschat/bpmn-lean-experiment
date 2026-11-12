@@ -117,12 +117,12 @@
             "name": "Work in the caller"
           },
           {
-            "elementId": "Child_Work",
-            "name": "Carry out the check"
-          },
-          {
             "elementId": "Child_Alert",
             "name": "Handle the child alert"
+          },
+          {
+            "elementId": "Child_Work",
+            "name": "Carry out the check"
           }
         ]
       },
@@ -143,12 +143,12 @@
         "afterCommandId": "s05-complete-Child_Work",
         "tasks": [
           {
-            "elementId": "Work_Parent",
-            "name": "Work in the caller"
-          },
-          {
             "elementId": "After_Call",
             "name": "File the check"
+          },
+          {
+            "elementId": "Work_Parent",
+            "name": "Work in the caller"
           }
         ]
       }

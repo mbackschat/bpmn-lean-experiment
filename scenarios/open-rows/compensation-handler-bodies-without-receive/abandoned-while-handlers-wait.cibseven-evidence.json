@@ -124,12 +124,12 @@
         "afterCommandId": "s03-complete-UserTask_Ship-1",
         "tasks": [
           {
-            "elementId": "UserTask_UndoQuote",
-            "name": "Undo the quote"
-          },
-          {
             "elementId": "UserTask_UndoPlanReview",
             "name": "Review the undo of the plan"
+          },
+          {
+            "elementId": "UserTask_UndoQuote",
+            "name": "Undo the quote"
           },
           {
             "elementId": "UserTask_Reverse",
