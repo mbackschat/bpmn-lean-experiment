@@ -430,7 +430,7 @@
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/tasks-sequential-in-turn.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0012",
-      "CIB-DEV-0014"
+      "CIB-INT-0041"
     ]
   },
   {
@@ -444,7 +444,7 @@
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/call-sequential-three-reviewers.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0012",
-      "CIB-DEV-0014",
+      "CIB-INT-0041",
       "PC-MI-03"
     ]
   },
