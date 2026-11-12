@@ -203,4 +203,12 @@ public class ScenarioJsonTest {
         "{\"kind\":\"scenarioResult\",\"scenarioId\":\"diagnostics-shape\",\"outcome\":{\"kind\":\"semantic\",\"outcome\":\"committed\"},\"trace\":[],\"diagnostics\":{\"engineVersion\":\"2.2.0\",\"databaseVersion\":\"2.3.232\",\"startupNanos\":1,\"phases\":{\"deploymentNanos\":1,\"definitionProjectionNanos\":2,\"startNanos\":3,\"waitProjectionNanos\":4,\"completeNanos\":5,\"completionProjectionNanos\":6,\"cleanupNanos\":7,\"totalNanos\":8},\"pvmDefinition\":{\"processId\":\"Process_1\",\"initialActivityId\":\"StartEvent_1\",\"activities\":[]},\"stateQueries\":[],\"taskQueries\":[],\"messageSubscriptions\":[],\"timerJobs\":[],\"effectJobs\":[],\"effectExecutions\":[],\"mappingExecutions\":[],\"cleanup\":{\"deployments\":0,\"processDefinitions\":0,\"processInstances\":0,\"tasks\":0,\"jobs\":0,\"incidents\":0,\"historicProcessInstances\":0}}}",
         ScenarioJson.write(result));
   }
+
+  /** The evidence schema requires a task's `name` as an explicit null for an unnamed User Task (run 43279665960). */
+  @Test
+  public void anUnnamedTaskKeepsItsNullName() throws JsonProcessingException {
+    assertEquals(
+        "{\"elementId\":\"Hold\",\"name\":null}",
+        new ObjectMapper().writeValueAsString(new ScenarioDiagnosticsProtocol.TaskQueryTask("Hold", null)));
+  }
 }

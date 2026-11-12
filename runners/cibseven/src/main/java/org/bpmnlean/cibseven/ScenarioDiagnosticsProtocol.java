@@ -102,7 +102,8 @@ public final class ScenarioDiagnosticsProtocol {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public record TaskQueryTask(
       String elementId,
-      String name,
+      // The evidence schema requires the name, null for an unnamed task, while the absent lists stay omitted.
+      @JsonInclude(JsonInclude.Include.ALWAYS) String name,
       List<IdentityLinkEvidence> identityLinks,
       List<FormFieldEvidence> formFields) {
     public TaskQueryTask(String elementId, String name) {
