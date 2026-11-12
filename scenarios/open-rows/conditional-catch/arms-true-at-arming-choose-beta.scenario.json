@@ -1,0 +1,76 @@
+{
+  "kind": "scenario",
+  "id": "conditional-catch-arms-true-at-arming-choose-beta",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-catch-arms",
+    "relativePath": "scenarios/open-rows/conditional-catch/arms.bpmn",
+    "sha256": "2ea5a75a1a8a2d408aa8230dd158192a15e8c42ccb5ca3649a890cda85d56fac",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "ready",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "conditionChoices": [
+        {
+          "elementId": "Catch_Beta"
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-ready-Catch_Alpha",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Alpha",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "ready",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Chosen_Beta",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Chosen_Beta",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95",
+      "BPMN 2.0.2 §10.6.6",
+      "BPMN 2.0.2 §13.4.4"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

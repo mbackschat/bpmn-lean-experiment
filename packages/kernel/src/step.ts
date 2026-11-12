@@ -524,6 +524,13 @@ function effectContinuation(ctx: Ctx, data: EffectInput, run: (data: EffectInput
   return retried ? run({ ...data, outcome: { tag: EffectOutcomeTag.TechnicalFailure } }) : result;
 }
 
+/** `Kernel.Step.admitChoices *> next`: `next` runs only on a ranking that repeats no element and names only competing ones. */
+function admitChoicesThen(hooks: Hooks, ctx: Ctx, next: () => Outcome): Outcome {
+  const elements = ctx.conditionChoices.map((choice) => choice.element);
+  if (new Set(elements).size !== elements.length) return failed(FailureTag.Rejected, "condition-choice-duplicate");
+  return elements.every((element) => hooks.competes(ctx, element)) ? next() : failed(FailureTag.Rejected, "condition-choice-not-candidate");
+}
+
 /**
  * Advance the clock to an input's logical time, `null` leaving it where it is; a time before the clock is rejected,
  * since logical time never runs backward.
@@ -544,7 +551,7 @@ function onRunning(
   if (before.status !== InstanceStatus.Running) return failed(FailureTag.Rejected, "instance-not-running");
   const advanced = advanceClock(atMs, { ...before, journal: [], outbox: [] });
   if (!advanced.ok) return advanced;
-  const started = microStep(hooks, ctx, { tag: CauseTag.Input, input: tag }, null, root, transition, advanced.value);
+  const started = admitChoicesThen(hooks, ctx, () => microStep(hooks, ctx, { tag: CauseTag.Input, input: tag }, null, root, transition, advanced.value));
   return started.ok ? settle(hooks, ctx, closureBound, started.value) : started;
 }
 
@@ -603,8 +610,8 @@ export function step(hooks: Hooks, program: Program, before: State | null, input
       if (!start.ok) return start;
       const fresh = admitThen(payload.variables.map(([, value]) => value), () => advanceClock(payload.atMs, enqueue(initial(payload.instanceId, payload.variables, payload.businessKey), { tag: SignalTag.ArmScope, scope: root })));
       if (!fresh.ok) return fresh;
-      const started = microStep(hooks, ctx, { tag: CauseTag.Input, input: InputTag.Start }, start.value, root,
-        (state) => begin(hooks, ctx, beginRequest({ element: start.value, scope: root, trigger: payload.trigger }), state), fresh.value);
+      const started = admitChoicesThen(hooks, ctx, () => microStep(hooks, ctx, { tag: CauseTag.Input, input: InputTag.Start }, start.value, root,
+        (state) => begin(hooks, ctx, beginRequest({ element: start.value, scope: root, trigger: payload.trigger }), state), fresh.value));
       return started.ok ? settle(hooks, ctx, closureBound, started.value) : started;
     }
     case InputTag.Command:

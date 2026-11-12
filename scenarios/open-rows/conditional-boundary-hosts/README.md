@@ -13,7 +13,9 @@ Answer-free schedules for [PC-CONDITION-04](../../../docs/PRACTICAL-CIB7-COVERAG
 
 | Schedule | Model | Row | Case it exercises and separates |
 |---|---|---|---|
-| [level-both-eligible](level-both-eligible.scenario.json) | conditional-hosts | PC-CONDITION-04 | `level` is created as 9 on `Writer`, which makes both predicates on `Host_Level` true; the two handlers and the host are then addressed. |
+| [level-both-eligible](level-both-eligible.scenario.json) | conditional-hosts | PC-CONDITION-04 | `level` is created as 9 on `Writer`, which makes both predicates on `Host_Level` true; the two handlers and the host are then addressed. The two compete, and the write carries no ranking, so the kernel refuses it; the retained CIB answer fired `Warn_Level` first, an order no profile selects ([CIB-LIM-0053](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-lim-0053--competing-conditional-items-true-at-one-evaluation-fire-in-the-inputs-ranked-order-which-cib-cannot-be-given)). |
+| [level-both-eligible-ranked](level-both-eligible-ranked.scenario.json) | conditional-hosts | PC-CONDITION-04 | Kernel-only: as `level-both-eligible`, the write ranked `Warn_Level, Stop_Level`; it reproduces the retained answer of `level-both-eligible`, which `conditional-ranked-twin.test.ts` checks. |
+| [level-both-eligible-stop-first](level-both-eligible-stop-first.scenario.json) | conditional-hosts | PC-CONDITION-04 | Kernel-only: as `level-both-eligible`, the write ranked `Stop_Level`, which withdraws `Warn_Level` before it fires. |
 | [level-repeated-handlers](level-repeated-handlers.scenario.json) | conditional-hosts | PC-CONDITION-04 | `level` is created as 6 and updated to 7; the second handler, the first, and the host complete. |
 | [completion-write-reaches-sibling](completion-write-reaches-sibling.scenario.json) | conditional-hosts | PC-CONDITION-04 | `Writer` completes writing `done` as `true`; the handler of `Watcher` and `Watcher` then complete. |
 | [completion-write-read-by-own-boundary](completion-write-read-by-own-boundary.scenario.json) | conditional-hosts | PC-CONDITION-04 | `Host_Self` completes writing `closed` as `true`; its handler and `After_Self` are then addressed. It separates a completion write that the host's own boundary reads from one that reaches a sibling, and it needs no effect host, so it stays on `conditional-hosts`. |
@@ -31,3 +33,5 @@ Answer-free schedules for [PC-CONDITION-04](../../../docs/PRACTICAL-CIB7-COVERAG
 - The called instance is addressed by the derived identity `call:10:Instance_1:9:Host_Call:1`.
 
 The schedules carry no expected route, open wait, variable or Process state; the retained CIB evidence is the answer.
+
+The `kernel-only` schedules carry a ranking, which the CIB runner cannot be given, and name no CIB revision (`not-applicable`), so the differential compares the Lean kernel with the TypeScript kernel on them.

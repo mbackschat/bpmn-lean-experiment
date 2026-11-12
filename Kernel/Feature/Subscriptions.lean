@@ -143,14 +143,13 @@ def subscribe (ctx : Ctx) (arming : Arming) (state : State) (subscription : Subs
     let (state, fired) ← armed ctx subscription item state
     pure (state, if fired then some item else none)
 
-/-- Subscribe each of one arming's subscriptions in order; at most one item of a contest may fire (`requireOneWinner`). -/
+/-- Subscribe each of one arming's subscriptions in order, then fire what its contests resolve to (`resolveContests`). -/
 def subscribeAll {α : Type} (ctx : Ctx) (state : State) (entries : List α)
     (each : State → α → Except Failure (State × Option OpenItem)) : Outcome := do
   let (state, fired) ← entries.foldlM (fun (state, fired) entry => do
     let (state, item) ← each state entry
     pure (state, fired ++ item.toList)) (state, [])
-  requireOneWinner ctx fired
-  pure state
+  pure (fireAll none (← resolveContests ctx state [] fired) state)
 
 /-- `Signal.arm`: open the boundaries of `element`, attached to `host`, in the host's scope `scope`. -/
 def arm (ctx : Ctx) (host : Nat) (element : ElementId) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
@@ -302,7 +301,7 @@ def admitFiring (hooks : SubscriptionsHooks) (ctx : Ctx) (subscription : Subscri
       else if delivery.payload.isSome then .error (.rejected "signal-payload-not-accepted")
       else (state, ·) <$> signalVariables ctx delivery.variables
     | some _, none | none, _ => .error (.rejected "not-a-signal-subscription")
-  -- Only `evaluateItem` fires a Conditional item, after its predicate held.
+  -- Only `Conditions.fireAll` fires a Conditional item, once its predicate held and its contest is resolved.
   | .condition _ => if view.conditional.isSome then .ok (state, []) else .error (.rejected "not-a-conditional-subscription")
 
 /-- What remains of a fired subscription that does not interrupt: a Message subscription stays open with the same
@@ -385,7 +384,9 @@ def arriveCatch (ctx : Ctx) (_ : Header) (_ : EventPayload) (subscription : Subs
   | some kind =>
     let state := state.openItem kind occurrence
     match state.openItems.getLast? with
-    | some item => (·.1) <$> armed ctx subscription item state
+    | some item => do
+      let (state, fires) ← armed ctx subscription item state
+      pure (if fires then fireAll none [item] state else state)
     | none => .ok state
   -- Admission refuses every trigger reaching here (`event.catch.error`, `.escalation`, `.compensation`, `.cancel`); the
   -- code names the first.

@@ -25,7 +25,8 @@ test("a stimulus's stated time reaches the kernel as its atMs", () => {
 
 test("a timer firing carries its deadline and the host's time; an effect result carries the host's time", () => {
   const timer = kernelPort.timerInput(occurrence, 1000, 1004);
-  assert.deepEqual(timer.input.payload, { occurrence: { processInstanceId: "I", element: "T", activation: 1 }, logicalTimeMs: 1000, atMs: 1004 });
+  assert.deepEqual(timer.input.payload,
+    { occurrence: { processInstanceId: "I", element: "T", activation: 1 }, logicalTimeMs: 1000, atMs: 1004, conditionChoices: [] });
   const effect = kernelPort.effectInput(occurrence, { kind: EffectResultKind.TechnicalFailure }, 1500);
   assert.equal(effect.input.payload.atMs, 1500);
 });
@@ -70,6 +71,39 @@ test("work a Terminate removed stays rejected, state unchanged, once the state c
     if (!late.committed) assert.equal(late.rejected, true, `${commandId} is rejected`);
   }
   assert.deepEqual(kernelPort.encodeState(carried), encoded);
+});
+
+// CIB-LIM-0053: an input the host makes states no ranking of competing Conditional items, so a contest its closure
+// raises stays `unsupported`; not `rejected`, it halts a durable chain as any unsupported arrival does
+// (`workflow-host.ts`, the arrival loop). The timer's firing arms two interrupting boundaries that are both true.
+test("a durable timer arrival that raises a Conditional contest is unsupported, not rejected", async () => {
+  const condition = `<bpmn:conditionalEventDefinition><bpmn:condition xsi:type="bpmn:tFormalExpression">true</bpmn:condition></bpmn:conditionalEventDefinition>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="D"
+  targetNamespace="urn:t" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:process id="P" isExecutable="true">
+    <bpmn:startEvent id="S"/><bpmn:sequenceFlow id="f1" sourceRef="S" targetRef="Wait"/>
+    <bpmn:intermediateCatchEvent id="Wait"><bpmn:timerEventDefinition><bpmn:timeDuration>PT1S</bpmn:timeDuration></bpmn:timerEventDefinition></bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="f2" sourceRef="Wait" targetRef="T"/><bpmn:userTask id="T"/>
+    <bpmn:sequenceFlow id="f3" sourceRef="T" targetRef="E"/><bpmn:endEvent id="E"/>
+    <bpmn:boundaryEvent id="B1" attachedToRef="T">${condition}</bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f4" sourceRef="B1" targetRef="E1"/><bpmn:endEvent id="E1"/>
+    <bpmn:boundaryEvent id="B2" attachedToRef="T">${condition}</bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f5" sourceRef="B2" targetRef="E2"/><bpmn:endEvent id="E2"/>
+  </bpmn:process>
+</bpmn:definitions>`;
+  const read = await readKernelProgram({
+    bytes: new TextEncoder().encode(xml), overlay: null, profile: "test-profile", limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
+  }, kernelProfileOptions([]));
+  assert.equal(read.kind, "read", JSON.stringify(read));
+  if (read.kind !== "read") return;
+  const program = kernelPort.decodeProgram(JSON.parse(JSON.stringify(read.program)));
+  assert.equal(kernelPort.admit(program), null);
+  const started = kernelPort.step(program, null,
+    kernelPort.decodeStimulus({ kind: "start", commandId: "start", instanceId: "I", variables: [], at: 0 }).input);
+  assert.ok(started.committed);
+  const fired = kernelPort.step(program, started.state, kernelPort.timerInput({ processInstanceId: "I", elementId: "Wait", activation: 1 }, 1000, 1000));
+  assert.deepEqual(fired, { committed: false, rejected: false, outcome: "unsupported", code: "conditions-simultaneous" });
 });
 
 // A program carries every bound version of a called definition, so one author's identifier can name two Script Tasks;

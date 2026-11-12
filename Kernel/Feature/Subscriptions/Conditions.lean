@@ -31,67 +31,118 @@ def predicateHolds (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (cond
     if code == "unknown-variable" || code == "juel.propertyNotFound" then .ok false else .error (.rolledBack code)
   | .unsupported code => .error (.unsupported code)
 
-/-- Evaluate an open Conditional item and fire it when the profile's rule says so: under `eachWrite` whenever the
-predicate holds, under `edge` only when it holds after an evaluation that did not, which the item records. `write` is
-the offered write, `none` at arming, where no filter applies (`ConditionalEventDefinition.java:112-113`). The flag says
-whether the item fired. -/
-def evaluateItem (ctx : Ctx) (write : Option WriteEvent) (item : OpenItem) (trigger : ConditionTrigger)
-    (state : State) : Except Failure (State × Bool) := do
+/-- Evaluate an open Conditional item: under `eachWrite` it fires whenever the predicate holds, under `edge` only when
+it holds after an evaluation that did not, which the item records. The flag says whether the item fires; its firing is
+enqueued once the evaluation's contests are resolved (`resolveContests`). -/
+def evaluateItem (ctx : Ctx) (item : OpenItem) (trigger : ConditionTrigger) (state : State) :
+    Except Failure (State × Bool) := do
   let some detail := item.kind.view.conditional | .ok (state, false)
   let value ← predicateHolds ctx state (homeScope state item) trigger.condition
-  let fire (state : State) : State := state.signal (.fire item.id (.condition write))
   match ctx.program.options.conditionalRetrigger with
-  | .eachWrite => .ok (if value then (fire state, true) else (state, false))
+  | .eachWrite => .ok (state, value)
   | .edge =>
     let recorded := { state with openItems := state.openItems.map fun open_ =>
       if open_.id == item.id then { open_ with kind := .conditional { detail with lastValue := some value } } else open_ }
-    .ok (if value && detail.lastValue != some true then (fire recorded, true) else (recorded, false))
+    .ok (recorded, value && detail.lastValue != some true)
 
-/-- What an item does once open: a Conditional one is evaluated at once. The flag says whether it fired. -/
+/-- What an item does once open: a Conditional one is evaluated at once, where no filter applies
+(`ConditionalEventDefinition.java:112-113`). The flag says whether it fires. -/
 def armed (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (state : State) : Except Failure (State × Bool) :=
   match subscription.trigger.condition? with
-  | some trigger => evaluateItem ctx none item trigger state
+  | some trigger => evaluateItem ctx item trigger state
   | none => .ok (state, false)
 
-/-- Conditional items of which at most one may fire: the arms of one Event-Based Gateway occurrence, the interrupting
-boundaries of one host occurrence, the interrupting Event Sub-Process starts of one scope occurrence. The first to fire
-disarms the others. -/
-inductive Contest where
-  | gateway (occurrence : Nat)
-  | host (occurrence : Nat)
-  | scope (scope : ScopeOccurrenceId)
-  deriving DecidableEq
+/-- Enqueue the firing of each of `items`, in order, for the offered write `write` (`none` at arming). A firing goes
+through `Signal.fire`, so one that an earlier firing withdrew finds nothing to fire. -/
+def fireAll (write : Option WriteEvent) (items : List OpenItem) (state : State) : State :=
+  items.foldl (fun state item => state.signal (.fire item.id (.condition write))) state
 
-/-- The refusal of two items of one contest true at one evaluation. -/
-def Contest.code : Contest → String
-  | .gateway _ => "gateway-arms-simultaneous"
-  | .host _ | .scope _ => "conditions-simultaneous"
-
-/-- The contest an open item enters, `none` for an item no other item disarms by firing. -/
-def contest (ctx : Ctx) (item : OpenItem) : Option Contest :=
+/-- What firing `item` withdraws at once, the same removal its firing makes (`fireBoundary`, `fireCatch`,
+`fireEventStart`): an interrupting boundary whatever its host's cancellation removes, its host's other boundaries and
+everything inside the host; an Event-Based Gateway arm its gateway's arms; an interrupting Event Sub-Process start
+everything inside its scope occurrence. `none` for an item whose firing withdraws nothing else: a non-interrupting
+boundary or start, or a catch Event. -/
+def withdrawal (ctx : Ctx) (item : OpenItem) : Option (State → State) :=
   match ctx.program.boundary? item.element, item.attachedTo with
-  | some (_, boundary), some host => if boundary.interrupting then some (.host host) else none
+  | some (_, boundary), some host => if boundary.interrupting then some (·.withdrawOccurrence host) else none
   | some _, none => none
-  | none, some gateway => some (.gateway gateway)
+  | none, some gateway => some (·.disarm gateway)
   | none, none =>
     let interrupting := (ctx.program.element? item.element).bind (·.start?) |>.bind (·.1.parent)
       |>.bind ctx.program.element? |>.bind (·.scope?) |>.bind fun (_, payload) => (ctx.eventStart payload).map (·.2)
-    if item.passive && interrupting == some true then some (.scope item.scope) else none
+    if item.passive && interrupting == some true then some (·.withdrawInside item.scope) else none
 
-/-- Two items of one contest that fired at one evaluation (one arming, one offered write): which wins is a choice
-neither BPMN (§13.4.4 gives simultaneous triggers no order) nor CIB (a `HashSet` of activities,
-`EventBasedGatewayActivityBehavior.java:36-44`) makes, and the kernel takes no arming order for one, so it refuses the
-input (FLOW-SPEC). -/
-def requireOneWinner (ctx : Ctx) (fired : List OpenItem) : Except Failure Unit :=
-  let contests := fired.filterMap (contest ctx)
-  match contests.zipIdx.find? fun (entry, index) => (contests.take index).contains entry with
-  -- dynamic-only: which Conditions hold at one evaluation is the run's data.
-  | some (entry, _) => .error (.unsupported entry.code)
-  | none => .ok ()
+/-- The open items other than `item` that firing `item` would withdraw from `state`, by identity. -/
+def withdrawnBy (ctx : Ctx) (state : State) (item : OpenItem) : List Nat :=
+  match withdrawal ctx item with
+  | none => []
+  | some withdraw =>
+    let kept := (withdraw state).openItems.map (·.id)
+    (state.openItems.filter fun open_ => open_.id != item.id && !kept.contains open_.id).map (·.id)
+
+/-- The refusal of a contest the ranking leaves undecided: the Event-Based Gateway code when it holds an arm. -/
+def contestCode (ctx : Ctx) (contest : List OpenItem) : String :=
+  if contest.any fun item => item.attachedTo.isSome && (ctx.program.boundary? item.element).isNone then
+    "gateway-arms-simultaneous"
+  else "conditions-simultaneous"
+
+/-- The contest of an item: the items of `fired` connected to `members` by `linked`, in evaluation order. -/
+def contestOf (linked : OpenItem → OpenItem → Bool) (fired : List OpenItem) : Nat → List OpenItem → List OpenItem
+  | 0, members => members
+  | fuel + 1, members =>
+    let grown := fired.filter fun item => members.any fun member => member.id == item.id || linked member item
+    if grown.length == members.length then members else contestOf linked fired fuel grown
+
+/-- The firings of one contest (SUBSCRIPTIONS-SPEC "Conditions", CIB-LIM-0053): the members
+whose interrupting firing an earlier write of the micro-step already enqueued (`pending`) first, then, entry by entry of
+the input's ranking, every live member whose element the entry names, a firing withdrawing what it cancels. The
+contest is decided when every member fired or was withdrawn; otherwise, or when two members one entry names withdraw
+one another, no order the kernel may take separates them and the input is `unsupported`. -/
+def walk (ctx : Ctx) (withdraws : OpenItem → OpenItem → Bool) (pending contest : List OpenItem) :
+    Except Failure (List OpenItem) := do
+  let fire (progress : List OpenItem × List OpenItem) (member : OpenItem) : List OpenItem × List OpenItem :=
+    (progress.1.filter fun other => other.id != member.id && !withdraws member other, progress.2 ++ [member])
+  let first := pending.foldl (fun progress member =>
+    if progress.1.any (·.id == member.id) then fire progress member else progress) (contest, [])
+  let (live, firings) ← ctx.conditionChoices.foldlM (fun progress choice => do
+    let listed := progress.1.filter fun member => ctx.program.publicId member.element == choice.element
+    -- dynamic-only: which Conditions hold at one evaluation is the run's data
+    if listed.any fun member => listed.any (withdraws member ·) then throw (.unsupported (contestCode ctx contest))
+    pure (listed.foldl fire progress)) first
+  -- dynamic-only: which Conditions hold at one evaluation is the run's data
+  if live.isEmpty then pure firings else throw (.unsupported (contestCode ctx contest))
+
+/-- The firings of one evaluation (one arming, or one offered write) in order. Of `fired`, the items it found true in
+evaluation order, two compete when firing one withdraws the other (`withdrawnBy`), and a contest is a connected set of
+competing items: which fires and in which order is a choice neither BPMN (§13.4.4 gives simultaneous triggers no
+order) nor CIB (CIB-LIM-0053) makes, so the input's ranking decides it (`walk`) and the kernel takes none. An
+uncontested item fires at its place in evaluation order, a contest at the place of its first member. -/
+def resolveContests (ctx : Ctx) (state : State) (pending fired : List OpenItem) : Except Failure (List OpenItem) := do
+  let takes := fired.map fun item => (item.id, withdrawnBy ctx state item)
+  let withdraws (member other : OpenItem) : Bool := ((takes.lookup member.id).getD []).contains other.id
+  let (firings, _) ← fired.foldlM (fun (firings, handled) item => do
+    if handled.contains item.id then pure (firings, handled)
+    else
+      match contestOf (fun a b => withdraws a b || withdraws b a) fired fired.length [item] with
+      | [only] => pure (firings ++ [only], handled ++ [only.id])
+      | contest => pure (firings ++ (← walk ctx withdraws pending contest), handled ++ contest.map (·.id)))
+    (([] : List OpenItem), ([] : List Nat))
+  pure firings
+
+/-- The Conditional trigger of the element `id`'s subscription, if it has one. -/
+def conditionOf? (ctx : Ctx) (id : ElementId) : Option ConditionTrigger :=
+  (subscription? ctx id).bind (·.trigger.condition?)
 
 /-- The Conditional trigger of an open item's subscription, if it has one. -/
 def itemCondition? (ctx : Ctx) (item : OpenItem) : Option ConditionTrigger :=
-  (subscription? ctx item.element).bind (·.trigger.condition?)
+  conditionOf? ctx item.element
+
+/-- `Hooks.competes`: whether some element or boundary whose public identity is `element` opens a Conditional item, a
+catch, an Event-Based Gateway arm, a boundary or an Event Sub-Process start, interrupting or not. -/
+def competes (ctx : Ctx) (element : ElementId) : Bool :=
+  ctx.program.elements.any fun declared =>
+    (declared.header.id :: ((declared.envelope?.map (·.boundaries.map (·.id))).getD [])).any fun id =>
+      ctx.program.publicId id == element && (conditionOf? ctx id).isSome
 
 /-- Whether a write passes a Conditional item's `camunda:variableName` and `camunda:variableEvents` filters. -/
 def passes (trigger : ConditionTrigger) (write : WriteEvent) : Bool :=
@@ -123,18 +174,22 @@ def depth (state : State) (item : OpenItem) : Nat :=
 
 /-- `Hooks.written`: offer each write, in order, to the open Conditional items in the subtree of the scope that owns
 the variable whose filters it passes, outermost first and then in opening order, CIB's top-down walk
-(`ExecutionEntity.java:1731-1755`). -/
-def offerWrites (ctx : Ctx) (writes : List WriteEvent) (state : State) : Outcome :=
-  writes.foldlM (fun state write => do
+(`ExecutionEntity.java:1731-1755`), and fire what each write's contests resolve to. All writes of a micro-step land
+before they are offered, so a later write can find true again an item whose interrupting firing an earlier one
+enqueued: that firing runs first and decides the later write's contest, as the explicit write order makes it do. -/
+def offerWrites (ctx : Ctx) (writes : List WriteEvent) (state : State) : Outcome := do
+  let (state, _) ← writes.foldlM (fun (state, pending) write => do
     let offered := state.openItems.filterMap fun item =>
       (itemCondition? ctx item).bind fun trigger =>
         if passes trigger write && inSubtree state write.scope (homeScope state item) then some (item, trigger) else none
     let ordered := offered.mergeSort fun (left, _) (right, _) =>
       depth state left < depth state right || (depth state left == depth state right && left.id ≤ right.id)
     let (state, fired) ← ordered.foldlM (fun (state, fired) (item, trigger) => do
-      let (state, fires) ← evaluateItem ctx (some write) item trigger state
+      let (state, fires) ← evaluateItem ctx item trigger state
       pure (state, if fires then fired ++ [item] else fired)) (state, [])
-    requireOneWinner ctx fired
-    pure state) state
+    let firings ← resolveContests ctx state pending fired
+    pure (fireAll (some write) firings state, pending ++ firings.filter fun item => (withdrawal ctx item).isSome))
+    (state, ([] : List OpenItem))
+  pure state
 
 end Kernel.Feature.Subscriptions

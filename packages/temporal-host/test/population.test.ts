@@ -257,3 +257,36 @@ test("a chain a population delivery steps keeps the registration that delivery m
   assert.equal(answer.resolution.kind, "committed");
   assert.equal(addresses() ?? 0, 0, "the ended chain's re-registration, which the delivery made, survives the driver's answer");
 });
+
+// A fan-out's start carries no ranking (CIB-LIM-0053), so a Conditional contest it raises stays refused.
+test("a Timer start fan-out whose start raises a Conditional contest answers it unsupported", async () => {
+  const condition = `<bpmn:conditionalEventDefinition><bpmn:condition xsi:type="bpmn:tFormalExpression">true</bpmn:condition></bpmn:conditionalEventDefinition>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="D"
+  targetNamespace="urn:t" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:process id="P" isExecutable="true">
+    <bpmn:startEvent id="TimerStart"><bpmn:timerEventDefinition><bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration></bpmn:timerEventDefinition></bpmn:startEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="TimerStart" targetRef="T"/><bpmn:userTask id="T"/>
+    <bpmn:sequenceFlow id="f2" sourceRef="T" targetRef="E"/><bpmn:endEvent id="E"/>
+    <bpmn:boundaryEvent id="B1" attachedToRef="T">${condition}</bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f3" sourceRef="B1" targetRef="E1"/><bpmn:endEvent id="E1"/>
+    <bpmn:boundaryEvent id="B2" attachedToRef="T">${condition}</bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f4" sourceRef="B2" targetRef="E2"/><bpmn:endEvent id="E2"/>
+  </bpmn:process>
+</bpmn:definitions>`;
+  const read = await readKernelProgram({
+    bytes: new TextEncoder().encode(xml), overlay: null, profile: "test-profile", limits: { maxBytes: 1_048_576, parserDeadlineMs: 1_000 },
+  }, kernelProfileOptions([]));
+  if (read.kind !== "read") throw new Error(`reader refused ${read.code}`);
+  const program = kernelPort.decodeProgram(JSON.parse(JSON.stringify(read.program)) as JsonValue);
+  const memory = new MemoryPopulation(binding.populationPort, kernelPort.hostView, populationCapacity.receivers,
+    new Map<string, PopulationChain<Program, State>>());
+  memory.deploy("d", "digest", program, 0);
+  const firing = { commandId: "fire", deploymentId: 1, startEvent: "TimerStart", dueMs: 1_000 };
+  const answer = memory.command("fire", "timerStart", firing, "f", 1_000) as { resolution: JsonValue };
+  assert.deepEqual(answer.resolution, {
+    kind: "fanOut",
+    entries: [{ kind: "failed", target: { kind: "start", deploymentId: 1, startEvent: "TimerStart" }, outcome: "unsupported",
+      code: "conditions-simultaneous" }],
+  });
+});

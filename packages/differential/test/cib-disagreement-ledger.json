@@ -563,6 +563,12 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/conditional-boundary-hosts/level-both-eligible.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0053"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/conditional-esp/handler-writes-bounded-chain.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0009"

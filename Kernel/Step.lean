@@ -60,6 +60,16 @@ def inputHead : Input → InputTag × Option Nat × List ConditionChoice
   | .timerFire payload => (.timerFire, some (payload.atMs.getD payload.logicalTimeMs), payload.conditionChoices)
   | .effectResult payload => (.effectResult, payload.atMs, payload.conditionChoices)
 
+/-- Reject an input's ranking of competing Conditional items before its transition: an element listed twice
+(`condition-choice-duplicate`; the schema's `uniqueItems` does not reach a caller that decodes without it), or one that
+opens no Conditional item (`condition-choice-not-candidate`, `Hooks.competes`), so a ranking never names what no
+contest can contain. -/
+def admitChoices (hooks : Hooks) (ctx : Ctx) : Except Failure Unit :=
+  let elements := ctx.conditionChoices.map (·.element)
+  if elements.eraseDups.length != elements.length then .error (.rejected "condition-choice-duplicate")
+  else if elements.all (hooks.competes ctx) then .ok ()
+  else .error (.rejected "condition-choice-not-candidate")
+
 /-- The loop characteristics of a body occurrence, read from any element's envelope. -/
 def bodyLoop? (element : Element) (occurrence : Occurrence) : Option (Envelope × MultiInstance) :=
   if occurrence.role == .multiInstanceBody then
@@ -431,6 +441,7 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
     else do
       let (tag, at?, _) := inputHead input
       let start ← advanceClock at? { state with journal := [], outbox := [] }
+      admitChoices hooks ctx
       orderJournal (settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input tag) none State.root transition start))
 
 /-- `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. -/
@@ -466,6 +477,7 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
       admitValues (payload.variables.map (·.2))
       let initial ← advanceClock payload.atMs
         ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root))
+      admitChoices hooks ctx
       orderJournal <| settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input .start) (some start) State.root
         (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger }) initial)
   | .command data => onRunning hooks ctx input before (command hooks ctx data)

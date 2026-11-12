@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CompetingHostsStandards"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-contests:competing-hosts-standards"
+  expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:process id="Process_CompetingHostsStandards" name="Figure review with competing Conditional items (Simple Boolean)" isExecutable="true">
+    <bpmn:property id="level" name="Figure level" />
+    <bpmn:property id="ready" name="Gate readiness" />
+    <bpmn:property id="nest" name="Inspection stop" />
+    <bpmn:property id="mix" name="Alert" />
+    <bpmn:startEvent id="Start_Contests" />
+    <bpmn:parallelGateway id="Fork_Contests" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Writer" name="Record the figures" />
+    <bpmn:endEvent id="End_Writer" />
+    <bpmn:userTask id="Host_Task" name="Review the figures" />
+    <bpmn:endEvent id="End_Task" />
+    <bpmn:boundaryEvent id="Task_Present" attachedToRef="Host_Task">
+      <bpmn:conditionalEventDefinition id="CED_Task_Present">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">isPresent(level)</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Task_Present" name="Handle any level" />
+    <bpmn:endEvent id="End_Handle_Task_Present" />
+    <bpmn:boundaryEvent id="Task_High" attachedToRef="Host_Task">
+      <bpmn:conditionalEventDefinition id="CED_Task_High">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">stringEquals(level,"high")</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Task_High" name="Handle the high level" />
+    <bpmn:endEvent id="End_Handle_Task_High" />
+    <bpmn:userTask id="Enter_Gate" name="Open the gate" />
+    <bpmn:eventBasedGateway id="Gate" />
+    <bpmn:intermediateCatchEvent id="Arm_Present">
+      <bpmn:conditionalEventDefinition id="CED_Arm_Present">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">isPresent(ready)</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Chosen_Present" name="Take the present arm" />
+    <bpmn:endEvent id="End_Chosen_Present" />
+    <bpmn:intermediateCatchEvent id="Arm_Go">
+      <bpmn:conditionalEventDefinition id="CED_Arm_Go">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">stringEquals(ready,"go")</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Chosen_Go" name="Take the go arm" />
+    <bpmn:endEvent id="End_Chosen_Go" />
+    <bpmn:subProcess id="Host_Outer" name="Run the inspection">
+      <bpmn:startEvent id="Outer_Start" />
+      <bpmn:userTask id="Inner_Task" name="Inspect one item" />
+      <bpmn:endEvent id="Outer_End" />
+      <bpmn:boundaryEvent id="Inner_Stop" attachedToRef="Inner_Task">
+        <bpmn:conditionalEventDefinition id="CED_Inner_Stop">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">isPresent(nest)</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="Handle_Inner" name="Handle the inner stop" />
+      <bpmn:endEvent id="End_Handle_Inner" />
+      <bpmn:sequenceFlow id="Flow_Outer_Start_Inner_Task" sourceRef="Outer_Start" targetRef="Inner_Task" />
+      <bpmn:sequenceFlow id="Flow_Inner_Task_Outer_End" sourceRef="Inner_Task" targetRef="Outer_End" />
+      <bpmn:sequenceFlow id="Flow_Inner_Stop_Handle_Inner" sourceRef="Inner_Stop" targetRef="Handle_Inner" />
+      <bpmn:sequenceFlow id="Flow_Handle_Inner_End_Handle_Inner" sourceRef="Handle_Inner" targetRef="End_Handle_Inner" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Outer" />
+    <bpmn:boundaryEvent id="Outer_Stop" attachedToRef="Host_Outer">
+      <bpmn:conditionalEventDefinition id="CED_Outer_Stop">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">stringEquals(nest,"stop")</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Outer" name="Handle the outer stop" />
+    <bpmn:endEvent id="End_Handle_Outer" />
+    <bpmn:userTask id="Host_Mix" name="Watch the alert" />
+    <bpmn:endEvent id="End_Mix" />
+    <bpmn:boundaryEvent id="Mix_Warn" attachedToRef="Host_Mix" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Mix_Warn">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">isPresent(mix)</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Mix_Warn" name="Handle the warning" />
+    <bpmn:endEvent id="End_Handle_Mix_Warn" />
+    <bpmn:boundaryEvent id="Mix_Stop" attachedToRef="Host_Mix">
+      <bpmn:conditionalEventDefinition id="CED_Mix_Stop">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">stringEquals(mix,"stop")</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Mix_Stop" name="Handle the stop" />
+    <bpmn:endEvent id="End_Handle_Mix_Stop" />
+    <bpmn:sequenceFlow id="Flow_Start_Contests_Fork_Contests" sourceRef="Start_Contests" targetRef="Fork_Contests" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Writer" sourceRef="Fork_Contests" targetRef="Writer" />
+    <bpmn:sequenceFlow id="Flow_Writer_End_Writer" sourceRef="Writer" targetRef="End_Writer" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Host_Task" sourceRef="Fork_Contests" targetRef="Host_Task" />
+    <bpmn:sequenceFlow id="Flow_Host_Task_End_Task" sourceRef="Host_Task" targetRef="End_Task" />
+    <bpmn:sequenceFlow id="Flow_Task_Present_Handle_Task_Present" sourceRef="Task_Present" targetRef="Handle_Task_Present" />
+    <bpmn:sequenceFlow id="Flow_Handle_Task_Present_End_Handle_Task_Present" sourceRef="Handle_Task_Present" targetRef="End_Handle_Task_Present" />
+    <bpmn:sequenceFlow id="Flow_Task_High_Handle_Task_High" sourceRef="Task_High" targetRef="Handle_Task_High" />
+    <bpmn:sequenceFlow id="Flow_Handle_Task_High_End_Handle_Task_High" sourceRef="Handle_Task_High" targetRef="End_Handle_Task_High" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Enter_Gate" sourceRef="Fork_Contests" targetRef="Enter_Gate" />
+    <bpmn:sequenceFlow id="Flow_Enter_Gate_Gate" sourceRef="Enter_Gate" targetRef="Gate" />
+    <bpmn:sequenceFlow id="Flow_Gate_Arm_Present" sourceRef="Gate" targetRef="Arm_Present" />
+    <bpmn:sequenceFlow id="Flow_Arm_Present_Chosen_Present" sourceRef="Arm_Present" targetRef="Chosen_Present" />
+    <bpmn:sequenceFlow id="Flow_Chosen_Present_End_Chosen_Present" sourceRef="Chosen_Present" targetRef="End_Chosen_Present" />
+    <bpmn:sequenceFlow id="Flow_Gate_Arm_Go" sourceRef="Gate" targetRef="Arm_Go" />
+    <bpmn:sequenceFlow id="Flow_Arm_Go_Chosen_Go" sourceRef="Arm_Go" targetRef="Chosen_Go" />
+    <bpmn:sequenceFlow id="Flow_Chosen_Go_End_Chosen_Go" sourceRef="Chosen_Go" targetRef="End_Chosen_Go" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Host_Outer" sourceRef="Fork_Contests" targetRef="Host_Outer" />
+    <bpmn:sequenceFlow id="Flow_Host_Outer_End_Outer" sourceRef="Host_Outer" targetRef="End_Outer" />
+    <bpmn:sequenceFlow id="Flow_Outer_Stop_Handle_Outer" sourceRef="Outer_Stop" targetRef="Handle_Outer" />
+    <bpmn:sequenceFlow id="Flow_Handle_Outer_End_Handle_Outer" sourceRef="Handle_Outer" targetRef="End_Handle_Outer" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Host_Mix" sourceRef="Fork_Contests" targetRef="Host_Mix" />
+    <bpmn:sequenceFlow id="Flow_Host_Mix_End_Mix" sourceRef="Host_Mix" targetRef="End_Mix" />
+    <bpmn:sequenceFlow id="Flow_Mix_Warn_Handle_Mix_Warn" sourceRef="Mix_Warn" targetRef="Handle_Mix_Warn" />
+    <bpmn:sequenceFlow id="Flow_Handle_Mix_Warn_End_Handle_Mix_Warn" sourceRef="Handle_Mix_Warn" targetRef="End_Handle_Mix_Warn" />
+    <bpmn:sequenceFlow id="Flow_Mix_Stop_Handle_Mix_Stop" sourceRef="Mix_Stop" targetRef="Handle_Mix_Stop" />
+    <bpmn:sequenceFlow id="Flow_Handle_Mix_Stop_End_Handle_Mix_Stop" sourceRef="Handle_Mix_Stop" targetRef="End_Handle_Mix_Stop" />
+  </bpmn:process>
+</bpmn:definitions>

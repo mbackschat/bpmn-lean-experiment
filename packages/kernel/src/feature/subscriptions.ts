@@ -110,9 +110,9 @@ import {
   messageTriggerChannel, withdrawInside, withdrawOccurrence, type Catch, type Ctx,
 } from "../hooks.js";
 import { ClassifiedTag, TimerKind, armAt as armTimer, classify, dynamicCode, successor } from "../il/timer.js";
-import { armed, predicateHolds, requireOneWinner } from "./subscriptions/conditions.js";
+import { armed, fireAll, predicateHolds, resolveContests } from "./subscriptions/conditions.js";
 
-export { offerWrites } from "./subscriptions/conditions.js";
+export { competes, offerWrites } from "./subscriptions/conditions.js";
 
 /**
  * Where a subscription is armed: what a Timer value given by an expression reads (`values`), what a Message name given
@@ -335,7 +335,7 @@ function subscribe(
   return committed([evaluated.value[0], evaluated.value[1] ? item : null]);
 }
 
-/** Subscribe each of one arming's subscriptions in order; at most one item of a contest may fire (`requireOneWinner`). */
+/** Subscribe each of one arming's subscriptions in order, then fire what its contests resolve to (`resolveContests`). */
 function subscribeAll<T>(
   ctx: Ctx, state: State, entries: readonly T[], each: (state: State, entry: T) => Result<readonly [State, OpenItem | null]>,
 ): Outcome {
@@ -347,8 +347,8 @@ function subscribeAll<T>(
     [current] = next.value;
     if (next.value[1] !== null) fired.push(next.value[1]);
   }
-  const winner = requireOneWinner(ctx, fired);
-  return winner.ok ? committed(current) : failedWith(winner.failure);
+  const firings = resolveContests(ctx, current, [], fired);
+  return firings.ok ? committed(fireAll(null, firings.value, current)) : failedWith(firings.failure);
 }
 
 /** `Signal.arm`: open the boundaries of `element`, attached to `host`, in the host's scope `scope`. */
@@ -580,7 +580,7 @@ function admitFiring(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscrip
       const values = signalVariables(ctx, delivery.variables);
       return values.ok ? committed([state, values.value]) : failedWith(values.failure);
     }
-    // Only `evaluateItem` fires a Conditional item, after its predicate held.
+    // Only `fireAll` (conditions module) fires a Conditional item, once its predicate held and its contest is resolved.
     case FiredTag.Condition:
       return view.conditional === null ? failed(FailureTag.Rejected, "not-a-conditional-subscription") : committed([state, []]);
   }
@@ -687,7 +687,9 @@ export function arriveCatch(ctx: Ctx, _header: Header, _payload: EventPayload, s
   const item = opened.openItems[opened.openItems.length - 1];
   if (item === undefined) return committed(opened);
   const evaluated = armed(ctx, subscription, item, opened);
-  return evaluated.ok ? committed(evaluated.value[0]) : failedWith(evaluated.failure);
+  if (!evaluated.ok) return failedWith(evaluated.failure);
+  const [armedState, fires] = evaluated.value;
+  return committed(fires ? fireAll(null, [item], armedState) : armedState);
 }
 
 /** `Hooks.leave`: a completing occurrence's attached items go. */

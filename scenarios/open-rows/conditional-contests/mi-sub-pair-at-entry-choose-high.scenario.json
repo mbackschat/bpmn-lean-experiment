@@ -1,0 +1,92 @@
+{
+  "kind": "scenario",
+  "id": "conditional-contests-mi-sub-pair-at-entry-choose-high",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-contests-competing-hosts",
+    "relativePath": "scenarios/open-rows/conditional-contests/competing-hosts.bpmn",
+    "sha256": "c2609afe61fd68023b095714152af436dcd7cd711014a7258e7484322ad64b54",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Enter_MiSub",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Enter_MiSub",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "misub",
+            "value": {
+              "kind": "integer",
+              "value": 9
+            }
+          }
+        ]
+      },
+      "conditionChoices": [
+        {
+          "elementId": "MiSub_High"
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-MiSub_Work",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "MiSub_Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Handle_MiSub_High",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_MiSub_High",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

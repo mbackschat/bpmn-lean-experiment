@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_FirstWriteWins"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-contests:first-write-wins">
+  <bpmn:process id="Process_FirstWriteWins" name="Answers whose first write interrupts" isExecutable="true">
+    <bpmn:startEvent id="Start_Writes" />
+    <bpmn:userTask id="Host_Writes" name="Collect the answers" />
+    <bpmn:endEvent id="End_Writes" />
+    <bpmn:boundaryEvent id="Writes_A" attachedToRef="Host_Writes">
+      <bpmn:conditionalEventDefinition id="CED_Writes_A">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${a == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_A" name="Handle answer a" />
+    <bpmn:endEvent id="End_Handle_A" />
+    <bpmn:boundaryEvent id="Writes_B" attachedToRef="Host_Writes">
+      <bpmn:conditionalEventDefinition id="CED_Writes_B" camunda:variableName="b">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${b == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_B" name="Handle answer b" />
+    <bpmn:endEvent id="End_Handle_B" />
+    <bpmn:sequenceFlow id="Flow_Start_Writes_Host_Writes" sourceRef="Start_Writes" targetRef="Host_Writes" />
+    <bpmn:sequenceFlow id="Flow_Host_Writes_End_Writes" sourceRef="Host_Writes" targetRef="End_Writes" />
+    <bpmn:sequenceFlow id="Flow_Writes_A_Handle_A" sourceRef="Writes_A" targetRef="Handle_A" />
+    <bpmn:sequenceFlow id="Flow_Handle_A_End_Handle_A" sourceRef="Handle_A" targetRef="End_Handle_A" />
+    <bpmn:sequenceFlow id="Flow_Writes_B_Handle_B" sourceRef="Writes_B" targetRef="Handle_B" />
+    <bpmn:sequenceFlow id="Flow_Handle_B_End_Handle_B" sourceRef="Handle_B" targetRef="End_Handle_B" />
+  </bpmn:process>
+</bpmn:definitions>

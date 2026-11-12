@@ -1,0 +1,83 @@
+{
+  "kind": "scenario",
+  "id": "conditional-contests-standards-arms-at-arming-choose-go",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "conditional-contests-competing-hosts-standards",
+    "relativePath": "scenarios/open-rows/conditional-contests/competing-hosts-standards.bpmn",
+    "sha256": "269f66fb8299255cfb745d8d6105c34e8d48bd84f82c23ad6385cd56213d1a7a",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-ready",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Enter_Gate",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "ready",
+            "value": {
+              "kind": "string",
+              "value": "go"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Enter_Gate",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Enter_Gate",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      },
+      "conditionChoices": [
+        {
+          "elementId": "Arm_Go"
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Chosen_Go",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Chosen_Go",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §10.6.6",
+      "BPMN 2.0.2 §13.4.4"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

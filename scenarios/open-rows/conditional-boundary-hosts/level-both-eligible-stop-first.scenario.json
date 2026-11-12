@@ -1,0 +1,107 @@
+{
+  "kind": "scenario",
+  "id": "conditional-boundary-hosts-level-both-eligible-stop-first",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-boundary-hosts",
+    "relativePath": "scenarios/open-rows/conditional-boundary-hosts/conditional-hosts.bpmn",
+    "sha256": "1103110216c74d059c70057df8604e7567e1a3d160c7cf5ec22291ee1374c49f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Writer",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 9
+            }
+          }
+        ]
+      },
+      "conditionChoices": [
+        {
+          "elementId": "Stop_Level"
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Handle_Warn",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Warn",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Handle_Stop_Level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Stop_Level",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Host_Level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host_Level",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.92"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

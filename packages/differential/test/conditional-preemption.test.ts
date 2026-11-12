@@ -2,9 +2,10 @@
  * PC-CONDITION-03 to PC-CONDITION-05: several Conditional items true in one step fire one at a time, and an
  * interrupting firing withdraws the items it cancels before any other pending firing runs: an interrupting boundary ends
  * the items of its host and of everything inside it, and an interrupting Event Sub-Process those of its parent scope.
- * Items of which only one may fire (two arms of one Event-Based Gateway, two interrupting boundaries of one host, two
- * interrupting Event Sub-Process starts of one scope) true at one evaluation have no winner: BPMN orders no
- * simultaneous triggers (§13.4.4), CIB picks by `HashSet` order (#79), and the kernel refuses the input as `unsupported`.
+ * Items true at one evaluation where firing one withdraws another (two arms of one Event-Based Gateway, two interrupting
+ * boundaries of one host, an interrupting Event Sub-Process and a catch it cancels) have no winner of their own: BPMN
+ * orders no simultaneous triggers (§13.4.4) and CIB picks by `HashSet` order (#79, CIB-LIM-0053), so the input's
+ * ranking `conditionChoices` decides, and an input that leaves the contest undecided is refused as `unsupported`.
  * The oracle is the occurrences each input begins (the journal), not only the waits left open, because a later
  * cancellation can hide a firing that should never have begun. The model is `scenarios/open-rows/conditional-catch/arms.bpmn`,
  * whose two-true-arms run has no retained CIB answer; the other models mutate its shape.
@@ -40,9 +41,10 @@ const eventSubProcess = (id: string, predicate: string): string =>
 
 const go = (value: boolean): Json => ({ name: "go", value: { kind: "boolean", value } });
 const start = (variables: Json[]): Json => ({ kind: "start", commandId: "s01", instanceId: "Instance_1", variables });
-const setGo = (element: string): Json => ({
+/** `go` written true on `element`, the input ranking `choices` first. */
+const setGo = (element: string, choices: readonly string[] = []): Json => ({
   kind: "command", commandId: "s02", occurrence: { processInstanceId: "Instance_1", elementId: element, activation: 1 },
-  action: { kind: "setVariables", values: [go(true)] },
+  action: { kind: "setVariables", values: [go(true)] }, conditionChoices: choices.map((elementId) => ({ elementId })),
 });
 
 /** `bytes` read and decoded under the CIB profile. */
@@ -117,22 +119,24 @@ test("two interrupting Conditional Event Sub-Processes true at their scope's ent
   assert.deepEqual(await refused(model, [start([go(true)])]), { tag: "unsupported", code: "conditions-simultaneous" });
 });
 
-test("a write that makes an interrupting Event Sub-Process and a catch it cancels true fires only the Event Sub-Process", async () => {
+test("a write that makes an interrupting Event Sub-Process and a catch it cancels true fires the ranked one, unranked refused", async () => {
   const model = inline(`<bpmn:startEvent id="S"/><bpmn:sequenceFlow id="f0" sourceRef="S" targetRef="Fork"/><bpmn:parallelGateway id="Fork"/>
     ${branch("Fork", "W1")}<bpmn:sequenceFlow id="f3" sourceRef="Fork" targetRef="Wait"/>
     <bpmn:intermediateCatchEvent id="Wait">${condition("go == true")}</bpmn:intermediateCatchEvent>${branch("Wait", "W2")}
     ${eventSubProcess("ESP1", "go")}`);
-  const [, started] = await begun(model, [start([go(false)]), setGo("W1")]);
+  assert.deepEqual(await refused(model, [start([go(false)]), setGo("W1")]), { tag: "unsupported", code: "conditions-simultaneous" });
+  const [, started] = await begun(model, [start([go(false)]), setGo("W1", ["ESP1_Start"])]);
   assert.deepEqual(users(started ?? []), ["ESP1_Work"]);
 });
 
-test("a write that makes an interrupting boundary and a catch inside its host true fires only the boundary", async () => {
+test("a write that makes an interrupting boundary and a catch inside its host true fires the ranked one, unranked refused", async () => {
   const model = inline(`<bpmn:startEvent id="S"/><bpmn:sequenceFlow id="f0" sourceRef="S" targetRef="Fork"/><bpmn:parallelGateway id="Fork"/>
     ${branch("Fork", "Wait_Work")}<bpmn:sequenceFlow id="f3" sourceRef="Fork" targetRef="Host"/>
     <bpmn:subProcess id="Host"><bpmn:startEvent id="IS"/><bpmn:sequenceFlow id="i1" sourceRef="IS" targetRef="Wait"/>
       <bpmn:intermediateCatchEvent id="Wait">${condition("go == true")}</bpmn:intermediateCatchEvent>${branch("Wait", "Inner")}</bpmn:subProcess>
     <bpmn:sequenceFlow id="f4" sourceRef="Host" targetRef="E"/><bpmn:endEvent id="E"/>
     <bpmn:boundaryEvent id="B1" attachedToRef="Host">${condition("go")}</bpmn:boundaryEvent>${branch("B1", "W1")}`);
-  const [, started] = await begun(model, [start([go(false)]), setGo("Wait_Work")]);
+  assert.deepEqual(await refused(model, [start([go(false)]), setGo("Wait_Work")]), { tag: "unsupported", code: "conditions-simultaneous" });
+  const [, started] = await begun(model, [start([go(false)]), setGo("Wait_Work", ["B1"])]);
   assert.deepEqual(users(started ?? []), ["W1"]);
 });

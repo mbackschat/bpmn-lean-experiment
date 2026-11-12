@@ -74,6 +74,7 @@ export const hooks: Hooks = {
   handlerEnded: Compensation.handlerEnded,
   evaluate: Data.evaluate,
   catches: Subscriptions.catches,
+  competes: Subscriptions.competes,
   correlates: Correlation.correlates,
   startsFired: (ctx, input) => Starts.startsFired(startsHooks, ctx, input),
   delivered: Delivery.delivered,

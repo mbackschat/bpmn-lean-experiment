@@ -184,40 +184,137 @@ theorem loser_armed_rejected (kind : OpenKind) :
 
 /-! ## Simultaneous truth
 
-Items of which only one may fire (the arms of one Event-Based Gateway, the interrupting boundaries of one host, the
-interrupting Event Sub-Process starts of one scope) that become true at one evaluation have no winner: BPMN orders no
-simultaneous triggers (§13.4.4) and arming order is no choice the kernel may take (FLOW-SPEC), so the input is
-`unsupported`, never committed with one of them. -/
+Conditional items true at one evaluation (one arming, or one offered write) compete when firing one withdraws the
+other: an interrupting boundary everything inside its host, the host's other boundaries included, an Event-Based arm its
+gateway's other arms, an interrupting Event Sub-Process start everything inside its scope. A contest is a connected set
+of competing items. BPMN orders no simultaneous triggers (§13.4.4) and arming order is no choice the kernel may take
+(FLOW-SPEC, Deferred choice), so a contest fires as the input's ranking says (SUBSCRIPTIONS-SPEC "Conditions",
+CIB-LIM-0053), and is `unsupported` where the ranking leaves it undecided, never committed by a kernel default. -/
 
-/-- At most one of `fired`, the items one evaluation fired, wins: two distinct ones that `compete` make the evaluation's
-verdict an `unsupported` refusal. -/
-def OneWinner (competes : OpenItem → OpenItem → Prop) (fired : List OpenItem) (verdict : Except Failure Unit) : Prop :=
-  (∃ a ∈ fired, ∃ b ∈ fired, a.id ≠ b.id ∧ competes a b) → ∃ code, verdict = .error (.unsupported code)
+/-- Where a contest member stands in the walk: a member whose withdrawing firing an earlier write of the micro-step
+enqueued (`pending`) first, then by the first ranking entry naming its element. -/
+def walkRank {κ : Type} [BEq κ] (element : OpenItem → κ) (pending : List Nat) (ranking : List κ) (item : OpenItem) : Nat :=
+  if pending.contains item.id then 0 else ranking.idxOf (element item) + 1
 
-/-- Two arms of the gateway occurrence 2, the items of `armItem`. -/
-def armItem (id : Nat) (kind : OpenKind) : OpenItem :=
-  { id, kind, element := ⟨s!"C{id}"⟩, scope := ⟨0⟩, occurrence := id + 10, attachedTo := some 2 }
+/-- One contest's verdict: `members` are its items, `withdraws a b` says firing `a` withdraws `b`, `pending` names the
+members an earlier write already fired with withdrawal, `ranking` is the input's elements and `element` an item's public
+identity, of any type `κ` with an equality (`ElementId` in the kernel). A committed verdict is the contest's firing
+sequence: only pending or listed members fire, in walk order, none after a firing that withdrew it, each member fired
+or withdrawn; any other answer is an `unsupported` refusal. -/
+structure ContestWalk {κ : Type} [BEq κ] (element : OpenItem → κ) (withdraws : OpenItem → OpenItem → Bool)
+    (pending : List Nat) (ranking : List κ) (members : List OpenItem) (verdict : Except Failure (List OpenItem)) : Prop where
+  chosen : ∀ firings, verdict = .ok firings →
+    firings.all (fun item => pending.contains item.id || ranking.contains (element item)) = true
+  ordered : ∀ firings, verdict = .ok firings →
+    firings.Pairwise fun a b => walkRank element pending ranking a ≤ walkRank element pending ranking b
+  live : ∀ firings, verdict = .ok firings → firings.Pairwise fun a b => withdraws a b = false
+  decided : ∀ firings, verdict = .ok firings →
+    members.all (fun member => firings.any (·.id == member.id) || firings.any (withdraws · member)) = true
+  onlyMembers : ∀ firings, verdict = .ok firings → firings.all (fun item => members.any (·.id == item.id)) = true
+  refused : ∀ failure, verdict = .error failure → ∃ code, failure = .unsupported code
 
-def sameGateway (a b : OpenItem) : Prop := a.attachedTo = b.attachedTo
+/-- The ranking, not the order in which the evaluation met the contest's members, decides: `resolve` answers every
+order of `members` with the same firing sequence, read as elements. -/
+def OrderFree {κ : Type} (element : OpenItem → κ) (resolve : List OpenItem → Except Failure (List OpenItem))
+    (members : List OpenItem) : Prop :=
+  ∀ evaluated, evaluated.Perm members → (resolve evaluated).map (·.map element) = (resolve members).map (·.map element)
 
-theorem two_arms_refused (kind : OpenKind) :
-    OneWinner sameGateway [armItem 1 kind, armItem 2 kind] (.error (.unsupported "gateway-arms-simultaneous")) :=
-  fun _ => ⟨_, rfl⟩
+/-- A contest member: a Conditional item of the identity `id` on the element `name`. The witnesses below read an
+item's identity as its public element (`key`), which keeps them decidable by evaluation; distinct members carry distinct
+elements. -/
+def member (id : Nat) (name : String) : OpenItem :=
+  { id, kind := .conditional {}, element := ⟨name⟩, scope := ⟨0⟩, occurrence := id + 10 }
 
-theorem one_arm_commits (kind : OpenKind) : OneWinner sameGateway [armItem 1 kind] (.ok ()) := by
-  rintro ⟨a, ha, rest⟩
-  obtain ⟨b, hb, distinct, _⟩ := rest
-  simp only [List.mem_singleton] at ha hb
-  subst ha hb
-  exact absurd rfl distinct
+def key (item : OpenItem) : Nat := item.id
 
-/-- Two competing arms committed with one of them is rejected. -/
-theorem two_arms_committed_rejected (kind : OpenKind) : ¬ OneWinner sameGateway [armItem 1 kind, armItem 2 kind] (.ok ()) :=
-  fun law => by
-    have second : ∃ b ∈ [armItem 1 kind, armItem 2 kind], (armItem 1 kind).id ≠ b.id ∧ sameGateway (armItem 1 kind) b :=
-      ⟨armItem 2 kind, by simp, by simp [armItem], rfl⟩
-    obtain ⟨_, refused⟩ := law ⟨armItem 1 kind, by simp, second⟩
-    cases refused
+/-- `level-both-eligible`'s pair: the non-interrupting `Warn_Level` and the interrupting `Stop_Level`, which withdraws it. -/
+def warn : OpenItem := member 1 "Warn_Level"
+def stop : OpenItem := member 2 "Stop_Level"
+def mixed (a b : OpenItem) : Bool := a.id == 2 && b.id == 1
+
+/-- Nested regions: the outer interrupting boundary `BO` withdraws the inner `BI` inside its host, not the reverse. -/
+def outer : OpenItem := member 3 "BO"
+def inner : OpenItem := member 4 "BI"
+def nested (a b : OpenItem) : Bool := a.id == 3 && b.id == 4
+
+theorem mixed_both_fire :
+    ContestWalk key mixed [] [1, 2] [warn, stop] (.ok [warn, stop]) where
+  chosen _ h := by cases h; decide +kernel
+  ordered _ h := by cases h; decide +kernel
+  live _ h := by cases h; decide +kernel
+  decided _ h := by cases h; decide +kernel
+  onlyMembers _ h := by cases h; decide +kernel
+  refused _ h := by cases h
+
+theorem mixed_interrupting_first :
+    ContestWalk key mixed [] [2, 1] [warn, stop] (.ok [stop]) where
+  chosen _ h := by cases h; decide +kernel
+  ordered _ h := by cases h; decide +kernel
+  live _ h := by cases h; decide +kernel
+  decided _ h := by cases h; decide +kernel
+  onlyMembers _ h := by cases h; decide +kernel
+  refused _ h := by cases h
+
+theorem mixed_unlisted_refused :
+    ContestWalk key mixed [] [1] [warn, stop] (.error (.unsupported "conditions-simultaneous")) where
+  chosen _ h := by cases h
+  ordered _ h := by cases h
+  live _ h := by cases h
+  decided _ h := by cases h
+  onlyMembers _ h := by cases h
+  refused _ h := by cases h; exact ⟨_, rfl⟩
+
+/-- Firing the listed non-interrupting member and leaving the unlisted interrupting one is rejected. -/
+theorem mixed_unlisted_committed_rejected :
+    ¬ ContestWalk key mixed [] [1] [warn, stop] (.ok [warn]) :=
+  fun law => by have := law.decided _ rfl; revert this; decide +kernel
+
+/-- An empty ranking that fires the interrupting member by default is rejected. -/
+theorem default_winner_rejected : ¬ ContestWalk key mixed [] [] [warn, stop] (.ok [stop]) :=
+  fun law => by have := law.chosen _ rfl; revert this; decide +kernel
+
+/-- A firing after one that withdrew it is rejected. -/
+theorem withdrawn_fires_rejected :
+    ¬ ContestWalk key mixed [] [2, 1] [warn, stop] (.ok [stop, warn]) :=
+  fun law => by have := law.live _ rfl; revert this; decide +kernel
+
+/-- A pending member fires first and decides what it withdraws with no ranking. -/
+theorem pending_decides : ContestWalk key mixed [2] [] [warn, stop] (.ok [stop]) where
+  chosen _ h := by cases h; decide +kernel
+  ordered _ h := by cases h; decide +kernel
+  live _ h := by cases h; decide +kernel
+  decided _ h := by cases h; decide +kernel
+  onlyMembers _ h := by cases h; decide +kernel
+  refused _ h := by cases h
+
+theorem nested_outer_chosen : ContestWalk key nested [] [3] [outer, inner] (.ok [outer]) where
+  chosen _ h := by cases h; decide +kernel
+  ordered _ h := by cases h; decide +kernel
+  live _ h := by cases h; decide +kernel
+  decided _ h := by cases h; decide +kernel
+  onlyMembers _ h := by cases h; decide +kernel
+  refused _ h := by cases h
+
+theorem nested_inner_then_outer :
+    ContestWalk key nested [] [4, 3] [outer, inner] (.ok [inner, outer]) where
+  chosen _ h := by cases h; decide +kernel
+  ordered _ h := by cases h; decide +kernel
+  live _ h := by cases h; decide +kernel
+  decided _ h := by cases h; decide +kernel
+  onlyMembers _ h := by cases h; decide +kernel
+  refused _ h := by cases h
+
+/-- The outermost-first order the kernel once took, unranked, is rejected. -/
+theorem nested_outermost_default_rejected : ¬ ContestWalk key nested [] [] [outer, inner] (.ok [outer]) :=
+  fun law => by have := law.chosen _ rfl; revert this; decide +kernel
+
+/-- A resolver that answers in the order it met the members is not order-free. -/
+theorem evaluation_order_rejected : ¬ OrderFree key .ok [warn, stop] :=
+  fun law => by have := law [stop, warn] (.swap _ _ []); simp [Except.map, key, warn, stop, member] at this
+
+/-- A resolver that reads only the ranking is order-free. -/
+theorem ranking_order_free : OrderFree key (fun _ => .ok [stop]) [warn, stop] :=
+  fun _ _ => rfl
 
 /-! ## Message delivery order
 

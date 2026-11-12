@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CompetingHosts"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-contests:competing-hosts">
+  <bpmn:process id="Process_CompetingHosts" name="Figure review with competing Conditional items on every kind of host" isExecutable="true">
+    <bpmn:startEvent id="Start_Contests" />
+    <bpmn:parallelGateway id="Fork_Contests" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Writer" name="Record the figures" />
+    <bpmn:endEvent id="End_Writer" />
+    <bpmn:userTask id="Enter_Task" name="Open the review" />
+    <bpmn:userTask id="Host_Task" name="Review the figures" />
+    <bpmn:endEvent id="End_Task" />
+    <bpmn:boundaryEvent id="Task_Low" attachedToRef="Host_Task">
+      <bpmn:conditionalEventDefinition id="CED_Task_Low" camunda:variableName="figure">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${figure &gt; 1}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Task_Low" name="Handle the low figure" />
+    <bpmn:endEvent id="End_Handle_Task_Low" />
+    <bpmn:boundaryEvent id="Task_High" attachedToRef="Host_Task">
+      <bpmn:conditionalEventDefinition id="CED_Task_High" camunda:variableName="figure">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${figure &gt; 2}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Task_High" name="Handle the high figure" />
+    <bpmn:endEvent id="End_Handle_Task_High" />
+    <bpmn:serviceTask id="Fetch" name="Fetch the figure" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="figure">${figureNext}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Fetch" />
+    <bpmn:userTask id="Host_MiTask" name="Review every lot together">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_MiTask" />
+    <bpmn:boundaryEvent id="MiTask_Low" attachedToRef="Host_MiTask">
+      <bpmn:conditionalEventDefinition id="CED_MiTask_Low" camunda:variableName="mi">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${mi &gt; 1}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_MiTask_Low" name="Handle the low lot figure" />
+    <bpmn:endEvent id="End_Handle_MiTask_Low" />
+    <bpmn:boundaryEvent id="MiTask_High" attachedToRef="Host_MiTask">
+      <bpmn:conditionalEventDefinition id="CED_MiTask_High" camunda:variableName="mi">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${mi &gt; 2}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_MiTask_High" name="Handle the high lot figure" />
+    <bpmn:endEvent id="End_Handle_MiTask_High" />
+    <bpmn:userTask id="Enter_Sub" name="Open the audit" />
+    <bpmn:subProcess id="Host_Sub" name="Audit the figures">
+      <bpmn:startEvent id="Sub_Start" />
+      <bpmn:userTask id="Sub_Work" name="Audit one figure" />
+      <bpmn:endEvent id="Sub_End" />
+      <bpmn:sequenceFlow id="Flow_Sub_Start_Sub_Work" sourceRef="Sub_Start" targetRef="Sub_Work" />
+      <bpmn:sequenceFlow id="Flow_Sub_Work_Sub_End" sourceRef="Sub_Work" targetRef="Sub_End" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Sub" />
+    <bpmn:boundaryEvent id="Sub_Low" attachedToRef="Host_Sub">
+      <bpmn:conditionalEventDefinition id="CED_Sub_Low" camunda:variableName="sub">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${sub &gt; 1}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Sub_Low" name="Handle the low audit figure" />
+    <bpmn:endEvent id="End_Handle_Sub_Low" />
+    <bpmn:boundaryEvent id="Sub_High" attachedToRef="Host_Sub">
+      <bpmn:conditionalEventDefinition id="CED_Sub_High" camunda:variableName="sub">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${sub &gt; 2}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Sub_High" name="Handle the high audit figure" />
+    <bpmn:endEvent id="End_Handle_Sub_High" />
+    <bpmn:userTask id="Enter_Call" name="Open the external check" />
+    <bpmn:callActivity id="Host_Call" name="Run the external check" calledElement="Process_CompetingChild" />
+    <bpmn:endEvent id="End_Call" />
+    <bpmn:boundaryEvent id="Call_Low" attachedToRef="Host_Call">
+      <bpmn:conditionalEventDefinition id="CED_Call_Low" camunda:variableName="call">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${call &gt; 1}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Call_Low" name="Handle the low check figure" />
+    <bpmn:endEvent id="End_Handle_Call_Low" />
+    <bpmn:boundaryEvent id="Call_High" attachedToRef="Host_Call">
+      <bpmn:conditionalEventDefinition id="CED_Call_High" camunda:variableName="call">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${call &gt; 2}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Call_High" name="Handle the high check figure" />
+    <bpmn:endEvent id="End_Handle_Call_High" />
+    <bpmn:userTask id="Enter_MiSub" name="Open the lot audits" />
+    <bpmn:subProcess id="Host_MiSub" name="Audit every lot">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
+      <bpmn:startEvent id="MiSub_Start" />
+      <bpmn:userTask id="MiSub_Work" name="Audit one lot" />
+      <bpmn:endEvent id="MiSub_End" />
+      <bpmn:sequenceFlow id="Flow_MiSub_Start_MiSub_Work" sourceRef="MiSub_Start" targetRef="MiSub_Work" />
+      <bpmn:sequenceFlow id="Flow_MiSub_Work_MiSub_End" sourceRef="MiSub_Work" targetRef="MiSub_End" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_MiSub" />
+    <bpmn:boundaryEvent id="MiSub_Low" attachedToRef="Host_MiSub">
+      <bpmn:conditionalEventDefinition id="CED_MiSub_Low" camunda:variableName="misub">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${misub &gt; 1}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_MiSub_Low" name="Handle the low lot audit figure" />
+    <bpmn:endEvent id="End_Handle_MiSub_Low" />
+    <bpmn:boundaryEvent id="MiSub_High" attachedToRef="Host_MiSub">
+      <bpmn:conditionalEventDefinition id="CED_MiSub_High" camunda:variableName="misub">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${misub &gt; 2}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_MiSub_High" name="Handle the high lot audit figure" />
+    <bpmn:endEvent id="End_Handle_MiSub_High" />
+    <bpmn:subProcess id="Host_Outer" name="Run the inspection">
+      <bpmn:startEvent id="Outer_Start" />
+      <bpmn:userTask id="Inner_Task" name="Inspect one item" />
+      <bpmn:endEvent id="Outer_End" />
+      <bpmn:boundaryEvent id="Inner_Stop" attachedToRef="Inner_Task">
+        <bpmn:conditionalEventDefinition id="CED_Inner_Stop" camunda:variableName="nest">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${nest &gt; 1}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="Handle_Inner" name="Handle the inner stop" />
+      <bpmn:endEvent id="End_Handle_Inner" />
+      <bpmn:sequenceFlow id="Flow_Outer_Start_Inner_Task" sourceRef="Outer_Start" targetRef="Inner_Task" />
+      <bpmn:sequenceFlow id="Flow_Inner_Task_Outer_End" sourceRef="Inner_Task" targetRef="Outer_End" />
+      <bpmn:sequenceFlow id="Flow_Inner_Stop_Handle_Inner" sourceRef="Inner_Stop" targetRef="Handle_Inner" />
+      <bpmn:sequenceFlow id="Flow_Handle_Inner_End_Handle_Inner" sourceRef="Handle_Inner" targetRef="End_Handle_Inner" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Outer" />
+    <bpmn:boundaryEvent id="Outer_Stop" attachedToRef="Host_Outer">
+      <bpmn:conditionalEventDefinition id="CED_Outer_Stop" camunda:variableName="nest">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${nest &gt; 2}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Outer" name="Handle the outer stop" />
+    <bpmn:endEvent id="End_Handle_Outer" />
+    <bpmn:subProcess id="Esp_Low" triggeredByEvent="true">
+      <bpmn:startEvent id="Esp_Low_Start">
+        <bpmn:conditionalEventDefinition id="CED_Esp_Low_Start" camunda:variableName="esp">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${esp &gt; 1}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Esp_Low_Work" name="Handle the low escalation" />
+      <bpmn:endEvent id="Esp_Low_End" />
+      <bpmn:sequenceFlow id="Flow_Esp_Low_Start_Esp_Low_Work" sourceRef="Esp_Low_Start" targetRef="Esp_Low_Work" />
+      <bpmn:sequenceFlow id="Flow_Esp_Low_Work_Esp_Low_End" sourceRef="Esp_Low_Work" targetRef="Esp_Low_End" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="Esp_High" triggeredByEvent="true">
+      <bpmn:startEvent id="Esp_High_Start">
+        <bpmn:conditionalEventDefinition id="CED_Esp_High_Start" camunda:variableName="esp">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${esp &gt; 2}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Esp_High_Work" name="Handle the high escalation" />
+      <bpmn:endEvent id="Esp_High_End" />
+      <bpmn:sequenceFlow id="Flow_Esp_High_Start_Esp_High_Work" sourceRef="Esp_High_Start" targetRef="Esp_High_Work" />
+      <bpmn:sequenceFlow id="Flow_Esp_High_Work_Esp_High_End" sourceRef="Esp_High_Work" targetRef="Esp_High_End" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="Mix_Warn" triggeredByEvent="true">
+      <bpmn:startEvent id="Mix_Warn_Start" isInterrupting="false">
+        <bpmn:conditionalEventDefinition id="CED_Mix_Warn_Start" camunda:variableName="mix">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${mix &gt; 1}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Mix_Warn_Work" name="Handle the warning" />
+      <bpmn:endEvent id="Mix_Warn_End" />
+      <bpmn:sequenceFlow id="Flow_Mix_Warn_Start_Mix_Warn_Work" sourceRef="Mix_Warn_Start" targetRef="Mix_Warn_Work" />
+      <bpmn:sequenceFlow id="Flow_Mix_Warn_Work_Mix_Warn_End" sourceRef="Mix_Warn_Work" targetRef="Mix_Warn_End" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="Mix_Stop" triggeredByEvent="true">
+      <bpmn:startEvent id="Mix_Stop_Start">
+        <bpmn:conditionalEventDefinition id="CED_Mix_Stop_Start" camunda:variableName="mix">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${mix &gt; 2}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Mix_Stop_Work" name="Handle the stop" />
+      <bpmn:endEvent id="Mix_Stop_End" />
+      <bpmn:sequenceFlow id="Flow_Mix_Stop_Start_Mix_Stop_Work" sourceRef="Mix_Stop_Start" targetRef="Mix_Stop_Work" />
+      <bpmn:sequenceFlow id="Flow_Mix_Stop_Work_Mix_Stop_End" sourceRef="Mix_Stop_Work" targetRef="Mix_Stop_End" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Start_Contests_Fork_Contests" sourceRef="Start_Contests" targetRef="Fork_Contests" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Writer" sourceRef="Fork_Contests" targetRef="Writer" />
+    <bpmn:sequenceFlow id="Flow_Writer_End_Writer" sourceRef="Writer" targetRef="End_Writer" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Enter_Task" sourceRef="Fork_Contests" targetRef="Enter_Task" />
+    <bpmn:sequenceFlow id="Flow_Enter_Task_Host_Task" sourceRef="Enter_Task" targetRef="Host_Task" />
+    <bpmn:sequenceFlow id="Flow_Host_Task_End_Task" sourceRef="Host_Task" targetRef="End_Task" />
+    <bpmn:sequenceFlow id="Flow_Task_Low_Handle_Task_Low" sourceRef="Task_Low" targetRef="Handle_Task_Low" />
+    <bpmn:sequenceFlow id="Flow_Handle_Task_Low_End_Handle_Task_Low" sourceRef="Handle_Task_Low" targetRef="End_Handle_Task_Low" />
+    <bpmn:sequenceFlow id="Flow_Task_High_Handle_Task_High" sourceRef="Task_High" targetRef="Handle_Task_High" />
+    <bpmn:sequenceFlow id="Flow_Handle_Task_High_End_Handle_Task_High" sourceRef="Handle_Task_High" targetRef="End_Handle_Task_High" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Fetch" sourceRef="Fork_Contests" targetRef="Fetch" />
+    <bpmn:sequenceFlow id="Flow_Fetch_End_Fetch" sourceRef="Fetch" targetRef="End_Fetch" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Host_MiTask" sourceRef="Fork_Contests" targetRef="Host_MiTask" />
+    <bpmn:sequenceFlow id="Flow_Host_MiTask_End_MiTask" sourceRef="Host_MiTask" targetRef="End_MiTask" />
+    <bpmn:sequenceFlow id="Flow_MiTask_Low_Handle_MiTask_Low" sourceRef="MiTask_Low" targetRef="Handle_MiTask_Low" />
+    <bpmn:sequenceFlow id="Flow_Handle_MiTask_Low_End_Handle_MiTask_Low" sourceRef="Handle_MiTask_Low" targetRef="End_Handle_MiTask_Low" />
+    <bpmn:sequenceFlow id="Flow_MiTask_High_Handle_MiTask_High" sourceRef="MiTask_High" targetRef="Handle_MiTask_High" />
+    <bpmn:sequenceFlow id="Flow_Handle_MiTask_High_End_Handle_MiTask_High" sourceRef="Handle_MiTask_High" targetRef="End_Handle_MiTask_High" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Enter_Sub" sourceRef="Fork_Contests" targetRef="Enter_Sub" />
+    <bpmn:sequenceFlow id="Flow_Enter_Sub_Host_Sub" sourceRef="Enter_Sub" targetRef="Host_Sub" />
+    <bpmn:sequenceFlow id="Flow_Host_Sub_End_Sub" sourceRef="Host_Sub" targetRef="End_Sub" />
+    <bpmn:sequenceFlow id="Flow_Sub_Low_Handle_Sub_Low" sourceRef="Sub_Low" targetRef="Handle_Sub_Low" />
+    <bpmn:sequenceFlow id="Flow_Handle_Sub_Low_End_Handle_Sub_Low" sourceRef="Handle_Sub_Low" targetRef="End_Handle_Sub_Low" />
+    <bpmn:sequenceFlow id="Flow_Sub_High_Handle_Sub_High" sourceRef="Sub_High" targetRef="Handle_Sub_High" />
+    <bpmn:sequenceFlow id="Flow_Handle_Sub_High_End_Handle_Sub_High" sourceRef="Handle_Sub_High" targetRef="End_Handle_Sub_High" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Enter_Call" sourceRef="Fork_Contests" targetRef="Enter_Call" />
+    <bpmn:sequenceFlow id="Flow_Enter_Call_Host_Call" sourceRef="Enter_Call" targetRef="Host_Call" />
+    <bpmn:sequenceFlow id="Flow_Host_Call_End_Call" sourceRef="Host_Call" targetRef="End_Call" />
+    <bpmn:sequenceFlow id="Flow_Call_Low_Handle_Call_Low" sourceRef="Call_Low" targetRef="Handle_Call_Low" />
+    <bpmn:sequenceFlow id="Flow_Handle_Call_Low_End_Handle_Call_Low" sourceRef="Handle_Call_Low" targetRef="End_Handle_Call_Low" />
+    <bpmn:sequenceFlow id="Flow_Call_High_Handle_Call_High" sourceRef="Call_High" targetRef="Handle_Call_High" />
+    <bpmn:sequenceFlow id="Flow_Handle_Call_High_End_Handle_Call_High" sourceRef="Handle_Call_High" targetRef="End_Handle_Call_High" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Enter_MiSub" sourceRef="Fork_Contests" targetRef="Enter_MiSub" />
+    <bpmn:sequenceFlow id="Flow_Enter_MiSub_Host_MiSub" sourceRef="Enter_MiSub" targetRef="Host_MiSub" />
+    <bpmn:sequenceFlow id="Flow_Host_MiSub_End_MiSub" sourceRef="Host_MiSub" targetRef="End_MiSub" />
+    <bpmn:sequenceFlow id="Flow_MiSub_Low_Handle_MiSub_Low" sourceRef="MiSub_Low" targetRef="Handle_MiSub_Low" />
+    <bpmn:sequenceFlow id="Flow_Handle_MiSub_Low_End_Handle_MiSub_Low" sourceRef="Handle_MiSub_Low" targetRef="End_Handle_MiSub_Low" />
+    <bpmn:sequenceFlow id="Flow_MiSub_High_Handle_MiSub_High" sourceRef="MiSub_High" targetRef="Handle_MiSub_High" />
+    <bpmn:sequenceFlow id="Flow_Handle_MiSub_High_End_Handle_MiSub_High" sourceRef="Handle_MiSub_High" targetRef="End_Handle_MiSub_High" />
+    <bpmn:sequenceFlow id="Flow_Fork_Contests_Host_Outer" sourceRef="Fork_Contests" targetRef="Host_Outer" />
+    <bpmn:sequenceFlow id="Flow_Host_Outer_End_Outer" sourceRef="Host_Outer" targetRef="End_Outer" />
+    <bpmn:sequenceFlow id="Flow_Outer_Stop_Handle_Outer" sourceRef="Outer_Stop" targetRef="Handle_Outer" />
+    <bpmn:sequenceFlow id="Flow_Handle_Outer_End_Handle_Outer" sourceRef="Handle_Outer" targetRef="End_Handle_Outer" />
+  </bpmn:process>
+  <bpmn:process id="Process_CompetingChild" isExecutable="true">
+    <bpmn:startEvent id="Start_Child" />
+    <bpmn:userTask id="Child_Work" name="Carry out the check" />
+    <bpmn:endEvent id="End_Child" />
+    <bpmn:sequenceFlow id="Flow_Start_Child_Child_Work" sourceRef="Start_Child" targetRef="Child_Work" />
+    <bpmn:sequenceFlow id="Flow_Child_Work_End_Child" sourceRef="Child_Work" targetRef="End_Child" />
+  </bpmn:process>
+</bpmn:definitions>

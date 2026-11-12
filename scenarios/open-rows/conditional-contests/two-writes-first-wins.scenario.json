@@ -1,0 +1,86 @@
+{
+  "kind": "scenario",
+  "id": "conditional-contests-two-writes-first-wins",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-contests-first-write-wins",
+    "relativePath": "scenarios/open-rows/conditional-contests/first-write-wins.bpmn",
+    "sha256": "4bbd247a62d903c15635cf76229677313629d1a5b23d9014bc6568b579409fbb",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-a-and-b",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host_Writes",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "a",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "b",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Handle_B",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_B",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Handle_A",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_A",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryConditionalEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/ConditionalEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/VariableListenerInvocationListener.java"
+    ]
+  }
+}

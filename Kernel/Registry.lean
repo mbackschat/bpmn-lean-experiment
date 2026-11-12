@@ -75,6 +75,7 @@ def hooks : Hooks :=
     handlerEnded := Feature.Compensation.handlerEnded
     evaluate := Feature.Data.evaluate
     catches := Feature.Subscriptions.catches
+    competes := Feature.Subscriptions.competes
     correlates := Feature.Correlation.correlates
     startsFired := Feature.Starts.startsFired startsHooks
     delivered := Feature.Subscriptions.delivered
