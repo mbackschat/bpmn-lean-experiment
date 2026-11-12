@@ -24,7 +24,7 @@ The counts below cover only entries recorded by this project, including the sepa
 |---|---:|---:|---|
 | Normative agreement records | 23 | 0 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
-| Confirmed normative deviations | 0 | 9 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
+| Confirmed normative deviations | 0 | 10 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 36 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 45 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
@@ -225,6 +225,16 @@ ISO 8601 makes `PnW` `7n` days. CIB parses `P\\d+W` as `newDuration(n·604,800,0
 **Status:** Withdrawn, not a deviation (M6 track review, 2026-11-11); recorded as CIB-EXT-0038
 
 CIB arms a Service Task's boundaries exactly while the Task is active, and its delegate realization makes that period atomic; BPMN does not require the Active state to last, so no clear requirement is broken. The difference comes from the project's mapping of CIB's pre-activation wait onto the active effect occurrence and is recorded as [CIB-EXT-0038](#cib-ext-0038--the-kernels-effect-wait-holds-its-hosts-boundaries-armed-which-cibs-asyncbefore-realization-never-commits).
+
+### CIB-DEV-0011 — CIB starts every compensation handler of one trigger at once
+
+**Status:** Deviation candidate from the pinned source and retained evidence; selected by no profile, since the kernel keeps BPMN's dependency order under every profile (`ProfileOptions.compensationOrder = dependency`; `allAtOnce` is refused)
+
+BPMN 2.0.2 §13.5.5 runs default compensation "in reverse order of the execution of the original Activities, allowing for concurrency when there was no dependency": a Sequence Flow from A to B, a boundary Event of A connected to B, or a data dependency of B on A compensates B before A, and the records of one looping Activity run in reverse order of their forward completion. CIB Seven `2.2.0` creates a concurrent execution for every retained compensation subscription of the trigger and signals them all, in reverse creation order, within the triggering command, so every waiting handler is open at once whatever the dependencies.
+
+**Evidence:** Pinned `bpmn/helper/CompensationUtil.java:55-88`; the retained answers of [compensation-order-chronology](../scenarios/open-rows/compensation-order-chronology/README.md) (all five schedules), [with-message-before-a-completes](../scenarios/open-rows/compensation-order-and-multiplicity/README.md), [end-untargeted](../scenarios/open-rows/compensation-targeting/README.md) and [late-third-second-throw, two-records-live-data and unfinished-third-ineligible](../scenarios/open-rows/compensation-eligibility/README.md) (profile `cibseven-2.2.0`), where CIB opens a handler the kernel holds until the handlers of its dependents complete. The sequential Multi-Instance witnesses `compensation-multi-instance-bodies/tasks-sequential-in-turn`, `regions-sequential-in-turn` and `compensation-order-and-multiplicity/call-sequential-three-reviewers` fall under the same source reading and are refused at admission today.
+
+**Boundary:** Triggers retaining two subjects that a §13.5.5 dependency orders, or repeated records of one subject; this entry owns the witnesses above whose only difference is CIB opening the ordered handlers together.
 
 A candidate must appear here immediately when evidence suggests conflict with a clear BPMN requirement. It remains a candidate until the evidence threshold below is satisfied. Implementation of the disputed profile-dependent behavior pauses unless the capsule explicitly preserves competing accounts as an unresolved experiment.
 

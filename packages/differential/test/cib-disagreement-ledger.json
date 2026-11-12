@@ -289,19 +289,19 @@
   {
     "evidence": "scenarios/open-rows/compensation-eligibility/late-third-second-throw.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-03"
+      "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-eligibility/two-records-live-data.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-03"
+      "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-eligibility/unfinished-third-ineligible.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-03"
+      "CIB-DEV-0011"
     ]
   },
   {
@@ -532,43 +532,37 @@
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/with-message-before-a-completes.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-02"
+      "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-chronology/advancing-clock-a-b-c.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-02"
+      "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-chronology/advancing-clock-a-c-b.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-02"
+      "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-chronology/advancing-clock-c-a-b.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-02"
+      "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-chronology/frozen-clock-a-b-c.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-02"
+      "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-chronology/frozen-clock-c-a-b.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-02"
+      "CIB-DEV-0011"
     ]
   },
   {
@@ -598,7 +592,7 @@
   {
     "evidence": "scenarios/open-rows/compensation-targeting/end-untargeted.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-02"
+      "CIB-DEV-0011"
     ]
   },
   {
