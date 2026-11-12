@@ -7,11 +7,11 @@ import {
   TransactionMethods,
   assertNever,
   elementActivity,
+  elementBeginsImplicitly,
   elementEnvelope,
   elementHeader,
   elementScope,
   elementStart,
-  programBeginsImplicitly,
   programBoundary,
   programChildren,
   programElement,
@@ -32,7 +32,7 @@ export function implicitChild(program: Program, header: Header): boolean {
   if (header.parent === null) return false;
   const children = programChildren(program, header.parent);
   return !children.some((child) => elementStart(child) !== null) &&
-    children.some((child) => elementHeader(child).id === header.id && programBeginsImplicitly(program, child));
+    children.some((child) => elementHeader(child).id === header.id && elementBeginsImplicitly(child));
 }
 
 /**
@@ -43,7 +43,7 @@ function implicitStart(program: Program, header: Header): string | null {
   const children = programChildren(program, header.id);
   if (children.some((child) => elementStart(child) !== null)) return null;
   const tokenless = children.some((child) =>
-    programBeginsImplicitly(program, child) && elementActivity(child) === null && elementScope(child) === null);
+    elementBeginsImplicitly(child) && elementActivity(child) === null && elementScope(child) === null);
   return tokenless ? "scope.implicitStart" : null;
 }
 

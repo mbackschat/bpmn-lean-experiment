@@ -51,6 +51,13 @@ export const rows: readonly Row[] = [
     control: handledBy(handler("manual")),
   },
   {
+    // CIB reads a compensation handler from the mark alone (`BpmnParse.java:2057-2059`), named by an Association or not.
+    code: "compensation.handlerFlow",
+    description: "an Activity marked for compensation that no Association names, with an outgoing Sequence Flow",
+    mutate: (program) => withFlows(append(program, handler("manual")), flow("he", "H", "E")),
+    control: (program) => append(program, handler("manual")),
+  },
+  {
     // CIB-LIM-0044: CIB refuses a Process-level Compensation Event Sub-Process (`BpmnParse.java:1187-1190`).
     code: "compensation.processEventSubProcess",
     description: "a Compensation Event Sub-Process at Process level",
@@ -63,6 +70,12 @@ export const rows: readonly Row[] = [
     description: "a compensation handler with Multi-Instance loop characteristics",
     mutate: handledBy(handler(serviceWork(), { multiInstance: loop({ outputDataItem: null }) })),
     control: handledBy(handler(serviceWork())),
+  },
+  {
+    code: "compensation.handlerMultiInstance",
+    description: "an Activity marked for compensation that no Association names, with Multi-Instance loop characteristics",
+    mutate: (program) => append(program, handler(serviceWork(), { multiInstance: loop({ outputDataItem: null }) })),
+    control: (program) => append(program, handler(serviceWork())),
   },
   {
     code: "process.definition.binding",

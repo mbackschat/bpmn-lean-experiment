@@ -574,6 +574,25 @@ export function elementIncoming(element: Element): readonly FlowId[] {
 }
 
 /**
+ * Whether the element is a Compensation Activity, an Activity or Scope marked `isForCompensation` (BPMN 2.0.2 §10.7.1,
+ * Table 10.3): the one reading of a compensation handler outside the Event Sub-Processes, whether an Association names
+ * it or not, as CIB reads it (`BpmnParse.java:2057-2059`).
+ */
+export function elementIsCompensationActivity(element: Element): boolean {
+  return elementEnvelope(element)?.forCompensation === true;
+}
+
+/**
+ * Whether an element begins when its parent Scope is entered without a none start Event: it has no incoming flow, is
+ * no Compensation Activity and is no Event Sub-Process (BPMN 2.0.2 §10.7.1, §13.3.4, §13.5.5).
+ */
+export function elementBeginsImplicitly(element: Element): boolean {
+  const scope = elementScope(element);
+  const eventSubProcess = scope !== null && scopeKindStart(scope[1].kind) !== null;
+  return elementIncoming(element).length === 0 && elementStart(element) === null && !elementIsCompensationActivity(element) && !eventSubProcess;
+}
+
+/**
  * A trigger's payload under its kind, `null` under every other: the IL's one match on `Trigger` (`triggerTimer` and so
  * on); `variables` are what a catch of an Error or Escalation sets from what it caught.
  */
@@ -674,20 +693,6 @@ export function programCallsRoot(program: Program, resolution: CalledElementReso
  */
 export function programDecision(program: Program, key: string): Decision | null {
   return program.decisionResources.flatMap((resource) => resource.decisions).find((decision) => decision.id === key) ?? null;
-}
-
-/**
- * Whether an element begins when its parent Scope is entered without a none start Event: it has no incoming flow, is
- * no compensation handler, whether an Association names it or it is only marked `isForCompensation`, and is no Event
- * Sub-Process (BPMN 2.0.2 §10.7.1, §13.3.4, §13.5.5).
- */
-export function programBeginsImplicitly(program: Program, element: Element): boolean {
-  const id = elementHeader(element).id;
-  const handler = program.elements.some((other) => elementEnvelope(other)?.compensationHandlers.includes(id) ?? false);
-  const marked = elementEnvelope(element)?.forCompensation ?? false;
-  const scope = elementScope(element);
-  const eventSubProcess = scope !== null && scopeKindStart(scope[1].kind) !== null;
-  return elementIncoming(element).length === 0 && elementStart(element) === null && !handler && !marked && !eventSubProcess;
 }
 
 /** The process-level elements of a called process. */

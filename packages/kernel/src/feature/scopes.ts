@@ -15,10 +15,10 @@ import {
   ScopeKindTag,
   assertNever,
   elementActivity,
+  elementBeginsImplicitly,
   elementHeader,
   elementScope,
   elementStart,
-  programBeginsImplicitly,
   programChildren,
   type ElementId,
   type Header,
@@ -82,13 +82,13 @@ function innerStart(ctx: Ctx, scope: ElementId, payload: ScopePayload): ElementI
 }
 
 /**
- * The children that begin when a Scope without a start Event is entered (`programBeginsImplicitly`). A Gateway or Event
+ * The children that begin when a Scope without a start Event is entered (`elementBeginsImplicitly`). A Gateway or Event
  * among them is refused (`scope.implicitStart` at admission).
  */
 function implicitStart(ctx: Ctx, scope: ElementId): Result<readonly ElementId[]> {
   const begun: ElementId[] = [];
   for (const child of programChildren(ctx.program, scope)) {
-    if (!programBeginsImplicitly(ctx.program, child)) continue;
+    if (!elementBeginsImplicitly(child)) continue;
     if (elementActivity(child) === null && elementScope(child) === null) return failed(FailureTag.Unsupported, "scope-implicit-start");
     begun.push(elementHeader(child).id);
   }

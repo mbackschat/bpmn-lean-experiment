@@ -15,14 +15,14 @@ def implicitChild (program : Program) (header : Header) : Bool :=
   | none => false
   | some parent =>
     let children := program.children (some parent)
-    !children.any (·.start?.isSome) && children.any fun child => child.header.id == header.id && program.beginsImplicitly child
+    !children.any (·.start?.isSome) && children.any fun child => child.header.id == header.id && child.beginsImplicitly
 
 /-- A Scope without a none start Event begins its Activities without incoming flow; a Gateway or Event without one would
 also begin (§13.3.4), which the kernel has no token for. -/
 def implicitStart (program : Program) (header : Header) : Option String :=
   let children := program.children (some header.id)
   if children.any (·.start?.isSome) then none
-  else if children.any fun child => program.beginsImplicitly child && child.activity?.isNone && child.scope?.isNone then
+  else if children.any fun child => child.beginsImplicitly && child.activity?.isNone && child.scope?.isNone then
     some "scope.implicitStart"
   else none
 

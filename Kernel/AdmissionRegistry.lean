@@ -16,28 +16,30 @@ public section
 
 namespace Kernel.AdmissionRegistry
 
-/-- Whether an element is some Activity's or Scope's compensation handler. -/
-def isHandler (program : Program) (id : ElementId) : Bool :=
+/-- Whether an Activity's or Scope's compensation boundary names the element by an Association. -/
+def associated (program : Program) (id : ElementId) : Bool :=
   program.elements.any fun element => ((element.envelope?.map (·.compensationHandlers)).getD []).contains id
 
 /-- Refusals an Activity owes because of how it begins. A compensation handler begins as a token would
 (`Kernel.Feature.Work.arriveActivity`), so it may have inputs and do any admitted work. -/
 def activityOrigin (program : Program) (header : Header) (payload : ActivityPayload) : Option String :=
   -- CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `marks` (`Kernel.State.Journal`) would read.
-  if isHandler program header.id && payload.envelope.multiInstance.isSome then some "compensation.handlerMultiInstance"
+  if payload.envelope.forCompensation && payload.envelope.multiInstance.isSome then some "compensation.handlerMultiInstance"
   else if Admission.Scopes.implicitChild program header && !Admission.Work.beginsWithoutToken payload.work then
     some "scope.implicitStart"
   else none
 
 /-- Where a compensation handler sits. BPMN 2.0.2 §10.7.1 puts a Compensation Activity "outside the normal flow" and
-marks it `isForCompensation` (Table 10.3), so an associated handler without the mark and a handler with a Sequence Flow are
+marks it `isForCompensation` (Table 10.3), the one reading of a handler (`Element.isCompensationActivity`), so an
+associated element without the mark and a marked one with a Sequence Flow, whether an Association names it or not, are
 refused; CIB refuses both at deployment (`BpmnParse.java:905-910`, `:4327-4337`). A Compensation Event Sub-Process
 carries no mark and is placed by `processEventSubProcess`. -/
 def handlerPlacement (program : Program) (header : Header) (envelope : Envelope) (eventSubProcess : Bool) :
     Option String :=
-  if !isHandler program header.id || eventSubProcess then none
-  else if !envelope.forCompensation then some "compensation.handlerNotForCompensation"
-  else if !envelope.incoming.isEmpty || !envelope.outgoing.isEmpty then some "compensation.handlerFlow"
+  if eventSubProcess then none
+  else if associated program header.id && !envelope.forCompensation then some "compensation.handlerNotForCompensation"
+  else if envelope.forCompensation && (!envelope.incoming.isEmpty || !envelope.outgoing.isEmpty) then
+    some "compensation.handlerFlow"
   else none
 
 /-- BPMN 2.0.2 §13.5.5 contains a Compensation Event Sub-Process "within a Process or a Sub-Process"; CIB refuses one at

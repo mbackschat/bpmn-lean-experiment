@@ -57,7 +57,7 @@ import * as Starts from "./admission/subscriptions/starts.js";
 import { catchWrites, writes } from "./il/footprint.js";
 
 /** Whether an element is some Activity's or Scope's compensation handler. */
-function isHandler(program: Program, id: ElementId): boolean {
+function associated(program: Program, id: ElementId): boolean {
   return program.elements.some((element) => elementEnvelope(element)?.compensationHandlers.includes(id) ?? false);
 }
 
@@ -67,21 +67,22 @@ function isHandler(program: Program, id: ElementId): boolean {
  */
 function activityOrigin(program: Program, header: Header, payload: ActivityPayload): string | null {
   // CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `state/journal.ts` `marks` would read.
-  if (isHandler(program, header.id) && payload.envelope.multiInstance !== null) return "compensation.handlerMultiInstance";
+  if (payload.envelope.forCompensation && payload.envelope.multiInstance !== null) return "compensation.handlerMultiInstance";
   if (Scopes.implicitChild(program, header) && !Work.beginsWithoutToken(payload.work)) return "scope.implicitStart";
   return null;
 }
 
 /**
  * Where a compensation handler sits. BPMN 2.0.2 §10.7.1 puts a Compensation Activity "outside the normal flow" and marks
- * it `isForCompensation` (Table 10.3), so an associated handler without the mark and a handler with a Sequence Flow are
- * refused; CIB refuses both at deployment (`BpmnParse.java:905-910`, `:4327-4337`). A Compensation Event Sub-Process
- * carries no mark and is placed by `processEventSubProcess`.
+ * it `isForCompensation` (Table 10.3), the one reading of a handler (`elementIsCompensationActivity`), so an associated
+ * element without the mark and a marked one with a Sequence Flow, whether an Association names it or not, are refused;
+ * CIB refuses both at deployment (`BpmnParse.java:905-910`, `:4327-4337`). A Compensation Event Sub-Process carries no
+ * mark and is placed by `processEventSubProcess`.
  */
 function handlerPlacement(program: Program, header: Header, envelope: Envelope, eventSubProcess: boolean): string | null {
-  if (!isHandler(program, header.id) || eventSubProcess) return null;
-  if (!envelope.forCompensation) return "compensation.handlerNotForCompensation";
-  if (envelope.incoming.length > 0 || envelope.outgoing.length > 0) return "compensation.handlerFlow";
+  if (eventSubProcess) return null;
+  if (associated(program, header.id) && !envelope.forCompensation) return "compensation.handlerNotForCompensation";
+  if (envelope.forCompensation && (envelope.incoming.length > 0 || envelope.outgoing.length > 0)) return "compensation.handlerFlow";
   return null;
 }
 

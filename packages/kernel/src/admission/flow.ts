@@ -9,6 +9,8 @@ import {
   assertNever,
   distinctCount,
   elementActivity,
+  elementBeginsImplicitly,
+  elementIsCompensationActivity,
   elementEnvelope,
   elementEvent,
   elementGateway,
@@ -22,7 +24,6 @@ import {
   eventPayloadLinkCatch,
   eventPayloadLinkThrow,
   definitionRefEquals,
-  programBeginsImplicitly,
   programBoundary,
   programCalledProcessFor,
   programCallerDeployment,
@@ -289,13 +290,13 @@ const flowTargets = (program: Program, flows: readonly FlowId[]): readonly Eleme
 
 /**
  * The children an occurrence of the Scope `id` begins on entry: its start Events, or, without one, the children that
- * begin implicitly (`programBeginsImplicitly`), as `feature/scopes.ts` `implicitStart` begins them.
+ * begin implicitly (`elementBeginsImplicitly`), as `feature/scopes.ts` `implicitStart` begins them.
  */
 function enteredChildren(program: Program, id: ElementId): readonly Element[] {
   const children = programChildren(program, id);
   return children.some((child) => elementStart(child) !== null)
     ? children.filter((child) => elementStart(child) !== null)
-    : children.filter((child) => programBeginsImplicitly(program, child));
+    : children.filter(elementBeginsImplicitly);
 }
 
 /**
@@ -399,10 +400,10 @@ function catchers(reading: Reading, program: Program, element: Element, fuel: nu
   return [...chain.flatMap(atHost), ...level, ...caller];
 }
 
-/** Whether an element is a compensation handler: an Activity or Scope marked `isForCompensation`, or a Compensation Event Sub-Process. */
+/** Whether an element is a compensation handler: a Compensation Activity (`elementIsCompensationActivity`) or a Compensation Event Sub-Process. */
 function handler(reading: Reading, element: Element): boolean {
   const start = eventSubProcessStart(element);
-  return elementEnvelope(element)?.forCompensation === true || (start !== null && reading.compensationStart(start));
+  return elementIsCompensationActivity(element) || (start !== null && reading.compensationStart(start));
 }
 
 /** Every element declared in `level` and the Scopes it holds. */

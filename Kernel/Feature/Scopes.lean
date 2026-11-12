@@ -36,11 +36,11 @@ def innerStart? (ctx : Ctx) (scope : ElementId) (payload : ScopePayload) : Optio
     | .transaction _ => starts.find? (·.2.subscription.isNone)
   chosen.map (·.1.id)
 
-/-- The children that begin when a Scope without a start Event is entered (`Program.beginsImplicitly`). A Gateway or
+/-- The children that begin when a Scope without a start Event is entered (`Element.beginsImplicitly`). A Gateway or
 Event among them is refused (`scope.implicitStart` at admission). -/
 def implicitStart (ctx : Ctx) (scope : ElementId) : Except Failure (List ElementId) :=
   (ctx.program.children (some scope)).foldlM (fun begun child =>
-    if !ctx.program.beginsImplicitly child then .ok begun
+    if !child.beginsImplicitly then .ok begun
     else if child.activity?.isSome || child.scope?.isSome then .ok (begun ++ [child.header.id])
     else .error (.unsupported "scope-implicit-start")) []
 

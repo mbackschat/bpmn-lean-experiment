@@ -466,6 +466,12 @@ def Element.incoming : Element → List FlowId
   | .gateway _ payload => payload.incoming
   | .start _ _ => []
 
+/-- Whether the element is a Compensation Activity, an Activity or Scope marked `isForCompensation` (BPMN 2.0.2
+§10.7.1, Table 10.3): the one reading of a compensation handler outside the Event Sub-Processes, whether an Association
+names it or not, as CIB reads it (`BpmnParse.java:2057-2059`). -/
+def Element.isCompensationActivity (element : Element) : Bool :=
+  element.envelope?.any (·.forCompensation)
+
 /-- One trigger, read uniformly: the payload of its kind, `none` for every other. The IL's one match on `Trigger`; a
 reader outside its owners takes the field it is about. -/
 structure TriggerView where
@@ -504,6 +510,12 @@ def ScopeKind.start? : ScopeKind → Option Subscription
 def ValueSource.literal? : ValueSource → Option String
   | .literal value => some value
   | .expression _ => none
+
+/-- Whether an element begins when its parent Scope is entered without a none start Event: it has no incoming flow, is
+no Compensation Activity and is no Event Sub-Process (BPMN 2.0.2 §10.7.1, §13.3.4, §13.5.5). -/
+def Element.beginsImplicitly (element : Element) : Bool :=
+  let eventSubProcess := ((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome
+  element.incoming.isEmpty && element.start?.isNone && !element.isCompensationActivity && !eventSubProcess
 
 namespace Program
 
@@ -550,16 +562,6 @@ def callsRoot (program : Program) (resolution : CalledElementResolution) (work :
 declare (`decision.duplicateId`). -/
 def decision? (program : Program) (key : String) : Option Decision :=
   (program.decisionResources.flatMap (·.decisions)).find? (·.id == key)
-
-/-- Whether an element begins when its parent Scope is entered without a none start Event: it has no incoming flow, is
-no compensation handler, whether an Association names it or it is only marked `isForCompensation`, and is no Event
-Sub-Process (BPMN 2.0.2 §10.7.1, §13.3.4, §13.5.5). -/
-def beginsImplicitly (program : Program) (element : Element) : Bool :=
-  let handler := program.elements.any fun other =>
-    ((other.envelope?.map (·.compensationHandlers)).getD []).contains element.header.id
-  let marked := (element.envelope?.map (·.forCompensation)).getD false
-  let eventSubProcess := ((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome
-  element.incoming.isEmpty && element.start?.isNone && !handler && !marked && !eventSubProcess
 
 /-- The process-level elements of a called process. -/
 def processChildren (program : Program) (process : CalledProcess) : List Element :=

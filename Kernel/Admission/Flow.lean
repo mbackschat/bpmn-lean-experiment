@@ -169,10 +169,10 @@ def flowTargets (program : Program) (flows : List FlowId) : List Element :=
   flows.filterMap fun flow => (program.target? flow).bind program.element?
 
 /-- The children an occurrence of the Scope `id` begins on entry: its start Events, or, without one, the children
-that begin implicitly (`Program.beginsImplicitly`), as `Kernel.Feature.Scopes.implicitStart` begins them. -/
+that begin implicitly (`Element.beginsImplicitly`), as `Kernel.Feature.Scopes.implicitStart` begins them. -/
 def enteredChildren (program : Program) (id : ElementId) : List Element :=
   let children := program.children (some id)
-  if children.any (·.start?.isSome) then children.filter (·.start?.isSome) else children.filter program.beginsImplicitly
+  if children.any (·.start?.isSome) then children.filter (·.start?.isSome) else children.filter (·.beginsImplicitly)
 
 /-- What a closure walk reads of an element beyond the IL, filled by `Kernel.AdmissionRegistry.reading` from the
 admissions that own each part, since this module matches none of `Trigger`, `Throw` or `Work`. -/
@@ -251,10 +251,10 @@ def catchers (reading : Reading) (program : Program) (element : Element) : Nat �
       (callers program process).flatMap fun call => Visit.passes call :: catchers reading program call fuel).getD []
     chain.flatMap atHost ++ level ++ caller
 
-/-- Whether an element is a compensation handler: an Activity or Scope marked `isForCompensation`, or a Compensation
-Event Sub-Process. -/
+/-- Whether an element is a compensation handler: a Compensation Activity (`Element.isCompensationActivity`) or a
+Compensation Event Sub-Process. -/
 def handler (reading : Reading) (element : Element) : Bool :=
-  (element.envelope?.any (·.forCompensation)) ||
+  element.isCompensationActivity ||
     ((element.scope?).bind fun (_, payload) => payload.kind.start?).any reading.compensationStart
 
 /-- Every element declared in `level` and the Scopes it holds. -/
