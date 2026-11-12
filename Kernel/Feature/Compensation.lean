@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.IL.Footprint
 
 /-! # Compensation and Transaction cancellation
 
@@ -13,9 +14,10 @@ handler restores none.
 
 A trigger (`Signal.compensate`) takes every record retained in its scope occurrence and runs their handlers, each
 begun in a context scope occurrence of its own inside that one, holding the restored context, with continuation
-`.compensation`. Order (§13.5.5): a Sequence Flow from A to B makes B's handler complete before A's starts, and
-handlers without such a dependency run concurrently, so every pending handler none of whose successors is still
-pending or running starts at once, in program order. Once the last handler has completed, the trigger continues as its
+`.compensation`. Order (§13.5.5): when A's record completed before B's, a Sequence Flow from A or from a boundary
+Event of A to B, a name B reads that A can write, or A and B being records of one subject makes B's handler complete
+before A's starts (`precedes`); handlers without such a dependency run concurrently, so every pending handler none of
+whose successors is still pending or running starts at once, in program order. Once the last handler has completed, the trigger continues as its
 thrower asked.
 
 A handler that an Error leaves uncaught fails the process instance: every token, item and occurrence is removed and
@@ -64,9 +66,59 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
         completion, snapshot, children := inner }
     .ok (store state { compensation with retained := outer ++ [record] })
 
-/-- A Sequence Flow leads from `record`'s subject to `other`'s. -/
+/-- Every element declared inside `element`, at any depth. -/
+def interior (ctx : Ctx) (element : Element) : List Element :=
+  let rec go : Nat → List ElementId → List Element
+    | 0, _ => []
+    | fuel + 1, ids => ids.flatMap fun id =>
+      match ctx.program.element? id with
+      | some inner => inner :: go fuel ((inner.scope?.map (·.2.children)).getD [])
+      | none => []
+  go ctx.program.elements.length ((element.scope?.map (·.2.children)).getD [])
+
+/-- What `element` itself reads and writes over its whole run, over-approximated: its envelope and outgoing conditions
+(`footprint`), the outputs of the subscriptions it catches with, a Multi-Instance element's output collection and data
+item, every name a User Task installs under
+`SubmissionRule.installsVariables`, and every name for a task kind this feature cannot inspect (none of User, Service,
+Call or Receive work). -/
+def ownData (ctx : Ctx) (element : Element) : Footprint :=
+  let subscriptions := ((element.envelope?.map (·.boundaries)).getD []).map (·.subscription) ++
+    ((element.event?.bind (·.2.catch?)).toList) ++ ((element.start?.bind (·.2.subscription)).toList) ++
+    ((element.scope?.bind fun (_, payload) => (ctx.eventStart payload).map (·.1)).toList)
+  -- `footprint` leaves out a Multi-Instance element's output collection and data item (issue #99).
+  let looped := ((element.envelope?.bind (·.multiInstance)).map fun loop =>
+    loop.outputCollection.toList ++ loop.outputDataItem.toList).getD []
+  let caught : Footprint :=
+    { writes := { names := subscriptions.flatMap (fun subscription => subscription.outputs.map (·.target)) ++ looped } }
+  let work : Footprint := match element.activity? with
+    | some (_, payload) =>
+      let uninspected := !(payload.work.isUser || payload.work.isService || payload.work.call?.isSome ||
+        payload.work.receive?.isSome)
+      let installs := payload.work.isUser && ctx.program.options.submission == .installsVariables
+      { reads := { all := uninspected }, writes := { all := uninspected || installs } }
+    | none => {}
+  ((footprint ctx.program element).union caught).union work
+
+/-- What a run of `subject` reads and writes: its own and, for a Scope, its interior's. -/
+def data (ctx : Ctx) (subject : ElementId) : Footprint :=
+  match ctx.program.element? subject with
+  | some element => (element :: interior ctx element).foldl (fun found inner => found.union (ownData ctx inner)) {}
+  | none => {}
+
+/-- `record`'s subject ran before `other`'s in a way §13.5.5 orders, so `other`'s handler completes before `record`'s
+starts: (b) a Sequence Flow leads from a boundary Event attached to `record`'s subject to `other`'s, a different one,
+whose record may complete while the subject still runs; or `record` completed first and (a) a Sequence Flow leads from
+its subject to `other`'s, (c) `other`'s subject reads a name `record`'s can write (`data`), or (d) both are records of
+one subject, run in reverse completion order. -/
 def precedes (ctx : Ctx) (record other : Compensable) : Bool :=
-  ctx.program.flows.any fun flow => flow.source == record.subject && flow.target == other.subject
+  let boundaries := (((ctx.program.element? record.subject).bind (·.envelope?)).map fun envelope =>
+    envelope.boundaries.map (·.id)).getD []
+  let leads (sources : List ElementId) := ctx.program.flows.any fun flow =>
+    sources.contains flow.source && flow.target == other.subject
+  (record.subject != other.subject && leads boundaries) ||
+    (record.completion < other.completion &&
+      (record.subject == other.subject || leads [record.subject] ||
+        (data ctx other.subject).reads.meets (data ctx record.subject).writes))
 
 def position (ctx : Ctx) (element : ElementId) : Nat :=
   (ctx.program.elements.map (·.header.id)).idxOf element
@@ -124,20 +176,15 @@ def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
       runs := others ++ [{ run with pending := waiting, running := run.running ++ started }] })
 
 /-- `Signal.compensate`: take the records retained in `scope` into a new run: those of `activity` when one is named,
-else all. Dynamic-only refusals: a second
-trigger in a scope whose run is in progress, since its relation to the running one is not selected
-(COMPH-EXCLUSIVE-01 of the trigger account), and a subject retained twice, whose instances §13.5.5 compensates in
-reverse completion order. -/
+else all. Dynamic-only refusal: a second trigger in a scope whose run is in progress, since its relation to the
+running one is not selected (COMPH-EXCLUSIVE-01 of the trigger account). -/
 def compensate (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
     (leave : Option Nat) (resume : Option Resume) (state : State) : Outcome :=
   let compensation := state.slots.compensation
   let (selected, kept) := compensation.retained.partition fun record =>
     record.scope == scope && activity.all (· == record.subject)
-  let subjects := selected.map (·.subject)
   if compensation.runs.any (·.scope == scope) then
     .error (.unsupported "compensation-concurrent-trigger") -- dynamic-only: whether a run is in progress
-  else if subjects.eraseDups.length != subjects.length then
-    .error (.unsupported "compensation-repeated-subject") -- dynamic-only: what was retained
   else
     advance ctx scope (store state
       { retained := kept, runs := compensation.runs ++ [{ trigger, scope, pending := selected, leave, resume }] })

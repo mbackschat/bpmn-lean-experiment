@@ -9,9 +9,10 @@
  *
  * A trigger (`Signal.compensate`) takes every record retained in its scope occurrence and runs their handlers, each
  * begun in a context scope occurrence of its own inside that one, holding the restored context, with continuation
- * `compensation`. Order (§13.5.5): a Sequence Flow from A to B makes B's handler complete before A's starts, and
- * handlers without such a dependency run concurrently, so every pending handler none of whose successors is still
- * pending or running starts at once, in program order. Once the last handler has completed, the trigger continues as
+ * `compensation`. Order (§13.5.5): when A's record completed before B's, a Sequence Flow from A or from a boundary
+ * Event of A to B, a name B reads that A can write, or A and B being records of one subject makes B's handler complete
+ * before A's starts (`precedes`); handlers without such a dependency run concurrently, so every pending handler none of
+ * whose successors is still pending or running starts at once, in program order. Once the last handler has completed, the trigger continues as
  * its thrower asked.
  *
  * A handler that an Error leaves uncaught fails the process instance: every token, item and occurrence is removed and
@@ -20,16 +21,26 @@
  */
 import {
   CompensationHandlerFailureTag,
+  SubmissionRule,
   assertNever,
-  distinctCount,
   elementActivity,
   elementEnvelope,
+  elementEvent,
   elementHeader,
   elementScope,
+  elementStart,
+  eventPayloadCatch,
   mergeSort,
   programElement,
+  workCall,
+  workIsService,
+  workIsUser,
+  workReceive,
+  type Element,
   type ElementId,
+  type Subscription,
 } from "../il/types.js";
+import { footprint, joined, meets, noNames, type Footprint } from "../il/footprint.js";
 import {
   ContinuationTag,
   FailureTag,
@@ -115,9 +126,76 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   return committed(store(issued, { ...compensation, retained: [...outer, record] }));
 }
 
-/** A Sequence Flow leads from `record`'s subject to `other`'s. */
+const optional = <T>(value: T | null): T[] => (value === null ? [] : [value]);
+
+/** Every element declared inside `element`, at any depth. */
+function interior(ctx: Ctx, element: Element): Element[] {
+  const go = (fuel: number, ids: readonly ElementId[]): Element[] =>
+    fuel === 0 ? [] : ids.flatMap((id) => {
+      const inner = programElement(ctx.program, id);
+      return inner === null ? [] : [inner, ...go(fuel - 1, elementScope(inner)?.[1].children ?? [])];
+    });
+  return go(ctx.program.elements.length, elementScope(element)?.[1].children ?? []);
+}
+
+/**
+ * What `element` itself reads and writes over its whole run, over-approximated: its envelope and outgoing conditions
+ * (`footprint`), the outputs of the subscriptions it catches with, a Multi-Instance element's output collection and
+ * data item, every name a User Task installs under
+ * `SubmissionRule.InstallsVariables`, and every name for a task kind this feature cannot inspect (none of User, Service,
+ * Call or Receive work).
+ */
+function ownData(ctx: Ctx, element: Element): Footprint {
+  const event = elementEvent(element);
+  const start = elementStart(element);
+  const scope = elementScope(element);
+  const subscriptions: Subscription[] = [
+    ...(elementEnvelope(element)?.boundaries ?? []).map((boundary) => boundary.subscription),
+    ...optional(event === null ? null : eventPayloadCatch(event[1])),
+    ...optional(start === null ? null : start[1].subscription),
+    ...optional(scope === null ? null : ctx.eventStart(scope[1])?.[0] ?? null),
+  ];
+  // `footprint` leaves out a Multi-Instance element's output collection and data item (issue #99).
+  const loop = elementEnvelope(element)?.multiInstance ?? null;
+  const looped = loop === null ? [] : [...optional(loop.outputCollection), ...optional(loop.outputDataItem)];
+  const caught: Footprint = {
+    reads: noNames,
+    writes: { names: [...subscriptions.flatMap((subscription) => subscription.outputs.map((mapping) => mapping.target)), ...looped], all: false },
+  };
+  const activity = elementActivity(element);
+  let work: Footprint = { reads: noNames, writes: noNames };
+  if (activity !== null) {
+    const kind = activity[1].work;
+    const uninspected = !(workIsUser(kind) || workIsService(kind) || workCall(kind) !== null || workReceive(kind) !== null);
+    const installs = workIsUser(kind) && ctx.program.options.submission === SubmissionRule.InstallsVariables;
+    work = { reads: { names: [], all: uninspected }, writes: { names: [], all: uninspected || installs } };
+  }
+  return joined(joined(footprint(ctx.program, element), caught), work);
+}
+
+/** What a run of `subject` reads and writes: its own and, for a Scope, its interior's. */
+function data(ctx: Ctx, subject: ElementId): Footprint {
+  const element = programElement(ctx.program, subject);
+  return element === null ? { reads: noNames, writes: noNames }
+    : [element, ...interior(ctx, element)].reduce((found, inner) => joined(found, ownData(ctx, inner)), { reads: noNames, writes: noNames });
+}
+
+/**
+ * `record`'s subject ran before `other`'s in a way §13.5.5 orders, so `other`'s handler completes before `record`'s
+ * starts: (b) a Sequence Flow leads from a boundary Event attached to `record`'s subject to `other`'s, a different one,
+ * whose record may complete while the subject still runs; or `record` completed first and (a) a Sequence Flow leads
+ * from its subject to `other`'s, (c) `other`'s subject reads a name `record`'s can write (`data`), or (d) both are
+ * records of one subject, run in reverse completion order.
+ */
 function precedes(ctx: Ctx, record: Compensable, other: Compensable): boolean {
-  return ctx.program.flows.some((flow) => flow.source === record.subject && flow.target === other.subject);
+  const subject = programElement(ctx.program, record.subject);
+  const boundaries = ((subject === null ? null : elementEnvelope(subject))?.boundaries ?? []).map((boundary) => boundary.id);
+  const leads = (sources: readonly ElementId[]): boolean =>
+    ctx.program.flows.some((flow) => sources.includes(flow.source) && flow.target === other.subject);
+  return (record.subject !== other.subject && leads(boundaries)) ||
+    (record.completion < other.completion &&
+      (record.subject === other.subject || leads([record.subject]) ||
+        meets(data(ctx, other.subject).reads, data(ctx, record.subject).writes)));
 }
 
 function position(ctx: Ctx, element: ElementId): number {
@@ -206,9 +284,8 @@ function advance(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outcome {
 
 /**
  * `Signal.compensate`: take the records retained in `scope` into a new run: those of `activity` when one is named, else
- * all. Dynamic-only refusals: a second trigger in a scope whose run is in progress, since its relation to the running
- * one is not selected (COMPH-EXCLUSIVE-01 of the trigger account), and a subject retained twice, whose instances
- * §13.5.5 compensates in reverse completion order.
+ * all. Dynamic-only refusal: a second trigger in a scope whose run is in progress, since its relation to the running
+ * one is not selected (COMPH-EXCLUSIVE-01 of the trigger account).
  */
 export function compensate(
   ctx: Ctx,
@@ -223,12 +300,8 @@ export function compensate(
   const selects = (record: Compensable): boolean => record.scope === scope && (activity === null || activity === record.subject);
   const selected = compensation.retained.filter(selects);
   const kept = compensation.retained.filter((record) => !selects(record));
-  const subjects = selected.map((record) => record.subject);
   if (compensation.runs.some((run) => run.scope === scope)) {
     return failed(FailureTag.Unsupported, "compensation-concurrent-trigger"); // dynamic-only: whether a run is in progress
-  }
-  if (distinctCount(subjects) !== subjects.length) {
-    return failed(FailureTag.Unsupported, "compensation-repeated-subject"); // dynamic-only: what was retained
   }
   return advance(ctx, scope, store(state, {
     retained: kept,

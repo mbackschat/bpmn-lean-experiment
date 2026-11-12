@@ -530,6 +530,13 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/with-message-before-a-completes.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/compensation-order-chronology/advancing-clock-a-b-c.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-01",

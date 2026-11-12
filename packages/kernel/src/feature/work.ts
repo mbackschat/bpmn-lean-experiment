@@ -202,9 +202,9 @@ export const defaultWorkHooks: WorkHooks = {
  * run begins in its context (`ScopeRole.CompensationHandler`), as the dynamic-only
  * `compensation.handlerInputUnavailable` (I10), any other as `started-activity-input-unavailable`. A handler and a
  * Multi-Instance instance count as begun by a token, so they may receive a Message or call a process; another
- * occurrence no token began may do a task without work, a User Task or a Service Task (`scope.implicitStart` and
- * `compensation.handlerWork` at admission). A `camunda:inputParameter`, whose unresolved expression is no unavailable
- * Data Input, rolls the command back instead of holding (`ctxEvaluateMappings`).
+ * occurrence no token began may do a task without work, a User Task or a Service Task (`scope.implicitStart` at
+ * admission). A `camunda:inputParameter`, whose unresolved expression is no unavailable Data Input, rolls the command
+ * back instead of holding (`ctxEvaluateMappings`).
  */
 export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, payload: ActivityPayload, occurrence: Occurrence,
   state: State): Outcome {

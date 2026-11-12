@@ -122,9 +122,9 @@ an occurrence a token began waits for it ([BPMN 2.0.2 §10.4.2](../../docs/refer
 is refused: a compensation handler, which its run begins in its context (`ScopeRole.compensationHandler`), as the
 dynamic-only `compensation.handlerInputUnavailable` (I10), any other as `started-activity-input-unavailable`. A handler
 and a Multi-Instance instance count as begun by a token, so they may receive a Message or call a process; another
-occurrence no token began may do a task without work, a User Task or a Service Task (`scope.implicitStart` and
-`compensation.handlerWork` at admission). A `camunda:inputParameter`, whose unresolved expression is no unavailable
-Data Input, rolls the command back instead of holding (`Ctx.evaluateMappings`). -/
+occurrence no token began may do a task without work, a User Task or a Service Task (`scope.implicitStart` at
+admission). A `camunda:inputParameter`, whose unresolved expression is no unavailable Data Input, rolls the command back
+instead of holding (`Ctx.evaluateMappings`). -/
 def arriveActivity (hooks : WorkHooks) (ctx : Ctx) (header : Header) (payload : ActivityPayload) (occurrence : Occurrence)
     (state : State) : Outcome := do
   let handler := ctx.scopeRole state occurrence.scope == .compensationHandler
