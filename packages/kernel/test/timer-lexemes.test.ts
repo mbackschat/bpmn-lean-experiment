@@ -155,3 +155,41 @@ for (const [schedule, code] of refused) {
     assert.equal(admit(decoded(schedule)), code);
   });
 }
+
+/**
+ * Malformed versus outside, separated under `malformedTimer = rollsBackArming`, which admits a malformed literal (its
+ * arming rolls back) and refuses an outside one. Malformed is claimed only where CIB's parser certainly fails: the
+ * pinned `DurationHelper` (more than three parts; a non-`P` lexeme; a `P…/P…` interval, whose second part Joda's date
+ * parser cannot read), the JDK's `DurationImpl` grammar, and Cron rules only in the field retained evidence certifies.
+ */
+const cibAdmits = (schedule: Json): string | null => {
+  const json = programJson(schedule, null);
+  const result = decodeProgram({ ...json, options: { ...(json.options as Json), malformedTimer: "rollsBackArming" } });
+  assert.ok(result.ok, result.ok ? "" : result.refusal);
+  return admit(result.value);
+};
+const duration = (lexeme: string): Json => ({ duration: { value: literal(lexeme) } });
+const cycle = (lexeme: string): Json => ({ cycle: { value: literal(lexeme), dialect: "cron" } });
+
+const certainlyMalformed: readonly Json[] = [
+  duration("PT1H/PT2H"), duration("P1D/P2D/x"), duration("PT.S"), duration("PT.5M"), duration("P.5D"), duration("PT1.M"),
+  cycle("5x * * * * ?"), cycle("x/5 * * * * ?"), cycle("*/5x * * * * ?"), cycle("5- * * * * ?"), cycle("5/0 * * * * ?"),
+  cycle("*/0 * * * * ?"), cycle("*/5/2 * * * * ?"), cycle("? 0 9 * * *"),
+];
+for (const schedule of certainlyMalformed) {
+  test(`${JSON.stringify(schedule)} is malformed: admitted to roll back at arming under rollsBackArming`, () => {
+    assert.equal(cibAdmits(schedule), null);
+  });
+}
+
+const uncertain: ReadonlyArray<readonly [Json, string]> = [
+  [duration("PT1.S"), "timer.duration"], [duration("PT.5S"), "timer.duration"], [duration("PT1H.25S"), "timer.duration"],
+  [duration("1970-01-01T00:00:00Z/PT5S"), "timer.duration"],
+  [cycle("0 5x * * * ?"), "timer.cron"], [cycle("0 0 5- * * ?"), "timer.cron"], [cycle("0 0 9 */5/2 * ?"), "timer.cron"],
+  [cycle("0 ? 9 * * ?"), "timer.cron"], [cycle("0 */0 * * * ?"), "timer.cron"],
+];
+for (const [schedule, code] of uncertain) {
+  test(`${JSON.stringify(schedule)} is outside: refused as ${code} under rollsBackArming`, () => {
+    assert.equal(cibAdmits(schedule), code);
+  });
+}

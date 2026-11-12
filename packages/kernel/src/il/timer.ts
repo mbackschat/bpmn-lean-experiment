@@ -169,22 +169,24 @@ function splitJava(chars: readonly string[], separator: string): string[][] {
 
 // Durations
 
-type Component = readonly [string, string[], string[]];
+/** One component: designator, integer digits, and the fraction digits after a point, `null` without a point. */
+type Component = readonly [string, string[], string[] | null];
 
-/** Read components whose designators come from `units` in order, until the input ends or reaches `T`. */
+/**
+ * Read components whose designators come from `units` in order, until the input ends or reaches `T`. A point is read
+ * here and checked by the caller; a component needs a digit on one side of it, as the JDK's `DurationImpl` requires (its
+ * `BigInteger` and `BigDecimal` reject a bare point).
+ */
 function readUnits(input: readonly string[], unitList: readonly string[]): readonly [Component[], string[]] | null {
   let chars = [...input];
   let units = [...unitList];
   const components: Component[] = [];
   while (chars.length > 0 && chars[0] !== "T") {
     const [digits, afterDigits] = spanDigits(chars);
-    if (digits.length === 0 || afterDigits.length === 0) return null;
-    let fraction: string[] = [];
+    let fraction: string[] | null = null;
     let rest = afterDigits;
-    if (rest[0] === ".") {
-      [fraction, rest] = spanDigits(rest.slice(1));
-      if (fraction.length === 0 || rest.length === 0) return null;
-    }
+    if (rest[0] === ".") [fraction, rest] = spanDigits(rest.slice(1));
+    if ((digits.length === 0 && (fraction ?? []).length === 0) || rest.length === 0) return null;
     const unit = rest[0] ?? "";
     const at = units.indexOf(unit);
     if (at < 0) return null;
@@ -210,11 +212,25 @@ function componentValue(components: readonly Component[], unit: string): number 
   return found === undefined ? 0 : digitsValue(found[1]);
 }
 
+/**
+ * A `/` lexeme as CIB's `DurationHelper` reads it (`DurationHelper.java:61-90`): more than three parts throws, and a
+ * `P…` first part makes the second the interval's end, which Joda's ISO date-time parser cannot read when it starts with
+ * `P` (`DateTimeUtil.java:47-60`), so both are malformed; every other interval form is outside.
+ */
+function classifyInterval(chars: readonly string[]): Classified {
+  const parts = splitJava(chars, "/");
+  if (parts.length > 3) return malformed(TimerCode.Duration);
+  return parts.length >= 2 && parts[0]?.[0] === "P" && parts[1]?.[0] === "P" ? malformed(TimerCode.Duration) : outside(TimerCode.Duration);
+}
+
+/**
+ * A duration lexeme. Seconds written `n.` or `.n` are outside: the JDK's `BigDecimal` reads them, so CIB commits them
+ * (retained `timer-data-derived/catch-point-without-digits`), but the subset keeps digits on both sides of a point. A
+ * point on any other component is malformed, since `BigInteger` rejects it.
+ */
 function classifyDuration(lexeme: string): Classified {
   const chars = Array.from(lexeme);
-  if (chars.includes("/")) {
-    return splitJava(chars, "/").length > 3 ? malformed(TimerCode.Duration) : outside(TimerCode.Duration);
-  }
+  if (chars.includes("/")) return classifyInterval(chars);
   if (chars[0] !== "P") return malformed(TimerCode.Duration);
   const rest = chars.slice(1);
   const [weeks, afterWeeks] = spanDigits(rest);
@@ -227,9 +243,11 @@ function classifyDuration(lexeme: string): Classified {
   if (parsed === null) return malformed(TimerCode.Duration);
   const [date, time] = parsed;
   const all = [...date, ...time];
-  const fraction = time.find((component) => component[0] === "S")?.[2] ?? [];
-  if (all.some(([unit, , digits]) => unit !== "S" && digits.length > 0)) return malformed(TimerCode.Duration);
-  if (fraction.length > 3 || all.some(([, digits]) => above(digits, maxComponent))) return outside(TimerCode.Duration);
+  const seconds = time.find((component) => component[0] === "S");
+  const fraction = seconds?.[2] ?? [];
+  const loose = seconds !== undefined && seconds[2] !== null && (seconds[1].length === 0 || seconds[2].length === 0);
+  if (all.some(([unit, , pointed]) => unit !== "S" && pointed !== null)) return malformed(TimerCode.Duration);
+  if (loose || fraction.length > 3 || all.some(([, digits]) => above(digits, maxComponent))) return outside(TimerCode.Duration);
   return admitted({
     tag: ParsedTag.Duration,
     value: {
@@ -342,6 +360,23 @@ function cronField(low: number, high: number, text: readonly string[]): CronFiel
   return every === 0 ? "outside" : range(low, high, (value) => from <= value && (value - from) % every === 0);
 }
 
+/**
+ * The Cron rules retained CIB evidence certifies as malformed, each in the seconds field only
+ * (`timer-data-derived/cron-*`): a letter, a range without its end, more than one `/`, a step of 0, and `?`. cron-utils'
+ * source is not pinned, so the same text in another field stays outside (I-T1).
+ */
+function secondsCertainlyMalformed(text: readonly string[]): boolean {
+  const steps = splitJava(text, "/");
+  const [stepDigits, afterStep] = spanDigits(steps[1] ?? []);
+  const zeroStep = steps.length === 2 && stepDigits.length > 0 && afterStep.length === 0 && digitsValue(stepDigits) === 0;
+  const openRange = (item: readonly string[]): boolean => {
+    const [digits, rest] = spanDigits(item);
+    return digits.length > 0 && rest.length === 1 && rest[0] === "-";
+  };
+  return text.join("") === "?" || text.some((char) => /^[A-Za-z]$/.test(char)) || steps.length > 2 || zeroStep ||
+    text.join("").split(",").some((item) => openRange(Array.from(item)));
+}
+
 const cronAlphabet = (char: string): boolean => /^[0-9A-Za-z]$/.test(char) || "*?/,-# ".includes(char);
 
 /** The Quartz day of week (1 = Sunday) of a day counted from the epoch, a Thursday. */
@@ -384,7 +419,7 @@ function classifyCron(lexeme: string): Classified {
   if (parts.length === 7) return outside(TimerCode.Cron);
   if (parts.length !== 6) return malformed(TimerCode.Cron);
   const [s = [], mi = [], h = [], dom = [], mo = [], dow = []] = parts;
-  const read = [cronField(0, 59, s), cronField(0, 59, mi), cronField(0, 23, h), cronField(1, 31, dom), cronField(1, 12, mo), cronField(1, 7, dow)];
+  const read = [secondsCertainlyMalformed(s) ? "malformed" as const : cronField(0, 59, s), cronField(0, 59, mi), cronField(0, 23, h), cronField(1, 31, dom), cronField(1, 12, mo), cronField(1, 7, dow)];
   if (read.includes("malformed")) return malformed(TimerCode.Cron);
   const full = (low: number, high: number, field: CronField): readonly number[] | null =>
     Array.isArray(field) ? field : field === "any" ? range(low, high, () => true) : null;

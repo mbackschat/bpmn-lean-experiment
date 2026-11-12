@@ -153,31 +153,29 @@ def splitJava (chars : List Char) (separator : Char) : List (List Char) :=
 
 /-! ## Durations -/
 
-/-- One component: designator, integer digits, fraction digits. -/
-abbrev Component := Char × List Char × List Char
+/-- One component: designator, integer digits, and the fraction digits after a point, `none` without a point. -/
+abbrev Component := Char × List Char × Option (List Char)
 
-/-- Read components whose designators come from `units` in order, until the input ends or reaches `T`. A fraction is
-read here and checked by the caller. -/
+/-- Read components whose designators come from `units` in order, until the input ends or reaches `T`. A point is read
+here and checked by the caller; a component needs a digit on one side of it, as the JDK's `DurationImpl` requires (its
+`BigInteger` and `BigDecimal` reject a bare point). -/
 def readUnits : Nat → List Char → List Char → Option (List Component × List Char)
   | 0, _, _ => none
   | _ + 1, [], _ => some ([], [])
   | _ + 1, chars@('T' :: _), _ => some ([], chars)
   | fuel + 1, chars@(_ :: _), units =>
-    match spanDigits chars with
-    | ([], _) => none
-    | (digits, '.' :: rest) =>
-      match spanDigits rest with
-      | ([], _) => none
-      | (fraction, unit :: rest) =>
+    let (digits, afterDigits) := spanDigits chars
+    let (fraction, rest) : Option (List Char) × List Char := match afterDigits with
+      | '.' :: more => let (fraction, rest) := spanDigits more; (some fraction, rest)
+      | _ => (none, afterDigits)
+    if digits.isEmpty && (fraction.getD []).isEmpty then none
+    else
+      match rest with
+      | unit :: rest =>
         match units.dropWhile (· != unit) with
         | _ :: later => (readUnits fuel rest later).map fun (list, rest) => ((unit, digits, fraction) :: list, rest)
         | [] => none
-      | (_, []) => none
-    | (digits, unit :: rest) =>
-      match units.dropWhile (· != unit) with
-      | _ :: later => (readUnits fuel rest later).map fun (list, rest) => ((unit, digits, []) :: list, rest)
       | [] => none
-    | (_, []) => none
 
 /-- The `xsd:duration` lexical form after `P` (fraction only on seconds), as date and time components. -/
 def xsdDuration (chars : List Char) : Option (List Component × List Component) := do
@@ -196,10 +194,21 @@ def componentValue (components : List Component) (unit : Char) : Nat :=
   | some (_, digits, _) => digitsValue digits
   | none => 0
 
+/-- A `/` lexeme as CIB's `DurationHelper` reads it (`DurationHelper.java:61-90`): more than three parts throws, and a
+`P…` first part makes the second the interval's end, which Joda's ISO date-time parser cannot read when it starts with
+`P` (`DateTimeUtil.java:47-60`), so both are malformed; every other interval form is outside. -/
+def classifyInterval (chars : List Char) : Classified :=
+  match splitJava chars '/' with
+  | _ :: _ :: _ :: _ :: _ => .malformed .duration
+  | ('P' :: _) :: ('P' :: _) :: _ => .malformed .duration
+  | _ => .outside .duration
+
+/-- A duration lexeme. Seconds written `n.` or `.n` are outside: the JDK's `BigDecimal` reads them, so CIB commits
+them (retained `timer-data-derived/catch-point-without-digits`), but the subset keeps digits on both sides of a point. A
+point on any other component is malformed, since `BigInteger` rejects it. -/
 def classifyDuration (lexeme : String) : Classified :=
   let chars := lexeme.toList
-  if chars.contains '/' then
-    if (splitJava chars '/').length > 3 then .malformed .duration else .outside .duration
+  if chars.contains '/' then classifyInterval chars
   else
     match chars with
     | 'P' :: rest =>
@@ -212,9 +221,13 @@ def classifyDuration (lexeme : String) : Classified :=
         | none => .malformed .duration
         | some (date, time) =>
           let all := date ++ time
-          let fraction := (time.find? (·.1 == 'S')).map (·.2.2) |>.getD []
-          if all.any fun (unit, _, fraction) => unit != 'S' && !fraction.isEmpty then .malformed .duration
-          else if fraction.length > 3 || all.any (fun (_, digits, _) => digitsValue digits > maxComponent) then
+          let seconds := time.find? (·.1 == 'S')
+          let fraction := (seconds.bind (·.2.2)).getD []
+          let loose := match seconds with
+            | some (_, digits, some fraction) => digits.isEmpty || fraction.isEmpty
+            | _ => false
+          if all.any fun (unit, _, fraction) => unit != 'S' && fraction.isSome then .malformed .duration
+          else if loose || fraction.length > 3 || all.any (fun (_, digits, _) => digitsValue digits > maxComponent) then
             .outside .duration
           else
             .admitted (.duration {
@@ -333,6 +346,22 @@ def cronField (low high : Nat) (text : List Char) : CronField :=
     | [_] => cronItems low high (splitAt text ',')
     | _ => .outside
 
+/-- The Cron rules retained CIB evidence certifies as malformed, each in the seconds field only
+(`timer-data-derived/cron-*`): a letter, a range without its end, more than one `/`, a step of 0, and `?`. cron-utils'
+source is not pinned, so the same text in another field stays outside (I-T1). -/
+def secondsCertainlyMalformed (text : List Char) : Bool :=
+  let steps := splitJava text '/'
+  let zeroStep := match steps with
+    | [_, step] =>
+      match spanDigits step with
+      | (digits@(_ :: _), []) => digitsValue digits == 0
+      | _ => false
+    | _ => false
+  let openRange (item : List Char) : Bool := match spanDigits item with
+    | (_ :: _, ['-']) => true
+    | _ => false
+  text == ['?'] || text.any Char.isAlpha || steps.length > 2 || zeroStep || (splitAt text ',').any openRange
+
 def cronAlphabet (char : Char) : Bool := char.isAlphanum || "*?/,-# ".toList.contains char
 
 /-- The Quartz day of week (1 = Sunday) of a day counted from the epoch, a Thursday. -/
@@ -370,7 +399,8 @@ def classifyCron (lexeme : String) : Classified :=
     let parts := (splitAt chars ' ').filter (!·.isEmpty)
     match parts with
     | [seconds, minutes, hours, daysOfMonth, months, daysOfWeek] =>
-      let (seconds, minutes, hours) := (cronField 0 59 seconds, cronField 0 59 minutes, cronField 0 23 hours)
+      let seconds := if secondsCertainlyMalformed seconds then .malformed else cronField 0 59 seconds
+      let (minutes, hours) := (cronField 0 59 minutes, cronField 0 23 hours)
       let (daysOfMonth, months, daysOfWeek) := (cronField 1 31 daysOfMonth, cronField 1 12 months, cronField 1 7 daysOfWeek)
       let malformed : CronField → Bool
         | .malformed => true
