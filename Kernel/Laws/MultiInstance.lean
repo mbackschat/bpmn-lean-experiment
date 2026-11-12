@@ -55,8 +55,9 @@ structure Owned (s : State) (run : MultiInstanceRun) : Prop where
   ownScopes : ∀ (first second : Nat) (scope : ScopeOccurrenceId), run.instances[first]? = some (.active scope) →
     run.instances[second]? = some (.active scope) → first = second
 
-/-- An instance's activation is its generation order: the occurrence of the Activity in the scope occurrence of slot
-`index` is activation `offset + index + 1`, `offset` counting the instances of earlier body entries
+/-- An instance's activation is its begin order: the occurrence of the Activity in the scope occurrence of slot `index`
+is activation `offset + index + 1`, `offset` counting the instances of the element begun before the body, while no
+other body of the element begins instances in between
 ([Multi-Instance, entry and generation](../../docs/kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md#entry-and-generation)). -/
 def Numbered (s : State) (run : MultiInstanceRun) (offset : Nat) : Prop :=
   ∀ (index : Nat) (scope : ScopeOccurrenceId), run.instances[index]? = some (.active scope) →
