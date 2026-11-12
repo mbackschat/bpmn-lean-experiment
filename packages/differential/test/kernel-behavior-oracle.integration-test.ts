@@ -407,7 +407,8 @@ test("the Lean and TypeScript kernels agree on the population contract's deploym
   const answer = (run: () => unknown): Promise<unknown> => Promise.resolve().then(run).then(
     (value) => wireValue(value),
     (error: unknown) =>
-      /population-(?:time-backward|time-mismatch|unknown-definition)/u.exec(String(error))?.[0] ?? `uncoded: ${String(error)}`,
+      /population-(?:time-backward|time-mismatch|unknown-definition|source-missing|sources-unused|source-refused-shape|source-identity)/u
+        .exec(String(error))?.[0] ?? `uncoded: ${String(error)}`,
   );
   try {
     for (const [name, programs, refs, steps] of cases) {

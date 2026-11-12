@@ -52,13 +52,14 @@ async function recordedCases(directory: string): Promise<ReadonlyArray<Recorded>
 }
 
 /**
- * A refusal or harness error by its stable code, the first `codec.`, `population-`, `fixture-` or `batch-` token, or
- * `uncoded`: the detail after a code is each codec's own wording (Lean names `Kernel.` types, TypeScript prefixes the
- * input it read), so only the code is the contract, as in `kernel-behavior-oracle.integration-test.ts`.
+ * A refusal or harness error by its stable code, the first `codec.`, `population-`, `fixture-` or `batch-` token: the
+ * detail after a code is each codec's own wording (Lean names `Kernel.` types, TypeScript prefixes the input it read),
+ * so only the code is the contract, as in `kernel-behavior-oracle.integration-test.ts`. A message with no code is kept
+ * whole behind `uncoded: `, so two different uncoded errors never compare equal.
  */
 function stableCode(message: unknown): unknown {
   if (typeof message !== "string") return message;
-  return /(?:codec\.[A-Za-z]+|(?:population|fixture|batch)-[a-z-]+)/u.exec(message)?.[0] ?? "uncoded";
+  return /(?:codec\.[A-Za-z]+|(?:population|fixture|batch)-[a-z-]+)/u.exec(message)?.[0] ?? `uncoded: ${message}`;
 }
 
 /** A batch answer with its harness error, or its codec refusal, reduced to the stable code. */
@@ -114,4 +115,13 @@ test("the pairing comparison lists a case whose Lean answer differs", () => {
   assert.deepEqual(pairingDisagreements([recorded({ answer: { value: 1 } }), recorded({ answer: { value: 2 } })],
     [{ answer: { value: 1 } }, { answer: { value: 3 } }]),
   ["seeded.test.ts › seeded (evaluate): case.answer.value: TypeScript 2, Lean 3"]);
+});
+
+// Two uncoded harness errors are equal only when their messages are, or any harness failure would pass for any other.
+test("the pairing comparison lists two different uncoded harness errors", () => {
+  const recorded = (expected: unknown): Recorded =>
+    ({ file: "seeded.test.ts", test: "seeded", case: { entry: "hostView" }, expected });
+  assert.deepEqual(pairingDisagreements([recorded({ error: "stack overflow" }), recorded({ error: "codec.malformed: Program" })],
+    [{ error: "out of memory" }, { error: "codec.malformed: Kernel.Program" }]),
+  ["seeded.test.ts › seeded (hostView): case.error: TypeScript \"uncoded: stack overflow\", Lean \"uncoded: out of memory\""]);
 });

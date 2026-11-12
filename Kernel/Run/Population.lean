@@ -9,8 +9,9 @@ public import Kernel.Run.Wire
 Reads a [population scenario](../../contracts/schemas/engine-population-scenario.schema.json) into the population's
 stimuli and renders the [engine-population result](../../contracts/schemas/engine-population-result.schema.json).
 `Kernel.Run` reads the files and runs the stimuli, because it is the one module that may import both registries. A
-malformed population scenario is a harness error, three of them with stable codes: `population-time-backward`,
-`population-time-mismatch` and `population-unknown-definition`.
+malformed population scenario is a harness error, these with stable codes: `population-time-backward`,
+`population-time-mismatch`, `population-unknown-definition` and, for the deployment sources, `population-source-missing`,
+`population-sources-unused`, `population-source-refused-shape` and `population-source-identity`.
 
 The harness passes one source per deployment, in deploy order: the definitions no `deploy` step names, in list order,
 then every `deploy` step in step order, so the n-th source is what deployment ordinal n deploys (`Population.apply`
@@ -43,6 +44,11 @@ structure Declared where
   definitionRef : String
   ref : Population.DeploymentRef
 
+/-- A malformed population scenario: a harness refusal with its stable code
+(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation). -/
+def harnessRefusal {α : Type} (code detail : String) : Except String α :=
+  throw s!"{code}: {detail}"
+
 /-- What one deployment deploys: the program assembled for it, or the code the reader refused its source with. -/
 inductive DeploymentSource where
   | program (program : Program)
@@ -54,24 +60,19 @@ def deploymentSourceFromJson (json : Json) : Except String DeploymentSource :=
   | .ok _ => do
     let code ← json.getObjValAs? String "refused"
     if json == Json.mkObj [("refused", Json.str code)] then pure (.refused code)
-    else throw "a refused deployment names only its code"
+    else harnessRefusal "population-source-refused-shape" "a refused deployment names only its code"
   | .error _ => .program <$> Codec.programFromJson json
 
 /-- The deployment of `entry` at `atMs` from the next source, with the sources left; a program must be the definition's
 source under the scenario's profile. -/
 def deployStimulus (entry : Declared) (atMs : Nat) :
     List DeploymentSource → Except String (Population.Stimulus × List DeploymentSource)
-  | [] => throw s!"no source for a deployment of {entry.definitionRef}"
+  | [] => harnessRefusal "population-source-missing" entry.definitionRef
   | .refused code :: rest => pure (.deployRefused entry.definitionRef entry.ref code atMs, rest)
   | .program program :: rest => do
     unless program.identity.sourceSha256 == entry.ref.sourceSha256 && program.identity.profile == entry.ref.profile do
-      throw s!"program identity differs from definition {entry.definitionRef}"
+      harnessRefusal "population-source-identity" entry.definitionRef
     pure (.deploy entry.definitionRef entry.ref program atMs, rest)
-
-/-- A malformed population scenario: a harness refusal with its stable code
-(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation). -/
-def harnessRefusal {α : Type} (code detail : String) : Except String α :=
-  throw s!"{code}: {detail}"
 
 def declaredOf (declared : List Declared) (definitionRef : String) : Except String Declared :=
   match declared.find? (·.definitionRef == definitionRef) with
@@ -216,7 +217,8 @@ def stimuliOfPopulation (declared : List Declared) (sources : List DeploymentSou
       match ← populationCommandFromJson json kind with
       | some command => stimuli := stimuli ++ [.command command clock (digests.getD index "")]
       | none => throw s!"unsupported population step {kind}"
-  unless pending.isEmpty do throw s!"{sources.length} deployment sources, {sources.length - pending.length} deployments"
+  unless pending.isEmpty do
+    harnessRefusal "population-sources-unused" s!"{sources.length} deployment sources, {sources.length - pending.length} deployments"
   pure stimuli
 
 def failureFields (failure : Failure) : List (String × Json) :=

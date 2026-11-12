@@ -70,9 +70,9 @@ test("each deployment takes the next source in deploy order, and a source the re
 });
 
 test("the sources match the deployments one to one, and a refused source names only its code", () => {
-  assert.throws(() => run([program], ["a", "b"], []), /no source for a deployment of b/u);
-  assert.throws(() => run([program, program], ["a"], []), /2 deployment sources, 1 deployments/u);
-  assert.throws(() => run([{ refused: "x", extra: true }], ["a"], []), /names only its code/u);
+  assert.throws(() => run([program], ["a", "b"], []), /population-source-missing: b/u);
+  assert.throws(() => run([program, program], ["a"], []), /population-sources-unused: 2 deployment sources, 1 deployments/u);
+  assert.throws(() => run([{ refused: "x", extra: true }], ["a"], []), /population-source-refused-shape/u);
 });
 
 test("an instance step before its definition's deploy step is not deployed", () => {

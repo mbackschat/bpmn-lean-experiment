@@ -3,8 +3,9 @@
  * (`contracts/schemas/engine-population-scenario.schema.json`) into the population's stimuli and renders the
  * engine-population result (`contracts/schemas/engine-population-result.schema.json`). `run.ts` runs the stimuli,
  * because it is the one module that may import both registries. A malformed population scenario is a harness error,
- * three of them with stable codes: `population-time-backward`, `population-time-mismatch` and
- * `population-unknown-definition`.
+ * these with stable codes: `population-time-backward`, `population-time-mismatch`, `population-unknown-definition`
+ * and, for the deployment sources, `population-source-missing`, `population-sources-unused`,
+ * `population-source-refused-shape` and `population-source-identity`.
  *
  * The harness passes one source per deployment, in deploy order: the definitions no `deploy` step names, in list order,
  * then every `deploy` step in step order, so the n-th source is what deployment ordinal n deploys (`population.ts`
@@ -80,7 +81,7 @@ export type DeploymentSource =
 export function deploymentSourceFromJson(json: unknown, where: string): DeploymentSource {
   if (optional(json, "refused") === undefined) return { tag: DeploymentSourceTag.Program, program: decoded(decodeProgram(json), where) };
   const code = requiredString(json, "refused", where);
-  if (Object.keys(json as object).length !== 1) throw new Error(`${where}: a refused deployment names only its code`);
+  if (Object.keys(json as object).length !== 1) harnessRefusal(where, "population-source-refused-shape", "a refused deployment names only its code");
   return { tag: DeploymentSourceTag.Refused, code };
 }
 
@@ -90,14 +91,14 @@ export function deploymentSourceFromJson(json: unknown, where: string): Deployme
  */
 function deployStimulus(entry: Declared, atMs: number, pending: DeploymentSource[], where: string): Stimulus {
   const source = pending.shift();
-  if (source === undefined) throw new Error(`${where}: no source for a deployment of ${entry.definitionRef}`);
+  if (source === undefined) harnessRefusal(where, "population-source-missing", entry.definitionRef);
   switch (source.tag) {
     case DeploymentSourceTag.Refused:
       return { tag: StimulusTag.DeployRefused, definitionRef: entry.definitionRef, ref: entry.ref, code: source.code, atMs };
     case DeploymentSourceTag.Program: {
       const identity = source.program.identity;
       if (identity.sourceSha256 !== entry.ref.sourceSha256 || identity.profile !== entry.ref.profile) {
-        throw new Error(`${where}: program identity differs from definition ${entry.definitionRef}`);
+        harnessRefusal(where, "population-source-identity", entry.definitionRef);
       }
       return { tag: StimulusTag.Deploy, definitionRef: entry.definitionRef, ref: entry.ref, program: source.program, atMs };
     }
@@ -264,7 +265,9 @@ export function stimuliOfPopulation(declared: readonly Declared[], sources: read
     if (command === null) throw new Error(`${where}: unsupported population step ${kind}`);
     stimuli.push({ tag: StimulusTag.Command, command, atMs: clock, digest: digests[index] ?? "" });
   });
-  if (pending.length > 0) throw new Error(`${where}: ${sources.length} deployment sources, ${sources.length - pending.length} deployments`);
+  if (pending.length > 0) {
+    harnessRefusal(where, "population-sources-unused", `${sources.length} deployment sources, ${sources.length - pending.length} deployments`);
+  }
   return stimuli;
 }
 
