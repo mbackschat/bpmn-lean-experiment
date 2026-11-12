@@ -1,11 +1,13 @@
 /**
  * PC-CONDITION-03 to PC-CONDITION-05: several Conditional items true in one step fire one at a time, and an
- * interrupting firing withdraws the items it cancels before any other pending firing runs. An Event-Based Gateway
- * takes only its first true arm in flow order (BPMN 2.0.2 §10.5.6, Table 10.95), an interrupting boundary ends the
- * items of its host and of everything inside it, and an interrupting Event Sub-Process those of its parent scope. The
- * oracle is the occurrences each input begins (the journal), not only the waits left open, because a later
+ * interrupting firing withdraws the items it cancels before any other pending firing runs: an interrupting boundary ends
+ * the items of its host and of everything inside it, and an interrupting Event Sub-Process those of its parent scope.
+ * Items of which only one may fire (two arms of one Event-Based Gateway, two interrupting boundaries of one host, two
+ * interrupting Event Sub-Process starts of one scope) true at one evaluation have no winner: BPMN orders no
+ * simultaneous triggers (§13.4.4), CIB picks by `HashSet` order (#79), and the kernel refuses the input as `unsupported`.
+ * The oracle is the occurrences each input begins (the journal), not only the waits left open, because a later
  * cancellation can hide a firing that should never have begun. The model is `scenarios/open-rows/conditional-catch/arms.bpmn`,
- * whose two-true-arms run has no retained CIB answer (CIB's pick varies per JVM, #79); the other models mutate its shape.
+ * whose two-true-arms run has no retained CIB answer; the other models mutate its shape.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -14,7 +16,7 @@ import path from "node:path";
 import { test } from "node:test";
 
 import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
-import type { State } from "@bpmn-lean/kernel";
+import type { Program, State } from "@bpmn-lean/kernel";
 
 import { readCaseSource } from "./kernel-program.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
@@ -43,19 +45,25 @@ const setGo = (element: string): Json => ({
   action: { kind: "setVariables", values: [go(true)] },
 });
 
-/** The elements each input begins, in order, after reading `bytes` under the CIB profile. */
-async function begun(bytes: Uint8Array, stimuli: readonly Json[]): Promise<string[][]> {
+/** `bytes` read and decoded under the CIB profile. */
+async function programOf(bytes: Uint8Array): Promise<Program> {
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   const read = await readCaseSource({ relativePath: "inline.bpmn", bytes, sha256, overlay: null }, "cibseven-2.2.0");
   assert.equal(read.kind, "read", JSON.stringify(read));
   const decoded = decodeProgram((read as Extract<typeof read, { kind: "read" }>).program);
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
+  return decoded.value;
+}
+
+/** The elements each input begins, in order, after reading `bytes` under the CIB profile. */
+async function begun(bytes: Uint8Array, stimuli: readonly Json[]): Promise<string[][]> {
+  const program = await programOf(bytes);
   let state: State | null = null;
   const out: string[][] = [];
   for (const stimulus of stimuli) {
     const parsed = stimulusFromJson(stimulus);
     assert.ok(parsed.ok, parsed.ok ? "" : parsed.refusal);
-    const outcome = step(hooks, decoded.value, state, parsed.value[1]);
+    const outcome = step(hooks, program, state, parsed.value[1]);
     assert.ok(outcome.ok, outcome.ok ? "" : JSON.stringify(outcome.failure));
     state = outcome.value;
     out.push(state.journal.flatMap((transition) => transition.started.map((fact) => fact.occurrence.element)));
@@ -63,30 +71,36 @@ async function begun(bytes: Uint8Array, stimuli: readonly Json[]): Promise<strin
   return out;
 }
 
+/** The refusal of the last of `stimuli`, every earlier one committing. */
+async function refused(bytes: Uint8Array, stimuli: readonly Json[]): Promise<unknown> {
+  const program = await programOf(bytes);
+  let state: State | null = null;
+  for (const [index, stimulus] of stimuli.entries()) {
+    const parsed = stimulusFromJson(stimulus);
+    assert.ok(parsed.ok, parsed.ok ? "" : parsed.refusal);
+    const outcome = step(hooks, program, state, parsed.value[1]);
+    if (index === stimuli.length - 1) return outcome.ok ? null : outcome.failure;
+    assert.ok(outcome.ok, outcome.ok ? "" : JSON.stringify(outcome.failure));
+    state = outcome.value;
+  }
+  return null;
+}
+
 const inline = (body: string): Uint8Array => new TextEncoder().encode(`${header}${body}${footer}`);
 const witness = (): Promise<Buffer> => readFile(path.join(projectRoot, "scenarios/open-rows/conditional-catch/arms.bpmn"));
 const users = (elements: readonly string[]): string[] => elements.filter((element) => /^(Chosen_|W\d|Inner|Wait_Work|ESP\d_Work)/u.test(element));
 
-test("an Event-Based Gateway whose two Conditional arms are true when armed takes only the first in flow order", async () => {
-  const [started] = await begun(await witness(), [start([{ name: "ready", value: { kind: "boolean", value: true } }])]);
-  assert.deepEqual(users(started ?? []), ["Chosen_Beta"]);
+test("an Event-Based Gateway whose two Conditional arms are true when armed refuses the input", async () => {
+  assert.deepEqual(await refused(await witness(), [start([{ name: "ready", value: { kind: "boolean", value: true } }])]),
+    { tag: "unsupported", code: "gateway-arms-simultaneous" });
 });
 
-test("the gateway's first arm is the first outgoing flow, not the first declared catch", async () => {
-  const swapped = (await witness()).toString("utf8").replace(
-    /(<bpmn:sequenceFlow id="Flow_Gateway_Arms_Catch_Beta"[^>]*\/>)(\s*)(<bpmn:sequenceFlow id="Flow_Gateway_Arms_Catch_Alpha"[^>]*\/>)/u,
-    "$3$2$1");
-  const [started] = await begun(new TextEncoder().encode(swapped), [start([{ name: "ready", value: { kind: "boolean", value: true } }])]);
-  assert.deepEqual(users(started ?? []), ["Chosen_Alpha"]);
-});
-
-test("of two interrupting Conditional boundaries true at their host's entry only the first fires", async () => {
+test("two interrupting Conditional boundaries true at their host's entry refuse the input", async () => {
   const model = inline(`<bpmn:startEvent id="S"/><bpmn:sequenceFlow id="f1" sourceRef="S" targetRef="Host"/><bpmn:userTask id="Host"/>
     <bpmn:sequenceFlow id="f2" sourceRef="Host" targetRef="E"/><bpmn:endEvent id="E"/>
     <bpmn:boundaryEvent id="B1" attachedToRef="Host">${condition("go")}</bpmn:boundaryEvent>${branch("B1", "W1")}
     <bpmn:boundaryEvent id="B2" attachedToRef="Host">${condition("go")}</bpmn:boundaryEvent>${branch("B2", "W2")}`);
-  const [started] = await begun(model, [start([go(true)])]);
-  assert.deepEqual(users(started ?? []), ["W1"]);
+  assert.deepEqual(await refused(model, [start([go(true)])]), { tag: "unsupported", code: "conditions-simultaneous" });
 });
 
 test("an interrupting boundary true at entry withdraws its Sub-Process host's own interrupting Event Sub-Process", async () => {
@@ -98,10 +112,9 @@ test("an interrupting boundary true at entry withdraws its Sub-Process host's ow
   assert.deepEqual(users(started ?? []), ["W1"]);
 });
 
-test("of two interrupting Conditional Event Sub-Processes true at their scope's entry only the first starts", async () => {
+test("two interrupting Conditional Event Sub-Processes true at their scope's entry refuse the input", async () => {
   const model = inline(`<bpmn:startEvent id="S"/>${branch("S", "Wait_Work")}${eventSubProcess("ESP1", "go")}${eventSubProcess("ESP2", "go == true")}`);
-  const [started] = await begun(model, [start([go(true)])]);
-  assert.deepEqual(users(started ?? []), ["ESP1_Work"]);
+  assert.deepEqual(await refused(model, [start([go(true)])]), { tag: "unsupported", code: "conditions-simultaneous" });
 });
 
 test("a write that makes an interrupting Event Sub-Process and a catch it cancels true fires only the Event Sub-Process", async () => {

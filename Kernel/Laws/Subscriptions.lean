@@ -182,6 +182,43 @@ theorem loser_armed_rejected (kind : OpenKind) :
   have := wins.disarmed (lateItem kind) (by simp)
   simp [lateItem] at this
 
+/-! ## Simultaneous truth
+
+Items of which only one may fire (the arms of one Event-Based Gateway, the interrupting boundaries of one host, the
+interrupting Event Sub-Process starts of one scope) that become true at one evaluation have no winner: BPMN orders no
+simultaneous triggers (§13.4.4) and arming order is no choice the kernel may take (FLOW-SPEC), so the input is
+`unsupported`, never committed with one of them. -/
+
+/-- At most one of `fired`, the items one evaluation fired, wins: two distinct ones that `compete` make the evaluation's
+verdict an `unsupported` refusal. -/
+def OneWinner (competes : OpenItem → OpenItem → Prop) (fired : List OpenItem) (verdict : Except Failure Unit) : Prop :=
+  (∃ a ∈ fired, ∃ b ∈ fired, a.id ≠ b.id ∧ competes a b) → ∃ code, verdict = .error (.unsupported code)
+
+/-- Two arms of the gateway occurrence 2, the items of `armItem`. -/
+def armItem (id : Nat) (kind : OpenKind) : OpenItem :=
+  { id, kind, element := ⟨s!"C{id}"⟩, scope := ⟨0⟩, occurrence := id + 10, attachedTo := some 2 }
+
+def sameGateway (a b : OpenItem) : Prop := a.attachedTo = b.attachedTo
+
+theorem two_arms_refused (kind : OpenKind) :
+    OneWinner sameGateway [armItem 1 kind, armItem 2 kind] (.error (.unsupported "gateway-arms-simultaneous")) :=
+  fun _ => ⟨_, rfl⟩
+
+theorem one_arm_commits (kind : OpenKind) : OneWinner sameGateway [armItem 1 kind] (.ok ()) := by
+  rintro ⟨a, ha, rest⟩
+  obtain ⟨b, hb, distinct, _⟩ := rest
+  simp only [List.mem_singleton] at ha hb
+  subst ha hb
+  exact absurd rfl distinct
+
+/-- Two competing arms committed with one of them is rejected. -/
+theorem two_arms_committed_rejected (kind : OpenKind) : ¬ OneWinner sameGateway [armItem 1 kind, armItem 2 kind] (.ok ()) :=
+  fun law => by
+    have second : ∃ b ∈ [armItem 1 kind, armItem 2 kind], (armItem 1 kind).id ≠ b.id ∧ sameGateway (armItem 1 kind) b :=
+      ⟨armItem 2 kind, by simp, by simp [armItem], rfl⟩
+    obtain ⟨_, refused⟩ := law ⟨armItem 1 kind, by simp, second⟩
+    cases refused
+
 /-! ## Timer lexemes
 
 A lexeme is malformed only where CIB's parser certainly fails, and outside wherever that is uncertain (I-T1;

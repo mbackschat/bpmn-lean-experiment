@@ -1526,6 +1526,16 @@ CIB Seven `2.2.0` binds `execution` and, through GraalJS host access, every Java
 
 **Boundary:** Scripts that reference `execution` or `Java`, read a List, Map or `stringList` variable, or return a number whose Java type the source does not fix. This entry owns the ledger entry of `probe-host-mutation`.
 
+### CIB-LIM-0053 — the kernel refuses competing Conditional items true at one evaluation, CIB fires one of them
+
+**Status:** Profile limitation under every profile; not a deviation
+
+Two arms of one Event-Based Gateway, two interrupting Conditional boundaries of one host, or two interrupting Conditional Event Sub-Process starts of one scope can become true at one evaluation: when they are armed, or when one write is offered to them. Only one may fire, since the first disarms the others. BPMN gives simultaneous triggers no order (§13.4.4, BPMN-2.0.2.md:12560). CIB Seven `2.2.0` fires the first true item it meets in `ScopeImpl.eventActivities`, a `HashSet<ActivityImpl>` whose classes override no `hashCode`, so the order follows identity hashes (**H:** it varies per JVM run). The kernel takes no arming order for that choice and refuses the input as dynamic-only `unsupported` (`gateway-arms-simultaneous`, `conditions-simultaneous`), as CIB-LIM-0003 refuses forms CIB commits. An explicit arm-choice input would admit the case without reinterpreting this refusal.
+
+**Evidence:** Pinned `EventBasedGatewayActivityBehavior.java:36-44`, `ScopeImpl.java:55`; the dropped witness `conditional-catch/gateway-two-true-arms` (`d69a66ae1`: a hosted replay did not reproduce its retained answer); the kernel's `Conditions.requireOneWinner`; `condition-simultaneous.test.ts`, `conditional-preemption.test.ts`.
+
+**Boundary:** Conditional items of one contest (gateway arms, interrupting boundaries of one host, interrupting Event Sub-Process starts of one scope) firing at one arming or one offered write, under every profile. A non-interrupting item competes with nothing; two Event-Based arms one Signal throw reaches are CIB-INT-0030's.
+
 ### CIB-LIM-0054 — a sequential Multi-Instance collection removed or null before a later instance is unsupported
 
 **Status:** Known limitation within reviewed scope; selected by the cibseven profiles with `CIB-INT-0043`

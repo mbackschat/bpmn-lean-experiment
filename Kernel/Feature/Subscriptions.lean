@@ -133,24 +133,35 @@ def waitKind (ctx : Ctx) (arming : Arming) (subscription : Subscription) : Excep
   | .compensation => .ok none
   | .cancel => .ok none
 
+/-- Open a subscription's item and evaluate it once if Conditional; the item comes back when that evaluation fired it. -/
 def subscribe (ctx : Ctx) (arming : Arming) (state : State) (subscription : Subscription) (element : ElementId)
-    (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool) : Outcome := do
+    (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool) : Except Failure (State × Option OpenItem) := do
   match ← waitKind ctx arming subscription with
-  | none => pure state
+  | none => pure (state, none)
   | some kind =>
     let (state, item) := state.openSubscription kind element scope host passive
-    armed ctx subscription item state
+    let (state, fired) ← armed ctx subscription item state
+    pure (state, if fired then some item else none)
+
+/-- Subscribe each of one arming's subscriptions in order; at most one item of a contest may fire (`requireOneWinner`). -/
+def subscribeAll {α : Type} (ctx : Ctx) (state : State) (entries : List α)
+    (each : State → α → Except Failure (State × Option OpenItem)) : Outcome := do
+  let (state, fired) ← entries.foldlM (fun (state, fired) entry => do
+    let (state, item) ← each state entry
+    pure (state, fired ++ item.toList)) (state, [])
+  requireOneWinner ctx fired
+  pure state
 
 /-- `Signal.arm`: open the boundaries of `element`, attached to `host`, in the host's scope `scope`. -/
 def arm (ctx : Ctx) (host : Nat) (element : ElementId) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
   match (ctx.program.element? element).bind (·.envelope?) with
   | none => .error (.semanticFailure "arm-without-envelope")
   | some envelope =>
-    envelope.boundaries.foldlM (fun state boundary =>
+    subscribeAll ctx state envelope.boundaries fun state boundary =>
       let arming : Arming :=
         { values := state.evalContext (state.ownScope host scope), names := state.evalContext scope
           repeats := !boundary.interrupting }
-      subscribe ctx arming state boundary.subscription boundary.id scope (some host) false) state
+      subscribe ctx arming state boundary.subscription boundary.id scope (some host) false
 
 /-- `Signal.armGateway`: open one subscription per arm, the catch Events the gateway's outgoing flows reach, attached
 to the gateway's occurrence. A Receive Task arm would need the work feature's wait and is refused
@@ -160,13 +171,13 @@ def armGateway (ctx : Ctx) (occurrence : Nat) (gateway : ElementId) (scope : Sco
   match (ctx.program.element? gateway).bind (·.gateway?) with
   | none => .error (.semanticFailure "arm-gateway-without-gateway")
   | some (_, payload) =>
-    payload.outgoing.foldlM (fun state flow =>
+    subscribeAll ctx state payload.outgoing fun state flow =>
       let arm := (ctx.program.target? flow).bind ctx.program.element? |>.bind fun target =>
         target.event?.bind fun (header, event) => event.catch?.map (header.id, ·)
       match arm with
       | some (element, subscription) =>
         subscribe ctx { values := state.evalContext scope } state subscription element scope (some occurrence) false
-      | none => .error (.unsupported "gateway-event-based-receive-arm")) state
+      | none => .error (.unsupported "gateway-event-based-receive-arm")
 
 /-- What the variables visible from `scope`'s parent read, without `scope`'s own: none at a root or a called root,
 whose start or call variables CIB sets after it subscribes (`PvmExecutionImpl.java:278-286`). -/
@@ -182,15 +193,15 @@ def startEvent? (ctx : Ctx) (eventSubProcess : ElementId) : Option ElementId :=
 (`State.childrenOf`: a called root's are its called process's) as passive items on their start Events. A start that opens no item needs no start Event: a Compensation Event
 Sub-Process's trigger is carried by its `ScopeKind`. -/
 def armScope (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
-  (state.childrenOf ctx.program scope).foldlM (fun state child =>
+  subscribeAll ctx state (state.childrenOf ctx.program scope) fun state child =>
     match child.scope?.bind fun (header, payload) => (ctx.eventStart payload).map (header.id, ·) with
-    | none => .ok state
+    | none => .ok (state, none)
     | some (eventSubProcess, subscription, interrupting) => do
       let arming := { values := state.evalContext scope, names := enclosingContext state scope, repeats := !interrupting }
       match startEvent? ctx eventSubProcess, ← waitKind ctx arming subscription with
       | some start, _ => subscribe ctx arming state subscription start scope none true
-      | none, none => .ok state
-      | none, some _ => .error (.semanticFailure "event-subprocess-without-start")) state
+      | none, none => .ok (state, none)
+      | none, some _ => .error (.semanticFailure "event-subprocess-without-start")
 
 /-! ## Root start triggers -/
 
@@ -374,7 +385,7 @@ def arriveCatch (ctx : Ctx) (_ : Header) (_ : EventPayload) (subscription : Subs
   | some kind =>
     let state := state.openItem kind occurrence
     match state.openItems.getLast? with
-    | some item => armed ctx subscription item state
+    | some item => (·.1) <$> armed ctx subscription item state
     | none => .ok state
   -- Admission refuses every trigger reaching here (`event.catch.error`, `.escalation`, `.compensation`, `.cancel`); the
   -- code names the first.

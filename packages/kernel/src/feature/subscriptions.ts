@@ -109,7 +109,7 @@ import {
   messageTriggerChannel, withdrawInside, withdrawOccurrence, type Catch, type Ctx,
 } from "../hooks.js";
 import { ClassifiedTag, TimerKind, armAt as armTimer, classify, dynamicCode, successor } from "../il/timer.js";
-import { armed, predicateHolds } from "./subscriptions/conditions.js";
+import { armed, predicateHolds, requireOneWinner } from "./subscriptions/conditions.js";
 
 export { offerWrites } from "./subscriptions/conditions.js";
 
@@ -314,6 +314,7 @@ function waitKind(ctx: Ctx, arming: Arming, subscription: Subscription): Result<
   return assertNever(trigger);
 }
 
+/** Open a subscription's item and evaluate it once if Conditional; the item comes back when that evaluation fired it. */
 function subscribe(
   ctx: Ctx,
   arming: Arming,
@@ -323,12 +324,30 @@ function subscribe(
   scope: ScopeOccurrenceId,
   host: number | null,
   passive: boolean,
-): Outcome {
+): Result<readonly [State, OpenItem | null]> {
   const kind = waitKind(ctx, arming, subscription);
   if (!kind.ok) return failedWith(kind.failure);
-  if (kind.value === null) return committed(state);
+  if (kind.value === null) return committed([state, null]);
   const [opened, item] = openSubscription(state, kind.value, element, scope, host, passive);
-  return armed(ctx, subscription, item, opened);
+  const evaluated = armed(ctx, subscription, item, opened);
+  if (!evaluated.ok) return failedWith(evaluated.failure);
+  return committed([evaluated.value[0], evaluated.value[1] ? item : null]);
+}
+
+/** Subscribe each of one arming's subscriptions in order; at most one item of a contest may fire (`requireOneWinner`). */
+function subscribeAll<T>(
+  ctx: Ctx, state: State, entries: readonly T[], each: (state: State, entry: T) => Result<readonly [State, OpenItem | null]>,
+): Outcome {
+  let current = state;
+  const fired: OpenItem[] = [];
+  for (const entry of entries) {
+    const next = each(current, entry);
+    if (!next.ok) return failedWith(next.failure);
+    [current] = next.value;
+    if (next.value[1] !== null) fired.push(next.value[1]);
+  }
+  const winner = requireOneWinner(ctx, fired);
+  return winner.ok ? committed(current) : failedWith(winner.failure);
 }
 
 /** `Signal.arm`: open the boundaries of `element`, attached to `host`, in the host's scope `scope`. */
@@ -336,16 +355,12 @@ export function arm(ctx: Ctx, host: number, element: ElementId, scope: ScopeOccu
   const found = programElement(ctx.program, element);
   const envelope = found === null ? null : elementEnvelope(found);
   if (envelope === null) return failed(FailureTag.SemanticFailure, "arm-without-envelope");
-  let current = state;
-  for (const boundary of envelope.boundaries) {
+  return subscribeAll(ctx, state, envelope.boundaries, (current, boundary) => {
     const arming = {
       values: evalContext(current, ownScope(current, host, scope)), names: evalContext(current, scope), repeats: !boundary.interrupting,
     };
-    const next = subscribe(ctx, arming, current, boundary.subscription, boundary.id, scope, host, false);
-    if (!next.ok) return next;
-    current = next.value;
-  }
-  return committed(current);
+    return subscribe(ctx, arming, current, boundary.subscription, boundary.id, scope, host, false);
+  });
 }
 
 /**
@@ -357,19 +372,15 @@ export function armGateway(ctx: Ctx, occurrence: number, gateway: ElementId, sco
   const found = programElement(ctx.program, gateway);
   const payload = found === null ? null : elementGateway(found);
   if (payload === null) return failed(FailureTag.SemanticFailure, "arm-gateway-without-gateway");
-  let current = state;
-  for (const flow of payload[1].outgoing) {
+  return subscribeAll(ctx, state, payload[1].outgoing, (current, flow) => {
     const target = programTarget(ctx.program, flow);
     const element = target === null ? null : programElement(ctx.program, target);
     const event = element === null ? null : elementEvent(element);
     const subscription = event === null ? null : eventPayloadCatch(event[1]);
     if (event === null || subscription === null) return failed(FailureTag.Unsupported, "gateway-event-based-receive-arm");
     const values = evalContext(current, scope);
-    const next = subscribe(ctx, { values, names: values, repeats: false }, current, subscription, event[0].id, scope, occurrence, false);
-    if (!next.ok) return next;
-    current = next.value;
-  }
-  return committed(current);
+    return subscribe(ctx, { values, names: values, repeats: false }, current, subscription, event[0].id, scope, occurrence, false);
+  });
 }
 
 /** The start Event of an Event Sub-Process. */
@@ -387,25 +398,18 @@ function startEvent(ctx: Ctx, eventSubProcess: ElementId): ElementId | null {
  * Sub-Process's trigger is carried by its `ScopeKind`.
  */
 export function armScope(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outcome {
-  let current = state;
-  for (const child of childrenOf(state, ctx.program, scope)) {
+  return subscribeAll(ctx, state, childrenOf(state, ctx.program, scope), (current, child): Result<readonly [State, OpenItem | null]> => {
     const declared = elementScope(child);
     const start = declared === null ? null : ctx.eventStart(declared[1]);
-    if (declared === null || start === null) continue;
+    if (declared === null || start === null) return committed([current, null]);
     const subscription = start[0];
     const arming = { values: evalContext(current, scope), names: enclosingContext(current, scope), repeats: !start[1] };
     const kind = waitKind(ctx, arming, subscription);
     if (!kind.ok) return failedWith(kind.failure);
     const startId = startEvent(ctx, declared[0].id);
-    if (startId !== null) {
-      const next = subscribe(ctx, arming, current, subscription, startId, scope, null, true);
-      if (!next.ok) return next;
-      current = next.value;
-    } else if (kind.value !== null) {
-      return failed(FailureTag.SemanticFailure, "event-subprocess-without-start");
-    }
-  }
-  return committed(current);
+    if (startId !== null) return subscribe(ctx, arming, current, subscription, startId, scope, null, true);
+    return kind.value === null ? committed([current, null]) : failed(FailureTag.SemanticFailure, "event-subprocess-without-start");
+  });
 }
 
 // Root start triggers
@@ -680,7 +684,9 @@ export function arriveCatch(ctx: Ctx, _header: Header, _payload: EventPayload, s
   if (kind.value === null) return failed(FailureTag.Unsupported, "event-catch-error");
   const opened = openItem(state, kind.value, occurrence);
   const item = opened.openItems[opened.openItems.length - 1];
-  return item === undefined ? committed(opened) : armed(ctx, subscription, item, opened);
+  if (item === undefined) return committed(opened);
+  const evaluated = armed(ctx, subscription, item, opened);
+  return evaluated.ok ? committed(evaluated.value[0]) : failedWith(evaluated.failure);
 }
 
 /** `Hooks.leave`: a completing occurrence's attached items go. */
