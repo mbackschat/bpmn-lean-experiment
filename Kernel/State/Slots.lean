@@ -89,12 +89,19 @@ structure Compensations where
   runs : List CompensationRun := []
   deriving Repr
 
-/-- An occurrence waiting at a join or for an unavailable InputSet, with the flow its token arrived on. -/
+/-- An occurrence waiting at a join, with the flow its token arrived on. -/
 structure Parked where
   occurrence : Nat
   flow : FlowId
   scope : ScopeOccurrenceId
   deriving DecidableEq, Repr
+
+/-- An occurrence waiting for an unavailable InputSet in its scope occurrence. It records no flow: it waits whether or
+not a token began it, and only its scope occurrence's clearing ends the wait. -/
+structure Held where
+  occurrence : Nat
+  scope : ScopeOccurrenceId
+  deriving Repr
 
 /-- A process instance's own facts: its root scope occurrence, its business key and, for a called instance, the
 definition its Call bound, kept per instance so recovery never re-resolves it (PC-SCOPE-03, PC-MESSAGE-08). -/
@@ -109,7 +116,7 @@ structure InstanceData where
 ([BPMN 2.0.2 §10.4.2](../docs/reference/bpmn-2.0.2/README.md), `Kernel.Feature.Work`). -/
 structure FeatureSlots where
   parked : List Parked := []
-  held : List Parked := []
+  held : List Held := []
   multiInstances : List MultiInstanceRun := []
   compensation : Compensations := {}
   instances : List InstanceData := []

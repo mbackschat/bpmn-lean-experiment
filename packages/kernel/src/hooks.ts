@@ -63,6 +63,7 @@ import {
   type EffectOutcome,
   type EvalContext,
   type Fired,
+  type Held,
   type Leave,
   type MessageChannel,
   type MultiInstanceRun,
@@ -71,7 +72,6 @@ import {
   type OpenItem,
   type Origin,
   type Outcome,
-  type Parked,
   type Raised,
   type Result,
   type Resume,
@@ -327,7 +327,7 @@ export function chooseStart(named: ElementId | null, fired: readonly ElementId[]
 }
 
 /** Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`). */
-export function hold(state: State, held: Parked): State {
+export function hold(state: State, held: Held): State {
   return { ...state, slots: { ...state.slots, held: [...state.slots.held, held] } };
 }
 

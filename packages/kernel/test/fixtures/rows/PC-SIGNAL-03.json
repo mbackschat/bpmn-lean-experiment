@@ -171,6 +171,7 @@
     "multiInstanceCounters": "cibLocals",
     "multiInstanceInputFailure": "rollback",
     "multiInstanceCount": "javaInt",
+    "multiInstanceCollection": "entrySnapshot",
     "businessRuleTask": "decisionTable",
     "scriptTask": "javascript",
     "inclusiveJoinReach": "outgoingOnly",
@@ -252,7 +253,8 @@
                         },
                         "correlation": [],
                         "interfaceRef": null,
-                        "operationRef": null
+                        "operationRef": null,
+                        "itemRef": null
                       }
                     }
                   },
@@ -282,7 +284,6 @@
               "inputDataItem": null,
               "outputDataItem": null,
               "outputCollection": null,
-              "mutableCollection": "entrySnapshot",
               "asyncBefore": false,
               "asyncAfter": false,
               "loopDataInputRef": null,
@@ -415,7 +416,8 @@
                       },
                       "correlation": [],
                       "interfaceRef": null,
-                      "operationRef": null
+                      "operationRef": null,
+                      "itemRef": null
                     }
                   }
                 },
@@ -473,7 +475,8 @@
                   },
                   "correlation": [],
                   "interfaceRef": null,
-                  "operationRef": null
+                  "operationRef": null,
+                  "itemRef": null
                 }
               }
             },

@@ -68,6 +68,7 @@
     "multiInstanceCounters": "none",
     "multiInstanceInputFailure": "hold",
     "multiInstanceCount": "integer",
+    "multiInstanceCollection": "entrySnapshot",
     "businessRuleTask": "refused",
     "scriptTask": "refused",
     "inclusiveJoinReach": "withBoundaries",
@@ -156,7 +157,8 @@
                       },
                       "correlation": [],
                       "interfaceRef": "Interface_ProcessMessages",
-                      "operationRef": "Operation_ReceiveApproval"
+                      "operationRef": "Operation_ReceiveApproval",
+                      "itemRef": null
                     }
                   }
                 },

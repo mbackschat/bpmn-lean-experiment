@@ -346,6 +346,12 @@
             "javaInt"
           ]
         },
+        "multiInstanceCollection": {
+          "enum": [
+            "entrySnapshot",
+            "sequentialReread"
+          ]
+        },
         "businessRuleTask": {
           "enum": [
             "refused",
@@ -647,6 +653,8 @@
         "work.call.tenant",
         "work.handlerKeyName",
         "work.receive.correlation",
+        "work.receive.dataOutputItem",
+        "work.receive.dataOutputs",
         "work.receive.instantiate",
         "work.receive.messageExpression",
         "work.rule",

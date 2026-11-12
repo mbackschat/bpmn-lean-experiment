@@ -80,6 +80,7 @@ export type KernelProfileOptions = Readonly<{
   multiInstanceCounters: "none" | "cibLocals";
   multiInstanceInputFailure: "hold" | "rollback";
   multiInstanceCount: "integer" | "javaInt";
+  multiInstanceCollection: "entrySnapshot" | "sequentialReread";
   businessRuleTask: "refused" | "decisionTable";
   scriptTask: "refused" | "javascript";
   inclusiveJoinReach: "withBoundaries" | "outgoingOnly";
@@ -141,6 +142,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     multiInstanceCounters: selects("CIB-INT-0018") ? "cibLocals" : "none",
     multiInstanceInputFailure: selects("CIB-INT-0019") ? "rollback" : "hold",
     multiInstanceCount: selects("CIB-EXT-0033") ? "javaInt" : "integer",
+    multiInstanceCollection: "entrySnapshot",
     businessRuleTask: selects("CIB-EXT-0032") ? "decisionTable" : "refused",
     scriptTask: selects("CIB-EXT-0048") ? "javascript" : "refused",
     inclusiveJoinReach: selects("CIB-INT-0020") ? "outgoingOnly" : "withBoundaries",

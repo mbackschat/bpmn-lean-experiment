@@ -43,7 +43,7 @@ export {
 import {
   type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
-  leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Resume, ResumeTag,
+  leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Held, type Resume, ResumeTag,
   type ScopeOccurrenceId,
 } from "./state/slots.js";
 import {
@@ -61,7 +61,7 @@ export {
 export {
   type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
-  leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Resume, ResumeTag,
+  leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Held, type Resume, ResumeTag,
   type ScopeOccurrenceId,
 };
 

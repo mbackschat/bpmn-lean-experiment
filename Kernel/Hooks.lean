@@ -167,7 +167,7 @@ def chooseStart (named : Option ElementId) (fired : List ElementId) : Except Fai
   | none, _ :: _ :: _ => .error (.rejected "start-ambiguous")
 
 /-- Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`). -/
-def State.hold (state : State) (held : Parked) : State :=
+def State.hold (state : State) (held : Held) : State :=
   { state with slots := { state.slots with held := state.slots.held ++ [held] } }
 
 /-- What an expression evaluated from `scope` reads. -/

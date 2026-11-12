@@ -100,7 +100,7 @@ The parallel User Task account selected no CIB relation; the sequential facts ab
 | `multiInstance.completionConditionExpression` | under `Evaluator.simpleBoolean`, a completion condition outside Simple Boolean | PC-MI-09; admitted under `Evaluator.juel` |
 | the [Multi-Instance level's codes](EXPRESSION-SEMANTICS-SPEC.md#codes-this-level-adds) | under `Evaluator.juel`: both forms together, a sequential JUEL collection, a declared loop-expression language, an item named like a counter, the option combinations, the whitespace bodies the parser drops, and the count, collection and condition failures | PC-MI-01, PC-MI-07, PC-MI-08, PC-MI-09 |
 | `multiInstance.elementVariable` | `camunda:elementVariable` under `MultiInstanceBinding.dataAssociations`, or beside an `inputDataItem` under `loopReferences`, where CIB sets the item's `name` over it even when that is absent, which the IL cannot tell from no item | the binding above |
-| `multiInstance.mutableCollection` | a sequential re-read of the collection (`CollectionRead.sequentialReread`) | PC-MI-08 |
+| `multiInstance.mutableCollection` | a sequential loop under a profile that re-reads its collection (`ProfileOptions.multiInstanceCollection = sequentialReread`) | PC-MI-08 |
 | `multiInstance.inputDataItem` | a collection loop without its input data item or an admitted element variable; a cardinality loop has no item | the instance's input |
 | `multiInstance.outputDataItem` | a User Task loop without its output data item | the instance's single submitted output |
 | `multiInstance.instanceResult` | a Service Task loop naming an output data item or output collection, which its empty OutputSet never fills | PC-MI-10 |

@@ -42,7 +42,7 @@ function program(shape: Shape = {}): Json {
     mode: shape.mode ?? "parallel",
     count: { collection: { items: { variable: { name: "DataObjectReference_Items" } } } },
     elementVariable: null, completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: null,
-    outputCollection: null, mutableCollection: "entrySnapshot", asyncBefore: false, asyncAfter: false,
+    outputCollection: null, asyncBefore: false, asyncAfter: false,
     loopDataInputRef: "DataInput_Items", inputDataItemName: "item", ...shape.loop,
   };
   const into = shape.failingSibling === true ? "To_Fork" : "To_T";

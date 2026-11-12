@@ -171,6 +171,7 @@
     "multiInstanceCounters": "cibLocals",
     "multiInstanceInputFailure": "rollback",
     "multiInstanceCount": "javaInt",
+    "multiInstanceCollection": "entrySnapshot",
     "businessRuleTask": "decisionTable",
     "scriptTask": "javascript",
     "inclusiveJoinReach": "outgoingOnly",
@@ -226,9 +227,12 @@
                   "name": null,
                   "correlation": [],
                   "interfaceRef": null,
-                  "operationRef": null
+                  "operationRef": null,
+                  "itemRef": null
                 },
-                "instantiate": false
+                "instantiate": false,
+                "dataOutputs": [],
+                "outputSets": 0
               }
             }
           },

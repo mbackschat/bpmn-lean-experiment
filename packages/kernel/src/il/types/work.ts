@@ -3,7 +3,7 @@
  * Part of `il/types.ts`, which re-exports it.
  */
 import { assertNever, type ValueSource } from "./expression.js";
-import type { CorrelationCriterion, EffectBinding, MessageTrigger } from "./message.js";
+import type { CorrelationCriterion, DataOutputDecl, EffectBinding, MessageTrigger } from "./message.js";
 import type { CallBinding, CallWork } from "./reference.js";
 
 export interface UserWork {
@@ -18,8 +18,17 @@ export interface UserWork {
   readonly priority: ValueSource | null;
 }
 
-/** `instantiate` marks a Receive Task that instantiates its Process (BPMN 2.0.2 §10.3.3, Table 10.10). */
-export interface ReceiveWork { readonly message: MessageTrigger; readonly instantiate: boolean; }
+/**
+ * `instantiate` marks a Receive Task that instantiates its Process (BPMN 2.0.2 §10.3.3, Table 10.10). `dataOutputs` are
+ * the Data Outputs of its `ioSpecification` and `outputSets` counts its OutputSets; a Receive Task associated with a
+ * Message has at most one of each (§10.4.1, "Receive Task Mapping").
+ */
+export interface ReceiveWork {
+  readonly message: MessageTrigger;
+  readonly instantiate: boolean;
+  readonly dataOutputs: readonly DataOutputDecl[];
+  readonly outputSets: number;
+}
 
 /**
  * `handlerKey` is the root identifier of the `camunda:delegateExpression` the binding was read from, which CIB resolves

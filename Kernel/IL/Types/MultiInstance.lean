@@ -26,12 +26,6 @@ inductive InstanceCount where
   | countAndCollection (count : Expression) (items : Expression)
   deriving Repr
 
-/-- Whether the input collection is read once on entry or re-read by a sequential Activity (PC-MI-08). -/
-inductive CollectionRead where
-  | entrySnapshot
-  | sequentialReread
-  deriving DecidableEq, Repr
-
 structure MultiInstance where
   mode : MultiInstanceMode
   count : InstanceCount
@@ -40,7 +34,6 @@ structure MultiInstance where
   inputDataItem : Option String := none
   outputDataItem : Option String := none
   outputCollection : Option String := none
-  mutableCollection : CollectionRead := .entrySnapshot
   /-- A transaction boundary before each instance begins and after it completes, declared on the loop
   characteristics; the envelope's marks are the body's (CIB-EXT-0027, `BpmnParse#parseMultiInstanceLoopCharacteristics`). -/
   asyncBefore : Bool := false

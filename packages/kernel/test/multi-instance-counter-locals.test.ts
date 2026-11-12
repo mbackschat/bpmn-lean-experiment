@@ -34,7 +34,7 @@ function program(mode: string, options: Json = cib): Json {
         envelope: { incoming: ["To_T"], outgoing: ["To_End"], inputs: [], outputs: [], boundaries: [], multiInstance: {
           mode, count: { collection: { items: { variable: { name: "items" } } } }, elementVariable: null,
           completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: null, outputCollection: null,
-          mutableCollection: "entrySnapshot", asyncBefore: false, asyncAfter: false, loopDataInputRef: null,
+          asyncBefore: false, asyncAfter: false, loopDataInputRef: null,
           inputDataItemName: "item",
         }, compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false } } } },
       { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish",

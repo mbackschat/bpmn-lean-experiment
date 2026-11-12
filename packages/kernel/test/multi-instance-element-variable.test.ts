@@ -34,7 +34,7 @@ function program(loop: Json): Json {
         envelope: { incoming: ["To_T"], outgoing: ["To_End"], inputs: [], outputs: [], boundaries: [], multiInstance: {
           mode: "parallel", count: { collection: { items: { variable: { name: "flags" } } } }, elementVariable: "flag",
           completionCondition: { variable: { name: "flag" } }, inputDataItem: null, outputDataItem: null,
-          outputCollection: null, mutableCollection: "entrySnapshot", asyncBefore: false, asyncAfter: false,
+          outputCollection: null, asyncBefore: false, asyncAfter: false,
           loopDataInputRef: null, inputDataItemName: null, ...loop,
         }, compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false } } } },
       { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish",

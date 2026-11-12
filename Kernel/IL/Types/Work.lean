@@ -25,10 +25,14 @@ structure UserWork where
   priority : Option ValueSource := none
   deriving Repr
 
-/-- `instantiate` marks a Receive Task that instantiates its Process (BPMN 2.0.2 §10.3.3, Table 10.10). -/
+/-- `instantiate` marks a Receive Task that instantiates its Process (BPMN 2.0.2 §10.3.3, Table 10.10).
+`dataOutputs` are the Data Outputs of its `ioSpecification` and `outputSets` counts its OutputSets; a Receive Task
+associated with a Message has at most one of each (§10.4.1, "Receive Task Mapping"). -/
 structure ReceiveWork where
   message : MessageTrigger
   instantiate : Bool := false
+  dataOutputs : List DataOutputDecl := []
+  outputSets : Nat := 0
   deriving Repr
 
 /-- `handlerKey` is the root identifier of the `camunda:delegateExpression` the binding was read from, which CIB

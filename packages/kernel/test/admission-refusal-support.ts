@@ -39,7 +39,8 @@ const timer = (schedule: Json): Json => ({ timer: { payload: { schedule } } });
 export const duration = (lexeme: string): Json => timer({ duration: { value: text(lexeme) } });
 export const date = (lexeme: string): Json => timer({ date: { value: text(lexeme) } });
 export const cycle = (lexeme: string, dialect = "iso8601"): Json => timer({ cycle: { value: text(lexeme), dialect } });
-export const messageBody = (over: Json = {}): Json => ({ messageRef: null, name: null, correlation: [], interfaceRef: null, operationRef: null, ...over });
+export const messageBody = (over: Json = {}): Json =>
+  ({ messageRef: null, name: null, correlation: [], interfaceRef: null, operationRef: null, itemRef: null, ...over });
 export const message = (over: Json = {}): Json => ({ message: { payload: messageBody(over) } });
 /** A QName in its wire form, of the base program's namespace (none) unless `namespace` says otherwise. */
 export const qName = (localName: string, namespace: string | null = null): Json => ({ namespace, localName });
@@ -79,7 +80,8 @@ export const userWork = (over: Json = {}): Json => ({
 });
 export const serviceWork = (protocol = "http", operation = "get", handlerKey: string | null = null): Json =>
   ({ service: { payload: { protocol, operation, handlerKey } } });
-export const receiveWork = (over: Json = {}, instantiate = false): Json => ({ receive: { payload: { message: messageBody(over), instantiate } } });
+export const receiveWork = (over: Json = {}, instantiate = false, data: Json = {}): Json =>
+  ({ receive: { payload: { message: messageBody(over), instantiate, dataOutputs: [], outputSets: 0, ...data } } });
 /**
  * A Call Activity's work; unless `over` sets `calledQName`, a literal `calledElement` resolves to that id in the base
  * program's namespace, as the reader resolves an unprefixed name.
@@ -106,7 +108,7 @@ export const ruleWork = (over: Json = {}): Json =>
 /** A Multi-Instance loop the kernel runs: one User Task per item of a collection variable, read once on entry. */
 export const loop = (over: Json = {}): Json => ({
   mode: "parallel", count: { collection: { items: variable("items") } }, elementVariable: null, completionCondition: null,
-  inputDataItem: "item", outputDataItem: "result", outputCollection: null, mutableCollection: "entrySnapshot",
+  inputDataItem: "item", outputDataItem: "result", outputCollection: null,
   asyncBefore: false, asyncAfter: false, loopDataInputRef: null, inputDataItemName: null, ...over,
 });
 

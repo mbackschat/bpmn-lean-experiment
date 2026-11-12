@@ -105,12 +105,19 @@ def handlerKey (program : Program) : Option String → Option String
   | some token => if (declaredNames program).contains token then some "work.handlerKeyName" else none
 
 /-- An instantiating Receive Task starts its Process (BPMN 2.0.2 §10.3.3, Table 10.10), which pinned CIB never reads
-(CIB-LIM-0008) (PC-BASIC-04). Under name addressing a Receive Task with a Message subscribes by its name as a Message
-Event does (`BpmnParse.java:2753-2759`), so a missing or blank name is refused (CIB-LIM-0022). -/
+(CIB-LIM-0008) (PC-BASIC-04). A Data Output of a Receive Task with a Message must be equivalent to the Message's
+ItemDefinition (§10.4.1, "Receive Task Mapping"); equivalence is read narrowly as the same ItemDefinition identifier,
+both absent included, and any other pair is refused (`work.receive.dataOutputItem`), a forward-compatible restriction
+the carried identifiers keep open. The Receive arm maps no payload, so a declared Data Output or a second OutputSet is
+refused (`work.receive.dataOutputs`). Under name addressing a Receive Task with a Message subscribes by its name as a
+Message Event does (`BpmnParse.java:2753-2759`), so a missing or blank name is refused (CIB-LIM-0022). -/
 def receive (options : ProfileOptions) (work : ReceiveWork) : Option String :=
   let unnamed := options.messageNames == .addresses && work.message.messageRef.isSome
   if work.instantiate then some "work.receive.instantiate"
   else if !work.message.correlation.isEmpty then some "work.receive.correlation"
+  else if work.message.messageRef.isSome && work.dataOutputs.any (·.itemRef != work.message.itemRef) then
+    some "work.receive.dataOutputItem"
+  else if !work.dataOutputs.isEmpty || work.outputSets > 1 then some "work.receive.dataOutputs"
   else
     match work.message.name with
     | none => if unnamed then some "message.unnamed" else none

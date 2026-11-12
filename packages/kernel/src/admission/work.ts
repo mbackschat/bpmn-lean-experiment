@@ -179,12 +179,20 @@ export function handlerKey(program: Program, token: string | null): string | nul
 
 /**
  * An instantiating Receive Task starts its Process (BPMN 2.0.2 §10.3.3, Table 10.10), which pinned CIB never reads
- * (CIB-LIM-0008) (PC-BASIC-04). Under name addressing a Receive Task with a Message subscribes by its name as a Message
- * Event does (`BpmnParse.java:2753-2759`), so a missing or blank name is refused (CIB-LIM-0022).
+ * (CIB-LIM-0008) (PC-BASIC-04). A Data Output of a Receive Task with a Message must be equivalent to the Message's
+ * ItemDefinition (§10.4.1, "Receive Task Mapping"); equivalence is read narrowly as the same ItemDefinition identifier,
+ * both absent included, and any other pair is refused (`work.receive.dataOutputItem`), a forward-compatible restriction
+ * the carried identifiers keep open. The Receive arm maps no payload, so a declared Data Output or a second OutputSet is
+ * refused (`work.receive.dataOutputs`). Under name addressing a Receive Task with a Message subscribes by its name as a
+ * Message Event does (`BpmnParse.java:2753-2759`), so a missing or blank name is refused (CIB-LIM-0022).
  */
 function receive(options: ProfileOptions, work: ReceiveWork): string | null {
   if (work.instantiate) return "work.receive.instantiate";
   if (work.message.correlation.length > 0) return "work.receive.correlation";
+  if (work.message.messageRef !== null && work.dataOutputs.some((output) => output.itemRef !== work.message.itemRef)) {
+    return "work.receive.dataOutputItem";
+  }
+  if (work.dataOutputs.length > 0 || work.outputSets > 1) return "work.receive.dataOutputs";
   const unnamed = options.messageNames === MessageNames.Addresses && work.message.messageRef !== null;
   const name = work.message.name;
   if (name === null) return unnamed ? "message.unnamed" : null;

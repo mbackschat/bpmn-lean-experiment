@@ -96,6 +96,7 @@ import {
   type InstanceCount,
   type Mapping,
   type MessageTrigger,
+  type DataOutputDecl,
   type MultiInstance,
   type ProfileOptions,
   type Program,
@@ -215,7 +216,10 @@ const messageTrigger = struct<MessageTrigger>("MessageTrigger", {
   correlation: list(correlationCriterion),
   interfaceRef: option(string),
   operationRef: option(string),
+  itemRef: option(string),
 });
+
+const dataOutputDecl = struct<DataOutputDecl>("DataOutputDecl", { id: string, itemRef: option(string) });
 
 const qName = struct<QName>("QName", { namespace: option(string), localName: string });
 
@@ -295,7 +299,9 @@ const work = inductive<Work>("Work", {
       priority: option(valueSource),
     }),
   },
-  [WorkTag.Receive]: { payload: struct("ReceiveWork", { message: messageTrigger, instantiate: bool }) },
+  [WorkTag.Receive]: {
+    payload: struct("ReceiveWork", { message: messageTrigger, instantiate: bool, dataOutputs: list(dataOutputDecl), outputSets: nat }),
+  },
   [WorkTag.Service]: { payload: struct("ServiceWork", { protocol: string, operation: string, handlerKey: option(string) }) },
   [WorkTag.Send]: {
     payload: struct("SendWork", {
@@ -346,7 +352,6 @@ const multiInstance = struct<MultiInstance>("MultiInstance", {
   inputDataItem: option(string),
   outputDataItem: option(string),
   outputCollection: option(string),
-  mutableCollection: members("CollectionRead", CollectionRead),
   asyncBefore: bool,
   asyncAfter: bool,
   loopDataInputRef: option(string),
@@ -481,6 +486,7 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   multiInstanceCounters: members("MultiInstanceCounters", MultiInstanceCounters),
   multiInstanceInputFailure: members("MultiInstanceInputFailure", MultiInstanceInputFailure),
   multiInstanceCount: members("MultiInstanceCount", MultiInstanceCount),
+  multiInstanceCollection: members("CollectionRead", CollectionRead),
   businessRuleTask: members("BusinessRuleTask", BusinessRuleTask),
   scriptTask: members("ScriptTask", ScriptTask),
   inclusiveJoinReach: members("InclusiveJoinReach", InclusiveJoinReach),

@@ -36,7 +36,7 @@ function program(mode: string, kind: Json | string = "embedded", loop: Json = {}
         localVariables: [], items: [], envelope: envelope(["To_S"], ["To_End"], { multiInstance: {
           mode, count: { collection: { items: { variable: { name: "items" } } } }, elementVariable: "item",
           completionCondition: null, inputDataItem: null, outputDataItem: null, outputCollection: null,
-          mutableCollection: "entrySnapshot", asyncBefore: false, asyncAfter: false, loopDataInputRef: null,
+          asyncBefore: false, asyncAfter: false, loopDataInputRef: null,
           inputDataItemName: null, ...loop,
         } }) } } },
       { start: { header: header("Inner", "startEvent", "S"), payload: { subscription: null, outgoing: ["To_Review"] } } },

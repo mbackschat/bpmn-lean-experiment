@@ -153,6 +153,20 @@ test("source facts pinned CIB erases are read into their IL fields, for admissio
   assert.deepEqual((called.processes as Json[]).map((process) => process.executable), [false]);
 });
 
+test("a Receive Task carries its Data Outputs, its count of OutputSets and its Message's ItemDefinition", async () => {
+  // BPMN 2.0.2 §10.4.1, "Receive Task Mapping"; admission bounds them (`work.receive.dataOutputs`, `.dataOutputItem`).
+  const roots = `<bpmn:itemDefinition id="Item_Reply"/><bpmn:message id="Msg" name="reply" itemRef="Item_Reply"/>`;
+  const io = `<bpmn:ioSpecification><bpmn:dataOutput id="Out" itemSubjectRef="Item_Reply"/><bpmn:dataOutput id="Bare"/><bpmn:inputSet/>
+    <bpmn:outputSet><bpmn:dataOutputRefs>Out</bpmn:dataOutputRefs></bpmn:outputSet><bpmn:outputSet/></bpmn:ioSpecification>`;
+  const receive = async (task: string): Promise<Json> =>
+    ((payloadOf(await programOf(model(task, roots)), "R").work as Json).receive as Json).payload as Json;
+  const declared = await receive(`<bpmn:receiveTask id="R" messageRef="Msg">${io}</bpmn:receiveTask>`);
+  assert.deepEqual([declared.dataOutputs, declared.outputSets, (declared.message as Json).itemRef],
+    [[{ id: "Out", itemRef: "Item_Reply" }, { id: "Bare", itemRef: null }], 2, "Item_Reply"]);
+  const bare = await receive(`<bpmn:receiveTask id="R"/>`);
+  assert.deepEqual([bare.dataOutputs, bare.outputSets, (bare.message as Json).itemRef], [[], 0, null]);
+});
+
 test("a source the BPMN 2.0.2 XSD rejects is refused before it is read", async () => {
   const operation = `<bpmn:interface id="If" name="If"><bpmn:operation id="Op" name="Op"><bpmn:inMessageRef>Msg</bpmn:inMessageRef></bpmn:operation></bpmn:interface>`;
   // `tMessageEventDefinition` declares operationRef a child element (Semantic.xsd), which `bpmn-moddle` also reads as

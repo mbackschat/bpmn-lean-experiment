@@ -68,6 +68,7 @@
     "multiInstanceCounters": "none",
     "multiInstanceInputFailure": "hold",
     "multiInstanceCount": "integer",
+    "multiInstanceCollection": "entrySnapshot",
     "businessRuleTask": "refused",
     "scriptTask": "refused",
     "inclusiveJoinReach": "withBoundaries",

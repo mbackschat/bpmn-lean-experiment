@@ -106,7 +106,7 @@ Each cell is a comma-separated token list; `-` means empty. A token is a Lean na
 | PC-DATA-09 | PC-DATA-09.json | Mapping.dialect+, Mapping.source | Failure.rolledBack, FeatureSlots.held | Input.effectResult | - | L.begin, L.writeOutputs | O.continuationFailure+ | expression.outsideSimpleBoolean+ | yes: wrong result type and throwing evaluator |
 | PC-HUM-01 | PC-HUM-01.json | UserWork.name, Envelope.inputs, Envelope.outputs | UserTaskDetail.inputs, State.occurrences, ScopeOccurrence.occurrence | CommandAction.completeUserTask, CommandInput.occurrence | OpenKind.userTask | L.begin, L.activityScope+, L.writeOutputs, L.complete.outgoing | O.submission+, O.scopeChainSubmissionBytes | - | no |
 | PC-HUM-02 | PC-HUM-02.json | UserWork.assignee, UserWork.candidateUsers, UserWork.candidateGroups, UserWork.formKey, UserWork.formFields, UserWork.dueDate, UserWork.followUpDate, UserWork.priority | UserTaskDetail.assignee+, UserTaskDetail.candidateUsers+, UserTaskDetail.candidateGroups, UserTaskDetail.formKey+, UserTaskDetail.formFields, UserTaskDetail.dueDate+, UserTaskDetail.followUpDate+, UserTaskDetail.priority+ | CommandAction.completeUserTask | OpenKind.userTask | L.begin | - | work.user.candidateGroupExpression, work.user.assignee+, work.user.formKey+, work.user.dueDate+, work.user.followUpDate+, work.user.priority+ | no |
-| PC-HUM-03 | PC-HUM-03.json | ReceiveWork.message, MessageTrigger.correlation, Envelope.outputs | MessageWaitDetail.channel, MessageWaitDetail.payload | Input.deliver, DeliveryInput.payload | OpenKind.message | L.begin, L.writeOutputs, L.complete.outgoing | O.messageCorrelation+ | work.receive.correlation, work.receive.messageExpression | no |
+| PC-HUM-03 | PC-HUM-03.json | ReceiveWork.message, MessageTrigger.correlation, Envelope.outputs, ReceiveWork.dataOutputs~, ReceiveWork.outputSets~, DataOutputDecl.itemRef~, MessageTrigger.itemRef~ | MessageWaitDetail.channel, MessageWaitDetail.payload | Input.deliver, DeliveryInput.payload | OpenKind.message | L.begin, L.writeOutputs, L.complete.outgoing | O.messageCorrelation+ | work.receive.correlation, work.receive.messageExpression, work.receive.dataOutputs, work.receive.dataOutputItem | no |
 | PC-HUM-04 | PC-HUM-04.json | Work.none | State.tokens | - | - | L.begin, L.complete.outgoing | - | - | no |
 | PC-HUM-05 | PC-HUM-05.json | Work.manual, Header.sourceType | State.tokens | - | - | L.begin, L.complete.outgoing | - | - | no |
 | PC-HUM-06 | PC-HUM-06.json | ReceiveWork.message, MessageTrigger.messageRef, MessageTrigger.name | MessageWaitDetail.channel, OpenItem.element | Input.deliver, DeliveryInput.occurrence | OpenKind.message | L.begin, L.complete.outgoing | - | - | no |
@@ -132,7 +132,7 @@ Each cell is a comma-separated token list; `-` means empty. A token is a Lean na
 | PC-MI-05 | PC-MI-05.json | MultiInstance.mode, MultiInstance.count, ScopeKind.embedded, Envelope.inputs | MultiInstanceRun.instances, State.scopes | Input.command, Input.effectResult | OpenKind.userTask, OpenKind.effect | L.begin, L.bodyActivation+, L.completeScope, L.instanceCompleted, L.completeBody, L.cancelled | - | scope.multiInstance | no |
 | PC-MI-06 | PC-MI-06.json | InstanceCount.cardinality, ScopeKind.embedded | MultiInstanceRun.instances | Input.command | OpenKind.userTask | L.begin, L.bodyActivation+, L.instanceCompleted, L.completeBody | - | multiInstance.cardinality, multiInstance.cardinalityDomain+ | no |
 | PC-MI-07 | PC-MI-07.json | InstanceCount.collection, InstanceCount.cardinality, MultiInstance.elementVariable | MultiInstanceRun.collection, MultiInstanceRun.instances | - | - | L.begin, L.bodyActivation+, L.instanceCompleted | - | multiInstance.collectionExpression | yes: Useful typed collection/cardinality expressions |
-| PC-MI-08 | PC-MI-08.json | MultiInstance.mutableCollection~, InstanceCount.collection | MultiInstanceRun.collection | CommandAction.completeUserTask, CommandAction.setVariables+ | OpenKind.userTask | L.bodyActivation+, L.instanceCompleted | O.continuationFailure+ | multiInstance.mutableCollection | no |
+| PC-MI-08 | PC-MI-08.json | ProfileOptions.multiInstanceCollection~, InstanceCount.collection | MultiInstanceRun.collection | CommandAction.completeUserTask, CommandAction.setVariables+ | OpenKind.userTask | L.bodyActivation+, L.instanceCompleted | O.continuationFailure+, O.multiInstanceCollection~ | multiInstance.mutableCollection | no |
 | PC-MI-09 | PC-MI-09.json | MultiInstance.completionCondition, MultiInstance.mode | MultiInstanceRun.instances | CommandAction.completeUserTask | OpenKind.userTask | L.bodyActivation+, L.instanceCompleted, L.completeBody, L.cancelled | O.multiInstanceFinalBody+ | multiInstance.completionConditionExpression | yes: Useful typed completion predicates |
 | PC-MI-10 | PC-MI-10.json | Envelope.inputs, Envelope.outputs, MultiInstance.inputDataItem, MultiInstance.outputDataItem, MultiInstance.outputCollection | ScopeOccurrence.occurrence, State.variables | CommandAction.completeUserTask, EffectOutcome.success | OpenKind.userTask, OpenKind.effect | L.bodyActivation+, L.activityScope+, L.writeOutputs, L.instanceCompleted | O.multiInstanceOutputs+, O.undeclaredWrite+ | multiInstance.mappings, multiInstance.outputDataItem, multiInstance.inputDataItem | no |
 | PC-MI-11 | PC-MI-11.json | MultiInstance.mode, ScopeKind.embedded | MultiInstanceRun.scope, State.activations~ | Input.command | OpenKind.userTask | L.begin, L.bodyActivation+, L.completeBody, L.cancelled | - | multiInstance.compositionCell+ | no |
@@ -174,7 +174,7 @@ Each cell is a comma-separated token list; `-` means empty. A token is a Lean na
 | PC-COMPENSATION-01 | n/a | Envelope.compensationHandlers, CompensationThrow.activity | Compensable.completion+ | - | - | - | O.compensationOrder+, O.compensationHandlerFailure+ | profile.compensationOrder.allAtOnce, profile.compensationHandlerFailure.selected, compensation.dependency.boundary+ | no |
 | PC-COMPENSATION-02 | PC-COMPENSATION-02.json | Throw.compensation, CompensationThrow.activity, CompensationThrow.waitForCompletion, Trigger.compensation | Compensations.retained, CompensationRun.resume, Compensable.children+ | Input.command, Input.effectResult | OpenKind.userTask, OpenKind.effect | L.completed, L.dispose+, L.handlerCompleted, L.complete.outgoing, X.compensation | O.compensationOrder+, O.compensationReferenceScope | throw.compensation.asynchronous, throw.compensation.activityLevel+, throw.compensation.notActivity+, compensation-concurrent-trigger | no |
 | PC-COMPENSATION-03 | PC-COMPENSATION-03.json | Envelope.compensationHandlers, MultiInstance.mode, Work.call, ScopeKind.embedded | Compensable.snapshot, Compensable.occurrence+, Compensable.children+, Compensable.completion+, Compensable.handler, Resume.group | Input.command, Input.effectResult | OpenKind.userTask, OpenKind.effect | L.completed, L.complete.aborted+, L.dispose+ | O.compensationOrder+, O.implicitCompensation, O.errorExitCompensation, O.multiInstanceCompensation | activity.compensationHandler, compensation.implicit, profile.errorExitCompensation.compensatesContained, profile.multiInstanceCompensation.perInstance, compensation-dependency-cycle | no |
-| PC-COMPENSATION-04 | PC-COMPENSATION-04.json | Envelope.compensationHandlers, Envelope.forCompensation, Work.user, Work.receive, Work.call, ScopeKind.embedded | CompensationRun.running, Compensations.runs | Input.command, Input.deliver, Input.effectResult | OpenKind.userTask, OpenKind.message, OpenKind.effect | L.begin, L.handlerCompleted, L.cancelled, X.compensation | O.compensationHandlerFailure+ | compensation.handlerCount, compensation.handlerMultiInstance, compensation.handlerNotForCompensation+, compensation.handlerFlow+, compensation.handlerInputUnavailable+, compensation-handler-escalation | no |
+| PC-COMPENSATION-04 | PC-COMPENSATION-04.json | Envelope.compensationHandlers, Envelope.forCompensation, Work.user, Work.receive, Work.call, ScopeKind.embedded | CompensationRun.running, Compensations.runs, FeatureSlots.held~ | Input.command, Input.deliver, Input.effectResult | OpenKind.userTask, OpenKind.message, OpenKind.effect | L.begin, L.handlerCompleted, L.cancelled, X.compensation | O.compensationHandlerFailure+ | compensation.handlerCount, compensation.handlerMultiInstance, compensation.handlerNotForCompensation+, compensation.handlerFlow+, compensation.handlerInputUnavailable+, compensation-handler-escalation | no |
 | PC-COMPENSATION-05 | PC-COMPENSATION-05.json | ScopeKind.eventSubProcess, Trigger.compensation, MultiInstance.mode, Throw.compensation | Compensable.snapshot, Compensable.children+ | Input.command | OpenKind.userTask | L.begin, L.completed, L.dispose+, L.handlerCompleted, X.compensation, X.eventStart | O.compensationOrder+ | start.compensation, compensation.processEventSubProcess+ | no |
 | PC-TX-01 | PC-TX-01.json | ScopeKind.transaction~, TransactionScope.method+, Envelope.compensationHandlers | Compensations.retained, Compensable.children+, Compensable.handler, Resume.group | Input.command | OpenKind.userTask | L.completeScope, L.completed, L.dispose+, L.complete.outgoing | O.implicitCompensation, O.errorExitCompensation, O.transactionMethods | scope.transaction.method, compensation.implicit, profile.errorExitCompensation.compensatesContained | no |
 | PC-TX-02 | PC-TX-02.json | Throw.cancel, Trigger.cancel, Boundary.outgoing, ScopeKind.transaction~ | Compensations.runs, CompensationRun.resume | Input.command, Input.effectResult | OpenKind.userTask, OpenKind.effect | L.entry+, L.clearInside, L.handlerCompleted, X.cancel, X.compensation | O.compensationHandlerFailure+ | throw.cancel.outsideTransaction+, boundary.cancel.host+, boundary.cancel.nonInterrupting+, boundary.cancel.duplicate+, throw.cancel.uncaught+ | no |
@@ -354,12 +354,6 @@ structure CallWork where
   propagateAllOutputs : Bool := false
   deriving Repr
 
-/-- PC-MI-08. The lowering fills it from the profile. -/
-inductive CollectionRead where
-  | entrySnapshot
-  | sequentialReread
-  deriving DecidableEq, Repr
-
 structure MultiInstance where
   mode : MultiInstanceMode
   count : InstanceCount
@@ -368,7 +362,6 @@ structure MultiInstance where
   inputDataItem : Option String := none
   outputDataItem : Option String := none
   outputCollection : Option String := none
-  mutableCollection : CollectionRead := .entrySnapshot
   asyncBefore : Bool := false                       -- PC-MI-02; each instance's transaction boundary (CIB-EXT-0027)
   asyncAfter : Bool := false
   loopDataInputRef : Option String := none          -- PC-MI-02; the literal binding (CIB-INT-0014)
@@ -458,6 +451,11 @@ inductive CallBindingTime where
   | invocation                -- PC-SCOPE-03 selects; `CallableElementUtil#getCalledProcessDefinition`
   deriving DecidableEq, Repr
 
+inductive CollectionRead where  -- PC-MI-08; moved from `MultiInstance.mutableCollection` (M11)
+  | entrySnapshot
+  | sequentialReread          -- `SequentialMultiInstanceActivityBehavior.java:57`
+  deriving DecidableEq, Repr
+
 structure ProfileOptions where
   relations : List String := []
   submission : SubmissionRule := .outputSet
@@ -481,6 +479,7 @@ structure ProfileOptions where
   timerZone : Option String := none
   multiInstanceBinding : MultiInstanceBinding := .dataAssociations   -- PC-MI-02; CIB-INT-0014 selects loopReferences
   effectResultValues : ResultValues := .outputSet                     -- CIB-EXT-0015 selects activityLocals
+  multiInstanceCollection : CollectionRead := .entrySnapshot          -- PC-MI-08
   deriving Repr
 ```
 
@@ -610,8 +609,14 @@ structure Compensable where
   children : List Compensable := []
   deriving Repr
 
--- add to `FeatureSlots`
+-- add to `FeatureSlots`; `held` changes from `List Parked` to `List Held` (M11, PC-COMPENSATION-04)
+structure Held where
+  occurrence : Nat
+  scope : ScopeOccurrenceId
+  deriving Repr
+
 structure FeatureSlots where
+  held : List Held := []
   instances : List InstanceData := []
   deriving Repr
 

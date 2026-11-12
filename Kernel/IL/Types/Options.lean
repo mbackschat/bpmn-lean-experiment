@@ -225,6 +225,17 @@ inductive MultiInstanceInputFailure where
   | rollback
   deriving DecidableEq, Repr
 
+/-- When a sequential Multi-Instance Activity reads its input collection (PC-MI-08); a parallel one reads it once, as
+it creates every instance. -/
+inductive CollectionRead where
+  /-- Once, as the Activity is entered: BPMN 2.0.2 §13.3.7 evaluates the number of instances once and is silent on
+  re-reading the items. -/
+  | entrySnapshot
+  /-- CIB re-reads the collection as an instance completes, before the next one begins
+  (`SequentialMultiInstanceActivityBehavior.java:57`). -/
+  | sequentialReread
+  deriving DecidableEq, Repr
+
 /-- Which values a Multi-Instance cardinality counts by. -/
 inductive MultiInstanceCount where
   /-- BPMN 2.0.2 Table 10.29: the expression "MUST evaluate to an integer". -/
@@ -410,6 +421,7 @@ structure ProfileOptions where
   multiInstanceCounters : MultiInstanceCounters := .none
   multiInstanceInputFailure : MultiInstanceInputFailure := .hold
   multiInstanceCount : MultiInstanceCount := .integer
+  multiInstanceCollection : CollectionRead := .entrySnapshot
   businessRuleTask : BusinessRuleTask := .refused
   scriptTask : ScriptTask := .refused
   inclusiveJoinReach : InclusiveJoinReach := .withBoundaries

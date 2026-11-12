@@ -98,8 +98,14 @@ export interface CompensationRun {
 /** `feature/compensation.ts`'s data: the retained records and the triggers in progress. */
 export interface Compensations { readonly retained: readonly Compensable[]; readonly runs: readonly CompensationRun[]; }
 
-/** An occurrence waiting at a join or for an unavailable InputSet, with the flow its token arrived on. */
+/** An occurrence waiting at a join, with the flow its token arrived on. */
 export interface Parked { readonly occurrence: number; readonly flow: FlowId; readonly scope: ScopeOccurrenceId; }
+
+/**
+ * An occurrence waiting for an unavailable InputSet in its scope occurrence. It records no flow: it waits whether or not
+ * a token began it, and only its scope occurrence's clearing ends the wait.
+ */
+export interface Held { readonly occurrence: number; readonly scope: ScopeOccurrenceId; }
 
 export function parkedEquals(left: Parked, right: Parked): boolean {
   return left.occurrence === right.occurrence && left.flow === right.flow && left.scope === right.scope;
@@ -122,7 +128,7 @@ export interface InstanceData {
  */
 export interface FeatureSlots {
   readonly parked: readonly Parked[];
-  readonly held: readonly Parked[];
+  readonly held: readonly Held[];
   readonly multiInstances: readonly MultiInstanceRun[];
   readonly compensation: Compensations;
   readonly instances: readonly InstanceData[];

@@ -51,17 +51,17 @@ Every element is `{"<kind>": {"header": …, "payload": …}}`; the header is `i
 
 The shared activity envelope, on Activity and Scope alike: `incoming` and `outgoing` (implicit merge and split), input and output `Mapping`s, `boundaries` (each `id`, `subscription`, `interrupting`, `outgoing`), optional `multiInstance`, the `compensationHandlers` its Associations name (admission admits one, `compensation.handlerCount`), the `forCompensation` mark (BPMN `isForCompensation`), optional `defaultFlow`, and the transaction-boundary marks `asyncBefore` and `asyncAfter`, which on a Multi-Instance Activity mark its body.
 
-`MultiInstance` is `mode`, `count` (`collection` or `cardinality` expression), `elementVariable`, `completionCondition`, `inputDataItem`, `outputDataItem`, `outputCollection` and `mutableCollection`, read through the Data Associations; the loop characteristics' own transaction-boundary marks `asyncBefore` and `asyncAfter`, which mark each instance (CIB-EXT-0027); and the literal `loopDataInputRef` and `inputDataItemName`, which `multiInstanceBinding` may select instead (CIB-INT-0014).
+`MultiInstance` is `mode`, `count` (`collection` or `cardinality` expression), `elementVariable`, `completionCondition`, `inputDataItem`, `outputDataItem` and `outputCollection`, read through the Data Associations; the loop characteristics' own transaction-boundary marks `asyncBefore` and `asyncAfter`, which mark each instance (CIB-EXT-0027); and the literal `loopDataInputRef` and `inputDataItemName`, which `multiInstanceBinding` may select instead (CIB-INT-0014).
 
-`Work` is one of `none`, `manual`, `user` (name, assignee, candidate users and groups, form key and fields, due and follow-up dates, priority), `receive` (a Message trigger, `instantiate`), `service` (protocol, operation), `send` (binding, recipient, correlation, Message and Operation references), `script` (format, source, result variable), `rule` (decision, result variable, binding, result mapping), `call` (called element, binding, tenant, business key, input and output mappings, propagate-all flags).
+`Work` is one of `none`, `manual`, `user` (name, assignee, candidate users and groups, form key and fields, due and follow-up dates, priority), `receive` (a Message trigger, `instantiate`, the `dataOutputs` of its `ioSpecification`, each a `DataOutputDecl` of `id` and `itemRef`, and the count of its `outputSets`), `service` (protocol, operation), `send` (binding, recipient, correlation, Message and Operation references), `script` (format, source, result variable), `rule` (decision, result variable, binding, result mapping), `call` (called element, binding, tenant, business key, input and output mappings, propagate-all flags).
 
 ### Subscriptions and throws
 
-A `Subscription` is a trigger plus output mappings, the triggers of a Multiple Event's later definitions (`alternatives`) and its `parallelMultiple` mark. Triggers: `timer` (`duration`, `date` or `cycle` with dialect `iso8601` or `cron`, each a `ValueSource`), `message` (`messageRef : Option String` addresses the Message and is `none` for an unspecified one; `name : Option ValueSource` is the description or, under a profile that addresses by name, the CIB address; correlation criteria `{key, value}`, `interfaceRef`, `operationRef`), `signal` (name), `condition` (expression, variable name, variable events), `error` (code or catch-all, code and message variables), `escalation` (code or catch-all, code variable), `compensation`, `cancel`.
+A `Subscription` is a trigger plus output mappings, the triggers of a Multiple Event's later definitions (`alternatives`) and its `parallelMultiple` mark. Triggers: `timer` (`duration`, `date` or `cycle` with dialect `iso8601` or `cron`, each a `ValueSource`), `message` (`messageRef : Option String` addresses the Message and is `none` for an unspecified one; `name : Option ValueSource` is the description or, under a profile that addresses by name, the CIB address; correlation criteria `{key, value}`, `interfaceRef`, `operationRef`, and `itemRef`, the Message's ItemDefinition), `signal` (name), `condition` (expression, variable name, variable events), `error` (code or catch-all, code and message variables), `escalation` (code or catch-all, code variable), `compensation`, `cancel`.
 
 A throw record is `none`, `message` (optional binding, payload mappings), `signal` (name, payload, `propagateAll`, `localOnly`, business key, `asynchronous`), `error` (code, optional message), `escalation` (code), `compensation` (optional `activity`, `waitForCompletion`), `cancel` or the Terminate End Event's record.
 
-A Multi-Instance wrapper is `mode` (`sequential`, `parallel`), `count` (`collection` or `cardinality` expression), element variable, completion condition, input and output data items, output collection, and `mutableCollection` (`entrySnapshot` or `sequentialReread`).
+A Multi-Instance wrapper is `mode` (`sequential`, `parallel`), `count` (`collection` or `cardinality` expression), element variable, completion condition, input and output data items and output collection. When a sequential wrapper reads its collection is the profile's `multiInstanceCollection`.
 
 ### Expressions and mappings
 
@@ -101,6 +101,7 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `multiInstanceBinding` | `dataAssociations`, `loopReferences` |
 | `effectResultValues` | `outputSet`, `activityLocals` |
 | `outputContext` | `submission`, `activityScope` |
+| `multiInstanceCollection` | `entrySnapshot`, `sequentialReread` |
 
 ## Inputs
 

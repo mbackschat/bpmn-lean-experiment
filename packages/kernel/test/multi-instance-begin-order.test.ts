@@ -58,7 +58,7 @@ function lot(incoming: string, outgoing: string, entry: string, waits: boolean, 
     { scope: { header: header("Lot", "subProcess"), payload: { kind: "embedded", children: inner, localVariables: ["prior"],
       items: [], envelope: envelope([incoming], [outgoing], { inputs: [io("prior", read(entry))], multiInstance: {
         mode: "parallel", count: { collection: { items: read("items") } }, elementVariable: "item", completionCondition,
-        inputDataItem: null, outputDataItem: null, outputCollection: null, mutableCollection: "entrySnapshot",
+        inputDataItem: null, outputDataItem: null, outputCollection: null,
         asyncBefore: false, asyncAfter: false, loopDataInputRef: null, inputDataItemName: null,
       } }) } } },
     start("Lot_Start", "To_Mark", "Lot"),

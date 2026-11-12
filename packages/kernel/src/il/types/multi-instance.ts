@@ -17,9 +17,6 @@ export type InstanceCount =
   /** Both forms, which CIB reads together; admission refuses it (`multiInstance.countAndCollection`). */
   | { readonly tag: InstanceCountTag.CountAndCollection; readonly count: Expression; readonly items: Expression };
 
-/** Whether the input collection is read once on entry or re-read by a sequential Activity (PC-MI-08). */
-export enum CollectionRead { EntrySnapshot = "entrySnapshot", SequentialReread = "sequentialReread" }
-
 export interface MultiInstance {
   readonly mode: MultiInstanceMode;
   readonly count: InstanceCount;
@@ -28,7 +25,6 @@ export interface MultiInstance {
   readonly inputDataItem: string | null;
   readonly outputDataItem: string | null;
   readonly outputCollection: string | null;
-  readonly mutableCollection: CollectionRead;
   /**
    * A transaction boundary before each instance begins and after it completes, declared on the loop characteristics;
    * the envelope's marks are the body's (CIB-EXT-0027, `BpmnParse#parseMultiInstanceLoopCharacteristics`).

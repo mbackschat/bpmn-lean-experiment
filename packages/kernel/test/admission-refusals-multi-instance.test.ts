@@ -144,9 +144,9 @@ export const rows: readonly Row[] = [
   },
   {
     code: "multiInstance.mutableCollection",
-    description: "a loop that re-reads its collection",
-    mutate: looping({ mutableCollection: "sequentialReread" }),
-    control: looping({ mutableCollection: "entrySnapshot" }),
+    description: "a sequential loop under a profile that re-reads its collection",
+    mutate: (program: Json) => withOptions(looping({ mode: "sequential" })(program), { multiInstanceCollection: "sequentialReread" }),
+    control: (program: Json) => withOptions(looping()(program), { multiInstanceCollection: "sequentialReread" }),
   },
   {
     code: "multiInstance.inputDataItem",

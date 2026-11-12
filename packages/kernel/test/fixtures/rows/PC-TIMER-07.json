@@ -171,6 +171,7 @@
     "multiInstanceCounters": "cibLocals",
     "multiInstanceInputFailure": "rollback",
     "multiInstanceCount": "javaInt",
+    "multiInstanceCollection": "entrySnapshot",
     "businessRuleTask": "decisionTable",
     "scriptTask": "javascript",
     "inclusiveJoinReach": "outgoingOnly",

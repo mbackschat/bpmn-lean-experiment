@@ -245,7 +245,8 @@ export function concurrentInstances(options: ProfileOptions, loop: MultiInstance
  * its input data item, or an admitted element variable; a cardinality loop sets none
  * (`MultiInstanceActivityBehavior:85`). Own input mappings are admitted under `loopReferences`, whose reads
  * `ownInputNames` restricts and whose targets `counterTarget` does; own output mappings are a CIB deployment error
- * (`BpmnParse.java:4855-4857`).
+ * (`BpmnParse.java:4855-4857`). The kernel reads a collection once, so a sequential loop whose profile re-reads it
+ * (`CollectionRead.SequentialReread`) or whose JUEL collection CIB re-evaluates (`rereads`) is refused (PC-MI-08).
  */
 export function activityLoop(options: ProfileOptions, juel: LoopExpression, submits: boolean | null, envelope: Envelope,
   loop: MultiInstance): string | null {
@@ -256,7 +257,8 @@ export function activityLoop(options: ProfileOptions, juel: LoopExpression, subm
     (condition === null ? null : underJuel ? juel(counters, condition) : standardCondition(condition));
   if (refused !== null) return refused;
   if (elementVariableRefused(options, loop)) return "multiInstance.elementVariable";
-  if (loop.mutableCollection === CollectionRead.SequentialReread || (underJuel && rereads(loop))) return "multiInstance.mutableCollection";
+  const sequentialReread = !runsAtOnce(loop) && options.multiInstanceCollection === CollectionRead.SequentialReread;
+  if (sequentialReread || (underJuel && rereads(loop))) return "multiInstance.mutableCollection";
   if (loop.count.tag !== InstanceCountTag.Cardinality && loop.inputDataItem === null && loop.elementVariable === null) {
     return "multiInstance.inputDataItem";
   }

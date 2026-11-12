@@ -400,7 +400,7 @@ export function arriveMultiInstance(
   if (!read.ok) return read;
   if (read.value === null) {
     if (occurrence.incoming === null) return failed(FailureTag.SemanticFailure, "multi-instance-without-flow");
-    return committed(hold(state, { occurrence: occurrence.id, flow: occurrence.incoming, scope: occurrence.scope }));
+    return committed(hold(state, { occurrence: occurrence.id, scope: occurrence.scope }));
   }
   const [collection, items, count] = read.value;
   if (count === 0) {

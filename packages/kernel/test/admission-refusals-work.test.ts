@@ -123,6 +123,26 @@ export const rows: readonly Row[] = [
     control: withTask(receiveWork({ name: text("M") })),
   },
   {
+    // BPMN 2.0.2 §10.4.1, "Receive Task Mapping": equivalence is read as the same ItemDefinition identifier. No control:
+    // an equivalent Data Output meets `work.receive.dataOutputs`, which refuses every one while the arm maps no payload.
+    code: "work.receive.dataOutputItem",
+    description: "a Receive Task Data Output whose ItemDefinition is not the Message's",
+    mutate: withTask(receiveWork({ messageRef: "M", name: text("M"), itemRef: "Item_A" }, false,
+      { dataOutputs: [{ id: "Out", itemRef: "Item_B" }], outputSets: 1 })),
+  },
+  {
+    code: "work.receive.dataOutputs",
+    description: "a Receive Task that declares a Data Output",
+    mutate: withTask(receiveWork({ messageRef: "M", name: text("M"), itemRef: "Item_A" }, false,
+      { dataOutputs: [{ id: "Out", itemRef: "Item_A" }], outputSets: 1 })),
+    control: withTask(receiveWork({ messageRef: "M", name: text("M"), itemRef: "Item_A" }, false, { outputSets: 1 })),
+  },
+  {
+    code: "work.receive.dataOutputs",
+    description: "a Receive Task with a second OutputSet",
+    mutate: withTask(receiveWork({ name: text("M") }, false, { outputSets: 2 })),
+  },
+  {
     code: "work.receive.messageExpression",
     description: "a Receive Task whose message name is an expression",
     mutate: withTask(receiveWork({ name: computed(variable("n")) })),

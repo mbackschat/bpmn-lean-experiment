@@ -241,6 +241,17 @@ export enum MultiInstanceCount {
   JavaInt = "javaInt",
 }
 
+/**
+ * When a sequential Multi-Instance Activity reads its input collection (PC-MI-08); a parallel one reads it once, as it
+ * creates every instance.
+ */
+export enum CollectionRead {
+  /** Once, as the Activity is entered: BPMN 2.0.2 §13.3.7 evaluates the number of instances once and is silent on re-reading the items. */
+  EntrySnapshot = "entrySnapshot",
+  /** CIB re-reads the collection as an instance completes, before the next one begins (`SequentialMultiInstanceActivityBehavior.java:57`). */
+  SequentialReread = "sequentialReread",
+}
+
 /** What an Activity's output mappings read besides the values its completion or effect result submits. */
 export enum OutputContext {
   /** BPMN 2.0.2 §10.4.2: nothing; the outputs map the submitted values alone. */
@@ -447,6 +458,7 @@ export interface ProfileOptions {
   readonly multiInstanceCounters: MultiInstanceCounters;
   readonly multiInstanceInputFailure: MultiInstanceInputFailure;
   readonly multiInstanceCount: MultiInstanceCount;
+  readonly multiInstanceCollection: CollectionRead;
   readonly businessRuleTask: BusinessRuleTask;
   readonly scriptTask: ScriptTask;
   readonly inclusiveJoinReach: InclusiveJoinReach;

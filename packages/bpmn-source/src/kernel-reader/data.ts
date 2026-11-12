@@ -1,7 +1,7 @@
 import { asElement, asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { parseJuel } from "./juel.js";
-import { ReadRefusal, ReadRefusalCode, list, namespaceOf, optionalId, text } from "./model.js";
+import { ReadRefusal, ReadRefusalCode, list, namespaceOf, optionalId, reference, requireId, text } from "./model.js";
 import type { ReadContext } from "./model.js";
 import { ctor, expressionSource, foreign, literalSource, mapping, MappingSyntax, stringLiteral, variable } from "./wire.js";
 import type { KernelJson } from "./wire.js";
@@ -204,6 +204,16 @@ export const associationMappings = (ctx: ReadContext, associations: ReadonlyArra
 
 export const eventOutputs = (ctx: ReadContext, element: ElementRecord): KernelJson[] =>
   list(element, "dataOutputAssociations").map((association) => associationMapping(ctx, association, eventOutputName));
+
+/** The identifier of the ItemDefinition `key` references on `owner`, `null` when it references none. */
+export function itemDefinitionId(owner: ElementRecord, key: string): string | null {
+  const item = reference(owner, key, "bpmn:ItemDefinition");
+  return item === null ? null : requireId(item);
+}
+
+/** A Data Output's `DataOutputDecl`: its identifier and its `itemSubjectRef` ItemDefinition's (BPMN 2.0.2 §10.4.1). */
+export const dataOutputDecl = (output: ElementRecord): KernelJson =>
+  ({ id: requireId(output), itemRef: itemDefinitionId(output, "itemSubjectRef") });
 
 export const eventInputs = (ctx: ReadContext, element: ElementRecord): KernelJson[] =>
   associationMappings(ctx, list(element, "dataInputAssociations"));

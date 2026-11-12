@@ -25,7 +25,7 @@ import type { EffectBinding, MessageTrigger } from "./types/message.js";
 import type { Work } from "./types/work.js";
 export { integerLexeme, isAscii, parseJavaInt, parseJavaLong, signedDigits, withinJavaInt } from "./types/lexical.js";
 export {
-  CollectionRead, type InstanceCount, InstanceCountTag, type MultiInstance, MultiInstanceMode,
+  type InstanceCount, InstanceCountTag, type MultiInstance, MultiInstanceMode,
 } from "./types/multi-instance.js";
 export {
   AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
@@ -34,7 +34,7 @@ export {
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
-  multiInstanceCounterNames, BusinessRuleTask, ScriptTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
+  CollectionRead, multiInstanceCounterNames, BusinessRuleTask, ScriptTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
   ScopeStart, SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms,
 } from "./types/options.js";
 export {
@@ -46,7 +46,7 @@ export {
   definitionRefEligibleFor, type ProgramIdentity, type QName,
 } from "./types/reference.js";
 export { assertNever };
-export type { CorrelationCriterion, EffectBinding, MessageTrigger } from "./types/message.js";
+export type { CorrelationCriterion, DataOutputDecl, EffectBinding, MessageTrigger } from "./types/message.js";
 export {
   DecisionResultMapping, type ReceiveWork, type RuleWork, type ScriptWork, type SendWork, type ServiceWork, type UserWork, type Work,
   WorkTag, workCall, workIsService, workIsUser, workReceive, workResults,

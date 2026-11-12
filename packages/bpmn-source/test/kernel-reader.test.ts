@@ -142,7 +142,7 @@ test("an Activity carries its default flow and asynchronous continuations in its
   assert.equal(envelope.asyncAfter, true);
   assert.equal(element(p, "A").activity.payload.envelope.asyncBefore, true);
   assert.equal(element(p, "U").activity.payload.envelope.defaultFlow, null);
-  assert.equal(element(p, "U").activity.payload.envelope.multiInstance.mutableCollection, "entrySnapshot");
+  assert.equal(p.options.multiInstanceCollection, "entrySnapshot");
   assert.deepEqual(p.flows.find((entry: Json) => entry.id === "c").condition, { simpleBoolean: { body: { literal: { value: true } } } });
 });
 
@@ -165,7 +165,7 @@ test("a Multi-Instance loop carries its own asynchronous continuations and the l
   assert.deepEqual(u.multiInstance, {
     mode: "parallel", count: { collection: { items: { variable: { name: "R" } } } }, elementVariable: null,
     completionCondition: null, inputDataItem: "In", outputDataItem: null, outputCollection: null,
-    mutableCollection: "entrySnapshot", asyncBefore: true, asyncAfter: true, loopDataInputRef: "Ins", inputDataItemName: "item",
+    asyncBefore: true, asyncAfter: true, loopDataInputRef: "Ins", inputDataItemName: "item",
   });
   const v = element(p, "V").activity.payload.envelope;
   assert.deepEqual([v.asyncBefore, v.asyncAfter], [false, false]);
@@ -307,6 +307,7 @@ test("the profile options are the full record, each non-default selected by the 
     multiInstanceCounters: "none",
     multiInstanceInputFailure: "hold",
     multiInstanceCount: "integer",
+    multiInstanceCollection: "entrySnapshot",
     businessRuleTask: "refused",
     scriptTask: "refused",
     inclusiveJoinReach: "withBoundaries",
@@ -358,6 +359,7 @@ test("the profile options are the full record, each non-default selected by the 
     multiInstanceCounters: "none",
     multiInstanceInputFailure: "hold",
     multiInstanceCount: "integer",
+    multiInstanceCollection: "entrySnapshot",
     businessRuleTask: "refused",
     scriptTask: "refused",
     inclusiveJoinReach: "withBoundaries",

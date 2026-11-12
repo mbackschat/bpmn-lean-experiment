@@ -2,7 +2,9 @@ import { asElement, asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { envelopeFor, headerOf } from "./build.js";
 import { activityProtocol, declaredImplementation, effectBinding, handlerKey, operation } from "./binding.js";
-import { associationMappings, associationSourceId, associationTargetId, inputOutputParameters, valueSource, variableCopies } from "./data.js";
+import {
+  associationMappings, associationSourceId, associationTargetId, dataOutputDecl, inputOutputParameters, valueSource, variableCopies,
+} from "./data.js";
 import { messageTrigger } from "./events.js";
 import {
   FlowElementKind, ReadRefusal, ReadRefusalCode, extensionValues, list, namesElement, optionalId, qualifiedName, reference, requireId, text,
@@ -135,6 +137,20 @@ function callWork(ctx: ReadContext, element: ElementRecord): KernelJson {
   } });
 }
 
+/**
+ * A Receive Task (BPMN 2.0.2 §10.3.3, Table 10.10; admission refuses an instantiating one, `work.receive.instantiate`)
+ * with the Data Outputs and the count of OutputSets of its `ioSpecification`, which admission bounds (§10.4.1).
+ */
+function receiveWork(ctx: ReadContext, element: ElementRecord): KernelJson {
+  const io = asElement(element.ioSpecification) ?? {};
+  return ctor("receive", { payload: {
+    message: messageTrigger(ctx, element, element),
+    instantiate: element.instantiate === true,
+    dataOutputs: list(io, "dataOutputs").map(dataOutputDecl),
+    outputSets: list(io, "outputSets").length,
+  } });
+}
+
 function sendWork(ctx: ReadContext, element: ElementRecord): KernelJson {
   return ctor("send", { payload: {
     binding: effectBinding(ctx, element),
@@ -229,9 +245,7 @@ function workOf(ctx: ReadContext, element: ElementRecord, kind: ActivityKind): R
         ? { work: serviceWork(ctx, element), sourceType: kind }
         : { work: sendWork(ctx, element), sourceType: kind };
     case FlowElementKind.ReceiveTask:
-      // BPMN 2.0.2 §10.3.3, Table 10.10; admission refuses an instantiating one (`work.receive.instantiate`).
-      return { work: ctor("receive", { payload: { message: messageTrigger(ctx, element, element), instantiate: element.instantiate === true } }),
-        sourceType: kind };
+      return { work: receiveWork(ctx, element), sourceType: kind };
     case FlowElementKind.ScriptTask:
       return { work: scriptWork(ctx, element), sourceType: kind };
     case FlowElementKind.BusinessRuleTask: {

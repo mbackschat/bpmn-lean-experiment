@@ -31,7 +31,7 @@ function program(shape: Shape = {}): Json {
   const loop = {
     mode: "parallel", count: { collection: { items: { variable: { name: "items" } } } }, elementVariable: null,
     completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: shape.user === true ? "DataOutput_Result" : null,
-    outputCollection: null, mutableCollection: "entrySnapshot", asyncBefore: false, asyncAfter: false,
+    outputCollection: null, asyncBefore: false, asyncAfter: false,
     loopDataInputRef: null, inputDataItemName: "item", ...shape.loop,
   };
   const work = shape.user === true

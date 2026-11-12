@@ -68,6 +68,7 @@
     "multiInstanceCounters": "none",
     "multiInstanceInputFailure": "hold",
     "multiInstanceCount": "integer",
+    "multiInstanceCollection": "entrySnapshot",
     "businessRuleTask": "refused",
     "scriptTask": "refused",
     "inclusiveJoinReach": "withBoundaries",
@@ -129,7 +130,8 @@
                       },
                       "correlation": [],
                       "interfaceRef": "Interface_ClearingHouse",
-                      "operationRef": "Operation_ConfirmSettlement"
+                      "operationRef": "Operation_ConfirmSettlement",
+                      "itemRef": "ItemDefinition_SettlementReference"
                     }
                   }
                 },
@@ -195,7 +197,8 @@
                         }
                       ],
                       "interfaceRef": "Interface_ClearingHouse",
-                      "operationRef": "Operation_ConfirmSettlement"
+                      "operationRef": "Operation_ConfirmSettlement",
+                      "itemRef": "ItemDefinition_SettlementReference"
                     }
                   }
                 },

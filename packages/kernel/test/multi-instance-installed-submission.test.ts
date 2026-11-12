@@ -29,7 +29,7 @@ function program(submission: string, mode: string): Json {
         envelope: { incoming: ["To_T"], outgoing: ["To_End"], inputs: [], outputs: [], boundaries: [], multiInstance: {
           mode, count: { collection: { items: { variable: { name: "items" } } } }, elementVariable: null,
           completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: "DataOutput_Result",
-          outputCollection: null, mutableCollection: "entrySnapshot", asyncBefore: false, asyncAfter: false,
+          outputCollection: null, asyncBefore: false, asyncAfter: false,
           loopDataInputRef: "items", inputDataItemName: "item",
         }, compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false } } } },
       { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish",

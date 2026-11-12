@@ -25,7 +25,7 @@ const envelope = (incoming: string[], outgoing: string[], over: Json = {}): Json
 const loop = (mode: string, collection: string, item: string): Json => ({
   mode, count: { collection: { items: { variable: { name: collection } } } }, elementVariable: null,
   completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: null, outputCollection: null,
-  mutableCollection: "entrySnapshot", asyncBefore: false, asyncAfter: false, loopDataInputRef: null, inputDataItemName: item,
+  asyncBefore: false, asyncAfter: false, loopDataInputRef: null, inputDataItemName: item,
 });
 const read = (target: string, name: string): Json =>
   ({ target, source: { juel: { nodes: [{ identifier: { name } }] } }, dialect: "ioParameter" });

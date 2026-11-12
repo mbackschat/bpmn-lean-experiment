@@ -225,8 +225,8 @@ def arriveMultiInstance (ctx : Ctx) (header : Header) (envelope : Envelope) (loo
     (occurrence : Occurrence) (state : State) : Outcome := do
   match ← entryRead ctx loop state occurrence.scope with
   | none =>
-    let some flow := occurrence.incoming | .error (.semanticFailure "multi-instance-without-flow")
-    .ok (state.hold { occurrence := occurrence.id, flow, scope := occurrence.scope })
+    let some _ := occurrence.incoming | .error (.semanticFailure "multi-instance-without-flow")
+    .ok (state.hold { occurrence := occurrence.id, scope := occurrence.scope })
   | some (collection, _, 0) =>
     .ok (state.signal (.complete occurrence.id .outgoing (written ctx loop collection []) .outward))
   | some (collection, items, count) =>

@@ -2,7 +2,7 @@ import { asElement } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { fixed, headerOf } from "./build.js";
 import { declaredImplementation, effectBinding, handlerKey } from "./binding.js";
-import { conditionExpression, eventInputs, eventOutputs, valueSource, variableCopies } from "./data.js";
+import { conditionExpression, eventInputs, eventOutputs, itemDefinitionId, valueSource, variableCopies } from "./data.js";
 import { FlowElementKind, ReadRefusal, ReadRefusalCode, list, optionalId, reference, requireId, targetNamespaceOf, text } from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
 import { assertNever, ctor, foreign, subscription, variable } from "./wire.js";
@@ -109,8 +109,9 @@ function correlationCriteria(ctx: ReadContext, owner: ElementRecord, ownerId: st
 }
 
 /**
- * The `MessageTrigger` of a Message Event Definition or Receive Task: the Message's identifier, which addresses it, and
- * its `name`, a literal or, with an expression marker, a JUEL value as CIB reads it (`BpmnParse.java:454-465`).
+ * The `MessageTrigger` of a Message Event Definition or Receive Task: the Message's identifier, which addresses it, its
+ * `name`, a literal or, with an expression marker, a JUEL value as CIB reads it (`BpmnParse.java:454-465`), and its
+ * `itemRef` ItemDefinition's identifier.
  */
 export function messageTrigger(ctx: ReadContext, owner: ElementRecord, event: ElementRecord): KernelJson {
   const message = reference(owner, "messageRef", "bpmn:Message");
@@ -121,6 +122,7 @@ export function messageTrigger(ctx: ReadContext, owner: ElementRecord, event: El
     correlation: correlationCriteria(ctx, event, requireId(event)),
     interfaceRef: operation === null ? null : optionalId(asElement(operation.$parent) ?? {}),
     operationRef: operation === null ? null : requireId(operation),
+    itemRef: message === null ? null : itemDefinitionId(message, "itemRef"),
   };
 }
 
