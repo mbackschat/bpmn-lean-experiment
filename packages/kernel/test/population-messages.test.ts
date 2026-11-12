@@ -164,6 +164,21 @@ test("a reached candidate whose modeled key is outside the key domain refuses th
   }
 });
 
+test("a reached wait's key outside the key domain refuses the publication whatever number of criteria it carries", () => {
+  const other = { target: { kind: "processVariable", name: "Other" }, expected: { kind: "string", value: "x" } };
+  const result = populate([definition("d1", waiting)], [waiting], [
+    { kind: "instance", definitionRef: "d1", instanceId: "W1", stimulus: { kind: "start", commandId: "start-W1", instanceId: "W1", variables: [] } },
+    publish("p0", { channel: ordered }, "executionsOnly"),
+    publish("p1", { channel: ordered }, "executionsOnly", { criteria: keyed("o-7") }),
+    publish("p2", { channel: ordered }, "executionsOnly", { criteria: [...keyed("o-7"), other] }),
+    publish("p3", { channel: ordered }, "any"),
+  ]);
+  const refusal = { kind: "unsupported", code: "correlation-key-unbound" };
+  // `p3` would otherwise fall through to the root Message start `SM` on the same channel.
+  assert.deepEqual(resolutions(result), [refusal, refusal, refusal, refusal]);
+  assert.equal((result.processStates as Json[]).length, 1);
+});
+
 test("a replayed command answers its recorded resolution and one of different content is rejected, changing nothing", () => {
   const program = starting("Order");
   const sent = publish("p1", { channel: order }, "startOnly");

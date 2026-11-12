@@ -136,7 +136,8 @@ function keyValue(ctx: Ctx, context: EvalContext, criterion: CorrelationCriterio
  * Whether the delivered `correlation` names exactly the criteria's keys, in order, each with the String its criterion
  * binds, under `MessageCorrelation.ModeledKey`, where a modeled key matches as `processVariable`. Criteria delivered to a
  * wait that models no key, and criteria `criteriaRefusal` refuses under that reading, are `unsupported` or `rejected`,
- * never a mismatch.
+ * never a mismatch. Every bound key is evaluated before the delivered criteria are compared, so a key outside the key
+ * domain refuses whatever number of criteria the delivery carries.
  */
 function correlationMatches(
   ctx: Ctx,
@@ -149,11 +150,15 @@ function correlationMatches(
   }
   const refusal = criteriaRefusal([MessageCorrelation.ModeledKey], false, correlation);
   if (refusal !== null) return failedWith(refusal);
-  if (bound.length !== correlation.length) return committed(false);
-  for (const [index, criterion] of bound.entries()) {
+  const keys: string[] = [];
+  for (const criterion of bound) {
     const expected = keyValue(ctx, context, criterion);
     if (!expected.ok) return failedWith(expected.failure);
-    const matched = criterionMatches(criterion, correlation[index] as CorrelationMatch, expected.value);
+    keys.push(expected.value);
+  }
+  if (bound.length !== correlation.length) return committed(false);
+  for (const [index, criterion] of bound.entries()) {
+    const matched = criterionMatches(criterion, correlation[index] as CorrelationMatch, keys[index] as string);
     if (!matched.ok || !matched.value) return matched;
   }
   return committed(true);

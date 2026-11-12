@@ -47,6 +47,21 @@ test("a key whose variable is unbound refuses the delivery as unsupported", () =
   assert.ok(state.openItems.some((item) => item.element === "T"));
 });
 
+test("a key whose variable is unbound refuses a delivery carrying no criteria or more than one", () => {
+  const state = started([]);
+  const unbound = { ok: false, failure: { tag: "unsupported", code: "correlation-key-unbound" } };
+  const deliver = (correlation: Json[]): Outcome => run(state, {
+    kind: "deliver", occurrence: { processInstanceId: "I", elementId: "T", activation: 1 },
+    trigger: { kind: "message", channel: { kind: "operationMessage", messageId: "M", interfaceId: "I", interfaceOperationId: "O" } },
+    correlation,
+  });
+  assert.deepEqual(deliver([]), unbound);
+  assert.deepEqual(deliver([
+    { target: { kind: "processVariable", name: "OrderKey" }, expected: { kind: "string", value: "o-7" } },
+    { target: { kind: "processVariable", name: "Other" }, expected: { kind: "string", value: "x" } },
+  ]), unbound);
+});
+
 test("a key bound to an empty String refuses the delivery as unsupported", () => {
   const state = started([{ name: "orderId", value: { kind: "string", value: "" } }]);
   assert.deepEqual(deliverKey(state, "o-7"), { ok: false, failure: { tag: "unsupported", code: "correlation-key-empty" } });

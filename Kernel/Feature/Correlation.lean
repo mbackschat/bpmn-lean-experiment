@@ -81,22 +81,23 @@ def keyValue (ctx : Ctx) (context : EvalContext) (criterion : CorrelationCriteri
 /-- Whether the delivered `correlation` names exactly the criteria's keys, in order, each with the String its criterion
 binds, under `MessageCorrelation.modeledKey`, where a modeled key matches as `.processVariable`. Criteria delivered to a
 wait that models no key, and criteria `criteriaRefusal` refuses under that reading, are `unsupported` or `rejected`,
-never a mismatch. -/
+never a mismatch. Every bound key is evaluated before the delivered criteria are compared, so a key outside the key
+domain refuses whatever number of criteria the delivery carries. -/
 def correlationMatches (ctx : Ctx) (context : EvalContext) (bound : List CorrelationCriterion)
-    (correlation : List CorrelationMatch) : Except Failure Bool :=
+    (correlation : List CorrelationMatch) : Except Failure Bool := do
   -- dynamic-only: a delivery's criteria are its caller's.
-  if bound.isEmpty && !correlation.isEmpty then .error (.unsupported "profile-message-correlation-api-criteria")
-  else if let some failure := criteriaRefusal [.modeledKey] false correlation then .error failure
-  else if bound.length != correlation.length then .ok false
-  else (bound.zip correlation).allM fun (criterion, delivered) => do
-    let expected ← keyValue ctx context criterion
+  if bound.isEmpty && !correlation.isEmpty then throw (.unsupported "profile-message-correlation-api-criteria")
+  if let some failure := criteriaRefusal [.modeledKey] false correlation then throw failure
+  let keys ← bound.mapM (keyValue ctx context)
+  if bound.length != correlation.length then return false
+  pure <| ((bound.zip keys).zip correlation).all fun ((criterion, expected), delivered) =>
     match delivered.target with
     | .processVariable key =>
-      pure (criterion.key == key && match delivered.expected with
+      criterion.key == key && match delivered.expected with
         | .string value => value == expected
-        | _ => false)
+        | _ => false
     -- `criteriaRefusal` refused every other target above; the arm keeps the match total.
-    | .localVariable _ | .businessKey | .processInstance => pure false
+    | .localVariable _ | .businessKey | .processInstance => false
 
 /-- Whether `correlation` accepts an item waiting in `scope` whose subscription's `trigger` models the keys it binds:
 under `modeledKey` as `correlationMatches` says; under `apiCriteria` as `criteriaHold` says, where admission leaves
