@@ -13,6 +13,7 @@ The [profile artifact](profile.json) is the CIB Seven 2.2.0 compatibility profil
 | `abnormalScopeEnd` | `completesNormally` | `CIB-INT-0007` |
 | `unhandledError` | `endsThrowingPath` | `CIB-INT-0013` |
 | `compensationHandlerFailure` | `propagatesFromTrigger` | `CIB-INT-0038` |
+| `implicitCompensation` | `everySubProcess` | `CIB-INT-0036` |
 | `errorCatchVariables` | `eventScope` | `CIB-EXT-0028` |
 | `multiInstanceBinding` | `loopReferences` | `CIB-INT-0014` |
 | `multiInstanceCounters` | `cibLocals` | `CIB-INT-0018` |

@@ -124,7 +124,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     multiInstanceOutputs: selects("CIB-LIM-0001") ? "none" : "aggregates",
     compensationOrder: "dependency",
     compensationHandlerFailure: selects("CIB-INT-0038") ? "propagatesFromTrigger" : "failsInstance",
-    implicitCompensation: "refused",
+    implicitCompensation: selects("CIB-INT-0036") ? "everySubProcess" : "refused",
     errorExitCompensation: "drops",
     multiInstanceCompensation: "perSubProcessInstance",
     transactionMethods: selects("CIB-INT-0039") ? "compatibilityAsCompensate" : "compensateOnly",

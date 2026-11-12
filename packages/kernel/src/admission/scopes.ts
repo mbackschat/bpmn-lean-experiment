@@ -1,5 +1,6 @@
 /** Admission of Scopes and scope membership, transcribed from `Kernel/Admission/Scopes.lean`. A refusal carries a stable code. */
 import {
+  ImplicitCompensation,
   ScopeKindTag,
   ScopeStart,
   TransactionMethodTag,
@@ -194,8 +195,9 @@ function within(program: Program, ancestor: ElementId, fuel: number, id: Element
  * When a Sub-Process completes, the records retained in it pass to its compensation handler or, without one, to its
  * parent (BPMN 2.0.2 §13.5.5); that implicit and recursive compensation is contradictory while BPMN21-403 is open. A
  * subject is refused when the Scope retaining it can hand its records on: to the parent occurrence, where a Compensation
- * throw shares that parent, or to the Scope's handler, whose body throws Compensation (PC-COMPENSATION-03). `throws`
- * lists the Compensation throws.
+ * throw shares that parent, unless `ImplicitCompensation.EverySubProcess` keeps them there as the Scope's group
+ * (CIB-INT-0036), or to the Scope's handler, whose body throws Compensation (PC-COMPENSATION-03). `throws` lists the
+ * Compensation throws.
  */
 function handOn(program: Program, throws: readonly Element[], fuel: number, scope: ElementId | null): string | null {
   if (fuel === 0 || scope === null) return null;
@@ -209,8 +211,14 @@ function handOn(program: Program, throws: readonly Element[], fuel: number, scop
       : null;
   }
   const parent = elementHeader(retaining).parent;
-  if (throws.some((thrower) => elementHeader(thrower).parent === parent)) return "compensation.implicit";
-  return handOn(program, throws, fuel - 1, parent);
+  switch (program.options.implicitCompensation) {
+    case ImplicitCompensation.Refused:
+      if (throws.some((thrower) => elementHeader(thrower).parent === parent)) return "compensation.implicit";
+      return handOn(program, throws, fuel - 1, parent);
+    case ImplicitCompensation.EverySubProcess:
+      return handOn(program, throws, fuel - 1, parent);
+  }
+  return assertNever(program.options.implicitCompensation);
 }
 
 export function nestedCompensation(program: Program, throws: readonly Element[], header: Header, envelope: Envelope): string | null {

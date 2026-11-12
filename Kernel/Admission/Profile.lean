@@ -46,7 +46,6 @@ def multiInstance (loops : Bool) (selected : ProfileOptions) : Option String :=
 def options (reach : Reach) (selected : ProfileOptions) : Option String :=
   (if selected.compensationOrder == .allAtOnce then some "profile.compensationOrder.allAtOnce" else none) <|>
   compensationHandlerFailure selected.compensationHandlerFailure <|>
-  (if selected.implicitCompensation == .everySubProcess then some "profile.implicitCompensation.everySubProcess" else none) <|>
   (if reach.errorExit && selected.errorExitCompensation == .compensatesContained then
     some "profile.errorExitCompensation.compensatesContained" else none) <|>
   (if reach.loopedHandler && selected.multiInstanceCompensation == .perInstance then

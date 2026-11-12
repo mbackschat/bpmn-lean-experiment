@@ -54,12 +54,6 @@ export const rows: readonly Row[] = [
     control: option({ compensationHandlerFailure: "failsInstance" }),
   },
   {
-    code: "profile.implicitCompensation.everySubProcess",
-    description: "implicit compensation of every Sub-Process",
-    mutate: option({ implicitCompensation: "everySubProcess" }),
-    control: option({ implicitCompensation: "refused" }),
-  },
-  {
     code: "profile.errorExitCompensation.compensatesContained",
     description: "compensating the contained work of a Sub-Process an Error leaves, for a Sub-Process retaining compensable work",
     mutate: (program) => compensableScope(withOptions(program, { errorExitCompensation: "compensatesContained" })),

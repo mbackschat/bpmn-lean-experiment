@@ -124,6 +124,13 @@ export const rows: readonly Row[] = [
     control: retaining(),
   },
   {
+    // CIB-INT-0036: under implicit compensation the Sub-Process keeps its records as one group.
+    code: "compensation.implicit",
+    description: "a compensable Task in a Sub-Process without a handler, beside a Compensation throw, unless implicit compensation groups it",
+    mutate: (program) => compensatingEnd(retaining()(program)),
+    control: (program) => compensatingEnd(retaining()(withOptions(program, { implicitCompensation: "everySubProcess" }))),
+  },
+  {
     code: "compensation.recursive",
     description: "a compensable Task in a Sub-Process whose handler throws Compensation",
     mutate: handledScope(compensate),

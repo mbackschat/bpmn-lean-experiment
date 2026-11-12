@@ -15,7 +15,6 @@ import {
   CompensationOrder,
   ErrorExitCompensation,
   Evaluator,
-  ImplicitCompensation,
   MultiInstanceCompensation,
   MultiInstanceCounters,
   MultiInstanceInputFailure,
@@ -65,7 +64,6 @@ export function options(reach: Reach, selected: ProfileOptions): string | null {
   if (selected.compensationOrder === CompensationOrder.AllAtOnce) return "profile.compensationOrder.allAtOnce";
   const handlerFailure = compensationHandlerFailure(selected.compensationHandlerFailure);
   if (handlerFailure !== null) return handlerFailure;
-  if (selected.implicitCompensation === ImplicitCompensation.EverySubProcess) return "profile.implicitCompensation.everySubProcess";
   if (reach.errorExit && selected.errorExitCompensation === ErrorExitCompensation.CompensatesContained) {
     return "profile.errorExitCompensation.compensatesContained";
   }

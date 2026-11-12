@@ -540,7 +540,6 @@
         "profile.compensationHandlerFailure.selected",
         "profile.compensationOrder.allAtOnce",
         "profile.errorExitCompensation.compensatesContained",
-        "profile.implicitCompensation.everySubProcess",
         "profile.multiInstanceCompensation.perInstance",
         "profile.multiInstanceCounters.cibLocals",
         "profile.multiInstanceCounters.none",

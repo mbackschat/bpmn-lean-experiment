@@ -329,13 +329,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/compensation-event-subprocess-throws/error-esp-completes-then-outer-throw.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02",
-      "PC-COMPENSATION-05"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/compensation-handler-bodies/abandoned-while-handlers-wait.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0049"
@@ -465,7 +458,7 @@
   {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/regions-sequential-in-turn.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-03"
+      "CIB-DEV-0011"
     ]
   },
   {
@@ -554,25 +547,25 @@
   {
     "evidence": "scenarios/open-rows/compensation-regions/inner-throw-then-outer-all.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-02"
+      "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-regions/inner-throw-then-region-targeted.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-02"
+      "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-regions/outer-all-without-inner-throw.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-02"
+      "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-regions/region-targeted-after-completion.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-02"
+      "CIB-DEV-0011"
     ]
   },
   {
@@ -2358,12 +2351,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/transaction-and-error-exits/error-end-in-subprocess.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-01"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/transaction-cancel-mixed/cancel-with-effect-unanswered.cibseven-evidence.json",
     "owners": [
       "PC-TX-02"
@@ -2454,21 +2441,21 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/transaction-paths/cancel-end.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/transaction-nested/outer-cancel-after-inner-completed.cibseven-evidence.json",
     "owners": [
-      "PC-TX-01"
+      "CIB-DEV-0011"
     ]
   },
   {
-    "evidence": "scenarios/open-rows/transaction-paths/error-end.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/transaction-paths/cancel-end.cibseven-evidence.json",
     "owners": [
-      "PC-TX-01"
+      "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-paths/success-then-outer-throw.cibseven-evidence.json",
     "owners": [
-      "PC-TX-01"
+      "CIB-DEV-0011"
     ]
   },
   {
