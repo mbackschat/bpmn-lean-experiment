@@ -8,7 +8,7 @@ import { test } from "node:test";
 
 import { activity, end, flow, loop, scope, start, userWork, variable } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
-import { chain, compensateAll, complete, driveFrom, handlerTask, parts, userTask, waiting } from "./compensation-support.ts";
+import { chain, compensateAll, complete, driveFrom, handlerTask, parts, throwing, userTask, waiting } from "./compensation-support.ts";
 
 const looping = (mode: string, outputDataItem: string | null = null): Json =>
   loop({ mode, count: { collection: { items: variable("items") } }, outputDataItem });
@@ -60,4 +60,19 @@ test("a Multi-Instance Task's handler runs once after zero instances", () => {
 test("a Multi-Instance Sub-Process with zero instances retains nothing", () => {
   const finished = driveFrom(subProcess("parallel"), items(0), complete("X"));
   assert.ok(finished.ok && finished.value.status === "completed", JSON.stringify(finished));
+});
+
+// A Multi-Instance Task directly inside an instance of a Multi-Instance Sub-Process is an instance of nothing there:
+// its body retains its record in that instance's scope occurrence, so a throw there runs its handler once (#116).
+test("a Multi-Instance Task inside a Multi-Instance Sub-Process instance is compensated by its body's record", () => {
+  const program = chain([scope("A", "embedded", {}, { multiInstance: looping("parallel") }), userTask("X")], "none",
+    parts({
+      elements: [
+        start("AS", null, [], "A"),
+        activity("M", userWork(), { compensationHandlers: ["HM"], multiInstance: looping("parallel", "result") }, "A"),
+        throwing("AT", compensateAll, "A"), end("AE", "none", "A"), handlerTask("HM"),
+      ],
+      flows: [flow("a0", "AS", "M"), flow("a1", "M", "AT"), flow("a2", "AT", "AE")],
+    }), {});
+  assert.deepEqual(waiting(driveFrom(program, items(1), complete("M", 1, [["result", { kind: "string", value: "r" }]]))), ["HM"]);
 });

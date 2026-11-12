@@ -76,7 +76,7 @@ import {
   type ScopeOccurrenceId,
   type State,
 } from "../state.js";
-import { ScopeRole, leaveScope, type Ctx } from "../hooks.js";
+import { ScopeRole, ctxRunsAsInstance, leaveScope, type Ctx } from "../hooks.js";
 
 function store(state: State, compensation: Compensations): State {
   return { ...state, slots: { ...state.slots, compensation } };
@@ -94,9 +94,7 @@ function ownedScope(ctx: Ctx, occurrence: Occurrence, state: State): ScopeOccurr
  * occurrence, the one `Iteration.active` names, holding its item and, under `cibLocals`, its `loopCounter`.
  */
 function isInstance(ctx: Ctx, occurrence: Occurrence, state: State): boolean {
-  const element = programElement(ctx.program, occurrence.element);
-  const looping = ((element === null ? null : elementEnvelope(element))?.multiInstance ?? null) !== null;
-  return looping && ctx.scopeRole(state, occurrence.scope) === ScopeRole.MultiInstanceInstance;
+  return ctxRunsAsInstance(ctx, state, occurrence.element, occurrence.scope);
 }
 
 /**

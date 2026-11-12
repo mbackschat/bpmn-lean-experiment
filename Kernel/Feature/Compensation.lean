@@ -49,8 +49,7 @@ def ownedScope? (ctx : Ctx) (occurrence : Occurrence) (state : State) : Option S
 /-- Whether `occurrence` is an instance of a Multi-Instance Activity: it completes in its own iteration scope
 occurrence, the one `Iteration.active` names, holding its item and, under `cibLocals`, its `loopCounter`. -/
 def isInstance (ctx : Ctx) (occurrence : Occurrence) (state : State) : Bool :=
-  (((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance)).isSome &&
-    ctx.scopeRole state occurrence.scope == .multiInstanceInstance
+  ctx.runsAsInstance state occurrence.element occurrence.scope
 
 /-- Where a completion retains its record, and with which handler (D6, I9): an instance of a Multi-Instance Activity
 completes in its own iteration scope occurrence, which `MultiInstance.instanceCompleted` leaves, so a Sub-Process

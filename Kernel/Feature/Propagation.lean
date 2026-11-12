@@ -169,8 +169,8 @@ thrower's outputs would run as it ends (`endsInstanceWithOutputs`, `finance-unli
 def enclosingInstances (ctx : Ctx) (state : State) : Nat → ScopeOccurrenceId → Outcome
   | 0, _ => .ok state
   | fuel + 1, current =>
-    -- A called root is the callee's: its owner, the Call's occurrence, is a Multi-Instance instance under a
-    -- Multi-Instance Call, which `scopeRole` reports, but that instance lies in the caller.
+    -- The path ends at its process instance's root: a called root is the scope of its Call's occurrence, a
+    -- Multi-Instance instance's under a Multi-Instance Call, but that instance and all above it lie in the caller.
     if state.calledRoot current then .ok state
     else if ctx.scopeRole state current == .multiInstanceInstance then
       .error (.unsupported "unhandled-error-leaves-multi-instance-instance") -- dynamic-only: where its thrower runs
@@ -370,7 +370,8 @@ mapped Error-path outputs, as CIB sets them on the task's execution before destr
 (`BpmnExceptionHandler.java:146-154`, CIB-EXT-0028). Otherwise the search goes on outward with the Activity still
 standing, and it leaves where the search decides (`hostLeaves`). -/
 def raise (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origin : Origin) (state : State) : Outcome :=
-  let hostBoundaries := if ctx.scopeRole state origin.scope == .multiInstanceInstance then [] else boundariesOf ctx origin.element
+  let hostBoundaries :=
+    if ctx.runsAsInstance state origin.element origin.scope then [] else boundariesOf ctx origin.element
   match origin.host, best? ctx raised (·.subscription.trigger) hostBoundaries with
   | some _, some (boundary, writes) =>
     (hooks.mappedErrorOutputs ctx origin (lastWrites writes) state).map (boundary.fire none none origin.scope [])

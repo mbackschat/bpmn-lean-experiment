@@ -108,8 +108,8 @@ import {
   childrenOf,
 } from "../state.js";
 import {
-  EvaluationTag, ScopeRole, boundaryFire, clearInside, ctxOutputReads, ctxRequireMappings, ctxRequireMappingsWith, evalContext,
-  idleWithout, lastWrites, ownVariables, type Ctx,
+  EvaluationTag, ScopeRole, boundaryFire, clearInside, ctxOutputReads, ctxRequireMappings, ctxRequireMappingsWith, ctxRunsAsInstance,
+  evalContext, idleWithout, lastWrites, ownVariables, type Ctx,
 } from "../hooks.js";
 
 /** The catcher with the lowest precedence among `candidates`, the first in document order on a tie, with what it writes. */
@@ -285,8 +285,8 @@ function endsInstanceWithOutputs(ctx: Ctx, origin: Origin, state: State): boolea
 function enclosingInstances(ctx: Ctx, state: State, start: ScopeOccurrenceId): Outcome {
   let current: ScopeOccurrenceId | null = start;
   for (let fuel = state.scopes.length + 1; fuel > 0 && current !== null; fuel -= 1) {
-    // A called root is the callee's: its owner, the Call's occurrence, is a Multi-Instance instance under a
-    // Multi-Instance Call, which `scopeRole` reports, but that instance lies in the caller.
+    // The path ends at its process instance's root: a called root is the scope of its Call's occurrence, a
+    // Multi-Instance instance's under a Multi-Instance Call, but that instance and all above it lie in the caller.
     if (calledRoot(state, current)) break;
     if (ctx.scopeRole(state, current) === ScopeRole.MultiInstanceInstance) {
       return failed(FailureTag.Unsupported, "unhandled-error-leaves-multi-instance-instance"); // dynamic-only: where its thrower runs
@@ -592,7 +592,7 @@ function searchScopes(
  * standing, and it leaves where the search decides (`hostLeaves`).
  */
 export function raise(hooks: PropagationHooks, ctx: Ctx, raised: Raised, origin: Origin, state: State): Outcome {
-  const hostBoundaries = ctx.scopeRole(state, origin.scope) === ScopeRole.MultiInstanceInstance ? [] : boundariesOf(ctx, origin.element);
+  const hostBoundaries = ctxRunsAsInstance(ctx, state, origin.element, origin.scope) ? [] : boundariesOf(ctx, origin.element);
   const caught = origin.host === null ? null : best(ctx, raised, (boundary) => boundary.subscription.trigger, hostBoundaries);
   if (caught !== null) {
     const left = hooks.mappedErrorOutputs(ctx, origin, lastWrites(caught[1]), state);
