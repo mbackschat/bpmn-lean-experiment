@@ -24,6 +24,7 @@ import {
   typeScriptEnums,
   type KernelTree,
   type Source,
+  type Token,
   type TypeScriptEnum,
 } from "./kernel-guard-scan.ts";
 
@@ -375,6 +376,57 @@ function leanModuleOf(file: string): string {
   return file.replace(/\.lean$/u, "").split("/").join(".");
 }
 
+/**
+ * Constructor names of Lean's own types, which an anonymous-constructor head may resolve to although no kernel
+ * inductive the scan reads declares them.
+ */
+const coreConstructorNames = new Set(["none", "some", "true", "false", "nil", "cons", "ok", "error", "inl", "inr", "unit", "lt", "eq", "gt", "zero", "succ", "mk"]);
+
+/** The first token of each element of the list literal `[` at `open` (`close` one past its `]`). */
+function listHeads(tokens: readonly Token[], open: number, close: number): Token[] {
+  const heads: Token[] = [];
+  let depth = 0;
+  for (let k = open + 1; k < close - 1; k += 1) {
+    const token = tokens[k];
+    if (token === undefined) break;
+    const previous = tokens[k - 1]?.text;
+    if (depth === 0 && (k === open + 1 || previous === ",")) heads.push(token);
+    if (token.kind === TokenKind.Punct && ["(", "[", "{", "⟨"].includes(token.text)) depth += 1;
+    if (token.kind === TokenKind.Punct && [")", "]", "}", "⟩"].includes(token.text)) depth -= 1;
+  }
+  return heads;
+}
+
+/**
+ * The element type the site states for the list literal at `open`: a declaration `… : List T := [` or an ascription
+ * `([…] : List T)`, `T` without its `Kernel.` prefix; `null` where the type comes from elsewhere (an argument, a field,
+ * a comparison), which a lexical scan cannot establish.
+ */
+function expectedElementType(tokens: readonly Token[], open: number, close: number): string | null {
+  const collection = (at: number): boolean => tokens[at]?.text === "List" || tokens[at]?.text === "Array";
+  const bare = (text: string | undefined): string | null => text === undefined ? null : text.replace(/^Kernel\./u, "");
+  if (tokens[open - 1]?.text === ":=" && collection(open - 3)) return bare(tokens[open - 2]?.text);
+  if (tokens[open - 1]?.text === "(" && tokens[close]?.text === ":" && collection(close + 1) && tokens[close + 3]?.text === ")") {
+    return bare(tokens[close + 2]?.text);
+  }
+  return null;
+}
+
+/** A list head that names a constructor: `.name`, or `Type.name` qualified by the guarded type (with or without
+ * `Kernel.`); `null` for any other head. */
+function constructorReference(head: Token, guarded: string): Readonly<{ name: string; qualified: boolean }> | null {
+  if (head.kind !== TokenKind.Word) return null;
+  if (/^\.[A-Za-z_][\w']*$/u.test(head.text)) return { name: head.text.slice(1), qualified: false };
+  const qualified = new RegExp(`^(?:Kernel\\.)?${guarded}\\.([A-Za-z_][\\w']*)$`, "u").exec(head.text);
+  return qualified === null ? null : { name: qualified[1] ?? "", qualified: true };
+}
+
+/** Whether `name` is a constructor of `guarded` and of no other inductive the scan reads or of Lean's own types. */
+function resolvesOnlyTo(owners: ReadonlyMap<string, ReadonlySet<string>>, name: string, guarded: string): boolean {
+  const declaring = owners.get(name);
+  return !coreConstructorNames.has(name) && declaring !== undefined && declaring.size === 1 && declaring.has(guarded);
+}
+
 function leanMirrorFindings(tree: KernelTree, types: readonly GuardedType[]): string[] {
   const findings: string[] = [];
   const guardedCtors = new Map<string, Readonly<{ ctors: Set<string>; definer: string; owners: readonly string[] }>>();
@@ -393,6 +445,12 @@ function leanMirrorFindings(tree: KernelTree, types: readonly GuardedType[]): st
       owners.some((owner) => module === owner || module.startsWith(`${owner}.`));
   };
   if (guardedCtors.size === 0) return [emptyInputFinding(3, "guarded Lean inductives")];
+  const constructorOwners = new Map<string, Set<string>>();
+  for (const [, inductives] of inductivesBySource) {
+    for (const [name, constructors] of inductives) {
+      for (const ctor of constructors) constructorOwners.set(ctor.name, (constructorOwners.get(ctor.name) ?? new Set()).add(name));
+    }
+  }
   for (const [source, inductives] of inductivesBySource) {
     for (const [name, constructors] of inductives) {
       if (guardedCtors.has(name)) continue;
@@ -406,16 +464,20 @@ function leanMirrorFindings(tree: KernelTree, types: readonly GuardedType[]): st
       }
     }
     const { tokens } = source;
-    const ownersForGuarded = new Map([...guardedCtors].map(([name, record]) => [name, record]));
     for (let i = 0; i < tokens.length; i += 1) {
       if (tokens[i]?.text !== "[") continue;
       const close = closeOf(tokens, i);
-      const words = tokens.slice(i + 1, close - 1).filter((token) => token.text.startsWith("."));
-      if (words.length < 2 || words.some((word) => word.text.includes("." , 1))) continue;
-      for (const [guarded, record] of ownersForGuarded) {
-        const hits = words.filter((word) => record.ctors.has(word.text.slice(1))).length;
-        if (hits === words.length && hits >= 2 && !allowedLean(source.file, record.owners, record.definer) && !isJustified(source, tokens[i]?.line ?? 0, 3)) {
-          findings.push(finding(3, source, tokens[i]?.line ?? 0, `allowlist of ${hits} ${guarded} constructors outside its owner`));
+      const heads = listHeads(tokens, i, close);
+      if (heads.length < 2) continue;
+      const expected = expectedElementType(tokens, i, close);
+      for (const [guarded, record] of guardedCtors) {
+        const named = heads.map((head) => constructorReference(head, guarded));
+        if (named.some((reference) => reference === null || !record.ctors.has(reference.name))) continue;
+        const resolved = expected === null
+          ? named.some((reference) => reference?.qualified === true || resolvesOnlyTo(constructorOwners, reference?.name ?? "", guarded))
+          : expected === guarded;
+        if (resolved && !allowedLean(source.file, record.owners, record.definer) && !isJustified(source, tokens[i]?.line ?? 0, 3)) {
+          findings.push(finding(3, source, tokens[i]?.line ?? 0, `allowlist of ${heads.length} ${guarded} constructors outside its owner`));
         }
       }
     }

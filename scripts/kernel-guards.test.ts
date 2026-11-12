@@ -263,6 +263,44 @@ def allow : List Element := [.task, .gateway]
   assert.match(findings, /allowlist of 2 Element constructors/u);
 });
 
+/** `Token` and `Value` share constructor names with the guarded `Element` and `Work`, as `Token.flow` shares
+`Continuation.flow` and `Value.null` shares `JuelNode.null` in the kernel (#109). */
+const sharedNames = `module
+inductive Element where
+  | task (header : Nat) (payload : Nat)
+  | gateway
+  | flow
+inductive Work where
+  | none
+  | user
+  | null
+inductive Token where
+  | flow (flow : Nat) (scope : Nat)
+  | gateway
+inductive Value where
+  | null
+  | map (entries : List Nat)
+structure Program where
+  count : Nat
+`;
+
+test("guard 3 counts a constructor list only for the type its names resolve to", () => {
+  const lists = (body: string): string[] =>
+    mirrorEnumerationFindings(fixture({ "Kernel/IL/Types.lean": sharedNames, "Kernel/Laws/Lists.lean": `module\n${body}` }));
+  assert.deepEqual(lists("def twice (s : State) (f p : Nat) : State := { s with tokens := [.flow f p, .flow f p] }\n"), []);
+  assert.deepEqual(lists(`theorem unordered : P (.map [("b", .null), ("a", .null)]) := sorry\n`), []);
+  assert.deepEqual(lists("def nulls := [.null, .null]\n"), []);
+  assert.deepEqual(lists("def tokens : List Token := [.flow 1 2, .gateway]\n"), []);
+  for (const body of [
+    "def allow : List Element := [.flow, .gateway]\n",
+    "def allow := ([.flow, .gateway] : List Kernel.Element)\n",
+    "def plain (e : Element) : Bool := [.task, .gateway].contains e\n",
+    "def plain (e : Element) : Bool := [Element.flow, Element.gateway].contains e\n",
+  ]) {
+    assert.match(lists(body).join("\n"), /G3 Kernel\/Laws\/Lists\.lean:2: allowlist of 2 Element constructors outside its owner/u, body);
+  }
+});
+
 holdsItsGround("guard 6 (proof placement)", proofPlacementFindings, {
   "Kernel/Feature/Flow.lean": `module
 theorem bad : 1 = 1 := by decide
