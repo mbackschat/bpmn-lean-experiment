@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ParallelError"
+  targetNamespace="urn:bpmn-lean:scenarios:transaction-multi-instance:parallel-error">
+  <bpmn:error id="Error_LotFailed" name="Lot failed" errorCode="LOT_FAILED" />
+  <bpmn:process id="Process_ParallelError" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Transaction" sourceRef="StartEvent_Start" targetRef="Transaction_Lot" />
+    <bpmn:transaction id="Transaction_Lot" name="Handle a lot">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="lots" camunda:elementVariable="lot" />
+      <bpmn:startEvent id="StartEvent_Lot" />
+      <bpmn:sequenceFlow id="Flow_Lot_Process" sourceRef="StartEvent_Lot" targetRef="UserTask_Process" />
+      <bpmn:userTask id="UserTask_Process" name="Process the lot" />
+      <bpmn:boundaryEvent id="Boundary_CompensateProcess" attachedToRef="UserTask_Process">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Process" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoProcess" name="Undo the lot" isForCompensation="true">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenLot">${lot}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_Process_Check" sourceRef="UserTask_Process" targetRef="UserTask_Check" />
+      <bpmn:userTask id="UserTask_Check" name="Check the lot" />
+      <bpmn:sequenceFlow id="Flow_Check_Gateway" sourceRef="UserTask_Check" targetRef="Gateway_Check" />
+      <bpmn:exclusiveGateway id="Gateway_Check" default="Flow_Check_Keep" />
+      <bpmn:sequenceFlow id="Flow_Check_Fail" sourceRef="Gateway_Check" targetRef="EndEvent_Fail">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${lot == badLot}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="Flow_Check_Keep" sourceRef="Gateway_Check" targetRef="EndEvent_Keep" />
+      <bpmn:endEvent id="EndEvent_Fail">
+        <bpmn:errorEventDefinition id="ErrorDefinition_Fail" errorRef="Error_LotFailed" />
+      </bpmn:endEvent>
+      <bpmn:endEvent id="EndEvent_Keep" />
+      <bpmn:association id="Association_Process" associationDirection="One" sourceRef="Boundary_CompensateProcess" targetRef="UserTask_UndoProcess" />
+    </bpmn:transaction>
+    <bpmn:boundaryEvent id="Boundary_Failed" attachedToRef="Transaction_Lot">
+      <bpmn:errorEventDefinition id="ErrorDefinition_Catch" errorRef="Error_LotFailed" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_Transaction_Done" sourceRef="Transaction_Lot" targetRef="UserTask_BatchDone" />
+    <bpmn:userTask id="UserTask_BatchDone" name="Finish the batch" />
+    <bpmn:sequenceFlow id="Flow_Done_End" sourceRef="UserTask_BatchDone" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Failed_BatchFailed" sourceRef="Boundary_Failed" targetRef="UserTask_BatchFailed" />
+    <bpmn:userTask id="UserTask_BatchFailed" name="Handle the failed batch" />
+    <bpmn:sequenceFlow id="Flow_BatchFailed_End" sourceRef="UserTask_BatchFailed" targetRef="EndEvent_Failed" />
+    <bpmn:endEvent id="EndEvent_Failed" />
+  </bpmn:process>
+</bpmn:definitions>

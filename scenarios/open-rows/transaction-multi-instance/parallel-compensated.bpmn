@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ParallelCompensated"
+  targetNamespace="urn:bpmn-lean:scenarios:transaction-multi-instance:parallel-compensated">
+  <bpmn:process id="Process_ParallelCompensated" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Transaction" sourceRef="StartEvent_Start" targetRef="Transaction_Lot" />
+    <bpmn:transaction id="Transaction_Lot" name="Handle a lot">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="lots" camunda:elementVariable="lot" />
+      <bpmn:startEvent id="StartEvent_Lot" />
+      <bpmn:sequenceFlow id="Flow_Lot_Process" sourceRef="StartEvent_Lot" targetRef="UserTask_Process" />
+      <bpmn:userTask id="UserTask_Process" name="Process the lot" />
+      <bpmn:boundaryEvent id="Boundary_CompensateProcess" attachedToRef="UserTask_Process">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Process" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoProcess" name="Undo the lot" isForCompensation="true">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenLot">${lot}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_Process_Check" sourceRef="UserTask_Process" targetRef="UserTask_Check" />
+      <bpmn:userTask id="UserTask_Check" name="Check the lot" />
+      <bpmn:sequenceFlow id="Flow_Check_End" sourceRef="UserTask_Check" targetRef="EndEvent_Lot" />
+      <bpmn:endEvent id="EndEvent_Lot" />
+      <bpmn:association id="Association_Process" associationDirection="One" sourceRef="Boundary_CompensateProcess" targetRef="UserTask_UndoProcess" />
+    </bpmn:transaction>
+    <bpmn:sequenceFlow id="Flow_Transaction_Done" sourceRef="Transaction_Lot" targetRef="UserTask_BatchDone" />
+    <bpmn:userTask id="UserTask_BatchDone" name="Finish the batch" />
+    <bpmn:sequenceFlow id="Flow_Done_Compensate" sourceRef="UserTask_BatchDone" targetRef="IntermediateThrow_Compensate" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_Compensate">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_Compensate_After" sourceRef="IntermediateThrow_Compensate" targetRef="UserTask_After" />
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>
