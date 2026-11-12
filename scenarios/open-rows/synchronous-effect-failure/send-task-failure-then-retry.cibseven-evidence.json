@@ -1,0 +1,56 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "synchronous-effect-failure-send-task-failure-then-retry",
+    "sha256": "15053739182b234bce200f8fc9d81a48d0fe14f4f2330cb085d31121b5047a3b"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "c728853249570691e20c4a350a2970a1c103f23c14391fb8964c9a7c944c484c"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [],
+    "taskQueries": [],
+    "timerJobs": [],
+    "incidentJobs": [],
+    "historicProcessStates": [],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "start-process",
+        "handler": "bpmnLeanEffectHandler",
+        "arguments": [],
+        "localPatch": [],
+        "invocations": 1
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "rolledBack"
+      }
+    ]
+  }
+}

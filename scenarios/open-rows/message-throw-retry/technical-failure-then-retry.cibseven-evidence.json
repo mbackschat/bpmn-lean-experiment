@@ -1,0 +1,47 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-throw-retry-technical-failure-then-retry",
+    "sha256": "ce3e9c996bb168aebcf4d19e7560fd70dca042e2fa5abb5b08e093304b763a14"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "c728853249570691e20c4a350a2970a1c103f23c14391fb8964c9a7c944c484c"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [],
+    "taskQueries": [],
+    "timerJobs": [],
+    "incidentJobs": [],
+    "historicProcessStates": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "rolledBack"
+      }
+    ]
+  }
+}

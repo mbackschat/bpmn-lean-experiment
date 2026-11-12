@@ -1,0 +1,199 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "script-task-javascript-probe-arithmetic-total",
+    "sha256": "75ec08234f4a9889edceee3b3733abedd78d00c0db30100fd097c908a0060dec"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "c728853249570691e20c4a350a2970a1c103f23c14391fb8964c9a7c944c484c"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "firstName",
+            "value": {
+              "kind": "string",
+              "value": "ada"
+            }
+          },
+          {
+            "name": "lastName",
+            "value": {
+              "kind": "string",
+              "value": "lovelace"
+            }
+          },
+          {
+            "name": "price",
+            "value": {
+              "kind": "string",
+              "value": "6"
+            }
+          },
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "total"
+            }
+          },
+          {
+            "name": "quantity",
+            "value": {
+              "kind": "string",
+              "value": "7"
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "kind": "integer",
+              "value": 42
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect result"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "start",
+        "handler": "script:Total",
+        "arguments": [],
+        "localPatch": [],
+        "invocations": 1
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "firstName",
+            "value": {
+              "kind": "string",
+              "value": "ada"
+            }
+          },
+          {
+            "name": "lastName",
+            "value": {
+              "kind": "string",
+              "value": "lovelace"
+            }
+          },
+          {
+            "name": "price",
+            "value": {
+              "kind": "string",
+              "value": "6"
+            }
+          },
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "total"
+            }
+          },
+          {
+            "name": "quantity",
+            "value": {
+              "kind": "string",
+              "value": "7"
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "kind": "integer",
+              "value": 42
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect result",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

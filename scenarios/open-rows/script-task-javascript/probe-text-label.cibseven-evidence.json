@@ -1,0 +1,199 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "script-task-javascript-probe-text-label",
+    "sha256": "ead3b28914ce7308b1fe537efb020cbdc4b21da612de1c022a231a45eb4bf42e"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "c728853249570691e20c4a350a2970a1c103f23c14391fb8964c9a7c944c484c"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "firstName",
+            "value": {
+              "kind": "string",
+              "value": "ada"
+            }
+          },
+          {
+            "name": "fullName",
+            "value": {
+              "kind": "string",
+              "value": "ADA lovelace"
+            }
+          },
+          {
+            "name": "lastName",
+            "value": {
+              "kind": "string",
+              "value": "lovelace"
+            }
+          },
+          {
+            "name": "price",
+            "value": {
+              "kind": "string",
+              "value": "6"
+            }
+          },
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "label"
+            }
+          },
+          {
+            "name": "quantity",
+            "value": {
+              "kind": "string",
+              "value": "7"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect result"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "start",
+        "handler": "script:Label",
+        "arguments": [],
+        "localPatch": [],
+        "invocations": 1
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "firstName",
+            "value": {
+              "kind": "string",
+              "value": "ada"
+            }
+          },
+          {
+            "name": "fullName",
+            "value": {
+              "kind": "string",
+              "value": "ADA lovelace"
+            }
+          },
+          {
+            "name": "lastName",
+            "value": {
+              "kind": "string",
+              "value": "lovelace"
+            }
+          },
+          {
+            "name": "price",
+            "value": {
+              "kind": "string",
+              "value": "6"
+            }
+          },
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "label"
+            }
+          },
+          {
+            "name": "quantity",
+            "value": {
+              "kind": "string",
+              "value": "7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect result",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

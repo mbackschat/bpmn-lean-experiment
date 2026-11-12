@@ -134,7 +134,7 @@
             "identityLinks": [
               {
                 "type": "candidate",
-                "userId": "bob",
+                "userId": "carol",
                 "groupId": null
               },
               {
@@ -149,7 +149,7 @@
               },
               {
                 "type": "candidate",
-                "userId": "carol",
+                "userId": "bob",
                 "groupId": null
               },
               {
@@ -180,12 +180,12 @@
             "identityLinks": [
               {
                 "type": "candidate",
-                "userId": "carol",
+                "userId": "bob",
                 "groupId": null
               },
               {
                 "type": "candidate",
-                "userId": "bob",
+                "userId": "carol",
                 "groupId": null
               },
               {
