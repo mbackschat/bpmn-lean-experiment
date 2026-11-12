@@ -29,6 +29,8 @@ export enum ReadRefusalCode {
   StandardLoop = "reader.standardLoop",
   EventSubProcessStart = "reader.eventSubProcessStart",
   DataAssociationShape = "reader.dataAssociationShape",
+  /** A Data Object reference inside a Scope, whose item the reader would declare per occurrence (`scopeItems`). */
+  ScopedDataObjectReference = "reader.scopedDataObjectReference",
   SignalWithoutReference = "reader.signalWithoutReference",
   ThrowWithoutCode = "reader.throwWithoutCode",
   /** A Message throw's CIB attributes the IL has no field for, which CIB would run (PC-MESSAGE-09). */

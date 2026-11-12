@@ -40,39 +40,41 @@ const callsCopy = (suffix: string, boundarySource = "QB") => (program: Json): Js
   };
 };
 
-/** `T` becomes a Sub-Process declaring `items` whose instance runs `TS → inner → TE`. */
-const declaring = (items: string[], inner: Json) => (program: Json): Json =>
-  withFlows(append(task(scope("T", "embedded", { items }))(program), start("TS", null, [], "T"), inner, end("TE", "none", "T")),
+/** `T` becomes a Sub-Process declaring `items`, with the envelope `env`, whose instance runs `TS → inner → TE`. */
+const declaring = (items: string[], inner: Json, env: Json = {}) => (program: Json): Json =>
+  withFlows(append(task(scope("T", "embedded", { items }, env))(program), start("TS", null, [], "T"), inner, end("TE", "none", "T")),
     flow("t1", "TS", elementId(inner)), flow("t2", elementId(inner), "TE"));
 const association = (target: string, source: string, dialect = "dataAssociation"): Json => mapping(target, variable(source), dialect);
-const catchesInto = catchEvent("W", message({ messageRef: "M", name: text("M") }), [association("P", "y")], "T");
 const reviewWith = (env: Json): Json => activity("W", userWork(), env, "T");
+const review = reviewWith({});
+const collection = (name: string): Json =>
+  ({ multiInstance: loop({ count: { collection: { items: variable(name) } }, outputDataItem: null }) });
 
 export const rows: readonly Row[] = [
   {
-    code: "data.scopedItem",
-    description: "a Message catch's Data Output Association target naming its Sub-Process's Property",
-    mutate: declaring(["P"], catchesInto),
-    control: declaring([], catchesInto),
-  },
-  {
-    code: "data.scopedItem",
-    description: "an Activity's Data Output Association target naming its Sub-Process's Property",
-    mutate: declaring(["P"], reviewWith({ outputs: [association("P", "y")] })),
-    control: declaring([], reviewWith({ outputs: [association("P", "y")] })),
+    code: "data.itemInaccessible",
+    description: "a Sub-Process's Data Output Association target naming its own Property, which its outputs write outside it",
+    mutate: declaring(["P"], review, { outputs: [association("P", "y")] }),
+    control: declaring(["P"], review, { outputs: [association("z", "P")] }),
   },
   {
     // A CIB mapping names a variable, not the item: the control keeps the name and changes the dialect.
-    code: "data.scopedItem",
-    description: "a Data Input Association source naming its Sub-Process's Data Object",
-    mutate: declaring(["P"], reviewWith({ inputs: [association("x", "P")] })),
-    control: declaring(["P"], reviewWith({ inputs: [association("x", "P", "ioParameter")] })),
+    code: "data.itemInaccessible",
+    description: "a Sub-Process's Data Input Association source naming its own Data Object, which its inputs read outside it",
+    mutate: declaring(["P"], review, { inputs: [association("x", "P")] }),
+    control: declaring(["P"], review, { inputs: [association("x", "P", "ioParameter")] }),
+  },
+  {
+    code: "data.itemInaccessible",
+    description: "a Multi-Instance Sub-Process's collection naming its own Data Object",
+    mutate: declaring(["P"], review, collection("P")),
+    control: declaring(["P"], review, collection("Q")),
   },
   {
     code: "data.scopedItem",
-    description: "a Multi-Instance collection naming its Sub-Process's Data Object",
-    mutate: declaring(["P"], reviewWith({ multiInstance: loop({ count: { collection: { items: variable("P") } } }) })),
-    control: declaring([], reviewWith({ multiInstance: loop({ count: { collection: { items: variable("P") } } }) })),
+    description: "a compensation handler's Data Output Association target naming its Sub-Process's Property",
+    mutate: declaring(["P"], reviewWith({ forCompensation: true, outputs: [association("P", "y")] })),
+    control: declaring(["P"], reviewWith({ outputs: [association("P", "y")] })),
   },
   {
     code: "mapping.expression",

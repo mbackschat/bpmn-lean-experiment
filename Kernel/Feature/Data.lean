@@ -43,17 +43,25 @@ def evaluate (context : EvalContext) : Expression → Evaluation
   -- `unsupported` like every refused shape (guard 20).
   | .foreign _ _ => .unsupported "expression.outsideSimpleBoolean"
 
-/-- One write seen from `scope`. Outward, a name no scope binds goes to the instance root when the instance's process
-declares it, since a target is a declared item ([BPMN 2.0.2 §10.4.1](../../docs/reference/bpmn-2.0.2/README.md)); any
-other name is the profile's choice: refused, or created at the instance root as CIB does (`UndeclaredWrite`,
-`AbstractVariableScope.setVariable`). -/
+/-- Where a write or removal of `name` from `scope` acts by element identity: for an item a Scope declares, the nearest
+occurrence of that Scope (`State.declaring?`), set or unset, never another frame's binding of the identifier
+([BPMN 2.0.2 §10.4.1](../../docs/reference/bpmn-2.0.2/README.md)); `none` for any other name, or for a site no
+occurrence of the declaring Scope encloses, which admission refuses for a Data Association (`data.itemInaccessible`,
+`data.scopedItem`) and which then acts by name. -/
+def itemOwner? (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (name : String) : Option ScopeOccurrenceId :=
+  (ctx.program.itemScope? name).bind (state.declaring? scope)
+
+/-- One write seen from `scope`. Outward, an item a Scope declares goes to its declaring occurrence (`itemOwner?`); a
+name no scope binds goes to the instance root when the instance's process declares it, since a target is a declared item
+([BPMN 2.0.2 §10.4.1](../../docs/reference/bpmn-2.0.2/README.md)); any other name is the profile's choice: refused, or
+created at the instance root as CIB does (`UndeclaredWrite`, `AbstractVariableScope.setVariable`). -/
 def write (ctx : Ctx) (rule : WriteRule) (scope : ScopeOccurrenceId) (state : State) (binding : String × Value) :
     Outcome :=
   let (name, value) := binding
   match rule with
   | .own => .ok (state.setVariable scope name value)
   | .outward =>
-    match state.owner? scope name with
+    match itemOwner? ctx state scope name <|> state.owner? scope name with
     | some owner => .ok (state.setVariable owner name value)
     | none =>
       let root := state.instanceRoot scope
@@ -69,11 +77,11 @@ def writeOutputs (ctx : Ctx) (scope : ScopeOccurrenceId) (writes : List (String 
     Outcome :=
   writes.foldlM (write ctx rule scope) state
 
-/-- `Hooks.removeVariables`: delete each name from the innermost scope that declares it; an undeclared name is nothing
-to delete. -/
-def removeVariables (_ : Ctx) (scope : ScopeOccurrenceId) (names : List String) (state : State) : Outcome :=
+/-- `Hooks.removeVariables`: delete each name from its declaring occurrence when it is a Scope's item (`itemOwner?`),
+else from the innermost scope that declares it; an undeclared name is nothing to delete. -/
+def removeVariables (ctx : Ctx) (scope : ScopeOccurrenceId) (names : List String) (state : State) : Outcome :=
   .ok <| names.foldl (fun state name =>
-    match state.owner? scope name with
+    match itemOwner? ctx state scope name <|> state.owner? scope name with
     | some owner => state.removeVariable owner name
     | none => state) state
 

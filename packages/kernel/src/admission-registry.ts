@@ -95,9 +95,45 @@ function processEventSubProcess(header: Header, payload: ScopePayload): string |
   return header.parent === null && start !== null && Subscriptions.compensates(start[0]) ? "compensation.processEventSubProcess" : null;
 }
 
-/** The site of an expression in `id`'s scope. */
+/**
+ * Whether `element` runs as a compensation handler: an Activity or Scope marked for compensation, or a Compensation
+ * Event Sub-Process, either of which may run after the occurrences enclosing it ended.
+ */
+function compensationHandler(element: Element): boolean {
+  const scope = elementScope(element);
+  const start = scope === null ? null : Scopes.eventSubProcessOf(scope[1]);
+  return (elementEnvelope(element)?.forCompensation ?? false) || (start !== null && Subscriptions.compensates(start[0]));
+}
+
+/**
+ * The items the Scopes enclosing `id` declare, `id` itself included, and those among them no compensation handler
+ * stands between: the items `id` may name, and the framed ones (`Data.ItemAccess`).
+ */
+function enclosingItems(program: Program, id: ElementId | null): readonly [string[], string[]] {
+  const accessible: string[] = [];
+  const framed: string[] = [];
+  let handled = false;
+  let current = id;
+  for (let fuel = program.elements.length + 1; fuel > 0 && current !== null; fuel -= 1) {
+    const element = programElement(program, current);
+    if (element === null) break;
+    const own = elementScope(element)?.[1].items ?? [];
+    accessible.push(...own);
+    if (!handled) framed.push(...own);
+    handled ||= compensationHandler(element);
+    current = elementHeader(element).parent;
+  }
+  return [accessible, framed];
+}
+
+/** The site of an expression in `id`'s scope: its Data Associations name the items of the Scopes enclosing it. */
 function site(program: Program, id: ElementId | null): Data.Site {
-  return { counters: MultiInstance.countersAt(program, id), hidden: [], scopeItems: Data.scopedItems(program) };
+  const [accessible, framed] = enclosingItems(program, id);
+  return {
+    counters: MultiInstance.countersAt(program, id),
+    hidden: [],
+    items: { declared: Data.scopedItems(program), sources: accessible, targets: accessible, framed },
+  };
 }
 
 /** How a subscription in the scope of `id` reads an expression of its trigger: the Core JUEL table at that site. */
@@ -159,12 +195,18 @@ function boundaryData(program: Program, host: Header, boundaries: readonly Bound
 /**
  * An element's own data: its envelope's mappings, each at its site, and the outputs it writes in its scope, which
  * `counterTarget` checks after `activityLoop` has refused a looping element's own outputs. A looping element's own
- * inputs may not read its instance (`ownInputNames`).
+ * inputs may not read its instance (`ownInputNames`). Its inputs read the enclosing context into its own Data Inputs,
+ * its outputs read inside it and write the enclosing context, and its loop reads and writes the enclosing context, so a
+ * Scope's own items are visible only to its output sources; the items framed are `header`'s own.
  */
 function envelopeData(program: Program, header: Header, envelope: Envelope): string | null {
   const here = site(program, header.id);
+  const outside = site(program, header.parent).items;
   const hidden = envelope.multiInstance === null ? [] : MultiInstance.ownInputNames(program.options, envelope.multiInstance);
-  return Data.envelope(program.options.evaluator, { ...here, hidden }, here, envelope);
+  const inputs = { ...here, hidden, items: { ...here.items, sources: outside.sources, targets: [] } };
+  const outputs = { ...here, items: { ...here.items, targets: outside.targets } };
+  const loop = { ...here, items: { ...here.items, sources: outside.sources, targets: outside.targets } };
+  return Data.envelope(program.options.evaluator, inputs, outputs, loop, envelope);
 }
 
 function outputTargets(program: Program, header: Header, outputs: readonly Mapping[]): string | null {

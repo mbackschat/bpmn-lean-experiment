@@ -9,9 +9,10 @@ import all Kernel.Feature.Data
 The rules of the [data semantics](../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md#interpretation), independent of
 `Kernel.Feature.Data`'s and `Kernel.State`'s code: a read takes the first binding of its name from the reading scope
 outward, a present null included; a write goes to the nearest scope occurrence of the instance that declares the name
-and touches no other frame; a name nobody declares is the profile's `UndeclaredWrite`; a removal deletes the name from
-its nearest owner and is nothing for an undeclared name; the value domain is stated over `Value`, and one value
-outside it rejects the whole input; and a failed mapping source reads by its dialect.
+and touches no other frame, and an item a Scope declares is written in its declaring occurrence; a name nobody declares
+is the profile's `UndeclaredWrite`; a removal deletes the name from its nearest owner and is nothing for an undeclared
+name; the value domain is stated over `Value`, and one value outside it rejects the whole input; and a failed mapping
+source reads by its dialect.
 
 The laws take the profile's choice and the process's declaration as parameters, since computing them is the IL's.
 Nothing executable imports this module.
@@ -84,6 +85,26 @@ def RemovesNearest (root scope : ScopeOccurrenceId) (name : String) (owner : Sco
 /-- Removing a name no frame of the instance declares changes no variable. -/
 def RemovesNothing (root scope : ScopeOccurrenceId) (name : String) (before after : State) : Prop :=
   (∀ owner, ¬ NearestOwner before root scope name owner) → after.variables = before.variables
+
+/-! ## Scope items -/
+
+/-- The occurrence `target` is one of the Scope `element`. -/
+def OccurrenceOf (s : State) (target : ScopeOccurrenceId) (element : ElementId) : Prop :=
+  ∃ occurrence ∈ s.scopes, occurrence.id = target ∧ occurrence.element = some element
+
+/-- `target` is the nearest occurrence of the Scope `element` from `scope` outward: the declaring occurrence of the items
+`element` declares, for a site in `scope`. -/
+def DeclaringOccurrence (s : State) (scope : ScopeOccurrenceId) (element : ElementId) (target : ScopeOccurrenceId) :
+    Prop :=
+  Within s scope target ∧ OccurrenceOf s target element ∧
+    ∀ nearer, Within s scope nearer → Within s nearer target → OccurrenceOf s nearer element → nearer = target
+
+/-- A write from `scope` of an item the Scope `element` declares lands in its declaring occurrence, whether that frame
+binds it yet or not and whatever a nearer or outer frame binds to its identifier, and touches no other frame (BPMN 2.0.2
+§10.4.1: data is referenced by element identity). -/
+def WritesItem (scope : ScopeOccurrenceId) (element : ElementId) (name : String) (value : Value)
+    (target : ScopeOccurrenceId) (before after : State) : Prop :=
+  DeclaringOccurrence before scope element target → HoldsOnly after target name value ∧ OthersKept before after target
 
 /-! ## The value domain
 
@@ -322,6 +343,56 @@ theorem removes_nothing : RemovesNothing processRoot subScope "z" (frames (.int 
 /-- Removing an undeclared name from another frame is rejected. -/
 theorem removes_other_rejected : ¬ RemovesNothing processRoot subScope "z" (frames (.int 1)) removed :=
   fun law => by simpa [removed, frames, framesWith, rootFrame] using law nobody_declares_z
+
+/-- The Sub-Process `Sub` declares the item `P`; the root binds the identifier `P` as a variable, and `Sub`'s frame does not
+bind it yet. -/
+def itemBefore : State := framesWith [("P", .int 1)]
+
+def itemAfter : State :=
+  { itemBefore with variables := [rootFrame [("P", .int 1)], { subFrame with entries := [("b", .int 2), ("P", .int 5)] }] }
+
+/-- The root occurrence has no parent, so it lies inside no other occurrence. -/
+theorem root_within {target : ScopeOccurrenceId} (within : Within itemBefore processRoot target) : target = processRoot :=
+  (Within.parentless (fun scope mem same => by
+    simp only [itemBefore, framesWith, List.mem_cons, List.not_mem_nil, or_false] at mem
+    rcases mem with rfl | rfl
+    · rfl
+    · simp [childScope, subScope, processRoot] at same) within).symm
+
+theorem sub_declares_p : DeclaringOccurrence itemBefore subScope ⟨"Sub"⟩ subScope :=
+  ⟨.refl _, ⟨childScope, by simp [itemBefore, framesWith], rfl, rfl⟩, fun nearer _ inside _ => by
+    cases inside with
+    | refl => rfl
+    | parent child parent _ member link within =>
+      simp only [itemBefore, framesWith, List.mem_cons, List.not_mem_nil, or_false] at member
+      rcases member with rfl | rfl
+      · simp [rootScope] at link
+      · simp only [childScope, Option.some.injEq] at link
+        subst link
+        exact absurd (root_within within) (by simp [subScope, processRoot])⟩
+
+theorem writes_item : WritesItem subScope ⟨"Sub"⟩ "P" (.int 5) subScope itemBefore itemAfter := fun _ =>
+  ⟨⟨⟨{ subFrame with entries := [("b", .int 2), ("P", .int 5)] }, by simp [itemAfter], rfl⟩, fun frame mem owned old => by
+      simp only [itemAfter, List.mem_cons, List.not_mem_nil, or_false] at mem
+      rcases mem with rfl | rfl
+      · simp [rootFrame, subScope, processRoot] at owned
+      · simp⟩,
+    ⟨fun frame mem other => by
+      simp only [itemBefore, framesWith, List.mem_cons, List.not_mem_nil, or_false] at mem
+      rcases mem with rfl | rfl
+      · simp [itemAfter]
+      · exact absurd rfl other,
+    fun frame mem other => by
+      simp only [itemAfter, List.mem_cons, List.not_mem_nil, or_false] at mem
+      rcases mem with rfl | rfl
+      · simp [itemBefore, framesWith]
+      · exact absurd rfl other⟩⟩
+
+/-- A write the root's binding of the identifier captures, as a lookup by name would, is rejected. -/
+theorem captured_item_write_rejected :
+    ¬ WritesItem subScope ⟨"Sub"⟩ "P" (.int 5) subScope itemBefore (framesWith [("P", .int 5)]) := fun law => by
+  have := (law sub_declares_p).1.2 subFrame (by simp [framesWith]) rfl (.int 5)
+  simp [subFrame] at this
 
 def sampleMap : Value := .map [("a", .bool true), ("b", .decimal (-125) 2)]
 

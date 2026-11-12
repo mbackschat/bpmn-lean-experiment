@@ -51,9 +51,30 @@ def processEventSubProcess (header : Header) (payload : ScopePayload) : Option S
   | none, none => none
   | some _, _ => none
 
-/-- The site of an expression in `id`'s scope. -/
+/-- Whether `element` runs as a compensation handler: an Activity or Scope marked for compensation, or a Compensation
+Event Sub-Process, either of which may run after the occurrences enclosing it ended. -/
+def compensationHandler (element : Element) : Bool :=
+  (element.envelope?.any (·.forCompensation)) ||
+    ((element.scope?).bind fun (_, payload) => Admission.Scopes.eventSubProcess? payload).any
+      (Admission.Subscriptions.compensates ·.1)
+
+/-- The items the Scopes enclosing `id` declare, `id` itself included, and those among them no compensation handler
+stands between: the items `id` may name, and the framed ones (`Admission.Data.ItemAccess`). -/
+def enclosingItems (program : Program) (id : Option ElementId) : List String × List String :=
+  let rec go (fuel : Nat) (current : Option ElementId) (handled : Bool) : List String × List String :=
+    match fuel, current.bind program.element? with
+    | 0, _ | _, none => ([], [])
+    | fuel + 1, some element =>
+      let own := ((element.scope?).map (·.2.items)).getD []
+      let (outer, framed) := go fuel element.header.parent (handled || compensationHandler element)
+      (own ++ outer, (if handled then [] else own) ++ framed)
+  go (program.elements.length + 1) id false
+
+/-- The site of an expression in `id`'s scope: its Data Associations name the items of the Scopes enclosing it. -/
 def site (program : Program) (id : Option ElementId) : Admission.Data.Site :=
-  { counters := Admission.MultiInstance.countersAt program id, scopeItems := Admission.Data.scopedItems program }
+  let (accessible, framed) := enclosingItems program id
+  { counters := Admission.MultiInstance.countersAt program id
+    items := { declared := Admission.Data.scopedItems program, sources := accessible, targets := accessible, framed } }
 
 def targets (mappings : List Mapping) : List String := mappings.map (·.target)
 
@@ -72,11 +93,18 @@ def boundaryData (program : Program) (host : Header) (boundaries : List Boundary
 
 /-- An element's own data: its envelope's mappings and its Call's, each at its site, and the outputs it writes in its
 scope, which `counterTarget` checks after `activityLoop` has refused a looping element's own outputs. A looping
-element's own inputs may not read its instance (`ownInputNames`). -/
+element's own inputs may not read its instance (`ownInputNames`). Its inputs read the enclosing context into its own
+Data Inputs, its outputs read inside it and write the enclosing context, and its loop reads and writes the enclosing
+context, so a Scope's own items are visible only to its output sources; the items framed are `header`'s own. -/
 def envelopeData (program : Program) (header : Header) (envelope : Envelope) : Option String :=
   let here := site program (some header.id)
-  let inputs := { here with hidden := (envelope.multiInstance.map (Admission.MultiInstance.ownInputNames program.options)).getD [] }
-  Admission.Data.envelope program.options.evaluator inputs here envelope
+  let outside := (site program header.parent).items
+  let inputs := { here with
+    hidden := (envelope.multiInstance.map (Admission.MultiInstance.ownInputNames program.options)).getD []
+    items := { here.items with sources := outside.sources, targets := [] } }
+  let outputs := { here with items := { here.items with targets := outside.targets } }
+  let loop := { here with items := { here.items with sources := outside.sources, targets := outside.targets } }
+  Admission.Data.envelope program.options.evaluator inputs outputs loop envelope
 
 def outputTargets (program : Program) (header : Header) (outputs : List Mapping) : Option String :=
   Admission.MultiInstance.counterTarget (Admission.MultiInstance.countersAt program (some header.id)) (targets outputs)

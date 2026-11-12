@@ -291,6 +291,13 @@ export const rows: readonly Row[] = [
     },
   },
   {
+    code: "reader.scopedDataObjectReference",
+    description: "a Data Object reference inside a Sub-Process",
+    evidence: "in Sub",
+    refused: { xml: model(`<bpmn:dataObject id="Obj"/><bpmn:subProcess id="Sub"><bpmn:dataObjectReference id="Ref" dataObjectRef="Obj"/></bpmn:subProcess>`) },
+    control: { xml: model(`<bpmn:dataObject id="Obj"/><bpmn:dataObjectReference id="Ref" dataObjectRef="Obj"/><bpmn:subProcess id="Sub"/>`) },
+  },
+  {
     code: "source.schema",
     description: "a Data Association without the target the BPMN 2.0.2 XSD requires",
     evidence: "required child",

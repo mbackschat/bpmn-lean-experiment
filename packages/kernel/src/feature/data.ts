@@ -12,6 +12,7 @@ import {
   ValueTag,
   assertNever,
   programDeclares,
+  programItemScope,
   type Expression,
   type SimpleBoolean,
   type Value,
@@ -21,6 +22,7 @@ import {
   FailureTag,
   WriteRule,
   committed,
+  declaring,
   failed,
   instanceRoot,
   owner,
@@ -76,17 +78,29 @@ export function evaluate(context: EvalContext, expression: Expression): Evaluati
 }
 
 /**
- * One write seen from `scope`. Outward, a name no scope binds goes to the instance root when the instance's process
- * declares it, since a target is a declared item (BPMN 2.0.2 §10.4.1); any other name is the profile's choice: refused,
- * or created at the instance root as CIB does (`UndeclaredWrite`, `AbstractVariableScope.setVariable`).
+ * Where a write or removal of `name` from `scope` acts by element identity: for an item a Scope declares, the nearest
+ * occurrence of that Scope (`declaring`), set or unset, never another frame's binding of the identifier (BPMN 2.0.2
+ * §10.4.1); `null` for any other name, or for a site no occurrence of the declaring Scope encloses, which admission
+ * refuses for a Data Association (`data.itemInaccessible`, `data.scopedItem`) and which then acts by name.
+ */
+function itemOwner(ctx: Ctx, state: State, scope: ScopeOccurrenceId, name: string): ScopeOccurrenceId | null {
+  const element = programItemScope(ctx.program, name);
+  return element === null ? null : declaring(state, scope, element);
+}
+
+/**
+ * One write seen from `scope`. Outward, an item a Scope declares goes to its declaring occurrence (`itemOwner`); a name
+ * no scope binds goes to the instance root when the instance's process declares it, since a target is a declared item
+ * (BPMN 2.0.2 §10.4.1); any other name is the profile's choice: refused, or created at the instance root as CIB does
+ * (`UndeclaredWrite`, `AbstractVariableScope.setVariable`).
  */
 function write(ctx: Ctx, rule: WriteRule, scope: ScopeOccurrenceId, state: State, [name, value]: Binding): Outcome {
   switch (rule) {
     case WriteRule.Own:
       return committed(setVariable(state, scope, name, value));
     case WriteRule.Outward: {
-      const declaring = owner(state, scope, name);
-      if (declaring !== null) return committed(setVariable(state, declaring, name, value));
+      const target = itemOwner(ctx, state, scope, name) ?? owner(state, scope, name);
+      if (target !== null) return committed(setVariable(state, target, name, value));
       const root = instanceRoot(state, scope);
       const definition = state.slots.instances.find((instance) => instance.root === root)?.definition ?? null;
       if (programDeclares(ctx.program, definition, name)) return committed(setVariable(state, root, name, value));
@@ -113,10 +127,13 @@ export function writeOutputs(ctx: Ctx, scope: ScopeOccurrenceId, writes: readonl
   return committed(current);
 }
 
-/** `Hooks.removeVariables`: delete each name from the innermost scope that declares it; an undeclared name is nothing to delete. */
-export function removeVariables(_ctx: Ctx, scope: ScopeOccurrenceId, names: readonly string[], state: State): Outcome {
+/**
+ * `Hooks.removeVariables`: delete each name from its declaring occurrence when it is a Scope's item (`itemOwner`), else
+ * from the innermost scope that declares it; an undeclared name is nothing to delete.
+ */
+export function removeVariables(ctx: Ctx, scope: ScopeOccurrenceId, names: readonly string[], state: State): Outcome {
   return committed(names.reduce((current, name) => {
-    const declaring = owner(current, scope, name);
-    return declaring === null ? current : removeVariable(current, declaring, name);
+    const target = itemOwner(ctx, current, scope, name) ?? owner(current, scope, name);
+    return target === null ? current : removeVariable(current, target, name);
   }, state));
 }
