@@ -111,9 +111,15 @@ def canonicalDecimal (coefficient scale : Int) : Bool :=
   else 0 ≤ scale && scale ≤ 6 && -9223372036854775808 ≤ coefficient && coefficient ≤ 9223372036854775807 &&
     (scale == 0 || coefficient % 10 != 0)
 
-/-- Map keys of at most 1,024 UTF-8 bytes, in strictly increasing Unicode-scalar order. -/
+/-- The UTF-8 bytes of a portable String or Map key, the one owner of that bound. -/
+def textBytes : Nat := 1024
+
+/-- The largest portable Integer, 2^53 − 1, the one owner of that bound. -/
+def integerBound : Int := 9007199254740991
+
+/-- Map keys of at most `textBytes` UTF-8 bytes, in strictly increasing Unicode-scalar order. -/
 def keysInDomain (entries : List (String × Value)) : Bool :=
-  entries.all (·.1.utf8ByteSize ≤ 1024) && (entries.zip entries.tail).all fun (left, right) => decide (left.1 < right.1)
+  entries.all (·.1.utf8ByteSize ≤ textBytes) && (entries.zip entries.tail).all fun (left, right) => decide (left.1 < right.1)
 
 /- The bounds below are project policy, not CIB limits (the portable-values contract's "Finite limits"): four
 container levels, 32 members per container, 256 value nodes, 16,384 canonical bytes, 1,024-byte Strings and keys,
@@ -125,9 +131,9 @@ outside the portable arms at every depth. -/
 def domainNodes (depth : Nat) : Value → Option Nat
   | .null => some 1
   | .bool _ => some 1
-  | .int value => if 0 ≤ value && value ≤ 9007199254740991 then some 1 else none
+  | .int value => if 0 ≤ value && value ≤ integerBound then some 1 else none
   | .decimal coefficient scale => if canonicalDecimal coefficient scale then some 1 else none
-  | .string value => if value.utf8ByteSize ≤ 1024 then some 1 else none
+  | .string value => if value.utf8ByteSize ≤ textBytes then some 1 else none
   | .stringList _ => none
   | .list items => if depth < 4 && items.length ≤ 32 then (memberNodes (depth + 1) items).map (· + 1) else none
   | .map entries =>
@@ -147,7 +153,7 @@ end
 variable value with at most 32 Strings of at most 1,024 bytes, the bounds its wire form has (DATA-SEMANTICS-SPEC
 "Values"). -/
 def inValueDomain : Value → Bool
-  | .stringList items => items.length ≤ 32 && items.all (·.utf8ByteSize ≤ 1024)
+  | .stringList items => items.length ≤ 32 && items.all (·.utf8ByteSize ≤ textBytes)
   | value =>
     match domainNodes 0 value, valueBytes value with
     | some nodes, some bytes => nodes ≤ 256 && bytes ≤ 16384

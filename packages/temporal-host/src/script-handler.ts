@@ -15,6 +15,7 @@
 import vm from "node:vm";
 
 import type { ScriptRequest } from "./host-machine.js";
+import { isJavascriptFormat, textBytes } from "./kernel-port.js";
 import { EffectResultKind, type EffectResult, type JsonValue } from "./port.js";
 
 export interface ScriptOptions {
@@ -26,14 +27,8 @@ export class UnsupportedScriptFormat extends Error {
   override readonly name = "UnsupportedScriptFormat";
 }
 
-/** The names CIB's JSR-223 lookup gives its JavaScript engine (`DefaultScriptEngineResolver`), ignoring ASCII case. */
-const javascriptNames = ["javascript", "js", "ecmascript"];
-
 /** Java's `int` range within the portable Integer domain, the result CIB stores as an `Integer` (P1). */
 const maxResultInteger = 2 ** 31 - 1;
-
-/** The portable String bound ([data semantics](../../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md#values)). */
-const maxResultBytes = 1024;
 
 /**
  * A variable's value as the context builds it: a primitive as itself, a list as `["l", items]`, a map as
@@ -83,7 +78,7 @@ function resultValue(value: unknown): JsonValue | null | undefined {
     case "number":
       return Number.isInteger(value) && value >= 0 && value <= maxResultInteger ? { kind: "integer", value: value + 0 } : undefined;
     case "string":
-      return value.isWellFormed() && Buffer.byteLength(value, "utf8") <= maxResultBytes ? { kind: "string", value } : undefined;
+      return value.isWellFormed() && Buffer.byteLength(value, "utf8") <= textBytes ? { kind: "string", value } : undefined;
     case "object": return value === null ? null : undefined;
     case "bigint": case "function": case "symbol": return undefined;
   }
@@ -156,7 +151,7 @@ function unsupported(code: string): EffectResult {
  */
 export function evaluateScript(request: ScriptRequest, options: ScriptOptions): EffectResult {
   const { format, source, resultVariable } = request.script;
-  if (!javascriptNames.includes(format.replace(/[A-Z]/gu, (letter) => letter.toLowerCase()))) {
+  if (!isJavascriptFormat(format)) {
     throw new UnsupportedScriptFormat(`script-format-unsupported: ${format}`);
   }
   // A malformed argument is a host fault and throws here, before the context exists.

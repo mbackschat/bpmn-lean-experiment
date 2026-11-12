@@ -298,6 +298,9 @@ def userTask (task : UserWork) : Option String :=
 by name (`DefaultScriptEngineResolver.java:76-89`), `js` by the engine's own (probe P1, 2026-11-12). -/
 def javascriptFormats : List String := ["javascript", "ecmascript", "js"]
 
+/-- Whether `format` names CIB's JavaScript engine; the host's evaluator asks this, so admission owns the list. -/
+def isJavascriptFormat (format : String) : Bool := javascriptFormats.contains format.toLower
+
 /-- A source CIB evaluates as a JUEL expression before it runs the value as the script: its text after the characters
 Java's `trim` drops starts with `${` or `#{` (`ScriptUtil.java:89-93,192-194`, `StringUtil.java:58-61`). -/
 def sourceExpression (source : String) : Bool :=
@@ -313,7 +316,7 @@ def script (options : ProfileOptions) (work : ScriptWork) : Option String :=
   else match options.scriptTask with
     | .refused => some "work.script"
     | .javascript =>
-      if !javascriptFormats.contains work.format.toLower then some "work.script.language"
+      if !isJavascriptFormat work.format then some "work.script.language"
       else match work.source with
         | none => some "work.script.source"
         | some source => if sourceExpression source then some "work.script.sourceExpression" else none

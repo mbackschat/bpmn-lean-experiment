@@ -188,10 +188,10 @@ def siteValue : JVal → Option Value
 def portable : JVal → Option Value
   | .null => some .null
   | .bool value => some (.bool value)
-  | .int value _ => if 0 ≤ value && value ≤ 9007199254740991 then some (.int value) else none
+  | .int value _ => if 0 ≤ value && value ≤ integerBound then some (.int value) else none
   | .decimal coefficient scale =>
     if canonicalDecimal coefficient scale then some (.decimal coefficient scale.toNat) else none
-  | .string value => if value.utf8ByteSize ≤ 1024 then some (.string value) else none
+  | .string value => if value.utf8ByteSize ≤ textBytes then some (.string value) else none
   | .list items => some (.list items)
   | .map entries => some (.map entries)
 

@@ -438,6 +438,9 @@ const javascriptFormats: readonly string[] = ["javascript", "ecmascript", "js"];
 
 const asciiLower = (text: string): string => text.replace(/[A-Z]/gu, (letter) => letter.toLowerCase());
 
+/** Whether `format` names CIB's JavaScript engine; the host's evaluator asks this, so admission owns the list. */
+export const isJavascriptFormat = (format: string): boolean => javascriptFormats.includes(asciiLower(format));
+
 /**
  * A source CIB evaluates as a JUEL expression before it runs the value as the script: its text after the characters
  * Java's `trim` drops starts with `${` or `#{` (`ScriptUtil.java:89-93,192-194`, `StringUtil.java:58-61`).
@@ -459,7 +462,7 @@ function script(options: ProfileOptions, work: ScriptWork): string | null {
     case ScriptTask.Refused:
       return "work.script";
     case ScriptTask.Javascript:
-      if (!javascriptFormats.includes(asciiLower(work.format))) return "work.script.language";
+      if (!isJavascriptFormat(work.format)) return "work.script.language";
       if (work.source === null) return "work.script.source";
       return sourceExpression(work.source) ? "work.script.sourceExpression" : null;
   }

@@ -249,8 +249,10 @@ const containerLevels = 4;
 const containerMembers = 32;
 const valueNodes = 256;
 const valueJsonBytes = 16384;
-const textBytes = 1024;
-const integerBound = 9007199254740991;
+/** The UTF-8 bytes of a portable String or Map key, the one owner of that bound. */
+export const textBytes = 1024;
+/** The largest portable Integer, 2^53 − 1, the one owner of that bound. */
+export const integerBound = 9007199254740991;
 
 /**
  * The value nodes of `value`, the root included, when every node lies in the portable domain and no container is

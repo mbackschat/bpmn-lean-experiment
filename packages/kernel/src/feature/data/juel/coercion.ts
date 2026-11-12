@@ -2,8 +2,8 @@
  * Data: Java's carriers for portable values and the EL coercions between them (`TypeConverterImpl`, EL §1.18), for
  * the Core JUEL evaluator; transcribed from `Kernel/Feature/Data/Juel/Coercion.lean`.
  */
-import { ValueTag, assertNever, isAscii, parseJavaLong, type Value } from "../../../il/types.js";
-import { canonicalDecimal } from "../../../hooks.js";
+import { ValueTag, assertNever, isAscii, parseJavaLong, utf8ByteSize, type Value } from "../../../il/types.js";
+import { canonicalDecimal, integerBound, textBytes } from "../../../hooks.js";
 
 /** Which Java class carries an Integer during one evaluation; only Java `equals` observes it. */
 export enum Carrier {
@@ -50,7 +50,7 @@ export const integer = (value: number): JVal => ({ tag: JValTag.Int, value: BigI
 export const text = (value: string): JVal => ({ tag: JValTag.String, value });
 /** Decimal scales beyond this bound are a kernel limit: exact arithmetic on them is unbounded work. */
 const scaleBound = 4096n;
-const maxSafe = 9007199254740991n;
+const maxSafe = BigInt(integerBound);
 
 /** The portable value of a result, or `null` outside the domain (DATA-SEMANTICS-SPEC "Values"). */
 export function portable(value: JVal): Value | null {
@@ -66,7 +66,7 @@ export function portable(value: JVal): Value | null {
         ? { tag: ValueTag.Decimal, coefficient: value.coefficient, scale: Number(value.scale) }
         : null;
     case JValTag.String:
-      return utf8Bytes(value.value) <= 1024 ? { tag: ValueTag.String, value: value.value } : null;
+      return utf8ByteSize(value.value) <= textBytes ? { tag: ValueTag.String, value: value.value } : null;
     case JValTag.List:
       return { tag: ValueTag.List, items: value.items };
     case JValTag.Map:
@@ -75,14 +75,6 @@ export function portable(value: JVal): Value | null {
   return assertNever(value);
 }
 
-function utf8Bytes(value: string): number {
-  let bytes = 0;
-  for (const char of value) {
-    const code = char.codePointAt(0) ?? 0;
-    bytes += code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0x10000 ? 3 : 4;
-  }
-  return bytes;
-}
 
 /** A context value as Java sees it: Integers of unknown class, a `stringList` as the ArrayList of Strings it is in CIB. */
 export function fromValue(value: Value): JVal {

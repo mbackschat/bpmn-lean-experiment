@@ -118,6 +118,9 @@ function scriptOf(program: Program, wait: WaitView): ScriptSource | null {
  */
 export type HostInput = Readonly<{ input: Input; firing: TimerFiring | null }>;
 
+/** The kernel's owners of what the Script evaluator must match: the JavaScript format names and the String bound. */
+export { isJavascriptFormat, textBytes } from "@bpmn-lean/kernel";
+
 export const kernelPort: KernelPort<Program, State, HostInput> = {
   decodeProgram: (json) => decoded(decodeProgram(json), "program"),
   admit,
