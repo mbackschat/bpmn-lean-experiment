@@ -314,8 +314,9 @@ its process-level elements, which have no parent. -/
 structure CalledProcess where
   definition : DefinitionRef
   children : List ElementId
-  /-- The item names the process declares: its Properties, Data Objects and their references, and its own Data Inputs
-  and Outputs. They are declared at the instance root before any value is bound (BPMN 2.0.2 §10.4.1). -/
+  /-- The item names the process declares: its Properties, Data Objects and its own Data Inputs and Outputs; a Data
+  Object reference declares none, it names its Data Object's item. They are declared at the instance root before any
+  value is bound (BPMN 2.0.2 §10.4.1). -/
   variables : List String := []
   /-- Table 10.1 `isExecutable`, absent read as `false`. -/
   executable : Bool := true
