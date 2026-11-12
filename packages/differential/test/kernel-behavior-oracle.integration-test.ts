@@ -16,10 +16,10 @@
  * adjusted away. The evidence is compared against the TypeScript kernel's result; the first test establishes that it is
  * also Lean's.
  *
- * The host-facing functions no scenario run reaches (`rootStarts`, `refusesSignalVariables`, `matching`,
- * `registerSummary`), and `definitionCapabilities` in the cases no scenario model reaches, are held to kernel fixtures
- * instead (`kernelRun --fixture`, `runFixture`): each kernel's answer must equal the expected answer kept beside the
- * fixture, which no runner reads, and the other kernel's.
+ * The host-facing functions no scenario run reaches (`rootStarts`, `refusesSignalVariables`, `registerSummary`), and
+ * `definitionCapabilities` in the cases no scenario model reaches, are held to kernel fixtures instead
+ * (`kernelRun --fixture`, `runFixture`): each kernel's answer must equal the expected answer kept beside the fixture,
+ * which no runner reads, and the other kernel's.
  */
 import assert from "node:assert/strict";
 import { copyFile, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";

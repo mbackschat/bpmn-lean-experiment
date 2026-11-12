@@ -1,8 +1,7 @@
 /**
  * The host interface a platform builds on: a Timer start offers its resolved schedule, a Message start its channel and
- * literal name, a correlated catch publishes its
- * channel, element and criteria, `matching` finds the open waits a correlated delivery reaches in one instance, and an
- * incident command names the generation it resolves.
+ * literal name, a correlated catch publishes its channel, element and criteria, and an incident command names the
+ * generation it resolves.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -17,7 +16,6 @@ import {
   hostViewJson,
   refusesSignalVariables,
   rootStarts,
-  matching,
   step,
   stimulusFromJson,
 } from "./lean-paired.ts";
@@ -171,20 +169,6 @@ test("a correlated catch publishes its channel, its element and the criteria the
     }],
     relations: program.options.relations,
   });
-});
-
-/** The channel and correlation of a delivery on `operationRef` carrying `key`, in the stimulus codec's wire form. */
-const delivery = (key: string, operationRef = "O") => [
-  { kind: "operationMessage", messageId: "M", interfaceId: "I", interfaceOperationId: operationRef },
-  [{ target: { kind: "processVariable", name: "OrderKey" }, expected: string(key) }],
-] as const;
-
-test("matching finds the open wait whose criteria the waiting instance's current values satisfy", () => {
-  const program = correlatedProgram();
-  const state = committed(run(program, null, begin([{ name: "orderId", value: string("o-7") }])));
-  assert.deepEqual(matching(program, state, ...delivery("o-7")), [{ processInstanceId: "Instance_1", elementId: "T", activation: 1 }]);
-  assert.deepEqual(matching(program, state, ...delivery("o-8")), []);
-  assert.deepEqual(matching(program, state, ...delivery("o-7", "Other")), []);
 });
 
 test("the host view names each open Message and Signal wait's address, which the population ingress registers", () => {

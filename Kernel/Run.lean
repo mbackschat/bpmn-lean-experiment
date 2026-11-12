@@ -396,7 +396,8 @@ def onlyProgram : List Program → Except String Program
   | [program] => pure program
   | _ => throw "fixture-program-count"
 
-/-- The instance state after `stimuli`, each of which must commit; matching is asked of a committed state only. -/
+/-- The instance state after `stimuli`, each of which must commit; a fixture's population question is asked of a
+committed state only. -/
 def committedState (program : Program) (stimuli : List Json) : Except String State := do
   let mut current : Option State := none
   for stimulus in stimuli do
@@ -435,7 +436,7 @@ def occurrenceAnswers (programs : List Program) (input : Json) : Except String J
       toJson (Population.timerOccurrences summary startEvent fromMs limit)).toArray).toArray)
 
 /-- The answer of the host-facing function a fixture's `entry` names: `rootStarts`, `refusesSignalVariables`,
-`matching` (over the state its stimuli commit, for a delivery's channel and correlation), `registerSummary` or
+`registerSummary` or
 `definitionCapabilities` (as the host view renders it) or `timerOccurrences`, or one of the population functions of
 `Kernel.Run.Fixture` and the Signal address codec's round trip (`signalAddress`). -/
 def fixtureAnswer (fixture : Json) : Except String Json := do
@@ -445,12 +446,6 @@ def fixtureAnswer (fixture : Json) : Except String Json := do
     let starts := Host.rootStarts (← onlyProgram (← fixturePrograms fixture))
     pure (Json.arr (starts.map fun (publicId, own) => Json.arr #[Json.str publicId, Json.str own.value]).toArray)
   | "refusesSignalVariables" => pure (Json.bool (Host.refusesSignalVariables (← onlyProgram (← fixturePrograms fixture))))
-  | "matching" =>
-    let program ← onlyProgram (← fixturePrograms fixture)
-    let state ← committedState program (← input.getObjValAs? (List Json) "stimuli")
-    let channel ← Codec.channelFromJson (← input.getObjVal? "channel")
-    let correlation ← (← input.getObjValAs? (List Json) "correlation").mapM Codec.correlationFromJson
-    pure (Json.arr ((Population.matching Registry.hooks program state channel correlation).map referenceJson).toArray)
   | "registerSummary" => registrations (← fixturePrograms fixture) (← input.getObjValAs? (List Nat) "deploymentIds")
   | "definitionCapabilities" =>
     pure (capabilitiesJson (Host.definitionCapabilities (← onlyProgram (← fixturePrograms fixture))))

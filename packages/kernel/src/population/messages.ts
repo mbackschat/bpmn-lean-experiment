@@ -86,27 +86,6 @@ export function occurrence(program: Program, state: State, item: OpenItem): Occu
 }
 
 /**
- * The open subscriptions of one instance of `program` that `Hooks.correlates` accepts for a delivery on `channel`
- * carrying `correlation`, by public occurrence identity; a subscription whose key cannot be evaluated is no match. A host
- * that routes a publication across instances asks it of each instance, after refusing the criteria `criteriaRefusal`
- * refuses, which this scan would read as no match.
- */
-export function matching(
-  hooks: Hooks,
-  program: Program,
-  state: State,
-  channel: MessageChannel,
-  correlation: readonly CorrelationMatch[],
-): readonly OccurrenceRef[] {
-  const ctx = context(hooks, program);
-  const accepted = state.openItems.filter((item) => {
-    const accepts = hooks.correlates(ctx, item, channel, correlation, state);
-    return accepts.ok && accepts.value;
-  });
-  return accepted.map((item) => occurrence(program, state, item));
-}
-
-/**
  * The open Message subscriptions of one instance of `program` a publication reaches, each with the channel its delivery
  * names: those on the publication's channel, or, for a name, those that resolved that name when they opened (only under
  * `MessageNames.addresses`, CIB-LIM-0022), that belong, when the publication carries a business key, to an instance with

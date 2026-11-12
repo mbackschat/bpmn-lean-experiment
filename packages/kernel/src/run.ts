@@ -34,7 +34,7 @@ import {
   type JsonValue,
 } from "./il/codec.js";
 import {
-  channelFromJson, channelToJson, decodeBindings, decodeCorrelation, decodeSignalAddress, failureCode, failureName, firingStimulusFromJson, signalAddressToJson,
+  channelToJson, decodeBindings, decodeSignalAddress, failureCode, failureName, firingStimulusFromJson, signalAddressToJson,
   type TimerFiring,
 } from "./il/codec/stimulus.js";
 import {
@@ -73,7 +73,6 @@ import { ResolvedTag, type Resolved } from "./il/timer.js";
 import { runStimuli as runInstances } from "./population.js";
 import { onTimeRefusal, timerOccurrences } from "./population/timers.js";
 import { deploymentSummary, registerSummary, type DeploymentSummary } from "./population/deploy.js";
-import { matching } from "./population/messages.js";
 import { signalStartReceivers } from "./population/signals.js";
 import { EvaluationTag } from "./hooks.js";
 import { hooks } from "./registry.js";
@@ -548,7 +547,7 @@ function onlyProgram(programs: readonly Program[]): Program {
   return program;
 }
 
-/** The instance state after `stimuli`, each of which must commit; matching is asked of a committed state only. */
+/** The instance state after `stimuli`, each of which must commit; a fixture's population question is asked of a committed state only. */
 function committedState(program: Program, stimuli: readonly unknown[]): State {
   let current: State | null = null;
   for (const stimulus of stimuli) {
@@ -582,20 +581,6 @@ function registrations(programs: readonly Program[], deploymentIds: readonly unk
   });
 }
 
-/** `matching` over the state the fixture's stimuli commit, for a delivery's channel and correlation. */
-function matchingAnswer(fixture: unknown, input: unknown): JsonValue {
-  const program = onlyProgram(fixturePrograms(fixture));
-  const state = committedState(program, arrayField(input, "stimuli", "fixture"));
-  const channel = channelFromJson(field(input, "channel", "fixture"));
-  if (!channel.ok) throw new Error(`fixture: ${channel.refusal}`);
-  const correlation = arrayField(input, "correlation", "fixture").map((json) => {
-    const decoded = decodeCorrelation(json);
-    if (!decoded.ok) throw new Error(`fixture: ${decoded.refusal}`);
-    return decoded.value;
-  });
-  return matching(hooks, program, state, channel.value, correlation).map(referenceJson);
-}
-
 function natField(json: unknown, key: string): number {
   const value = field(json, key, "fixture");
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) throw new Error(`fixture: ${key}: Nat expected`);
@@ -624,7 +609,6 @@ function occurrenceAnswers(programs: readonly Program[], input: unknown): JsonVa
 const fixtureEntries: Readonly<Record<string, (fixture: unknown, input: unknown) => JsonValue>> = {
   rootStarts: (fixture) => rootStarts(onlyProgram(fixturePrograms(fixture))).map(([publicId, own]) => [publicId, own]),
   refusesSignalVariables: (fixture) => refusesSignalVariables(onlyProgram(fixturePrograms(fixture))),
-  matching: matchingAnswer,
   registerSummary: (fixture, input) => registrations(fixturePrograms(fixture), arrayField(input, "deploymentIds", "fixture")),
   definitionCapabilities: (fixture) => capabilitiesJson(definitionCapabilities(onlyProgram(fixturePrograms(fixture)))),
   timerOccurrences: (fixture, input) => occurrenceAnswers(fixturePrograms(fixture), input),

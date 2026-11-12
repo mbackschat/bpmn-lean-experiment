@@ -18,19 +18,6 @@ def occurrence (program : Program) (state : State) (item : OpenItem) : Occurrenc
   { processInstanceId := state.instanceOf item.scope, element := program.publicId item.element
     activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
 
-/-- The open subscriptions of one instance of `program` that `Hooks.correlates` accepts for a delivery on `channel`
-carrying `correlation`, by public occurrence identity; a subscription whose key cannot be evaluated is no match. A host
-that routes a publication across instances asks it of each instance, after refusing the criteria `criteriaRefusal`
-refuses, which this scan would read as no match. -/
-def matching (hooks : Hooks) (program : Program) (state : State) (channel : MessageChannel)
-    (correlation : List CorrelationMatch) : List OccurrenceRef :=
-  let ctx := Step.context hooks program
-  let accepted := state.openItems.filter fun item =>
-    match hooks.correlates ctx item channel correlation state with
-    | .ok accepts => accepts
-    | .error _ => false
-  accepted.map (occurrence program state)
-
 /-- The open Message subscriptions of one instance of `program` a publication reaches, each with the channel its
 delivery names: those on the publication's channel, or, for a name, those that resolved that name when they opened
 (only under `MessageNames.addresses`, CIB-LIM-0022), that belong, when the publication carries a business key, to an

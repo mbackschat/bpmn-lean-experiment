@@ -52,7 +52,7 @@ export type {
   Binding, BroadcastIntent, CorrelationMatch, EffectOutcome, Failure, Input, Leave, MessageChannel, OccurrenceRef,
   Outcome, SignalAddress, StartInput, StartTrigger, State,
 } from "./state.js";
-export { matching, messageReceivers, messageStartCandidates } from "./population/messages.js";
+export { messageReceivers, messageStartCandidates } from "./population/messages.js";
 export {
   FanOutNextTag,
   PendingTag,

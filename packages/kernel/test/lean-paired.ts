@@ -132,17 +132,6 @@ export function hostViewJson(program: Program, state: State): unknown {
   return kernel.hostViewJson(hostView(program, state));
 }
 
-/**
- * The open waits of an admitted program's committed state that a delivery on `channel` with `correlation` (both in
- * their wire form) matches, as the `matching` fixture answers it.
- */
-export function matching(program: Program, state: State, channel: unknown, correlation: readonly unknown[]): unknown {
-  return runFixture({
-    entry: "matching", programs: [wireOf(programJson, program, "program")],
-    input: { stimuli: wireOf(pathOf, state, "state"), channel, correlation },
-  });
-}
-
 /** The canonical result of a scenario run, replayed as a host-view run. */
 export function runScenario(program: unknown, scenario: unknown): unknown {
   record({ entry: "hostView", program, scenario });
