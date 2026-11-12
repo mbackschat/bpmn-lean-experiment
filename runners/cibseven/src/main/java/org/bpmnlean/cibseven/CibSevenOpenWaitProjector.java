@@ -79,6 +79,37 @@ final class CibSevenOpenWaitProjector {
       Comparator.comparing((ProjectedWait wait) -> wait.openWait().id(), OCCURRENCE_ORDER)
           .thenComparing(wait -> wait.openWait().detail().kindName(), WireStrings::compare);
 
+  // CIB answers the task, identity-link, subscription, job and incident queries without an ORDER BY, so H2 returns
+  // rows in the string order of their identifiers. The runner's per-scenario counter issues those identifiers, so the
+  // order shifts whenever an unrelated change moves the counter across a digit boundary (#111): every set-valued list
+  // the projection records takes one canonical order instead, over all its fields where no key identifies an entry.
+  private static final Comparator<String> NULLABLE_WIRE_ORDER = Comparator.nullsFirst(WireStrings::compare);
+
+  private static final Comparator<IdentityLinkEvidence> IDENTITY_LINK_ORDER =
+      Comparator.comparing(IdentityLinkEvidence::type, WireStrings::compare)
+          .thenComparing(IdentityLinkEvidence::userId, NULLABLE_WIRE_ORDER)
+          .thenComparing(IdentityLinkEvidence::groupId, NULLABLE_WIRE_ORDER);
+
+  private static final Comparator<MessageSubscription> SUBSCRIPTION_ORDER =
+      Comparator.comparing(MessageSubscription::elementId, WireStrings::compare)
+          .thenComparing(MessageSubscription::eventName, WireStrings::compare)
+          .thenComparing(MessageSubscription::messageId, WireStrings::compare)
+          .thenComparing(MessageSubscription::processInstanceIdMatches)
+          .thenComparing(MessageSubscription::executionIdPresent);
+
+  private static final Comparator<TimerJob> TIMER_ORDER =
+      Comparator.comparing(TimerJob::elementId, WireStrings::compare)
+          .thenComparingLong(TimerJob::dueDateDeltaMs)
+          .thenComparing(TimerJob::executable);
+
+  /** An effect's activation numbers it within its element and instance; the instance order breaks the last tie. */
+  private static final Comparator<EffectJob> EFFECT_ORDER =
+      Comparator.comparing(EffectJob::elementId, WireStrings::compare).thenComparingLong(EffectJob::activation);
+
+  private static final Comparator<IncidentJob> INCIDENT_ORDER =
+      Comparator.comparing(IncidentJob::elementId, WireStrings::compare)
+          .thenComparing(IncidentJob::publicJobId, WireStrings::compare);
+
   private final ProcessEngine engine;
   private final Date logicalEpoch;
   private final boolean incidentsCancellable;
@@ -118,26 +149,41 @@ final class CibSevenOpenWaitProjector {
         new Projection(
             new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(),
             new ArrayList<>(), new ArrayList<>());
-    for (var instance : instances) {
+    // Called instances arrive in the engine's query order; their stable identifiers order them, and the stable sorts
+    // below keep that order among entries of different instances that compare equal.
+    var ordered = instances.stream().sorted(Comparator.comparing(Instance::stableId, WireStrings::compare)).toList();
+    for (var instance : ordered) {
       projectTasks(instance, occurrences, projection);
       projectSubscriptions(instance, occurrences, projection);
       projectAddressless(instance, occurrences, projection);
       projectJobs(instance, occurrences, projection);
     }
     projection.waits().sort(WAIT_ORDER);
-    projection.timers().sort(Comparator.comparing(TimerJob::elementId, WireStrings::compare));
-    projection.effects().sort(Comparator.comparing(EffectJob::elementId, WireStrings::compare));
+    projection.subscriptions().sort(SUBSCRIPTION_ORDER);
+    projection.timers().sort(TIMER_ORDER);
+    projection.effects().sort(EFFECT_ORDER);
+    projection.incidents().sort(INCIDENT_ORDER);
     return projection;
   }
 
   private void projectTasks(Instance instance, CibSevenOccurrences occurrences, Projection projection) {
     var taskService = engine.getTaskService();
     var tasks =
-        taskService.createTaskQuery().processInstanceId(instance.engineId()).initializeFormKeys().list();
+        new ArrayList<Task>(
+            taskService.createTaskQuery().processInstanceId(instance.engineId()).initializeFormKeys().list());
+    var activations = new HashMap<String, Long>();
+    for (var task : tasks) {
+      activations.put(
+          task.getId(), occurrences.activation(instance, task.getTaskDefinitionKey(), task.getExecutionId()));
+    }
+    tasks.sort(
+        Comparator.comparing(Task::getTaskDefinitionKey, WireStrings::compare)
+            .thenComparingLong(task -> activations.get(task.getId())));
     for (var task : tasks) {
       var links =
           taskService.getIdentityLinksForTask(task.getId()).stream()
               .map(link -> new IdentityLinkEvidence(link.getType(), link.getUserId(), link.getGroupId()))
+              .sorted(IDENTITY_LINK_ORDER)
               .toList();
       var fields =
           engine.getFormService().getTaskFormData(task.getId()).getFormFields().stream()
@@ -147,8 +193,7 @@ final class CibSevenOpenWaitProjector {
           links.isEmpty() && fields.isEmpty()
               ? new TaskQueryTask(task.getTaskDefinitionKey(), task.getName())
               : new TaskQueryTask(task.getTaskDefinitionKey(), task.getName(), links, fields));
-      var activation =
-          occurrences.activation(instance, task.getTaskDefinitionKey(), task.getExecutionId());
+      long activation = activations.get(task.getId());
       var detail = userTaskDetail(instance.model(), task, links, fields);
       projection.waits().add(
           wait(instance, task.getTaskDefinitionKey(), activation, detail, new TaskHandle(task.getId())));
