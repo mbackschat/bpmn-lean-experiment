@@ -72,12 +72,6 @@ export const rows: readonly Row[] = [
     control: option({ multiInstanceCompensation: "perInstance" }),
   },
   {
-    code: "profile.compensationReferenceScope.eventSubProcessParent",
-    description: "a Compensation throw in an Event Sub-Process naming an Activity of its parent's level",
-    mutate: option({ compensationReferenceScope: "eventSubProcessParent" }),
-    control: option({ compensationReferenceScope: "visible" }),
-  },
-  {
     code: "profile.callBindingTime.invocation",
     description: "a called process bound at invocation",
     mutate: option({ callBindingTime: "invocation" }),

@@ -342,12 +342,12 @@ def raise (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origin : Ori
     (hooks.mappedErrorOutputs ctx origin (lastWrites writes) state).map (boundary.fire none none origin.scope [])
   | _, _ => searchScopes hooks ctx raised origin state (state.scopes.length + 1) (some origin.scope)
 
-/-- A Compensation throw compensates the Activities retained in its scope occurrence and continues once all
-handlers have completed; only the global, synchronous form is implemented (`throw.compensation.*` at admission). -/
+/-- A Compensation throw compensates the Activities retained in its scope occurrence, or only its `activityRef`'s, and
+continues once all handlers have completed; only the synchronous form is implemented (`throw.compensation.asynchronous`
+at admission). -/
 def throwCompensation (header : Header) (payload : EventPayload) (thrown : CompensationThrow) (occurrence : Occurrence)
     (state : State) : Outcome :=
-  if thrown.activity.isSome then .error (.unsupported "throw-compensation-activity")
-  else if !thrown.waitForCompletion then .error (.unsupported "throw-compensation-asynchronous")
+  if !thrown.waitForCompletion then .error (.unsupported "throw-compensation-asynchronous")
   else
     let triggered := throwerRef state { element := header.id, scope := occurrence.scope, activation := occurrence.activation }
     .ok (state.signal (.compensate occurrence.scope thrown.activity triggered none

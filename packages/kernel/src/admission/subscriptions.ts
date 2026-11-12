@@ -509,6 +509,24 @@ export function cancels(attached: Boundary): boolean {
   return assertNever(trigger);
 }
 
+/** Whether a subscription catches Compensation: the start of a Compensation Event Sub-Process. */
+export function compensates(subscription: Subscription): boolean {
+  const trigger = subscription.trigger;
+  switch (trigger.tag) {
+    case TriggerTag.Compensation:
+      return true;
+    case TriggerTag.Timer:
+    case TriggerTag.Message:
+    case TriggerTag.Signal:
+    case TriggerTag.Condition:
+    case TriggerTag.Error:
+    case TriggerTag.Escalation:
+    case TriggerTag.Cancel:
+      return false;
+  }
+  return assertNever(trigger);
+}
+
 export function boundaries(options: ProfileOptions, reading: Reading, host: Host, list: readonly Boundary[]): string | null {
   const seen: Declared = { errorCodes: new Set<string>(), escalations: [], cancels: [] };
   for (const attached of list) {

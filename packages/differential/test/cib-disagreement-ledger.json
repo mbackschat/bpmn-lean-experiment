@@ -269,7 +269,7 @@
   {
     "evidence": "scenarios/open-rows/compensation-activity-ref-refusals/throw-names-a-start-event.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-02"
+      "CIB-EXT-0046"
     ]
   },
   {
@@ -352,19 +352,19 @@
   {
     "evidence": "scenarios/open-rows/compensation-handler-bodies/abandoned-while-handlers-wait.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-04"
+      "CIB-LIM-0049"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-bodies/all-forms-complete.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-04"
+      "CIB-LIM-0049"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-bodies/premature-and-stale-handler-results.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-04"
+      "CIB-LIM-0049"
     ]
   },
   {
@@ -591,30 +591,6 @@
   },
   {
     "evidence": "scenarios/open-rows/compensation-regions/region-targeted-after-completion.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-targeting/chain-handlers-forward.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-targeting/chain-handlers-reversed.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-targeting/empty-then-targeted.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-targeting/end-targeted-only.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-02"
     ]

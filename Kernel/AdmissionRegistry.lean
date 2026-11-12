@@ -68,13 +68,30 @@ def cancelSite (program : Program) (header : Header) : Admission.Propagation.Can
     else .uncaught
   | none => .outside
 
-/-- How a throw Event in `header`'s place reads its trigger's expressions and its mappings. -/
+/-- Where the element `target` a Compensation throw in `header`'s place names lies: at the throw's level, else, when the
+throw sits directly in an Event Sub-Process, at that Event Sub-Process's level, which a Compensation one makes visible
+(BPMN 2.0.2 Tables 10.88 and 10.89). A Sub-Process of any kind is an Activity. -/
+def compensationTarget (program : Program) (header : Header) (target : ElementId) : Admission.Propagation.Reference :=
+  let activity := (program.element? target).any fun element => element.activity?.isSome || element.scope?.isSome
+  let lies (place : Header) : Bool := (program.siblings place).any (·.header.id == target)
+  let enclosing := (header.parent.bind program.element?).bind fun parent =>
+    parent.scope?.bind fun (scopeHeader, payload) => (Admission.Scopes.eventSubProcess? payload).map ((scopeHeader, ·.1))
+  if lies header then { level := .visible, activity }
+  else match enclosing with
+    | some (scopeHeader, start) =>
+      if !lies scopeHeader then { level := .elsewhere, activity }
+      else if Admission.Subscriptions.compensates start then { level := .visible, activity }
+      else { level := .eventSubProcessParent, activity }
+    | none => { level := .elsewhere, activity }
+
+/-- How a throw Event in `header`'s place reads its trigger's expressions, its mappings and its Compensation reference. -/
 def throwSite (program : Program) (header : Header) : Admission.Propagation.ThrowSite :=
   let reading := subscriptionReading program (some header.id)
   { signalAddress := Admission.Subscriptions.signalAddress program.options reading false
     eventsExpression := Admission.Subscriptions.eventsExpression program.options reading
     mappings := Admission.Data.mappings program.options.evaluator (site program (some header.id))
-    handlerKey := Admission.Work.handlerKey program }
+    handlerKey := Admission.Work.handlerKey program
+    reference := compensationTarget program header }
 
 /-- What an element throws, if it is a throw Event. -/
 def thrown (element : Element) : Option (Header × ThrowView) :=

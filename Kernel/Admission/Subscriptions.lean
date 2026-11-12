@@ -336,6 +336,18 @@ def cancels (boundary : Boundary) : Bool :=
   | .escalation _ => false
   | .compensation => false
 
+/-- Whether a subscription catches Compensation: the start of a Compensation Event Sub-Process. -/
+def compensates (subscription : Subscription) : Bool :=
+  match subscription.trigger with
+  | .compensation => true
+  | .timer _ => false
+  | .message _ => false
+  | .signal _ => false
+  | .condition _ => false
+  | .error _ => false
+  | .escalation _ => false
+  | .cancel => false
+
 def boundaries (options : ProfileOptions) (reading : Reading) (host : Host) (list : List Boundary) :
     Option String :=
   match list.foldlM (boundary options reading host) {} with

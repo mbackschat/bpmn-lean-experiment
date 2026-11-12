@@ -13,7 +13,6 @@ import {
   CallBindingTime,
   CompensationHandlerFailureTag,
   CompensationOrder,
-  CompensationReferenceScope,
   ErrorExitCompensation,
   Evaluator,
   ImplicitCompensation,
@@ -72,9 +71,6 @@ export function options(reach: Reach, selected: ProfileOptions): string | null {
   }
   if (reach.loopedHandler && selected.multiInstanceCompensation === MultiInstanceCompensation.PerInstance) {
     return "profile.multiInstanceCompensation.perInstance";
-  }
-  if (selected.compensationReferenceScope === CompensationReferenceScope.EventSubProcessParent) {
-    return "profile.compensationReferenceScope.eventSubProcessParent";
   }
   if (selected.callBindingTime === CallBindingTime.Invocation) return "profile.callBindingTime.invocation";
   if (selected.timerZone !== null) return "profile.timerZone";

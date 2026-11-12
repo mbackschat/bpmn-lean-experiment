@@ -8,15 +8,30 @@ public section
 
 namespace Kernel.Admission.Propagation
 
+/-- Where a Compensation throw's `activityRef` names an element: at the throw's own level or, from inside a Compensation
+Event Sub-Process, at its parent's level, where BPMN 2.0.2 Tables 10.88 and 10.89 make it visible; at the parent's level
+of another kind of Event Sub-Process; or elsewhere. -/
+inductive ReferenceLevel where
+  | visible
+  | eventSubProcessParent
+  | elsewhere
+  deriving DecidableEq
+
+/-- The element a Compensation throw names: where it lies, and whether it is an Activity. -/
+structure Reference where
+  level : ReferenceLevel
+  activity : Bool
+
 /-- What a throw's admission asks of its site, which the registry fills from the other admissions at that site: a
 Signal address's refusal (`Kernel.Admission.Subscriptions.signalAddress`, the one rule catches, starts and throws
-share), an Events-level expression's refused as the given code, its mappings' refusal, and a delegate token's
-(`Kernel.Admission.Work.handlerKey`, CIB-LIM-0017). -/
+share), an Events-level expression's refused as the given code, its mappings' refusal, a delegate token's
+(`Kernel.Admission.Work.handlerKey`, CIB-LIM-0017), and where a Compensation throw's reference lies. -/
 structure ThrowSite where
   signalAddress : Option QName → Option ValueSource → Option String := fun _ _ => none
   eventsExpression : String → Expression → Option String := fun _ _ => none
   mappings : List Mapping → Option String := fun _ => none
   handlerKey : Option String → Option String := fun _ => none
+  reference : ElementId → Reference := fun _ => { level := .elsewhere, activity := false }
 
 /-- A CIB business key expression: a String literal, else read at the Events level. -/
 def businessKey (site : ThrowSite) : Expression → Option String
@@ -53,6 +68,18 @@ def messageThrow (options : ProfileOptions) (site : ThrowSite) (record : Message
     | .refused, none => some "throw.message.unbound"
     | .cibForms, _ => site.handlerKey record.handlerKey
 
+/-- A Compensation throw's `activityRef` names an Activity visible from the throw (BPMN 2.0.2 §10.7.2, Table 10.94,
+Tables 10.88 and 10.89). CIB resolves it from any Event Sub-Process at the parent's level (CIB-EXT-0047), which
+`CompensationReferenceScope.eventSubProcessParent` admits, and deploys a reference to a non-Activity of the level, which
+compensates nothing (CIB-EXT-0046); every other reference CIB refuses at deployment (`BpmnParse.java:1695-1720`). -/
+def compensationReference (options : ProfileOptions) (reference : Reference) : Option String :=
+  let resolved := if reference.activity then none else some "throw.compensation.notActivity"
+  match reference.level, options.compensationReferenceScope with
+  | .visible, _ => resolved
+  | .eventSubProcessParent, .eventSubProcessParent => resolved
+  | .eventSubProcessParent, .visible => some "throw.compensation.activityLevel"
+  | .elsewhere, _ => some "throw.compensation.activityLevel"
+
 /-- Where a throw sits for a Cancel End: not directly in a Transaction, or directly in one with or without a Cancel
 boundary. -/
 inductive CancelSite where
@@ -76,9 +103,8 @@ def throwRecord (options : ProfileOptions) (site : ThrowSite) (cancelSite : Canc
   | .message record => messageThrow options site record
   | .signal record => signalThrow options site record
   | .compensation record =>
-    if record.activity.isSome then some "throw.compensation.activity"
-    else if !record.waitForCompletion then some "throw.compensation.asynchronous"
-    else none
+    (record.activity.bind fun target => compensationReference options (site.reference target)) <|>
+      if !record.waitForCompletion then some "throw.compensation.asynchronous" else none
   | .cancel =>
     match cancelSite with
     | .outside => some "throw.cancel.outsideTransaction"

@@ -1,20 +1,39 @@
 /** Admission of throw Events, transcribed from `Kernel/Admission/Propagation.lean`. A refusal carries a stable code. */
 import {
-  ExpressionTag, MappingDialect, MessageThrowForms, SignalPayload, ThrowTag, ValueSourceTag, assertNever, type Expression,
+  CompensationReferenceScope, ExpressionTag, MappingDialect, MessageThrowForms, SignalPayload, ThrowTag, ValueSourceTag, assertNever,
+  type ElementId, type Expression,
   type Mapping, type MessageThrow, type ProfileOptions, type QName, type SignalThrow, type Throw, type ValueSource,
 } from "../il/types.js";
 
 /**
+ * Where a Compensation throw's `activityRef` names an element: at the throw's own level or, from inside a Compensation
+ * Event Sub-Process, at its parent's level, where BPMN 2.0.2 Tables 10.88 and 10.89 make it visible; at the parent's
+ * level of another kind of Event Sub-Process; or elsewhere.
+ */
+export enum ReferenceLevel {
+  Visible = "visible",
+  EventSubProcessParent = "eventSubProcessParent",
+  Elsewhere = "elsewhere",
+}
+
+/** The element a Compensation throw names: where it lies, and whether it is an Activity. */
+export interface Reference {
+  readonly level: ReferenceLevel;
+  readonly activity: boolean;
+}
+
+/**
  * What a throw's admission asks of its site, which the registry fills from the other admissions at that site: a Signal
  * address's refusal (`admission/subscriptions.ts#signalAddress`, the one rule catches, starts and throws share), an
- * Events-level expression's refused as the given code, its mappings' refusal, and a delegate token's
- * (`admission/work.ts#handlerKey`, CIB-LIM-0017).
+ * Events-level expression's refused as the given code, its mappings' refusal, a delegate token's
+ * (`admission/work.ts#handlerKey`, CIB-LIM-0017), and where a Compensation throw's reference lies.
  */
 export interface ThrowSite {
   readonly signalAddress: (signalRef: QName | null, name: ValueSource | null) => string | null;
   readonly eventsExpression: (refusal: string, expression: Expression) => string | null;
   readonly mappings: (list: readonly Mapping[]) => string | null;
   readonly handlerKey: (token: string | null) => string | null;
+  readonly reference: (target: ElementId) => Reference;
 }
 
 /** A CIB business key expression: a String literal, else read at the Events level. */
@@ -68,6 +87,31 @@ function messageThrow(options: ProfileOptions, site: ThrowSite, record: MessageT
  * Where a throw sits for a Cancel End: not directly in a Transaction, or directly in one with or without a Cancel
  * boundary.
  */
+/**
+ * A Compensation throw's `activityRef` names an Activity visible from the throw (BPMN 2.0.2 §10.7.2, Table 10.94,
+ * Tables 10.88 and 10.89). CIB resolves it from any Event Sub-Process at the parent's level (CIB-EXT-0047), which
+ * `CompensationReferenceScope.EventSubProcessParent` admits, and deploys a reference to a non-Activity of the level,
+ * which compensates nothing (CIB-EXT-0046); every other reference CIB refuses at deployment (`BpmnParse.java:1695-1720`).
+ */
+function compensationReference(options: ProfileOptions, reference: Reference): string | null {
+  const resolved = reference.activity ? null : "throw.compensation.notActivity";
+  switch (reference.level) {
+    case ReferenceLevel.Visible:
+      return resolved;
+    case ReferenceLevel.EventSubProcessParent:
+      switch (options.compensationReferenceScope) {
+        case CompensationReferenceScope.EventSubProcessParent:
+          return resolved;
+        case CompensationReferenceScope.Visible:
+          return "throw.compensation.activityLevel";
+      }
+      return assertNever(options.compensationReferenceScope);
+    case ReferenceLevel.Elsewhere:
+      return "throw.compensation.activityLevel";
+  }
+  return assertNever(reference.level);
+}
+
 export enum CancelSite {
   Outside = "outside",
   Uncaught = "uncaught",
@@ -109,9 +153,8 @@ export function throwRecord(options: ProfileOptions, site: ThrowSite, cancelSite
     case ThrowTag.Signal:
       return signalThrow(options, site, thrown.payload);
     case ThrowTag.Compensation:
-      if (thrown.payload.activity !== null) return "throw.compensation.activity";
-      if (!thrown.payload.waitForCompletion) return "throw.compensation.asynchronous";
-      return null;
+      return (thrown.payload.activity === null ? null : compensationReference(options, site.reference(thrown.payload.activity))) ??
+        (thrown.payload.waitForCompletion ? null : "throw.compensation.asynchronous");
   }
   return assertNever(thrown);
 }

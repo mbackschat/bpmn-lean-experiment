@@ -26,9 +26,9 @@ The counts below cover only entries recorded by this project, including the sepa
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 9 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 36 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| CIB extension records | 43 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
+| CIB extension records | 45 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 39 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 40 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1324,6 +1324,16 @@ BPMN 2.0.2 §10.3.5 lets a Cancel End Event cancel its Transaction, whose Cancel
 
 **Boundary:** A Cancel End Event in a Transaction without a Cancel boundary, and a non-interrupting Cancel boundary; this entry owns `cancel-end-without-boundary` and `non-interrupting-cancel-boundary` in the ledger.
 
+### CIB-LIM-0049 — CIB never subscribes a Receive Task compensation handler to its Message
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile, since the kernel keeps BPMN's meaning, under which the handler waits for its Message; not a deviation
+
+BPMN 2.0.2 §10.7.1 lets a Compensation Activity be any Task, a Receive Task included, which waits for its Message. CIB Seven `2.2.0` makes a Receive Task with a `messageRef` a scope whose Message subscription is declared on itself, and creates a scope's declared subscriptions only when a new scope execution initializes; a boundary compensation handler instead reuses the compensating execution and starts the activity on it, so the handler's Message subscription is never created, a delivery to it is rejected and the compensation never completes.
+
+**Evidence:** Pinned `bpmn/parser/BpmnParse.java:2754-2760`, `persistence/entity/ExecutionEntity.java:409-414` and `event/CompensationEventHandler.java:73-78` (`setActivity` and `PvmAtomicOperation.ACTIVITY_START` on the existing execution); the retained answers of [all-forms-complete, premature-and-stale-handler-results and abandoned-while-handlers-wait](../scenarios/open-rows/compensation-handler-bodies/README.md) (profile `cibseven-2.2.0`), which open no wait for `ReceiveTask_UndoQuote` and reject its Message.
+
+**Boundary:** Receive Task compensation handlers attached by a boundary Event; this entry owns those three witnesses in the ledger.
+
 ## Extension register
 
 ### CIB-LIM-0025 — CIB admits two interrupting Error Event Sub-Processes of one code in one scope
@@ -1840,6 +1850,26 @@ BPMN 2.0.2 types `calledElement` as `xsd:QName` (`Semantic.xsd:149`) and names n
 **Evidence:** Pinned `BpmnParse.java:3945-3987`, `:4016-4070`, `CallableElementUtil.java:75-103`, `ProcessDefinitionManager.java:141-162`; retained `call-binding-time/*`, whose missing, foreign-namespace, absent-version and unknown-tag forms stay PC-SCOPE-03 disagreements under the cibseven profiles (admission refuses the deployment as `work.call.calledProcessMissing`, where CIB fails only the invocation), and `called-process-call-activity` (negative calibration of the standards reading: CIB rolls back by key text where `qualifiedName` resolves the QName).
 
 **Boundary:** Literal Call selectors; expression selectors are CIB-LIM-0032 and tenants CIB-LIM-0033.
+
+### CIB-EXT-0046 — a Compensation throw whose `activityRef` names no Activity compensates nothing
+
+**Status:** Recorded extension; selected by no profile, since the kernel refuses the reference under every profile (`throw.compensation.notActivity`)
+
+BPMN 2.0.2 Table 10.94 types a Compensation Event Definition's `activityRef` as an Activity. CIB Seven `2.2.0` deploys a reference to any element of the throw's level, an Event or Gateway included, and a throw naming one finds no compensation subscription and continues at once.
+
+**Evidence:** Pinned `bpmn/parser/BpmnParse.java:1695-1720` (`findActivityAtLevelOfSubprocess` matches any flow node of the level), `bpmn/helper/CompensationUtil.java:215-226` and `bpmn/behavior/CompensationEventActivityBehavior.java:45-54`; the retained answer of [throw-names-a-start-event](../scenarios/open-rows/compensation-activity-ref-refusals/README.md) (profile `cibseven-2.2.0`), which commits with nothing compensated.
+
+**Boundary:** An `activityRef` naming a Start Event, Gateway or other non-Activity of the throw's level; this entry owns `throw-names-a-start-event` in the ledger.
+
+### CIB-EXT-0047 — CIB resolves a targeted Compensation throw from any Event Sub-Process at its parent's level
+
+**Status:** Recorded extension; selected by `ProfileOptions.compensationReferenceScope = eventSubProcessParent` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile
+
+BPMN 2.0.2 Tables 10.88 and 10.89 require the Activity a Compensation throw references to be visible from it: the throw lies in normal flow at the Activity's level, or in a Compensation Event Sub-Process of the Sub-Process containing the Activity. CIB Seven `2.2.0` looks the reference up at the throw's level and, when the throw lies in any Event Sub-Process, an Error, Escalation, Message, Signal, Timer or Conditional one included, at its parent's level, refusing any other reference at deployment. Under `bpmn-2.0.2` admission refuses a reference from a non-Compensation Event Sub-Process as `throw.compensation.activityLevel`.
+
+**Evidence:** Pinned `bpmn/parser/BpmnParse.java:1695-1720` (the `TRIGGERED_BY_EVENT` step to the flow scope); the retained answer of [error-esp-throws-targeted](../scenarios/open-rows/compensation-event-subprocess-throws/README.md) (profile `cibseven-2.2.0`), which commits, and of [inner-throw-names-outer-activity and outer-throw-names-inner-activity](../scenarios/open-rows/compensation-activity-ref-refusals/README.md), which CIB refuses at deployment as the kernel does.
+
+**Boundary:** Targeted throws inside a non-Compensation Event Sub-Process naming an Activity of its parent's level.
 
 ## Permitted operational-detail register
 

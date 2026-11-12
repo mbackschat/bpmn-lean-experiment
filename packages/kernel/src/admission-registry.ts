@@ -19,6 +19,7 @@ import {
   programChildren,
   programElement,
   programInCalledProcess,
+  programSiblings,
   programSource,
   throwView,
   triggerMessage,
@@ -80,6 +81,26 @@ function subscriptionReading(program: Program, id: ElementId | null): Subscripti
 }
 
 /** How a throw Event in `header`'s place reads its trigger's expressions and its mappings. */
+/**
+ * Where the element `target` a Compensation throw in `header`'s place names lies: at the throw's level, else, when the
+ * throw sits directly in an Event Sub-Process, at that Event Sub-Process's level, which a Compensation one makes visible
+ * (BPMN 2.0.2 Tables 10.88 and 10.89). A Sub-Process of any kind is an Activity.
+ */
+function compensationTarget(program: Program, header: Header, target: ElementId): Propagation.Reference {
+  const element = programElement(program, target);
+  const activity = element !== null && (elementActivity(element) !== null || elementScope(element) !== null);
+  const lies = (place: Header): boolean => programSiblings(program, place).some((entry) => elementHeader(entry).id === target);
+  if (lies(header)) return { level: Propagation.ReferenceLevel.Visible, activity };
+  const parent = header.parent === null ? null : programElement(program, header.parent);
+  const scope = parent === null ? null : elementScope(parent);
+  const start = scope === null ? null : Scopes.eventSubProcessOf(scope[1]);
+  if (scope === null || start === null || !lies(scope[0])) return { level: Propagation.ReferenceLevel.Elsewhere, activity };
+  return {
+    level: Subscriptions.compensates(start[0]) ? Propagation.ReferenceLevel.Visible : Propagation.ReferenceLevel.EventSubProcessParent,
+    activity,
+  };
+}
+
 function throwSite(program: Program, header: Header): Propagation.ThrowSite {
   const reading = subscriptionReading(program, header.id);
   return {
@@ -87,6 +108,7 @@ function throwSite(program: Program, header: Header): Propagation.ThrowSite {
     eventsExpression: (refusal, expression) => Subscriptions.eventsExpression(program.options, reading, refusal, expression),
     mappings: (list) => Data.mappings(program.options.evaluator, site(program, header.id), list),
     handlerKey: (token) => Work.handlerKey(program, token),
+    reference: (target) => compensationTarget(program, header, target),
   };
 }
 

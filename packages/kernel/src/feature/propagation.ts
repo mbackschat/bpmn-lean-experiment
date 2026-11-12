@@ -578,11 +578,11 @@ function throwLeave(payload: EventPayload): Leave {
 }
 
 /**
- * A Compensation throw compensates the Activities retained in its scope occurrence and continues once all handlers have
- * completed; only the global, synchronous form is implemented (`throw.compensation.*` at admission).
+ * A Compensation throw compensates the Activities retained in its scope occurrence, or only its `activityRef`'s, and
+ * continues once all handlers have completed; only the synchronous form is implemented (`throw.compensation.asynchronous`
+ * at admission).
  */
 function throwCompensation(header: Header, payload: EventPayload, thrown: CompensationThrow, occurrence: Occurrence, state: State): Outcome {
-  if (thrown.activity !== null) return failed(FailureTag.Unsupported, "throw-compensation-activity");
   if (!thrown.waitForCompletion) return failed(FailureTag.Unsupported, "throw-compensation-asynchronous");
   const triggered = throwerRef(state, { element: header.id, scope: occurrence.scope, activation: occurrence.activation, host: null, patch: [] });
   return committed(signal(state, {

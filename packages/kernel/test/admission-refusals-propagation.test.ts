@@ -1,11 +1,11 @@
 /**
  * Refusal tests of `admission/propagation.ts`: an End Event throws only what `feature/propagation.ts` raises. An Error
- * message must be literal, a Compensation names no Activity and waits for its handlers, a Message throw runs only in
+ * message must be literal, a Compensation names an Activity visible from it and waits for its handlers, a Message throw runs only in
  * CIB's forms and carries no Data Input Associations, and a Signal throw carries `camunda:in` copies and a business key only where a Signal carries variables.
  */
 import {
-  append, boundary, computed, duration, end, flow, literalValue, mapping, qName, refusalTests, replace, scope, start, task, text, variable,
-  withFlows, withOptions,
+  activity, append, boundary, compensationTrigger, computed, duration, end, eventSubProcess, flow, literalValue, mapping, qName, refusalTests,
+  replace, scope, start, task, text, variable, withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -37,6 +37,24 @@ const cibForms: Json = { messageThrowForms: "cibForms" };
 const carrying: Json = { signalPayload: "variables", evaluator: "juel" };
 
 const compensation = (over: Json): Json => ({ compensation: { payload: { activity: null, waitForCompletion: true, ...over } } });
+
+/**
+ * `T` becomes a Sub-Process `XS -> U -> XE` holding the Event Sub-Process `K` started by `trigger`, whose start `KS`
+ * reaches an End `KE` throwing Compensation of `target`. An interrupting Event Sub-Process is an abnormal scope end, so
+ * the profile that completes normally is selected.
+ */
+const throwingInEventSubProcess = (trigger: Json | string, target: string) => (program: Json): Json =>
+  withFlows(append(task(scope("T", "embedded"))(withOptions(program, { abnormalScopeEnd: "completesNormally" })),
+    start("XS", null, [], "T"), activity("U", "manual", {}, "T"), end("XE", "none", "T"),
+    scope("K", eventSubProcess(trigger, true), {}, {}, "T"), start("KS", trigger, [], "K"), end("KE", compensation({ activity: target }), "K")),
+  flow("xu", "XS", "U"), flow("ux", "U", "XE"), flow("kk", "KS", "KE"));
+/** The profile selection resolving a reference from any Event Sub-Process at its parent's level (CIB-EXT-0047). */
+const parentLevel: Json = { compensationReferenceScope: "eventSubProcessParent" };
+/** `T` becomes a Sub-Process `XS -> U -> XE`; `E` throws Compensation of `target`. */
+const throwingBeside = (target: string) => (program: Json): Json =>
+  withFlows(append(task(scope("T", "embedded"))(throwing(compensation({ activity: target }))(program)),
+    start("XS", null, [], "T"), activity("U", "manual", {}, "T"), end("XE", "none", "T")),
+  flow("xu", "XS", "U"), flow("ux", "U", "XE"));
 
 export const rows: readonly Row[] = [
   {
@@ -118,10 +136,30 @@ export const rows: readonly Row[] = [
     control: (program) => throwing(signalThrow({}))(withOptions(program, { signalNames: "addresses" })),
   },
   {
-    code: "throw.compensation.activity",
-    description: "a Compensation naming the Activity to compensate",
-    mutate: throwing(compensation({ activity: "T" })),
-    control: throwing(compensation({})),
+    // BPMN 2.0.2 Table 10.94 types `activityRef` as an Activity; CIB-EXT-0046 compensates nothing for any other element.
+    code: "throw.compensation.notActivity",
+    description: "a Compensation naming a Start Event of its level",
+    mutate: throwing(compensation({ activity: "S" })),
+    control: throwing(compensation({ activity: "T" })),
+  },
+  {
+    code: "throw.compensation.activityLevel",
+    description: "a Compensation naming an Activity inside a Sub-Process of its level",
+    mutate: throwingBeside("U"),
+    control: throwingBeside("T"),
+  },
+  {
+    // BPMN 2.0.2 Tables 10.88 and 10.89: a Compensation Event Sub-Process sees its parent's level.
+    code: "throw.compensation.notActivity",
+    description: "a Compensation in a Compensation Event Sub-Process naming a Start Event of its parent's level",
+    mutate: throwingInEventSubProcess(compensationTrigger, "XS"),
+    control: throwingInEventSubProcess(compensationTrigger, "U"),
+  },
+  {
+    code: "throw.compensation.activityLevel",
+    description: "a Compensation in a Timer Event Sub-Process naming an Activity of its parent's level, unless CIB-EXT-0047 is selected",
+    mutate: throwingInEventSubProcess(duration("PT1S"), "U"),
+    control: (program) => throwingInEventSubProcess(duration("PT1S"), "U")(withOptions(program, parentLevel)),
   },
   {
     code: "throw.compensation.asynchronous",
