@@ -28,9 +28,9 @@ Four further models each hold one interrupting Escalation boundary `SLIP` that l
 | [call-interrupting](call-interrupting.scenario.json) | The interrupting boundary of a Call host, raised inside the called instance. |
 | [call-non-interrupting](call-non-interrupting.scenario.json) | The non-interrupting boundary of a Call host, raised inside the called instance. |
 | [user-task-host-declared](user-task-host-declared.scenario.json) | A User Task host with a boundary that is declared and never raised: only the host's normal completion. |
-| [service-task-host](service-task-host.scenario.json) | The start alone. Separates a deployment that refuses an Escalation boundary on a Service Task from one that accepts it. No evidence yet. |
-| [manual-task-host](manual-task-host.scenario.json) | The start alone, on a manual Task. No evidence yet. |
-| [task-host](task-host.scenario.json) | The start alone, on an untyped Task. No evidence yet. |
-| [transaction-host](transaction-host.scenario.json) | A Transaction host whose body throws `SLIP` after `Reserve` completes: the control for the three refusals, which a Transaction host should be accepted and route to `Handle`. No evidence yet. |
+| [service-task-host](service-task-host.scenario.json) | The start alone. Separates a deployment that refuses an Escalation boundary on a Service Task from one that accepts it. |
+| [manual-task-host](manual-task-host.scenario.json) | The start alone, on a manual Task. |
+| [task-host](task-host.scenario.json) | The start alone, on an untyped Task. |
+| [transaction-host](transaction-host.scenario.json) | A Transaction host whose body throws `SLIP` after `Reserve` completes: the control for the three refusals, which a Transaction host should be accepted and route to `Handle`. |
 
 The schedules carry no expected route or Process state; the retained CIB evidence is the answer.

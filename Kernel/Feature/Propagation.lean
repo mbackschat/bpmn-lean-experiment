@@ -93,11 +93,12 @@ def heldOnChain (state : State) (visited : ScopeOccurrenceId) : Nat → ScopeOcc
 /-- The Event Sub-Processes of `occurrence` that may catch a raise from `origin` (PC-ERROR-02). One the raise
 originates inside is no candidate, so a rethrow passes the handler that runs it, or that an interrupting handler's
 completion is disposing of, to the host's boundaries and outward (BPMN 2.0.2 §13.5.4: "control passes to the boundary
-Event"; CIB-INT-0022). Refused, dynamic-only because they rest on what a running handler raises: an Escalation from
-deeper inside a handler that matches it, which CIB catches with that handler again (`escalation-rethrow-reenters-handler`);
-and a raise from an interrupting handler that another Event Sub-Process of the same scope would catch, which §13.5.4
-rules out ("new Event Handlers MUST NOT be started" while the parent is Failing or Terminating) and CIB starts
-(CIB-DEV-0003). -/
+Event"; CIB-INT-0022). Refused under every profile, dynamic-only because they rest on what a running handler raises:
+an Escalation from deeper inside a handler that matches it (`escalation-rethrow-reenters-handler`), which CIB catches
+with that handler again; and a raise from an interrupting handler that another Event Sub-Process of the same scope would
+catch (`rethrow-caught-by-sibling-handler`), which CIB starts (CIB-DEV-0003). Both are restrictions of the `bpmn-2.0.2`
+meaning, never that meaning: §13.5.4 passes the running handler at any depth and starts no new handler while the parent
+is Failing or Terminating, so both raises would go on outward. -/
 def handlerCandidates (ctx : Ctx) (raised : Raised) (origin : Origin) (state : State) (occurrence : ScopeOccurrence) :
     Except Failure (List (ElementId × Subscription × Bool)) :=
   let handlers := eventSubProcesses ctx state occurrence

@@ -9,7 +9,7 @@ The [double-pass model](double-pass-claim.bpmn) separates one pass of the Call's
 | Scenario | Case it exercises |
 |---|---|
 | [relayed-through-callee-handler](relayed-through-callee-handler.scenario.json) | `ExamineRelayed` sets `status` before the throw, which the called Process's ESP catches and throws again toward the Call's boundary. |
-| [double-pass-through-root-handler](double-pass-through-root-handler.scenario.json) | `claim = "CLM-1"`; `Draft` completes with `status = "draft"`, then `Revise` completes with `status = "revised"`. No evidence yet. |
+| [double-pass-through-root-handler](double-pass-through-root-handler.scenario.json) | `claim = "CLM-1"`; `Draft` completes with `status = "draft"`, then `Revise` completes with `status = "revised"`. |
 
 The schedules carry no expected route, mapped variable or Process state; the retained CIB evidence is the answer. What each reading of the double-pass schedule predicts, observed in the caller's variables after each step:
 
