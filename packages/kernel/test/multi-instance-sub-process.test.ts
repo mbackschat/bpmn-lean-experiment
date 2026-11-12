@@ -3,8 +3,8 @@
  * runs one Sub-Process instance per item, each an ordinary occurrence of the Scope in a scope occurrence of its own
  * holding the item (BPMN 2.0.2 §10.3.8, §13.3.7; CIB makes the Sub-Process a scope under the body,
  * `BpmnParse.java:3887`, `:1808-1811`); the body completes once every instance's Sub-Process is quiescent. A
- * Transaction or Event Sub-Process loop stays `scope.multiInstance`, and a Sub-Process loop naming an output data item,
- * which no instance fills, is `multiInstance.instanceResult` (PC-MI-10). The oracle is the open inner tasks per step.
+ * Transaction loops alike (PC-TX-03), and a Sub-Process loop naming an output data item, which no instance fills, is
+ * `multiInstance.instanceResult` (PC-MI-10). The oracle is the open inner tasks per step.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -87,8 +87,13 @@ test("a sequential Multi-Instance Sub-Process opens the next instance only after
   ]);
 });
 
-test("a Transaction loop stays refused, and a Sub-Process loop naming an output data item no instance fills is refused", () => {
-  assert.deepEqual(journey(program("parallel", { transaction: { payload: { method: "compensate" } } }), [start]), [["unsupported", "scope.multiInstance"]]);
+test("a Transaction loop runs its instances as a Sub-Process loop does", () => {
+  assert.deepEqual(journey(program("parallel", { transaction: { payload: { method: "compensate" } } }), [start, complete(2), complete(1)]), [
+    ["start", "committed", [1, 2], "running"], ["complete-2", "committed", [1], "running"], ["complete-1", "committed", [], "completed"],
+  ]);
+});
+
+test("a Sub-Process loop naming an output data item no instance fills is refused", () => {
   assert.deepEqual(journey(program("parallel", "embedded", { outputDataItem: "result" }), [start]),
     [["unsupported", "multiInstance.instanceResult"]]);
 });

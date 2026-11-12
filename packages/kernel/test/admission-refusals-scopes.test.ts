@@ -1,6 +1,6 @@
 /**
  * Refusal tests of `admission/scopes.ts`: a Scope the kernel can begin and run. A Scope without a none start Event
- * begins only Activities, a Transaction runs the compensate method, a Scope carries no loop, and a local variable
+ * begins only Activities, a Transaction runs the compensate method, an Event Sub-Process carries no loop, and a local variable
  * needs the input mapping that gives it its initial value.
  */
 import assert from "node:assert/strict";
@@ -101,9 +101,9 @@ export const rows: readonly Row[] = [
   },
   {
     code: "scope.multiInstance",
-    description: "a Transaction with a loop; an embedded Sub-Process may loop",
-    mutate: task(scope("T", { transaction: { payload: { method: "compensate" } } }, {}, { multiInstance: loop({ outputDataItem: null }) })),
-    control: task(scope("T", "embedded", {}, { multiInstance: loop({ outputDataItem: null }) })),
+    description: "an Event Sub-Process with a loop; a Transaction may loop",
+    mutate: timerEventSubProcess({ multiInstance: loop({ outputDataItem: null }) }),
+    control: task(scope("T", { transaction: { payload: { method: "compensate" } } }, {}, { multiInstance: loop({ outputDataItem: null }) })),
   },
   {
     code: "scope.localVariableWithoutInput",

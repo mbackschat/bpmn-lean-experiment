@@ -138,12 +138,12 @@ function withoutStart(program: Program, header: Header, payload: ScopePayload): 
 
 /**
  * A local variable is declared by an input mapping; a declared local without one has no initial value the kernel could
- * choose. An embedded Sub-Process may loop, which `admission/multi-instance.ts` admits (PC-MI-04 to PC-MI-06); a looping
- * Transaction (PC-TX) or Event Sub-Process, which BPMN 2.0.2 §10.3.5 starts by its event, is refused.
+ * choose. An embedded Sub-Process or Transaction may loop, which `admission/multi-instance.ts` admits (PC-MI-04 to
+ * PC-MI-06, PC-TX-03); a looping Event Sub-Process, which BPMN 2.0.2 §10.3.5 starts by its event, is refused.
  */
 export function scope(program: Program, header: Header, payload: ScopePayload): string | null {
   const declared = payload.envelope.inputs.map((mapping) => mapping.target);
-  if (payload.envelope.multiInstance !== null && (isTransaction(payload) || eventSubProcessOf(payload) !== null)) {
+  if (payload.envelope.multiInstance !== null && eventSubProcessOf(payload) !== null) {
     return "scope.multiInstance";
   }
   if (payload.localVariables.some((name) => !declared.includes(name))) return "scope.localVariableWithoutInput";

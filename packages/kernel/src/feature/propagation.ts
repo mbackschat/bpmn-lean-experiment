@@ -387,17 +387,36 @@ function interruptedOutputs(ctx: Ctx, occurrence: ScopeOccurrence, parent: Scope
 }
 
 /**
+ * The scope occurrence a Cancel caught at `occurrence` rolls back (I15): the nearest scope occurrence of the Transaction
+ * on the chain from the raise outward, which is `occurrence` itself, or, when `occurrence` is a Multi-Instance
+ * Transaction's body, whose instances offer no boundaries, the cancelling instance's. The other instances go on until
+ * its run completes; leaving the Activity then cancels them with their runs (D12) and drops the records completed
+ * instances retained in the body, never compensated.
+ */
+function cancelledScope(origin: Origin, occurrence: ScopeOccurrence, state: State): ScopeOccurrenceId {
+  let current: ScopeOccurrenceId | null = origin.scope;
+  for (let fuel = state.scopes.length + 1; fuel > 0 && current !== null; fuel -= 1) {
+    const at: ScopeOccurrenceId = current;
+    const entry = state.scopes.find((scope) => scope.id === at);
+    if (entry === undefined) return occurrence.id;
+    if (entry.element === occurrence.element) return entry.id;
+    current = entry.parent;
+  }
+  return occurrence.id;
+}
+
+/**
  * Leave `occurrence`, held in `parent`, through its caught boundary. A Cancel boundary on a Transaction first cancels
- * the Transaction's interior and runs the compensation handlers retained in it, and only then takes the boundary's
- * flows (BPMN 2.0.2 §10.3.5 Transaction: the boundary "will direct the flow after the Transaction has been rolled back
- * and all compensation has been completed"); a Cancel raise has no host. An interrupting Error or Escalation boundary
- * writes its catch variables from the host, lets a raising Activity leave (`catchDecided`), and writes the host's output
- * mappings (`interruptedOutputs`; CIB-EXT-0016 for both, as `deleteCascade` destroys the host either way,
- * `PvmAtomicOperationCancelActivity.java:60`). A Call's host is its occurrence in the caller, the called root's
- * `parent`, not the called instance: CIB sets the variables on the execution of the boundary's event scope, the Call's
- * (`BpmnExceptionHandler.java:146-153`, CIB-EXT-0028). Only an Escalation boundary is non-interrupting
- * (`boundary.error.nonInterrupting`): it writes its code variable from the host's parent, CIB's flow scope of the
- * boundary (`EscalationHandler.java:80-97`), and its thrower then leaves.
+ * the interior of the Transaction, or of its cancelling instance (`cancelledScope`), and runs the compensation handlers
+ * retained there, and only then takes the boundary's flows (BPMN 2.0.2 §10.3.5 Transaction: the boundary "will direct
+ * the flow after the Transaction has been rolled back and all compensation has been completed"); a Cancel raise has no
+ * host. An interrupting Error or Escalation boundary writes its catch variables from the host, lets a raising Activity
+ * leave (`catchDecided`), and writes the host's output mappings (`interruptedOutputs`; CIB-EXT-0016 for both, as
+ * `deleteCascade` destroys the host either way, `PvmAtomicOperationCancelActivity.java:60`). A Call's host is its
+ * occurrence in the caller, the called root's `parent`, not the called instance: CIB sets the variables on the
+ * execution of the boundary's event scope, the Call's (`BpmnExceptionHandler.java:146-153`, CIB-EXT-0028). Only an
+ * Escalation boundary is non-interrupting (`boundary.error.nonInterrupting`): it writes its code variable from the
+ * host's parent, CIB's flow scope of the boundary (`EscalationHandler.java:80-97`), and its thrower then leaves.
  */
 function leaveOccurrence(
   hooks: PropagationHooks,
@@ -411,9 +430,10 @@ function leaveOccurrence(
   state: State,
 ): Outcome {
   if (raisedIsCancel(raised)) {
-    return committed(signal(clearInside(state, occurrence.id), {
+    const rolledBack = cancelledScope(origin, occurrence, state);
+    return committed(signal(clearInside(state, rolledBack), {
       tag: SignalTag.Compensate,
-      scope: occurrence.id,
+      scope: rolledBack,
       activity: null,
       trigger: throwerRef(state, origin),
       leave: occurrence.occurrence,

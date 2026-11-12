@@ -232,11 +232,27 @@ def interruptedOutputs (ctx : Ctx) (occurrence : ScopeOccurrence) (parent : Scop
         state.signal (.write parent outputs .outward)
   | .none => .ok state
 
+/-- The scope occurrence a Cancel caught at `occurrence` rolls back (I15): the nearest scope occurrence of the
+Transaction on the chain from the raise outward, which is `occurrence` itself, or, when `occurrence` is a
+Multi-Instance Transaction's body, whose instances offer no boundaries, the cancelling instance's. The other instances
+go on until its run completes; leaving the Activity then cancels them with their runs (D12) and drops the records
+completed instances retained in the body, never compensated. -/
+def cancelledScope (origin : Origin) (occurrence : ScopeOccurrence) (state : State) : ScopeOccurrenceId :=
+  let rec nearest : Nat → ScopeOccurrenceId → ScopeOccurrenceId
+    | 0, _ => occurrence.id
+    | fuel + 1, current =>
+      match state.scopes.find? (·.id == current) with
+      | none => occurrence.id
+      | some entry =>
+        if entry.element == occurrence.element then entry.id
+        else (entry.parent.map (nearest fuel)).getD occurrence.id
+  nearest (state.scopes.length + 1) origin.scope
+
 /-- Leave `occurrence`, held in `parent`, through its caught boundary. A Cancel boundary on a Transaction first
-cancels the Transaction's interior and runs the compensation handlers retained in it, and only then takes the
-boundary's flows ([BPMN 2.0.2 §10.3.5](../../docs/reference/bpmn-2.0.2/README.md) Transaction: the boundary "will
-direct the flow after the Transaction has been rolled back and all compensation has been completed"); a Cancel raise
-has no host. An interrupting Error or Escalation boundary writes its catch variables from the host, lets a raising
+cancels the interior of the Transaction, or of its cancelling instance (`cancelledScope`), and runs the compensation
+handlers retained there, and only then takes the boundary's flows
+([BPMN 2.0.2 §10.3.5](../../docs/reference/bpmn-2.0.2/README.md) Transaction: the boundary "will direct the flow after
+the Transaction has been rolled back and all compensation has been completed"); a Cancel raise has no host. An interrupting Error or Escalation boundary writes its catch variables from the host, lets a raising
 Activity leave (`catchDecided`), and writes the host's output mappings (`interruptedOutputs`; CIB-EXT-0016 for both, as
 `deleteCascade` destroys the host either way, `PvmAtomicOperationCancelActivity.java:60`). A Call's host is its
 occurrence in the caller, the called root's `parent`, not the called instance: CIB sets the variables on the execution
@@ -248,7 +264,8 @@ def leaveOccurrence (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (or
     (state : State) : Outcome := do
   if raised.isCancel then
     let thrown := throwerRef state origin
-    .ok ((state.clearInside occurrence.id).signal (.compensate occurrence.id none thrown occurrence.occurrence
+    let rolledBack := cancelledScope origin occurrence state
+    .ok ((state.clearInside rolledBack).signal (.compensate rolledBack none thrown occurrence.occurrence
       (some (.occur boundary.id parent (.flows boundary.outgoing)))))
   else if boundary.interrupting then
     let host := if state.calledRoot occurrence.id then parent else occurrence.id

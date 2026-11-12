@@ -2336,54 +2336,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/transaction-multi-instance-concurrent-cancel/completion-condition-closes-while-run-waits.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/transaction-multi-instance-concurrent-cancel/concurrent-cancel-first-run-completes-first.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/transaction-multi-instance-concurrent-cancel/concurrent-cancel-second-run-completes-first.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/transaction-multi-instance-concurrent-cancel/sequential-cancel-before-third-body-begins.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/transaction-multi-instance/parallel-all-bodies-succeed.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/transaction-multi-instance/parallel-cancel-after-others-checked.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/transaction-multi-instance/parallel-cancel-with-others-unchecked.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/transaction-multi-instance/sequential-second-body-cancels.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-03"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/transaction-nested/outer-cancel-after-inner-completed.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0011"
