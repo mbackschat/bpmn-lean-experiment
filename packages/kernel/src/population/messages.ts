@@ -3,7 +3,7 @@
  * across the population with exact cardinality, to a waiting subscription, else to a root Message start
  * ([specification](../../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)).
  */
-import { MessageNames, assertNever, programPublicId, valueSourceLiteral, type ElementId, type Program } from "../il/types.js";
+import { MessageNames, assertNever, compareStrings, programPublicId, valueSourceLiteral, type ElementId, type Program } from "../il/types.js";
 import { messageTriggerChannel, type Hooks } from "../hooks.js";
 import {
   DeliveryTriggerTag,
@@ -94,7 +94,7 @@ export function occurrence(program: Program, state: State, item: OpenItem): Occu
 export function leastRefusal(refusals: readonly Failure[]): Failure | null {
   let least: Failure | null = null;
   for (const failure of refusals) {
-    if (least === null || failure.code < least.code) least = failure;
+    if (least === null || compareStrings(failure.code, least.code) < 0) least = failure;
   }
   return least;
 }

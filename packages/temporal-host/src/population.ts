@@ -11,6 +11,8 @@
  * population layer through `PopulationPort`; the driver only routes the receivers it is given to the chains and
  * deployments that hold them.
  */
+import { compareStrings } from "@bpmn-lean/kernel";
+
 import { canonicalJson } from "./canonical-json.js";
 import type { HostConfig } from "./host-contract.js";
 import type {
@@ -616,7 +618,7 @@ export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressSta
       // A reached wait's refusal is the command's, whatever the other chains reach, and the least code wins whatever the
       // registrations' order (`Population.publish`, `leastRefusal`).
       const refused = given.chains.reduce<RefusalParts | null>((least, chain) =>
-        chain.scan.kind === "refused" && (least === null || chain.scan.refusal.code < least.code) ? chain.scan.refusal : least, null);
+        chain.scan.kind === "refused" && (least === null || compareStrings(chain.scan.refusal.code, least.code) < 0) ? chain.scan.refusal : least, null);
       if (refused !== null) return resolve(port, state, refused);
       const matches = given.chains.flatMap((chain) => chain.scan.kind === "receivers"
         ? chain.scan.receivers.map(([target, channel]) => ({ workflowId: chain.workflowId, target, channel })) : []);

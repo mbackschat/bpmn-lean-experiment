@@ -13,6 +13,7 @@ export {
   runStep,
   unsupportedDeploymentResult,
 } from "./run.js";
+export { compareStrings } from "./il/types.js";
 export {
   CodecRefusalCode,
   bindingsFromJson,
