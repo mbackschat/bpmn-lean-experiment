@@ -1,17 +1,32 @@
 /**
- * The single step function, transcribed from `Kernel/Step.lean`, whose module comment states its contract: the dispatch
- * it owns, the one completion pipeline, the order of hooks, the closure and its bounds, and when a scope occurrence is
- * idle.
+ * The single step function, transcribed from `Kernel/Step.lean`.
+ *
+ * It owns dispatch on element kind, event role, input kind, signal and continuation, the one completion pipeline, and
+ * the order in which hooks run. An input's own transition comes first, then the closure: hand the next signal to its
+ * hook; else route the next token to the element at the end of its flow, or dispatch the deferred begin it is as its
+ * `begin` signal; else complete one idle scope occurrence; until none is left. A closure that does not settle within
+ * `closureBound` steps, or whose steps together run over more than `closureWorkBound` state entries, is `unsupported`,
+ * never silently truncated. Each of those is one micro-step and appends one `Transition` to the journal; a completion
+ * that is the only signal a micro-step enqueued runs inside that micro-step, so a pass-through element begins and
+ * completes in one transition.
+ *
+ * A scope occurrence is idle when it holds no token, no blocking open item, no begun occurrence and no child
+ * occurrence, and no slot keeps it alive. An idle Scope element is completed by its hook, an idle called instance's
+ * root by its Call Activity's, an idle Multi-Instance body by its feature; an idle process root completes the
+ * instance, removing the passive items left in it. An Activity's local-variable scope occurrence has no completion of
+ * its own: the completion pipeline disposes of it with its Activity.
+ *
+ * How a closure's failure becomes its input's outcome where CIB runs the work in a job is `step/jobs.ts`.
  */
 import {
-  BranchSchedule, ContinuationFailure, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementGateway,
+  BranchSchedule, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementGateway,
   elementHeader, programElement, programPublicId, programSourceType, programTarget, type Element, type ElementId,
   type Envelope, type FlowId, type MultiInstance, type Program,
 } from "./il/types.js";
 import {
-  ActivationRole, CauseTag, CommandActionTag, ContinuationTag, EffectOutcomeTag, FailureTag, FiredTag, InputTag,
+  ActivationRole, CauseTag, CommandActionTag, ContinuationTag, FailureTag, FiredTag, InputTag,
   InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence, beginRequest,
-  busyScopes, closeOwnItems, committed, crossed, emptyDraft, entryCount, failed, failedWith, idle, initial, instanceOf,
+  busyScopes, closeOwnItems, committed, emptyDraft, entryCount, failed, failedWith, idle, initial, instanceOf,
   keyOf, occurrenceOf, ownScope, recordEnd, reserve, root, signal as enqueue, startReserved, type BeginRequest,
   type Binding, type Cause, type CommandInput, type EffectInput, type Fired, type IncidentDetail, type Input,
   type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceRef, type OpenItem, type Outcome,
@@ -21,6 +36,7 @@ import {
 import {
   ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemDetailOf, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
 } from "./hooks.js";
+import { deferred, effectContinuation, timerJob } from "./step/jobs.js";
 
 /** The name a transition records for a signal: its tag, which spells the Lean constructor. */
 export function signalName(next: Signal): string {
@@ -86,32 +102,6 @@ function roleOf(program: Program, request: BeginRequest): ActivationRole {
       return loops ? ActivationRole.MultiInstanceBody : ActivationRole.Element;
   }
   return assertNever(request.continuation);
-}
-
-/**
- * `outcome`, unless it rolls back or fails after `state` crossed a transaction boundary: CIB commits an input at the
- * boundary and runs the rest in a job, which alone fails (`ExecutionEntity#performOperation`, CIB-EXT-0027). Rolling the
- * whole input back would be wrong and the kernel does not split it, so the outcome is `unsupported`.
- */
-function deferred(program: Program, state: State, outcome: Outcome): Outcome {
-  if (outcome.ok) return outcome;
-  switch (outcome.failure.tag) {
-    case FailureTag.RolledBack:
-    case FailureTag.SemanticFailure:
-      // dynamic-only: whether a closure fails after it crossed a boundary depends on the run's data and order
-      return crossed(program, state) ? failed(FailureTag.Unsupported, "async-boundary-failure") : outcome;
-    case FailureTag.Rejected:
-    case FailureTag.Unsupported:
-      return outcome;
-  }
-  return assertNever(outcome.failure.tag);
-}
-
-/** A rolled-back timer firing stays rolled back under `ContinuationFailure.RolledBack`, `unsupported` under `Incident`. */
-function timerJob(failure: ContinuationFailure, outcome: Outcome): Outcome {
-  const rolledBack = !outcome.ok && outcome.failure.tag === FailureTag.RolledBack;
-  // dynamic-only: whether a firing's closure rolls back depends on the run's data
-  return rolledBack && failure === ContinuationFailure.Incident ? failed(FailureTag.Unsupported, "timer-job-failure") : outcome;
 }
 
 /**
@@ -509,19 +499,6 @@ function command(hooks: Hooks, ctx: Ctx, input: CommandInput, state: State): Out
 function deliverEffectResult(hooks: Hooks, ctx: Ctx, input: EffectInput, state: State): Outcome {
   const item = itemOf(ctx, state, input.occurrence, (view) => view.effect);
   return item === null ? failed(FailureTag.Rejected, "unknown-effect") : hooks.effectResult(ctx, item, input.outcome, state);
-}
-
-/**
- * A continuation an effect result reaches that cannot go on rolls back; under a profile selecting the job-failure
- * reading (`ContinuationFailure.incident`, CIB-EXT-0026, the boundary of CIB-INT-0003) it instead turns the effect into
- * a technical failure, the path a real job's retry and incident follow.
- */
-function effectContinuation(ctx: Ctx, data: EffectInput, run: (data: EffectInput) => Outcome): Outcome {
-  const result = run(data);
-  const retried = !result.ok && result.failure.tag === FailureTag.RolledBack &&
-    ctx.program.options.continuationFailure === ContinuationFailure.Incident &&
-    (data.outcome.tag === EffectOutcomeTag.Success || data.outcome.tag === EffectOutcomeTag.BusinessFailure);
-  return retried ? run({ ...data, outcome: { tag: EffectOutcomeTag.TechnicalFailure } }) : result;
 }
 
 /** `Kernel.Step.admitChoices *> next`: `next` runs only on a ranking that repeats no element and names only competing ones. */
