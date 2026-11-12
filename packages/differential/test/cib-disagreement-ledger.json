@@ -150,6 +150,12 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/automation-handler-reuse/unknown-delegate.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0051"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/business-rule-hit-policies/after-timer-failure.cibseven-evidence.json",
     "owners": [
       "CIB-OP-0017"
@@ -530,6 +536,12 @@
   },
   {
     "evidence": "scenarios/open-rows/condition-language-declarations/definitions-xpath-default.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0009"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-language-declarations/named-javascript.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0009"
     ]
@@ -1143,6 +1155,24 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/juel-form-separations/authenticated-user-name.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0009"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-form-separations/execution-mutation.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0009"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-form-separations/execution-read.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0009"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/juel-form-separations/list-mutating-method.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0009"
@@ -1338,6 +1368,12 @@
     "evidence": "scenarios/open-rows/message-start-population/start-only-with-criteria.population-cibseven-evidence.json",
     "owners": [
       "CIB-EXT-0025"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-throw-retry/technical-failure-then-retry.cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0049"
     ]
   },
   {
@@ -1855,9 +1891,51 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/string-over-bytes-human-completion.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0014"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/string-over-bytes-service-result.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0014"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/scope-without-start/transaction-entry-rolls-back.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0024"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/script-task-javascript/multi-instance-body.cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0048"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/script-task-javascript/probe-host-mutation.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0052"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/script-task-javascript/probe-other-language-juel.cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0048"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/script-task-javascript/probe-thrown-error.cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0049"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/script-task-javascript/probe-unknown-name.cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0049"
     ]
   },
   {
@@ -1900,6 +1978,18 @@
     "evidence": "scenarios/open-rows/structured-value-bounds/start-over-node-bound.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0014"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/synchronous-effect-failure/send-task-failure-then-retry.cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0049"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/synchronous-effect-failure/service-task-failure-then-retry.cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0049"
     ]
   },
   {

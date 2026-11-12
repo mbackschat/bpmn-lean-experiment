@@ -15,5 +15,5 @@ Every schedule has one stimulus, the start with `flag = true`.
 
 Notes for the target runners:
 
-- Gap: a condition that names a non-JUEL language: the runner records its model as a harness failure; the case is kept because PC-DATA-07 owns the language mismatch.
+- `named-javascript`: CIB evaluates the JavaScript condition through GraalJS (CIB-CFG-0015) and commits, where the kernel refuses the language at deployment (CIB-LIM-0009); PC-DATA-07 owns the language mismatch.
 - `definitions-xpath-default` only declares the BPMN default language; no XPath expression exists in it.

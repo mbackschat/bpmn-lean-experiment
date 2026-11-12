@@ -19,7 +19,7 @@ import { beforeEach } from "node:test";
 
 import * as kernel from "@bpmn-lean/kernel";
 import type {
-  Decoded, Input, JsonValue, MessageChannel, Outcome, Program, State, TimerFiring,
+  Decoded, Input, JsonValue, Outcome, Program, State, TimerFiring,
 } from "@bpmn-lean/kernel";
 
 export {
@@ -193,14 +193,6 @@ export function rootStarts(program: Program): ReturnType<typeof kernel.rootStart
 export function refusesSignalVariables(program: Program): boolean {
   record({ entry: "fixture", fixture: { entry: "refusesSignalVariables", programs: [wireOf(programJson, program, "program")], input: {} } });
   return kernel.refusesSignalVariables(program);
-}
-
-/** A delivery's channel, remembering its wire form. */
-const channelJson = new WeakMap<MessageChannel, unknown>();
-export function channelFromJson(json: unknown): Decoded<MessageChannel> {
-  const decoded = kernel.channelFromJson(json);
-  if (decoded.ok) channelJson.set(decoded.value, json);
-  return decoded;
 }
 
 /** The registry's evaluator over an IL expression and wire bindings, as `kernelRun --batch` answers `evaluate`. */
