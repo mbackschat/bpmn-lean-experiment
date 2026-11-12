@@ -58,13 +58,13 @@ function isHandler(program: Program, id: ElementId): boolean {
   return program.elements.some((element) => elementEnvelope(element)?.compensationHandlers.includes(id) ?? false);
 }
 
-/** Refusals an Activity owes because of how it begins or of what its handler restores. */
+/**
+ * Refusals an Activity owes because of how it begins. A compensation handler begins as a token would
+ * (`feature/work.ts#arriveActivity`), so it may have inputs and do any admitted work.
+ */
 function activityOrigin(program: Program, header: Header, payload: ActivityPayload): string | null {
-  const handler = isHandler(program, header.id);
-  if (handler && payload.envelope.inputs.length > 0) return "activity.compensationHandler.input";
-  if (handler && !Work.beginsWithoutToken(payload.work)) return "compensation.handlerWork";
   // CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `state/journal.ts` `marks` would read.
-  if (handler && payload.envelope.multiInstance !== null) return "compensation.handlerMultiInstance";
+  if (isHandler(program, header.id) && payload.envelope.multiInstance !== null) return "compensation.handlerMultiInstance";
   if (Scopes.implicitChild(program, header) && !Work.beginsWithoutToken(payload.work)) return "scope.implicitStart";
   return null;
 }

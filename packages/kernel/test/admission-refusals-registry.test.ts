@@ -27,18 +27,6 @@ const multipleEnd = (alternatives: Array<Json | string>) => (program: Json): Jso
 
 export const rows: readonly Row[] = [
   {
-    code: "activity.compensationHandler.input",
-    description: "a compensation handler with an input mapping",
-    mutate: handledBy(handler(userWork(), { inputs: [mapping("x", variable("y"))] })),
-    control: handledBy(handler(userWork())),
-  },
-  {
-    code: "compensation.handlerWork",
-    description: "a compensation handler that waits for a Message",
-    mutate: handledBy(handler(receiveWork())),
-    control: handledBy(handler("manual")),
-  },
-  {
     // CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `marks` (`Kernel.State.Journal`) would read.
     code: "compensation.handlerMultiInstance",
     description: "a compensation handler with Multi-Instance loop characteristics",
@@ -79,6 +67,12 @@ function refusedEverywhere(): Json {
   const program = calledProcess({ tenant: "tenant" })(conditionOn(task(activity("T", sendWork()))(base()), "f2", foreign()));
   return withOptions(program, { callBindingTime: "invocation" });
 }
+
+test("registry: a compensation handler with input mappings, or one that waits for a Message, is admitted", () => {
+  // I10: a run begins its handler as a token would, so its inputs read the handler context and any admitted work runs.
+  assert.equal(refusalOf(handledBy(handler(userWork(), { inputs: [mapping("x", variable("y"))] }))(base())), null);
+  assert.equal(refusalOf(handledBy(handler(receiveWork()))(base())), null);
+});
 
 test("registry: a called process's population stamps are admitted, since the population validates them", () => {
   assert.equal(refusalOf(calledProcess({ deployment: 1, version: 2, versionTag: "stable" })(base())), null);

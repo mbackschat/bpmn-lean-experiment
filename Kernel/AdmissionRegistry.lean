@@ -20,13 +20,11 @@ namespace Kernel.AdmissionRegistry
 def isHandler (program : Program) (id : ElementId) : Bool :=
   program.elements.any fun element => ((element.envelope?.map (·.compensationHandlers)).getD []).contains id
 
-/-- Refusals an Activity owes because of how it begins or of what its handler restores. -/
+/-- Refusals an Activity owes because of how it begins. A compensation handler begins as a token would
+(`Kernel.Feature.Work.arriveActivity`), so it may have inputs and do any admitted work. -/
 def activityOrigin (program : Program) (header : Header) (payload : ActivityPayload) : Option String :=
-  let handler := isHandler program header.id
-  if handler && !payload.envelope.inputs.isEmpty then some "activity.compensationHandler.input"
-  else if handler && !Admission.Work.beginsWithoutToken payload.work then some "compensation.handlerWork"
   -- CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `marks` (`Kernel.State.Journal`) would read.
-  else if handler && payload.envelope.multiInstance.isSome then some "compensation.handlerMultiInstance"
+  if isHandler program header.id && payload.envelope.multiInstance.isSome then some "compensation.handlerMultiInstance"
   else if Admission.Scopes.implicitChild program header && !Admission.Work.beginsWithoutToken payload.work then
     some "scope.implicitStart"
   else none

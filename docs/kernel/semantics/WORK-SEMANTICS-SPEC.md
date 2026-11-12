@@ -14,7 +14,7 @@ What an Activity does once its occurrence has begun. [`Kernel.Feature.Work`](../
 - The kernel owns the occurrence, its published projection and the admission of the command that completes it; a host only transports the projection and the command ([decision][uti-decision]).
 - A command that names another instance, element or activation, or an occurrence already consumed, is `rejected` and changes nothing (`unknown-user-task`, `unknown-effect`, `unknown-incident`; [EFFECT-REFUSE-01][effect-rules], [RECV-REFUSE-01][recv-rules], [CTASK-REFUSE-01][ctask-rules]).
 - A completing task leaves through its one completion pipeline and takes every unconditioned outgoing flow in that step.
-- An Activity that no token began (the implicit start of a Scope, a compensation handler) may only be a task without work, a User Task or a Service Task (`scope.implicitStart`, `compensation.handlerWork`); a Receive Task or Call begun that way is `unsupported`.
+- An Activity that a Scope's implicit start begins, without a token, may only be a task without work, a User Task or a Service Task (`scope.implicitStart`); a Receive Task or Call begun that way is `unsupported`. A compensation handler, which its run begins as a token would, may do any admitted work ([compensation](COMPENSATION-SEMANTICS-SPEC.md)).
 - `asyncBefore` and `asyncAfter` mark transaction boundaries: a closure that rolls back or fails after it crossed one is `unsupported` (`async-boundary-failure`), never a rollback of the whole input ([`Step.deferred`](../../../Kernel/Step.lean)).
 
 ### Tasks without work
@@ -161,7 +161,7 @@ The deleted implementation admitted each work kind only in exact first-profile t
 | `work.call.dataCorrespondence` | standard Call data other than one input and one output Data Association | §10.3.6 correspondence the kernel can read |
 | `activity.inputMappings`, `activity.outputMappings` | mappings on work other than User, Service and decision tasks, and a plain Task's outputs other than `camunda:outputParameter`s under `OutputContext.activityScope` | nothing would carry or submit them |
 | `activity.multiInstanceBody` | Multi-Instance on work other than a User, Service or Receive Task | [Multi-Instance rows](MULTI-INSTANCE-SEMANTICS-SPEC.md) |
-| `activity.compensationHandler`, `activity.compensationHandler.input`, `compensation.handlerWork` | compensation on work the pipeline cannot complete | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
+| `activity.compensationHandler` | compensation on work the pipeline cannot complete | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
 | `compensation.handlerCount` | more than one compensation handler of one Activity or Scope | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
 | `scope.implicitStart` | a Receive Task or Call begun by a Scope's implicit start | no flow to wait on |
 | dynamic: `effect-technical-failure` | technical failure without the incident profile | no BPMN meaning (§13.3.3) |

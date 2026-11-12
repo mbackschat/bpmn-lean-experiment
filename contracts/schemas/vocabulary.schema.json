@@ -428,7 +428,6 @@
     "refusalCode": {
       "enum": [
         "activity.compensationHandler",
-        "activity.compensationHandler.input",
         "activity.inputMappings",
         "activity.multiInstanceBody",
         "activity.outputMappings",
@@ -446,7 +445,6 @@
         "compensation.dependency.boundary",
         "compensation.handlerCount",
         "compensation.handlerMultiInstance",
-        "compensation.handlerWork",
         "compensation.implicit",
         "compensation.recursive",
         "data.scopedItem",

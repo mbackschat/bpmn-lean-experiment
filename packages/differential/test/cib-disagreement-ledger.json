@@ -350,18 +350,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/compensation-handler-bodies-without-receive/abandoned-while-handlers-wait.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-handler-bodies-without-receive/all-forms-complete.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-04"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/compensation-handler-bodies/abandoned-while-handlers-wait.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-04"
@@ -394,15 +382,13 @@
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/both-succeed-reversed.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
+      "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/duplicate-results.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
+      "CIB-LIM-0042"
     ]
   },
   {
@@ -415,22 +401,19 @@
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/one-fails-uncaught.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
+      "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/technical-failure-cancelled.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
+      "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/technical-failure-retried.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
+      "CIB-LIM-0042"
     ]
   },
   {
@@ -2424,18 +2407,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/transaction-cancel-mixed/deadline-interrupts.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/transaction-cancel-mixed/empty-cancel.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-02"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/transaction-cancel-mixed/refund-business-failure.cibseven-evidence.json",
     "owners": [
       "PC-TX-02"
@@ -2444,7 +2415,7 @@
   {
     "evidence": "scenarios/open-rows/transaction-cancel-mixed/refund-incident-retried.cibseven-evidence.json",
     "owners": [
-      "PC-TX-02"
+      "CIB-LIM-0042"
     ]
   },
   {
@@ -2462,13 +2433,13 @@
   {
     "evidence": "scenarios/open-rows/transaction-cancel-waiting-handlers/handlers-user-first.cibseven-evidence.json",
     "owners": [
-      "PC-TX-02"
+      "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-cancel-waiting-handlers/stale-interior-result-while-handlers-wait.cibseven-evidence.json",
     "owners": [
-      "PC-TX-02"
+      "CIB-LIM-0042"
     ]
   },
   {

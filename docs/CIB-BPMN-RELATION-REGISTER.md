@@ -28,7 +28,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | CIB interpretations of BPMN gaps or inconsistencies | 36 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 43 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 38 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 39 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1303,6 +1303,16 @@ BPMN 2.0.2 gives a data value no Java type, and the kernel's Integer is one kind
 **Evidence:** Pinned `QueryVariableValue.java:58-66`, `MultiInstanceActivityBehavior.java:77`; retained `message-correlation-criteria/engine-integer-criterion`, whose criterion on `lastPosition`, mapped from `${loopCounter}`, CIB rejects where the kernel delivers; `integer-beyond-int-range`, which agrees; and `receive-task-payload-correlation/items-parallel-local-correlation`.
 
 **Boundary:** Integer criteria on a variable CIB stores as `Integer` (an engine counter, or an expression result derived from one) under the cibseven profiles; this entry owns those witnesses in the ledger.
+
+### CIB-LIM-0042 — CIB ignores the asynchronous continuation of a boundary compensation handler
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile, since the kernel waits for every handler effect under every profile; not a deviation
+
+BPMN 2.0.2 §10.7.1 lets a Compensation Activity be any Task or Sub-Process, and a Service Task's work is an external effect the kernel waits for. CIB Seven `2.2.0` starts a boundary compensation handler with `PvmAtomicOperation.ACTIVITY_START` on the compensating execution, which never defers to a job, so `camunda:asyncBefore` on the handler has no effect and its delegate runs inside the command that triggers compensation; a handler's raised Error or Escalation therefore leaves within that command.
+
+**Evidence:** Pinned `bpmn/helper/CompensationUtil.java:62-75` and `event/CompensationEventHandler.java:73-78`; the retained answers of [compensation-handler-failures](../scenarios/open-rows/compensation-handler-failures/README.md) except `one-fails-caught`, [handlers-user-first and stale-interior-result-while-handlers-wait](../scenarios/open-rows/transaction-cancel-waiting-handlers/README.md) and [refund-incident-retried](../scenarios/open-rows/transaction-cancel-mixed/README.md) (profile `cibseven-2.2.0`), whose handler effects CIB runs in the triggering command.
+
+**Boundary:** Service Task compensation handlers attached by a boundary Event; this entry owns their witnesses in the ledger except those of CIB-LIM-0046.
 
 ### CIB-LIM-0043 — CIB deploys Cancel forms BPMN does not define and fails or strands them
 
