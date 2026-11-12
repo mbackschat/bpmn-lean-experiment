@@ -11,7 +11,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { cascadeInstanceId, runPopulation } from "@bpmn-lean/kernel";
+import { fixture, runPopulation } from "./lean-paired.ts";
 
 import {
   activity, base, catchEvent, criterion, end, eventBased, flow, gateway, message, qName, signal, start, text, userWork, variable, wired,
@@ -131,10 +131,11 @@ test("a broadcast's variables are rejected where a receiver's Signal carries no 
 test("a started instance's thrown Signal cascades depth-first, its starts named after the throw", () => {
   const result = populate([relay("Relay"), waiter("Orders"), starter("Audit")], [begin("d2", "W1"), send("b1", { address: { signalRef: { id: "Go" } } })]);
   const relayed = startedId("b1", 1);
-  const emitter = { processInstanceId: relayed, element: "E", activation: 1 };
+  const emitter = { processInstanceId: relayed, elementId: "E", activation: 1 };
+  const cascaded = fixture("instanceId", [], { commandId: "b1", deploymentId: 3, startEvent: "S", emitter }) as string;
   assert.deepEqual(resolutions(result), [{
     kind: "fanOut",
-    entries: [started(relayed, 1), delivered("W1", "C"), started(cascadeInstanceId("b1", 3, "S", emitter), 3)],
+    entries: [started(relayed, 1), delivered("W1", "C"), started(cascaded, 3)],
   }]);
 });
 

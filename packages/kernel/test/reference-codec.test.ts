@@ -7,7 +7,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, encodeProgram, signalAddressToJson, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, encodeProgram, fixture, stimulusFromJson } from "./lean-paired.ts";
 
 import {
   activity, append, base, callWork, catchEvent, definitionRef, end, qName, start, text, withOptions, wired,
@@ -67,17 +67,14 @@ const deliverSignal = (address: Json, extra: Json = {}): Json => ({
   trigger: { kind: "signal", ...address }, ...extra,
 });
 
-function startAddress(stimulus: Json): Json {
-  const decoded = stimulusFromJson(stimulus);
-  assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
-  const input = decoded.value[1];
-  assert.ok(input.tag === "start" && input.payload.trigger.tag === "signal");
-  return signalAddressToJson(input.payload.trigger.address) as Json;
-}
+/** The Signal address codec's round trip (the `signalAddress` kernel fixture), which a start and a delivery decode with. */
+const roundTrip = (address: Json): unknown => fixture("signalAddress", [], { address });
 
 test("a Signal start addresses its Signal by name or by signalRef, with or without a namespace", () => {
   for (const address of [{ name: "S" }, { signalRef: { id: "Sig" } }, { signalRef: { namespace, id: "Sig" } }]) {
-    assert.deepEqual(startAddress(startSignal(address)), address);
+    const decoded = stimulusFromJson(startSignal(address));
+    assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
+    assert.deepEqual(roundTrip(address), address);
   }
 });
 
@@ -86,7 +83,7 @@ test("a Signal delivery carries its address and optional variables", () => {
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const input = decoded.value[1];
   assert.ok(input.tag === "deliver" && input.payload.trigger.tag === "signal");
-  assert.deepEqual(signalAddressToJson(input.payload.trigger.address), { signalRef: { namespace, id: "Sig" } });
+  assert.deepEqual(roundTrip({ signalRef: { namespace, id: "Sig" } }), { signalRef: { namespace, id: "Sig" } });
   assert.equal(input.payload.variables.length, 1);
 });
 

@@ -166,6 +166,11 @@ export function runFixture(fixture: unknown): unknown {
   return kernel.runFixture(fixture);
 }
 
+/** The answer of the kernel fixture `entry` over the admitted wire `programs` and `input` (`kernelRun --fixture`). */
+export function fixture(entry: string, programs: readonly unknown[], input: unknown): unknown {
+  return runFixture({ entry, programs, input });
+}
+
 /** The program's host requirements, which a run of no input replays. */
 export function hostRequirements(program: Program): ReturnType<typeof kernel.hostRequirements> {
   record(run(program, []));
