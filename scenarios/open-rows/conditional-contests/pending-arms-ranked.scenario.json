@@ -1,0 +1,78 @@
+{
+  "kind": "scenario",
+  "id": "conditional-contests-pending-arms-ranked",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-contests-pending-withdraws",
+    "relativePath": "scenarios/open-rows/conditional-contests/pending-withdraws.bpmn",
+    "sha256": "eb32fc7e9ae8d9c8e9d704a65beaad688eca17e48931180bf9f0402d2462546d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-ga-and-gb",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Writer",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "ga",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "gb",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      },
+      "conditionChoices": [
+        {
+          "elementId": "Arm_C"
+        },
+        {
+          "elementId": "Arm_B"
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Chosen_A",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Chosen_A",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95",
+      "BPMN 2.0.2 §10.6.6",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

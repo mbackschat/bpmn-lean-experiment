@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_PendingWithdraws"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-contests:pending-withdraws">
+  <bpmn:process id="Process_PendingWithdraws" name="Answers whose first write withdraws the items a later write makes true together" isExecutable="true">
+    <bpmn:startEvent id="Start_Pending" />
+    <bpmn:parallelGateway id="Fork_Pending" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Writer" name="Record the answers" />
+    <bpmn:endEvent id="End_Writer" />
+    <bpmn:userTask id="Host_Pair" name="Collect the pair answers" />
+    <bpmn:endEvent id="End_Pair" />
+    <bpmn:boundaryEvent id="Pair_A" attachedToRef="Host_Pair">
+      <bpmn:conditionalEventDefinition id="CED_Pair_A" camunda:variableName="pa">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${pa == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Pair_A" name="Handle the pair answer A" />
+    <bpmn:endEvent id="End_Handle_Pair_A" />
+    <bpmn:boundaryEvent id="Pair_B" attachedToRef="Host_Pair">
+      <bpmn:conditionalEventDefinition id="CED_Pair_B" camunda:variableName="pb">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${pb == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Pair_B" name="Handle the pair answer B" />
+    <bpmn:endEvent id="End_Handle_Pair_B" />
+    <bpmn:boundaryEvent id="Pair_C" attachedToRef="Host_Pair">
+      <bpmn:conditionalEventDefinition id="CED_Pair_C" camunda:variableName="pb">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${pb == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Pair_C" name="Handle the pair answer C" />
+    <bpmn:endEvent id="End_Handle_Pair_C" />
+    <bpmn:userTask id="Host_Mixed" name="Collect the mixed answers" />
+    <bpmn:endEvent id="End_Mixed" />
+    <bpmn:boundaryEvent id="Mixed_A" attachedToRef="Host_Mixed">
+      <bpmn:conditionalEventDefinition id="CED_Mixed_A" camunda:variableName="ma">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${ma == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Mixed_A" name="Handle the mixed answer A" />
+    <bpmn:endEvent id="End_Handle_Mixed_A" />
+    <bpmn:boundaryEvent id="Mixed_B" attachedToRef="Host_Mixed">
+      <bpmn:conditionalEventDefinition id="CED_Mixed_B" camunda:variableName="mb">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${mb == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Mixed_B" name="Handle the mixed answer B" />
+    <bpmn:endEvent id="End_Handle_Mixed_B" />
+    <bpmn:boundaryEvent id="Mixed_C" attachedToRef="Host_Mixed" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Mixed_C" camunda:variableName="mb">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${mb == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Mixed_C" name="Handle the mixed answer C" />
+    <bpmn:endEvent id="End_Handle_Mixed_C" />
+    <bpmn:eventBasedGateway id="Gateway_Pending" />
+    <bpmn:intermediateCatchEvent id="Arm_A" name="Answer A arrived">
+      <bpmn:conditionalEventDefinition id="CED_Arm_A" camunda:variableName="ga">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${ga == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Chosen_A" name="Take arm A" />
+    <bpmn:endEvent id="End_Chosen_A" />
+    <bpmn:intermediateCatchEvent id="Arm_B" name="Answer B arrived">
+      <bpmn:conditionalEventDefinition id="CED_Arm_B" camunda:variableName="gb">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${gb == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Chosen_B" name="Take arm B" />
+    <bpmn:endEvent id="End_Chosen_B" />
+    <bpmn:intermediateCatchEvent id="Arm_C" name="Answer C arrived">
+      <bpmn:conditionalEventDefinition id="CED_Arm_C" camunda:variableName="gb">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${gb == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Chosen_C" name="Take arm C" />
+    <bpmn:endEvent id="End_Chosen_C" />
+    <bpmn:sequenceFlow id="Flow_Start_Pending_Fork_Pending" sourceRef="Start_Pending" targetRef="Fork_Pending" />
+    <bpmn:sequenceFlow id="Flow_Fork_Pending_Writer" sourceRef="Fork_Pending" targetRef="Writer" />
+    <bpmn:sequenceFlow id="Flow_Writer_End_Writer" sourceRef="Writer" targetRef="End_Writer" />
+    <bpmn:sequenceFlow id="Flow_Fork_Pending_Host_Pair" sourceRef="Fork_Pending" targetRef="Host_Pair" />
+    <bpmn:sequenceFlow id="Flow_Host_Pair_End_Pair" sourceRef="Host_Pair" targetRef="End_Pair" />
+    <bpmn:sequenceFlow id="Flow_Pair_A_Handle_Pair_A" sourceRef="Pair_A" targetRef="Handle_Pair_A" />
+    <bpmn:sequenceFlow id="Flow_Handle_Pair_A_End_Handle_Pair_A" sourceRef="Handle_Pair_A" targetRef="End_Handle_Pair_A" />
+    <bpmn:sequenceFlow id="Flow_Pair_B_Handle_Pair_B" sourceRef="Pair_B" targetRef="Handle_Pair_B" />
+    <bpmn:sequenceFlow id="Flow_Handle_Pair_B_End_Handle_Pair_B" sourceRef="Handle_Pair_B" targetRef="End_Handle_Pair_B" />
+    <bpmn:sequenceFlow id="Flow_Pair_C_Handle_Pair_C" sourceRef="Pair_C" targetRef="Handle_Pair_C" />
+    <bpmn:sequenceFlow id="Flow_Handle_Pair_C_End_Handle_Pair_C" sourceRef="Handle_Pair_C" targetRef="End_Handle_Pair_C" />
+    <bpmn:sequenceFlow id="Flow_Fork_Pending_Host_Mixed" sourceRef="Fork_Pending" targetRef="Host_Mixed" />
+    <bpmn:sequenceFlow id="Flow_Host_Mixed_End_Mixed" sourceRef="Host_Mixed" targetRef="End_Mixed" />
+    <bpmn:sequenceFlow id="Flow_Mixed_A_Handle_Mixed_A" sourceRef="Mixed_A" targetRef="Handle_Mixed_A" />
+    <bpmn:sequenceFlow id="Flow_Handle_Mixed_A_End_Handle_Mixed_A" sourceRef="Handle_Mixed_A" targetRef="End_Handle_Mixed_A" />
+    <bpmn:sequenceFlow id="Flow_Mixed_B_Handle_Mixed_B" sourceRef="Mixed_B" targetRef="Handle_Mixed_B" />
+    <bpmn:sequenceFlow id="Flow_Handle_Mixed_B_End_Handle_Mixed_B" sourceRef="Handle_Mixed_B" targetRef="End_Handle_Mixed_B" />
+    <bpmn:sequenceFlow id="Flow_Mixed_C_Handle_Mixed_C" sourceRef="Mixed_C" targetRef="Handle_Mixed_C" />
+    <bpmn:sequenceFlow id="Flow_Handle_Mixed_C_End_Handle_Mixed_C" sourceRef="Handle_Mixed_C" targetRef="End_Handle_Mixed_C" />
+    <bpmn:sequenceFlow id="Flow_Fork_Pending_Gateway_Pending" sourceRef="Fork_Pending" targetRef="Gateway_Pending" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pending_Arm_A" sourceRef="Gateway_Pending" targetRef="Arm_A" />
+    <bpmn:sequenceFlow id="Flow_Arm_A_Chosen_A" sourceRef="Arm_A" targetRef="Chosen_A" />
+    <bpmn:sequenceFlow id="Flow_Chosen_A_End_Chosen_A" sourceRef="Chosen_A" targetRef="End_Chosen_A" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pending_Arm_B" sourceRef="Gateway_Pending" targetRef="Arm_B" />
+    <bpmn:sequenceFlow id="Flow_Arm_B_Chosen_B" sourceRef="Arm_B" targetRef="Chosen_B" />
+    <bpmn:sequenceFlow id="Flow_Chosen_B_End_Chosen_B" sourceRef="Chosen_B" targetRef="End_Chosen_B" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pending_Arm_C" sourceRef="Gateway_Pending" targetRef="Arm_C" />
+    <bpmn:sequenceFlow id="Flow_Arm_C_Chosen_C" sourceRef="Arm_C" targetRef="Chosen_C" />
+    <bpmn:sequenceFlow id="Flow_Chosen_C_End_Chosen_C" sourceRef="Chosen_C" targetRef="End_Chosen_C" />
+  </bpmn:process>
+</bpmn:definitions>

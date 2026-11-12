@@ -232,3 +232,38 @@ const filtered = admitted(withFlows(
 test("an interrupting firing an earlier write of the input enqueued decides a later write's contest", () => {
   assert.deepEqual(begun(run(filtered, [begin(), write("T", [flag("a"), flag("b")])]), ["H1", "H2"]), ["H1"]);
 });
+
+/** The User Task `T` with the interrupting boundaries `B1` (`${a}`, writes of `a` only) and `B2` (`${b}`, writes of `b`
+ * only), and `B3` (`${b}`, writes of `b` only, interrupting unless stated), each to its handler `H1`, `H2`, `H3`. */
+const pendingHost = (thirdInterrupts: boolean): Program => admitted(withFlows(
+  append(replace(base(), "T", activity("T", userWork(), {
+    boundaries: [boundary("B1", holds("a", "a"), { outgoing: ["b1"] }), boundary("B2", holds("b", "b"), { outgoing: ["b2"] }),
+      boundary("B3", holds("b", "b"), { outgoing: ["b3"], interrupting: thirdInterrupts })],
+  })), activity("H1", userWork()), end("EH1"), activity("H2", userWork()), end("EH2"), activity("H3", userWork()), end("EH3")),
+  flow("b1", "B1", "H1"), flow("h1", "H1", "EH1"), flow("b2", "B2", "H2"), flow("h2", "H2", "EH2"), flow("b3", "B3", "H3"),
+  flow("h3", "H3", "EH3")), ["a", "b"]);
+
+test("items an earlier write's interrupting firing withdraws take part in no contest of a later write", () => {
+  for (const third of [true, false]) {
+    for (const choices of [{}, ranked("B2", "B3"), ranked("B3", "B2"), ranked("B3")]) {
+      assert.deepEqual(begun(run(pendingHost(third), [begin(), write("T", [flag("a"), flag("b")], choices)]), ["H1", "H2", "H3"]), ["H1"],
+        JSON.stringify({ third, choices }));
+    }
+  }
+});
+
+/** `S -> P`, a Parallel fork to the User Task `W` and to the Event-Based Gateway `G` with the arms `C1` (`${a}`, writes of
+ * `a` only), `C2` and `C3` (`${b}`, writes of `b` only). */
+const pendingArms = admitted(withFlows(
+  append(replace(base(), "T", gateway("P", "parallel", { outgoing: ["p1", "p2"] })),
+    gateway("G", { eventBased: { instantiation: "none" } }), catchEvent("C1", holds("a", "a")), catchEvent("C2", holds("b", "b")),
+    catchEvent("C3", holds("b", "b")), end("E1"), end("E2"), end("E3"), activity("W", userWork()), end("EW")),
+  flow("p0", "S", "P"), flow("pe", "P", "E"), flow("p1", "P", "G"), flow("p2", "P", "W"), flow("g1", "G", "C1"), flow("g2", "G", "C2"),
+  flow("g3", "G", "C3"), flow("c1", "C1", "E1"), flow("c2", "C2", "E2"), flow("c3", "C3", "E3"), flow("w1", "W", "EW")), ["a", "b"]);
+
+test("arms an earlier write's arm withdraws take part in no contest of a later write", () => {
+  for (const choices of [{}, ranked("C2", "C3"), ranked("C3")]) {
+    assert.deepEqual(begun(run(pendingArms, [begin(), write("W", [flag("a"), flag("b")], choices)]), ["C1", "C2", "C3"]), ["C1"],
+      JSON.stringify(choices));
+  }
+});

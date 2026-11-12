@@ -116,8 +116,12 @@ def walk (ctx : Ctx) (withdraws : OpenItem → OpenItem → Bool) (pending conte
 evaluation order, two compete when firing one withdraws the other (`withdrawnBy`), and a contest is a connected set of
 competing items: which fires and in which order is a choice neither BPMN (§13.4.4 gives simultaneous triggers no
 order) nor CIB (CIB-LIM-0053) makes, so the input's ranking decides it (`walk`) and the kernel takes none. An
-uncontested item fires at its place in evaluation order, a contest at the place of its first member. -/
+uncontested item fires at its place in evaluation order, a contest at the place of its first member. An item a
+`pending` firing withdraws, a member of this evaluation's contests or not, takes part in none: that firing runs first
+and leaves it nothing to fire. -/
 def resolveContests (ctx : Ctx) (state : State) (pending fired : List OpenItem) : Except Failure (List OpenItem) := do
+  let gone := pending.flatMap (withdrawnBy ctx state)
+  let fired := fired.filter fun item => !gone.contains item.id
   let takes := fired.map fun item => (item.id, withdrawnBy ctx state item)
   let withdraws (member other : OpenItem) : Bool := ((takes.lookup member.id).getD []).contains other.id
   let (firings, _) ← fired.foldlM (fun (firings, handled) item => do

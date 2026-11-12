@@ -194,11 +194,15 @@ function walk(
  * evaluation order, two compete when firing one withdraws the other (`withdrawnBy`), and a contest is a connected set of
  * competing items: which fires and in which order is a choice neither BPMN (§13.4.4 gives simultaneous triggers no
  * order) nor CIB (CIB-LIM-0053) makes, so the input's ranking decides it (`walk`) and the kernel takes none. An
- * uncontested item fires at its place in evaluation order, a contest at the place of its first member.
+ * uncontested item fires at its place in evaluation order, a contest at the place of its first member. An item a
+ * `pending` firing withdraws, a member of this evaluation's contests or not, takes part in none: that firing runs first
+ * and leaves it nothing to fire.
  */
 export function resolveContests(
-  ctx: Ctx, state: State, pending: readonly OpenItem[], fired: readonly OpenItem[],
+  ctx: Ctx, state: State, pending: readonly OpenItem[], offered: readonly OpenItem[],
 ): Result<readonly OpenItem[]> {
+  const gone = pending.flatMap((item) => withdrawnBy(ctx, state, item));
+  const fired = offered.filter((item) => !gone.includes(item.id));
   const takes = new Map(fired.map((item) => [item.id, withdrawnBy(ctx, state, item)] as const));
   const withdraws = (member: OpenItem, other: OpenItem): boolean => (takes.get(member.id) ?? []).includes(other.id);
   const firings: OpenItem[] = [];
