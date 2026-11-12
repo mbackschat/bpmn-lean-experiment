@@ -10,6 +10,7 @@ The Process variables of every schedule are `first` (`process-first`), `order` (
 | [scope-entry-inputs](scope-entry-inputs.bpmn) | Sub-Process *Scope* with the task *Echo* inside |
 | [call-entry-inputs](call-entry-inputs.bpmn) | Call Activity *Delegate*, whose called Process *Delegate* holds the task *Echo*; the called task is addressed as `call:<length>:Run_1:<length>:CallActivity_Delegate:1` |
 | [mi-entry-inputs](mi-entry-inputs.bpmn) | sequential Multi-Instance User Task *Visit* with cardinality `${count}` |
+| [mi-entry-portable-inputs](mi-entry-portable-inputs.bpmn), [mi-entry-portable-inputs-parallel](mi-entry-portable-inputs-parallel.bpmn) | sequential and parallel Multi-Instance User Task *Visit* with cardinality `${count}` and the seven inputs, none of which reads a counter or the item |
 | [captured-snapshot](captured-snapshot.bpmn) | Service Task *Send* (`${bpmnLeanEffectHandler}`, `asyncBefore`) |
 
 | Schedule | Model | Case it separates | Row |
@@ -19,6 +20,8 @@ The Process variables of every schedule are `first` (`process-first`), `order` (
 | [scope-entry](scope-entry.scenario.json) | [scope-entry-inputs](scope-entry-inputs.bpmn) | The same inputs declared on a Sub-Process, read by the task inside it. | PC-DATA-05 |
 | [call-entry](call-entry.scenario.json) | [call-entry-inputs](call-entry-inputs.bpmn) | The same forms as `camunda:in` mappings of a Call Activity, `second` mapped from the name `first` that an earlier mapping fills. | PC-DATA-05 |
 | [multi-instance-entry](multi-instance-entry.scenario.json) | [mi-entry-inputs](mi-entry-inputs.bpmn) | A sequential Multi-Instance User Task with a computed input over `loopCounter`, evaluated at each body's entry; the first body is completed so the second opens. | PC-DATA-05 |
+| [multi-instance-entry-portable-sequential](multi-instance-entry-portable-sequential.scenario.json) | [mi-entry-portable-inputs](mi-entry-portable-inputs.bpmn) | The seven inputs at each entry of a sequential Multi-Instance User Task; the first body is completed so the second opens, whose `second` shows whether it reads the Process `first` or the first body's input `first`. *multi-instance-entry* reads `loopCounter` in the same inputs, which the kernel refuses ([CIB-LIM-0019](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-lim-0019-a-looping-activitys-own-input-mapping-that-reads-its-counters-or-item-is-refused)), so this schedule is the entry case both engines run. | PC-DATA-05 |
+| [multi-instance-entry-portable-parallel](multi-instance-entry-portable-parallel.scenario.json) | [mi-entry-portable-inputs-parallel](mi-entry-portable-inputs-parallel.bpmn) | The same inputs at both entries of a parallel Multi-Instance User Task, both open from the start; the first body is completed. | PC-DATA-05 |
 | [captured-snapshot](captured-snapshot.scenario.json) | [captured-snapshot](captured-snapshot.bpmn) | A Service Task's expression, structured and plain inputs; a `setVariables` command rewrites all three sources while the effect is open, then the effect returns. | PC-DATA-05 |
 
 Notes for the target runners:
