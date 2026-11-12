@@ -20,7 +20,7 @@ Answer-free schedules for [PC-MESSAGE-06](../../../docs/PRACTICAL-CIB7-COVERAGE-
 
 ## Notes for the target runners
 
-- Every schedule addresses an Event Sub-Process start, which the CIB runner numbers through a host that has no activity instance before the start fires; the projection can fail as a harness failure until the runner names the declaring scope as the host.
+- Every schedule addresses an Event Sub-Process start, which the CIB runner numbers through a host that has no activity instance before the start fires.
 - A schedule that delivers a payload uses a `deliver` payload, which the CIB runner does not send because CIB's Message carries only variables; the retained CIB evidence is the answer.
 - `orderRef` is the String Process variable the start supplies; the handler's input mapping publishes it as `orderSeen`.
 

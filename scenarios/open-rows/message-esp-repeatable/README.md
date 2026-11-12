@@ -19,7 +19,7 @@ Answer-free schedules for [PC-MESSAGE-07](../../../docs/PRACTICAL-CIB7-COVERAGE-
 
 ## Notes for the target runners
 
-- Every schedule addresses an Event Sub-Process start, which the CIB runner numbers through a host that has no activity instance before the start fires; the projection can fail as a harness failure until the runner names the declaring scope as the host.
+- Every schedule addresses an Event Sub-Process start, which the CIB runner numbers through a host that has no activity instance before the start fires.
 - An Event Sub-Process start is addressed by its Start Event and the count of begins of its scope: the Process-level and `Region` starts are activation 1, and the start of a Multi-Instance body is the next activation for each body begun.
 - `items` is the String list `a, b`; a handler is addressed by the activation of its Human Task, counted per begun occurrence.
 
