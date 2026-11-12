@@ -56,10 +56,6 @@ def transaction (methods : TransactionMethods) (payload : ScopePayload) : Option
 def isTransaction (payload : ScopePayload) : Bool :=
   (transaction? payload).isSome
 
-/-- Whether an element is a Transaction. -/
-def transactionElement (program : Program) (id : ElementId) : Bool :=
-  ((program.element? id).bind (·.scope?)).any fun (_, payload) => isTransaction payload
-
 /-- The start subscription of an interrupting Event Sub-Process, `none` for any other Scope. -/
 def interruptingStart (payload : ScopePayload) : Option Subscription :=
   (eventSubProcess? payload).bind fun (start, interrupting) => if interrupting then some start else none

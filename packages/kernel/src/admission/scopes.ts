@@ -98,13 +98,6 @@ export function isTransaction(payload: ScopePayload): boolean {
   return transactionOf(payload) !== null;
 }
 
-/** Whether an element is a Transaction. */
-export function transactionElement(program: Program, id: ElementId): boolean {
-  const element = programElement(program, id);
-  const scope = element === null ? null : elementScope(element);
-  return scope !== null && isTransaction(scope[1]);
-}
-
 /** The start subscription of an interrupting Event Sub-Process, `null` for any other Scope. */
 export function interruptingStart(payload: ScopePayload): Subscription | null {
   const subProcess = eventSubProcessOf(payload);
