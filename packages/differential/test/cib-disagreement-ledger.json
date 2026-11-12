@@ -553,7 +553,7 @@
   {
     "evidence": "scenarios/open-rows/conditional-boundary-hosts/completion-write-read-by-own-boundary.cibseven-evidence.json",
     "owners": [
-      "CIB-DEV-0005"
+      "CIB-INT-0042"
     ]
   },
   {
@@ -1899,7 +1899,7 @@
   {
     "evidence": "scenarios/open-rows/timer-data-derived/catch-point-without-digits.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-03"
+      "CIB-LIM-0003"
     ]
   },
   {
