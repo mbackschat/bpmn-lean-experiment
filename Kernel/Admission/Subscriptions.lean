@@ -371,33 +371,29 @@ structure Site (α : Type) where
   start : Bool
   trigger : α
 
-/-- Under `MessageNames.addresses` two Message subscriptions of one event scope and one start mark may not share a name:
-CIB refuses the second at deployment when its unresolved name text equals the first's
-(`hasMultipleEventDefinitionsWithSameName`, `BpmnParse.java:1277-1282`, `:1317-1327`). `sites` are every Message
-subscription of the program. A literal name compares by its text. Admission cannot compare expression texts: the IL
-keeps an expression's parsed form, a guarded JUEL table, not its text. So two expression names on one Message, which
-has one name text, are `message.duplicateName`, and two on different Messages are refused as `message.expressionNames`
-rather than guessed, which also refuses pairs of different texts that CIB deploys (PC-MESSAGE-01). A literal never
+/-- Two Message or Signal names compare as CIB compares their texts: a literal by its text, an expression by its parsed
+form, which the IL keeps instead of the text. Derived `Repr` makes that exact structural equality without a dispatch over
+the guarded JUEL types (as `startConditions`), and it equates only texts that differ in layout, which CIB keeps apart.
+The reader reads every text holding `${` or `#{` as an expression, so a literal never equals an expression. An absent
+name equals nothing. -/
+def sameName (left right : Option ValueSource) : Bool :=
+  left.isSome && reprStr left == reprStr right
+
+def sameSignalName (left right : SignalTrigger) : Bool := sameName left.name right.name
+
+/-- Under `MessageNames.addresses` two Message subscriptions of one event scope and one start mark may not share a name
+(`message.duplicateName`, CIB-LIM-0022): CIB refuses the second at deployment when its unresolved name text equals the
+first's (`hasMultipleEventDefinitionsWithSameName`, `BpmnParse.java:1277-1282`, `:1317-1327`). `sites` are every Message
+subscription of the program. Names compare by `sameName`: a literal by its text, an expression by the parsed form the IL
+keeps instead of its text, so two texts that differ only in layout are refused where CIB deploys them. A literal never
 collides with an expression: the reader reads every text holding `${` or `#{` as an expression. -/
 def messageNames (options : ProfileOptions) (sites : List (Site MessageTrigger)) : Option String :=
-  let clash (earlier site : Site MessageTrigger) : Option String :=
-    if earlier.scope != site.scope || earlier.start != site.start then none
-    else
-      match earlier.trigger.name, site.trigger.name with
-      | some (.literal left), some (.literal right) => if left == right then some "message.duplicateName" else none
-      | some (.expression _), some (.expression _) =>
-        some (if earlier.trigger.messageRef == site.trigger.messageRef then "message.duplicateName"
-          else "message.expressionNames")
-      | _, _ => none
   if options.messageNames != .addresses then none
-  else sites.zipIdx.findSome? fun (site, index) => (sites.take index).findSome? (clash · site)
+  else if sites.zipIdx.any fun (site, index) => (sites.take index).any fun earlier =>
+      earlier.scope == site.scope && earlier.start == site.start && sameName earlier.trigger.name site.trigger.name then
+    some "message.duplicateName"
+  else none
 
-/-- Two Signal names compare as CIB compares their texts: a literal by its text, an expression by its parsed form, which
-the IL keeps instead of the text. Derived `Repr` makes that exact structural equality without a dispatch over the
-guarded JUEL types (as `startConditions`), and it equates only texts that differ in layout, which CIB keeps apart. The
-reader reads every text holding `${` or `#{` as an expression, so a literal never equals an expression. -/
-def sameSignalName (left right : SignalTrigger) : Bool :=
-  left.name.isSome && reprStr left.name == reprStr right.name
 
 /-- Under `SignalNames.addresses` two Signals the program references may not share a name (`signal.duplicateDefinitionName`,
 CIB-LIM-0026): CIB refuses a document declaring two (`BpmnParse.java:479-482`). `signals` are every Signal the

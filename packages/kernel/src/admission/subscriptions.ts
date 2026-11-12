@@ -576,38 +576,18 @@ export interface Site<T> {
 }
 
 /**
- * Under `MessageNames.Addresses` two Message subscriptions of one event scope and one start mark may not share a name:
- * CIB refuses the second at deployment when its unresolved name text equals the first's
- * (`hasMultipleEventDefinitionsWithSameName`, `BpmnParse.java:1277-1282`, `:1317-1327`). `sites` are every Message
- * subscription of the program. A literal name compares by its text. Admission cannot compare expression texts: the IL
- * keeps an expression's parsed form, a guarded JUEL table, not its text. So two expression names on one Message, which
- * has one name text, are `message.duplicateName`, and two on different Messages are refused as `message.expressionNames`
- * rather than guessed, which also refuses pairs of different texts that CIB deploys (PC-MESSAGE-01). A literal never
- * collides with an expression: the reader reads every text holding `${` or `#{` as an expression.
+ * Under `MessageNames.Addresses` two Message subscriptions of one event scope and one start mark may not share a name
+ * (`message.duplicateName`, CIB-LIM-0022): CIB refuses the second at deployment when its unresolved name text equals the
+ * first's (`hasMultipleEventDefinitionsWithSameName`, `BpmnParse.java:1277-1282`, `:1317-1327`). `sites` are every Message
+ * subscription of the program. Names compare by `sameName`: a literal by its text, an expression by the parsed form the
+ * IL keeps instead of its text, so two texts that differ only in layout are refused where CIB deploys them. A literal
+ * never collides with an expression: the reader reads every text holding `${` or `#{` as an expression.
  */
 export function messageNames(options: ProfileOptions, sites: readonly Site<MessageTrigger>[]): string | null {
   if (options.messageNames !== MessageNames.Addresses) return null;
-  const clash = (earlier: Site<MessageTrigger>, site: Site<MessageTrigger>): string | null => {
-    if (earlier.start !== site.start || !eventScopeEquals(earlier.scope, site.scope)) return null;
-    const left = earlier.trigger.name;
-    const right = site.trigger.name;
-    if (left === null || right === null) return null;
-    switch (left.tag) {
-      case ValueSourceTag.Literal:
-        return right.tag === ValueSourceTag.Literal && left.value === right.value ? "message.duplicateName" : null;
-      case ValueSourceTag.Expression:
-        if (right.tag !== ValueSourceTag.Expression) return null;
-        return earlier.trigger.messageRef === site.trigger.messageRef ? "message.duplicateName" : "message.expressionNames";
-    }
-    return assertNever(left);
-  };
-  for (const [index, site] of sites.entries()) {
-    for (const earlier of sites.slice(0, index)) {
-      const refused = clash(earlier, site);
-      if (refused !== null) return refused;
-    }
-  }
-  return null;
+  const clash = sites.some((site, index) => sites.slice(0, index).some((earlier) =>
+    eventScopeEquals(earlier.scope, site.scope) && earlier.start === site.start && sameName(earlier.trigger.name, site.trigger.name)));
+  return clash ? "message.duplicateName" : null;
 }
 
 /**
@@ -630,13 +610,18 @@ export function sameData(left: unknown, right: unknown): boolean {
 }
 
 /**
- * Two Signal names compare as CIB compares their texts: a literal by its text, an expression by its parsed form, which
- * the IL keeps instead of the text. `sameData` makes that exact structural equality without a dispatch over the guarded
- * JUEL types (as `startConditions`), and it equates only texts that differ in layout, which CIB keeps apart. The reader
- * reads every text holding `${` or `#{` as an expression, so a literal never equals an expression.
+ * Two Message or Signal names compare as CIB compares their texts: a literal by its text, an expression by its parsed
+ * form, which the IL keeps instead of the text. `sameData` makes that exact structural equality without a dispatch over
+ * the guarded JUEL types (as `startConditions`), and it equates only texts that differ in layout, which CIB keeps apart.
+ * The reader reads every text holding `${` or `#{` as an expression, so a literal never equals an expression. An absent
+ * name equals nothing.
  */
+function sameName(left: ValueSource | null, right: ValueSource | null): boolean {
+  return left !== null && sameData(left, right);
+}
+
 function sameSignalName(left: SignalTrigger, right: SignalTrigger): boolean {
-  return left.name !== null && sameData(left.name, right.name);
+  return sameName(left.name, right.name);
 }
 
 /** Whether some element of `items` and an earlier one are `related`. */

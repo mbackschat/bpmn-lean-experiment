@@ -589,17 +589,11 @@ export const rows: readonly Row[] = [
     control: addresses(namedBy({ literal: { value: "order" } }, orderField("id"))),
   },
   {
-    code: "message.expressionNames",
+    // Expression names compare by parsed form, so the control's different texts deploy, as in CIB.
+    code: "message.duplicateName",
     description: "two boundaries of one host on two Messages named by one expression text, where names address",
     mutate: addresses(namedBy(orderField("id"), orderField("id"))),
-    control: addresses(namedBy(text("M"), orderField("id"))),
-  },
-  {
-    // Conservative: admission cannot compare expression texts, so it refuses two that CIB deploys.
-    code: "message.expressionNames",
-    description: "two boundaries of one host on two Messages named by different expression texts, where names address",
-    mutate: addresses(namedBy(orderField("id"), orderField("number"))),
-    control: addresses(namedBy(text("M"), text("N"))),
+    control: addresses(namedBy(orderField("id"), orderField("number"))),
   },
   {
     code: "message.duplicateName",

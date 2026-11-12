@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ExpressionBoundaryNames"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:expression-boundary-names">
+  <bpmn:message id="Message_ByOrder" name="${orderRef}" />
+  <bpmn:message id="Message_ByTicket" name="${ticketRef}" />
+  <bpmn:process id="Process_ExpressionBoundaryNames" name="Two notices named by different expressions on one host" isExecutable="true">
+    <bpmn:startEvent id="Start_Pair" />
+    <bpmn:userTask id="Host_Pair" name="Work with two notices" />
+    <bpmn:endEvent id="End_Pair" />
+    <bpmn:sequenceFlow id="Flow_Start_Pair_Host_Pair" sourceRef="Start_Pair" targetRef="Host_Pair" />
+    <bpmn:sequenceFlow id="Flow_Host_Pair_End_Pair" sourceRef="Host_Pair" targetRef="End_Pair" />
+    <bpmn:boundaryEvent id="Notice_Order" name="Order notice" attachedToRef="Host_Pair">
+      <bpmn:messageEventDefinition id="MED_Notice_Order" messageRef="Message_ByOrder" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Notice_Ticket" name="Ticket notice" attachedToRef="Host_Pair">
+      <bpmn:messageEventDefinition id="MED_Notice_Ticket" messageRef="Message_ByTicket" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Order" name="Handle the order notice" />
+    <bpmn:userTask id="Handler_Ticket" name="Handle the ticket notice" />
+    <bpmn:endEvent id="End_Handler_Order" />
+    <bpmn:endEvent id="End_Handler_Ticket" />
+    <bpmn:sequenceFlow id="Flow_Notice_Order_Handler_Order" sourceRef="Notice_Order" targetRef="Handler_Order" />
+    <bpmn:sequenceFlow id="Flow_Notice_Ticket_Handler_Ticket" sourceRef="Notice_Ticket" targetRef="Handler_Ticket" />
+    <bpmn:sequenceFlow id="Flow_Handler_Order_End_Handler_Order" sourceRef="Handler_Order" targetRef="End_Handler_Order" />
+    <bpmn:sequenceFlow id="Flow_Handler_Ticket_End_Handler_Ticket" sourceRef="Handler_Ticket" targetRef="End_Handler_Ticket" />
+  </bpmn:process>
+</bpmn:definitions>

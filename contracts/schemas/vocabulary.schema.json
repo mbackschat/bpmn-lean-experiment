@@ -527,7 +527,6 @@
         "message.correlation.output",
         "message.correlation.value",
         "message.duplicateName",
-        "message.expressionNames",
         "message.nameExpression",
         "message.unnamed",
         "message.unspecified",
