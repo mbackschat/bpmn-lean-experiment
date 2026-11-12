@@ -181,11 +181,7 @@ Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `u
 |---|---|
 | PC-HUM-01 | User Task inputs and results across serial, branch, rework, scoped and Multi-Instance compositions; an output reading beyond the submission (PC-DATA-06) |
 | PC-HUM-03 | correlated and payload-bearing Receive Tasks in every ownership |
-| PC-AUTO-01 | public named handlers across task and scope bodies |
-| PC-AUTO-03 | incidents in Multi-Instance Sub-Process bodies |
-| PC-AUTO-04 | Nothing owed: the configured send of CIB-EXT-0023 agrees with every retained [send-task-configured-send](../../../scenarios/open-rows/send-task-configured-send/README.md) answer, and a Message-addressed Send Task stays refused (`work.send`) as a forward-compatible restriction, since CIB gives it no execution meaning; closes at the M3 track review |
-| PC-AUTO-05 | Nothing owed: the [script semantics](SCRIPT-SEMANTICS-SPEC.md) are the reviewed contract (2026-11-12); closes at the M3 track review |
-| PC-AUTO-06 | The cibseven profiles' selection of `ScriptTask.javascript` with its register entries, the harness fold of a synchronous script's result, and the witnesses' evidence; the kernel's Script effect, its result rule and the host evaluator are in place |
+| PC-AUTO-06 | A durable-scheduling Script witness on the Temporal host whose recovery reuses the committed result, and the Multi-Instance body context, refused today (`activity.multiInstanceBody`); the kernel's Script effect, its result rule, the host evaluator, the cibseven profiles' selection and the retained CIB evidence are in place (M10 track review) |
 
 ## Sources
 

@@ -68,9 +68,7 @@ The old admission surface was a per-profile capability table of operation kinds 
 
 ## Open rows
 
-| Row | Owed |
-|---|---|
-| PC-DATA-02 | The row's acceptance on the kernel: whole-scenario support, direct refusal and strict wire decoding at the Human completion and Service result of [scalar-types-in-multi-instance](../../../scenarios/open-rows/scalar-types-in-multi-instance/README.md), pending the long Strings' CIB evidence (CIB-LIM-0014) |
+None: every row this document owns is closed.
 
 ## Sources
 

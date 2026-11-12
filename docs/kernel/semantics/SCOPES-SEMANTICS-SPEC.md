@@ -138,8 +138,6 @@ Superseded first-profile restrictions: the embedded, nested, concurrent and re-e
 
 | Row | Decision owed or not yet implemented |
 |---|---|
-| PC-SCOPE-01 | Nested embedded scopes with mixed activities and selected gateways complete at exact owned quiescence (the mechanism above); acceptance on the kernel's scenarios. |
-| PC-TERMINATE-02 | Terminate inside called children, both Multi-Instance modes and non-interrupting Event Sub-Process instances, with stale-result rejection. Interpretation [reviewed](#pc-terminate-02-terminate-inside-called-children-multi-instance-bodies-and-event-sub-process-instances). |
 | PC-MESSAGE-06 | Interrupting Message Event Sub-Process (refused); stated in [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md). |
 
 ## Sources
