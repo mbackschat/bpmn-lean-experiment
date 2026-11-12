@@ -1,6 +1,6 @@
 # Multi-Instance Transactions
 
-This directory serves [PC-TX-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list): a Cancel inside one body of a parallel and of a sequential Multi-Instance Transaction, the effect on the other bodies, their handlers and the single Cancel Boundary continuation, the all-bodies-succeed path, a parallel and a sequential Multi-Instance Transaction compensated after it completed, and an Error leaving one body. The five models are project-authored MIT source for the `cibseven-2.2.0` profile; every schedule is answer-free and CIB Seven `2.2.0` supplies the retained answer.
+This directory serves [PC-TX-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list): a Cancel inside one body of a parallel and of a sequential Multi-Instance Transaction, the effect on the other bodies, their handlers and the single Cancel Boundary continuation, the all-bodies-succeed path, a parallel and a sequential Multi-Instance Transaction compensated after it completed, an Error leaving one body, and a Timer boundary that is due while one body's Cancel compensates. The six models are project-authored MIT source for the `cibseven-2.2.0` profile; every schedule is answer-free and CIB Seven `2.2.0` supplies the retained answer.
 
 ## Models
 
@@ -9,6 +9,8 @@ This directory serves [PC-TX-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md
 [parallel-compensated](parallel-compensated.bpmn) and [sequential-compensated](sequential-compensated.bpmn) differ only in `isSequential`. Their body runs `UserTask_Process`, with the same handler, and `UserTask_Check` to a None End Event, with no Gateway and no Cancel; the Transaction leads to `UserTask_BatchDone`, an untargeted Compensation throw and `UserTask_After`.
 
 [parallel-error](parallel-error.bpmn) is parallel-batch with an Error End Event (`LOT_FAILED`) in place of the Cancel End Event and an Error Boundary Event for `LOT_FAILED` on the Multi-Instance Transaction, leading to `UserTask_BatchFailed`, in place of the Cancel Boundary Event.
+
+[parallel-batch-deadline](parallel-batch-deadline.bpmn) is parallel-batch with an interrupting `PT30S` Timer Boundary Event `Boundary_Deadline` on the Multi-Instance Transaction, leading to `UserTask_TimedOut`.
 
 ## Schedules
 
@@ -22,6 +24,7 @@ Bodies are addressed by activation in generation order. `badLot` is `b` unless s
 | [sequential-second-body-cancels](sequential-second-body-cancels.scenario.json) | sequential-batch | Body 1 completes `UserTask_Process` and `UserTask_Check`; body 2 completes `UserTask_Process` and `UserTask_Check`; the handlers of bodies 1 and 2 are addressed, then `UserTask_BatchCancelled` and body 3's `UserTask_Process`. |
 | [parallel-complete-then-compensate](parallel-complete-then-compensate.scenario.json) | parallel-compensated | All three `UserTask_Process` complete; `UserTask_Check` of bodies 3, 1 and 2 complete; `UserTask_BatchDone` completes; `UserTask_UndoProcess` activations 1, 2 and 3 are addressed, then `UserTask_After`. |
 | [sequential-complete-then-compensate](sequential-complete-then-compensate.scenario.json) | sequential-compensated | Bodies 1, 2 and 3 each complete `UserTask_Process` and `UserTask_Check`; `UserTask_BatchDone` completes; `UserTask_UndoProcess` activations 1, 2 and 3 are addressed, then `UserTask_After`. |
+| [parallel-cancel-deadline-during-run](parallel-cancel-deadline-during-run.scenario.json) | parallel-batch-deadline | All three `UserTask_Process` complete; body 2's `UserTask_Check` completes (its body cancels); the Timer is fired at 30 000 ms while body 2's handler waits; then `UserTask_UndoProcess` activation 1, the `UserTask_Check` of bodies 1 and 3, `UserTask_BatchCancelled` and `UserTask_TimedOut` are addressed. |
 | [parallel-error-leaves-second-body](parallel-error-leaves-second-body.scenario.json) | parallel-error | All three `UserTask_Process` complete; `UserTask_Check` of body 1 (its body ends), then of body 2 (its Error End is reached); `UserTask_UndoProcess` activations 1 and 2, body 3's `UserTask_Check` and `UserTask_BatchFailed` are addressed. |
 
 The schedules carry no expected eligible set, body state or Process state; the retained CIB evidence is the answer.

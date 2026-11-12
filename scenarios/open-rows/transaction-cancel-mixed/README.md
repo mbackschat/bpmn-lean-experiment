@@ -20,5 +20,6 @@ The forward prefix `UserTask_Pick` (writing `picked = p1`), `ServiceTask_Charge`
 | [deadline-interrupts](deadline-interrupts.scenario.json) | true | The three subjects complete, the Timer fires at 30 000 ms, then `UserTask_Decide` and `UserTask_UndoPick` are addressed, then `UserTask_TimedOut`. |
 | [normal-completion](normal-completion.scenario.json) | false | The three subjects complete, then `UserTask_Decide` and `UserTask_Confirm`. |
 | [cancel-with-effect-unanswered](cancel-with-effect-unanswered.scenario.json) | true | `UserTask_Pick` completes, `UserTask_Decide` completes while the charge effect is unanswered, the charge is answered afterwards, then `UserTask_UndoPick` and `UserTask_Cancelled`. |
+| [deadline-passes-while-cancel-compensates](deadline-passes-while-cancel-compensates.scenario.json) | true | `UserTask_Pick` completes, `UserTask_Decide` completes while the charge effect is unanswered, the Timer is fired at 30 000 ms while `UserTask_UndoPick` waits, then `UserTask_UndoPick`, `UserTask_Cancelled` and `UserTask_TimedOut` are addressed. |
 
 The schedules carry no expected eligible set, handler or Process state; the retained CIB evidence is the answer.
