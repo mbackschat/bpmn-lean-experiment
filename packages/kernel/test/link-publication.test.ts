@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, hostView, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, hostView, step, stimulusFromJson } from "./lean-paired.ts";
 
 import { activity, base, end, flow, gateway, link, start, userWork, wired } from "./admission-refusal-support.ts";
 
@@ -24,7 +24,7 @@ test("a Link pair and a flow-reached catching Link publish no occurrence and act
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const start_ = stimulusFromJson({ kind: "start", commandId: "start", instanceId: "I", variables: [] });
   assert.ok(start_.ok);
-  const started = step(hooks, decoded.value, null, start_.value[1]);
+  const started = step(decoded.value, null, start_.value[1]);
   assert.ok(started.ok, started.ok ? "" : started.failure.code);
   const journal = hostView(decoded.value, started.value).journal;
   const acted = journal.flatMap((transition) => (transition.element === null ? [] : [transition.element]));

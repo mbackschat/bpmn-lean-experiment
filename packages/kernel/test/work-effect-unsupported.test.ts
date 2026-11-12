@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, Program, State } from "@bpmn-lean/kernel";
 
 import { activity, base, serviceWork, task, withOptions, wired } from "./admission-refusal-support.ts";
@@ -22,7 +22,7 @@ function serviceProgram(options: Record<string, unknown>): Program {
 function apply(program: Program, state: State | null, raw: Record<string, unknown>): Outcome {
   const stimulus = stimulusFromJson({ commandId: "c", ...raw });
   assert.ok(stimulus.ok, stimulus.ok ? "" : stimulus.refusal);
-  return step(hooks, program, state, stimulus.value[1]);
+  return step(program, state, stimulus.value[1]);
 }
 
 const start = { kind: "start", instanceId: "I", variables: [] };
