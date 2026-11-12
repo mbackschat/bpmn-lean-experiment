@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ChargeAndReceipt" targetNamespace="urn:bpmn-lean:scenarios:synchronous-effect-failure">
+  <process id="Process_ChargeAndReceipt" name="Charge an order and send its receipt" isExecutable="true">
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <serviceTask id="ChargeCard" name="Charge card"
+                 implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" />
+    <sendTask id="SendReceipt" name="Send receipt"
+              implementation="urn:bpmn-lean:effect:probe-v1"
+              camunda:delegateExpression="${bpmnLeanEffectHandler}" />
+    <userTask id="ReviewOrder" name="Review order" />
+    <endEvent id="OrderDone" name="Order done" />
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="ChargeCard" />
+    <sequenceFlow id="Flow_Charged" sourceRef="ChargeCard" targetRef="SendReceipt" />
+    <sequenceFlow id="Flow_Sent" sourceRef="SendReceipt" targetRef="ReviewOrder" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewOrder" targetRef="OrderDone" />
+  </process>
+</definitions>

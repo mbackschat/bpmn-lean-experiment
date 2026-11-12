@@ -12,6 +12,7 @@ import org.bpmnlean.cibseven.ScenarioProtocol.EffectResult;
 import org.bpmnlean.cibseven.ScenarioProtocol.EffectSuccess;
 import org.bpmnlean.cibseven.ScenarioProtocol.TechnicalFailure;
 import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
+import org.cibseven.bpm.engine.ProcessEngineException;
 import org.cibseven.bpm.engine.delegate.BpmnError;
 import org.cibseven.bpm.engine.delegate.DelegateExecution;
 import org.cibseven.bpm.engine.delegate.JavaDelegate;
@@ -24,8 +25,9 @@ import org.cibseven.bpm.engine.delegate.JavaDelegate;
  * synchronous one runs inside the command that reaches it, before its `effectResult` stimulus comes up, so it
  * consumes the scenario's next unconsumed `effectResult` for its element, and the runner later skips that stimulus
  * with no trace entry (the differential compensates through `CibCaseRelation.SynchronousFinalState` and
- * `SynchronousBoundaryError`). Outputs become Activity-local variables, so the model's output mappings, not the
- * adapter, decide what reaches the process.
+ * `SynchronousBoundaryError`). A synchronous technical failure throws an engine exception from the delegate, which
+ * rolls the reaching command back as any failing delegate does (`AbstractBpmnActivityBehavior.java:87-109`). Outputs become Activity-local variables, so the
+ * model's output mappings, not the adapter, decide what reaches the process.
  */
 final class CibSevenScriptedEffect {
 
@@ -144,8 +146,7 @@ final class CibSevenScriptedEffect {
           case EffectSuccess success -> success.outputs();
           case BusinessFailure failure -> failure.outputs();
           case TechnicalFailure ignored ->
-              throw new IllegalStateException(
-                  "A synchronous Service Task cannot realize a technical failure");
+              throw new ProcessEngineException("scripted synchronous technical failure");
         };
     mappings.add(
         new MappingExecutionSnapshot(
