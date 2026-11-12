@@ -201,8 +201,19 @@ structure Ctx where
   catches : Raised → Trigger → Option Catch
   /-- Scopes: the start subscription and interrupting flag of an Event Sub-Process, `none` for another scope. -/
   eventStart : ScopePayload → Option (Subscription × Bool)
-  /-- `Step`: what a scope occurrence is, for a search that must not treat it as ordinary. -/
+  /-- `Step`: what a scope occurrence is, for a search that must not treat it as ordinary. It speaks of the scope
+  occurrence and its own element only: an instance scope of a Multi-Instance Sub-Process, or the root a Multi-Instance
+  Call's instance calls, is `.multiInstanceInstance` while the elements running in it are instances of nothing, which
+  `Ctx.runsAsInstance` answers. -/
   scopeRole : State → ScopeOccurrenceId → ScopeRole := fun _ _ => .ordinary
+
+/-- Whether `element`, running in the scope occurrence `scope`, is an instance of its own Multi-Instance Activity:
+`scope` is a Multi-Instance instance's and belongs to `element`. An element inside an instance of an enclosing
+Multi-Instance Sub-Process, or inside a called instance of a Multi-Instance Call, runs in a scope of another element
+(#116). -/
+def Ctx.runsAsInstance (ctx : Ctx) (state : State) (element : ElementId) (scope : ScopeOccurrenceId) : Bool :=
+  ctx.scopeRole state scope == .multiInstanceInstance &&
+    (state.scopes.find? (·.id == scope)).bind (·.element) == some element
 
 /-- `bindings` with only the last binding of each target, by target name: a target bound twice keeps the value written
 last, as CIB's sequential writes do, and the bindings, one per target, then commute, so they are kept in the name order

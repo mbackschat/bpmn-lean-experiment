@@ -361,8 +361,24 @@ export interface Ctx {
   readonly catches: (raised: Raised, trigger: Trigger) => Catch | null;
   /** Scopes: the start subscription and interrupting flag of an Event Sub-Process, `null` for another scope. */
   readonly eventStart: (payload: ScopePayload) => readonly [Subscription, boolean] | null;
-  /** `step.ts`: what a scope occurrence is, for a search that must not treat it as ordinary. */
+  /**
+   * `step.ts`: what a scope occurrence is, for a search that must not treat it as ordinary. It speaks of the scope
+   * occurrence and its own element only: an instance scope of a Multi-Instance Sub-Process, or the root a
+   * Multi-Instance Call's instance calls, is `MultiInstanceInstance` while the elements running in it are instances of
+   * nothing, which `ctxRunsAsInstance` answers.
+   */
   readonly scopeRole: (state: State, scope: ScopeOccurrenceId) => ScopeRole;
+}
+
+/**
+ * Whether `element`, running in the scope occurrence `scope`, is an instance of its own Multi-Instance Activity:
+ * `scope` is a Multi-Instance instance's and belongs to `element`. An element inside an instance of an enclosing
+ * Multi-Instance Sub-Process, or inside a called instance of a Multi-Instance Call, runs in a scope of another element
+ * (#116).
+ */
+export function ctxRunsAsInstance(ctx: Ctx, state: State, element: ElementId, scope: ScopeOccurrenceId): boolean {
+  return ctx.scopeRole(state, scope) === ScopeRole.MultiInstanceInstance &&
+    state.scopes.find((entry) => entry.id === scope)?.element === element;
 }
 
 /**
