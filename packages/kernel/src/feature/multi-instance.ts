@@ -390,7 +390,10 @@ function entryRead(ctx: Ctx, loop: MultiInstance, state: State, scope: number): 
   return assertNever(count);
 }
 
-/** `Hooks.arriveMultiInstance`: read the count or collection on entry, then begin the instances. */
+/**
+ * `Hooks.arriveMultiInstance`: read the count or collection on entry, then begin the instances. An unavailable read
+ * holds the occurrence whether or not a token began it, as `Work.arriveActivity` holds an unavailable InputSet (§10.4.2).
+ */
 export function arriveMultiInstance(
   ctx: Ctx,
   header: Header,
@@ -401,10 +404,7 @@ export function arriveMultiInstance(
 ): Outcome {
   const read = entryRead(ctx, loop, state, occurrence.scope);
   if (!read.ok) return read;
-  if (read.value === null) {
-    if (occurrence.incoming === null) return failed(FailureTag.SemanticFailure, "multi-instance-without-flow");
-    return committed(hold(state, { occurrence: occurrence.id, scope: occurrence.scope }));
-  }
+  if (read.value === null) return committed(hold(state, { occurrence: occurrence.id, scope: occurrence.scope }));
   const [collection, items, count] = read.value;
   if (count === 0) {
     return committed(signal(state, completeSignal(occurrence.id, leaveOutgoing, written(ctx, loop, collection, []), WriteRule.Outward)));

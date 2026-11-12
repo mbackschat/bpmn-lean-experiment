@@ -1,12 +1,13 @@
 /**
  * How a compensation handler begins (docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md I10): its run begins it
  * without a token, in its context, so it may wait for a Message, and an unavailable Data Input holds it as it holds any
- * Activity (BPMN 2.0.2 §10.4.2, #104), with its run in progress until its scope occurrence is cleared.
+ * Activity (BPMN 2.0.2 §10.4.2, #104), with its run in progress until its scope occurrence is cleared. An Activity a
+ * Scope's implicit start begins is held the same way, a Multi-Instance one by its entry read.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { activity, boundary, duration, flow, mapping, receiveWork, scope, start, userWork, variable } from "./admission-refusal-support.ts";
+import { activity, boundary, duration, flow, loop, mapping, receiveWork, scope, start, userWork, variable } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 import {
   chain, compensateAll, committedState, complete, drive, instance, parts, throwing, userTask, waiting,
@@ -55,6 +56,18 @@ test("an Activity a Scope's implicit start begins with its Data Input unavailabl
   // `P` has no Start Event, so its implicit start begins `T`, which no token reaches.
   const program = chain([scope("P", "embedded")], "none", parts({
     elements: [activity("T", userWork(), { inputs: unavailable }, "P")],
+    flows: [],
+  }));
+  const state = committedState(drive(program));
+  assert.deepEqual(state.openItems, []);
+  assert.equal(state.slots.held.length, 1);
+});
+
+test("a Multi-Instance Activity a Scope's implicit start begins with its collection unavailable is held", () => {
+  // `P` has no Start Event, so its implicit start begins `T`, whose entry reads the unset `items`.
+  const looping = loop({ mode: "parallel", count: { collection: { items: variable("items") } }, outputDataItem: null });
+  const program = chain([scope("P", "embedded")], "none", parts({
+    elements: [activity("T", userWork(), { incoming: [], outgoing: [], multiInstance: looping }, "P")],
     flows: [],
   }));
   const state = committedState(drive(program));

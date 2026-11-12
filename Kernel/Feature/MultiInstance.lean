@@ -220,13 +220,12 @@ def entryRead (ctx : Ctx) (loop : MultiInstance) (state : State) (scope : ScopeO
   -- Admission refuses it (`multiInstance.countAndCollection`).
   | .countAndCollection _ _ => .error (.unsupported "multiInstance.countAndCollection")
 
-/-- `Hooks.arriveMultiInstance`: read the count or collection on entry, then begin the instances. -/
+/-- `Hooks.arriveMultiInstance`: read the count or collection on entry, then begin the instances. An unavailable read
+holds the occurrence whether or not a token began it, as `Work.arriveActivity` holds an unavailable InputSet (§10.4.2). -/
 def arriveMultiInstance (ctx : Ctx) (header : Header) (envelope : Envelope) (loop : MultiInstance)
     (occurrence : Occurrence) (state : State) : Outcome := do
   match ← entryRead ctx loop state occurrence.scope with
-  | none =>
-    let some _ := occurrence.incoming | .error (.semanticFailure "multi-instance-without-flow")
-    .ok (state.hold { occurrence := occurrence.id, scope := occurrence.scope })
+  | none => .ok (state.hold { occurrence := occurrence.id, scope := occurrence.scope })
   | some (collection, _, 0) =>
     .ok (state.signal (.complete occurrence.id .outgoing (written ctx loop collection []) .outward))
   | some (collection, items, count) =>
