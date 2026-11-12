@@ -17,6 +17,45 @@
     },
     {
       "kind": "effectResult",
+      "commandId": "complete-notify-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "NotifyEach",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-notify-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "NotifyEach",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-notify-3",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "NotifyEach",
+        "activation": 3
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "effectResult",
       "commandId": "fail-assess-2",
       "occurrence": {
         "processInstanceId": "call:10:Instance_1:10:ReviewEach:2",

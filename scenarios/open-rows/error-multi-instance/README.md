@@ -11,7 +11,7 @@ The [error-data model](review-error-data.bpmn) runs only a parallel Multi-Instan
 | Scenario | Case it exercises |
 |---|---|
 | [sequential-second-instance-fails](sequential-second-instance-fails.scenario.json) | The first of three instances succeeds and the second reports the business failure the host boundary names. |
-| [parallel-second-child-fails](parallel-second-child-fails.scenario.json) | The second of two concurrent children reports the business failure the host boundary names, then the first child's result is addressed after that. |
+| [parallel-second-child-fails](parallel-second-child-fails.scenario.json) | The three `NotifyEach` instances succeed, the second of two concurrent children reports the business failure the host boundary names, then the first child's result is addressed after that. |
 | [parallel-error-data-to-host-boundary](parallel-error-data-to-host-boundary.scenario.json) | On the error-data model, the second of two concurrent children reports `REVIEW_REJECTED` with a message, then the Human Task the boundary leads to is completed: where the code and message variables land and that the first child is cancelled. |
 
 The schedules carry no expected route or Process state; the retained CIB evidence is the answer.
