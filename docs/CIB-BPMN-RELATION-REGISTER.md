@@ -28,7 +28,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | CIB interpretations of BPMN gaps or inconsistencies | 38 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 45 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 46 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 47 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1455,6 +1455,16 @@ BPMN 2.0.2 §10.7.1 lets a Compensation Activity be any Task, a Receive Task inc
 **Evidence:** Pinned `bpmn/parser/BpmnParse.java:2754-2760`, `persistence/entity/ExecutionEntity.java:409-414` and `event/CompensationEventHandler.java:73-78` (`setActivity` and `PvmAtomicOperation.ACTIVITY_START` on the existing execution); the retained answers of [all-forms-complete, premature-and-stale-handler-results and abandoned-while-handlers-wait](../scenarios/open-rows/compensation-handler-bodies/README.md) (profile `cibseven-2.2.0`), which open no wait for `ReceiveTask_UndoQuote` and reject its Message.
 
 **Boundary:** Receive Task compensation handlers attached by a boundary Event; this entry owns those three witnesses in the ledger.
+
+### CIB-LIM-0050 — CIB drops a compensation handler's output parameters
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile, since the kernel runs a handler's output mapping when it completes, as at every other Activity's completion; not a deviation, since the output parameter is CIB's extension (CIB-EXT-0015, CIB-EXT-0019), which no BPMN requirement governs
+
+BPMN 2.0.2 §10.4.2 executes an Activity's output Data Associations "When an Activity finishes execution", and §13.3.2 pushes data "into the context of the Activity" upon completion; §10.7.1 makes a Compensation Activity an ordinary Activity in that respect. The project reads CIB's `camunda:outputParameter` as that completion mapping. CIB Seven `2.2.0` ends a compensation handler that has no outgoing flow, below a compensation-throwing ancestor, through `endCompensation`, which fires the end listeners and removes the execution without destroying its scope, so the output parameters that `destroy` executes never run and the handler's writes are lost. This rests on the source reading; no probe isolates the call.
+
+**Evidence:** Pinned `bpmn/behavior/BpmnActivityBehavior.java:120-122` (such a handler calls `endCompensation`), `pvm/runtime/PvmExecutionImpl.java:414-425` (`endCompensation`: `FIRE_ACTIVITY_END`, then `remove()`), against `persistence/entity/ExecutionEntity.java:518-525` (`destroy` executes the activity's output parameters) and `:1049-1062` (`remove` does not); the retained answer of [default-handler-reads-and-writes-outer](../scenarios/open-rows/compensation-context-live-outer/README.md) (profile `cibseven-2.2.0`), whose handler `UserTask_UndoWork` writes `shared = handler-wrote` by an output parameter: after it completes, CIB's `shared` stays `s2` (trace [10] and [12]) and the kernel's is `handler-wrote`.
+
+**Boundary:** Compensation handlers with output parameters that end through `endCompensation`; this entry owns that witness in the ledger.
 
 ## Extension register
 

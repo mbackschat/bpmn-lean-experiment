@@ -275,8 +275,7 @@
   {
     "evidence": "scenarios/open-rows/compensation-context-live-outer/default-handler-reads-and-writes-outer.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-05"
+      "CIB-LIM-0050"
     ]
   },
   {
