@@ -7,13 +7,13 @@
  * parent Activity", BPMN 2.0.2 §13.5.5; CIB copies only them, `CompensationUtil.java:118-124`); every other name the
  * handler reads live through its context's chain (D9). A boundary handler restores none.
  *
- * A trigger (`Signal.compensate`) takes every record retained in its scope occurrence and runs their handlers, each
- * begun in a context scope occurrence of its own inside that one, holding the restored context, with continuation
- * `compensation`. Order (§13.5.5): when A's record completed before B's, a Sequence Flow from A or from a boundary
- * Event of A to B, a name B reads that A can write, or A and B being records of one subject makes B's handler complete
- * before A's starts (`precedes`); handlers without such a dependency run concurrently, so every pending handler none of
- * whose successors is still pending or running starts at once, in program order. Once the last handler has completed,
- * the trigger continues as its thrower asked.
+ * A trigger (`Signal.compensate`) takes every record visible from its scope occurrence (`visibleScopes`), or its
+ * target's, and runs their handlers, each begun in a context scope occurrence of its own inside that one, holding the
+ * restored context, with continuation `compensation`. Order (§13.5.5): when A's record completed before B's, a Sequence
+ * Flow from A or from a boundary Event of A to B, a name B reads that A can write, or A and B being records of one
+ * subject makes B's handler complete before A's starts (`precedes`); handlers without such a dependency run
+ * concurrently, so every pending handler none of whose successors is still pending or running starts at once, in
+ * program order. Once the last handler has completed, the trigger continues as its thrower asked.
  *
  * Under `ImplicitCompensation.EverySubProcess` (I5) a completed Sub-Process without a handler that holds records is
  * retained as one group record without a handler: compensating it runs its children as a nested run in a context
@@ -336,9 +336,30 @@ function release(ctx: Ctx, scope: ScopeOccurrenceId, context: ScopeOccurrenceId,
 }
 
 /**
- * `Signal.compensate`: take the records retained in `scope` into a new run: those of `activity` when one is named, else
- * all. Dynamic-only refusal: a second trigger in a scope whose run is in progress, since its relation to the running
- * one is not selected (COMPH-EXCLUSIVE-01 of the trigger account).
+ * The scope occurrences whose records a throw in `scope` sees (I2, D15): the Activities "visible" from it, those at its
+ * own level or, from a Compensation Event Sub-Process, in the Sub-Process containing it (BPMN 2.0.2 Tables 10.88 and
+ * 10.89). The walk goes outward from `scope` through Event Sub-Process occurrences up to and including the first scope
+ * occurrence of another kind, as CIB's does (`CompensationUtil.java:184-206`); a compensation handler's context ends
+ * it, included, since `beginHandler` moved the records of the handler's subject there.
+ */
+function visibleScopes(ctx: Ctx, state: State, scope: ScopeOccurrenceId): ScopeOccurrenceId[] {
+  const go = (fuel: number, id: ScopeOccurrenceId): ScopeOccurrenceId[] => {
+    if (fuel === 0) return [];
+    const entry = state.scopes.find((candidate) => candidate.id === id) ?? null;
+    const element = entry?.element == null ? null : programElement(ctx.program, entry.element);
+    const payload = element === null ? null : elementScope(element);
+    const eventSubProcess = payload !== null && ctx.eventStart(payload[1]) !== null;
+    const parent = entry?.parent ?? null;
+    if (parent === null) return [id];
+    return ctx.scopeRole(state, id) !== ScopeRole.CompensationHandler && eventSubProcess ? [id, ...go(fuel - 1, parent)] : [id];
+  };
+  return go(state.scopes.length + 1, scope);
+}
+
+/**
+ * `Signal.compensate`: take into a new run in `scope` every record the throw sees (`visibleScopes`), or only
+ * `activity`'s when one is named (I3). Dynamic-only refusal: a trigger while a run is in progress in a scope occurrence
+ * it covers, since its relation to the running one is not selected (COMPH-EXCLUSIVE-01 of the trigger account).
  */
 export function compensate(
   ctx: Ctx,
@@ -350,10 +371,11 @@ export function compensate(
   state: State,
 ): Outcome {
   const compensation = state.slots.compensation;
-  const selects = (record: Compensable): boolean => record.scope === scope && (activity === null || activity === record.subject);
+  const covered = visibleScopes(ctx, state, scope);
+  const selects = (record: Compensable): boolean => covered.includes(record.scope) && (activity === null || activity === record.subject);
   const selected = compensation.retained.filter(selects);
   const kept = compensation.retained.filter((record) => !selects(record));
-  if (compensation.runs.some((run) => run.scope === scope)) {
+  if (compensation.runs.some((run) => covered.includes(run.scope))) {
     return failed(FailureTag.Unsupported, "compensation-concurrent-trigger"); // dynamic-only: whether a run is in progress
   }
   return advance(ctx, scope, store(state, {

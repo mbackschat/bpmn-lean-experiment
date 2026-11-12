@@ -336,20 +336,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/compensation-event-subprocess-throws/error-esp-throws-targeted.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02",
-      "PC-COMPENSATION-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-event-subprocess-throws/error-esp-throws-untargeted.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02",
-      "PC-COMPENSATION-05"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/compensation-handler-bodies/abandoned-while-handlers-wait.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0049"
