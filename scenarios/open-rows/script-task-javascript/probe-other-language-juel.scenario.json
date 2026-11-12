@@ -3,9 +3,9 @@
   "id": "script-task-javascript-probe-other-language-juel",
   "profile": "cibseven-2.2.0",
   "bpmn": {
-    "id": "script-probes",
-    "relativePath": "scenarios/open-rows/script-task-javascript/script-probes.bpmn",
-    "sha256": "842cf1f9bdb60ab6026b4f02a6ac231249285a51af88186d81b2bdfee85d4d33",
+    "id": "script-other-language",
+    "relativePath": "scenarios/open-rows/script-task-javascript/script-other-language.bpmn",
+    "sha256": "3c5b3895834bc14354020a8e222e4e83ea9daecf010c5b016599752a6d339d3e",
     "sourceOverlay": null
   },
   "stimuli": [

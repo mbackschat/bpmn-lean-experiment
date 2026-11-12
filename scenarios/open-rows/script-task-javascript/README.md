@@ -4,7 +4,7 @@ Answer-free schedules for [PC-AUTO-05](../../../docs/PRACTICAL-CIB7-COVERAGE-TAR
 
 A Script Task here carries its script in the model and writes its value to a `camunda:resultVariable`; no schedule supplies a script result. A script reads Process variables by bare name, never through `execution`, except in the probe that does. Every script that returns a number returns an integer, so the retained runner's variable projection can carry it. The numeric inputs are Strings that a script parses, because the [scenario value contract](../../../scripts/scenario-variable-value-contract.ts) admits Integer start values only for registered process ids.
 
-[script-probes.bpmn](script-probes.bpmn) holds one Script Task per probe behind an Exclusive Gateway whose JUEL conditions test the start variable `probe`; all branches merge into the User Task *Inspect result*. Every schedule starts the Process with `price = "6"`, `quantity = "7"`, `firstName = "ada"`, `lastName = "lovelace"` and its probe, and has no other stimulus.
+[script-probes.bpmn](script-probes.bpmn) holds one JavaScript Script Task per probe behind an Exclusive Gateway whose JUEL conditions test the start variable `probe`; all branches merge into the User Task *Inspect result*. The JUEL probe has a model of its own, [script-other-language.bpmn](script-other-language.bpmn), since a refused language refuses the whole model and would hide every other probe. Every schedule starts the Process with `price = "6"`, `quantity = "7"`, `firstName = "ada"`, `lastName = "lovelace"` and its probe, and has no other stimulus.
 
 | Schedule | Probe | Case it separates |
 |---|---|---|

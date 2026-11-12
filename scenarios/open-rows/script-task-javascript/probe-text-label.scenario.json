@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "script-probes",
     "relativePath": "scenarios/open-rows/script-task-javascript/script-probes.bpmn",
-    "sha256": "842cf1f9bdb60ab6026b4f02a6ac231249285a51af88186d81b2bdfee85d4d33",
+    "sha256": "434e95142566bfe01ba409c39b22d81101631dd3ef9438f3bec9fd96649d84ad",
     "sourceOverlay": null
   },
   "stimuli": [

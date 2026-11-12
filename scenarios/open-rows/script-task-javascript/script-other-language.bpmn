@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ScriptOtherLanguage" targetNamespace="urn:bpmn-lean:script-other-language">
+  <process id="Process_ScriptOtherLanguage" name="A Script Task in JUEL" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <scriptTask id="OtherLanguage" name="Add in JUEL" scriptFormat="juel" camunda:resultVariable="sum">
+      <script>${price + quantity}</script>
+    </scriptTask>
+    <userTask id="Inspect" name="Inspect result" />
+    <endEvent id="OrderClosed" name="Order closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="OtherLanguage" />
+    <sequenceFlow id="Flow_Added" sourceRef="OtherLanguage" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="OrderClosed" />
+  </process>
+</definitions>

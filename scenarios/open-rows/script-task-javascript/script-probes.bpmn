@@ -12,9 +12,6 @@
     <scriptTask id="Label" name="Compose label" scriptFormat="javascript" camunda:resultVariable="fullName">
       <script>firstName.toUpperCase() + ' ' + lastName</script>
     </scriptTask>
-    <scriptTask id="OtherLanguage" name="Add in JUEL" scriptFormat="juel" camunda:resultVariable="sum">
-      <script>${price + quantity}</script>
-    </scriptTask>
     <scriptTask id="MutateHost" name="Mutate the execution" scriptFormat="javascript" camunda:resultVariable="outcome">
       <script>execution.setVariable('leaked', 'yes'); true;</script>
     </scriptTask>
@@ -40,9 +37,6 @@
     <sequenceFlow id="Flow_ToLabel" sourceRef="Select" targetRef="Label">
       <conditionExpression xsi:type="tFormalExpression">${probe == 'label'}</conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="Flow_ToOtherLanguage" sourceRef="Select" targetRef="OtherLanguage">
-      <conditionExpression xsi:type="tFormalExpression">${probe == 'juel'}</conditionExpression>
-    </sequenceFlow>
     <sequenceFlow id="Flow_ToMutateHost" sourceRef="Select" targetRef="MutateHost">
       <conditionExpression xsi:type="tFormalExpression">${probe == 'mutate'}</conditionExpression>
     </sequenceFlow>
@@ -61,7 +55,6 @@
     <sequenceFlow id="Flow_NoProbe" sourceRef="Select" targetRef="Merge" />
     <sequenceFlow id="Flow_TotalDone" sourceRef="Total" targetRef="Merge" />
     <sequenceFlow id="Flow_LabelDone" sourceRef="Label" targetRef="Merge" />
-    <sequenceFlow id="Flow_OtherLanguageDone" sourceRef="OtherLanguage" targetRef="Merge" />
     <sequenceFlow id="Flow_MutateHostDone" sourceRef="MutateHost" targetRef="Merge" />
     <sequenceFlow id="Flow_RandomnessDone" sourceRef="Randomness" targetRef="Merge" />
     <sequenceFlow id="Flow_WallClockDone" sourceRef="WallClock" targetRef="Merge" />
