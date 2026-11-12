@@ -19,8 +19,8 @@ namespace Kernel.Admission.Work
 
 /-- What admission reads of a work kind, read in one place (`traits`): whether the work carries mappings (a plain
 Task's only where `readsOwnScope` holds; a decision task's, since `Kernel.Feature.Work.evaluateDecision` writes its
-result and maps its outputs, PC-AUTO-08), whether it may be a compensation subject, which completes through the
-pipeline's `Hooks.completed` that `Kernel.Feature.Work` reaches for a single User Task or Service Task only, what one
+result and maps its outputs, PC-AUTO-08), whether it may be a compensation subject (a User Task, Service Task or
+Call Activity, single or Multi-Instance, whose body's completion retains one record, §13.5.5), what one
 Multi-Instance instance submits (`instanceBody`), whether an occurrence no token began may do it
 (`beginsWithoutToken`), the names CIB installs from it (`declaredNames`) and the delegate token it binds. -/
 structure Traits where
@@ -52,7 +52,7 @@ def traits : Work → Traits
   | .send work => { handlerKey := work.handlerKey }
   | .script work => { names := work.resultVariable.toList }
   | .rule work => { mapsData := true, names := work.resultVariable.toList }
-  | .call work => { names := writtenTargets (work.inputs ++ work.outputs) }
+  | .call work => { compensable := true, names := writtenTargets (work.inputs ++ work.outputs) }
 
 /-- The work one instance of a Multi-Instance Activity may do: `some submits`, where `submits` says whether its
 completion submits the loop's output data item, or `none` for work no instance may do. -/
@@ -73,8 +73,7 @@ def workEnvelope (options : ProfileOptions) (work : Traits) (envelope : Envelope
   else if !envelope.outputs.isEmpty && !work.mapsData && !(work.plainTask && readsOwnScope options envelope.outputs) then
     some "activity.outputMappings"
   else if envelope.multiInstance.isSome && work.instanceBody.isNone then some "activity.multiInstanceBody"
-  else if !envelope.compensationHandlers.isEmpty && (!work.compensable || envelope.multiInstance.isSome) then
-    some "activity.compensationHandler"
+  else if !envelope.compensationHandlers.isEmpty && !work.compensable then some "activity.compensationHandler"
   else none
 
 /-- An Activity or Scope compensates through one handler. BPMN 2.0.2 states no limit; CIB keeps one per Activity or

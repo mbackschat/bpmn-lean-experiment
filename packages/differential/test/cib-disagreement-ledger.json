@@ -280,13 +280,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/compensation-effect-and-call-records/call-completed-then-throw.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-03",
-      "PC-COMPENSATION-04"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/compensation-eligibility/late-third-second-throw.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0011"
@@ -422,13 +415,13 @@
   {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/tasks-parallel-out-of-order.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-03"
+      "CIB-DEV-0012"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/tasks-sequential-in-turn.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-03"
+      "CIB-DEV-0012"
     ]
   },
   {
@@ -448,22 +441,13 @@
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/user-handler-two-items.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-03"
+      "CIB-DEV-0012"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/user-handler-zero-items.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/user-parallel-quorum-ends-after-one.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-03"
+      "CIB-DEV-0012"
     ]
   },
   {

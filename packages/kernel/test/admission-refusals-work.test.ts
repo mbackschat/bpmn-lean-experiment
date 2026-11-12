@@ -4,8 +4,11 @@
  * Multi-Instance loop and compensation handler may sit. A Send or Script Task has no kernel meaning; a Business Rule
  * Task's decisions are `admission-refusals-decision.test.ts`'s.
  */
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
 import {
-  activity, append, callWork, computed, criterion, definitionRef, loop, mapping, qName, receiveWork, refusalTests,
+  activity, append, base, callWork, computed, criterion, definitionRef, loop, mapping, qName, receiveWork, refusalOf, refusalTests,
   ruleWork, scriptWork, sendWork, serviceWork, task, text, userWork, variable, withOptions, withOrigin,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
@@ -101,12 +104,6 @@ export const rows: readonly Row[] = [
     code: "activity.compensationHandler",
     description: "a compensation handler on a Task without work",
     mutate: (program) => append(withTask("manual", { compensationHandlers: ["H"] })(program), handlerTask),
-    control: (program) => append(withTask(userWork(), { compensationHandlers: ["H"] })(program), handlerTask),
-  },
-  {
-    code: "activity.compensationHandler",
-    description: "a compensation handler on a Multi-Instance User Task",
-    mutate: (program) => append(withTask(userWork(), { compensationHandlers: ["H"], multiInstance: loop() })(program), handlerTask),
     control: (program) => append(withTask(userWork(), { compensationHandlers: ["H"] })(program), handlerTask),
   },
   {
@@ -426,3 +423,12 @@ export const rows: readonly Row[] = [
 ];
 
 refusalTests("work", rows);
+
+test("work: a compensation handler on a Multi-Instance User Task is admitted, its handler run once for all instances (§13.5.5)", () => {
+  assert.equal(refusalOf(append(withTask(userWork(), { compensationHandlers: ["H"], multiInstance: loop() })(base()), handlerTask)), null);
+});
+
+test("work: a compensation handler on a Call Activity is admitted, the Call retained like a Task", () => {
+  const handled = (program: Json): Json => task(activity("T", callWork(), { compensationHandlers: ["H"] }))(program);
+  assert.equal(refusalOf(append(withCalled()(handled(base())), handlerTask)), null);
+});

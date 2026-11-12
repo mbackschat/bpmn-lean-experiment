@@ -50,8 +50,8 @@ import * as Decision from "./work/decision.js";
 /**
  * What admission reads of a work kind, read in one place (`traits`): whether the work carries mappings (a plain Task's
  * only where `readsOwnScope` holds; a decision task's, since `feature/work.ts` `evaluateDecision` writes its result and
- * maps its outputs, PC-AUTO-08), whether it may be a compensation subject, which completes through the pipeline's
- * `Hooks.completed` that `feature/work.ts` reaches for a single User Task or Service Task only, what one
+ * maps its outputs, PC-AUTO-08), whether it may be a compensation subject (a User Task, Service Task or Call Activity,
+ * single or Multi-Instance, whose body's completion retains one record, §13.5.5), what one
  * Multi-Instance instance submits (`instanceBody`), whether an occurrence no token began may do it
  * (`beginsWithoutToken`), the names CIB installs from it (`declaredNames`) and the delegate token it binds.
  */
@@ -99,7 +99,7 @@ function traits(work: Work): Traits {
     case WorkTag.Rule:
       return { ...noTraits, mapsData: true, names: work.payload.resultVariable === null ? [] : [work.payload.resultVariable] };
     case WorkTag.Call:
-      return { ...noTraits, names: writtenTargets([...work.payload.inputs, ...work.payload.outputs]) };
+      return { ...noTraits, compensable: true, names: writtenTargets([...work.payload.inputs, ...work.payload.outputs]) };
   }
   return assertNever(work);
 }
@@ -126,7 +126,7 @@ function workEnvelope(options: ProfileOptions, work: Traits, fields: Envelope): 
     return "activity.outputMappings";
   }
   if (fields.multiInstance !== null && work.instanceBody === null) return "activity.multiInstanceBody";
-  if (fields.compensationHandlers.length > 0 && (!work.compensable || fields.multiInstance !== null)) return "activity.compensationHandler";
+  if (fields.compensationHandlers.length > 0 && !work.compensable) return "activity.compensationHandler";
   return null;
 }
 

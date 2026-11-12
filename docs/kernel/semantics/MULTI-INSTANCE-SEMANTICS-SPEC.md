@@ -111,7 +111,6 @@ The parallel User Task account selected no CIB relation; the sequential facts ab
 | `multiInstance.resultShadowsInstance` (`unsupported`, dynamic-only) | an instance result named like a counter or the item, or a write that reached a counter local | [counters and the item](#counters-and-the-item-at-every-instance-site) |
 | `activity.multiInstanceBody` | an instance doing anything but a User Task, a Service Task or an embedded Sub-Process | PC-MI-03 |
 | `scope.multiInstance` | a looping Transaction or Event Sub-Process | PC-TX; BPMN 2.0.2 §10.3.5 starts an Event Sub-Process by its event |
-| `activity.compensationHandler` | a compensation handler on a Multi-Instance Activity | PC-COMPENSATION-03 |
 | `instance-output-kind`, `undeclared-output`, `output-unavailable` (`rejected`) | an instance completion that is not exactly its output data item, or a non-String into a String List | the slot rule above |
 | `multi-instance-collection` (`semanticFailure`) | under `MultiInstanceInputFailure.hold`, a collection value that is no list; under `rollback` it is `multiInstance.notACollection` and fails the operation | the run's data |
 
