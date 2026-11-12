@@ -28,7 +28,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | CIB interpretations of BPMN gaps or inconsistencies | 36 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 45 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 40 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 41 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1313,6 +1313,16 @@ BPMN 2.0.2 gives a data value no Java type, and the kernel's Integer is one kind
 **Evidence:** Pinned `QueryVariableValue.java:58-66`, `MultiInstanceActivityBehavior.java:77`; retained `message-correlation-criteria/engine-integer-criterion`, whose criterion on `lastPosition`, mapped from `${loopCounter}`, CIB rejects where the kernel delivers; `integer-beyond-int-range`, which agrees; and `receive-task-payload-correlation/items-parallel-local-correlation`.
 
 **Boundary:** Integer criteria on a variable CIB stores as `Integer` (an engine counter, or an expression result derived from one) under the cibseven profiles; this entry owns those witnesses in the ledger.
+
+### CIB-LIM-0041 — CIB runs an asynchronous Compensation throw synchronously
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile, since the kernel refuses the asynchronous form at admission under every profile (`throw.compensation.asynchronous`); not a deviation
+
+BPMN 2.0.2 §10.7.2 lets a Compensation throw with `waitForCompletion = false` continue without waiting for the triggered compensation to complete. CIB Seven `2.2.0` deploys such a throw with a warning that the attribute is not supported and always waits for the compensation to join, so the throw's form cannot be told from the synchronous one in CIB.
+
+**Evidence:** Pinned `bpmn/parser/BpmnParse.java:1726-1729` (the deployment warning) and `bpmn/behavior/CompensationEventActivityBehavior.java:51-52`; the retained answer of [unwaited-handler-open](../scenarios/open-rows/compensation-targeting/README.md) (profile `cibseven-2.2.0`), which waits for the handler.
+
+**Boundary:** Compensation throws with `waitForCompletion = false`; this entry owns their witnesses in the ledger.
 
 ### CIB-LIM-0042 — CIB ignores the asynchronous continuation of a boundary compensation handler
 

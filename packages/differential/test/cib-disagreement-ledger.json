@@ -598,7 +598,7 @@
   {
     "evidence": "scenarios/open-rows/compensation-targeting/unwaited-handler-open.cibseven-evidence.json",
     "owners": [
-      "PC-COMPENSATION-02"
+      "CIB-LIM-0041"
     ]
   },
   {

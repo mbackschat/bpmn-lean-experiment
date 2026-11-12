@@ -298,7 +298,7 @@ CIB's ordering, persistence and invocation algorithms stay outside the kernel ([
 | Refusal code | Refused | Reason or owning row |
 |---|---|---|
 | `throw.compensation.activityLevel`, `throw.compensation.notActivity` | an `activityRef` naming an element not visible from the throw (Tables 10.88, 10.89; from a non-Compensation Event Sub-Process at its parent's level unless `compensationReferenceScope = eventSubProcessParent`, CIB-EXT-0047), or naming no Activity (Table 10.94; CIB-EXT-0046) | PC-COMPENSATION-02 |
-| `throw.compensation.asynchronous` | `waitForCompletion = false` | PC-COMPENSATION-02 |
+| `throw.compensation.asynchronous` | `waitForCompletion = false`, which CIB runs synchronously (CIB-LIM-0041) | PC-COMPENSATION-02 |
 | `activity.compensationHandler` | a handler on anything but a single User or Service Task, or on a Multi-Instance Activity | PC-COMPENSATION-03 |
 | `compensation.handlerInputUnavailable` (dynamic-only `unsupported`) | a handler whose Data Input is unavailable, which has no flow to be held on | PC-COMPENSATION-04 |
 | `compensation.handlerMultiInstance` | a handler with Multi-Instance loop characteristics, whose asynchronous marks CIB skips (`BpmnParse.java:2416`) | PC-COMPENSATION-04 |
