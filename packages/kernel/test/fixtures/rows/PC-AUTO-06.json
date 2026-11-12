@@ -1,8 +1,8 @@
 {
   "identity": {
-    "processId": "Process_ScopedScripts",
-    "namespace": "urn:bpmn-lean:script-scoped",
-    "sourceSha256": "8926af319975ff41248c671685f6c2a882777f95e33c168c43eebb1349461a70",
+    "processId": "Process_ScopedScriptSubProcess",
+    "namespace": "urn:bpmn-lean:script-scoped-subprocess",
+    "sourceSha256": "8bc046f4aa2e62be1198667df1c0e3fd97c80a86d7b9d2858ac217b71dccbbeb",
     "profile": "cibseven-2.2.0",
     "deployment": null
   },
@@ -354,75 +354,6 @@
     {
       "activity": {
         "header": {
-          "id": "Shout",
-          "origin": {
-            "definition": null,
-            "sourceId": "Shout"
-          },
-          "sourceType": "scriptTask",
-          "parent": null
-        },
-        "payload": {
-          "work": {
-            "script": {
-              "payload": {
-                "format": "javascript",
-                "source": "'ITEM-' + loopCounter",
-                "resultVariable": "label",
-                "resource": null
-              }
-            }
-          },
-          "envelope": {
-            "incoming": [
-              "Flow_Priced"
-            ],
-            "outgoing": [
-              "Flow_Shouted"
-            ],
-            "inputs": [],
-            "outputs": [],
-            "boundaries": [],
-            "multiInstance": {
-              "mode": "sequential",
-              "count": {
-                "cardinality": {
-                  "count": {
-                    "juel": {
-                      "nodes": [
-                        {
-                          "text": {
-                            "value": "2"
-                          }
-                        }
-                      ]
-                    }
-                  }
-                }
-              },
-              "elementVariable": null,
-              "completionCondition": null,
-              "inputDataItem": null,
-              "outputDataItem": null,
-              "outputCollection": null,
-              "mutableCollection": "entrySnapshot",
-              "asyncBefore": false,
-              "asyncAfter": false,
-              "loopDataInputRef": null,
-              "inputDataItemName": null
-            },
-            "compensationHandlers": [],
-            "forCompensation": false,
-            "defaultFlow": null,
-            "asyncBefore": false,
-            "asyncAfter": false
-          }
-        }
-      }
-    },
-    {
-      "activity": {
-        "header": {
           "id": "Inspect",
           "origin": {
             "definition": null,
@@ -449,7 +380,7 @@
           },
           "envelope": {
             "incoming": [
-              "Flow_Shouted"
+              "Flow_Priced"
             ],
             "outgoing": [
               "Flow_Inspected"
@@ -516,12 +447,6 @@
     {
       "id": "Flow_Priced",
       "source": "Pricing",
-      "target": "Shout",
-      "condition": null
-    },
-    {
-      "id": "Flow_Shouted",
-      "source": "Shout",
       "target": "Inspect",
       "condition": null
     },

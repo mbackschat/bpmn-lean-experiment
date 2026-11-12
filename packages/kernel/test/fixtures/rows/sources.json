@@ -131,8 +131,8 @@
     "profile": "cibseven-2.2.0"
   },
   "PC-AUTO-06": {
-    "scenario": "scenarios/open-rows/script-task-javascript/nested-scope-and-body.scenario.json",
-    "source": "scenarios/open-rows/script-task-javascript/scoped-scripts.bpmn",
+    "scenario": "scenarios/open-rows/script-task-javascript/nested-scope-write.scenario.json",
+    "source": "scenarios/open-rows/script-task-javascript/scoped-script-subprocess.bpmn",
     "profile": "cibseven-2.2.0"
   },
   "PC-AUTO-08": {

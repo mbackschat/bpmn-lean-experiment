@@ -17,11 +17,12 @@ A Script Task here carries its script in the model and writes its value to a `ca
 | [probe-unknown-name](probe-unknown-name.scenario.json) | `UnknownName` | A script that reads a name no variable or host binding declares. |
 | [probe-thrown-error](probe-thrown-error.scenario.json) | `ThrownError` | A script that throws an `Error`. |
 
-[scoped-scripts.bpmn](scoped-scripts.bpmn) places Script Tasks in two contexts: *Apply discount* in the Sub-Process *Pricing*, which declares the local `lineTotal` from the String `price`, parses it in the script and copies the result out as `total`, and *Label each body* as a sequential Multi-Instance body with a cardinality of two, whose script reads the body's `loopCounter`.
+Two models place a Script Task in a scope, one each, so that a refusal of one context hides nothing of the other. In [scoped-script-subprocess.bpmn](scoped-script-subprocess.bpmn) *Apply discount* runs in the Sub-Process *Pricing*, which declares the local `lineTotal` from the String `price`, parses it in the script and copies the result out as `total`. In [scoped-script-body.bpmn](scoped-script-body.bpmn) *Label each body* is a sequential Multi-Instance body with a cardinality of two, whose script reads the body's `loopCounter`. Both start with `price = "100"` and wait in the User Task *Inspect result*.
 
 | Schedule | Case it separates |
 |---|---|
-| [nested-scope-and-body](nested-scope-and-body.scenario.json) | A result written to a Sub-Process local that has no namesake at the root, and a body whose result variable each iteration rewrites. |
+| [nested-scope-write](nested-scope-write.scenario.json) | A result written to a Sub-Process local that has no namesake at the root. |
+| [multi-instance-body](multi-instance-body.scenario.json) | A body whose result variable each iteration rewrites. |
 
 Notes for the target runners:
 

@@ -1,0 +1,39 @@
+{
+  "kind": "scenario",
+  "id": "script-task-javascript-nested-scope-write",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "script-scoped-subprocess",
+    "relativePath": "scenarios/open-rows/script-task-javascript/scoped-script-subprocess.bpmn",
+    "sha256": "8bc046f4aa2e62be1198667df1c0e3fd97c80a86d7b9d2858ac217b71dccbbeb",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Order_1",
+      "variables": [
+        {
+          "name": "price",
+          "value": {
+            "kind": "string",
+            "value": "100"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ScriptTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/scripting/engine/ScriptBindings.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

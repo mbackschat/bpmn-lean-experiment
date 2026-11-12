@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ScopedScriptBody" targetNamespace="urn:bpmn-lean:script-scoped-body">
+  <process id="Process_ScopedScriptBody" name="A Script Task as a Multi-Instance body" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <scriptTask id="Shout" name="Label each body" scriptFormat="javascript" camunda:resultVariable="label">
+      <multiInstanceLoopCharacteristics isSequential="true">
+        <loopCardinality xsi:type="tFormalExpression">2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+      <script>'ITEM-' + loopCounter</script>
+    </scriptTask>
+    <userTask id="Inspect" name="Inspect result" />
+    <endEvent id="OrderClosed" name="Order closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="Shout" />
+    <sequenceFlow id="Flow_Shouted" sourceRef="Shout" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="OrderClosed" />
+  </process>
+</definitions>

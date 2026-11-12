@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ScopedScriptSubProcess" targetNamespace="urn:bpmn-lean:script-scoped-subprocess">
+  <process id="Process_ScopedScriptSubProcess" name="A Script Task writing a Sub-Process local" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <subProcess id="Pricing" name="Pricing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="lineTotal">${price}</camunda:inputParameter>
+          <camunda:outputParameter name="total">${lineTotal}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="PricingOpened" />
+      <scriptTask id="Discount" name="Apply discount" scriptFormat="javascript" camunda:resultVariable="lineTotal">
+        <script>parseInt(lineTotal, 10) - 5</script>
+      </scriptTask>
+      <endEvent id="PricingClosed" />
+      <sequenceFlow id="Flow_PricingOpened" sourceRef="PricingOpened" targetRef="Discount" />
+      <sequenceFlow id="Flow_Discounted" sourceRef="Discount" targetRef="PricingClosed" />
+    </subProcess>
+    <userTask id="Inspect" name="Inspect result" />
+    <endEvent id="OrderClosed" name="Order closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="Pricing" />
+    <sequenceFlow id="Flow_Priced" sourceRef="Pricing" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="OrderClosed" />
+  </process>
+</definitions>
