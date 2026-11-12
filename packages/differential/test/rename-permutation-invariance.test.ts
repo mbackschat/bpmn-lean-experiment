@@ -4,16 +4,18 @@
  * whose flow elements are renamed and reordered. The variant's result, with the new identifiers mapped back, must equal
  * the original's exactly.
  *
- * The variant renames the identifier of every flow node and Sequence Flow of a Process or Sub-Process, and every
- * reference to one, to a fresh name whose lexical order is the reverse of the original's, so a reading that depends on
- * identifier order is caught. It reverses the declaration order of the flow nodes in each container and reorders the
+ * The variant renames the identifier of every flow node and Sequence Flow of a Process or Sub-Process and of every
+ * Message, Signal, Error and Escalation, and every reference to one, to a fresh name whose lexical order is the reverse
+ * of the original's, so a reading that depends on identifier order is caught. It reverses the declaration order of the flow nodes in each container and reorders the
  * Sequence Flows by source, keeping only the declaration orders that choose among candidates: the flows leaving one
  * source, a gateway's or an Activity's candidate order (BPMN 2.0.2 §13.4.2: "the conditions are evaluated in order";
  * CIB-INT-0001 reads it as XML Sequence Flow declaration order); the Boundary Events of one host and the Event
  * Sub-Processes of one scope, among which a thrown Error, Escalation or Message picks its catcher in declaration order
  * where several match; and the root start Events of one Process, which a population reaches in document order when
- * one command fires several of them. Names, data items, Messages, Signals and Errors keep their identifiers: they are
- * values a schedule or expression names, not references the reader resolves. A derived instance identifier embeds
+ * one command fires several of them. Names, Error and Escalation codes, and data items keep their identifiers: a name
+ * or a code is a value a schedule, a catch or an expression matches, and a data item is named by expressions the
+ * reader does not resolve. A schedule that addresses a Message by identifier (`messageId`) or a Signal by reference
+ * (`signalRef.id`) is renamed with the model. A derived instance identifier embeds
  * element identifiers (a called instance's its Call Activity's, a started one's its start Event's, a cascade-started
  * one's its emitter's), so it is renamed through its encoding.
  *
@@ -56,10 +58,15 @@ const flowNodes = new Set([
   "eventBasedGateway", "complexGateway",
 ]);
 /** The attributes and element texts that refer to a flow node or Sequence Flow by identifier. */
-const referenceAttributes = new Set(["id", "sourceRef", "targetRef", "default", "attachedToRef", "activityRef", "bpmnElement"]);
-const referenceTexts = new Set(["incoming", "outgoing", "flowNodeRef"]);
-/** The schedule fields that name an element; a process instance field may name a called instance. */
-const elementFields = new Set(["elementId", "startEvent"]);
+const referenceAttributes = new Set([
+  "id", "sourceRef", "targetRef", "default", "attachedToRef", "activityRef", "bpmnElement", "messageRef", "signalRef",
+  "errorRef", "escalationRef",
+]);
+/** The root elements a trigger or a result refers to by identifier. */
+const rootReferences = new Set(["message", "signal", "error", "escalation"]);
+const referenceTexts = new Set(["incoming", "outgoing", "flowNodeRef", "inMessageRef", "outMessageRef", "errorRef"]);
+/** The schedule fields that name an element or a Message; a process instance field may name a called instance. */
+const elementFields = new Set(["elementId", "startEvent", "messageId"]);
 const instanceFields = new Set(["processInstanceId", "instanceId"]);
 
 type XmlNode = { kind: "raw"; text: string } | { kind: "element"; local: string; open: string; children: XmlNode[]; close: string };
@@ -108,7 +115,8 @@ function* elements(nodes: readonly XmlNode[], parent: string | null = null): Gen
 /** Old identifier to new over every document of `trees`, reversing the lexical order of the renamed identifiers. */
 function renaming(trees: readonly (readonly XmlNode[])[]): Map<string, string> {
   const ids = [...new Set(trees.flatMap((tree) => [...elements(tree)]
-    .filter(([element, parent]) => parent !== null && containers.has(parent) && (flowNodes.has(element.local) || element.local === "sequenceFlow"))
+    .filter(([element, parent]) => (parent !== null && containers.has(parent) && (flowNodes.has(element.local) || element.local === "sequenceFlow"))
+      || (parent === "definitions" && rootReferences.has(element.local)))
     .map(([element]) => attribute(element, "id"))
     .filter((id): id is string => id !== undefined)))]
     .sort();
@@ -300,7 +308,10 @@ function renamedInstance(id: string, names: ReadonlyMap<string, string>): string
   return id;
 }
 
-/** `json` with every string at a field `selects` picks renamed through `names`, as an element or an instance. */
+/**
+ * `json` with every string at a field `selects` picks renamed through `names`, as an element or an instance; a Signal
+ * reference (`signalRef: {id, namespace?}`) names its Signal by `id`.
+ */
 function mapStrings(json: Json, names: ReadonlyMap<string, string>, selects: (field: string) => boolean, field = ""): Json {
   if (typeof json === "string") {
     if (instanceFields.has(field)) return renamedInstance(json, names);
@@ -308,7 +319,8 @@ function mapStrings(json: Json, names: ReadonlyMap<string, string>, selects: (fi
   }
   if (Array.isArray(json)) return json.map((item) => mapStrings(item, names, selects, field));
   if (json !== null && typeof json === "object") {
-    return Object.fromEntries(Object.entries(json).map(([key, value]) => [key, mapStrings(value, names, selects, key)]));
+    return Object.fromEntries(Object.entries(json).map(([key, value]) =>
+      [key, mapStrings(value, names, key === "signalRef" ? (inner) => inner === "id" || selects(inner) : selects, key)]));
   }
   return json;
 }
