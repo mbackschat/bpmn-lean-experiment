@@ -1,0 +1,373 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "conditional-contests-two-writes-first-wins",
+    "sha256": "4ea6bfa9767fb3a0e7358aa5fed73179e5f872412d9a84ebb4af4926970ee1cb"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-set-a-and-b",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "a",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "b",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Handle_B",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "a",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "b",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Handle_A",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "a",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "b",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Host_Writes",
+            "name": "Collect the answers"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-set-a-and-b",
+        "tasks": [
+          {
+            "elementId": "Handle_A",
+            "name": "Handle answer a"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Handle_B",
+        "tasks": [
+          {
+            "elementId": "Handle_A",
+            "name": "Handle answer a"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Handle_A",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-set-a-and-b",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-Handle_B",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-Handle_A",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-set-a-and-b",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-Handle_B",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-Handle_A",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Writes",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Collect the answers",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Writes_A",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Writes_B",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": "b",
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-set-a-and-b",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "a",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "b",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handle_A",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle answer a",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-Handle_B",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "a",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "b",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handle_A",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle answer a",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-Handle_A",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "a",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "b",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}
