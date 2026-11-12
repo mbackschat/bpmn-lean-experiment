@@ -380,7 +380,7 @@ function callers(program: Program, process: CalledProcess): Element[] {
  * enclosing one, whose host it interrupts and passes, an Event Sub-Process of an enclosing Scope or of the process
  * level, and from a called process's level a Call's catchers in its caller. Any raised kind and code counts.
  */
-function catchers(reading: Reading, program: Program, fuel: number, element: Element): Visit[] {
+function catchers(reading: Reading, program: Program, element: Element, fuel: number): Visit[] {
   if (fuel === 0) return [];
   const chain = [...(elementEnvelope(element) === null ? [] : [element]), ...ancestors(program, elementHeader(element).parent)];
   const atHost = (host: Element): Visit[] => {
@@ -394,7 +394,7 @@ function catchers(reading: Reading, program: Program, fuel: number, element: Ele
   const top = chain.at(-1) ?? element;
   const level = startingSubProcesses(programSiblings(program, elementHeader(top)), reading.catchesRaise).map(toEnter);
   const process = programProcessOf(program, elementHeader(top));
-  const caller = process === null ? [] : callers(program, process).flatMap((call) => [toPass(call), ...catchers(reading, program, fuel - 1, call)]);
+  const caller = process === null ? [] : callers(program, process).flatMap((call) => [toPass(call), ...catchers(reading, program, call, fuel - 1)]);
   return [...chain.flatMap(atHost), ...level, ...caller];
 }
 
@@ -454,7 +454,7 @@ export function conditionalCatches(program: Program): Visit[] {
  * instance (CIB-OP-0019).
  */
 function beyond(reading: Reading, program: Program, element: Element, completes: boolean): Visit[] {
-  const raised = reading.raises(element) ? catchers(reading, program, program.elements.length + 1, element) : [];
+  const raised = reading.raises(element) ? catchers(reading, program, element, program.elements.length + 1) : [];
   const compensated = reading.compensates(element) ? handlersOf(reading, program, element).map(toEnter) : [];
   const id = elementHeader(element).id;
   const continued = completes && handler(reading, element)

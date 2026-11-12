@@ -234,9 +234,9 @@ def callers (program : Program) (process : CalledProcess) : List Element :=
 /-- Where a raise from `element` may be caught: a boundary of the element itself, if it is an Activity or Scope, or of
 an enclosing one, whose host it interrupts and passes, an Event Sub-Process of an enclosing Scope or of the process
 level, and from a called process's level a Call's catchers in its caller. Any raised kind and code counts. -/
-def catchers (reading : Reading) (program : Program) : Nat → Element → List Visit
-  | 0, _ => []
-  | fuel + 1, element =>
+def catchers (reading : Reading) (program : Program) (element : Element) : Nat → List Visit
+  | 0 => []
+  | fuel + 1 =>
     let chain := (if element.envelope?.isSome then [element] else []) ++
       ancestors program program.elements.length element.header.parent
     let atHost (host : Element) : List Visit :=
@@ -247,7 +247,7 @@ def catchers (reading : Reading) (program : Program) : Nat → Element → List 
     let top := (chain.getLast?).getD element
     let level := (startingSubProcesses (program.siblings top.header) reading.catchesRaise).map Visit.enters
     let caller := ((program.processOf top.header).map fun process =>
-      (callers program process).flatMap fun call => Visit.passes call :: catchers reading program fuel call).getD []
+      (callers program process).flatMap fun call => Visit.passes call :: catchers reading program call fuel).getD []
     chain.flatMap atHost ++ level ++ caller
 
 /-- Whether an element is a compensation handler: an Activity or Scope marked `isForCompensation`, or a Compensation
@@ -292,7 +292,7 @@ handlers its Compensation throw or Cancel End begins and, when it is a handler t
 every trigger that may begin it and that trigger's continuation; and every Signal catch a Signal throw resumes in the
 instance (CIB-OP-0019). -/
 def beyond (reading : Reading) (program : Program) (element : Element) (completes : Bool) : List Visit :=
-  let raised := if reading.raises element then catchers reading program (program.elements.length + 1) element else []
+  let raised := if reading.raises element then catchers reading program element (program.elements.length + 1) else []
   let compensated := if reading.compensates element then (handlersOf reading program element).map Visit.enters else []
   let continued := if completes && handler reading element then
       (program.elements.filter fun thrower => reading.compensates thrower &&
