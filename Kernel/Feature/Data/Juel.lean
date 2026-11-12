@@ -255,9 +255,14 @@ def property (base name : JVal) : Eval JVal := do
 
 /-! ## Methods (`AstMethod.invoke`; the closed list) -/
 
--- dynamic-only: a receiver or argument kind outside the closed list's parameters is the run's data.
+-- dynamic-only: the receiver's class has a method of that name the kernel does not model (a scalar carrier's `equals`,
+-- the writing `Map.replace`), or an argument kind is outside the listed parameter's; either is the run's data.
 def wrongReceiver {α : Type} : Eval α := limit "juel.methodReceiver"
 def wrongArgument {α : Type} : Eval α := limit "juel.methodArgument"
+
+/-- A listed method the receiver's class lacks: no String, List or Map carrier CIB hands JUEL (CIB-CFG-0009) declares
+it, so the call throws `MethodNotFoundException` (`AstMethod.java:91-93`), an `ELException`. -/
+def missingMethod {α : Type} : Eval α := fail elError
 
 def textArgument : Option JVal → Eval String
   | some (.string value) => .ok value
@@ -313,7 +318,7 @@ def stringMethod (method : JuelMethod) (receiver : String) (args : List JVal) : 
     if targetUnits.isEmpty then
       whole (replacementUnits ++ (units.flatMap (· :: replacementUnits)))
     else whole (replaceUnits targetUnits replacementUnits units)
-  | .size | .get | .containsKey | .containsValue => wrongReceiver
+  | .size | .get | .containsKey | .containsValue => missingMethod
 
 def listMethod (method : JuelMethod) (receiver : JVal) (items : List Value) (argument : JVal) : Eval JVal := do
   let found (indexes : List Nat) : Eval JVal := do
@@ -334,7 +339,7 @@ def listMethod (method : JuelMethod) (receiver : JVal) (items : List Value) (arg
     | some item => return fromValue item
     | none => fail elError
   | .length | .startsWith | .endsWith | .substring | .toUpperCase | .toLowerCase | .trim | .concat
-  | .replace | .containsKey | .containsValue => wrongReceiver
+  | .replace | .containsKey | .containsValue => missingMethod
 
 def mapMethod (method : JuelMethod) (receiver : JVal) (entries : List (String × Value)) (argument : JVal) :
     Eval JVal := do
@@ -351,7 +356,8 @@ def mapMethod (method : JuelMethod) (receiver : JVal) (entries : List (String ×
   | .containsValue =>
     return .bool (← decided (anyEqual (entries.map fun (_, value) => javaEquals argument (fromValue value))))
   | .length | .contains | .startsWith | .endsWith | .indexOf | .lastIndexOf | .substring
-  | .toUpperCase | .toLowerCase | .trim | .concat | .replace => wrongReceiver
+  | .toUpperCase | .toLowerCase | .trim | .concat => missingMethod
+  | .replace => wrongReceiver
 
 def applyMethod (method : JuelMethod) (receiver : JVal) (args : List JVal) : Eval JVal :=
   let first := args.head?.getD .null

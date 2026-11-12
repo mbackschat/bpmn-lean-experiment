@@ -132,7 +132,7 @@ An identifier is the innermost visible binding of that name; a name no binding d
 
 ### Methods
 
-A method call evaluates its receiver, then its arguments left to right, then invokes (`AstMethod.java:78`). A null receiver fails as `juel.propertyNotFound`. A receiver whose kind does not list the method, or an argument of a kind other than the listed parameter's (null included), is `unsupported` (`juel.methodReceiver`, `juel.methodArgument`): Jakarta's `BeanELResolver` would pick a Java overload or coercion the kernel does not model. A Java exception inside the method fails as `juel.error`: Jakarta's `BeanELResolver.invoke` wraps it as an `ELException`.
+A method call evaluates its receiver, then its arguments left to right, then invokes (`AstMethod.java:78`). A null receiver fails as `juel.propertyNotFound`. A listed method that the table below leaves blank for a String, List or Map receiver fails as `juel.error`: no carrier that reaches JUEL declares it, so no resolver finds it and `AstMethod.invoke` throws `MethodNotFoundException`, an `ELException` (`AstMethod.java:91-93`). The rule rests on the carrier census of [CIB-CFG-0009](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0009--default-java-serialization-of-structured-business-values), which bounds it; a carrier outside the census could declare the method, and the rule claims nothing for it. A receiver whose Java class has a method of that name the kernel does not model is `unsupported` (`juel.methodReceiver`): a Boolean, Integer or Decimal receiver, whose carrier has `equals` among others, and a Map's writing `replace` below. An argument of a kind other than the listed parameter's (null included) is `unsupported` (`juel.methodArgument`): Jakarta's `BeanELResolver` would pick a Java overload or coercion the kernel does not model. A Java exception inside the method fails as `juel.error`: Jakarta's `BeanELResolver.invoke` wraps it as an `ELException`.
 
 The reader writes a call's method name as it stands; the codecs decode it through `JuelMethod`'s own wire names, which are the Java names, into `listed m` for a method of the closed list and `other name` for any other name. Admission refuses `other`, and a listed name with an argument count the table below gives it no overload for, both as `expression.juel.method`. The closed list, every method read-only:
 
@@ -382,7 +382,7 @@ The CIB runner's value projection carries Decimal as `BigDecimal` at the value's
 
 ## Witnesses and ledger the Core level settles
 
-Measured 2026-11-12 against the retained CIB Seven `2.2.0` answers: every witness of the [oracle plan](#oracle-plan-and-witness-table) that the Core and Multi-Instance levels admit and evaluate to a value or a failure agrees, including every condition-expression-routing, condition-whitespace, mapping-failure-sites and juel-unsupported-syntax schedule. No kernel value differs from a CIB value; each remaining disagreement is a kernel `unsupported`, and the [disagreement ledger](../../../packages/differential/test/cib-disagreement-ledger.json) owns it by its registered relation:
+Measured 2026-11-12 against the retained CIB Seven `2.2.0` answers: every witness of the [oracle plan](#oracle-plan-and-witness-table) that the Core and Multi-Instance levels admit and evaluate to a value or a failure agrees, including every condition-expression-routing, condition-whitespace, mapping-failure-sites and juel-unsupported-syntax schedule and the 26 [method-receiver](#methods) probes of juel-evaluation-failures. No kernel value differs from a CIB value; each remaining disagreement is a kernel `unsupported`, and the [disagreement ledger](../../../packages/differential/test/cib-disagreement-ledger.json) owns it by its registered relation:
 
 | Owner | Witnesses |
 |---|---|
@@ -390,7 +390,6 @@ Measured 2026-11-12 against the retained CIB Seven `2.2.0` answers: every witnes
 | CIB-LIM-0010 (`unsupported` at run time) | the witnesses its register entry lists, whether CIB returns a value or rolls back |
 | CIB-CFG-0011 | juel-evaluation-failures `bean-reference` |
 | CIB-EXT-0030 | the standards-profile witnesses [exclusive-gateway-simple-boolean](../../../scenarios/exclusive-gateway-simple-boolean/README.md) and [inclusive-gateway-selected-branches](../../../scenarios/inclusive-gateway-selected-branches/README.md), whose Definitions declare the Simple Boolean language; CIB ignores the declaration, reads `true` and `isPresent(…)` as JUEL text, a String, and rolls the start back (`el/UelExpressionCondition.java:52`) |
-| PC-DATA-09 | the 26 juel-evaluation-failures probes of a listed String, List or Map method on a receiver kind that does not list it (`juel.methodReceiver`), where CIB rolls back; they await the interpretation of a method the receiver's Java class lacks |
 
 The Multi-Instance expression witnesses that read the counters or the item in the Activity's own inputs (expression-cardinality-and-collections, multi-instance-expressions, multi-instance-user-task) are CIB-LIM-0019's refusal witnesses, not this level's.
 

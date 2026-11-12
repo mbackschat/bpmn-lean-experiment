@@ -1120,147 +1120,15 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-concat.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-contains-key.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-contains-value.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-ends-with.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-length.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/list-mutating-method.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-replace.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-starts-with.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-substring.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-to-lower-case.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-to-upper-case.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-trim.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-concat.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-contains.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-ends-with.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-index-of.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-last-index-of.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-length.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/map-replace.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0010"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-starts-with.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-substring.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-to-lower-case.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-to-upper-case.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-trim.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
     ]
   },
   {
@@ -1273,30 +1141,6 @@
     "evidence": "scenarios/open-rows/juel-evaluation-failures/reflection-through-method.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0009"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/text-contains-key.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/text-contains-value.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/text-get.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/juel-evaluation-failures/text-size.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09"
     ]
   },
   {

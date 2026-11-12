@@ -467,9 +467,16 @@ function methodCall(payload: JuelCallNode, sub: (index: number) => Eval<JVal>): 
   return assertNever(target);
 }
 
-// dynamic-only: a receiver or argument kind outside the closed list's parameters is the run's data.
+// dynamic-only: the receiver's class has a method of that name the kernel does not model (a scalar carrier's `equals`,
+// the writing `Map.replace`), or an argument kind is outside the listed parameter's; either is the run's data.
 const wrongReceiver = <T>(): Eval<T> => unsupported("juel.methodReceiver");
 const wrongArgument = <T>(): Eval<T> => unsupported("juel.methodArgument");
+
+/**
+ * A listed method the receiver's class lacks: no String, List or Map carrier CIB hands JUEL (CIB-CFG-0009) declares it,
+ * so the call throws `MethodNotFoundException` (`AstMethod.java:91-93`), an `ELException`.
+ */
+const missingMethod = <T>(): Eval<T> => fail(elError);
 
 function applyMethod(method: JuelMethod, receiver: JVal, args: readonly JVal[]): Eval<JVal> {
   const first = args[0] ?? nullValue;
@@ -563,7 +570,7 @@ function stringMethod(method: JuelMethod, receiver: string, args: readonly JVal[
     case JuelMethod.Get:
     case JuelMethod.ContainsKey:
     case JuelMethod.ContainsValue:
-      return wrongReceiver();
+      return missingMethod();
   }
   return assertNever(method);
 }
@@ -613,7 +620,7 @@ function listMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag
     case JuelMethod.Replace:
     case JuelMethod.ContainsKey:
     case JuelMethod.ContainsValue:
-      return wrongReceiver();
+      return missingMethod();
   }
   return assertNever(method);
 }
@@ -650,6 +657,7 @@ function mapMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag.
     case JuelMethod.ToLowerCase:
     case JuelMethod.Trim:
     case JuelMethod.Concat:
+      return missingMethod();
     case JuelMethod.Replace:
       return wrongReceiver();
   }
