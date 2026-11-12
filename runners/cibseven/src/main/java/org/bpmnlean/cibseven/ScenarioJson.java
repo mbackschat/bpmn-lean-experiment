@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.io.IOException;
@@ -18,6 +19,9 @@ public final class ScenarioJson {
           .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
           .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
           .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+          // Jackson coerces a JSON String into a number or Boolean field by default; the wire types each scalar, and
+          // the schema and both kernel decoders refuse a text-spelled Integer, so this decoder must too.
+          .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
           .build();
 
   private ScenarioJson() {}
