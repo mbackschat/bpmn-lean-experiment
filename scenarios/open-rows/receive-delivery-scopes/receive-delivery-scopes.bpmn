@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_P5" targetNamespace="urn:bpmn-lean:scenarios:receive-delivery-scopes">
+  <message id="Message_Embedded" name="Embedded" />
+  <message id="Message_Called" name="Called" />
+  <message id="Message_Each" name="Each" />
+  <process id="Process_P5" isExecutable="true">
+    <startEvent id="Start" />
+    <parallelGateway id="Fork" />
+    <subProcess id="Embedded">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="note">embedded-local</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="EmbeddedStart" />
+      <receiveTask id="ReceiveEmbedded" messageRef="Message_Embedded" />
+      <userTask id="HoldEmbedded" />
+      <endEvent id="EmbeddedEnd" />
+      <sequenceFlow id="e1" sourceRef="EmbeddedStart" targetRef="ReceiveEmbedded" />
+      <sequenceFlow id="e2" sourceRef="ReceiveEmbedded" targetRef="HoldEmbedded" />
+      <sequenceFlow id="e3" sourceRef="HoldEmbedded" targetRef="EmbeddedEnd" />
+    </subProcess>
+    <callActivity id="CallReceiver" calledElement="Process_P5Called">
+      <extensionElements>
+        <camunda:in source="note" target="note" />
+      </extensionElements>
+    </callActivity>
+    <receiveTask id="ReceiveEach" messageRef="Message_Each">
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </receiveTask>
+    <parallelGateway id="Join" />
+    <userTask id="Inspect" />
+    <endEvent id="End" />
+    <sequenceFlow id="f1" sourceRef="Start" targetRef="Fork" />
+    <sequenceFlow id="f2" sourceRef="Fork" targetRef="Embedded" />
+    <sequenceFlow id="f3" sourceRef="Fork" targetRef="CallReceiver" />
+    <sequenceFlow id="f4" sourceRef="Fork" targetRef="ReceiveEach" />
+    <sequenceFlow id="f5" sourceRef="Embedded" targetRef="Join" />
+    <sequenceFlow id="f6" sourceRef="CallReceiver" targetRef="Join" />
+    <sequenceFlow id="f7" sourceRef="ReceiveEach" targetRef="Join" />
+    <sequenceFlow id="f8" sourceRef="Join" targetRef="Inspect" />
+    <sequenceFlow id="f9" sourceRef="Inspect" targetRef="End" />
+  </process>
+  <process id="Process_P5Called" isExecutable="true">
+    <startEvent id="CalledStart" />
+    <receiveTask id="ReceiveCalled" messageRef="Message_Called" />
+    <userTask id="HoldCalled" />
+    <endEvent id="CalledEnd" />
+    <sequenceFlow id="c1" sourceRef="CalledStart" targetRef="ReceiveCalled" />
+    <sequenceFlow id="c2" sourceRef="ReceiveCalled" targetRef="HoldCalled" />
+    <sequenceFlow id="c3" sourceRef="HoldCalled" targetRef="CalledEnd" />
+  </process>
+</definitions>

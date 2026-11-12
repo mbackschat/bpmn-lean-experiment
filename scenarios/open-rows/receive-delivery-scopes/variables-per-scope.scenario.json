@@ -1,0 +1,134 @@
+{
+  "kind": "scenario",
+  "id": "receive-delivery-scopes-variables-per-scope",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "receive-delivery-scopes",
+    "relativePath": "scenarios/open-rows/receive-delivery-scopes/receive-delivery-scopes.bpmn",
+    "sha256": "1da7ee6571e42f48a569e80f114ff904e51f5077b20dc522603940cd7846b3f4",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "root"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-embedded",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReceiveEmbedded",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Embedded"
+        }
+      },
+      "variables": [
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "from-embedded"
+          }
+        },
+        {
+          "name": "freshEmbedded",
+          "value": {
+            "kind": "string",
+            "value": "e"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s03-deliver-called",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:12:CallReceiver:1",
+        "elementId": "ReceiveCalled",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Called"
+        }
+      },
+      "variables": [
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "from-called"
+          }
+        },
+        {
+          "name": "freshCalled",
+          "value": {
+            "kind": "string",
+            "value": "c"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s04-deliver-each",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReceiveEach",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Each"
+        }
+      },
+      "variables": [
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "from-each"
+          }
+        },
+        {
+          "name": "freshEach",
+          "value": {
+            "kind": "string",
+            "value": "m"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a713.3.3",
+      "BPMN 2.0.2 \u00a710.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/MessageCorrelationBuilderImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ReceiveTaskActivityBehavior.java"
+    ]
+  }
+}
