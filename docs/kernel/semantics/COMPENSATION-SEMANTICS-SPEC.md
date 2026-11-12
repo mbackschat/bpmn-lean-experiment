@@ -197,7 +197,7 @@ Interpretation of track M9 (PC-COMPENSATION-01 to -05, PC-TX-01 to -03), drafted
 - D6 (I9): a Multi-Instance Sub-Process per instance, a Multi-Instance Task or Call once, under every profile; CIB-DEV-0012 recorded and not selected.
 - D7 (I10): handler effects stay asynchronous, CIB-LIM-0042.
 - D8 (I11): `propagatesFromTrigger` under the cibseven profiles; an Error End under `failsInstance` for the standards profile; no Escalation widening. `propagatesFromTrigger` rests on committed retained answers only, never on a rolled-back command (CIB-LIM-0046, CIB-LIM-0047).
-- D9 (I12): the narrowed snapshot, superseding the CESP account's live-alias exclusion; it rests on the source reading, since CIB's observation of the separating witness fails (CIB-LIM-0048).
+- D9 (I12): the narrowed snapshot, superseding the CESP account's live-alias exclusion; it rests on the source reading, since CIB's observation of the separating witness fails (CIB-LIM-0048). CIB's handlers of a sequential Multi-Instance Activity read the body's last item instead (CIB-DEV-0014).
 - D10 (I13): static refusal of an uncaught Cancel and of two Cancel boundaries, CIB-LIM-0043.
 - D11 (I14): `##Store` and `##Image` run as `##Compensate` under the cibseven profiles; a protocol URI stays refused under every profile.
 - D12 (I15): settled by P4, with I15's Propagation change.

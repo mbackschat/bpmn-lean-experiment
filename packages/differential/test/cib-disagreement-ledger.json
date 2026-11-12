@@ -313,6 +313,7 @@
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/sequential-in-turn-consumed.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0011",
+      "CIB-DEV-0014",
       "CIB-LIM-0045"
     ]
   },
@@ -320,6 +321,7 @@
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/sequential-in-turn-rethrown.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0011",
+      "CIB-DEV-0014",
       "CIB-LIM-0045"
     ]
   },
@@ -410,7 +412,8 @@
   {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/regions-sequential-in-turn.cibseven-evidence.json",
     "owners": [
-      "CIB-DEV-0011"
+      "CIB-DEV-0011",
+      "CIB-DEV-0014"
     ]
   },
   {
@@ -422,7 +425,8 @@
   {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/tasks-sequential-in-turn.cibseven-evidence.json",
     "owners": [
-      "CIB-DEV-0012"
+      "CIB-DEV-0012",
+      "CIB-DEV-0014"
     ]
   },
   {
@@ -2327,6 +2331,19 @@
     "evidence": "scenarios/open-rows/transaction-cancel-waiting-handlers/stale-interior-result-while-handlers-wait.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0042"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-multi-instance/parallel-complete-then-compensate.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-multi-instance/sequential-complete-then-compensate.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0011",
+      "CIB-DEV-0014"
     ]
   },
   {
