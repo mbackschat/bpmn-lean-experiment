@@ -26,11 +26,13 @@
 import {
   CompensationHandlerFailureTag,
   ImplicitCompensation,
+  Placement,
   SubmissionRule,
   assertNever,
   elementActivity,
   elementEnvelope,
   elementEvent,
+  elementGateway,
   elementHeader,
   elementScope,
   elementStart,
@@ -203,20 +205,38 @@ function data(ctx: Ctx, subject: ElementId): Footprint {
 }
 
 /**
+ * Whether a Sequence Flow path leads from one of `sources` to `target` through Gateways and intermediate Events only,
+ * nodes that are no Activity and leave no record (§13.5.5 "A Sequence Flow between Activities A and B", issue #96); an
+ * Activity on the path ends it, since its own record, if any, carries the order on. The walk is bounded by the element
+ * count, so a cycle of such nodes ends it.
+ */
+function flowReaches(ctx: Ctx, sources: readonly ElementId[], target: ElementId): boolean {
+  const passes = (id: ElementId): boolean => {
+    const element = programElement(ctx.program, id);
+    return element !== null && (elementGateway(element) !== null || elementEvent(element)?.[1].placement === Placement.Intermediate);
+  };
+  let frontier = sources;
+  for (let fuel = ctx.program.elements.length; fuel > 0; fuel -= 1) {
+    const next = ctx.program.flows.filter((flow) => frontier.includes(flow.source)).map((flow) => flow.target);
+    if (next.includes(target)) return true;
+    frontier = next.filter(passes);
+  }
+  return false;
+}
+
+/**
  * `record`'s subject ran before `other`'s in a way §13.5.5 orders, so `other`'s handler completes before `record`'s
- * starts: (b) a Sequence Flow leads from a boundary Event attached to `record`'s subject to `other`'s, a different one,
- * whose record may complete while the subject still runs; or `record` completed first and (a) a Sequence Flow leads
- * from its subject to `other`'s, (c) `other`'s subject reads a name `record`'s can write (`data`), or (d) both are
- * records of one subject, run in reverse completion order.
+ * starts: (b) a Sequence Flow path (`flowReaches`) leads from a boundary Event attached to `record`'s subject to
+ * `other`'s, a different one, whose record may complete while the subject still runs; or `record` completed first and
+ * (a) a Sequence Flow path leads from its subject to `other`'s, (c) `other`'s subject reads a name `record`'s can write
+ * (`data`), or (d) both are records of one subject, run in reverse completion order.
  */
 function precedes(ctx: Ctx, record: Compensable, other: Compensable): boolean {
   const subject = programElement(ctx.program, record.subject);
   const boundaries = ((subject === null ? null : elementEnvelope(subject))?.boundaries ?? []).map((boundary) => boundary.id);
-  const leads = (sources: readonly ElementId[]): boolean =>
-    ctx.program.flows.some((flow) => sources.includes(flow.source) && flow.target === other.subject);
-  return (record.subject !== other.subject && leads(boundaries)) ||
+  return (record.subject !== other.subject && flowReaches(ctx, boundaries, other.subject)) ||
     (record.completion < other.completion &&
-      (record.subject === other.subject || leads([record.subject]) ||
+      (record.subject === other.subject || flowReaches(ctx, [record.subject], other.subject) ||
         meets(data(ctx, other.subject).reads, data(ctx, record.subject).writes)));
 }
 

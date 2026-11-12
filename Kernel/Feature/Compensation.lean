@@ -131,19 +131,31 @@ def data (ctx : Ctx) (subject : ElementId) : Footprint :=
   | some element => (element :: interior ctx element).foldl (fun found inner => found.union (ownData ctx inner)) {}
   | none => {}
 
+/-- Whether a Sequence Flow path leads from one of `sources` to `target` through Gateways and intermediate Events only,
+nodes that are no Activity and leave no record (§13.5.5 "A Sequence Flow between Activities A and B", issue #96); an
+Activity on the path ends it, since its own record, if any, carries the order on. The walk is bounded by the element
+count, so a cycle of such nodes ends it. -/
+def flowReaches (ctx : Ctx) (sources : List ElementId) (target : ElementId) : Bool :=
+  let passes (id : ElementId) : Bool := (ctx.program.element? id).any fun element =>
+    element.gateway?.isSome || element.event?.any (·.2.placement == .intermediate)
+  let rec go : Nat → List ElementId → Bool
+    | 0, _ => false
+    | fuel + 1, frontier =>
+      let next := (ctx.program.flows.filter (frontier.contains ·.source)).map (·.target)
+      next.contains target || go fuel (next.filter passes)
+  go ctx.program.elements.length sources
+
 /-- `record`'s subject ran before `other`'s in a way §13.5.5 orders, so `other`'s handler completes before `record`'s
-starts: (b) a Sequence Flow leads from a boundary Event attached to `record`'s subject to `other`'s, a different one,
-whose record may complete while the subject still runs; or `record` completed first and (a) a Sequence Flow leads from
-its subject to `other`'s, (c) `other`'s subject reads a name `record`'s can write (`data`), or (d) both are records of
-one subject, run in reverse completion order. -/
+starts: (b) a Sequence Flow path (`flowReaches`) leads from a boundary Event attached to `record`'s subject to
+`other`'s, a different one, whose record may complete while the subject still runs; or `record` completed first and
+(a) a Sequence Flow path leads from its subject to `other`'s, (c) `other`'s subject reads a name `record`'s can write
+(`data`), or (d) both are records of one subject, run in reverse completion order. -/
 def precedes (ctx : Ctx) (record other : Compensable) : Bool :=
   let boundaries := (((ctx.program.element? record.subject).bind (·.envelope?)).map fun envelope =>
     envelope.boundaries.map (·.id)).getD []
-  let leads (sources : List ElementId) := ctx.program.flows.any fun flow =>
-    sources.contains flow.source && flow.target == other.subject
-  (record.subject != other.subject && leads boundaries) ||
+  (record.subject != other.subject && flowReaches ctx boundaries other.subject) ||
     (record.completion < other.completion &&
-      (record.subject == other.subject || leads [record.subject] ||
+      (record.subject == other.subject || flowReaches ctx [record.subject] other.subject ||
         (data ctx other.subject).reads.meets (data ctx record.subject).writes))
 
 def position (ctx : Ctx) (element : ElementId) : Nat :=
