@@ -42,6 +42,7 @@ import {
 } from "./kernel-guards-refusal.ts";
 import { ilRecordScopeFindings, rebuildFindings, shapeEditReport } from "./kernel-rebuild-model.ts";
 import { pairingFindings, profileLiteralFindings, shapeFindings } from "./kernel-structure.ts";
+import { unitPairingFindings } from "./kernel-guards-pairing.ts";
 
 const roots: string[] = [];
 after(() => { for (const root of roots) rmSync(root, { recursive: true, force: true }); });
@@ -129,7 +130,8 @@ export function work(value) {
 }
 `,
   "packages/bpmn-source/src/kernel-reader/model.ts": "export enum ReadRefusalCode { ParserFailure = \"source.parser-failure\" }\n",
-  "packages/kernel/test/slice.test.ts": `import { readdirSync } from "node:fs";\nconst cases = readdirSync("scenarios");\nassert("work.user.assignee", cases);\n`,
+  "packages/kernel/test/slice.test.ts": `import { readdirSync } from "node:fs";\nimport type { Program } from "@bpmn-lean/kernel";\nconst cases = readdirSync("scenarios");\nassert("work.user.assignee", cases);\n`,
+  "packages/kernel/test/lean-paired.ts": `import * as kernel from "@bpmn-lean/kernel";\nexport { WorkTag } from "@bpmn-lean/kernel";\nexport const run = kernel.run;\n`,
   "packages/bpmn-source/test/reader.test.ts": `assert.equal(code, "source.parser-failure");\n`,
   "scenarios/one/scenario.json": "{}\n",
   "scenarios/two/scenario.json": "{}\n",
@@ -494,6 +496,23 @@ test("guard 11 honours the bounded decoder's justified read", () => {
   })), []);
 });
 
+holdsItsGround("guard 16 (unit cases through the Lean-paired helper)", unitPairingFindings, {
+  "packages/kernel/test/slice.test.ts": `import { run, type Program } from "@bpmn-lean/kernel";\nrun();\n`,
+}, /G16 packages\/kernel\/test\/slice\.test\.ts:1: reaches the TypeScript kernel outside/u);
+
+test("guard 16 refuses a helper that passes on kernel behavior and a dynamic kernel import, and reads no comment", () => {
+  seeded(unitPairingFindings, {
+    "packages/kernel/test/lean-paired.ts": `export { WorkTag, run } from "@bpmn-lean/kernel";\n`,
+  }, /lean-paired\.ts:1: the helper passes on run, which is no kernel enum/u);
+  seeded(unitPairingFindings, {
+    "packages/kernel/test/slice.test.ts": `const kernel = await import("../dist/index.js");\n`,
+  }, /slice\.test\.ts:1: reaches the kernel by a dynamic import/u);
+  assert.deepEqual(unitPairingFindings(fixture({
+    "packages/kernel/test/slice.test.ts": `/** import { run } from "@bpmn-lean/kernel"; */\n// import { step } from "@bpmn-lean/kernel";\n`,
+  })), []);
+  assert.match(unitPairingFindings(fixture({ "packages/kernel/test/lean-paired.ts": null })).join("\n"), /G16: read no packages\/kernel\/test\/lean-paired\.ts/u);
+});
+
 holdsItsGround("guard 24 (justified rules)", justifiedRuleFindings, {
   "packages/kernel/src/feature/flow.ts": `// The frozen evaluator orders the arrivals this way.\nexport function gateway(state) { return state; }\n`,
 }, /rule justified by "frozen evaluator"/u);
@@ -583,6 +602,7 @@ for (const [name, guard] of [
   ["guard 23 (structural inputs)", structureInputFindings],
   ["guard 11 (bounded wire numbers)", boundedNumberFindings],
   ["guard 24", justifiedRuleFindings],
+  ["guard 16 (unit cases through the Lean-paired helper)", unitPairingFindings],
 ] as const) {
   test(`the tree passes ${name}`, () => assert.deepEqual(guard(tree), []));
 }
