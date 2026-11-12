@@ -207,6 +207,22 @@ export function pairingFindings(root = projectRoot): string[] {
   ].sort();
 }
 
+/** Guard 5: every feature module `Kernel/Feature/<F>.lean` has its declarative `Kernel/Laws/<F>.lean`, written with the
+ * feature (docs/kernel/ARCHITECTURE-SPEC.md#risks); a feature's sub-modules share its one Laws module. */
+export function lawsFindings(root = projectRoot): string[] {
+  const directory = (name: string): string[] => {
+    try {
+      return readdirSync(path.join(root, "Kernel", name)).filter((file) => file.endsWith(".lean")).map((file) => file.slice(0, -".lean".length));
+    } catch {
+      return [];
+    }
+  };
+  const features = directory("Feature");
+  if (features.length === 0) return ["read no Kernel/Feature module; a renamed directory must not empty the guard's input"];
+  const laws = new Set(directory("Laws"));
+  return features.filter((feature) => !laws.has(feature)).sort().map((feature) => `Kernel/Feature/${feature}.lean has no Kernel/Laws/${feature}.lean`);
+}
+
 /** `Admission/Flow` and `Feature/Flow` to `flow`: the two halves of one family, which name a construct's admission
  * check and its execution alike. */
 function admissionOrFeatureFamily(relative: string): string | null {

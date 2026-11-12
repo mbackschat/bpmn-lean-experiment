@@ -10,6 +10,7 @@ import {
   featureFileFindings,
   Layer,
   layeringFindings,
+  lawsFindings,
   leanModules,
   pairingFindings,
   profileLiteralFindings,
@@ -138,6 +139,24 @@ test("the name clause rejects a helper defined twice and exempts only the two ha
       "filled is defined in packages/kernel/src/feature/flow.ts, packages/kernel/src/feature/multi-instance.ts",
       "isAscii is defined in Kernel/Feature/Data/Juel.lean, Kernel/Feature/Flow.lean",
     ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("every feature module has its Laws module", () => {
+  assert.deepEqual(lawsFindings(), []);
+});
+
+test("the Laws clause names a feature without its Laws module and fails on no features", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "kernel-laws-"));
+  try {
+    assert.deepEqual(lawsFindings(root), ["read no Kernel/Feature module; a renamed directory must not empty the guard's input"]);
+    for (const file of ["Kernel/Feature/Flow.lean", "Kernel/Feature/Data.lean", "Kernel/Feature/Data/Juel.lean", "Kernel/Laws/Flow.lean"]) {
+      mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+      writeFileSync(path.join(root, file), "");
+    }
+    assert.deepEqual(lawsFindings(root), ["Kernel/Feature/Data.lean has no Kernel/Laws/Data.lean"]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
