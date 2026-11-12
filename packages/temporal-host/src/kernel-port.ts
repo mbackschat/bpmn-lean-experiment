@@ -131,11 +131,13 @@ export const kernelPort: KernelPort<Program, State, HostInput> = {
     return { commandId, input: { input, firing } };
   },
   route: (held) => route(held.input),
+  // A host-made input states no ranking, so a Conditional contest it raises stays `unsupported` (CIB-LIM-0053): a
+  // ranking the Workflow chose would be a choice no stimulus made.
   timerInput: (timer, deadlineMs, atMs) => ({
-    input: { tag: InputTag.TimerFire, payload: { occurrence: reference(timer), logicalTimeMs: deadlineMs, atMs } }, firing: null,
+    input: { tag: InputTag.TimerFire, payload: { occurrence: reference(timer), logicalTimeMs: deadlineMs, atMs, conditionChoices: [] } }, firing: null,
   }),
   effectInput: (effect, result, atMs) => ({
-    input: { tag: InputTag.EffectResult, payload: { occurrence: reference(effect), outcome: effectOutcome(result), atMs } }, firing: null,
+    input: { tag: InputTag.EffectResult, payload: { occurrence: reference(effect), outcome: effectOutcome(result), atMs, conditionChoices: [] } }, firing: null,
   }),
   // The single-instance run's step, not the bare step: a chain is the degenerate population, so a Timer start that is
   // not on time is refused before the step exactly as the kernel runner refuses it (`Kernel.Run.runStep`).

@@ -223,7 +223,7 @@ export function conditionalVerdictAnswer(hooks: Hooks, program: Program, input: 
   const verdict = conditionalStartVerdict(hooks, program, {
     instanceId: requiredString(input, "instanceId", where), startEvent: requiredString(input, "startEvent", where),
     variables: bindingsOf(input, "variables"), trigger: { tag: StartTriggerTag.Condition },
-    businessKey: nullableAt(input, "businessKey", stringValue), atMs: natural(input, "atMs", where),
+    businessKey: nullableAt(input, "businessKey", stringValue), atMs: natural(input, "atMs", where), conditionChoices: [],
   });
   return verdict.ok ? { holds: verdict.value } : failureFields(verdict.failure);
 }

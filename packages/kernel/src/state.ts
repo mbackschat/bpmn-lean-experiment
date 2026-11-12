@@ -29,13 +29,13 @@ export {
   type TimerRecurrence, type UserTaskDetail, type WaitView,
 };
 import {
-  type CommandAction, CommandActionTag, type CommandInput, type CorrelationMatch, type CriterionTarget,
+  type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
   type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
   SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput,
 } from "./state/input.js";
 export {
-  type CommandAction, CommandActionTag, type CommandInput, type CorrelationMatch, type CriterionTarget,
+  type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
   type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
   SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput,

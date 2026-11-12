@@ -168,7 +168,7 @@ export function requireOneWinner(ctx: Ctx, fired: readonly OpenItem[]): Result<n
 
 /** The Conditional trigger of an open item's subscription, if it has one. */
 function conditionOf(ctx: Ctx, item: OpenItem): ConditionTrigger | null {
-  const subscription = subscriptionOf(ctx, item);
+  const subscription = subscriptionOf(ctx, item.element);
   return subscription === null ? null : triggerCondition(subscription.trigger);
 }
 

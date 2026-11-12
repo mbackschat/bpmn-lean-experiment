@@ -50,6 +50,12 @@ inductive CriterionTarget where
   | processInstance
   deriving DecidableEq, Repr
 
+/-- One entry of an input's ranking of the Conditional items its closure finds true at one evaluation: a public
+element identity, as an occurrence names it. Every payload carries the ranking as `conditionChoices` (`Input`). -/
+structure ConditionChoice where
+  element : ElementId
+  deriving DecidableEq, Repr
+
 /-- A present null matches only a present null; an absent name matches nothing (PC-MESSAGE-08). -/
 structure CorrelationMatch where
   target : CriterionTarget
@@ -67,6 +73,8 @@ structure DeliveryInput where
   variables : List (String × Value) := []
   /-- The input's logical time (`Input.atMs`). -/
   atMs : Option Nat := none
+  /-- The input's ranking of competing Conditional items (`Input.conditionChoices`). -/
+  conditionChoices : List ConditionChoice := []
   deriving Repr
 
 /-! ## Inputs -/
@@ -79,6 +87,8 @@ structure StartInput where
   businessKey : Option String := none
   /-- The input's logical time (`Input.atMs`). -/
   atMs : Option Nat := none
+  /-- The input's ranking of competing Conditional items (`Input.conditionChoices`). -/
+  conditionChoices : List ConditionChoice := []
   deriving Repr
 
 /-- An incident command names the incident's `generation` (`IncidentDetail.generation`) beside its occurrence, so a
@@ -97,6 +107,8 @@ structure CommandInput where
   action : CommandAction
   /-- The input's logical time (`Input.atMs`). -/
   atMs : Option Nat := none
+  /-- The input's ranking of competing Conditional items (`Input.conditionChoices`). -/
+  conditionChoices : List ConditionChoice := []
   deriving Repr
 
 structure TimerInput where
@@ -104,6 +116,8 @@ structure TimerInput where
   logicalTimeMs : Nat
   /-- The input's logical time (`Input.atMs`). -/
   atMs : Option Nat := none
+  /-- The input's ranking of competing Conditional items (`Input.conditionChoices`). -/
+  conditionChoices : List ConditionChoice := []
   deriving Repr
 
 /-- An effect's result as its host reports it. `unsupported` reports a value or behavior the effect produced or needed that
@@ -122,11 +136,18 @@ structure EffectInput where
   outcome : EffectOutcome
   /-- The input's logical time (`Input.atMs`). -/
   atMs : Option Nat := none
+  /-- The input's ranking of competing Conditional items (`Input.conditionChoices`). -/
+  conditionChoices : List ConditionChoice := []
   deriving Repr
 
 /-- Guarded type: `Kernel.Step` owns matching on it. Every payload carries `atMs`, the input's logical time in
 milliseconds: the clock advances to it before the input's transition, so a timer armed by the input counts from it, and
-`none` leaves the clock where it is. Logical time is an explicit input, never a wall clock. -/
+`none` leaves the clock where it is. Logical time is an explicit input, never a wall clock.
+
+Every payload also carries `conditionChoices`, the explicit ranking by which the input decides Conditional items its
+closure finds true together at one evaluation where firing one withdraws another (SUBSCRIPTIONS-SPEC "Conditions",
+CIB-LIM-0053): the order of firings is a choice neither BPMN nor CIB makes, so the input states it; `[]` decides no such
+contest, which stays `unsupported`. -/
 inductive Input where
   | start (payload : StartInput)
   | command (payload : CommandInput)

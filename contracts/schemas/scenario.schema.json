@@ -606,6 +606,9 @@
         },
         "at": {
           "$ref": "#/$defs/logicalTime"
+        },
+        "conditionChoices": {
+          "$ref": "#/$defs/conditionChoices"
         }
       }
     },
@@ -740,6 +743,9 @@
         },
         "at": {
           "$ref": "#/$defs/logicalTime"
+        },
+        "conditionChoices": {
+          "$ref": "#/$defs/conditionChoices"
         }
       }
     },
@@ -873,6 +879,9 @@
         },
         "at": {
           "$ref": "#/$defs/logicalTime"
+        },
+        "conditionChoices": {
+          "$ref": "#/$defs/conditionChoices"
         }
       }
     },
@@ -1049,6 +1058,9 @@
         },
         "at": {
           "$ref": "#/$defs/logicalTime"
+        },
+        "conditionChoices": {
+          "$ref": "#/$defs/conditionChoices"
         }
       }
     },
@@ -1076,6 +1088,9 @@
         },
         "at": {
           "$ref": "#/$defs/logicalTime"
+        },
+        "conditionChoices": {
+          "$ref": "#/$defs/conditionChoices"
         }
       }
     },
@@ -1175,6 +1190,23 @@
     "logicalTime": {
       "description": "The input's logical time in milliseconds: the clock advances to it before the input applies, never backward; absent leaves the clock where it is. A host that owns logical time refuses a stimulus that states one.",
       "$ref": "#/$defs/nonnegativeSafeInteger"
+    },
+    "conditionChoices": {
+      "description": "The input's ranking of the Conditional items its closure finds true together at one evaluation where firing one withdraws another, by public element identity, first listed first; absent or empty decides no such contest, which stays unsupported.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "elementId"
+        ],
+        "properties": {
+          "elementId": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        }
+      }
     }
   }
 }

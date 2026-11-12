@@ -224,7 +224,7 @@ function startFor(
   const started = startInstance(hooks, deployment, publicStart, {
     instanceId: startedInstanceId(publication.commandId, deployment.deploymentId, publicStart), startEvent,
     variables: publication.variables, trigger: { tag: StartTriggerTag.Message, channel, payload: publication.payload },
-    businessKey: publication.businessKey, atMs,
+    businessKey: publication.businessKey, atMs, conditionChoices: [],
   });
   if (!started.ok) return started;
   const [instance, entry] = started.value;
@@ -298,7 +298,7 @@ export function publish(
       tag: InputTag.Deliver,
       payload: {
         occurrence: target, trigger: { tag: DeliveryTriggerTag.Message, channel }, correlation: publication.criteria,
-        payload: publication.payload, variables: publication.variables, atMs,
+        payload: publication.payload, variables: publication.variables, atMs, conditionChoices: [],
       },
     };
     const member = instances[index];

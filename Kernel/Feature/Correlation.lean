@@ -111,7 +111,7 @@ def correlationAccepts (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (
 /-- `Hooks.correlates`. Under `modeledKey` a publication reaches only a subscription that models a key. -/
 def correlates (ctx : Ctx) (item : OpenItem) (channel : MessageChannel) (correlation : List CorrelationMatch)
     (state : State) : Except Failure Bool :=
-  match item.kind.view.channel, (subscription? ctx item).map (·.trigger) with
+  match item.kind.view.channel, (subscription? ctx item.element).map (·.trigger) with
   | some channel', some trigger =>
     if channel' != channel then .ok false
     else if (criteria trigger).isEmpty && ctx.program.options.messageCorrelation == .modeledKey then .ok false

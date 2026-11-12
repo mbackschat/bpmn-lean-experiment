@@ -50,14 +50,15 @@ def advanceClock (at? : Option Nat) (state : State) : Outcome :=
     if atMs < state.logicalTimeMs then .error (.rejected "logical-time-backward")
     else .ok { state with logicalTimeMs := atMs }
 
-/-- What every input states besides its payload: its tag and its logical time. A Timer firing without its own time
-happens at the deadline it names; a host that wakes later states the later time. -/
-def inputHead : Input → InputTag × Option Nat
-  | .start payload => (.start, payload.atMs)
-  | .command payload => (.command, payload.atMs)
-  | .deliver payload => (.deliver, payload.atMs)
-  | .timerFire payload => (.timerFire, some (payload.atMs.getD payload.logicalTimeMs))
-  | .effectResult payload => (.effectResult, payload.atMs)
+/-- What every input states besides its payload: its tag, its logical time and its ranking of competing Conditional
+items. A Timer firing without its own time happens at the deadline it names; a host that wakes later states the later
+time. -/
+def inputHead : Input → InputTag × Option Nat × List ConditionChoice
+  | .start payload => (.start, payload.atMs, payload.conditionChoices)
+  | .command payload => (.command, payload.atMs, payload.conditionChoices)
+  | .deliver payload => (.deliver, payload.atMs, payload.conditionChoices)
+  | .timerFire payload => (.timerFire, some (payload.atMs.getD payload.logicalTimeMs), payload.conditionChoices)
+  | .effectResult payload => (.effectResult, payload.atMs, payload.conditionChoices)
 
 /-- The loop characteristics of a body occurrence, read from any element's envelope. -/
 def bodyLoop? (element : Element) (occurrence : Occurrence) : Option (Envelope × MultiInstance) :=
@@ -420,7 +421,7 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
   | some state =>
     if state.status != .running then .error (.rejected "instance-not-running")
     else do
-      let (tag, at?) := inputHead input
+      let (tag, at?, _) := inputHead input
       let start ← advanceClock at? { state with journal := [], outbox := [] }
       orderJournal (settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input tag) none State.root transition start))
 
@@ -444,9 +445,10 @@ def context (hooks : Hooks) (program : Program) : Ctx :=
   { program, evaluate := hooks.evaluate, catches := hooks.catches, eventStart := hooks.eventStart, scopeRole }
 
 /-- One input. `none` is the state before the instance starts; only a start applies to it. The root's Event
-Sub-Process starts are armed before the start Event's tokens move. -/
+Sub-Process starts are armed before the start Event's tokens move. Every hook of the input's closure reads its
+ranking of competing Conditional items. -/
 def step (hooks : Hooks) (program : Program) (before : Option State) (input : Input) : Outcome :=
-  let ctx := context hooks program
+  let ctx := { context hooks program with conditionChoices := (inputHead input).2.2 }
   match input with
   | .start payload =>
     match before with

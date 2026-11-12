@@ -206,6 +206,9 @@ structure Ctx where
   Call's instance calls, is `.multiInstanceInstance` while the elements running in it are instances of nothing, which
   `Ctx.runsAsInstance` answers. -/
   scopeRole : State → ScopeOccurrenceId → ScopeRole := fun _ _ => .ordinary
+  /-- `Step`: the running input's ranking of competing Conditional items (`ConditionChoice`), which only
+  `Feature.Subscriptions` reads. -/
+  conditionChoices : List ConditionChoice := []
 
 /-- Whether `element`, running in the scope occurrence `scope`, is an instance of its own Multi-Instance Activity:
 `scope` is a Multi-Instance instance's and belongs to `element`. An element inside an instance of an enclosing
@@ -291,14 +294,15 @@ def item? {α : Type} (ctx : Ctx) (state : State) (occurrence : OccurrenceRef) (
     Option OpenItem :=
   (itemDetail? ctx state occurrence detail).map (·.1)
 
-/-- The subscription an open item belongs to: a boundary's, a catch Event's or an Event Sub-Process start's; an
-Activity's own subscription (a Receive Task) is the work feature's. Subscriptions and Correlation
-share it here because features never import each other. -/
-def subscription? (ctx : Ctx) (item : OpenItem) : Option Subscription :=
-  match ctx.program.boundary? item.element with
+/-- The subscription the element `id` opens its item with: a boundary's, a catch Event's or an Event Sub-Process
+start's; an Activity's own subscription (a Receive Task) is the work feature's. Subscriptions and Correlation share it
+here because features never import each other; Subscriptions asks it of an open item's element and of an element a
+ranking names. -/
+def subscription? (ctx : Ctx) (id : ElementId) : Option Subscription :=
+  match ctx.program.boundary? id with
   | some (_, boundary) => some boundary.subscription
   | none =>
-    let element := ctx.program.element? item.element
+    let element := ctx.program.element? id
     let catchEvent := element.bind (·.event?) |>.bind fun (_, event) => event.catch?
     let eventStart := element.bind (·.start?) |>.bind (·.1.parent) |>.bind ctx.program.element?
       |>.bind (·.scope?) |>.bind fun (_, payload) => (ctx.eventStart payload).map (·.1)
@@ -425,6 +429,10 @@ structure Hooks where
   catches : Raised → Trigger → Option Catch := fun _ _ => none
   /-- Scopes: `Ctx.eventStart`. -/
   eventStart : ScopePayload → Option (Subscription × Bool) := fun _ => none
+  /-- Subscriptions: whether `element`, a public element identity, opens a Conditional item (a catch, an Event-Based
+  Gateway arm, a boundary or an Event Sub-Process start, interrupting or not), so `Step` rejects a ranking that names
+  anything else before the transition. -/
+  competes : Ctx → ElementId → Bool := fun _ _ => false
   /-- Starts: the root start Events a start input's trigger fires, in document order; `chooseStart` picks the one
   the input starts. `Kernel.Population` asks it too, to start every fired start. -/
   startsFired : Ctx → StartInput → Except Failure (List ElementId) := fun _ _ => .ok []

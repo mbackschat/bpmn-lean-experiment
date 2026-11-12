@@ -438,7 +438,7 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
       tag: InputTag.Deliver,
       payload: {
         occurrence: target, trigger: { tag: DeliveryTriggerTag.Message, channel }, correlation: publication.criteria,
-        payload: publication.payload as Value | null, variables: publication.variables, atMs,
+        payload: publication.payload as Value | null, variables: publication.variables, atMs, conditionChoices: [],
       },
     }));
   },
@@ -447,6 +447,7 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
     const input: StartInput = {
       instanceId: asked.instanceId, startEvent: rootStart(program, asked.startEvent), variables: asked.variables,
       trigger: asked.trigger ?? { tag: StartTriggerTag.Timer, logicalTimeMs: atMs }, businessKey: asked.businessKey, atMs,
+      conditionChoices: [],
     };
     // A Conditional start's predicate is asked over the exact input it then starts with (CIB-EXT-0044).
     if (input.trigger.tag === StartTriggerTag.Condition) {

@@ -149,6 +149,20 @@ def effectOutcomeFromJson (json : Json) : Except String EffectOutcome := do
   | "unsupported" => fields json ["kind", "code"]; pure (.unsupported (← json.getObjValAs? String "code"))
   | other => throw s!"unknown effect outcome kind {other}"
 
+/-- An input's ranking of competing Conditional items, `conditionChoices`: absent is `[]`; each entry is an object naming
+one public element, so a later refinement adds a member without reinterpreting an entry. -/
+def conditionChoicesFromJson (json : Json) : Except String (List ConditionChoice) := do
+  match optionalField json "conditionChoices" with
+  | none => pure []
+  | some entries =>
+    (← entries.getArr?).toList.mapM fun entry => do
+      fields entry ["elementId"]
+      pure { element := ⟨← entry.getObjValAs? String "elementId"⟩ }
+
+/-- The members `conditionChoicesFromJson` reads back. -/
+def conditionChoicesToJson (choices : List ConditionChoice) : Json :=
+  Json.arr (choices.map fun choice => Json.mkObj [("elementId", Json.str choice.element.value)]).toArray
+
 /-- The firing a start stimulus states when its trigger is a Timer: the start it names, if any, and the due instant its
 trigger's logical time gives. A single-instance run checks it before the step (`Run.runStep`). -/
 structure TimerFiring where
@@ -161,15 +175,18 @@ def decodeStimulus (json : Json) : Except String (String × Input × Option Time
   let kind ← kindOf json
   let common := ["kind", "commandId"]
   match kind with
-  | "start" => fields json (common ++ ["instanceId", "variables"]) ["startEvent", "trigger", "businessKey", "at"]
-  | "command" => fields json (common ++ ["occurrence", "action"]) ["at"]
-  | "deliver" => fields json (common ++ ["occurrence", "trigger"]) ["correlation", "payload", "variables", "at"]
-  | "timerFire" => fields json (common ++ ["occurrence", "logicalTimeMs"]) ["at"]
-  | "effectResult" => fields json (common ++ ["occurrence", "outcome"]) ["at"]
+  | "start" =>
+    fields json (common ++ ["instanceId", "variables"]) ["startEvent", "trigger", "businessKey", "at", "conditionChoices"]
+  | "command" => fields json (common ++ ["occurrence", "action"]) ["at", "conditionChoices"]
+  | "deliver" =>
+    fields json (common ++ ["occurrence", "trigger"]) ["correlation", "payload", "variables", "at", "conditionChoices"]
+  | "timerFire" => fields json (common ++ ["occurrence", "logicalTimeMs"]) ["at", "conditionChoices"]
+  | "effectResult" => fields json (common ++ ["occurrence", "outcome"]) ["at", "conditionChoices"]
   | _ => pure ()
   let commandId ← json.getObjValAs? String "commandId"
   -- `at`, the input's logical time in milliseconds, is optional; absent or null leaves the clock unchanged.
   let atMs ← (optionalField json "at").mapM fun value => Lean.fromJson? (α := Nat) value
+  let conditionChoices ← conditionChoicesFromJson json
   let occurrence : Unit → Except String OccurrenceRef := fun _ => do occurrenceFromJson (← json.getObjVal? "occurrence")
   let (input, firing) : Input × Option TimerFiring ← match kind with
     | "start" =>
@@ -180,23 +197,23 @@ def decodeStimulus (json : Json) : Except String (String × Input × Option Time
         | .none | .message .. | .signal .. | .condition => none
       pure (.start { instanceId := ← json.getObjValAs? String "instanceId", startEvent
                      variables := ← bindingsAt json "variables", trigger := trigger.getD .none
-                     businessKey := ← optionalString json "businessKey", atMs }, firing)
+                     businessKey := ← optionalString json "businessKey", atMs, conditionChoices }, firing)
     | "command" =>
       pure (.command { occurrence := ← occurrence (), action := ← commandActionFromJson (← json.getObjVal? "action")
-                       atMs }, none)
+                       atMs, conditionChoices }, none)
     | "deliver" =>
       let entries ← ((optionalField json "correlation").getD (Json.arr #[])).getArr?
       pure (.deliver { occurrence := ← occurrence (), trigger := ← deliveryTriggerFromJson (← json.getObjVal? "trigger")
                        correlation := ← entries.toList.mapM correlationFromJson
                        payload := ← (optionalField json "payload").mapM valueAt
                        variables := ← if (optionalField json "variables").isSome then bindingsAt json "variables" else pure []
-                       atMs }, none)
+                       atMs, conditionChoices }, none)
     | "timerFire" =>
       pure (.timerFire { occurrence := ← occurrence (), logicalTimeMs := ← json.getObjValAs? Nat "logicalTimeMs"
-                         atMs }, none)
+                         atMs, conditionChoices }, none)
     | "effectResult" =>
       pure (.effectResult { occurrence := ← occurrence ()
-                            outcome := ← effectOutcomeFromJson (← json.getObjVal? "outcome"), atMs }, none)
+                            outcome := ← effectOutcomeFromJson (← json.getObjVal? "outcome"), atMs, conditionChoices }, none)
     | other => throw s!"unknown stimulus kind {other}"
   pure (commandId, input, firing)
 

@@ -88,6 +88,7 @@ export function evaluateStart(
       const input: StartInput = {
         instanceId: startedInstanceId(evaluation.commandId, receiver.deploymentId, receiver.startEvent), startEvent: header.id,
         variables: evaluation.variables, trigger: { tag: StartTriggerTag.Condition }, businessKey: evaluation.businessKey, atMs,
+        conditionChoices: [],
       };
       const verdict = conditionalStartVerdict(hooks, deployment.program, input);
       if (!verdict.ok) return { ok: true, value: [instances, { tag: FanOutEntryTag.Failed, target: receiver, failure: verdict.failure }, null] };

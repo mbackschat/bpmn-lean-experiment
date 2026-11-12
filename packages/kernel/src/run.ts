@@ -34,8 +34,8 @@ import {
   type JsonValue,
 } from "./il/codec.js";
 import {
-  channelToJson, decodeBindings, decodeSignalAddress, failureCode, failureName, firingStimulusFromJson, signalAddressToJson,
-  type TimerFiring,
+  channelToJson, conditionChoicesToJson, decodeBindings, decodeSignalAddress, failureCode, failureName, firingStimulusFromJson,
+  signalAddressToJson, type TimerFiring,
 } from "./il/codec/stimulus.js";
 import {
   CauseTag,
@@ -642,6 +642,11 @@ const fixtureEntries: Readonly<Record<string, (fixture: unknown, input: unknown)
     const address = decodeSignalAddress(field(input, "address", "fixture"));
     if (!address.ok) throw new Error(`fixture: ${address.refusal}`);
     return signalAddressJson(address.value);
+  },
+  conditionChoices: (_fixture, input) => {
+    const decoded = firingStimulusFromJson(field(input, "stimulus", "fixture"));
+    if (!decoded.ok) throw new Error(`fixture: ${decoded.refusal}`);
+    return conditionChoicesToJson(decoded.value[1].payload.conditionChoices);
   },
 };
 

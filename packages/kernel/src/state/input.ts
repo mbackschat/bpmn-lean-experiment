@@ -61,6 +61,12 @@ export type CriterionTarget =
   | { readonly tag: CriterionTargetTag.BusinessKey }
   | { readonly tag: CriterionTargetTag.ProcessInstance };
 
+/**
+ * One entry of an input's ranking of the Conditional items its closure finds true at one evaluation: a public element
+ * identity, as an occurrence names it. Every payload carries the ranking as `conditionChoices` (`Input`).
+ */
+export interface ConditionChoice { readonly element: ElementId; }
+
 /** A present null matches only a present null; an absent name matches nothing (PC-MESSAGE-08). */
 export interface CorrelationMatch { readonly target: CriterionTarget; readonly expected: Value; }
 
@@ -77,6 +83,8 @@ export interface DeliveryInput {
   readonly variables: readonly Binding[];
   /** The input's logical time (`Input.atMs`). */
   readonly atMs: number | null;
+  /** The input's ranking of competing Conditional items (`Input.conditionChoices`). */
+  readonly conditionChoices: readonly ConditionChoice[];
 }
 
 // Inputs
@@ -89,6 +97,8 @@ export interface StartInput {
   readonly businessKey: string | null;
   /** The input's logical time (`Input.atMs`). */
   readonly atMs: number | null;
+  /** The input's ranking of competing Conditional items (`Input.conditionChoices`). */
+  readonly conditionChoices: readonly ConditionChoice[];
 }
 
 export enum CommandActionTag {
@@ -110,9 +120,19 @@ export type CommandAction =
   | { readonly tag: CommandActionTag.SetVariables; readonly values: readonly Binding[] }
   | { readonly tag: CommandActionTag.RemoveVariables; readonly names: readonly string[] };
 
-export interface CommandInput { readonly occurrence: OccurrenceRef; readonly action: CommandAction; readonly atMs: number | null; }
+export interface CommandInput {
+  readonly occurrence: OccurrenceRef;
+  readonly action: CommandAction;
+  readonly atMs: number | null;
+  readonly conditionChoices: readonly ConditionChoice[];
+}
 
-export interface TimerInput { readonly occurrence: OccurrenceRef; readonly logicalTimeMs: number; readonly atMs: number | null; }
+export interface TimerInput {
+  readonly occurrence: OccurrenceRef;
+  readonly logicalTimeMs: number;
+  readonly atMs: number | null;
+  readonly conditionChoices: readonly ConditionChoice[];
+}
 
 export enum EffectOutcomeTag {
   Success = "success",
@@ -138,12 +158,22 @@ export type EffectOutcome =
   | { readonly tag: EffectOutcomeTag.TechnicalFailure }
   | { readonly tag: EffectOutcomeTag.Unsupported; readonly code: string };
 
-export interface EffectInput { readonly occurrence: OccurrenceRef; readonly outcome: EffectOutcome; readonly atMs: number | null; }
+export interface EffectInput {
+  readonly occurrence: OccurrenceRef;
+  readonly outcome: EffectOutcome;
+  readonly atMs: number | null;
+  readonly conditionChoices: readonly ConditionChoice[];
+}
 
 /**
  * Guarded type: `step.ts` owns matching on it. Every payload carries `atMs`, the input's logical time in milliseconds:
  * the clock advances to it before the input's transition, so a timer armed by the input counts from it, and `null` leaves
  * the clock where it is. Logical time is an explicit input, never a wall clock.
+ *
+ * Every payload also carries `conditionChoices`, the explicit ranking by which the input decides Conditional items its
+ * closure finds true together at one evaluation where firing one withdraws another (SUBSCRIPTIONS-SPEC "Conditions",
+ * CIB-LIM-0053): the order of firings is a choice neither BPMN nor CIB makes, so the input states it; `[]` decides no
+ * such contest, which stays `unsupported`.
  */
 export type Input =
   | { readonly tag: InputTag.Start; readonly payload: StartInput }

@@ -742,6 +742,7 @@ function thrownDelivery(ctx: Ctx, state: State, address: SignalAddress, variable
     payload: null,
     variables,
     atMs: null,
+    conditionChoices: [],
   };
 }
 

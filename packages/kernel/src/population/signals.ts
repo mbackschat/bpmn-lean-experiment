@@ -158,7 +158,7 @@ export function signalStartReceivers(
     const started = elementStart(element);
     if (started === null) return [];
     const probe: StartInput = {
-      instanceId: "", startEvent: started[0].id, variables: [], businessKey: null, atMs: null,
+      instanceId: "", startEvent: started[0].id, variables: [], businessKey: null, atMs: null, conditionChoices: [],
       trigger: { tag: StartTriggerTag.Signal, address, variables },
     };
     const fired = hooks.startsFired(ctx, probe);
@@ -236,7 +236,7 @@ export function reachOccurrence(
     tag: InputTag.Deliver,
     payload: {
       occurrence: target, trigger: { tag: DeliveryTriggerTag.Signal, address, reach: SignalReach.Broadcast },
-      correlation: [], payload: null, variables, atMs,
+      correlation: [], payload: null, variables, atMs, conditionChoices: [],
     },
   });
   return { skipped: false, outcome };
@@ -445,7 +445,7 @@ export function reachReceiver(
   const started = startInstance(hooks, deployment, receiver.startEvent, {
     instanceId: emissionStartedId(emission, commandId, receiver.deploymentId, receiver.startEvent), startEvent: header.id, variables: [],
     trigger: { tag: StartTriggerTag.Signal, address: emission.address, variables: emission.variables },
-    businessKey: emission.businessKey, atMs,
+    businessKey: emission.businessKey, atMs, conditionChoices: [],
   });
   if (!started.ok) return started;
   const [instance, entry] = started.value;

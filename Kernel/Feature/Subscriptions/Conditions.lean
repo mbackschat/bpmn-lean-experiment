@@ -91,7 +91,7 @@ def requireOneWinner (ctx : Ctx) (fired : List OpenItem) : Except Failure Unit :
 
 /-- The Conditional trigger of an open item's subscription, if it has one. -/
 def itemCondition? (ctx : Ctx) (item : OpenItem) : Option ConditionTrigger :=
-  (subscription? ctx item).bind (·.trigger.condition?)
+  (subscription? ctx item.element).bind (·.trigger.condition?)
 
 /-- Whether a write passes a Conditional item's `camunda:variableName` and `camunda:variableEvents` filters. -/
 def passes (trigger : ConditionTrigger) (write : WriteEvent) : Bool :=

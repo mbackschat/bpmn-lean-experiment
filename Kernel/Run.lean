@@ -438,7 +438,8 @@ def occurrenceAnswers (programs : List Program) (input : Json) : Except String J
 /-- The answer of the host-facing function a fixture's `entry` names: `rootStarts`, `refusesSignalVariables`,
 `registerSummary` or
 `definitionCapabilities` (as the host view renders it) or `timerOccurrences`, or one of the population functions of
-`Kernel.Run.Fixture` and the Signal address codec's round trip (`signalAddress`). -/
+`Kernel.Run.Fixture`, the Signal address codec's round trip (`signalAddress`) and the ranking a stimulus decodes to
+(`conditionChoices`). -/
 def fixtureAnswer (fixture : Json) : Except String Json := do
   let input ← fixture.getObjVal? "input"
   match ← fixture.getObjValAs? String "entry" with
@@ -471,6 +472,9 @@ def fixtureAnswer (fixture : Json) : Except String Json := do
   | "fanOut" => fanOutScript input
   | "instanceId" => instanceIdAnswer input
   | "signalAddress" => signalAddressJson <$> Codec.signalAddressFromJson (← input.getObjVal? "address")
+  | "conditionChoices" =>
+    let (_, decoded, _) ← Codec.firingStimulusFromJson (← input.getObjVal? "stimulus")
+    pure (Codec.conditionChoicesToJson (Step.inputHead decoded).2.2)
   | other => throw s!"fixture-entry-unknown: {other}"
 
 def runFixtures (paths : List String) : IO Json := do

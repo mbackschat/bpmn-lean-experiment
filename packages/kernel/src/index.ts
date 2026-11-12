@@ -49,7 +49,7 @@ export {
 } from "./state.js";
 export { criteriaRefusal, startCriteriaRefusal } from "./state/criteria.js";
 export type {
-  Binding, BroadcastIntent, CorrelationMatch, EffectOutcome, Failure, Input, Leave, MessageChannel, OccurrenceRef,
+  Binding, BroadcastIntent, ConditionChoice, CorrelationMatch, EffectOutcome, Failure, Input, Leave, MessageChannel, OccurrenceRef,
   Outcome, SignalAddress, StartInput, StartTrigger, State,
 } from "./state.js";
 export { leastRefusal, messageReceivers, messageStartCandidates } from "./population/messages.js";

@@ -36,6 +36,7 @@ import {
   noStartTrigger,
   type Binding,
   type CommandAction,
+  type ConditionChoice,
   type CorrelationMatch,
   type CriterionTarget,
   type DeliveryTrigger,
@@ -341,12 +342,33 @@ function effectOutcomeFromJson(json: unknown): EffectOutcome {
 }
 
 /**
+ * An input's ranking of competing Conditional items, `conditionChoices`: absent is `[]`; each entry is an object naming
+ * one public element, so a later refinement adds a member without reinterpreting an entry.
+ */
+function conditionChoicesFromJson(json: unknown): readonly ConditionChoice[] {
+  const entries = optionalField(json, "conditionChoices");
+  if (entries === undefined) return [];
+  if (!Array.isArray(entries)) throw new Refusal("expected JSON array");
+  return entries.map((entry: unknown) => {
+    fields(entry, ["elementId"]);
+    return { element: get(stringField(entry, "elementId")) };
+  });
+}
+
+/** The members `conditionChoicesFromJson` reads back. */
+export function conditionChoicesToJson(choices: readonly ConditionChoice[]): JsonValue {
+  return choices.map((choice) => ({ elementId: choice.element }));
+}
+
+/**
  * The firing a start stimulus states when its trigger is a Timer: the start it names, if any, and the due instant its
  * trigger's logical time gives. A single-instance run checks it before the step (`runStep`).
  */
 export type TimerFiring = Readonly<{ startEvent: ElementId | null; dueMs: number }>;
 
-function inputFromJson(json: unknown, kind: string, atMs: number | null): readonly [Input, TimerFiring | null] {
+function inputFromJson(
+  json: unknown, kind: string, atMs: number | null, conditionChoices: readonly ConditionChoice[],
+): readonly [Input, TimerFiring | null] {
   const occurrence = (): OccurrenceRef => get(occurrenceFromJson(present(json, "occurrence")));
   switch (kind) {
     case "start": {
@@ -356,12 +378,15 @@ function inputFromJson(json: unknown, kind: string, atMs: number | null): readon
       const firing = trigger?.tag === StartTriggerTag.Timer ? { startEvent, dueMs: trigger.logicalTimeMs } : null;
       const instanceId = get(stringField(json, "instanceId"));
       const variables = bindingsAt(json, "variables");
-      const payload = { instanceId, startEvent, variables, trigger: trigger ?? noStartTrigger, businessKey: optionalString(json, "businessKey"), atMs };
+      const payload = {
+        instanceId, startEvent, variables, trigger: trigger ?? noStartTrigger, businessKey: optionalString(json, "businessKey"), atMs,
+        conditionChoices,
+      };
       return [{ tag: InputTag.Start, payload }, firing];
     }
     case "command": {
       const ref = occurrence();
-      return [{ tag: InputTag.Command, payload: { occurrence: ref, action: commandActionFromJson(present(json, "action")), atMs } }, null];
+      return [{ tag: InputTag.Command, payload: { occurrence: ref, action: commandActionFromJson(present(json, "action")), atMs, conditionChoices } }, null];
     }
     case "deliver": {
       const rawCorrelation = optionalField(json, "correlation");
@@ -372,27 +397,31 @@ function inputFromJson(json: unknown, kind: string, atMs: number | null): readon
       const correlation = entries.map(correlationFromJson);
       const payload = optionalField(json, "payload");
       const variables = optionalField(json, "variables") === undefined ? [] : bindingsAt(json, "variables");
-      const delivery = { occurrence: ref, trigger, correlation, payload: payload === undefined ? null : valueAt(payload), variables, atMs };
+      const delivery = {
+        occurrence: ref, trigger, correlation, payload: payload === undefined ? null : valueAt(payload), variables, atMs, conditionChoices,
+      };
       return [{ tag: InputTag.Deliver, payload: delivery }, null];
     }
     case "timerFire": {
       const ref = occurrence();
-      return [{ tag: InputTag.TimerFire, payload: { occurrence: ref, logicalTimeMs: get(nat.decode(objValD(json, "logicalTimeMs"))), atMs } }, null];
+      const logicalTimeMs = get(nat.decode(objValD(json, "logicalTimeMs")));
+      return [{ tag: InputTag.TimerFire, payload: { occurrence: ref, logicalTimeMs, atMs, conditionChoices } }, null];
     }
     case "effectResult": {
       const ref = occurrence();
-      return [{ tag: InputTag.EffectResult, payload: { occurrence: ref, outcome: effectOutcomeFromJson(present(json, "outcome")), atMs } }, null];
+      const outcome = effectOutcomeFromJson(present(json, "outcome"));
+      return [{ tag: InputTag.EffectResult, payload: { occurrence: ref, outcome, atMs, conditionChoices } }, null];
     }
   }
   throw new Refusal(`unknown stimulus kind ${kind}`);
 }
 
 const stimulusForms: Readonly<Record<string, readonly [readonly string[], readonly string[]]>> = {
-  start: [["instanceId", "variables"], ["startEvent", "trigger", "businessKey", "at"]],
-  command: [["occurrence", "action"], ["at"]],
-  deliver: [["occurrence", "trigger"], ["correlation", "payload", "variables", "at"]],
-  timerFire: [["occurrence", "logicalTimeMs"], ["at"]],
-  effectResult: [["occurrence", "outcome"], ["at"]],
+  start: [["instanceId", "variables"], ["startEvent", "trigger", "businessKey", "at", "conditionChoices"]],
+  command: [["occurrence", "action"], ["at", "conditionChoices"]],
+  deliver: [["occurrence", "trigger"], ["correlation", "payload", "variables", "at", "conditionChoices"]],
+  timerFire: [["occurrence", "logicalTimeMs"], ["at", "conditionChoices"]],
+  effectResult: [["occurrence", "outcome"], ["at", "conditionChoices"]],
 };
 
 /** One scenario stimulus with the Timer firing it states, every refusal carrying its strict-decoding code. */
@@ -405,7 +434,7 @@ export function firingStimulusFromJson(json: unknown): Decoded<readonly [string,
     // `at`, the input's logical time in milliseconds, is optional; absent leaves the clock unchanged.
     const at = optionalField(json, "at");
     const atMs = at === undefined ? null : get(nat.decode(at));
-    const [input, firing] = inputFromJson(json, kind, atMs);
+    const [input, firing] = inputFromJson(json, kind, atMs, conditionChoicesFromJson(json));
     return [commandId, input, firing] as const;
   });
   return decoded.ok ? decoded : refuseDecoding(coded(decoded.refusal));

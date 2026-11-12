@@ -116,7 +116,7 @@ export function timerStart(
   if (header === undefined) return { ok: false, error: "timer-start-without-start" };
   const started = startInstance(hooks, deployment, fired.startEvent, {
     instanceId: timerInstanceId(fired.deploymentId, fired.startEvent, fired.dueMs), startEvent: header.id, variables: [],
-    trigger: { tag: StartTriggerTag.Timer, logicalTimeMs: atMs }, businessKey: null, atMs,
+    trigger: { tag: StartTriggerTag.Timer, logicalTimeMs: atMs }, businessKey: null, atMs, conditionChoices: [],
   });
   if (!started.ok) return started;
   const [instance, entry] = started.value;

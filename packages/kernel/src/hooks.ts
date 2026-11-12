@@ -57,6 +57,7 @@ import {
   visible,
   type Binding,
   type IncidentDetail,
+  type ConditionChoice,
   type CorrelationMatch,
   type DeliveryInput,
   type DeliveryTrigger,
@@ -368,6 +369,11 @@ export interface Ctx {
    * nothing, which `ctxRunsAsInstance` answers.
    */
   readonly scopeRole: (state: State, scope: ScopeOccurrenceId) => ScopeRole;
+  /**
+   * `step.ts`: the running input's ranking of competing Conditional items (`ConditionChoice`), which only
+   * `feature/subscriptions` reads.
+   */
+  readonly conditionChoices: readonly ConditionChoice[];
 }
 
 /**
@@ -514,14 +520,15 @@ export function itemOf(ctx: Ctx, state: State, occurrence: OccurrenceRef, detail
 }
 
 /**
- * The subscription an open item belongs to: a boundary's, a catch Event's or an Event Sub-Process start's; an
- * Activity's own subscription (a Receive Task) is the work feature's. Subscriptions and Correlation share it here
- * because features never import each other.
+ * The subscription the element `id` opens its item with: a boundary's, a catch Event's or an Event Sub-Process start's;
+ * an Activity's own subscription (a Receive Task) is the work feature's. Subscriptions and Correlation share it here
+ * because features never import each other; Subscriptions asks it of an open item's element and of an element a ranking
+ * names.
  */
-export function subscriptionOf(ctx: Ctx, item: OpenItem): Subscription | null {
-  const boundary = programBoundary(ctx.program, item.element);
+export function subscriptionOf(ctx: Ctx, id: ElementId): Subscription | null {
+  const boundary = programBoundary(ctx.program, id);
   if (boundary !== null) return boundary[1].subscription;
-  const element = programElement(ctx.program, item.element);
+  const element = programElement(ctx.program, id);
   const event = element === null ? null : elementEvent(element);
   const catchEvent = event === null ? null : eventPayloadCatch(event[1]);
   if (catchEvent !== null) return catchEvent;
@@ -666,6 +673,12 @@ export interface Hooks {
   /** Scopes: `Ctx.eventStart`. */
   readonly eventStart: (payload: ScopePayload) => readonly [Subscription, boolean] | null;
   /**
+   * Subscriptions: whether `element`, a public element identity, opens a Conditional item (a catch, an Event-Based
+   * Gateway arm, a boundary or an Event Sub-Process start, interrupting or not), so `step.ts` rejects a ranking that
+   * names anything else before the transition.
+   */
+  readonly competes: (ctx: Ctx, element: ElementId) => boolean;
+  /**
    * Subscriptions: the root start Events a start input's trigger fires, in document order; `chooseStart` picks the one
    * the input starts. `population.ts` asks it too, to start every fired start.
    */
@@ -719,6 +732,7 @@ export const defaultHooks: Hooks = {
   evaluate: () => ({ tag: EvaluationTag.Failure, code: "no-evaluator" }),
   catches: () => null,
   eventStart: () => null,
+  competes: () => false,
   startsFired: () => committed([]),
   correlates: () => failed(FailureTag.Unsupported, "correlates"), // dynamic-only: a registry without the hook
   delivered: () => failed(FailureTag.Unsupported, "delivered"), // dynamic-only: a registry without the hook

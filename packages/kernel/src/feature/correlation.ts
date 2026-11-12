@@ -210,7 +210,7 @@ export function correlates(
   state: State,
 ): Result<boolean> {
   const waiting = openKindView(item.kind).channel;
-  const subscription = subscriptionOf(ctx, item);
+  const subscription = subscriptionOf(ctx, item.element);
   if (waiting === null || subscription === null) return committed(false);
   if (!messageChannelEquals(waiting, channel)) return committed(false);
   if (criteria(subscription.trigger).length === 0 && ctx.program.options.messageCorrelation === MessageCorrelation.ModeledKey) {

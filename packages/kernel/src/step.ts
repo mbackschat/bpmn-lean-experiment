@@ -592,15 +592,16 @@ function ownedByMultiInstance(owner: Occurrence): boolean {
 
 /** The context every hook of `program` reads, its queries filled from `hooks`. */
 export function context(hooks: Hooks, program: Program): Ctx {
-  return { program, evaluate: hooks.evaluate, catches: hooks.catches, eventStart: hooks.eventStart, scopeRole };
+  return { program, evaluate: hooks.evaluate, catches: hooks.catches, eventStart: hooks.eventStart, scopeRole, conditionChoices: [] };
 }
 
 /**
  * One input. `null` is the state before the instance starts; only a start applies to it. The root's Event Sub-Process
- * starts are armed before the start Event's tokens move.
+ * starts are armed before the start Event's tokens move. Every hook of the input's closure reads its ranking of
+ * competing Conditional items.
  */
 export function step(hooks: Hooks, program: Program, before: State | null, input: Input): Outcome {
-  const ctx = context(hooks, program);
+  const ctx = { ...context(hooks, program), conditionChoices: input.payload.conditionChoices };
   switch (input.tag) {
     case InputTag.Start: {
       const payload = input.payload;
