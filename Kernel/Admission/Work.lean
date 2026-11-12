@@ -44,7 +44,7 @@ Multi-Instance shape itself is admitted by `Kernel.Admission.MultiInstance`. -/
 def traits : Work → Traits
   | .none => { plainTask := true, beginsWithoutToken := true }
   | .manual => { beginsWithoutToken := true }
-  | .user task =>
+  | .user _ =>
     { mapsData := true, compensable := true, instanceBody := some true, beginsWithoutToken := true }
   | .receive _ => { instanceBody := some false }
   | .service work =>
