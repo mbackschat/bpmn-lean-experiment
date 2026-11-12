@@ -1217,71 +1217,32 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/message-esp-interrupting/process-cancel-inside-region.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-03",
-      "CIB-LIM-0013"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-esp-interrupting/process-cancel-while-work-open.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-03",
-      "CIB-LIM-0013"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/message-esp-interrupting/process-cancel-without-payload.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-03",
       "CIB-LIM-0013"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-esp-interrupting/region-abort-while-inner-open.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-03",
-      "CIB-LIM-0013"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-esp-interrupting/region-completes-first.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-03"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/branches-each-own-destination.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-03",
-      "CIB-LIM-0013"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-payload-catches/parallel-bodies-out-of-order.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-03",
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/payload-absent.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-03",
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/payload-null.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-03",
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/payload-of-another-kind.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-03",
       "CIB-LIM-0013"
     ]
   },
@@ -1294,21 +1255,12 @@
   {
     "evidence": "scenarios/open-rows/message-payload-catches/payload-to-receive-task.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-03",
       "CIB-LIM-0037"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/repeated-arrival-fresh-wait.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-03",
-      "CIB-LIM-0013"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-payload-catches/sequential-bodies-previous-body.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-03",
       "CIB-LIM-0013"
     ]
   },
@@ -1909,12 +1861,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-data-derived/catch-interval-text.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/timer-data-derived/catch-point-without-digits.cibseven-evidence.json",
     "owners": [
       "PC-TIMER-03"
@@ -1933,57 +1879,9 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-data-derived/cron-item-with-letter.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/timer-data-derived/cron-never-matches.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0003"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/cron-open-range.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/cron-step-from-letter.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/cron-step-with-letter.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/cron-step-zero-from-start.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/cron-step-zero-over-range.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/cron-two-steps.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/cron-unspecified-seconds.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
     ]
   },
   {
