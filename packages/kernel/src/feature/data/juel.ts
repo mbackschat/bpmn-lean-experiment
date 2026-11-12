@@ -6,7 +6,7 @@
  * Integers are 64-bit `bigint`s carrying their Java class; a rule that would build a Double, or reach a Java surface the
  * kernel does not represent, ends as `unsupported`. Strings are indexed and ordered in UTF-16 code units, as Java does.
  */
-import { assertNever, integerLexeme, isAscii, parseJavaInt, type Value } from "../../il/types.js";
+import { assertNever, integerLexeme, isAscii, parseJavaInt, ValueTag, type Value } from "../../il/types.js";
 import {
   JuelBinary, JuelCallTag, JuelMethod, JuelNodeTag, JuelUnary, juelMethodCounts, type JuelCallNode, type JuelNode,
 } from "../../il/types/juel.js";
@@ -289,28 +289,32 @@ function equal(left: JVal, right: JVal): Eval<boolean> {
     const b = toText(right);
     return b.ok ? ok(a.value === b.value) : stopped(b);
   }
-  return decided(javaEquals(left, right));
+  return decided(javaEquals(left, right.tag === JValTag.List
+    ? { tag: ValueTag.List, items: right.items }
+    : { tag: ValueTag.Map, entries: right.entries }));
 }
 
-/** Java `equals`, three-valued: `null` when it depends on an Integer's unknown class. */
-function javaEquals(left: JVal, right: JVal): boolean | null {
-  if (left.tag === JValTag.Int && right.tag === JValTag.Int) {
-    if (left.value !== right.value) return false;
-    if (left.carrier === Carrier.Unknown || right.carrier === Carrier.Unknown) return null;
-    return left.carrier === right.carrier;
-  }
+/**
+ * Java `equals` of an evaluated value against a context value, three-valued: `null` when it depends on an Integer's
+ * class, which a context value does not record. Every comparison the evaluator makes has a context value on one side, an
+ * item or entry of a collection or the collection itself, whose `equals` Java keeps symmetric; so two equal Integers
+ * always leave the answer to their classes.
+ */
+function javaEquals(left: JVal, value: Value): boolean | null {
+  const right = fromValue(value);
+  if (left.tag === JValTag.Int && right.tag === JValTag.Int) return left.value !== right.value ? false : null;
   if (left.tag === JValTag.Decimal && right.tag === JValTag.Decimal) {
     return left.coefficient === right.coefficient && left.scale === right.scale;
   }
   if (left.tag === JValTag.List && right.tag === JValTag.List) {
     if (left.items.length !== right.items.length) return false;
-    return every(left.items.map((item, index) => javaEquals(fromValue(item), fromValue(right.items[index] as Value))));
+    return every(left.items.map((item, index) => javaEquals(fromValue(item), right.items[index] as Value)));
   }
   if (left.tag === JValTag.Map && right.tag === JValTag.Map) {
     if (left.entries.length !== right.entries.length) return false;
-    const pairs = left.entries.map(([name, value]) => {
+    const pairs = left.entries.map(([name, item]) => {
       const other = right.entries.find(([key]) => key === name);
-      return other === undefined ? false : javaEquals(fromValue(value), fromValue(other[1]));
+      return other === undefined ? false : javaEquals(fromValue(item), other[1]);
     });
     return every(pairs);
   }
@@ -579,7 +583,7 @@ function listMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag
   const items = receiver.items.map(fromValue);
   const found = (order: readonly number[]): Eval<JVal> => {
     for (const index of order) {
-      const answer = decided(javaEquals(argument, items[index] as JVal));
+      const answer = decided(javaEquals(argument, receiver.items[index] as Value));
       if (!answer.ok) return stopped(answer);
       if (answer.value) return ok(integer(index));
     }
@@ -591,11 +595,11 @@ function listMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag
     case JuelMethod.Size:
       return ok(integer(items.length));
     case JuelMethod.Equals: {
-      const answer = decided(javaEquals(receiver, argument));
+      const answer = decided(javaEquals(argument, { tag: ValueTag.List, items: receiver.items }));
       return answer.ok ? ok(bool(answer.value)) : stopped(answer);
     }
     case JuelMethod.Contains: {
-      const answer = decided(some(items.map((item) => javaEquals(argument, item))));
+      const answer = decided(some(receiver.items.map((item) => javaEquals(argument, item))));
       return answer.ok ? ok(bool(answer.value)) : stopped(answer);
     }
     case JuelMethod.IndexOf:
@@ -632,7 +636,7 @@ function mapMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag.
     case JuelMethod.Size:
       return ok(integer(receiver.entries.length));
     case JuelMethod.Equals: {
-      const answer = decided(javaEquals(receiver, argument));
+      const answer = decided(javaEquals(argument, { tag: ValueTag.Map, entries: receiver.entries }));
       return answer.ok ? ok(bool(answer.value)) : stopped(answer);
     }
     case JuelMethod.Get:
@@ -643,7 +647,7 @@ function mapMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag.
     case JuelMethod.ContainsKey:
       return withText(argument, (key) => bool(receiver.entries.some(([name]) => name === key)));
     case JuelMethod.ContainsValue: {
-      const answer = decided(some(receiver.entries.map(([, value]) => javaEquals(argument, fromValue(value)))));
+      const answer = decided(some(receiver.entries.map(([, value]) => javaEquals(argument, value))));
       return answer.ok ? ok(bool(answer.value)) : stopped(answer);
     }
     case JuelMethod.Length:

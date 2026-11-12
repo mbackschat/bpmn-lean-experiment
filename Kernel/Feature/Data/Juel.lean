@@ -123,22 +123,16 @@ def allEqual (answers : List (Option Bool)) : Option Bool :=
 def anyEqual (answers : List (Option Bool)) : Option Bool :=
   if answers.contains (some true) then some true else if answers.contains none then none else some false
 
-/-- Java `equals`, three-valued: `none` when it depends on an Integer's unknown class. -/
-def javaEquals : JVal → JVal → Option Bool
-  | .int a carrierA, .int b carrierB =>
-    if a != b then some false
-    else if carrierA == .unknown || carrierB == .unknown then none
-    else some (carrierA == carrierB)
-  | .decimal a scaleA, .decimal b scaleB => some (a == b && scaleA == scaleB)
-  | .list left, .list right =>
-    if left.length != right.length then some false
-    else allEqual ((left.zip right).map fun (a, b) => valueEquals a b)
-  | .map left, .map right =>
-    if left.length != right.length then some false
-    else allEqual (left.map fun (name, value) =>
-      match right.find? (·.1 == name) with
-      | some (_, other) => valueEquals value other
-      | none => some false)
+/-- Java `equals` of an evaluated value against a context value, three-valued: `none` when it depends on an Integer's
+class, which a context value does not record. Every comparison the evaluator makes has a context value on one side, an
+item or entry of a collection or the collection itself, whose `equals` Java keeps symmetric; so two equal Integers
+always leave the answer to their classes. -/
+def javaEquals (left : JVal) (right : Value) : Option Bool :=
+  match left, right with
+  | .int a _, .int b => if a != b then some false else none
+  | .decimal a scaleA, .decimal b scaleB => some (a == b && scaleA == (scaleB : Int))
+  | .list items, other => valueEquals (.list items) other
+  | .map entries, other => valueEquals (.map entries) other
   | .null, .null => some true
   | .bool a, .bool b => some (a == b)
   | .string a, .string b => some (a == b)
@@ -193,7 +187,8 @@ def equal (left right : JVal) : Eval Bool := do
   | .int _ _, _ | _, .int _ _ => return (← toLong left) == (← toLong right)
   | .bool _, _ | _, .bool _ => return (← toBool left) == (← toBool right)
   | .string _, _ | _, .string _ => return (← toText left) == (← toText right)
-  | _, _ => decided (javaEquals left right)
+  | _, .list items => decided (javaEquals left (.list items))
+  | _, .map entries => decided (javaEquals left (.map entries))
 
 /-- `left op right`, the one dispatch over `JuelBinary`: `and` and `or` skip their right operand once the left one
 decides (EL §1.9); every other operator evaluates both, left first. -/
@@ -320,16 +315,16 @@ def stringMethod (method : JuelMethod) (receiver : String) (args : List JVal) : 
     else whole (replaceUnits targetUnits replacementUnits units)
   | .size | .get | .containsKey | .containsValue => missingMethod
 
-def listMethod (method : JuelMethod) (receiver : JVal) (items : List Value) (argument : JVal) : Eval JVal := do
+def listMethod (method : JuelMethod) (items : List Value) (argument : JVal) : Eval JVal := do
   let found (indexes : List Nat) : Eval JVal := do
     for index in indexes do
-      if ← decided (javaEquals argument ((items[index]?.map fromValue).getD .null)) then return integer index
+      if ← decided (javaEquals argument (items[index]?.getD .null)) then return integer index
     return integer (-1)
   match method with
   | .isEmpty => return .bool items.isEmpty
   | .size => return integer items.length
-  | .equals => return .bool (← decided (javaEquals receiver argument))
-  | .contains => return .bool (← decided (anyEqual (items.map fun item => javaEquals argument (fromValue item))))
+  | .equals => return .bool (← decided (javaEquals argument (.list items)))
+  | .contains => return .bool (← decided (anyEqual (items.map (javaEquals argument))))
   | .indexOf => found (List.range items.length)
   | .lastIndexOf => found (List.range items.length).reverse
   | .get =>
@@ -341,12 +336,11 @@ def listMethod (method : JuelMethod) (receiver : JVal) (items : List Value) (arg
   | .length | .startsWith | .endsWith | .substring | .toUpperCase | .toLowerCase | .trim | .concat
   | .replace | .containsKey | .containsValue => missingMethod
 
-def mapMethod (method : JuelMethod) (receiver : JVal) (entries : List (String × Value)) (argument : JVal) :
-    Eval JVal := do
+def mapMethod (method : JuelMethod) (entries : List (String × Value)) (argument : JVal) : Eval JVal := do
   match method with
   | .isEmpty => return .bool entries.isEmpty
   | .size => return integer entries.length
-  | .equals => return .bool (← decided (javaEquals receiver argument))
+  | .equals => return .bool (← decided (javaEquals argument (.map entries)))
   | .get =>
     let key ← textArgument (some argument)
     return ((entries.find? (·.1 == key)).map (fromValue ·.2)).getD .null
@@ -354,7 +348,7 @@ def mapMethod (method : JuelMethod) (receiver : JVal) (entries : List (String ×
     let key ← textArgument (some argument)
     return .bool (entries.any (·.1 == key))
   | .containsValue =>
-    return .bool (← decided (anyEqual (entries.map fun (_, value) => javaEquals argument (fromValue value))))
+    return .bool (← decided (anyEqual (entries.map fun (_, value) => javaEquals argument value)))
   | .length | .contains | .startsWith | .endsWith | .indexOf | .lastIndexOf | .substring
   | .toUpperCase | .toLowerCase | .trim | .concat => missingMethod
   | .replace => wrongReceiver
@@ -363,8 +357,8 @@ def applyMethod (method : JuelMethod) (receiver : JVal) (args : List JVal) : Eva
   let first := args.head?.getD .null
   match receiver with
   | .string value => stringMethod method value args
-  | .list items => listMethod method receiver items first
-  | .map entries => mapMethod method receiver entries first
+  | .list items => listMethod method items first
+  | .map entries => mapMethod method entries first
   | .null | .bool _ | .int _ _ | .decimal _ _ => wrongReceiver
 
 def methodCall (payload : JuelCallNode) (sub : Nat → Eval JVal) : Eval JVal := do

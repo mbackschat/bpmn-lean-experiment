@@ -148,6 +148,13 @@ const rows: readonly Row[] = [
   { name: "List contains of a String", build: (t) => t.call(t.id("texts"), "contains", t.str("y")), expect: { value: bool(true) } },
   { name: "List contains of an unequal Integer", build: (t) => t.call(t.id("numbers"), "contains", t.int("4")), expect: { value: bool(false) } },
   { name: "List get out of range fails", build: (t) => t.call(t.id("texts"), "get", t.int("2")), expect: { failure: "juel.error" } },
+  // Every Java `equals` the evaluator makes has a context value on one side, whose Integers have no class.
+  { name: "List indexOf of an unequal Integer", build: (t) => t.bin("lt", t.call(t.id("numbers"), "indexOf", t.int("4")), t.int("0")), expect: { value: bool(true) } },
+  { name: "List indexOf of an equal Long literal", build: (t) => t.call(t.id("numbers"), "indexOf", t.int("3")), expect: { unsupported: "juel.integerCarrier" } },
+  { name: "List equals an equal List of Strings", build: (t) => t.call(t.id("texts"), "equals", t.id("texts")), expect: { value: bool(true) } },
+  { name: "List equals a List of Integers of unknown class", build: (t) => t.call(t.id("numbers"), "equals", t.id("numbers")), expect: { unsupported: "juel.integerCarrier" } },
+  { name: "Map equals a List", build: (t) => t.call(t.id("order"), "equals", t.id("texts")), expect: { value: bool(false) } },
+  { name: "Map containsValue of a String", build: (t) => t.call(t.id("order"), "containsValue", t.str("A-1")), expect: { value: bool(true) } },
   { name: "Map get and containsKey", build: (t) => t.bin("and", t.call(t.id("order"), "containsKey", t.str("id")), t.bin("eq", t.call(t.id("order"), "get", t.str("id")), t.str("A-1"))), expect: { value: bool(true) } },
   { name: "size is on Lists and Maps", build: (t) => t.call(t.id("order"), "size"), expect: { value: int(2) } },
   { name: "method on a null receiver fails", build: (t) => t.call(t.id("nothing"), "length"), expect: { failure: "juel.propertyNotFound" } },
