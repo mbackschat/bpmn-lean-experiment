@@ -1,0 +1,396 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "error-multi-instance-parallel-second-child-fails",
+    "sha256": "c0a4a2f0fe1a7d9a5d10f8b3e8884f695a34a546fd24ea440f608c6a5deed514"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "fail-assess-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-assess-1-after-cancellation",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "fail-assess-2",
+        "tasks": [
+          {
+            "elementId": "ResolveReview",
+            "name": "Resolve rejected review"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-assess-1-after-cancellation",
+        "tasks": [
+          {
+            "elementId": "ResolveReview",
+            "name": "Resolve rejected review"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "fail-assess-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-assess-1-after-cancellation",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": [
+          {
+            "elementId": "Assess",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "Assess",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-assess-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-assess-1-after-cancellation",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fail-assess-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-assess-1-after-cancellation",
+        "state": "ACTIVE"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "fail-assess-2",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "start-process",
+        "handler": "bpmnLeanEffectHandler",
+        "arguments": [
+          {
+            "name": "loopCounter",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "nrOfActiveInstances",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "nrOfCompletedInstances",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "nrOfInstances",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          }
+        ],
+        "localPatch": [],
+        "invocations": 1
+      },
+      {
+        "afterCommandId": "start-process",
+        "handler": "bpmnLeanEffectHandler",
+        "arguments": [
+          {
+            "name": "loopCounter",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "nrOfActiveInstances",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "nrOfCompletedInstances",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "nrOfInstances",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          }
+        ],
+        "localPatch": [],
+        "invocations": 2
+      },
+      {
+        "afterCommandId": "start-process",
+        "handler": "bpmnLeanEffectHandler",
+        "arguments": [
+          {
+            "name": "loopCounter",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          },
+          {
+            "name": "nrOfActiveInstances",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "nrOfCompletedInstances",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          },
+          {
+            "name": "nrOfInstances",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          }
+        ],
+        "localPatch": [],
+        "invocations": 3
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:ReviewEach:1",
+              "elementId": "Assess",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ReviewBatch",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:ReviewEach:2",
+              "elementId": "Assess",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ReviewBatch",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fail-assess-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ResolveReview",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Resolve rejected review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-assess-1-after-cancellation",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ResolveReview",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Resolve rejected review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
