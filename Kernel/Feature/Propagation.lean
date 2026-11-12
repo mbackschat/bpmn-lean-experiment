@@ -161,15 +161,18 @@ def endsInstanceWithOutputs (ctx : Ctx) (origin : Origin) (state : State) : Bool
     | none => state.idle origin.scope
   !outputs.isEmpty && state.instanceRoot origin.scope == origin.scope && left
 
-/-- Refuse an uncaught Error whose path lies inside a Multi-Instance instance, walking out from `current` to the root.
-What CIB's `execution.end(true)` does to an enclosing instance is PC-ERROR-03's to settle (CIB-INT-0013's boundary).
-A called instance is no such boundary: the thrower's path ends there, and with nothing left the called instance ends
-and its Call returns normally, unless the thrower's outputs would run as it ends (`endsInstanceWithOutputs`,
-`finance-unlisted-code`, CIB-LIM-0006). -/
+/-- Refuse an uncaught Error whose path lies inside a Multi-Instance instance, walking out from `current` to its
+instance's root and no further. What CIB's `execution.end(true)` does to an enclosing instance is PC-ERROR-03's to settle
+(CIB-INT-0013's boundary). A called instance's root ends the walk, even under a Multi-Instance Call: the thrower's path
+ends in the called instance, and with nothing left the called instance ends and its Call returns normally, unless the
+thrower's outputs would run as it ends (`endsInstanceWithOutputs`, `finance-unlisted-code`, CIB-LIM-0006). -/
 def enclosingInstances (ctx : Ctx) (state : State) : Nat → ScopeOccurrenceId → Outcome
   | 0, _ => .ok state
   | fuel + 1, current =>
-    if ctx.scopeRole state current == .multiInstanceInstance then
+    -- A called root is the callee's: its owner, the Call's occurrence, is a Multi-Instance instance under a
+    -- Multi-Instance Call, which `scopeRole` reports, but that instance lies in the caller.
+    if state.calledRoot current then .ok state
+    else if ctx.scopeRole state current == .multiInstanceInstance then
       .error (.unsupported "unhandled-error-leaves-multi-instance-instance") -- dynamic-only: where its thrower runs
     else match (state.scopes.find? (·.id == current)).bind (·.parent) with
       | some parent => enclosingInstances ctx state fuel parent

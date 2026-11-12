@@ -276,15 +276,18 @@ function endsInstanceWithOutputs(ctx: Ctx, origin: Origin, state: State): boolea
 }
 
 /**
- * Refuse an uncaught Error whose path lies inside a Multi-Instance instance, walking out from `start` to the root. What
- * CIB's `execution.end(true)` does to an enclosing instance is PC-ERROR-03's to settle (CIB-INT-0013's boundary). A
- * called instance is no such boundary: the thrower's path ends there, and with nothing left the called instance ends
- * and its Call returns normally, unless the thrower's outputs would run as it ends (`endsInstanceWithOutputs`,
- * `finance-unlisted-code`, CIB-LIM-0006).
+ * Refuse an uncaught Error whose path lies inside a Multi-Instance instance, walking out from `start` to its instance's
+ * root and no further. What CIB's `execution.end(true)` does to an enclosing instance is PC-ERROR-03's to settle
+ * (CIB-INT-0013's boundary). A called instance's root ends the walk, even under a Multi-Instance Call: the thrower's path
+ * ends in the called instance, and with nothing left the called instance ends and its Call returns normally, unless the
+ * thrower's outputs would run as it ends (`endsInstanceWithOutputs`, `finance-unlisted-code`, CIB-LIM-0006).
  */
 function enclosingInstances(ctx: Ctx, state: State, start: ScopeOccurrenceId): Outcome {
   let current: ScopeOccurrenceId | null = start;
   for (let fuel = state.scopes.length + 1; fuel > 0 && current !== null; fuel -= 1) {
+    // A called root is the callee's: its owner, the Call's occurrence, is a Multi-Instance instance under a
+    // Multi-Instance Call, which `scopeRole` reports, but that instance lies in the caller.
+    if (calledRoot(state, current)) break;
     if (ctx.scopeRole(state, current) === ScopeRole.MultiInstanceInstance) {
       return failed(FailureTag.Unsupported, "unhandled-error-leaves-multi-instance-instance"); // dynamic-only: where its thrower runs
     }

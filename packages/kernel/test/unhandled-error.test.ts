@@ -12,7 +12,7 @@ import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 import {
-  activity, append, base, boundary, callWork, definitionRef, end, errorTrigger, flow, gateway, loop, mapping, serviceWork, start,
+  activity, append, base, boundary, callWork, definitionRef, elementId, end, errorTrigger, flow, gateway, loop, mapping, scope, serviceWork, start,
   task, userWork, variable, withFlows, withOptions, wired,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
@@ -131,6 +131,52 @@ function calling(outputs: Json[]): Json {
 test("under CIB's reading an uncaught Error ends only its path inside a called instance, which then returns", () => {
   const state = committed(failUnmatchedIn(calling([]), "call:1:I:1:T:1"));
   assert.equal(state.status, "completed");
+});
+
+/** Start with two `items`, then fail `CT` with an uncaught code in the called instances `calledIds`, in that order. */
+function failEachCalled(json: Json, calledIds: readonly string[]): State {
+  const decoded = decodeProgram(wired(json));
+  assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
+  const items = { name: "items", value: { kind: "stringList", value: ["a", "b"] } };
+  let state = committed(step(decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [items] })));
+  for (const processInstanceId of calledIds) {
+    state = committed(step(decoded.value, state, stimulus({
+      kind: "effectResult",
+      occurrence: { processInstanceId, elementId: "CT", activation: 1 },
+      outcome: { kind: "businessFailure", code: "OTHER", message: "no stock", outputs: [] },
+    })));
+  }
+  return state;
+}
+
+// A called instance bounds the path an uncaught Error ends, also under a Multi-Instance Call: each called instance ends
+// and its Call instance returns normally, so the caller completes once both have (PC-ERROR-03, CIB-INT-0013).
+test("under CIB's reading an uncaught Error ends only its path inside a called instance of a Multi-Instance Call", () => {
+  for (const mode of ["sequential", "parallel"]) {
+    const program = calling([]);
+    const multi = {
+      ...program,
+      elements: (program.elements as Json[]).map((element) => elementId(element) === "T"
+        ? activity("T", callWork(), { multiInstance: loop({ mode, outputDataItem: null }) })
+        : element),
+    };
+    assert.equal(failEachCalled(multi, ["call:1:I:1:T:1", "call:1:I:1:T:2"]).status, "completed", mode);
+  }
+});
+
+// The same bound holds where the Multi-Instance instance enclosing the Call is a Sub-Process's in the caller.
+test("under CIB's reading an uncaught Error ends only its path inside a Call within a Multi-Instance Sub-Process", () => {
+  const program = calling([]);
+  const nested = {
+    ...program,
+    elements: [
+      ...(program.elements as Json[]).filter((element) => elementId(element) !== "T"),
+      scope("T", "embedded", {}, { multiInstance: loop({ mode: "parallel", outputDataItem: null }) }),
+      start("TS", null, [], "T"), activity("TC", callWork(), {}, "T"), end("TE", "none", "T"),
+    ],
+    flows: [...(program.flows as Json[]), flow("tf1", "TS", "TC"), flow("tf2", "TC", "TE")],
+  };
+  assert.equal(failEachCalled(nested, ["call:1:I:2:TC:1", "call:1:I:2:TC:2"]).status, "completed");
 });
 
 // The same last path with the thrower's output parameters rolls CIB's command back (`finance-unlisted-code`), the
