@@ -110,6 +110,8 @@ const rows: Row[] = [
   { code: "decision.testKind", description: "a comparison of a String input",
     mutate: oneRule([input("channel", "string")], [output("grade")], [tests(cmp("lt", 5))], [lit.str("x")]),
     control: oneRule([input("channel", "string")], [output("grade")], [tests(eq(lit.str("web")))], [lit.str("x")]) },
+  { code: "decision.testKind", description: "a comparison bounded by a String", mutate: integerTest(tests({ compare: { operator: "lt", bound: lit.str("5") } })),
+    control: integerTest(tests(cmp("lt", 5))) },
   { code: "decision.testKind", description: "a number test of a Boolean input",
     mutate: oneRule([input("vip", "boolean")], [output("grade")], [tests(eq(lit.num(1)))], [lit.str("x")]),
     control: oneRule([input("vip", "boolean")], [output("grade")], [tests(eq(lit.bool(true)))], [lit.str("x")]) },

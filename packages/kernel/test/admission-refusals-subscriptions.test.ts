@@ -301,6 +301,12 @@ export const rows: readonly Row[] = [
     control: catching(correlated(key)),
   },
   {
+    code: "expression.juel.site",
+    description: "under JUEL, a correlation key bound to a JUEL expression",
+    mutate: (program) => withOptions(catching(correlated(criterion("k", juel({ identifier: { name: "x" } }))))(program), { evaluator: "juel" }),
+    control: (program) => withOptions(catching(correlated(key))(program), { evaluator: "juel" }),
+  },
+  {
     code: "message.correlation.value",
     description: "a correlation key bound to a Simple Boolean expression",
     mutate: catching(correlated(criterion("k", simpleBoolean()))),

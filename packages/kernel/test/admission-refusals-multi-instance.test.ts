@@ -216,6 +216,12 @@ export const rows: readonly Row[] = [
   },
   {
     code: "multiInstance.countAndCollection",
+    description: "under Simple Boolean, a loop declaring both a cardinality and a collection",
+    mutate: looping({ count: { countAndCollection: { count: variable("n"), items: variable("items") } } }),
+    control: looping(),
+  },
+  {
+    code: "multiInstance.countAndCollection",
     description: "under JUEL, a loop declaring both a cardinality and a collection",
     mutate: juelLooping({ count: { countAndCollection: { count: variable("n"), items: variable("items") } } }),
     control: juelLooping(cardinality(variable("n"))),
