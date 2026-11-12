@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { access, mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -32,6 +32,43 @@ async function waitForPathBefore(
   }
 }
 
+function isAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ESRCH") return false;
+    throw error;
+  }
+}
+
+/**
+ * Waits until the descendant is gone. An escaped descendant never exits, so the test's own timeout reports the escape;
+ * a wall-clock marker instead failed whenever load delayed the group signal past the marker's deadline.
+ */
+async function waitForExit(pid: number): Promise<void> {
+  while (isAlive(pid)) await delay(25);
+}
+
+function killIfAlive(pid: number | undefined): void {
+  if (pid !== undefined && isAlive(pid)) process.kill(pid, "SIGKILL");
+}
+
+/** The descendant outlives the test unless its process group is signalled; it ends itself as a safety bound. */
+const descendantSource = "setTimeout(() => process.exit(0), 30_000);";
+
+/** A parent that reports its descendant's process id in `readyPath`, then lives for `lifetimeMs` unless signalled. */
+function parentSource(readyPath: string, lifetimeMs: number, ignoresSigterm: boolean): string {
+  return [
+    'const { spawn } = require("node:child_process");',
+    'const { writeFileSync } = require("node:fs");',
+    `const descendant = spawn(process.execPath, ["-e", ${JSON.stringify(descendantSource)}], { stdio: "ignore" });`,
+    `writeFileSync(${JSON.stringify(readyPath)}, String(descendant.pid));`,
+    ignoresSigterm ? 'process.on("SIGTERM", () => {});' : "",
+    `setTimeout(() => process.exit(0), ${lifetimeMs});`,
+  ].join("");
+}
+
 test(
   "terminates a timed-out process group before descendants can escape",
   { timeout: 6_000 },
@@ -40,23 +77,11 @@ test(
       path.join(tmpdir(), "bpmn-run-command-test-"),
     );
     const readyPath = path.join(directory, "ready");
-    const markerPath = path.join(directory, "escaped-child");
-    const childSource = [
-      'const { writeFileSync } = require("node:fs");',
-      `setTimeout(() => writeFileSync(${JSON.stringify(markerPath)}, "escaped"), 3000);`,
-    ].join("");
-    const parentSource = [
-      'const { spawn } = require("node:child_process");',
-      'const { writeFileSync } = require("node:fs");',
-      `spawn(process.execPath, ["-e", ${JSON.stringify(childSource)}], { stdio: "ignore" });`,
-      `writeFileSync(${JSON.stringify(readyPath)}, "ready");`,
-      'process.on("SIGTERM", () => {});',
-      "setTimeout(() => process.exit(0), 5_000);",
-    ].join("");
+    let descendant: number | undefined;
 
     try {
       const rejected = assert.rejects(
-        runCommand(process.execPath, ["-e", parentSource], {
+        runCommand(process.execPath, ["-e", parentSource(readyPath, 30_000, true)], {
           cwd: directory,
           env: process.env,
           timeoutMs: 2_500,
@@ -74,10 +99,11 @@ test(
         rejected,
         "command timed out before establishing its descendant process",
       );
+      descendant = Number(await readFile(readyPath, "utf8"));
       await rejected;
-      await delay(1_000);
-      await assert.rejects(access(markerPath), { code: "ENOENT" });
+      await waitForExit(descendant);
     } finally {
+      killIfAlive(descendant);
       await rm(directory, { recursive: true, force: true });
     }
   },
@@ -91,27 +117,16 @@ test(
       path.join(tmpdir(), "bpmn-run-command-interrupt-test-"),
     );
     const readyPath = path.join(directory, "ready");
-    const markerPath = path.join(directory, "escaped-child");
-    const childSource = [
-      'const { writeFileSync } = require("node:fs");',
-      `setTimeout(() => writeFileSync(${JSON.stringify(markerPath)}, "escaped"), 500);`,
-    ].join("");
-    const parentSource = [
-      'const { spawn } = require("node:child_process");',
-      'const { writeFileSync } = require("node:fs");',
-      `spawn(process.execPath, ["-e", ${JSON.stringify(childSource)}], { stdio: "ignore" });`,
-      `writeFileSync(${JSON.stringify(readyPath)}, "ready");`,
-      "setTimeout(() => process.exit(0), 1_500);",
-    ].join("");
     const runnerUrl = pathToFileURL(
       path.join(process.cwd(), "scripts/run-command.ts"),
     ).href;
+    // The parent and the runner's own deadline outlive the test, so only the interrupt can end the group in time.
     const controllerSource = [
       `import { runCommand } from ${JSON.stringify(runnerUrl)};`,
-      `await runCommand(process.execPath, ["-e", ${JSON.stringify(parentSource)}], {`,
+      `await runCommand(process.execPath, ["-e", ${JSON.stringify(parentSource(readyPath, 30_000, false))}], {`,
       `  cwd: ${JSON.stringify(directory)},`,
       "  env: process.env,",
-      "  timeoutMs: 2_000,",
+      "  timeoutMs: 30_000,",
       "  terminationGraceMs: 50,",
       "});",
     ].join("\n");
@@ -124,6 +139,7 @@ test(
       controller.once("error", reject);
       controller.once("close", resolve);
     });
+    let descendant: number | undefined;
 
     try {
       await waitForPathBefore(
@@ -131,12 +147,13 @@ test(
         controllerClosed,
         "controller exited before establishing its process group",
       );
+      descendant = Number(await readFile(readyPath, "utf8"));
       controller.kill("SIGTERM");
       await controllerClosed;
-      await delay(700);
-      await assert.rejects(access(markerPath), { code: "ENOENT" });
+      await waitForExit(descendant);
     } finally {
       controller.kill("SIGKILL");
+      killIfAlive(descendant);
       await rm(directory, { recursive: true, force: true });
     }
   },
