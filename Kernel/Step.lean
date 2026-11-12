@@ -124,9 +124,17 @@ def timerJob (failure : ContinuationFailure) (outcome : Outcome) : Outcome :=
 
 /-- An occurrence begins only in a scope occurrence that stands: a begin into one that is gone is an invariant failure,
 never a silent begin, since whatever removes a scope occurrence also drops what would begin in it (a run an
-interrupting catcher removes, `Compensation.dropWithin`). -/
+interrupting catcher removes, `Compensation.dropWithin`; a queued begin, `withdrawnScope`). -/
 def requireScope (state : State) (scope : ScopeOccurrenceId) : Except Failure Unit :=
   if state.scopes.any (·.id == scope) then .ok () else .error (.semanticFailure "begin-into-missing-scope")
+
+/-- Whether `scope` is a scope occurrence that was entered and has since been removed. Signals run first in, first out,
+so what entering a scope occurrence queued for it, the arming of its Event Sub-Processes and the begin of its start
+Event, can still wait when a later signal of the same closure removes it: an interrupting Event Sub-Process clearing its
+parent, or the cancellation of an interrupted host. That work goes with the scope occurrence, as a firing that finds no
+item does (`Signal.fire`); a scope occurrence that never existed stays `requireScope`'s invariant failure. -/
+def withdrawnScope (state : State) (scope : ScopeOccurrenceId) : Bool :=
+  scope.value < state.nextIssue && !state.scopes.any (·.id == scope)
 
 /-- Begin the occurrence `request` names and hand it to its feature (`requireScope`). -/
 def begin (hooks : Hooks) (ctx : Ctx) (request : BeginRequest) (state : State) : Outcome := do
@@ -187,10 +195,10 @@ def endInstance (status : InstanceStatus) (failure : Option InstanceFailure) (st
 
 def dispatchSignal (hooks : Hooks) (ctx : Ctx) : Signal → State → Outcome
   | .arm host element scope => hooks.arm ctx host element scope
-  | .armScope scope => hooks.armScope ctx scope
+  | .armScope scope => fun state => if withdrawnScope state scope then .ok state else hooks.armScope ctx scope state
   | .armGateway occurrence gateway scope => hooks.armGateway ctx occurrence gateway scope
   | .raise event origin => hooks.raise ctx event origin
-  | .begin request => begin hooks ctx request
+  | .begin request => fun state => if withdrawnScope state request.scope then .ok state else begin hooks ctx request state
   | .complete occurrence leave writes rule => complete hooks ctx occurrence leave writes rule
   | .write scope writes rule => hooks.writeOutputs ctx scope writes rule
   | .remove scope names => hooks.removeVariables ctx scope names

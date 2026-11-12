@@ -1,20 +1,7 @@
 /**
- * The single step function, transcribed from `Kernel/Step.lean`.
- *
- * It owns dispatch on element kind, event role, input kind, signal and continuation, the one completion pipeline, and
- * the order in which hooks run. An input's own transition comes first, then the closure: hand the next signal to its
- * hook; else route the next token to the element at the end of its flow, or dispatch the deferred begin it is as its
- * `begin` signal; else complete one idle scope occurrence; until none is left. A closure that does not settle within
- * `closureBound` steps, or whose steps together run over more than `closureWorkBound` state entries, is `unsupported`,
- * never silently truncated. Each of those is one micro-step and appends one `Transition` to the journal; a completion
- * that is the only signal a micro-step enqueued runs inside that micro-step, so a pass-through element begins and
- * completes in one transition.
- *
- * A scope occurrence is idle when it holds no token, no blocking open item, no begun occurrence and no child
- * occurrence, and no slot keeps it alive. An idle Scope element is completed by its hook, an idle called instance's
- * root by its Call Activity's, an idle Multi-Instance body by its feature; an idle process root completes the
- * instance, removing the passive items left in it. An Activity's local-variable scope occurrence has no completion of
- * its own: the completion pipeline disposes of it with its Activity.
+ * The single step function, transcribed from `Kernel/Step.lean`, whose module comment states its contract: the dispatch
+ * it owns, the one completion pipeline, the order of hooks, the closure and its bounds, and when a scope occurrence is
+ * idle.
  */
 import {
   BranchSchedule, ContinuationFailure, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementGateway,
@@ -130,10 +117,15 @@ function timerJob(failure: ContinuationFailure, outcome: Outcome): Outcome {
 /**
  * An occurrence begins only in a scope occurrence that stands: a begin into one that is gone is an invariant failure,
  * never a silent begin, since whatever removes a scope occurrence also drops what would begin in it (a run an
- * interrupting catcher removes, `Compensation.dropWithin`). `null` when it stands.
+ * interrupting catcher removes, `Compensation.dropWithin`; a queued begin, `withdrawnScope`). `null` when it stands.
  */
 function requireScope(state: State, scope: ScopeOccurrenceId): Outcome | null {
   return state.scopes.some((entry) => entry.id === scope) ? null : failed(FailureTag.SemanticFailure, "begin-into-missing-scope");
+}
+
+/** `Kernel.Step.withdrawnScope`: a scope occurrence entered and since removed, whose queued work goes with it. */
+function withdrawnScope(state: State, scope: ScopeOccurrenceId): boolean {
+  return scope < state.nextIssue && !state.scopes.some((entry) => entry.id === scope);
 }
 
 /** Begin the occurrence `request` names and hand it to its feature (`requireScope`). */
@@ -234,13 +226,13 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
     case SignalTag.Arm:
       return other((state) => hooks.arm(ctx, next.host, next.element, next.scope, state));
     case SignalTag.ArmScope:
-      return other((state) => hooks.armScope(ctx, next.scope, state));
+      return other((state) => (withdrawnScope(state, next.scope) ? committed(state) : hooks.armScope(ctx, next.scope, state)));
     case SignalTag.ArmGateway:
       return other((state) => hooks.armGateway(ctx, next.occurrence, next.gateway, next.scope, state));
     case SignalTag.Raise:
       return other((state) => hooks.raise(ctx, next.event, next.origin, state));
     case SignalTag.Begin:
-      return other((state) => begin(hooks, ctx, next.request, state));
+      return other((state) => (withdrawnScope(state, next.request.scope) ? committed(state) : begin(hooks, ctx, next.request, state)));
     case SignalTag.Complete:
       return { completion: true, run: (state) => complete(hooks, ctx, next.occurrence, next.leave, next.writes, next.rule, state) };
     case SignalTag.Write:
