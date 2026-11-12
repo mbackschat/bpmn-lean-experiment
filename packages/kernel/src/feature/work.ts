@@ -215,11 +215,9 @@ export const defaultWorkHooks: WorkHooks = {
 };
 
 /**
- * An Activity's occurrence began. An input mapping whose source is unavailable makes the InputSet unavailable, and an
- * occurrence a token began waits for it (BPMN 2.0.2 §10.4.2), held in `FeatureSlots.held` until its scope occurrence
- * is cleared. An occurrence no token began is refused instead, a restriction (#104): a compensation handler, which its
- * run begins in its context (`ScopeRole.CompensationHandler`), as the dynamic-only
- * `compensation.handlerInputUnavailable` (I10), any other as `started-activity-input-unavailable`. A handler and a
+ * An Activity's occurrence began. An input mapping whose source is unavailable makes the InputSet unavailable, and the
+ * occurrence waits for it (BPMN 2.0.2 §10.4.2), held in `FeatureSlots.held` until its scope occurrence is cleared,
+ * whether a token, a Scope's implicit start or a compensation run began it (#104). A handler and a
  * Multi-Instance instance count as begun by a token, so they may receive a Message or call a process; another
  * occurrence no token began may do a task without work, a User Task or a Service Task (`scope.implicitStart` at
  * admission). A `camunda:inputParameter`, whose unresolved expression is no unavailable Data Input, rolls the command
@@ -230,11 +228,7 @@ export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, paylo
   const handler = ctx.scopeRole(state, occurrence.scope) === ScopeRole.CompensationHandler;
   const evaluated = ctxEvaluateMappings(ctx, evalContext(state, occurrence.scope), payload.envelope.inputs);
   if (!evaluated.ok) return failedWith(evaluated.failure);
-  if (evaluated.value === null) {
-    if (occurrence.incoming !== null) return committed(hold(state, { occurrence: occurrence.id, scope: occurrence.scope }));
-    // Dynamic-only: whether the source is set depends on the run.
-    return failed(FailureTag.Unsupported, handler ? "compensation.handlerInputUnavailable" : "started-activity-input-unavailable");
-  }
+  if (evaluated.value === null) return committed(hold(state, { occurrence: occurrence.id, scope: occurrence.scope }));
   const inputs = evaluated.value;
   const entered = enterLocal(header, inputs, occurrence, state);
   // An instance of a Multi-Instance body, the only occurrence of a looping Activity this hook sees, follows the token

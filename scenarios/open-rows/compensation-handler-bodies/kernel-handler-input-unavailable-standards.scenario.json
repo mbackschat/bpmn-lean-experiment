@@ -1,0 +1,64 @@
+{
+ "kind": "scenario",
+ "id": "compensation-handler-bodies-kernel-handler-input-unavailable-standards",
+ "profile": "bpmn-2.0.2",
+ "bpmn": {
+  "id": "compensation-handler-bodies-kernel-held-handler",
+  "relativePath": "scenarios/open-rows/compensation-handler-bodies/kernel-held-handler.bpmn",
+  "sha256": "07071d9be64e3774dfbe8e45f5beece3c1bc84994cd65d6fa1357c49ad981cb3",
+  "sourceOverlay": null
+ },
+ "stimuli": [
+  {
+   "kind": "start",
+   "commandId": "s01-start",
+   "instanceId": "Instance_1",
+   "variables": []
+  },
+  {
+   "kind": "command",
+   "commandId": "s02-complete-UserTask_Book-1",
+   "occurrence": {
+    "processInstanceId": "Instance_1",
+    "elementId": "UserTask_Book",
+    "activation": 1
+   },
+   "action": {
+    "kind": "completeUserTask",
+    "values": []
+   }
+  },
+  {
+   "kind": "timerFire",
+   "commandId": "s03-fire-timer-Boundary_Deadline-1",
+   "occurrence": {
+    "processInstanceId": "Instance_1",
+    "elementId": "Boundary_Deadline",
+    "activation": 1
+   },
+   "logicalTimeMs": 30000
+  },
+  {
+   "kind": "command",
+   "commandId": "s04-complete-UserTask_Late-1",
+   "occurrence": {
+    "processInstanceId": "Instance_1",
+    "elementId": "UserTask_Late",
+    "activation": 1
+   },
+   "action": {
+    "kind": "completeUserTask",
+    "values": []
+   }
+  }
+ ],
+ "provenance": {
+  "normativeRefs": [
+   "BPMN 2.0.2 Clause 10.4.2",
+   "BPMN 2.0.2 Clause 13.3.2",
+   "BPMN 2.0.2 Clause 13.5.5"
+  ],
+  "cibRevision": "not-applicable",
+  "cibRefs": []
+ }
+}

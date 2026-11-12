@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_KernelHeldHandler"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-handler-bodies:kernel-held-handler">
+  <bpmn:process id="Process_KernelHeldHandler" isExecutable="true">
+    <bpmn:property id="Property_BookingNote" />
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Work" sourceRef="StartEvent_Start" targetRef="SubProcess_Work" />
+    <bpmn:subProcess id="SubProcess_Work" name="Book and undo">
+      <bpmn:startEvent id="StartEvent_Work" />
+      <bpmn:sequenceFlow id="Flow_Work_Book" sourceRef="StartEvent_Work" targetRef="UserTask_Book" />
+      <bpmn:userTask id="UserTask_Book" name="Book the room" />
+      <bpmn:boundaryEvent id="Boundary_CompensateBook" attachedToRef="UserTask_Book">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Book" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoBook" name="Cancel the booking" isForCompensation="true">
+        <bpmn:ioSpecification id="IoSpecification_UndoBook">
+          <bpmn:dataInput id="DataInput_BookingNote" name="Booking note" />
+          <bpmn:inputSet id="InputSet_UndoBook">
+            <bpmn:dataInputRefs>DataInput_BookingNote</bpmn:dataInputRefs>
+          </bpmn:inputSet>
+          <bpmn:outputSet id="OutputSet_UndoBook" />
+        </bpmn:ioSpecification>
+        <bpmn:dataInputAssociation id="DataInputAssociation_BookingNote">
+          <bpmn:sourceRef>Property_BookingNote</bpmn:sourceRef>
+          <bpmn:targetRef>DataInput_BookingNote</bpmn:targetRef>
+        </bpmn:dataInputAssociation>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_Book_Throw" sourceRef="UserTask_Book" targetRef="IntermediateThrow_Undo" />
+      <bpmn:intermediateThrowEvent id="IntermediateThrow_Undo">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Undo" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:sequenceFlow id="Flow_Throw_End" sourceRef="IntermediateThrow_Undo" targetRef="EndEvent_Work" />
+      <bpmn:endEvent id="EndEvent_Work" />
+      <bpmn:association id="Association_Book" associationDirection="One" sourceRef="Boundary_CompensateBook" targetRef="UserTask_UndoBook" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Deadline" attachedToRef="SubProcess_Work">
+      <bpmn:timerEventDefinition id="TimerDefinition_Deadline">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_Work_After" sourceRef="SubProcess_Work" targetRef="UserTask_After" />
+    <bpmn:userTask id="UserTask_After" name="Continue" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Deadline_Late" sourceRef="Boundary_Deadline" targetRef="UserTask_Late" />
+    <bpmn:userTask id="UserTask_Late" name="Handle the deadline" />
+    <bpmn:sequenceFlow id="Flow_Late_End" sourceRef="UserTask_Late" targetRef="EndEvent_Late" />
+    <bpmn:endEvent id="EndEvent_Late" />
+  </bpmn:process>
+</bpmn:definitions>
