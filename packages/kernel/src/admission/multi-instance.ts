@@ -20,6 +20,7 @@ import {
   MultiInstanceCounters,
   MultiInstanceMode,
   SubmissionRule,
+  ValueTag,
   assertNever,
   multiInstanceCounterNames,
   elementEnvelope,
@@ -194,6 +195,33 @@ function unordered(options: ProfileOptions, loop: MultiInstance): boolean {
       return runsAtOnce(loop);
   }
   return assertNever(options.branchSchedule);
+}
+
+/**
+ * The names a loop writes into scope occurrences of its own, which no sibling branch can read: the counters and each
+ * instance's input and output items; only the output collection reaches the enclosing scope.
+ */
+export function loopLocals(loop: MultiInstance): readonly string[] {
+  return [...multiInstanceCounterNames,
+    ...[loop.elementVariable, loop.inputDataItem, loop.inputDataItemName, loop.outputDataItem].filter((name) => name !== null)];
+}
+
+/**
+ * Whether a loop may run no instance, which completes its element in the closure that begins it: anything but a
+ * literal positive cardinality, since a collection may be empty and a computed count zero.
+ */
+export function mayRunNone(loop: MultiInstance): boolean {
+  const count = loop.count;
+  switch (count.tag) {
+    case InstanceCountTag.Cardinality: {
+      const expression = count.count;
+      return !(expression.tag === ExpressionTag.Literal && expression.value.tag === ValueTag.Int && expression.value.value > 0);
+    }
+    case InstanceCountTag.Collection:
+    case InstanceCountTag.CountAndCollection:
+      return true;
+  }
+  return assertNever(count);
 }
 
 /**

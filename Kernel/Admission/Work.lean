@@ -22,7 +22,9 @@ Task's only where `readsOwnScope` holds; a decision task's, since `Kernel.Featur
 result and maps its outputs, PC-AUTO-08), whether it may be a compensation subject (a User Task, Service Task or
 Call Activity, single or Multi-Instance, whose body's completion retains one record, §13.5.5), what one
 Multi-Instance instance submits (`instanceBody`), whether an occurrence no token began may do it
-(`beginsWithoutToken`), the names CIB installs from it (`declaredNames`) and the delegate token it binds. -/
+(`beginsWithoutToken`), the names CIB installs from it (`declaredNames`), whether its run may raise an Error or
+Escalation in the closure that completes it (an effect's business failure, a called instance's raise), which
+`Kernel.Admission.Flow`'s closure walk follows, and the delegate token it binds. -/
 structure Traits where
   mapsData : Bool := false
   plainTask : Bool := false
@@ -30,6 +32,7 @@ structure Traits where
   instanceBody : Option Bool := none
   beginsWithoutToken : Bool := false
   names : List String := []
+  raises : Bool := false
   handlerKey : Option String := none
 
 /-- The targets of the mappings CIB itself performs: every one except a BPMN Data Association, which it never runs. -/
@@ -47,12 +50,12 @@ def traits : Work → Traits
       names := task.formFields.map (·.1) }
   | .receive _ => { instanceBody := some false }
   | .service work =>
-    { mapsData := true, compensable := true, instanceBody := some false, beginsWithoutToken := true
+    { mapsData := true, compensable := true, instanceBody := some false, beginsWithoutToken := true, raises := true
       handlerKey := work.handlerKey }
-  | .send work => { handlerKey := work.handlerKey }
+  | .send work => { raises := true, handlerKey := work.handlerKey }
   | .script work => { names := work.resultVariable.toList }
   | .rule work => { mapsData := true, names := work.resultVariable.toList }
-  | .call work => { compensable := true, names := writtenTargets (work.inputs ++ work.outputs) }
+  | .call work => { compensable := true, raises := true, names := writtenTargets (work.inputs ++ work.outputs) }
 
 /-- The work one instance of a Multi-Instance Activity may do: `some submits`, where `submits` says whether its
 completion submits the loop's output data item, or `none` for work no instance may do. -/

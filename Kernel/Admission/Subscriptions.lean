@@ -324,29 +324,35 @@ def boundary (options : ProfileOptions) (reading : Reading) (host : Host) (seen 
         else none)
       .ok { seen with cancel := true }
 
+/-- What a catcher's trigger is read for outside its admission: whether it catches a raised Error, Escalation or Cancel,
+whether that is Cancel, whether it starts a Compensation Event Sub-Process, and the variables its catch writes besides
+its output mappings, an Error's code and message and an Escalation's code (CIB-EXT-0028). -/
+structure CatchView where
+  raised : Bool := false
+  cancel : Bool := false
+  compensation : Bool := false
+  variables : List String := []
+
+def catchView (subscription : Subscription) : CatchView :=
+  match subscription.trigger with
+  | .error trigger => { raised := true, variables := trigger.codeVariable.toList ++ trigger.messageVariable.toList }
+  | .escalation trigger => { raised := true, variables := trigger.codeVariable.toList }
+  | .cancel => { raised := true, cancel := true }
+  | .compensation => { compensation := true }
+  | .timer _ => {}
+  | .message _ => {}
+  | .signal _ => {}
+  | .condition _ => {}
+
 /-- Whether a boundary catches Cancel. -/
-def cancels (boundary : Boundary) : Bool :=
-  match boundary.subscription.trigger with
-  | .cancel => true
-  | .timer _ => false
-  | .message _ => false
-  | .signal _ => false
-  | .condition _ => false
-  | .error _ => false
-  | .escalation _ => false
-  | .compensation => false
+def cancels (boundary : Boundary) : Bool := (catchView boundary.subscription).cancel
 
 /-- Whether a subscription catches Compensation: the start of a Compensation Event Sub-Process. -/
-def compensates (subscription : Subscription) : Bool :=
-  match subscription.trigger with
-  | .compensation => true
-  | .timer _ => false
-  | .message _ => false
-  | .signal _ => false
-  | .condition _ => false
-  | .error _ => false
-  | .escalation _ => false
-  | .cancel => false
+def compensates (subscription : Subscription) : Bool := (catchView subscription).compensation
+
+/-- The names a catch writes when it fires: its output mappings' targets and its trigger's variables. -/
+def writes (subscription : Subscription) : List String :=
+  subscription.outputs.map (·.target) ++ (catchView subscription).variables
 
 def boundaries (options : ProfileOptions) (reading : Reading) (host : Host) (list : List Boundary) :
     Option String :=

@@ -32,11 +32,14 @@ export {
   stimulusFromJson,
   type TimerFiring,
 } from "./il/codec/stimulus.js";
-export { admit, admitLocated, type AdmissionRefusal } from "./admission-registry.js";
+export { admit, admitLocated, closureReach, type AdmissionRefusal } from "./admission-registry.js";
+export { VisitTag, conditionalCatches, type Closure, type Visit } from "./admission/flow.js";
 export { hooks } from "./registry.js";
 export { step } from "./step.js";
 export { definitionCapabilities, hostRequirements, hostView, refusesSignalVariables, rootStarts } from "./host.js";
-export { WorkTag, elementActivity, elementHeader } from "./il/types.js";
+export {
+  ScopeKindTag, WorkTag, elementActivity, elementHeader, elementScope, programBoundary, programElement, programTarget,
+} from "./il/types.js";
 export type { Program, Value } from "./il/types.js";
 export {
   DeliveryTriggerTag, EffectOutcomeTag, FailureTag, InputTag, SignalAddressTag, SignalReach, StartTriggerTag,

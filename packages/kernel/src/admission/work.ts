@@ -53,20 +53,24 @@ import * as Decision from "./work/decision.js";
  * maps its outputs, PC-AUTO-08), whether it may be a compensation subject (a User Task, Service Task or Call Activity,
  * single or Multi-Instance, whose body's completion retains one record, §13.5.5), what one
  * Multi-Instance instance submits (`instanceBody`), whether an occurrence no token began may do it
- * (`beginsWithoutToken`), the names CIB installs from it (`declaredNames`) and the delegate token it binds.
+ * (`beginsWithoutToken`), the names CIB installs from it (`declaredNames`), whether its run may raise an Error or
+ * Escalation in the closure that completes it (an effect's business failure, a called instance's raise), which
+ * `admission/flow.ts`'s closure walk follows, and the delegate token it binds.
  */
-interface Traits {
+export interface Traits {
   readonly mapsData: boolean;
   readonly plainTask: boolean;
   readonly compensable: boolean;
   readonly instanceBody: boolean | null;
   readonly beginsWithoutToken: boolean;
   readonly names: readonly string[];
+  readonly raises: boolean;
   readonly handlerKey: string | null;
 }
 
 const noTraits: Traits = {
-  mapsData: false, plainTask: false, compensable: false, instanceBody: null, beginsWithoutToken: false, names: [], handlerKey: null,
+  mapsData: false, plainTask: false, compensable: false, instanceBody: null, beginsWithoutToken: false, names: [], raises: false,
+  handlerKey: null,
 };
 
 /** The targets of the mappings CIB itself performs: every one except a BPMN Data Association, which it never runs. */
@@ -78,7 +82,7 @@ const writtenTargets = (mappings: readonly Mapping[]): string[] =>
  * Multi-Instance Activity has no mappings (PC-MI-02); a Receive Task's delivery carries no payload (PC-HUM-06). The
  * Multi-Instance shape itself is admitted by `admission/multi-instance.ts`.
  */
-function traits(work: Work): Traits {
+export function traits(work: Work): Traits {
   switch (work.tag) {
     case WorkTag.None:
       return { ...noTraits, plainTask: true, beginsWithoutToken: true };
@@ -90,16 +94,16 @@ function traits(work: Work): Traits {
     case WorkTag.Receive:
       return { ...noTraits, instanceBody: false };
     case WorkTag.Service:
-      return { ...noTraits, mapsData: true, compensable: true, instanceBody: false, beginsWithoutToken: true,
+      return { ...noTraits, mapsData: true, compensable: true, instanceBody: false, beginsWithoutToken: true, raises: true,
         handlerKey: work.payload.handlerKey };
     case WorkTag.Send:
-      return { ...noTraits, handlerKey: work.payload.handlerKey };
+      return { ...noTraits, raises: true, handlerKey: work.payload.handlerKey };
     case WorkTag.Script:
       return { ...noTraits, names: work.payload.resultVariable === null ? [] : [work.payload.resultVariable] };
     case WorkTag.Rule:
       return { ...noTraits, mapsData: true, names: work.payload.resultVariable === null ? [] : [work.payload.resultVariable] };
     case WorkTag.Call:
-      return { ...noTraits, compensable: true, names: writtenTargets([...work.payload.inputs, ...work.payload.outputs]) };
+      return { ...noTraits, compensable: true, raises: true, names: writtenTargets([...work.payload.inputs, ...work.payload.outputs]) };
   }
   return assertNever(work);
 }

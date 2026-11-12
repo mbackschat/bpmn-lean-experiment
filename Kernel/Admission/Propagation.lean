@@ -1,6 +1,7 @@
 module
 
 public import Kernel.IL.Types
+public import Kernel.IL.Footprint
 
 /-! # Admission of throw Events. A refusal carries a stable code. -/
 
@@ -87,28 +88,47 @@ inductive CancelSite where
   | uncaught
   | caught
 
+/-- What a throw is read for besides its refusal: whether its raise may reach a catcher (an Error, Escalation or Cancel,
+or a bound Message throw, whose effect may fail with a business Error), whether it begins compensation handlers (a
+Compensation throw, or a Cancel End, which compensates its Transaction, §10.3.5), and the names its receivers install,
+a Signal's `camunda:in` targets or every name (CIB-EXT-0043), which `Kernel.Admission.Flow`'s closure walk counts. -/
+structure Thrown where
+  refusal : Option String := none
+  raises : Bool := false
+  compensates : Bool := false
+  installs : NameSet := {}
+
 /-- `cancelSite` says where the throw sits: a Cancel End is used only within a Transaction Sub-Process (BPMN 2.0.2
 §10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere), whose Cancel boundary directs the flow
 after the cancellation (§10.3.5); CIB deploys one without the boundary and rolls back the command that reaches it
 (CIB-LIM-0043) (PC-TX-02). -/
-def throwRecord (options : ProfileOptions) (site : ThrowSite) (cancelSite : CancelSite) : Throw → Option String
-  | .none => none
+def throwReading (options : ProfileOptions) (site : ThrowSite) (cancelSite : CancelSite) : Throw → Thrown
+  | .none => {}
   | .error record =>
-    match record.message with
-    | some (.expression _) => some "throw.error.message"
-    | some (.literal _) => none
-    | none => none
-  | .escalation _ => none
-  | .terminate => none
-  | .message record => messageThrow options site record
-  | .signal record => signalThrow options site record
+    { raises := true
+      refusal := match record.message with
+        | some (.expression _) => some "throw.error.message"
+        | some (.literal _) => none
+        | none => none }
+  | .escalation _ => { raises := true }
+  | .terminate => {}
+  | .message record => { refusal := messageThrow options site record, raises := record.binding.isSome }
+  | .signal record =>
+    { refusal := signalThrow options site record
+      installs := { names := record.payload.map (·.target), all := record.propagateAll.isSome } }
   | .compensation record =>
-    (record.activity.bind fun target => compensationReference options (site.reference target)) <|>
-      if !record.waitForCompletion then some "throw.compensation.asynchronous" else none
+    { compensates := true
+      refusal := (record.activity.bind fun target => compensationReference options (site.reference target)) <|>
+        if !record.waitForCompletion then some "throw.compensation.asynchronous" else none }
   | .cancel =>
-    match cancelSite with
-    | .outside => some "throw.cancel.outsideTransaction"
-    | .uncaught => some "throw.cancel.uncaught"
-    | .caught => none
+    { raises := true, compensates := true
+      refusal := match cancelSite with
+        | .outside => some "throw.cancel.outsideTransaction"
+        | .uncaught => some "throw.cancel.uncaught"
+        | .caught => none }
+
+def throwRecord (options : ProfileOptions) (site : ThrowSite) (cancelSite : CancelSite) (record : Throw) :
+    Option String :=
+  (throwReading options site cancelSite record).refusal
 
 end Kernel.Admission.Propagation

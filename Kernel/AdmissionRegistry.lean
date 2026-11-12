@@ -285,11 +285,41 @@ def loopedHandler (program : Program) : Bool :=
     element.activity?.any fun (_, payload) =>
       payload.envelope.multiInstance.isSome && !payload.envelope.compensationHandlers.isEmpty
 
+/-- What `Admission.Flow`'s closure walk reads beyond the IL, each part from its owner: a work's result names and whether
+it may raise (`Admission.Work.traits`), a catch's writes and whether it catches a raise or starts compensation
+(`Admission.Subscriptions`), what a Signal throw's receivers install and whether a throw raises or begins compensation
+handlers (`Admission.Propagation.throwReading`), and a loop's output collection, its own names and whether it may run no
+instance (`Admission.MultiInstance`). -/
+def reading (program : Program) : Admission.Flow.Reading :=
+  let thrownOf (element : Element) : Option Admission.Propagation.Thrown :=
+    element.event?.bind fun (_, payload) => payload.throw?.map (Admission.Propagation.throwReading program.options {} .caught)
+  let caught (element : Element) : List Subscription :=
+    (element.event?.bind (·.2.catch?)).toList ++ (element.start?.bind (·.2.subscription)).toList ++
+      ((element.scope?).bind fun (_, payload) => payload.kind.start?).toList
+  let traits (element : Element) : Option Admission.Work.Traits :=
+    element.activity?.map fun (_, payload) => Admission.Work.traits payload.work
+  let loop (element : Element) : Option MultiInstance := element.envelope?.bind (·.multiInstance)
+  { writes := fun element =>
+      ({ names := ((traits element).map (·.names)).getD [] ++ (caught element).flatMap Admission.Subscriptions.writes ++
+          ((loop element).bind (·.outputCollection)).toList } : NameSet).union (((thrownOf element).map (·.installs)).getD {})
+    locals := fun element => ((loop element).map Admission.MultiInstance.loopLocals).getD []
+    fires := fun boundary => Admission.Subscriptions.writes boundary.subscription
+    raises := fun element => (traits element).any (·.raises) || (thrownOf element).any (·.raises)
+    catchesRaise := fun subscription => (Admission.Subscriptions.catchView subscription).raised
+    compensates := fun element => (thrownOf element).any (·.compensates)
+    compensationStart := Admission.Subscriptions.compensates
+    mayRunNone := fun element => (loop element).any Admission.MultiInstance.mayRunNone }
+
+/-- What one closure from `begun` may reach and write, ascending out of Scopes and called processes: the walk every
+closure of a run is held to by the closure law (`packages/differential/test/closure-reach.integration-test.ts`). -/
+def closureReach (program : Program) (begun : List Admission.Flow.Visit) : Admission.Flow.Closure :=
+  Admission.Flow.closureWalk (reading program) program { stop := Admission.Flow.awaitsStimulus, ascends := true } begun
+
 /-- Whether a looping element's instances race one another where they begin: the closure is
 `Admission.Flow`'s, the loop's mode and condition `Admission.MultiInstance`'s. -/
 def loopInstances (program : Program) (element : Element) : Option String :=
   (element.envelope?.bind (·.multiInstance)).bind fun loop =>
-    let closure := Admission.Flow.instanceClosure program element
+    let closure := Admission.Flow.instanceClosure (reading program) program element
     Admission.MultiInstance.concurrentInstances program.options loop closure.races closure.completes
 
 /-- A flow's condition, evaluated in its source's enclosing scope, then where it may sit, then whether its branch races
@@ -297,7 +327,7 @@ a sibling's write. -/
 def flow (program : Program) (entry : Flow) : Option String :=
   let here := site program ((program.element? entry.source).bind (·.header.parent))
   Admission.Data.flowCondition program.options.evaluator here entry <|> Admission.Flow.conditionalOutflow program entry <|>
-    Admission.Flow.concurrentWrite program entry
+    Admission.Flow.concurrentWrite (reading program) program entry
 
 /-- A called process's deployment, version and version tag are the population's stamps, which `Population.deploy`
 validates against its registry (PC-SCOPE-03); the population has one tenant, so a tenant stays refused

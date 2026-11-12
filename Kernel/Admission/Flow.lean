@@ -173,55 +173,259 @@ def enteredChildren (program : Program) (id : ElementId) : List Element :=
   let children := program.children (some id)
   if children.any (·.start?.isSome) then children.filter (·.start?.isSome) else children.filter program.beginsImplicitly
 
-/-- The elements a token reaches next from `element` in the same closure: its outgoing flows' targets, a throwing
-Link's catch's, and a Scope's `enteredChildren`. -/
-def onward (program : Program) (element : Element) : List Element :=
+/-- What a closure walk reads of an element beyond the IL, filled by `Kernel.AdmissionRegistry.reading` from the
+admissions that own each part, since this module matches none of `Trigger`, `Throw` or `Work`. -/
+structure Reading where
+  /-- What an element writes when it runs through its closure, beyond its envelope's outputs and a Call's: its work's
+  result, its catch's outputs and variables, what its Signal's receivers install and a loop's output collection. -/
+  writes : Element → NameSet := fun _ => {}
+  /-- The names a looping element writes into scope occurrences of its own, which no sibling branch can read: its
+  counters and each instance's items. -/
+  locals : Element → List String := fun _ => []
+  /-- What a boundary writes when it fires: its outputs and catch variables. -/
+  fires : Boundary → List String := fun _ => []
+  /-- Whether an element's run may raise an Error, Escalation or Cancel in its closure. -/
+  raises : Element → Bool := fun _ => false
+  /-- Whether a subscription catches a raised Error, Escalation or Cancel. -/
+  catchesRaise : Subscription → Bool := fun _ => false
+  /-- Whether an element begins compensation handlers: a Compensation throw or a Cancel End. -/
+  compensates : Element → Bool := fun _ => false
+  /-- Whether a subscription starts a Compensation Event Sub-Process. -/
+  compensationStart : Subscription → Bool := fun _ => false
+  /-- Whether a looping element may run no instance, which completes it in the closure that begins it. -/
+  mayRunNone : Element → Bool := fun _ => false
+
+/-- One step of a closure walk: an element a token begins, one that completes, a boundary that fires, or an element a
+raise passes, which writes its outputs (`interruptedOutputs`, a Call's raised outputs) and goes no further. -/
+inductive Visit where
+  | enters (element : Element)
+  | completes (element : Element)
+  | fires (boundary : Boundary)
+  | passes (element : Element)
+
+/-- What a walk found: the footprint of the shared names, whether a token may end, every element and boundary it
+reached (walked through, stopped at or fired), and the names written into scope occurrences of their own. -/
+structure Closure where
+  footprint : Footprint := {}
+  ends : Bool := false
+  reached : List ElementId := []
+  locals : List String := []
+
+/-- The elements enclosing `element`, innermost first. -/
+def ancestors (program : Program) : Nat → Option ElementId → List Element
+  | 0, _ => []
+  | _, none => []
+  | fuel + 1, some id =>
+    match program.element? id with
+    | some element => element :: ancestors program fuel element.header.parent
+    | none => []
+
+/-- The Event Sub-Processes among `level` whose start `starts` takes. -/
+def startingSubProcesses (level : List Element) (starts : Subscription → Bool) : List Element :=
+  level.filter fun element => ((element.scope?).bind fun (_, payload) => payload.kind.start?).any starts
+
+/-- The Call Activities whose called process is `process`. -/
+def callers (program : Program) (process : CalledProcess) : List Element :=
+  program.elements.filter fun element =>
+    (element.activity?.bind fun (_, payload) => payload.work.call?).any fun work =>
+      (program.calledProcessFor program.options.calledElementResolution (program.callerDeployment element.header) work).any
+        (·.definition == process.definition)
+
+/-- Where a raise from `element` may be caught: a boundary of the element itself, if it is an Activity or Scope, or of
+an enclosing one, whose host it interrupts and passes, an Event Sub-Process of an enclosing Scope or of the process
+level, and from a called process's level a Call's catchers in its caller. Any raised kind and code counts. -/
+def catchers (reading : Reading) (program : Program) : Nat → Element → List Visit
+  | 0, _ => []
+  | fuel + 1, element =>
+    let chain := (if element.envelope?.isSome then [element] else []) ++
+      ancestors program program.elements.length element.header.parent
+    let atHost (host : Element) : List Visit :=
+      (((host.envelope?.map (·.boundaries)).getD []).filter (reading.catchesRaise ·.subscription)).flatMap
+          (fun boundary => [Visit.fires boundary, Visit.passes host]) ++
+        ((host.scope?).map fun (header, _) =>
+          (startingSubProcesses (program.children (some header.id)) reading.catchesRaise).map Visit.enters).getD []
+    let top := (chain.getLast?).getD element
+    let level := (startingSubProcesses (program.siblings top.header) reading.catchesRaise).map Visit.enters
+    let caller := ((program.processOf top.header).map fun process =>
+      (callers program process).flatMap fun call => Visit.passes call :: catchers reading program fuel call).getD []
+    chain.flatMap atHost ++ level ++ caller
+
+/-- Whether an element is a compensation handler: an Activity or Scope marked `isForCompensation`, or a Compensation
+Event Sub-Process. -/
+def handler (reading : Reading) (element : Element) : Bool :=
+  (element.envelope?.any (·.forCompensation)) ||
+    ((element.scope?).bind fun (_, payload) => payload.kind.start?).any reading.compensationStart
+
+/-- Every element declared in `level` and the Scopes it holds. -/
+def declaredIn (program : Program) : Nat → List Element → List Element
+  | 0, _ => []
+  | fuel + 1, level => level.flatMap fun element =>
+    element :: ((element.scope?).map fun (header, _) => declaredIn program fuel (program.children (some header.id))).getD []
+
+/-- The handlers a Compensation throw or Cancel End may begin: every handler declared under the nearest Scope enclosing
+it that is no Event Sub-Process, or under its process level. Which records it finds is the run's; any may be there. -/
+def handlersOf (reading : Reading) (program : Program) (thrower : Element) : List Element :=
+  let enclosing := (ancestors program program.elements.length thrower.header.parent).find? fun scope =>
+    !((scope.scope?).bind fun (_, payload) => payload.kind.start?).isSome
+  let level := match enclosing with
+    | some scope => program.children (some scope.header.id)
+    | none => program.siblings ((ancestors program program.elements.length thrower.header.parent).getLast?.getD thrower).header
+  (declaredIn program program.elements.length level).filter (handler reading)
+
+/-- The subscriptions a Signal or Conditional catch, boundary or Event Sub-Process start of `element` holds, as visits:
+a catch completes, a boundary fires, an Event Sub-Process begins. -/
+def catching (picks : Subscription → Bool) (element : Element) : List Visit :=
+  let caught := ((element.event?.bind (·.2.catch?)).filter picks).map fun _ => Visit.completes element
+  let attached := ((element.envelope?.map (·.boundaries)).getD []).filter (picks ·.subscription) |>.map Visit.fires
+  let started := (((element.scope?).bind fun (_, payload) => payload.kind.start?).filter picks).map fun _ =>
+    Visit.enters element
+  caught.toList ++ attached ++ started.toList
+
+def signalled (subscription : Subscription) : Bool := (triggerView subscription.trigger).signal.isSome
+def conditional (subscription : Subscription) : Bool := subscription.trigger.condition?.isSome
+
+/-- Every Conditional catch, boundary and Event Sub-Process start of the program, which a write may resume. -/
+def conditionalCatches (program : Program) : List Visit := program.elements.flatMap (catching conditional)
+
+/-- The visits a token's leaving `element` makes in the same closure beside its flows: the catchers of its raise, the
+handlers its Compensation throw or Cancel End begins and, when it is a handler that completes, the other handlers of
+every trigger that may begin it and that trigger's continuation; and every Signal catch a Signal throw resumes in the
+instance (CIB-OP-0019). -/
+def beyond (reading : Reading) (program : Program) (element : Element) (completes : Bool) : List Visit :=
+  let raised := if reading.raises element then catchers reading program (program.elements.length + 1) element else []
+  let compensated := if reading.compensates element then (handlersOf reading program element).map Visit.enters else []
+  let continued := if completes && handler reading element then
+      (program.elements.filter fun thrower => reading.compensates thrower &&
+        (handlersOf reading program thrower).any (·.header.id == element.header.id)).flatMap fun thrower =>
+        (handlersOf reading program thrower).map Visit.enters ++ [Visit.completes thrower]
+    else []
+  let signals := if ((element.event?.bind (·.2.throw?)).any fun thrown => (throwView thrown).signal.isSome) then
+      program.elements.flatMap (catching signalled)
+    else []
+  raised ++ compensated ++ continued ++ signals
+
+/-- The elements `element`'s outgoing flows and throwing Link lead to. -/
+def continuing (program : Program) (element : Element) : List Element :=
   let link := (element.event?.bind fun (header, payload) => payload.linkThrow?.map (header, ·)).map fun (header, name) =>
     (program.siblings header).flatMap fun other =>
       if (other.event?.bind (·.2.linkCatch?)) == some name then other.outgoing else []
-  let entered := element.scope?.map fun (header, _) => enteredChildren program header.id
-  flowTargets program (element.outgoing ++ link.getD []) ++ entered.getD []
+  flowTargets program (element.outgoing ++ link.getD [])
 
-/-- What the work beginning at `begun` reaches may read and write in one closure, where an element `stop` names only
-begins, and whether a token may end there: reach an element that neither stops nor continues. -/
-def closureWalk (program : Program) (stop : Element → Bool) (begun : List Element) : Footprint × Bool :=
-  let rec go (fuel : Nat) (frontier : List Element) (seen : List ElementId) (found : Footprint) (ends : Bool) :
-      Footprint × Bool :=
+/-- How a walk proceeds: `stop` names the elements that only begin, and `ascends` whether a token ending in a Scope may
+complete it, a called process's end its Calls, and a looping element's instance begin the next. A branch walk does not
+ascend: completing the Scope that holds the split waits for every branch. -/
+structure Walk where
+  stop : Element → Bool
+  ascends : Bool
+
+/-- The visits after `element` completes: its flows and Link, and under `ascends` its parent's completion or, at a
+called process's level, its Calls'; a handler completes no parent. -/
+def after (reading : Reading) (program : Program) (walk : Walk) (element : Element) : List Visit :=
+  let next := (continuing program element).map Visit.enters
+  let ascent := if walk.ascends && next.isEmpty && !handler reading element then
+      match element.header.parent with
+      | some parent => ((program.element? parent).map Visit.completes).toList
+      | none => ((program.processOf element.header).map fun process => (callers program process).map Visit.completes).getD []
+    else []
+  next ++ ascent ++ beyond reading program element true
+
+/-- The visits beginning `element` makes: a Scope's entered children and, as before it completes, its flows; a loop
+that may run no instance completes at once; a Conditional boundary, an Event Sub-Process Conditional start and an
+Event-Based Gateway's Conditional arm may fire on entry. -/
+def entering (reading : Reading) (program : Program) (element : Element) : List Visit :=
+  let conditions := ((element.envelope?.map (·.boundaries)).getD []).filter (conditional ·.subscription) |>.map Visit.fires
+  let arms := if (element.gateway?.any fun (_, payload) => (routing payload).waits) then
+      (flowTargets program element.outgoing).flatMap fun arm =>
+        if (arm.event?.bind (·.2.catch?)).any conditional then [Visit.completes arm] else []
+    else []
+  let nested := ((element.scope?).map fun (header, _) =>
+    (enteredChildren program header.id).map Visit.enters ++
+      (startingSubProcesses (program.children (some header.id)) conditional).map Visit.enters).getD []
+  conditions ++ arms ++ nested ++ (if reading.mayRunNone element then [Visit.completes element] else [])
+
+/-- Whether a stop runs through anyway: a loop that may run no instance, or a Conditional catch whose condition may hold
+on arrival. -/
+def runsThrough (reading : Reading) (element : Element) : Bool :=
+  reading.mayRunNone element || (element.event?.bind (·.2.catch?)).any conditional
+
+/-- What `element` contributes when it runs: its reads, and its shared and own writes. -/
+def runs (reading : Reading) (program : Program) (element : Element) : Footprint × List String :=
+  ({ reads := (footprint program element).reads, writes := (footprint program element).writes.union (reading.writes element) },
+   reading.locals element)
+
+/-- Walk one closure from `begun`. Every element, boundary and passed host is taken at most once per kind of visit; a
+write arms every Conditional of the program once, since it may resume one in the same closure (CIB-EXT-0035). -/
+def closureWalk (reading : Reading) (program : Program) (walk : Walk) (begun : List Visit) : Closure :=
+  let key : Visit → Nat × ElementId
+    | .enters element => (0, element.header.id)
+    | .completes element => (1, element.header.id)
+    | .fires boundary => (2, boundary.id)
+    | .passes element => (3, element.header.id)
+  let rec go (fuel : Nat) (frontier : List Visit) (seen : List (Nat × ElementId)) (found : Closure) (armed : Bool) :
+      Closure :=
     match fuel, frontier with
-    | _, [] => (found, ends)
-    -- The fuel bounds every visit of every element, so it is never exhausted; running out answers what was found.
-    | 0, _ :: _ => (found, ends)
-    | fuel + 1, element :: rest =>
-      let id := element.header.id
-      if seen.contains id then go fuel rest seen found ends
-      else if stop element then go fuel rest (id :: seen) (found.union { reads := beginReads element }) ends
+    | _, [] => found
+    -- The fuel bounds every visit and every visit's successors, so it is never exhausted; running out answers what was
+    -- found.
+    | 0, _ :: _ => found
+    | fuel + 1, visit :: rest =>
+      if seen.contains (key visit) then go fuel rest seen found armed
       else
-        let next := onward program element
-        go fuel (rest ++ next) (id :: seen) (found.union (footprint program element)) (ends || next.isEmpty)
-  let size := program.elements.length + program.flows.length + 1
-  go (size * size) begun [] {} false
+        let seen := key visit :: seen
+        let reach (id : ElementId) (found : Closure) : Closure := { found with reached := id :: found.reached }
+        let add (part : Footprint × List String) (found : Closure) : Closure :=
+          { found with footprint := found.footprint.union part.1, locals := part.2 ++ found.locals }
+        let (found, next) : Closure × List Visit := match visit with
+          | .fires boundary =>
+            (add ({ writes := { names := reading.fires boundary } }, []) (reach boundary.id found),
+              (flowTargets program boundary.outgoing).map Visit.enters)
+          | .passes element =>
+            (add ({ reads := (footprint program element).reads,
+                    writes := (footprint program element).writes.union (reading.writes element) }, [])
+              (reach element.header.id found), [])
+          | .completes element => (add (runs reading program element) (reach element.header.id found),
+              after reading program walk element ++
+                if walk.ascends && (element.envelope?.bind (·.multiInstance)).isSome then [Visit.enters element] else [])
+          | .enters element =>
+            let found := reach element.header.id found
+            if walk.stop element && !runsThrough reading element then
+              ({ found with footprint := found.footprint.union { reads := beginReads element } },
+                entering reading program element)
+            else
+              let onward := continuing program element ++
+                ((element.scope?).map fun (header, _) => enteredChildren program header.id).getD []
+              ({ add (runs reading program element) found with ends := found.ends || onward.isEmpty },
+                entering reading program element ++ after reading program walk element)
+        let arms := !armed && (!found.footprint.writes.names.isEmpty || found.footprint.writes.all)
+        let next := if arms then next ++ conditionalCatches program else next
+        go fuel (rest ++ next) seen found (armed || arms)
+  let boundaries := program.elements.foldl (fun count element => count + ((element.envelope?.map (·.boundaries.length)).getD 0)) 0
+  let size := program.elements.length + program.flows.length + boundaries + 1
+  go (4 * size * size) begun [] {} false
 
 /-- What the work a token on `start` reaches may read and write in one closure; an element it stops at only begins. -/
-def branchFootprint (program : Program) (start : FlowId) : Footprint :=
-  (closureWalk program branchStop (flowTargets program [start])).1
+def branchFootprint (reading : Reading) (program : Program) (start : FlowId) : Footprint :=
+  (closureWalk reading program { stop := branchStop, ascends := false } ((flowTargets program [start]).map Visit.enters)).footprint
 
 /-- Under `BranchSchedule.orderInvariant`, no branch of a split may write a name another branch reads or writes in the
 same closure: BPMN 2.0.2 lets concurrent branches interleave in any order (Table 13.1, §13.3.1), so the value left or
 read would depend on the closure's order, which no input states. CIB runs the first-declared branch first
 (CIB-OP-0016), the profile option `declarationDepthFirst` (PC-BASIC-03). A split is a Parallel or Inclusive Gateway,
 or any element or Boundary Event with several outgoing flows. A forward-compatible restriction, and a conservative one:
-a Call's output mappings count as written in the closure even when the called instance waits, and a JUEL text as
-reading every name; a later profile may take the interleaving as a choice input instead. Not counted: what an element
-it stops at evaluates besides its input mappings and Multi-Instance definition. -/
-def concurrentWrite (program : Program) (flow : Flow) : Option String :=
+a branch counts what its elements write (`Reading.writes`), what the catchers, handlers and Signal and Conditional catches
+it may resume in the closure do, and a loop that may run no instance as completing (issue #99); a Call's output
+mappings count as written even when the called instance waits, and a JUEL text as reading every name; a later profile
+may take the interleaving as a choice input instead. Not counted: what an element it stops at evaluates besides its
+input mappings and Multi-Instance definition. -/
+def concurrentWrite (reading : Reading) (program : Program) (flow : Flow) : Option String :=
   match program.options.branchSchedule with
   | .declarationDepthFirst => none
   | .orderInvariant =>
     let siblings := leaving program flow.source
     let concurrent := ((program.element? flow.source).bind (·.gateway?)).all fun (_, payload) =>
       (routing payload).concurrent
-    let own := branchFootprint program flow.id
-    if concurrent && siblings.any fun other => other != flow.id && own.races (branchFootprint program other) then
+    let own := branchFootprint reading program flow.id
+    if concurrent && siblings.any fun other => other != flow.id && own.races (branchFootprint reading program other) then
       some "flow.concurrentWrite"
     else none
 
@@ -237,10 +441,16 @@ structure InstanceClosure where
 reach in that closure; a task instance is its work, which completes at once unless it awaits a stimulus. `completes`
 over-approximates: a token reaching an element that neither waits nor continues, ignoring that a sibling branch of a
 Parallel split may wait, which flows a condition selects and whether a nested Call waits. -/
-def instanceClosure (program : Program) (element : Element) : InstanceClosure :=
-  let (own, completes) := match element.scope? with
-    | some (header, _) => closureWalk program awaitsStimulus (enteredChildren program header.id)
-    | none => if awaitsStimulus element then ({}, false) else (footprint program element, true)
+def instanceClosure (reading : Reading) (program : Program) (element : Element) : InstanceClosure :=
+  let (own, completes) : Footprint × Bool := match element.scope? with
+    | some (header, _) =>
+      let closure := closureWalk reading program { stop := awaitsStimulus, ascends := false }
+        ((enteredChildren program header.id).map Visit.enters)
+      (closure.footprint, closure.ends)
+    | none =>
+      if awaitsStimulus element then ({}, false)
+      else ({ reads := (footprint program element).reads,
+              writes := (footprint program element).writes.union (reading.writes element) }, true)
   { races := own.races own, completes }
 
 /-- Pinned CIB parses one initial start per process, a None or Timer Start (`BpmnParse#selectInitial`), and one start

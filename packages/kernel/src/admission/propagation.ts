@@ -4,6 +4,7 @@ import {
   type ElementId, type Expression,
   type Mapping, type MessageThrow, type ProfileOptions, type QName, type SignalThrow, type Throw, type ValueSource,
 } from "../il/types.js";
+import { noNames, type NameSet } from "../il/footprint.js";
 
 /**
  * Where a Compensation throw's `activityRef` names an element: at the throw's own level or, from inside a Compensation
@@ -131,30 +132,45 @@ function cancelRecord(cancelSite: CancelSite): string | null {
 }
 
 /**
+ * What a throw is read for besides its refusal: whether its raise may reach a catcher (an Error, Escalation or Cancel,
+ * or a bound Message throw, whose effect may fail with a business Error), whether it begins compensation handlers (a
+ * Compensation throw, or a Cancel End, which compensates its Transaction, §10.3.5), and the names its receivers install,
+ * a Signal's `camunda:in` targets or every name (CIB-EXT-0043), which `admission/flow.ts`'s closure walk counts.
+ */
+export type Thrown = Readonly<{ refusal: string | null; raises: boolean; compensates: boolean; installs: NameSet }>;
+
+const nothingThrown: Thrown = { refusal: null, raises: false, compensates: false, installs: noNames };
+
+/**
  * `cancelSite` says where the throw sits: a Cancel End is used only within a Transaction Sub-Process (BPMN 2.0.2
  * §10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere), whose Cancel boundary directs the flow
  * after the cancellation (§10.3.5); CIB deploys one without the boundary and rolls back the command that reaches it
  * (CIB-LIM-0043) (PC-TX-02).
  */
-export function throwRecord(options: ProfileOptions, site: ThrowSite, cancelSite: CancelSite, thrown: Throw): string | null {
-  switch (thrown.tag) {
+export function throwReading(options: ProfileOptions, site: ThrowSite, cancelSite: CancelSite, record: Throw): Thrown {
+  switch (record.tag) {
     case ThrowTag.None:
-    case ThrowTag.Escalation:
     case ThrowTag.Terminate:
-      return null;
+      return nothingThrown;
+    case ThrowTag.Escalation:
+      return { ...nothingThrown, raises: true };
     case ThrowTag.Cancel:
-      return cancelRecord(cancelSite);
+      return { ...nothingThrown, refusal: cancelRecord(cancelSite), raises: true, compensates: true };
     case ThrowTag.Error:
-      return thrown.payload.message !== null && thrown.payload.message.tag === ValueSourceTag.Expression
-        ? "throw.error.message"
-        : null;
+      return { ...nothingThrown, raises: true,
+        refusal: record.payload.message !== null && record.payload.message.tag === ValueSourceTag.Expression ? "throw.error.message" : null };
     case ThrowTag.Message:
-      return messageThrow(options, site, thrown.payload);
+      return { ...nothingThrown, refusal: messageThrow(options, site, record.payload), raises: record.payload.binding !== null };
     case ThrowTag.Signal:
-      return signalThrow(options, site, thrown.payload);
+      return { ...nothingThrown, refusal: signalThrow(options, site, record.payload),
+        installs: { names: record.payload.payload.map((mapping) => mapping.target), all: record.payload.propagateAll !== null } };
     case ThrowTag.Compensation:
-      return (thrown.payload.activity === null ? null : compensationReference(options, site.reference(thrown.payload.activity))) ??
-        (thrown.payload.waitForCompletion ? null : "throw.compensation.asynchronous");
+      return { ...nothingThrown, compensates: true,
+        refusal: (record.payload.activity === null ? null : compensationReference(options, site.reference(record.payload.activity))) ??
+          (record.payload.waitForCompletion ? null : "throw.compensation.asynchronous") };
   }
-  return assertNever(thrown);
+  return assertNever(record);
 }
+
+export const throwRecord = (options: ProfileOptions, site: ThrowSite, cancelSite: CancelSite, record: Throw): string | null =>
+  throwReading(options, site, cancelSite, record).refusal;

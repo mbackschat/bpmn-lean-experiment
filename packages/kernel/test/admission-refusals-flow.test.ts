@@ -5,9 +5,10 @@
  * Link needs exactly one catching Link of its name.
  */
 import {
-  activity, append, base, mapping, variable, withOptions, catchEvent, conditionOn, duration, end, eventBased, flow, gateway, link, message, receiveWork, refusalOf, refusalTests, replace,
-  scope, simpleBoolean, start, task, text, userWork, withFlows,
+  activity, append, base, mapping, variable, withOptions, catchEvent, conditionOn, duration, end, eventBased, flow, gateway, link, loop, message, receiveWork, refusalOf, refusalTests, replace,
+  ruleWork, scope, simpleBoolean, start, task, text, userWork, withFlows,
 } from "./admission-refusal-support.ts";
+import { grades, resource } from "./decision-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -80,6 +81,26 @@ const racing = (first: string, second: string, read = "source", condition: strin
 /** `racing`'s branch `A` becomes a Sub-Process without a start Event whose plain Task `AW`, begun implicitly, writes `inner`. */
 const racingInside = (inner: string) => (program: Json): Json =>
   append(replace(racing("unused", "x")(program), "A", scope("A", "embedded")), activity("AW", "none", { outputs: [mapping(inner, variable("source"))] }, "A"));
+
+/** `racing`'s branches `A` and `B` become the Activities `first` and `second`. */
+const racingWith = (first: Json, second: Json) => (program: Json): Json =>
+  replace(replace(racing("unused", "unused")(program), "A", first), "B", second);
+
+/** `racingWith` two Business Rule Tasks evaluating the decision `d`, writing their results to `first` and `second`. */
+const racingRules = (first: string, second: string) => (program: Json): Json => ({
+  ...withOptions(racingWith(activity("A", ruleWork({ resultVariable: first })), activity("B", ruleWork({ resultVariable: second })))(program),
+    { undeclaredWrite: "atInstanceRoot", businessRuleTask: "decisionTable" }),
+  decisionResources: [resource([grades("d", "unique")])],
+});
+
+/**
+ * `racingWith` two Multi-Instance User Tasks over the collections `itemsA` and `itemsB`, collecting into `first` and
+ * `second` when named: an empty collection completes the Task in the closure that begins it, writing its output
+ * collection.
+ */
+const racingLoops = (first: string | null, second: string | null) => racingWith(
+  activity("A", userWork(), { multiInstance: loop({ count: { collection: { items: variable("itemsA") } }, outputDataItem: "resultA", outputCollection: first }) }),
+  activity("B", userWork(), { multiInstance: loop({ count: { collection: { items: variable("itemsB") } }, outputDataItem: "resultB", outputCollection: second }) }));
 
 /**
  * `Start -> T (Inclusive split) -> A, B -> J (Inclusive join) -> End`: `a` and `b` leave the split, `ja` and `jb` enter
@@ -203,6 +224,21 @@ export const rows: readonly Row[] = [
     description: "a branch whose Sub-Process begins a Task writing a sibling branch's name implicitly",
     mutate: racingInside("x"),
     control: racingInside("y"),
+  },
+  {
+    // Issue #99: a Business Rule Task writes its result variable in the closure.
+    code: "flow.concurrentWrite",
+    description: "two branches of a Parallel fork whose Business Rule Tasks write one result variable",
+    mutate: racingRules("label", "label"),
+    control: racingRules("labelA", "labelB"),
+  },
+  {
+    // Issue #99: a Multi-Instance Task over an empty collection completes at once and writes its output collection.
+    code: "flow.concurrentWrite",
+    description: "two branches of a Parallel fork whose Multi-Instance User Tasks may run no instance and write one output collection",
+    mutate: racingLoops("Out", "Out"),
+    // A loop's definition reads every name when it begins, so any output collection meets the sibling's reads.
+    control: racingLoops(null, null),
   },
   {
     code: "start.rootCombination",

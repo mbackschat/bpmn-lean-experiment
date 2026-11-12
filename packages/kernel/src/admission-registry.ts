@@ -21,6 +21,7 @@ import {
   programInCalledProcess,
   programSiblings,
   programSource,
+  scopeKindStart,
   throwView,
   triggerMessage,
   workCall,
@@ -54,6 +55,7 @@ import * as Propagation from "./admission/propagation.js";
 import * as Scopes from "./admission/scopes.js";
 import * as Subscriptions from "./admission/subscriptions.js";
 import * as Starts from "./admission/subscriptions/starts.js";
+import { noNames, union } from "./il/footprint.js";
 
 /** Whether an element is some Activity's or Scope's compensation handler. */
 function isHandler(program: Program, id: ElementId): boolean {
@@ -442,6 +444,70 @@ function loopedHandler(program: Program): boolean {
   });
 }
 
+/** A throw site that refuses nothing, for reading what a throw does rather than whether it is admitted. */
+const neutralSite: Propagation.ThrowSite = {
+  signalAddress: () => null,
+  eventsExpression: () => null,
+  mappings: () => null,
+  handlerKey: () => null,
+  reference: () => ({ level: Propagation.ReferenceLevel.Elsewhere, activity: false }),
+};
+
+/**
+ * What `admission/flow.ts`'s closure walk reads beyond the IL, each part from its owner: a work's result names and
+ * whether it may raise (`admission/work.ts` `traits`), a catch's writes and whether it catches a raise or starts
+ * compensation (`admission/subscriptions.ts`), what a Signal throw's receivers install and whether a throw raises or
+ * begins compensation handlers (`admission/propagation.ts` `throwReading`), and a loop's output collection, its own names
+ * and whether it may run no instance (`admission/multi-instance.ts`).
+ */
+function reading(program: Program): FlowAdmission.Reading {
+  const thrownOf = (element: Element): Propagation.Thrown | null => {
+    const event = elementEvent(element);
+    const record = event === null ? null : eventPayloadThrow(event[1]);
+    return record === null ? null : Propagation.throwReading(program.options, neutralSite, Propagation.CancelSite.Caught, record);
+  };
+  const caught = (element: Element): Subscription[] => {
+    const event = elementEvent(element);
+    const start = elementStart(element);
+    const scope = elementScope(element);
+    return [event === null ? null : eventPayloadCatch(event[1]), start === null ? null : start[1].subscription,
+      scope === null ? null : scopeKindStart(scope[1].kind)].filter((subscription) => subscription !== null);
+  };
+  const traits = (element: Element): Work.Traits | null => {
+    const activity = elementActivity(element);
+    return activity === null ? null : Work.traits(activity[1].work);
+  };
+  const loop = (element: Element) => elementEnvelope(element)?.multiInstance ?? null;
+  return {
+    writes: (element) => {
+      const collection = loop(element)?.outputCollection ?? null;
+      const names = [...(traits(element)?.names ?? []), ...caught(element).flatMap(Subscriptions.writes), ...(collection === null ? [] : [collection])];
+      return union({ names, all: false }, thrownOf(element)?.installs ?? noNames);
+    },
+    locals: (element) => {
+      const found = loop(element);
+      return found === null ? [] : MultiInstance.loopLocals(found);
+    },
+    fires: (attached) => Subscriptions.writes(attached.subscription),
+    raises: (element) => traits(element)?.raises === true || thrownOf(element)?.raises === true,
+    catchesRaise: (subscription) => Subscriptions.catchView(subscription).raised,
+    compensates: (element) => thrownOf(element)?.compensates === true,
+    compensationStart: Subscriptions.compensates,
+    mayRunNone: (element) => {
+      const found = loop(element);
+      return found !== null && MultiInstance.mayRunNone(found);
+    },
+  };
+}
+
+/**
+ * What one closure from `begun` may reach and write, ascending out of Scopes and called processes: the walk every
+ * closure of a run is held to by the closure law (`packages/differential/test/closure-reach.integration-test.ts`).
+ */
+export function closureReach(program: Program, begun: readonly FlowAdmission.Visit[]): FlowAdmission.Closure {
+  return FlowAdmission.closureWalk(reading(program), program, { stop: FlowAdmission.awaitsStimulus, ascends: true }, begun);
+}
+
 /**
  * Whether a looping element's instances race one another where they begin: the closure is `admission/flow.ts`'s, the
  * loop's mode and condition `admission/multi-instance.ts`'s.
@@ -449,7 +515,7 @@ function loopedHandler(program: Program): boolean {
 function loopInstances(program: Program, entry: Element): string | null {
   const loop = elementEnvelope(entry)?.multiInstance ?? null;
   if (loop === null) return null;
-  const closure = FlowAdmission.instanceClosure(program, entry);
+  const closure = FlowAdmission.instanceClosure(reading(program), program, entry);
   return MultiInstance.concurrentInstances(program.options, loop, closure.races, closure.completes);
 }
 
@@ -461,7 +527,7 @@ function flow(program: Program, entry: Flow): string | null {
   const source = programElement(program, entry.source);
   const here = site(program, source === null ? null : source.header.parent);
   return Data.flowCondition(program.options.evaluator, here, entry) ?? FlowAdmission.conditionalOutflow(program, entry) ??
-    FlowAdmission.concurrentWrite(program, entry);
+    FlowAdmission.concurrentWrite(reading(program), program, entry);
 }
 
 /**

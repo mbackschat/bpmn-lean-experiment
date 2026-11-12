@@ -361,7 +361,7 @@ test("the kernel behavior oracle runs in the restored-output integration lane", 
   ]);
   assert.match(
     manifest,
-    /"test:kernel-behavior-oracle:built": "node --test --test-concurrency=1 packages\/differential\/test\/kernel-behavior-oracle\.integration-test\.ts packages\/differential\/test\/row-fixtures\.integration-test\.ts"/u,
+    /"test:kernel-behavior-oracle:built": "node --test --test-concurrency=1 packages\/differential\/test\/kernel-behavior-oracle\.integration-test\.ts packages\/differential\/test\/row-fixtures\.integration-test\.ts packages\/differential\/test\/closure-reach\.integration-test\.ts"/u,
   );
   assert.equal(
     verifyScript.split("\n").filter((line) =>

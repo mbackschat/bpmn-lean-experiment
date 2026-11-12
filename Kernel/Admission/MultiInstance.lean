@@ -103,6 +103,21 @@ the scope the targets are written in (CIB-LIM-0020). A write no admission sees s
 def counterTarget (counters : Bool) (targets : List String) : Option String :=
   if counters && targets.any multiInstanceCounterNames.contains then some "multiInstance.counterTarget" else none
 
+/-- The names a loop writes into scope occurrences of its own, which no sibling branch can read: the counters and each
+instance's input and output items; only the output collection reaches the enclosing scope. -/
+def loopLocals (loop : MultiInstance) : List String :=
+  multiInstanceCounterNames ++ loop.elementVariable.toList ++ loop.inputDataItem.toList ++ loop.inputDataItemName.toList ++
+    loop.outputDataItem.toList
+
+/-- Whether a loop may run no instance, which completes its element in the closure that begins it: anything but a
+literal positive cardinality, since a collection may be empty and a computed count zero. -/
+def mayRunNone (loop : MultiInstance) : Bool :=
+  match loop.count with
+  | .cardinality (.literal (.int count)) => count ≤ 0
+  | .cardinality _ => true
+  | .collection _ => true
+  | .countAndCollection _ _ => true
+
 /-- Under `BranchSchedule.orderInvariant`, the instances of a parallel loop may not race one another in the closure that
 begins them (`Kernel.Admission.Flow.instanceClosure`): BPMN 2.0.2 §13.3.7 fixes no order among them, which
 `Kernel.Feature.MultiInstance` leaves to the closure's first-in, first-out queue, so a name an instance writes there,
