@@ -2294,12 +2294,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/transaction-cancel-mixed/cancel-with-effect-unanswered.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-02"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/transaction-cancel-mixed/refund-business-failure.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0046"

@@ -72,6 +72,7 @@ import {
   calledRoot,
   committed,
   completeSignal,
+  disarm,
   failed,
   failedWith,
   idle,
@@ -410,7 +411,11 @@ function cancelledScope(origin: Origin, occurrence: ScopeOccurrence, state: Stat
  * the interior of the Transaction, or of its cancelling instance (`cancelledScope`), and runs the compensation handlers
  * retained there, and only then takes the boundary's flows (BPMN 2.0.2 §10.3.5 Transaction: the boundary "will direct
  * the flow after the Transaction has been rolled back and all compensation has been completed"); a Cancel raise has no
- * host. An interrupting Error or Escalation boundary writes its catch variables from the host, lets a raising Activity
+ * host. From the Cancel on, a Transaction it rolls back as a whole is Terminating, which has no "Activity Interrupted"
+ * edge (§13.3.2 Figure 13.2), so the items attached to its occurrence, its Timer, Message, Signal and Conditional
+ * boundaries, are disarmed at once (I18), as CIB's Cancel End interrupt deletes their jobs and subscriptions
+ * (`ExecutionEntity.java:575-588`); a Multi-Instance body's stay armed while one instance rolls back (D12). An
+ * interrupting Error or Escalation boundary writes its catch variables from the host, lets a raising Activity
  * leave (`catchDecided`), and writes the host's output mappings (`interruptedOutputs`; CIB-EXT-0016 for both, as
  * `deleteCascade` destroys the host either way, `PvmAtomicOperationCancelActivity.java:60`). A Call's host is its
  * occurrence in the caller, the called root's `parent`, not the called instance: CIB sets the variables on the
@@ -431,7 +436,8 @@ function leaveOccurrence(
 ): Outcome {
   if (raisedIsCancel(raised)) {
     const rolledBack = cancelledScope(origin, occurrence, state);
-    return committed(signal(clearInside(state, rolledBack), {
+    const terminating = occurrence.occurrence !== null && rolledBack === occurrence.id ? disarm(state, occurrence.occurrence) : state;
+    return committed(signal(clearInside(terminating, rolledBack), {
       tag: SignalTag.Compensate,
       scope: rolledBack,
       activity: null,
