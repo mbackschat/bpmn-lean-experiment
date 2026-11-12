@@ -9,8 +9,10 @@ Owns `FeatureSlots.compensation`. An Activity or Scope with a compensation handl
 scope occurrence it completed in, together with the context its handler restores: for a Sub-Process whose handler is a
 Compensation Event Sub-Process, its own variables as they were when it completed ("snapshot data … associated with the
 parent Activity", [BPMN 2.0.2 §13.5.5](../../docs/reference/bpmn-2.0.2/README.md); CIB copies only them,
-`CompensationUtil.java:118-124`); every other name the handler reads live through its context's chain (D9). A boundary
-handler restores none.
+`CompensationUtil.java:118-124`), and for an instance of a Multi-Instance Sub-Process also the locals of its own
+iteration scope occurrence whose names those lack, its item and `loopCounter` ("for each instance the dedicated snapshot
+is restored", §13.5.5; CIB-DEV-0014); every other name the handler reads live through its context's chain (D9), and a
+write to a restored name lands in the context's copy. A boundary handler restores none.
 
 A trigger (`Signal.compensate`) takes every record visible from its scope occurrence (`visibleScopes`), or its target's,
 and runs their handlers, each begun in a context scope occurrence of its own inside that one, holding the restored
@@ -43,19 +45,25 @@ def ownedScope? (ctx : Ctx) (occurrence : Occurrence) (state : State) : Option S
     state.scopes.find? (·.occurrence == some occurrence.id)
   else none
 
+/-- Whether `occurrence` is an instance of a Multi-Instance Activity: it completes in its own iteration scope
+occurrence, the one `Iteration.active` names, holding its item and, under `cibLocals`, its `loopCounter`. -/
+def isInstance (ctx : Ctx) (occurrence : Occurrence) (state : State) : Bool :=
+  (((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance)).isSome &&
+    ctx.scopeRole state occurrence.scope == .multiInstanceInstance
+
 /-- Where a completion retains its record, and with which handler (D6, I9): an instance of a Multi-Instance Activity
-completes in its own scope occurrence, which `MultiInstance.instanceCompleted` leaves, so a Sub-Process instance's
-record goes to that occurrence's parent, the body's instance-holding `MultiInstanceRun.scope`, and a Task or Call
-instance retains none (`none`), since §13.5.5 compensates a Multi-Instance Activity "only once", by its body's record;
-a completed Multi-Instance Sub-Process body retains the group of its instance records without the handler, which they
-carry (§10.7.2: compensation "individually triggers compensation for all instances"). -/
+completes in its own iteration scope occurrence, which `MultiInstance.instanceCompleted` leaves, so a Sub-Process
+instance's record goes to that occurrence's parent, the body's instance-holding `MultiInstanceRun.scope`, and a Task or
+Call instance retains none (`none`), since §13.5.5 compensates a Multi-Instance Activity "only once", by its body's
+record; a completed Multi-Instance Sub-Process body retains the group of its instance records without the handler,
+which they carry (§10.7.2: compensation "individually triggers compensation for all instances"). -/
 def placement (ctx : Ctx) (occurrence : Occurrence) (state : State) : Option (Option ElementId × ScopeOccurrenceId) :=
   let element := ctx.program.element? occurrence.element
   -- Admission admits at most one handler (`compensation.handlerCount`).
   let handler := (element.bind (·.envelope?)).bind (·.compensationHandlers.head?)
   let looping := ((element.bind (·.envelope?)).bind (·.multiInstance)).isSome
   let isScope := (element.bind (·.scope?)).isSome
-  if looping && ctx.scopeRole state occurrence.scope == .multiInstanceInstance then
+  if isInstance ctx occurrence state then
     if isScope then some (handler, ((state.scopes.find? (·.id == occurrence.scope)).bind (·.parent)).getD occurrence.scope)
     else none
   else if looping && isScope then some (none, occurrence.scope)
@@ -65,8 +73,10 @@ def placement (ctx : Ctx) (occurrence : Occurrence) (state : State) : Option (Op
 compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the children its handler may trigger; one
 without keeps them as a group under `ImplicitCompensation.everySubProcess` (I5) or as a Multi-Instance body (I9), else
 they move to the parent. A Compensation Event Sub-Process, the handler inside its subject, and a group restore the
-completed Scope's own variables ("snapshot data"); a boundary handler restores none (§13.5.5: it "can only perform
-black-box compensation"). -/
+completed Scope's own variables ("snapshot data"), and for a Multi-Instance Sub-Process instance also the locals of its
+own iteration scope occurrence whose names those lack, its item and, under `cibLocals`, its `loopCounter` (§13.5.5: "for
+each instance the dedicated snapshot is restored"; §10.3.8 assigns both to each inner instance); a boundary handler
+restores none (§13.5.5: it "can only perform black-box compensation"), so it reads the item live. -/
 def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
   match placement ctx occurrence state with
   | none => .ok state
@@ -82,8 +92,10 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
       let (state, completion) := state.issue
       let inside := handler.all fun handler =>
         ((ctx.program.element? handler).bind (·.header.parent)) == some occurrence.element
-      let own := (owned.map fun scope => ((state.variables.find? (·.scope == scope.id)).map (·.entries)).getD []).getD []
-      let snapshot := if inside then own else []
+      let locals (scope : ScopeOccurrenceId) := ((state.variables.find? (·.scope == scope)).map (·.entries)).getD []
+      let own := (owned.map (locals ·.id)).getD []
+      let iteration := if isInstance ctx occurrence state then locals occurrence.scope else []
+      let snapshot := if inside then own ++ iteration.filter (fun entry => !own.any (·.1 == entry.1)) else []
       let reference : OccurrenceRef :=
         { processInstanceId := state.instanceOf occurrence.scope, element := occurrence.element
           activation := occurrence.activation }

@@ -4,8 +4,11 @@
  * Owns `FeatureSlots.compensation`. An Activity or Scope with a compensation handler that completes is retained in the
  * scope occurrence it completed in, together with the context its handler restores: for a Sub-Process whose handler is a
  * Compensation Event Sub-Process, its own variables as they were when it completed ("snapshot data … associated with the
- * parent Activity", BPMN 2.0.2 §13.5.5; CIB copies only them, `CompensationUtil.java:118-124`); every other name the
- * handler reads live through its context's chain (D9). A boundary handler restores none.
+ * parent Activity", BPMN 2.0.2 §13.5.5; CIB copies only them, `CompensationUtil.java:118-124`), and for an instance of a
+ * Multi-Instance Sub-Process also the locals of its own iteration scope occurrence whose names those lack, its item and
+ * `loopCounter` ("for each instance the dedicated snapshot is restored", §13.5.5; CIB-DEV-0014); every other name the
+ * handler reads live through its context's chain (D9), and a write to a restored name lands in the context's copy. A
+ * boundary handler restores none.
  *
  * A trigger (`Signal.compensate`) takes every record visible from its scope occurrence (`visibleScopes`), or its
  * target's, and runs their handlers, each begun in a context scope occurrence of its own inside that one, holding the
@@ -92,12 +95,22 @@ function ownedScope(ctx: Ctx, occurrence: Occurrence, state: State): ScopeOccurr
 }
 
 /**
+ * Whether `occurrence` is an instance of a Multi-Instance Activity: it completes in its own iteration scope
+ * occurrence, the one `Iteration.active` names, holding its item and, under `cibLocals`, its `loopCounter`.
+ */
+function isInstance(ctx: Ctx, occurrence: Occurrence, state: State): boolean {
+  const element = programElement(ctx.program, occurrence.element);
+  const looping = ((element === null ? null : elementEnvelope(element))?.multiInstance ?? null) !== null;
+  return looping && ctx.scopeRole(state, occurrence.scope) === ScopeRole.MultiInstanceInstance;
+}
+
+/**
  * Where a completion retains its record, and with which handler (D6, I9): an instance of a Multi-Instance Activity
- * completes in its own scope occurrence, which `MultiInstance.instanceCompleted` leaves, so a Sub-Process instance's
- * record goes to that occurrence's parent, the body's instance-holding `MultiInstanceRun.scope`, and a Task or Call
- * instance retains none (`null`), since §13.5.5 compensates a Multi-Instance Activity "only once", by its body's record;
- * a completed Multi-Instance Sub-Process body retains the group of its instance records without the handler, which
- * they carry (§10.7.2: compensation "individually triggers compensation for all instances").
+ * completes in its own iteration scope occurrence, which `MultiInstance.instanceCompleted` leaves, so a Sub-Process
+ * instance's record goes to that occurrence's parent, the body's instance-holding `MultiInstanceRun.scope`, and a Task
+ * or Call instance retains none (`null`), since §13.5.5 compensates a Multi-Instance Activity "only once", by its body's
+ * record; a completed Multi-Instance Sub-Process body retains the group of its instance records without the handler,
+ * which they carry (§10.7.2: compensation "individually triggers compensation for all instances").
  */
 function placement(ctx: Ctx, occurrence: Occurrence, state: State): readonly [ElementId | null, ScopeOccurrenceId] | null {
   const element = programElement(ctx.program, occurrence.element);
@@ -106,7 +119,7 @@ function placement(ctx: Ctx, occurrence: Occurrence, state: State): readonly [El
   const handler = envelope?.compensationHandlers[0] ?? null;
   const looping = (envelope?.multiInstance ?? null) !== null;
   const isScope = element !== null && elementScope(element) !== null;
-  if (looping && ctx.scopeRole(state, occurrence.scope) === ScopeRole.MultiInstanceInstance) {
+  if (isInstance(ctx, occurrence, state)) {
     if (!isScope) return null;
     return [handler, state.scopes.find((scope) => scope.id === occurrence.scope)?.parent ?? occurrence.scope];
   }
@@ -119,8 +132,10 @@ function placement(ctx: Ctx, occurrence: Occurrence, state: State): readonly [El
  * compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the children its handler may trigger; one
  * without keeps them as a group under `ImplicitCompensation.EverySubProcess` (I5) or as a Multi-Instance body (I9),
  * else they move to the parent. A Compensation Event Sub-Process, the handler inside its subject, and a group restore
- * the completed Scope's own variables ("snapshot data"); a boundary handler restores none (§13.5.5: it "can only
- * perform black-box compensation").
+ * the completed Scope's own variables ("snapshot data"), and for a Multi-Instance Sub-Process instance also the locals
+ * of its own iteration scope occurrence whose names those lack, its item and, under `cibLocals`, its `loopCounter`
+ * (§13.5.5: "for each instance the dedicated snapshot is restored"; §10.3.8 assigns both to each inner instance); a
+ * boundary handler restores none (§13.5.5: it "can only perform black-box compensation"), so it reads the item live.
  */
 export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
   const placed = placement(ctx, occurrence, state);
@@ -140,7 +155,11 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   const [issued, completion] = issue(state);
   const handlerElement = handler === null ? null : programElement(ctx.program, handler);
   const inside = handler === null || (handlerElement !== null && elementHeader(handlerElement).parent === occurrence.element);
-  const snapshot = owned === null || !inside ? [] : (issued.variables.find((scoped) => scoped.scope === owned.id)?.entries ?? []);
+  const locals = (scope: ScopeOccurrenceId): Compensable["snapshot"] =>
+    issued.variables.find((scoped) => scoped.scope === scope)?.entries ?? [];
+  const own = owned === null ? [] : locals(owned.id);
+  const iteration = isInstance(ctx, occurrence, issued) ? locals(occurrence.scope) : [];
+  const snapshot = !inside ? [] : [...own, ...iteration.filter(([name]) => !own.some(([held]) => held === name))];
   const reference: OccurrenceRef = {
     processInstanceId: instanceOf(issued, occurrence.scope),
     element: occurrence.element,

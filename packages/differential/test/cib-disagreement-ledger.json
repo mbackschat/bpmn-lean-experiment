@@ -300,12 +300,14 @@
   {
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/parallel-out-of-order-consumed.cibseven-evidence.json",
     "owners": [
+      "CIB-DEV-0014",
       "PC-COMPENSATION-05"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/parallel-out-of-order-rethrown.cibseven-evidence.json",
     "owners": [
+      "CIB-DEV-0014",
       "PC-COMPENSATION-05"
     ]
   },
@@ -406,6 +408,7 @@
   {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/regions-parallel-out-of-order.cibseven-evidence.json",
     "owners": [
+      "CIB-DEV-0014",
       "PC-COMPENSATION-03"
     ]
   },
@@ -2336,6 +2339,7 @@
   {
     "evidence": "scenarios/open-rows/transaction-multi-instance/parallel-complete-then-compensate.cibseven-evidence.json",
     "owners": [
+      "CIB-DEV-0014",
       "PC-COMPENSATION-03"
     ]
   },
