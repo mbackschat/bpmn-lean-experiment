@@ -75,7 +75,7 @@ What an Activity does once its occurrence has begun. [`Kernel.Feature.Work`](../
 
 - A Send Task sends a Message populated from its Data Input and completes; `implementation` selects the technology (§10.3.3, Table 10.9, §13.3.3) ([normative basis][send-norm]). CIB reads no `messageRef`, `operationRef` or `implementation` and runs a Send Task with a delegate as a Service Task; under [CIB-EXT-0023](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0023--send-task-performed-by-a-configured-handler) the send is the configured handler's effect, its Message data are the handler's inputs, no Message is constructed and no Message Flow is read ([normative basis][send-norm], [SEND-EFFECT-01][send-rules]).
 - Such a Send Task runs as an effect published exactly as a Service Task's ([public contract][send-contract]). It assigns no output (§13.3.3), so its result patch is empty ([SEND-DATA-01][send-rules]).
-- A Send Task without a configured implementation is `send` work, refused until the Message-addressed send of PC-AUTO-04 ([admission][send-admission], [SEND-REFUSE-01][send-rules]).
+- A Send Task without a configured implementation is `send` work, refused (`work.send`) under every profile: pinned CIB never reads a Send Task's `messageRef`, `operationRef` or `implementation` (`BpmnParse.java:2505-2541`), so a Message-addressed send has no CIB execution meaning, and the refusal is a forward-compatible restriction the IL's `SendWork` shape keeps open ([admission][send-admission], [SEND-REFUSE-01][send-rules], [CIB-EXT-0023](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0023--send-task-performed-by-a-configured-handler)).
 
 ### Script and Business Rule Tasks
 
@@ -183,7 +183,7 @@ Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `u
 | PC-HUM-03 | correlated and payload-bearing Receive Tasks in every ownership |
 | PC-AUTO-01 | public named handlers across task and scope bodies |
 | PC-AUTO-03 | incidents in Multi-Instance Sub-Process bodies |
-| PC-AUTO-04 | Message-addressed Send Task with recipient and correlation (`SendWork`) |
+| PC-AUTO-04 | Nothing owed: the configured send of CIB-EXT-0023 agrees with every retained [send-task-configured-send](../../../scenarios/open-rows/send-task-configured-send/README.md) answer, and a Message-addressed Send Task stays refused (`work.send`) as a forward-compatible restriction, since CIB gives it no execution meaning; closes at the M3 track review |
 | PC-AUTO-05, PC-AUTO-06 | Script binding per the owner decision |
 
 ## Sources
