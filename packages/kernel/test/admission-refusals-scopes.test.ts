@@ -35,7 +35,7 @@ const timerEventSubProcess = (env: Json = {}) => task(scope("T", eventSubProcess
 const retaining = (over: Json = {}) => (program: Json): Json =>
   withFlows(append(task(scope("T", "embedded", {}, over))(program),
     start("XS", null, [], "T"), activity("U", userWork(), { compensationHandlers: ["H"] }, "T"), end("XE", "none", "T"),
-    activity("H", "manual", {}, "T")), flow("xu", "XS", "U"), flow("ux", "U", "XE"));
+    activity("H", "manual", { forCompensation: true }, "T")), flow("xu", "XS", "U"), flow("ux", "U", "XE"));
 
 /** `E` becomes a Compensation End beside the Sub-Process. */
 const compensatingEnd = (program: Json): Json => replace(program, "E", end("E", compensate));
@@ -43,7 +43,7 @@ const compensatingEnd = (program: Json): Json => replace(program, "E", end("E", 
 /** `T` hands its records to its handler `K`, a Sub-Process `KS -> KE` whose End throws `record`. */
 const handledScope = (record: Json | string) => (program: Json): Json =>
   withFlows(append(retaining({ compensationHandlers: ["K"] })(program),
-    scope("K", "embedded", {}, {}), start("KS", null, [], "K"), end("KE", record, "K")), flow("kk", "KS", "KE"));
+    scope("K", "embedded", {}, { forCompensation: true }), start("KS", null, [], "K"), end("KE", record, "K")), flow("kk", "KS", "KE"));
 
 /**
  * `T` becomes a User Task compensable by `HT`, whose Timer boundary `BT` leads to `B`, a User Task compensable by `HB`
@@ -51,7 +51,7 @@ const handledScope = (record: Json | string) => (program: Json): Json =>
  */
 const boundaryConnected = (alsoFromTask: boolean) => (program: Json): Json =>
   withFlows(append(task(activity("T", userWork(), { compensationHandlers: ["HT"], boundaries: [boundary("BT", duration("PT1S"))] }))(program),
-    activity("B", userWork(), { compensationHandlers: ["HB"] }), activity("HT", "manual"), activity("HB", "manual")),
+    activity("B", userWork(), { compensationHandlers: ["HB"] }), activity("HT", "manual", { forCompensation: true }), activity("HB", "manual", { forCompensation: true })),
   flow("bb", "BT", "B"), flow("be", "B", "E"), ...(alsoFromTask ? [flow("tb", "T", "B")] : []));
 
 export const rows: readonly Row[] = [

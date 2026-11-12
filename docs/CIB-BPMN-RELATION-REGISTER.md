@@ -28,7 +28,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | CIB interpretations of BPMN gaps or inconsistencies | 37 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 45 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 41 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 42 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1353,6 +1353,16 @@ BPMN 2.0.2 §10.3.5 lets a Cancel End Event cancel its Transaction, whose Cancel
 **Evidence:** Pinned `bpmn/behavior/CancelEndEventActivityBehavior.java:39-53` (the `ensureNotNull` at `:41-42`) and `bpmn/parser/BpmnParse.java:1776-1779` (a second Cancel boundary refused); the retained answers of [cancel-end-without-boundary, non-interrupting-cancel-boundary and two-cancel-boundaries](../scenarios/open-rows/transaction-cancel-refusals/README.md) (profile `cibseven-2.2.0`); the retained rollback carries no cause, so the `ensureNotNull` site is the source reading.
 
 **Boundary:** A Cancel End Event in a Transaction without a Cancel boundary, and a non-interrupting Cancel boundary; this entry owns `cancel-end-without-boundary` and `non-interrupting-cancel-boundary` in the ledger.
+
+### CIB-LIM-0044 — CIB refuses a second compensation handler of one Activity and a Process-level Compensation Event Sub-Process
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile, since the kernel refuses the same forms at admission under every profile (`compensation.handlerCount`, `compensation.processEventSubProcess`); not a deviation
+
+BPMN 2.0.2 states no limit of one compensation handler per Activity, and §13.5.5 contains a Compensation Event Sub-Process "within a Process or a Sub-Process". CIB Seven `2.2.0` keeps at most one handler per Activity or scope, refusing at deployment a Compensation boundary beside a Compensation Event Sub-Process of the same Sub-Process, two Compensation Event Sub-Processes of one scope and two Compensation boundaries on one Activity, and refuses a Compensation Event Sub-Process at Process level, since compensation across a call hierarchy is unsupported.
+
+**Evidence:** Pinned `bpmn/parser/BpmnParse.java:913-920`, `:1187-1190`, `:1199-1201` and `:1754`; the retained answers of [esp-and-boundary-same-scope, two-esps-same-scope, two-compensation-boundaries and esp-at-process-level](../scenarios/open-rows/compensation-handler-form-refusals/README.md) (profile `cibseven-2.2.0`), refused at deployment as the kernel refuses them.
+
+**Boundary:** Those four forms. An Association to an Activity without `isForCompensation` and a Sequence Flow into or out of a handler are BPMN-invalid (§10.7.1, Table 10.3), and both CIB and the kernel refuse them.
 
 ### CIB-LIM-0049 — CIB never subscribes a Receive Task compensation handler to its Message
 

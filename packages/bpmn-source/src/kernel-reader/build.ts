@@ -30,15 +30,15 @@ export function envelopeFor(
   boundaries: KernelJson[],
 ): KernelJson {
   const id = requireId(element);
-  // The first handler only: the kernel admits one (`compensation.handlerCount`), and every model read so far names one.
-  const handler = ctx.compensation.find((entry) => entry.subject === id)?.handler;
+  // Every handler, so that admission sees a second one (`compensation.handlerCount`) instead of the reader erasing it.
+  const handlers = ctx.compensation.filter((entry) => entry.subject === id).map((entry) => entry.handler);
   return {
     incoming: ctx.incoming(id),
     outgoing: ctx.outgoing(id),
     inputs: [],
     outputs: [],
     multiInstance: null,
-    compensationHandlers: handler === undefined ? [] : [handler],
+    compensationHandlers: handlers,
     forCompensation: element.isForCompensation === true,
     defaultFlow: defaultFlowOf(element),
     ...asyncContinuations(ctx, element),

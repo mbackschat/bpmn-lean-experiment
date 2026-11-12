@@ -29,6 +29,26 @@ def activityOrigin (program : Program) (header : Header) (payload : ActivityPayl
     some "scope.implicitStart"
   else none
 
+/-- Where a compensation handler sits. BPMN 2.0.2 §10.7.1 puts a Compensation Activity "outside the normal flow" and
+marks it `isForCompensation` (Table 10.3), so an associated handler without the mark and a handler with a Sequence Flow are
+refused; CIB refuses both at deployment (`BpmnParse.java:905-910`, `:4327-4337`). A Compensation Event Sub-Process
+carries no mark and is placed by `processEventSubProcess`. -/
+def handlerPlacement (program : Program) (header : Header) (envelope : Envelope) (eventSubProcess : Bool) :
+    Option String :=
+  if !isHandler program header.id || eventSubProcess then none
+  else if !envelope.forCompensation then some "compensation.handlerNotForCompensation"
+  else if !envelope.incoming.isEmpty || !envelope.outgoing.isEmpty then some "compensation.handlerFlow"
+  else none
+
+/-- BPMN 2.0.2 §13.5.5 contains a Compensation Event Sub-Process "within a Process or a Sub-Process"; CIB refuses one at
+Process level (`BpmnParse.java:1187-1190`, CIB-LIM-0044), whose records would come from the calling hierarchy. -/
+def processEventSubProcess (header : Header) (payload : ScopePayload) : Option String :=
+  match header.parent, Admission.Scopes.eventSubProcess? payload with
+  | none, some (start, _) =>
+    if Admission.Subscriptions.compensates start then some "compensation.processEventSubProcess" else none
+  | none, none => none
+  | some _, _ => none
+
 /-- The site of an expression in `id`'s scope. -/
 def site (program : Program) (id : Option ElementId) : Admission.Data.Site :=
   { counters := Admission.MultiInstance.countersAt program id, scopeItems := Admission.Data.scopedItems program }
@@ -193,6 +213,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
           Admission.Data.mappings program.options.evaluator (site program (some header.id)) work.outputs) <|>
       Admission.Work.activity program header payload <|>
       activityOrigin program header payload <|>
+      handlerPlacement program header payload.envelope false <|>
       payload.envelope.multiInstance.bind
         (Admission.MultiInstance.activityLoop program.options Admission.Data.loopExpression
           (Admission.Work.instanceBody payload.work) payload.envelope) <|>
@@ -206,6 +227,8 @@ def element (program : Program) (throws : List Element) : Element → Option Str
     Admission.Data.origin program header <|> envelopeData program header payload.envelope <|>
       Admission.Work.handlerCount payload.envelope <|>
       Admission.Scopes.scope program header payload <|>
+      handlerPlacement program header payload.envelope (Admission.Scopes.eventSubProcess? payload).isSome <|>
+      processEventSubProcess header payload <|>
       -- A Sub-Process instance submits no output data item, so `submits` is false (PC-MI-10).
       payload.envelope.multiInstance.bind
         (Admission.MultiInstance.activityLoop program.options Admission.Data.loopExpression (some false) payload.envelope) <|>

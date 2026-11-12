@@ -396,48 +396,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/association-to-ordinary-activity.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-04",
-      "PC-COMPENSATION-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/esp-and-boundary-same-scope.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-04",
-      "PC-COMPENSATION-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/esp-at-process-level.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-04",
-      "PC-COMPENSATION-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/handler-with-sequence-flow.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-04",
-      "PC-COMPENSATION-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/two-compensation-boundaries.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-04",
-      "PC-COMPENSATION-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/two-esps-same-scope.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-04",
-      "PC-COMPENSATION-05"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/compensation-handler-terminate/slow-first.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-04"

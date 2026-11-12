@@ -11,8 +11,8 @@ import {
 import type { Json, Row } from "./admission-refusal-support.ts";
 
 /** `H`, an unconnected Task that a compensation subject names as its handler. */
-const handlerTask = activity("H", "manual", { incoming: [], outgoing: [] });
-const secondHandlerTask = activity("H2", "manual", { incoming: [], outgoing: [] });
+const handlerTask = activity("H", "manual", { incoming: [], outgoing: [], forCompensation: true });
+const secondHandlerTask = activity("H2", "manual", { incoming: [], outgoing: [], forCompensation: true });
 
 const withTask = (work: Json | string, env: Json = {}) => task(activity("T", work, env));
 

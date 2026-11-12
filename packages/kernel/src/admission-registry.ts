@@ -32,6 +32,7 @@ import {
   type Element,
   type ElementId,
   type Envelope,
+  type ScopePayload,
   type EventPayload,
   type Flow,
   type Header,
@@ -68,6 +69,28 @@ function activityOrigin(program: Program, header: Header, payload: ActivityPaylo
   if (isHandler(program, header.id) && payload.envelope.multiInstance !== null) return "compensation.handlerMultiInstance";
   if (Scopes.implicitChild(program, header) && !Work.beginsWithoutToken(payload.work)) return "scope.implicitStart";
   return null;
+}
+
+/**
+ * Where a compensation handler sits. BPMN 2.0.2 §10.7.1 puts a Compensation Activity "outside the normal flow" and marks
+ * it `isForCompensation` (Table 10.3), so an associated handler without the mark and a handler with a Sequence Flow are
+ * refused; CIB refuses both at deployment (`BpmnParse.java:905-910`, `:4327-4337`). A Compensation Event Sub-Process
+ * carries no mark and is placed by `processEventSubProcess`.
+ */
+function handlerPlacement(program: Program, header: Header, envelope: Envelope, eventSubProcess: boolean): string | null {
+  if (!isHandler(program, header.id) || eventSubProcess) return null;
+  if (!envelope.forCompensation) return "compensation.handlerNotForCompensation";
+  if (envelope.incoming.length > 0 || envelope.outgoing.length > 0) return "compensation.handlerFlow";
+  return null;
+}
+
+/**
+ * BPMN 2.0.2 §13.5.5 contains a Compensation Event Sub-Process "within a Process or a Sub-Process"; CIB refuses one at
+ * Process level (`BpmnParse.java:1187-1190`, CIB-LIM-0044), whose records would come from the calling hierarchy.
+ */
+function processEventSubProcess(header: Header, payload: ScopePayload): string | null {
+  const start = Scopes.eventSubProcessOf(payload);
+  return header.parent === null && start !== null && Subscriptions.compensates(start[0]) ? "compensation.processEventSubProcess" : null;
 }
 
 /** The site of an expression in `id`'s scope. */
@@ -328,6 +351,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
             Data.mappings(program.options.evaluator, site(program, header.id), call.outputs)),
         () => Work.activity(program, header, payload),
         () => activityOrigin(program, header, payload),
+        () => handlerPlacement(program, header, payload.envelope, false),
         () => (loop === null ? null
           : MultiInstance.activityLoop(program.options, Data.loopExpression, Work.instanceBody(payload.work), payload.envelope, loop)),
         () => outputTargets(program, header, [...payload.envelope.outputs, ...(call?.outputs ?? [])]),
@@ -346,6 +370,8 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => envelopeData(program, header, payload.envelope),
         () => Work.handlerCount(payload.envelope),
         () => Scopes.scope(program, header, payload),
+        () => handlerPlacement(program, header, payload.envelope, subProcess !== null),
+        () => processEventSubProcess(header, payload),
         // A Sub-Process instance submits no output data item, so `submits` is false (PC-MI-10).
         () => (payload.envelope.multiInstance === null
           ? null

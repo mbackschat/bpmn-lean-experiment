@@ -7,8 +7,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, append, base, conditionOn, definitionRef, end, foreign, loop, mapping, receiveWork, refusalOf, refusalTests, replace,
-  scriptWork, sendWork, serviceWork, task, userWork, variable, withOptions,
+  activity, append, base, compensationTrigger, conditionOn, definitionRef, end, eventSubProcess, flow, foreign, loop, mapping, receiveWork,
+  refusalOf, refusalTests, replace, scope, scriptWork, sendWork, serviceWork, start, task, userWork, variable, withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -16,7 +16,17 @@ import type { Json, Row } from "./admission-refusal-support.ts";
 const handledBy = (handler: Json) => (program: Json): Json =>
   append(task(activity("T", userWork(), { compensationHandlers: ["H"] }))(program), handler);
 
-const handler = (work: Json | string, env: Json = {}): Json => activity("H", work, { incoming: [], outgoing: [], ...env });
+const handler = (work: Json | string, env: Json = {}): Json => activity("H", work, { incoming: [], outgoing: [], forCompensation: true, ...env });
+
+/**
+ * `T` becomes an embedded Sub-Process `XS -> XE` holding the Compensation Event Sub-Process `K`, or `K` sits beside it at
+ * Process level. An interrupting Event Sub-Process is an abnormal scope end, so the profile that completes normally is
+ * selected.
+ */
+const compensationEventSubProcess = (atProcessLevel: boolean) => (program: Json): Json =>
+  withFlows(append(task(scope("T", "embedded"))(withOptions(program, { abnormalScopeEnd: "completesNormally" })), start("XS", null, [], "T"), end("XE", "none", "T"),
+    scope("K", eventSubProcess(compensationTrigger, true), {}, {}, atProcessLevel ? null : "T"), start("KS", compensationTrigger, [], "K")),
+  flow("xx", "XS", "XE"));
 
 const calledProcess = (over: Json = {}, executable = true) => (program: Json): Json =>
   ({ ...program, processes: [{ definition: definitionRef("Q", over), children: [], variables: [], executable }] });
@@ -26,6 +36,27 @@ const multipleEnd = (alternatives: Array<Json | string>) => (program: Json): Jso
   replace(program, "E", end("E", { error: { payload: { code: "E1", message: null } } }, null, alternatives));
 
 export const rows: readonly Row[] = [
+  {
+    // BPMN 2.0.2 §10.7.1, Table 10.3: a Compensation Activity is marked `isForCompensation`; CIB refuses it unmarked (`BpmnParse.java:905-910`).
+    code: "compensation.handlerNotForCompensation",
+    description: "a compensation handler not marked for compensation",
+    mutate: handledBy(handler("manual", { forCompensation: false })),
+    control: handledBy(handler("manual")),
+  },
+  {
+    // BPMN 2.0.2 §10.7.1: a Compensation Activity lies outside the normal flow; CIB refuses its flows (`BpmnParse.java:4327-4337`).
+    code: "compensation.handlerFlow",
+    description: "a compensation handler with an outgoing Sequence Flow",
+    mutate: (program) => withFlows(handledBy(handler("manual"))(program), flow("he", "H", "E")),
+    control: handledBy(handler("manual")),
+  },
+  {
+    // CIB-LIM-0044: CIB refuses a Process-level Compensation Event Sub-Process (`BpmnParse.java:1187-1190`).
+    code: "compensation.processEventSubProcess",
+    description: "a Compensation Event Sub-Process at Process level",
+    mutate: compensationEventSubProcess(true),
+    control: compensationEventSubProcess(false),
+  },
   {
     // CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `marks` (`Kernel.State.Journal`) would read.
     code: "compensation.handlerMultiInstance",
