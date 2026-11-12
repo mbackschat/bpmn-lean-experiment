@@ -170,13 +170,13 @@ Tables 10.89 and 10.90 trigger a Conditional Event when its condition becomes tr
 
 ### CIB-DEV-0005 — a task's submitted variables reach its own Conditional boundaries before it leaves
 
-**Status:** Candidate deviation (open question 2)
+**Status:** Resolved, not a deviation; recorded as CIB-INT-0042
 
-CIB dispatches the variable events of a task's completion before the task leaves (`FlowNodeActivityBehavior.java:52`), so a submission that makes a task's own interrupting Conditional boundary true cancels the completing task; its own output mapping does not reach it (`BoundaryConditionalEventTest#testSetVariableInOutputMapping`). The kernel drains a completion's writes after the host has left, so none of its own boundaries sees them.
+CIB dispatches the variable events of a task's completion before the task leaves, so a submission that makes a task's own interrupting Conditional boundary true cancels the completing task; the kernel offers a completion's writes after the task has left. BPMN states no requirement for either order: Figure 13.2 (BPMN-2.0.2.md:12310) leaves "Activity Interrupted" open from Completing and guards Completing → Completed with "Completing Requirements Done; Assignments Completed", so outputs are assigned while the Activity can still be interrupted. The difference is a gap BPMN leaves, which CIB-INT-0042 records.
 
-**Evidence:** Pinned `FlowNodeActivityBehavior.java:52`, `PvmExecutionImpl.java:2005-2023`; witness `conditional-boundary-hosts/completion-write-read-by-own-boundary` (no evidence yet).
+**Evidence:** As CIB-INT-0042.
 
-**Boundary:** Submissions of User Tasks with Conditional boundaries.
+**Boundary:** As CIB-INT-0042.
 
 ### CIB-DEV-0006 — the last firing of a finite cycle starts an endless chain at its deadline
 
@@ -1005,6 +1005,16 @@ BPMN 2.0.2 §13.3.7 evaluates the number of instances once and generates a seque
 **Boundary:** Sequential collection loops of both CIB profiles. The kernel reads the collection in the completing instance's scope occurrence before it is left, after the completion's writes, as CIB reads it in the body's execution that holds the item, `loopCounter` and the instance's result locals; a value that is no collection rolls the completion back (`multiInstance.notACollection`), as does a collection shorter than the next index (`multiInstance.collectionShortened`) and a failing JUEL read. A removed or null collection is `CIB-LIM-0054`'s. An earlier instance's result local that this one did not overwrite is `unsupported` (`multiInstance.sequentialResultLeftover`). With a loop-characteristics `asyncAfter` the re-read runs in the after-job, where a failure is `unsupported` (`async-boundary-failure`). Parallel loops and cardinality loops read nothing again; output aggregation with a re-read is refused (`profile.multiInstanceCollection.sequentialReread`).
 
 ## Known limitation register
+
+### CIB-INT-0042 — CIB offers a task's submitted variables to its own Conditional boundaries before it leaves
+
+**Status:** Recorded interpretation; selected by no profile; not a deviation
+
+BPMN 2.0.2 assigns an Activity's outputs while it is Completing, a state Figure 13.2 (BPMN-2.0.2.md:12310) still lets an interruption leave, and orders neither against the Activity's own boundaries. CIB Seven `2.2.0` dispatches the variables a command submits on completing a task before the task leaves (`FlowNodeActivityBehavior.java:51-53`), so a submission that makes the task's own interrupting Conditional boundary true cancels the completing task and takes the boundary's flow; the task's output mappings run later and reach none of its own boundaries (`BoundaryConditionalEventTest#testSetVariableInOutputMapping`). The kernel offers a completion's writes, submitted and mapped alike, after the task has left, so none of its own boundaries sees them: the project's interpretation of the order, kept on purpose ([subscriptions semantics](kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md#conditions)). A `ProfileOptions` value reproducing CIB's order would need an owner request for cibseven compatibility on this observation.
+
+**Evidence:** Pinned `FlowNodeActivityBehavior.java:51-53`, `PvmExecutionImpl.java:2005-2023`, `BoundaryConditionalEventTest#testSetVariableInOutputMapping`; retained `conditional-boundary-hosts/completion-write-read-by-own-boundary` (CIB cancels the completing task through its own boundary, the kernel completes it).
+
+**Boundary:** Submissions of User Tasks whose own Conditional boundaries read a submitted variable; this entry owns the ledger entry of `completion-write-read-by-own-boundary`.
 
 ### CIB-LIM-0001: standard sequential Multi-Instance output aggregation is absent
 

@@ -47,7 +47,7 @@ Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it
 - A predicate that reads an absent variable or property is false where the read is reached; `null`, any other non-Boolean and any other failure roll the input back (`condition-not-boolean`; [CIB-INT-0025][r-int-0025]).
 - Items of which only one may fire, the arms of one Event-Based Gateway occurrence, the interrupting boundaries of one host occurrence and the interrupting Event Sub-Process starts of one scope occurrence, may not become true together at one evaluation (one arming, or one offered write): BPMN gives simultaneous triggers no order (§13.4.4, BPMN-2.0.2.md:12560), CIB picks by `HashSet` order, which varies per JVM run, and arming order is no choice the kernel may make (FLOW-SPEC, Deferred choice), so the input is dynamic-only `unsupported` (`gateway-arms-simultaneous`, `conditions-simultaneous`; `Conditions.requireOneWinner`, [CIB-LIM-0053](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0053--the-kernel-refuses-competing-conditional-items-true-at-one-evaluation-cib-fires-one-of-them)). An explicit arm-choice input would keep that open without reinterpreting this refusal. A non-interrupting boundary or start competes with nothing.
 - A firing goes through `Signal.fire`, so a firing that cancels another item first leaves that item's pending firing nothing to fire. An interrupting item fires once; a non-interrupting boundary or Event Sub-Process start stays open and fires again (see [Repetition](#repetition)). A re-trigger chain is bounded by `Step.closureBound` ([CIB-LIM-0016](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0016-pinned-cib-runs-an-automatic-burst-beyond-the-kernels-closure-limit)); a predicate that reads `execution` is refused (`expression.juel.engineContext`, [CIB-LIM-0009](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0009-the-core-juel-level-refuses-at-admission-forms-cib-deploys-and-evaluates)).
-- A completion's writes are offered after the completing task has left, so none of its own Conditional boundaries sees them (candidate [CIB-DEV-0005][r-dev-0005]).
+- A completion's writes, submitted and mapped alike, are offered after the completing task has left, so none of its own Conditional boundaries sees them. This order is the project's interpretation: BPMN assigns outputs while the Activity is Completing, which Figure 13.2 still lets an interruption leave, and orders neither against its own boundaries; CIB offers submitted variables before the task leaves ([CIB-INT-0042][r-int-0042]; the former candidate CIB-DEV-0005 is resolved as no deviation).
 
 ### Boundaries
 
@@ -109,7 +109,8 @@ Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it
 | [CIB-INT-0028][r-int-0028], [CIB-EXT-0041][r-ext-0041] | Select `ProfileOptions.signalNames = addresses`: a Signal is addressed by its name, which may be an expression. |
 | [CIB-EXT-0042][r-ext-0042], [CIB-EXT-0043][r-ext-0043] | Select `signalDelivery = occurrenceTargeted` and `signalPayload = variables`: a targeted external Signal, and Signal variables installed in the receiving scope. |
 | [CIB-INT-0025][r-int-0025] | An absent variable reads false in a Conditional predicate. |
-| [CIB-DEV-0004][r-dev-0004], [CIB-DEV-0005][r-dev-0005] | Candidate deviations: each-write re-fire; a completion's writes and its own boundaries. |
+| [CIB-DEV-0004][r-dev-0004] | Candidate deviation: each-write re-fire. |
+| [CIB-INT-0042][r-int-0042] | Interpretation: CIB offers a task's submitted variables to its own Conditional boundaries before it leaves, the kernel after; resolves the former candidate [CIB-DEV-0005][r-dev-0005]. |
 | [CIB-AGR-0001](../../CIB-BPMN-RELATION-REGISTER.md#cib-agr-0001--sequential-process-and-user-task-lifecycle), [CIB-OP-0001](../../CIB-BPMN-RELATION-REGISTER.md#cib-op-0001--cib-host-task-identity-mapped-to-project-semantic-task-identity) | Reused only for the User Task work around a subscription; no evidence for Message, boundary, start or repetition behavior ([ICM CIB][icm-cib], [MST CIB][mst-cib], [RES basis][res-normative]). |
 
 The boundary, Message start, Timer start and payload accounts select no CIB relation: BPMN resolves each, and an engine-specific observation would have been a stop condition ([ABMSG CIB][abmsg-cib], [ABT CIB][abt-cib], [NBT CIB][nbt-cib], [SPT CIB][spt-cib], [MPC CIB][mpc-cib], [TST CIB][tst-cib], [MST decisions][mst-decisions]). `ProfileOptions.timerZone` is refused (`profile.timerZone`). `ProfileOptions.malformedTimer`, `messageNames` and `conditionalRetrigger` are each read from the relation that selects them.
@@ -174,7 +175,7 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 | PC-MESSAGE-03 | Payload catches in branches and nested work; the runner does not yet deliver payloads, so no CIB evidence. |
 | PC-MESSAGE-06 | Interrupting Message Event Sub-Processes (refused). |
 | PC-SIGNAL-01, PC-SIGNAL-03 | Signal throws; Signal boundaries and Event Sub-Process starts. |
-| PC-CONDITION-03, PC-CONDITION-04 | Event-Based Gateway arms true at once, which CIB picks in a per-JVM arbitrary order ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)); a completion's writes read by its own boundaries ([CIB-DEV-0005][r-dev-0005]); Event Sub-Process starts of one scope with one condition, which both CIB and the kernel deploy (CIB's duplicate-condition check covers root starts only, `BpmnParse.java:1289`, `:1042`). |
+| PC-CONDITION-03, PC-CONDITION-04 | Event-Based Gateway arms true at once, which CIB picks in a per-JVM arbitrary order ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)); a completion's writes read by its own boundaries ([CIB-INT-0042][r-int-0042]); Event Sub-Process starts of one scope with one condition, which both CIB and the kernel deploy (CIB's duplicate-condition check covers root starts only, `BpmnParse.java:1289`, `:1042`). |
 
 ## Sources
 
@@ -207,6 +208,7 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 [r-ext-0044]: ../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0044--cib-evaluates-a-root-conditional-start-over-the-variables-a-request-submits
 [r-lim-0027]: ../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0027--the-kernel-compares-two-root-conditional-start-predicates-by-their-parsed-form-cib-by-their-text
 [r-dev-0005]: ../../CIB-BPMN-RELATION-REGISTER.md#cib-dev-0005--a-tasks-submitted-variables-reach-its-own-conditional-boundaries-before-it-leaves
+[r-int-0042]: ../../CIB-BPMN-RELATION-REGISTER.md#cib-int-0042--cib-offers-a-tasks-submitted-variables-to-its-own-conditional-boundaries-before-it-leaves
 [abmsg-select]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-BOUNDARY-MESSAGE-SPEC.md#selection-basis
 [abmsg-normative]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-BOUNDARY-MESSAGE-SPEC.md#normative-basis-and-interpretation
 [abmsg-source]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-BOUNDARY-MESSAGE-SPEC.md#selected-source-profile
