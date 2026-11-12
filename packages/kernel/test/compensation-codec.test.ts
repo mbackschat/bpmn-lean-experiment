@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, encodeProgram } from "@bpmn-lean/kernel";
+import { decodeProgram, encodeProgram } from "./lean-paired.ts";
 
 import { activity, append, base, task, userWork, withOptions } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";

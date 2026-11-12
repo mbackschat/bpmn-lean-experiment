@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 
 import {
   activity, append, base, boundary, end, errorTrigger, flow, literalValue, mapping, scope, serviceWork, start, task, userWork,
@@ -40,9 +40,9 @@ const stimulus = (json: Json) => {
 function rootAfterCatch(json: Json): Record<string, unknown> {
   const decoded = decodeProgram(wired(json));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
-  const started = step(hooks, decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }));
+  const started = step(decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }));
   assert.ok(started.ok, JSON.stringify(started));
-  const caught = step(hooks, decoded.value, started.value, stimulus({
+  const caught = step(decoded.value, started.value, stimulus({
     kind: "effectResult",
     occurrence: { processInstanceId: "I", elementId: "PT", activation: 1 },
     outcome: { kind: "businessFailure", code: "FAIL", message: "boom", outputs: [] },
@@ -93,9 +93,9 @@ function serviceHost(inputs: Json[], outputs: Json[]): Json {
 function rootAfterTaskCatch(json: Json): unknown {
   const decoded = decodeProgram(wired(json));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
-  const started = step(hooks, decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }));
+  const started = step(decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }));
   assert.ok(started.ok, JSON.stringify(started));
-  const caught = step(hooks, decoded.value, started.value, stimulus({
+  const caught = step(decoded.value, started.value, stimulus({
     kind: "effectResult",
     occurrence: { processInstanceId: "I", elementId: "T", activation: 1 },
     outcome: { kind: "businessFailure", code: "FAIL", message: "boom", outputs: [] },

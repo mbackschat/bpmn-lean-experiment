@@ -13,7 +13,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 
 import {
   activity, append, base, boundary, callWork, definitionRef, end, errorTrigger, escalationTrigger, eventSubProcess, flow, gateway, literalValue,
@@ -58,7 +58,7 @@ function started(json: Json) {
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const stimulus = stimulusFromJson({ commandId: "c", kind: "start", instanceId: "I", variables: [] });
   assert.ok(stimulus.ok, stimulus.ok ? "" : stimulus.refusal);
-  return step(hooks, decoded.value, null, stimulus.value[1]);
+  return step(decoded.value, null, stimulus.value[1]);
 }
 
 test("a raise caught by the busy called root's own Event Sub-Process whose Call maps outputs is refused", () => {

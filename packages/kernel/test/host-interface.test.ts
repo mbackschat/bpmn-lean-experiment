@@ -7,25 +7,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import type { Outcome, Program, State } from "@bpmn-lean/kernel";
+
 import {
   admit,
-  capabilitiesJson,
   decodeProgram,
   definitionCapabilities,
   hostRequirements,
-  hostView,
   hostViewJson,
-  InputTag,
   refusesSignalVariables,
   rootStarts,
-  hooks,
   matching,
   step,
   stimulusFromJson,
-  type Outcome,
-  type Program,
-  type State,
-} from "@bpmn-lean/kernel";
+} from "./lean-paired.ts";
 
 import {
   activity,
@@ -65,7 +60,7 @@ function admitted(json: Json): Program {
 function run(program: Program, state: State | null, stimulus: Json): Outcome {
   const input = stimulusFromJson(stimulus);
   assert.ok(input.ok, input.ok ? "" : input.refusal);
-  return step(hooks, program, state, input.value[1]);
+  return step(program, state, input.value[1]);
 }
 
 function committed(outcome: Outcome): State {
@@ -114,7 +109,7 @@ test("a bound Message throw needs the host to serve effects, as a Service Task d
 
 test("a Timer start offers the duration the kernel resolves from its schedule", () => {
   const program = admitted(replace(base(), "S", start("S", duration("PT1M30S"))));
-  assert.deepEqual(capabilitiesJson(definitionCapabilities(program)), {
+  assert.deepEqual(definitionCapabilities(program), {
     starts: [{ startEventId: "S", trigger: { kind: "timer" }, schedule: { durationMs: 90_000 } }],
     correlatedChannels: [],
     relations: program.options.relations,
@@ -126,12 +121,12 @@ function refusedStarts(trigger: Json, refusal: string): Json {
   const decoded = decodeProgram(wired(replace(base(), "S", start("S", trigger))));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   assert.equal(admit(decoded.value), refusal, "admission refuses the form first");
-  return capabilitiesJson(definitionCapabilities(decoded.value)) as Json;
+  return definitionCapabilities(decoded.value) as Json;
 }
 
 test("a Timer start offers the instant of a literal date, the period of a cycle and the text of a literal Cron expression", () => {
   const offered = (trigger: Json): Json =>
-    (capabilitiesJson(definitionCapabilities(admitted(replace(base(), "S", start("S", trigger))))) as Json).starts as Json;
+    (definitionCapabilities(admitted(replace(base(), "S", start("S", trigger)))) as Json).starts as Json;
   const timer = (schedule: Json): Json[] => [{ startEventId: "S", trigger: { kind: "timer" }, schedule }];
   assert.deepEqual(offered(date("2026-11-09T10:00:00Z")), timer({ instantMs: Date.parse("2026-11-09T10:00:00Z") }));
   assert.deepEqual(offered(cycle("R3/PT1H")), timer({ cycle: { periodMs: 3_600_000, repetitions: 3 } }));
@@ -145,7 +140,7 @@ test("a Timer start whose schedule is an expression is not offered", () => {
 
 test("a Message start offers its channel and its literal Message name", () => {
   const program = admitted(replace(base(), "S", start("S", message(channel()))));
-  assert.deepEqual((capabilitiesJson(definitionCapabilities(program)) as Json).starts, [{
+  assert.deepEqual((definitionCapabilities(program) as Json).starts, [{
     startEventId: "S",
     trigger: {
       kind: "message",
@@ -156,8 +151,8 @@ test("a Message start offers its channel and its literal Message name", () => {
 });
 
 test("a Signal and a Conditional start offer their trigger kind, a none start the kind none", () => {
-  const offered = (trigger: Json | null): Json => (capabilitiesJson(definitionCapabilities(admitted(withOptions(
-    replace(base(), "S", start("S", trigger)), { conditionalStart: "submittedContext" })))) as Json).starts as Json;
+  const offered = (trigger: Json | null): Json => (definitionCapabilities(admitted(withOptions(
+    replace(base(), "S", start("S", trigger)), { conditionalStart: "submittedContext" }))) as Json).starts as Json;
   assert.deepEqual(offered(signal()), [{ startEventId: "S", trigger: { kind: "signal" } }]);
   assert.deepEqual(offered(condition()), [{ startEventId: "S", trigger: { kind: "condition" } }]);
   assert.deepEqual(offered(null), [{ startEventId: "S", trigger: { kind: "none" } }]);
@@ -168,7 +163,7 @@ const correlatedProgram = (): Program => admitted({ ...replace(base(), "T", corr
 
 test("a correlated catch publishes its channel, its element and the criteria the kernel evaluates", () => {
   const program = correlatedProgram();
-  assert.deepEqual(capabilitiesJson(definitionCapabilities(program)), {
+  assert.deepEqual(definitionCapabilities(program), {
     starts: [{ startEventId: "S", trigger: { kind: "none" } }],
     correlatedChannels: [{
       channel: { kind: "operationMessage", interfaceId: "I", interfaceOperationId: "O", messageId: "M" },
@@ -178,42 +173,35 @@ test("a correlated catch publishes its channel, its element and the criteria the
   });
 });
 
-/** The channel and correlation of a delivery on `operationRef` carrying `key`, as the stimulus codec reads them. */
-function delivery(key: string, operationRef = "O") {
-  const decoded = stimulusFromJson({
-    kind: "deliver", commandId: "deliver", occurrence: { processInstanceId: "Instance_1", elementId: "T", activation: 1 },
-    trigger: { kind: "message", channel: { kind: "operationMessage", messageId: "M", interfaceId: "I", interfaceOperationId: operationRef } },
-    correlation: [{ target: { kind: "processVariable", name: "OrderKey" }, expected: string(key) }],
-  });
-  assert.ok(decoded.ok && decoded.value[1].tag === InputTag.Deliver);
-  const { trigger, correlation } = decoded.value[1].payload;
-  assert.ok("channel" in trigger);
-  return [trigger.channel, correlation] as const;
-}
+/** The channel and correlation of a delivery on `operationRef` carrying `key`, in the stimulus codec's wire form. */
+const delivery = (key: string, operationRef = "O") => [
+  { kind: "operationMessage", messageId: "M", interfaceId: "I", interfaceOperationId: operationRef },
+  [{ target: { kind: "processVariable", name: "OrderKey" }, expected: string(key) }],
+] as const;
 
 test("matching finds the open wait whose criteria the waiting instance's current values satisfy", () => {
   const program = correlatedProgram();
   const state = committed(run(program, null, begin([{ name: "orderId", value: string("o-7") }])));
-  assert.deepEqual(matching(hooks, program, state, ...delivery("o-7")), [{ processInstanceId: "Instance_1", element: "T", activation: 1 }]);
-  assert.deepEqual(matching(hooks, program, state, ...delivery("o-8")), []);
-  assert.deepEqual(matching(hooks, program, state, ...delivery("o-7", "Other")), []);
+  assert.deepEqual(matching(program, state, ...delivery("o-7")), [{ processInstanceId: "Instance_1", elementId: "T", activation: 1 }]);
+  assert.deepEqual(matching(program, state, ...delivery("o-8")), []);
+  assert.deepEqual(matching(program, state, ...delivery("o-7", "Other")), []);
 });
 
 test("the host view names each open Message and Signal wait's address, which the population ingress registers", () => {
   const signalProgram = admitted(replace(base(), "T", catchEvent("T", signal())));
   const signalState = committed(run(signalProgram, null, begin()));
-  assert.deepEqual((hostViewJson(hostView(signalProgram, signalState)) as Json).addresses, [{
+  assert.deepEqual((hostViewJson(signalProgram, signalState) as Json).addresses, [{
     occurrence: { processInstanceId: "Instance_1", elementId: "T", activation: 1 },
     signal: { signalRef: { id: "Sig" } },
   }]);
   const messageProgram = admitted(replace(base(), "T", catchEvent("T", message(channel()))));
   const messageState = committed(run(messageProgram, null, begin()));
-  assert.deepEqual((hostViewJson(hostView(messageProgram, messageState)) as Json).addresses, [{
+  assert.deepEqual((hostViewJson(messageProgram, messageState) as Json).addresses, [{
     occurrence: { processInstanceId: "Instance_1", elementId: "T", activation: 1 },
     message: { channel: { kind: "operationMessage", interfaceId: "I", interfaceOperationId: "O", messageId: "M" } },
   }]);
   const plain = admitted(base());
-  assert.equal((hostViewJson(hostView(plain, committed(run(plain, null, begin())))) as Json).addresses, undefined);
+  assert.equal((hostViewJson(plain, committed(run(plain, null, begin()))) as Json).addresses, undefined);
 });
 
 test("rootStarts pairs each root start's public identifier with its own, which a population start input names", () => {

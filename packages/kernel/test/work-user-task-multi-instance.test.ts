@@ -19,7 +19,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { admit, decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { admit, decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 import { activity, base, loop, task, userWork, withOptions, wired } from "./admission-refusal-support.ts";
@@ -49,7 +49,7 @@ const complete = (activation: number, name: string, value: string) => stimulus({
 /** The root variables and the open activations of `T` (or the status once ended) after each completion in turn. */
 function run(outputDataItem: string | null, completions: ReadonlyArray<readonly [number, string, string]>, mode = "parallel"): unknown[] {
   const decoded = program(installs, outputDataItem, mode);
-  const started = step(hooks, decoded, null, stimulus({
+  const started = step(decoded, null, stimulus({
     kind: "start", instanceId: "I", variables: [{ name: "items", value: { kind: "stringList", value: ["a", "b"] } }],
   }));
   assert.ok(started.ok, JSON.stringify(started));
@@ -63,7 +63,7 @@ function run(outputDataItem: string | null, completions: ReadonlyArray<readonly 
   const trace: unknown[] = [];
   let state = started.value;
   for (const [activation, name, value] of completions) {
-    const outcome = step(hooks, decoded, state, complete(activation, name, value));
+    const outcome = step(decoded, state, complete(activation, name, value));
     if (outcome.ok) state = outcome.value;
     trace.push(outcome.ok ? seen(outcome.value) : outcome.failure);
   }

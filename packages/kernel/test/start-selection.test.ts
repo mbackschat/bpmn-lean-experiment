@@ -9,11 +9,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { SignalAddressTag, admit, decodeProgram, hooks, hostView, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { SignalAddressTag, admit, decodeProgram, hostView, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, Program, State } from "@bpmn-lean/kernel";
 
 import {
-  activity, append, base, duration, flow, juel, mapping, message, replace, signal, start, text, userWork, variable, wired, withFlows, withOptions,
+  activity, append, base, duration, flow, juel, mapping, message, qName, replace, signal, start, text, userWork, variable, wired, withFlows,
+  withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
@@ -48,7 +49,7 @@ const waiting = admitted(replace(base(), "T", activity("T", userWork())));
 function run(program: Program, state: State | null, stimulus: Json): Outcome {
   const input = stimulusFromJson(stimulus);
   assert.ok(input.ok, input.ok ? "" : input.refusal);
-  return step(hooks, program, state, input.value[1]);
+  return step(program, state, input.value[1]);
 }
 
 function committed(outcome: Outcome): State {
@@ -56,8 +57,9 @@ function committed(outcome: Outcome): State {
   return outcome.value;
 }
 
-const timerStart = (startEvent?: string): Json => ({
-  kind: "start", commandId: "start", instanceId: "I", variables: [], trigger: { kind: "timer", logicalTimeMs: 1_000 },
+/** A Timer firing at `logicalTimeMs`; the runner refuses a named start's firing unless it is that start's due time. */
+const timerStart = (startEvent?: string, logicalTimeMs = 1_000): Json => ({
+  kind: "start", commandId: "start", instanceId: "I", variables: [], trigger: { kind: "timer", logicalTimeMs },
   ...(startEvent === undefined ? {} : { startEvent }),
 });
 
@@ -74,7 +76,7 @@ test("an unnamed None input with two None starts is ambiguous, and a named one s
 });
 
 test("a Timer trigger naming one of the starts it fires starts that one", () => {
-  const started = committed(run(twoTimerStarts, null, timerStart("S2")));
+  const started = committed(run(twoTimerStarts, null, timerStart("S2", 2_000)));
   assert.deepEqual(started.openItems.map((item) => item.element), ["T"]);
 });
 
@@ -95,18 +97,25 @@ test("a delivery carrying variables is not admitted", () => {
   assert.deepEqual(outcome.ok ? null : outcome.failure, { tag: "rejected", code: "delivery-variables-not-admitted" });
 });
 
+/** `S -> Th -> T -> E`, where the intermediate Event `Th` throws the Signal `Sig` named `S` and `T` is a User Task. */
+const throwing = admitted({ ...append(replace(base(), "T", activity("T", userWork())), {
+  event: {
+    header: { id: "Th", origin: { definition: null, sourceId: "Th" }, sourceType: "intermediateThrowEvent", parent: null },
+    payload: {
+      role: { throw: { record: { signal: { payload: {
+        signalRef: qName("Sig"), name: text("S"), payload: [], propagateAll: null, localOnly: false, businessKey: null, asynchronous: false,
+      } } } } },
+      placement: "intermediate", incoming: [], outgoing: [], alternativeThrows: [],
+    },
+  },
+}), flows: [flow("f0", "S", "Th"), flow("f1", "Th", "T"), flow("f2", "T", "E")] });
+
 test("an input starts with an empty outbox, and the host view publishes a broadcast with its public origin", () => {
-  const started = committed(run(waiting, null, { kind: "start", commandId: "start", instanceId: "I", variables: [] }));
-  const thrown: State = {
-    ...started,
-    outbox: [{
-      address: { tag: SignalAddressTag.Named, name: "S" }, variables: [], businessKey: null,
-      origin: { processInstanceId: "I", element: "T", activation: 1 },
-    }],
-  };
-  assert.deepEqual(hostView(waiting, thrown).broadcasts.map((intent) => intent.origin),
-    [{ processInstanceId: "I", element: "T", activation: 1 }]);
-  const completed = committed(run(waiting, thrown, {
+  const thrown = committed(run(throwing, null, { kind: "start", commandId: "start", instanceId: "I", variables: [] }));
+  assert.deepEqual(thrown.outbox.map((intent) => intent.address), [{ tag: SignalAddressTag.Qualified, ref: { namespace: null, localName: "Sig" } }]);
+  assert.deepEqual(hostView(throwing, thrown).broadcasts.map((intent) => intent.origin),
+    [{ processInstanceId: "I", element: "Th", activation: 1 }]);
+  const completed = committed(run(throwing, thrown, {
     kind: "command", commandId: "c", occurrence: userTask, action: { kind: "completeUserTask", values: [] },
   }));
   assert.deepEqual(completed.outbox, []);

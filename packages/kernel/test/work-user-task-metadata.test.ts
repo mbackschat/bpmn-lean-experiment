@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 
 import { activity, base, task, text, userWork, wired } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
@@ -19,7 +19,7 @@ function published(fields: Json): unknown {
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const stimulus = stimulusFromJson({ commandId: "start", kind: "start", instanceId: "I", variables: [] });
   assert.ok(stimulus.ok);
-  const started = step(hooks, decoded.value, null, stimulus.value[1]);
+  const started = step(decoded.value, null, stimulus.value[1]);
   assert.ok(started.ok, JSON.stringify(started));
   const [item] = started.value.openItems;
   return (item!.kind as unknown as { detail: unknown }).detail;

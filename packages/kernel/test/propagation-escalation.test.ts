@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 import {
@@ -39,7 +39,7 @@ const stimulus = (json: Json) => {
 function started(json: Json) {
   const decoded = decodeProgram(wired(json));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
-  return step(hooks, decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }));
+  return step(decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }));
 }
 
 function committed(json: Json): State {

@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { admit, decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { admit, decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, Program, State } from "@bpmn-lean/kernel";
 
 type Json = Record<string, unknown>;
@@ -56,7 +56,7 @@ function decoded(schedule: Json, delay: string | null = null): Program {
 function run(program: Program, state: State | null, stimulus: Json): Outcome {
   const input = stimulusFromJson(stimulus);
   assert.ok(input.ok);
-  return step(hooks, program, state, input.value[1]);
+  return step(program, state, input.value[1]);
 }
 
 /** The deadline of the open Timer of `element`. */

@@ -12,7 +12,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, State } from "@bpmn-lean/kernel";
 
 import {
@@ -60,7 +60,7 @@ function run(json: Json, ...stimuli: Json[]): Outcome {
   for (const raw of [{ kind: "start", instanceId: "I", variables: [{ name: "total", value: str("old") }] }, ...stimuli]) {
     const parsed = stimulusFromJson({ commandId: "c", ...raw });
     assert.ok(parsed.ok, parsed.ok ? "" : parsed.refusal);
-    outcome = step(hooks, decoded.value, state, parsed.value[1]);
+    outcome = step(decoded.value, state, parsed.value[1]);
     if (!outcome.ok) return outcome;
     state = outcome.value;
   }

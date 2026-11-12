@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { runScenario } from "@bpmn-lean/kernel";
+import { runScenario } from "./lean-paired.ts";
 
 type Json = Record<string, unknown>;
 

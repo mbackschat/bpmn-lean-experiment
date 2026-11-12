@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, runScenario, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, runScenario, step, stimulusFromJson } from "./lean-paired.ts";
 
 type Json = Record<string, unknown>;
 
@@ -68,7 +68,7 @@ function startFailure(json: Json): unknown {
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const stimulus = stimulusFromJson(scenario.stimuli[0]);
   assert.ok(stimulus.ok);
-  const outcome = step(hooks, decoded.value, null, stimulus.value[1]);
+  const outcome = step(decoded.value, null, stimulus.value[1]);
   return outcome.ok ? "committed" : outcome.failure;
 }
 

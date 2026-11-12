@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, hostView, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, hostView, step, stimulusFromJson } from "./lean-paired.ts";
 
 import { activity, base, boundary, duration, flow, task, userWork, withFlows } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
@@ -25,7 +25,7 @@ test("a renamed boundary's wait publishes the identifier its author wrote", () =
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const start = stimulusFromJson({ kind: "start", commandId: "start", instanceId: "I", variables: [] });
   assert.ok(start.ok);
-  const started = step(hooks, decoded.value, null, start.value[1]);
+  const started = step(decoded.value, null, start.value[1]);
   assert.ok(started.ok, started.ok ? "" : started.failure.code);
   const elements = hostView(decoded.value, started.value).openWaits.map((wait) => wait.id.element);
   assert.ok(elements.includes("Late"), JSON.stringify(elements));

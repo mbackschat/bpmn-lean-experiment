@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 import {
@@ -44,9 +44,9 @@ const stimulus = (json: Json) => {
 function failUnmatched(json: Json, outputs: Json[] = []) {
   const decoded = decodeProgram(wired(json));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
-  const started = step(hooks, decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }));
+  const started = step(decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }));
   assert.ok(started.ok, JSON.stringify(started));
-  return step(hooks, decoded.value, started.value, stimulus({
+  return step(decoded.value, started.value, stimulus({
     kind: "effectResult",
     occurrence: { processInstanceId: "I", elementId: "T", activation: 1 },
     outcome: { kind: "businessFailure", code: "OTHER", message: "no stock", outputs },
@@ -93,10 +93,10 @@ function failUnmatchedIn(json: Json, instance: string, outputs: Json[] = []) {
   const decoded = decodeProgram(wired(json));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const items = { name: "items", value: { kind: "stringList", value: ["a", "b"] } };
-  const started = step(hooks, decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [items] }));
+  const started = step(decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [items] }));
   assert.ok(started.ok, JSON.stringify(started));
   const element = instance === "I" ? "T" : "CT";
-  return step(hooks, decoded.value, started.value, stimulus({
+  return step(decoded.value, started.value, stimulus({
     kind: "effectResult",
     occurrence: { processInstanceId: instance, elementId: element, activation: 1 },
     outcome: { kind: "businessFailure", code: "OTHER", message: "no stock", outputs },
@@ -144,11 +144,11 @@ test("an uncaught Error End fails the instance under the standards reading and e
   const program = (json: Json): Json => task(end("T", { error: { payload: { code: "OTHER", message: null } } }))(json);
   const decoded = decodeProgram(wired(program(base())));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
-  const standards = committed(step(hooks, decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] })));
+  const standards = committed(step(decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] })));
   assert.equal(standards.status, "failed");
   assert.equal(standards.failure?.occurrence.element, "T");
   const cibDecoded = decodeProgram(wired(withOptions(program(base()), cib)));
   assert.ok(cibDecoded.ok, cibDecoded.ok ? "" : cibDecoded.refusal);
-  assert.equal(committed(step(hooks, cibDecoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }))).status,
+  assert.equal(committed(step(cibDecoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }))).status,
     "completed");
 });

@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { runScenario } from "@bpmn-lean/kernel";
+import { runScenario } from "./lean-paired.ts";
 
 import {
   activity, base, envelope, flow, gateway, juel, mapping, scope, start, userWork, withOptions,

@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { admit, decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { admit, decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, Program, State } from "@bpmn-lean/kernel";
 
 import {
@@ -48,7 +48,7 @@ const nested = admitted(withOptions(withFlows(
 function apply(program: Program, state: State | null, raw: Json): Outcome {
   const stimulus = stimulusFromJson({ commandId: "c", ...raw });
   assert.ok(stimulus.ok, stimulus.ok ? "" : stimulus.refusal);
-  return step(hooks, program, state, stimulus.value[1]);
+  return step(program, state, stimulus.value[1]);
 }
 
 function run(program: Program, ...stimuli: Json[]): State {

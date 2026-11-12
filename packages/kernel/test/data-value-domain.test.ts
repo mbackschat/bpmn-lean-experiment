@@ -13,7 +13,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, State } from "@bpmn-lean/kernel";
 
 import { activity, base, catchEvent, mapping, message, replace, serviceWork, start, task, userWork, variable, withOptions, wired } from "./admission-refusal-support.ts";
@@ -66,7 +66,7 @@ function runAll(program: Json, ...stimuli: Json[]): Outcome[] {
   return stimuli.map((raw) => {
     const stimulus = stimulusFromJson({ commandId: "c", ...raw });
     assert.ok(stimulus.ok, stimulus.ok ? "" : stimulus.refusal);
-    const outcome = step(hooks, decoded.value, state, stimulus.value[1]);
+    const outcome = step(decoded.value, state, stimulus.value[1]);
     if (outcome.ok) state = outcome.value;
     return outcome;
   });

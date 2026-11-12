@@ -11,7 +11,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, State } from "@bpmn-lean/kernel";
 
 import { activity, base, mapping, serviceWork, task, variable, withOptions, wired } from "./admission-refusal-support.ts";
@@ -34,7 +34,7 @@ function resultWithReceipt(envelope: Json, effectResultValues: string): Outcome 
   for (const raw of stimuli) {
     const stimulus = stimulusFromJson({ commandId: "c", ...raw });
     assert.ok(stimulus.ok, stimulus.ok ? "" : stimulus.refusal);
-    outcome = step(hooks, decoded.value, state, stimulus.value[1]);
+    outcome = step(decoded.value, state, stimulus.value[1]);
     if (!outcome.ok) return outcome;
     state = outcome.value;
   }

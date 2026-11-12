@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, State } from "@bpmn-lean/kernel";
 
 type Json = Record<string, unknown>;
@@ -72,7 +72,7 @@ const complete = (at?: number): Json => ({
 function run(state: State | null, stimulus: Json): Outcome {
   const input = stimulusFromJson(stimulus);
   assert.ok(input.ok);
-  return step(hooks, program, state, input.value[1]);
+  return step(program, state, input.value[1]);
 }
 
 function committed(outcome: Outcome): State {

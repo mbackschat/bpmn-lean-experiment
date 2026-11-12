@@ -7,7 +7,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { admit, decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { admit, decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, Program, State } from "@bpmn-lean/kernel";
 
 import { activity, base, boundary, catchEvent, cycle, flow, replace, task, userWork, withFlows } from "./admission-refusal-support.ts";
@@ -32,7 +32,7 @@ function hostProgram(lexeme: string, interrupting: boolean): Program {
 function run(program: Program, state: State | null, stimulus: Json): Outcome {
   const input = stimulusFromJson(stimulus);
   assert.ok(input.ok);
-  return step(hooks, program, state, input.value[1]);
+  return step(program, state, input.value[1]);
 }
 
 type Timer = { deadlineMs: number; recurrence: { periodMs: number | null; cron: string | null; remaining: number | null } | null };

@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, Program, State } from "@bpmn-lean/kernel";
 
 import { activity, base, serviceWork, task, withOptions, wired } from "./admission-refusal-support.ts";
@@ -32,7 +32,7 @@ const retry = (generation: number) => ({ kind: "command", occurrence, action: { 
 function apply(state: State | null, raw: Record<string, unknown>, on: Program = program): Outcome {
   const stimulus = stimulusFromJson({ commandId: "c", ...raw });
   assert.ok(stimulus.ok, stimulus.ok ? "" : stimulus.refusal);
-  return step(hooks, on, state, stimulus.value[1]);
+  return step(on, state, stimulus.value[1]);
 }
 
 function run(...stimuli: Record<string, unknown>[]): State {

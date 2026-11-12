@@ -11,7 +11,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { admit, decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { admit, decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, State } from "@bpmn-lean/kernel";
 
 import { activity, base, loop, receiveWork, task, wired } from "./admission-refusal-support.ts";
@@ -38,7 +38,7 @@ const scan = (activation: number) => stimulus({
 /** The outcome of each delivery in turn after the start, as the open activations of `T` or the failure. */
 function run(mode: "parallel" | "sequential", activations: readonly number[]): unknown[] {
   const decoded = program(mode);
-  const started = step(hooks, decoded, null, stimulus({
+  const started = step(decoded, null, stimulus({
     kind: "start", instanceId: "I", variables: [{ name: "items", value: { kind: "stringList", value: ["a", "b"] } }],
   }));
   assert.ok(started.ok, JSON.stringify(started));
@@ -47,7 +47,7 @@ function run(mode: "parallel" | "sequential", activations: readonly number[]): u
   const seen: unknown[] = [waiting(started.value)];
   let state = started.value;
   for (const activation of activations) {
-    const outcome: Outcome = step(hooks, decoded, state, scan(activation));
+    const outcome: Outcome = step(decoded, state, scan(activation));
     if (outcome.ok) state = outcome.value;
     seen.push(outcome.ok ? waiting(outcome.value) : outcome.failure);
   }

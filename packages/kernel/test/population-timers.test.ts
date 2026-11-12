@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { runPopulation, runScenario } from "@bpmn-lean/kernel";
+import { runPopulation, runScenario } from "./lean-paired.ts";
 
 import { activity, base, cycle, date, duration, replace, start, userWork, wired } from "./admission-refusal-support.ts";
 

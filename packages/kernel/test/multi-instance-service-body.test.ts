@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, runScenario, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, runScenario, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 type Json = Record<string, unknown>;
@@ -176,7 +176,7 @@ function stateAfterStart(json: Json, collection: Json): State {
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const input = stimulusFromJson(start(collection));
   assert.ok(input.ok);
-  const outcome = step(hooks, decoded.value, null, input.value[1]);
+  const outcome = step(decoded.value, null, input.value[1]);
   assert.ok(outcome.ok, JSON.stringify(outcome));
   return outcome.value;
 }
@@ -202,7 +202,7 @@ function startOutcome(json: Json, collection: Json): unknown {
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const input = stimulusFromJson(start(collection));
   assert.ok(input.ok);
-  const outcome = step(hooks, decoded.value, null, input.value[1]);
+  const outcome = step(decoded.value, null, input.value[1]);
   return outcome.ok ? "committed" : outcome.failure;
 }
 

@@ -11,7 +11,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { admit, decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { admit, decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Program, State } from "@bpmn-lean/kernel";
 
 import {
@@ -50,7 +50,7 @@ const integer = (value: number): Json => ({ kind: "integer", value });
 const nothing: Json = { kind: "null" };
 
 function started(program: Program, over: Json = {}): State {
-  const outcome = step(hooks, program, null, stimulus({
+  const outcome = step(program, null, stimulus({
     kind: "start", instanceId: "I",
     variables: [
       { name: "orderId", value: string("A-1") }, { name: "note", value: nothing }, { name: "ticket", value: integer(41) },
@@ -64,7 +64,7 @@ function started(program: Program, over: Json = {}): State {
 const criterion = (target: Json, expected: Json): Json => ({ target, expected });
 
 function deliver(program: Program, state: State, element: string, correlation: Json[], variables: Json[] = []) {
-  return step(hooks, program, state, stimulus({
+  return step(program, state, stimulus({
     kind: "deliver", occurrence: { processInstanceId: "I", elementId: element, activation: 1 },
     trigger: { kind: "message", channel: { kind: "directMessage", messageId: "M" } }, correlation, variables,
   }));

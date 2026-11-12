@@ -1,57 +1,63 @@
 /**
  * The Core JUEL evaluator (`feature/data/juel.ts`) against the rules of the expression semantics
- * (docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#evaluation): each row builds one node table, evaluates it through
- * the registry's `evaluate` against named bindings, and expects a value, a failure code or an `unsupported` code. The
+ * (docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#evaluation): each row builds one node table in the IL's wire form,
+ * evaluates it through the registry's `evaluate` against named wire bindings (`kernelRun --batch`'s `evaluate`, which
+ * the Lean kernel answers too), and expects a value, a failure code or an `unsupported` code. The
  * oracle is the pinned `cibseven-juel` source cited per rule in the semantics; the retained CIB evidence checks the
  * same rules end to end.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { hooks } from "@bpmn-lean/kernel";
-import type { Value } from "@bpmn-lean/kernel";
+import { evaluate } from "./lean-paired.ts";
 
-type Node = Record<string, unknown>;
+type Node = Record<string, unknown> | string;
+/** A value in the scenario contract's `variableValue` wire form. */
+type Value = Readonly<Record<string, unknown>>;
 
-/** A post-order node table: each builder appends one node and returns its index. */
+/** A post-order node table in the IL's wire form: each builder appends one node and returns its index. */
 class Table {
   readonly nodes: Node[] = [];
   private add(node: Node): number {
     this.nodes.push(node);
     return this.nodes.length - 1;
   }
-  text = (value: string): number => this.add({ tag: "text", value });
-  composite = (...parts: number[]): number => this.add({ tag: "composite", parts });
-  nil = (): number => this.add({ tag: "null" });
-  bool = (value: boolean): number => this.add({ tag: "bool", value });
-  int = (digits: string): number => this.add({ tag: "integer", digits });
-  float = (lexeme: string): number => this.add({ tag: "float", lexeme });
-  str = (value: string): number => this.add({ tag: "stringLiteral", value });
-  id = (name: string): number => this.add({ tag: "identifier", name });
-  fn = (name: string, ...args: number[]): number => this.add({ tag: "function", payload: { qualifier: null, name, args } });
-  dot = (base: number, property: string): number => this.add({ tag: "dot", base, property });
-  at = (base: number, property: number): number => this.add({ tag: "bracket", base, property });
+  text = (value: string): number => this.add({ text: { value } });
+  composite = (...parts: number[]): number => this.add({ composite: { parts } });
+  nil = (): number => this.add("null");
+  bool = (value: boolean): number => this.add({ bool: { value } });
+  int = (digits: string): number => this.add({ integer: { digits } });
+  float = (lexeme: string): number => this.add({ float: { lexeme } });
+  str = (value: string): number => this.add({ stringLiteral: { value } });
+  id = (name: string): number => this.add({ identifier: { name } });
+  fn = (name: string, ...args: number[]): number => this.add({ function: { payload: { qualifier: null, name, args } } });
+  dot = (base: number, property: string): number => this.add({ dot: { base, property } });
+  at = (base: number, property: number): number => this.add({ bracket: { base, property } });
+  /** A call of a listed method, which the wire names by its Java name. */
   call = (receiver: number, method: string, ...args: number[]): number =>
-    this.add({ tag: "call", payload: { receiver, target: { tag: "listed", method }, args } });
+    this.add({ call: { payload: { receiver, target: method, args } } });
+  /** A call of a method the list does not name, which decodes as `other`. */
   other = (receiver: number, name: string, ...args: number[]): number =>
-    this.add({ tag: "call", payload: { receiver, target: { tag: "other", name }, args } });
-  computed = (receiver: number, name: number): number => this.add({ tag: "computedCall", payload: { receiver, name, args: [] } });
-  un = (op: string, operand: number): number => this.add({ tag: "unary", op, operand });
-  bin = (op: string, left: number, right: number): number => this.add({ tag: "binary", payload: { op, left, right } });
+    this.add({ call: { payload: { receiver, target: name, args } } });
+  computed = (receiver: number, name: number): number => this.add({ computedCall: { payload: { receiver, name, args: [] } } });
+  un = (op: string, operand: number): number => this.add({ unary: { op, operand } });
+  bin = (op: string, left: number, right: number): number => this.add({ binary: { payload: { op, left, right } } });
   choice = (condition: number, whenTrue: number, whenFalse: number): number =>
-    this.add({ tag: "choice", payload: { condition, whenTrue, whenFalse } });
+    this.add({ choice: { payload: { condition, whenTrue, whenFalse } } });
 }
 
-const int = (value: number): Value => ({ tag: "int", value } as unknown as Value);
-const str = (value: string): Value => ({ tag: "string", value } as unknown as Value);
-const bool = (value: boolean): Value => ({ tag: "bool", value } as unknown as Value);
-const nil: Value = { tag: "null" } as unknown as Value;
-const decimal = (coefficient: bigint, scale: number): Value => ({ tag: "decimal", coefficient, scale } as unknown as Value);
-const list = (...items: Value[]): Value => ({ tag: "list", items } as unknown as Value);
-const map = (...entries: [string, Value][]): Value => ({ tag: "map", entries } as unknown as Value);
+const int = (value: number): Value => ({ kind: "integer", value });
+const str = (value: string): Value => ({ kind: "string", value });
+const bool = (value: boolean): Value => ({ kind: "boolean", value });
+const nil: Value = { kind: "null" };
+const decimal = (coefficient: bigint, scale: number): Value => ({ kind: "decimal", coefficient: String(coefficient), scale });
+const list = (...items: Value[]): Value => ({ kind: "list", value: items });
+const map = (...entries: [string, Value][]): Value => ({ kind: "map", value: entries.map(([name, value]) => ({ name, value })) });
 
 type Expected = Readonly<{ value: Value }> | Readonly<{ failure: string }> | Readonly<{ unsupported: string }>;
 type Row = Readonly<{ name: string; build: (t: Table) => unknown; variables?: [string, Value][]; expect: Expected }>;
+
+const bindings = (entries: readonly (readonly [string, Value])[]): unknown[] => entries.map(([name, value]) => ({ name, value }));
 
 const context: [string, Value][] = [
   ["a", int(7)], ["b", int(3)], ["s", str("7")], ["t", str("true")], ["word", str("abc")], ["blank", str("")],
@@ -160,28 +166,18 @@ const rows: readonly Row[] = [
   { name: "List to text is unsupported", build: (t) => t.composite(t.text("x"), t.id("texts")), expect: { unsupported: "juel.collectionText" } },
 ];
 
-const evaluateTable = (row: Row) => {
-  const table = new Table();
-  row.build(table);
-  const expression = { tag: "juel", nodes: table.nodes } as never;
-  return hooks.evaluate({ variables: row.variables ?? context, nowMs: 0 } as never, expression) as unknown as Record<string, unknown>;
-};
-
 for (const row of rows) {
   test(`juel: ${row.name}`, () => {
-    const actual = evaluateTable(row);
-    if ("value" in row.expect) assert.deepEqual(actual, { tag: "value", result: row.expect.value });
-    else if ("failure" in row.expect) assert.deepEqual(actual, { tag: "failure", code: row.expect.failure });
-    else assert.deepEqual(actual, { tag: "unsupported", code: row.expect.unsupported });
+    const table = new Table();
+    row.build(table);
+    assert.deepEqual(evaluate({ juel: { nodes: table.nodes } }, bindings(row.variables ?? context)), row.expect);
   });
 }
 
 test("juel: an empty node table is malformed", () => {
-  const actual = hooks.evaluate({ variables: [], nowMs: 0 } as never, { tag: "juel", nodes: [] } as never) as unknown;
-  assert.deepEqual(actual, { tag: "unsupported", code: "expression.juel.malformed" });
+  assert.deepEqual(evaluate({ juel: { nodes: [] } }, []), { unsupported: "expression.juel.malformed" });
 });
 
 test("juel: a text the reader left unparsed is unsupported, as admission refuses it", () => {
-  const actual = hooks.evaluate({ variables: [], nowMs: 0 } as never, { tag: "foreign", language: "juel", source: "${x}" } as never) as unknown;
-  assert.deepEqual(actual, { tag: "unsupported", code: "expression.outsideSimpleBoolean" });
+  assert.deepEqual(evaluate({ foreign: { language: "juel", source: "${x}" } }, []), { unsupported: "expression.outsideSimpleBoolean" });
 });

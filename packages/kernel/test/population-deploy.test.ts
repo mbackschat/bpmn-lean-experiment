@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { runPopulation } from "@bpmn-lean/kernel";
+import { runPopulation } from "./lean-paired.ts";
 
 import { base, message, replace, start, text, wired, withOptions } from "./admission-refusal-support.ts";
 

@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { runHostView } from "@bpmn-lean/kernel";
+import { runHostView } from "./lean-paired.ts";
 
 import { activity, base, end, envelope, flow, start, userWork } from "./admission-refusal-support.ts";
 

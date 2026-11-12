@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { decodeProgram, encodeProgram, runScenario } from "@bpmn-lean/kernel";
+import { decodeProgram, encodeProgram, runScenario } from "./lean-paired.ts";
 
 function readJson(url: URL): unknown {
   return JSON.parse(readFileSync(url, "utf8"));
