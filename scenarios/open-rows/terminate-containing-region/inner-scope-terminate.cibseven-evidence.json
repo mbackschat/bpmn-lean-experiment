@@ -61,12 +61,8 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Close the region"
-          },
-          {
-            "elementId": "UserTask_Review",
-            "name": "Review the file"
+            "elementId": "UserTask_Abort",
+            "name": "Abort the whole review"
           },
           {
             "elementId": "UserTask_ChildTrigger",
@@ -77,16 +73,20 @@
             "name": "Check one attachment"
           },
           {
-            "elementId": "UserTask_Raise",
-            "name": "Raise an alert"
-          },
-          {
             "elementId": "UserTask_Outside",
             "name": "Handle the unrelated request"
           },
           {
-            "elementId": "UserTask_Abort",
-            "name": "Abort the whole review"
+            "elementId": "UserTask_Raise",
+            "name": "Raise an alert"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the file"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Close the region"
           }
         ]
       },
@@ -94,24 +94,24 @@
         "afterCommandId": "s02-close-attachment-check",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Close the region"
-          },
-          {
-            "elementId": "UserTask_Review",
-            "name": "Review the file"
-          },
-          {
-            "elementId": "UserTask_Raise",
-            "name": "Raise an alert"
+            "elementId": "UserTask_Abort",
+            "name": "Abort the whole review"
           },
           {
             "elementId": "UserTask_Outside",
             "name": "Handle the unrelated request"
           },
           {
-            "elementId": "UserTask_Abort",
-            "name": "Abort the whole review"
+            "elementId": "UserTask_Raise",
+            "name": "Raise an alert"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the file"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Close the region"
           }
         ]
       },
@@ -119,24 +119,24 @@
         "afterCommandId": "s03-late-child-work",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Close the region"
-          },
-          {
-            "elementId": "UserTask_Review",
-            "name": "Review the file"
-          },
-          {
-            "elementId": "UserTask_Raise",
-            "name": "Raise an alert"
+            "elementId": "UserTask_Abort",
+            "name": "Abort the whole review"
           },
           {
             "elementId": "UserTask_Outside",
             "name": "Handle the unrelated request"
           },
           {
-            "elementId": "UserTask_Abort",
-            "name": "Abort the whole review"
+            "elementId": "UserTask_Raise",
+            "name": "Raise an alert"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the file"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Close the region"
           }
         ]
       },
@@ -144,20 +144,20 @@
         "afterCommandId": "s04-review-file",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Close the region"
-          },
-          {
-            "elementId": "UserTask_Raise",
-            "name": "Raise an alert"
+            "elementId": "UserTask_Abort",
+            "name": "Abort the whole review"
           },
           {
             "elementId": "UserTask_Outside",
             "name": "Handle the unrelated request"
           },
           {
-            "elementId": "UserTask_Abort",
-            "name": "Abort the whole review"
+            "elementId": "UserTask_Raise",
+            "name": "Raise an alert"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Close the region"
           }
         ]
       },
@@ -165,20 +165,20 @@
         "afterCommandId": "s05-reply",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Close the region"
-          },
-          {
-            "elementId": "UserTask_Raise",
-            "name": "Raise an alert"
+            "elementId": "UserTask_Abort",
+            "name": "Abort the whole review"
           },
           {
             "elementId": "UserTask_Outside",
             "name": "Handle the unrelated request"
           },
           {
-            "elementId": "UserTask_Abort",
-            "name": "Abort the whole review"
+            "elementId": "UserTask_Raise",
+            "name": "Raise an alert"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Close the region"
           }
         ]
       },
@@ -186,16 +186,16 @@
         "afterCommandId": "s06-close-region",
         "tasks": [
           {
-            "elementId": "UserTask_Outside",
-            "name": "Handle the unrelated request"
-          },
-          {
             "elementId": "UserTask_Abort",
             "name": "Abort the whole review"
           },
           {
             "elementId": "UserTask_AfterRegion",
             "name": "File the region outcome"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
           }
         ]
       }

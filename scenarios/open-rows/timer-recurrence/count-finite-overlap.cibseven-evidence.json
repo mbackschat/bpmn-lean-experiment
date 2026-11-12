@@ -160,12 +160,12 @@
         "afterCommandId": "s02-fire-Cycle_Count",
         "tasks": [
           {
-            "elementId": "Host_Count",
-            "name": "Review (count)"
-          },
-          {
             "elementId": "Handler_Count",
             "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Host_Count",
+            "name": "Review (count)"
           }
         ]
       },
@@ -173,16 +173,16 @@
         "afterCommandId": "s03-fire-Cycle_Count",
         "tasks": [
           {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
             "elementId": "Host_Count",
             "name": "Review (count)"
-          },
-          {
-            "elementId": "Handler_Count",
-            "name": "Respond to the reminder (count)"
-          },
-          {
-            "elementId": "Handler_Count",
-            "name": "Respond to the reminder (count)"
           }
         ]
       },
@@ -190,20 +190,20 @@
         "afterCommandId": "s04-fire-Cycle_Count",
         "tasks": [
           {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
             "elementId": "Host_Count",
             "name": "Review (count)"
-          },
-          {
-            "elementId": "Handler_Count",
-            "name": "Respond to the reminder (count)"
-          },
-          {
-            "elementId": "Handler_Count",
-            "name": "Respond to the reminder (count)"
-          },
-          {
-            "elementId": "Handler_Count",
-            "name": "Respond to the reminder (count)"
           }
         ]
       },
@@ -211,20 +211,20 @@
         "afterCommandId": "s05-fire-Cycle_Count",
         "tasks": [
           {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
             "elementId": "Host_Count",
             "name": "Review (count)"
-          },
-          {
-            "elementId": "Handler_Count",
-            "name": "Respond to the reminder (count)"
-          },
-          {
-            "elementId": "Handler_Count",
-            "name": "Respond to the reminder (count)"
-          },
-          {
-            "elementId": "Handler_Count",
-            "name": "Respond to the reminder (count)"
           }
         ]
       },
@@ -232,16 +232,16 @@
         "afterCommandId": "s06-complete-Handler_Count",
         "tasks": [
           {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
             "elementId": "Host_Count",
             "name": "Review (count)"
-          },
-          {
-            "elementId": "Handler_Count",
-            "name": "Respond to the reminder (count)"
-          },
-          {
-            "elementId": "Handler_Count",
-            "name": "Respond to the reminder (count)"
           }
         ]
       },
@@ -249,12 +249,12 @@
         "afterCommandId": "s07-complete-Handler_Count",
         "tasks": [
           {
-            "elementId": "Host_Count",
-            "name": "Review (count)"
-          },
-          {
             "elementId": "Handler_Count",
             "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Host_Count",
+            "name": "Review (count)"
           }
         ]
       },

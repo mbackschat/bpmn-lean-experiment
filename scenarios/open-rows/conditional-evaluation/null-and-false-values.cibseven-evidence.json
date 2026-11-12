@@ -193,16 +193,16 @@
         "afterCommandId": "s02-set-status",
         "tasks": [
           {
+            "elementId": "Handle_Null",
+            "name": "Handle the null condition"
+          },
+          {
             "elementId": "Host",
             "name": "Review the account"
           },
           {
             "elementId": "Host_Local",
             "name": "Review the local account"
-          },
-          {
-            "elementId": "Handle_Null",
-            "name": "Handle the null condition"
           }
         ]
       },
@@ -210,16 +210,16 @@
         "afterCommandId": "s03-set-approved",
         "tasks": [
           {
+            "elementId": "Handle_Null",
+            "name": "Handle the null condition"
+          },
+          {
             "elementId": "Host",
             "name": "Review the account"
           },
           {
             "elementId": "Host_Local",
             "name": "Review the local account"
-          },
-          {
-            "elementId": "Handle_Null",
-            "name": "Handle the null condition"
           }
         ]
       },
@@ -227,20 +227,20 @@
         "afterCommandId": "s04-set-approved",
         "tasks": [
           {
-            "elementId": "Host",
-            "name": "Review the account"
-          },
-          {
-            "elementId": "Host_Local",
-            "name": "Review the local account"
+            "elementId": "Handle_False",
+            "name": "Handle the false condition"
           },
           {
             "elementId": "Handle_Null",
             "name": "Handle the null condition"
           },
           {
-            "elementId": "Handle_False",
-            "name": "Handle the false condition"
+            "elementId": "Host",
+            "name": "Review the account"
+          },
+          {
+            "elementId": "Host_Local",
+            "name": "Review the local account"
           }
         ]
       },
@@ -248,20 +248,20 @@
         "afterCommandId": "s05-set-flag",
         "tasks": [
           {
-            "elementId": "Host",
-            "name": "Review the account"
-          },
-          {
-            "elementId": "Host_Local",
-            "name": "Review the local account"
+            "elementId": "Handle_False",
+            "name": "Handle the false condition"
           },
           {
             "elementId": "Handle_Null",
             "name": "Handle the null condition"
           },
           {
-            "elementId": "Handle_False",
-            "name": "Handle the false condition"
+            "elementId": "Host",
+            "name": "Review the account"
+          },
+          {
+            "elementId": "Host_Local",
+            "name": "Review the local account"
           }
         ]
       },
@@ -269,24 +269,24 @@
         "afterCommandId": "s06-set-flag",
         "tasks": [
           {
-            "elementId": "Host",
-            "name": "Review the account"
-          },
-          {
-            "elementId": "Host_Local",
-            "name": "Review the local account"
-          },
-          {
-            "elementId": "Handle_Null",
-            "name": "Handle the null condition"
+            "elementId": "Handle_Any",
+            "name": "Handle the any condition"
           },
           {
             "elementId": "Handle_False",
             "name": "Handle the false condition"
           },
           {
-            "elementId": "Handle_Any",
-            "name": "Handle the any condition"
+            "elementId": "Handle_Null",
+            "name": "Handle the null condition"
+          },
+          {
+            "elementId": "Host",
+            "name": "Review the account"
+          },
+          {
+            "elementId": "Host_Local",
+            "name": "Review the local account"
           }
         ]
       }

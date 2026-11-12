@@ -227,23 +227,23 @@
         "afterCommandId": "s03-effect-ChargeCard-1",
         "tasks": [
           {
-            "elementId": "CheckSanctions",
-            "name": "Check sanctions",
-            "identityLinks": [],
-            "formFields": [
-              {
-                "id": "sanctions",
-                "typeName": "string"
-              }
-            ]
-          },
-          {
             "elementId": "CheckAddress",
             "name": "Check address",
             "identityLinks": [],
             "formFields": [
               {
                 "id": "address",
+                "typeName": "string"
+              }
+            ]
+          },
+          {
+            "elementId": "CheckSanctions",
+            "name": "Check sanctions",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "sanctions",
                 "typeName": "string"
               }
             ]

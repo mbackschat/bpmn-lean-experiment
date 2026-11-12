@@ -193,16 +193,16 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_OuterWork",
-            "name": "Outer work"
-          },
-          {
             "elementId": "UserTask_InnerWork",
             "name": "Inner work"
           },
           {
             "elementId": "UserTask_OuterDecide",
             "name": "Decide whether to cancel the outer transaction"
+          },
+          {
+            "elementId": "UserTask_OuterWork",
+            "name": "Outer work"
           }
         ]
       },
@@ -223,12 +223,12 @@
         "afterCommandId": "s02-complete-UserTask_InnerWork-1",
         "tasks": [
           {
-            "elementId": "UserTask_OuterDecide",
-            "name": "Decide whether to cancel the outer transaction"
-          },
-          {
             "elementId": "UserTask_InnerDecide",
             "name": "Decide whether to cancel the inner transaction"
+          },
+          {
+            "elementId": "UserTask_OuterDecide",
+            "name": "Decide whether to cancel the outer transaction"
           }
         ]
       },

@@ -210,12 +210,12 @@
         "afterCommandId": "s03-complete-UserTask_Check-2",
         "tasks": [
           {
-            "elementId": "UserTask_Sibling",
-            "name": "Review the sibling branch"
-          },
-          {
             "elementId": "UserTask_Publish",
             "name": "Publish outcome"
+          },
+          {
+            "elementId": "UserTask_Sibling",
+            "name": "Review the sibling branch"
           }
         ]
       },

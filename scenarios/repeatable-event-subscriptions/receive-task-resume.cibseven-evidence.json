@@ -61,12 +61,12 @@
         "afterCommandId": "start-subscription",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
-          },
-          {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },
@@ -74,12 +74,12 @@
         "afterCommandId": "deliver-response",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
-          },
-          {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },

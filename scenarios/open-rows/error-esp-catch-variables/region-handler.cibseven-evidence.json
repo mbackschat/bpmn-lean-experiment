@@ -86,12 +86,12 @@
         "afterCommandId": "s02-complete-trigger",
         "tasks": [
           {
-            "elementId": "MainWork",
-            "name": "Main work"
-          },
-          {
             "elementId": "Handle",
             "name": "Handle the intake failure"
+          },
+          {
+            "elementId": "MainWork",
+            "name": "Main work"
           }
         ]
       },

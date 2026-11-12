@@ -50,16 +50,16 @@
         "afterCommandId": "complete-dig",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Work"
+            "elementId": "EscalateOuter",
+            "name": "Handle the deep escalation"
           },
           {
             "elementId": "Surface",
             "name": "Surface"
           },
           {
-            "elementId": "EscalateOuter",
-            "name": "Handle the deep escalation"
+            "elementId": "Work",
+            "name": "Work"
           }
         ]
       }

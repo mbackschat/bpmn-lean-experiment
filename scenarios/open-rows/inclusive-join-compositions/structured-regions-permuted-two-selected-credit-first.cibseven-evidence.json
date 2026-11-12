@@ -137,12 +137,12 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "FraudCheck",
-            "name": "Fraud check"
-          },
-          {
             "elementId": "CreditCheck",
             "name": "Credit check"
+          },
+          {
+            "elementId": "FraudCheck",
+            "name": "Fraud check"
           }
         ]
       },

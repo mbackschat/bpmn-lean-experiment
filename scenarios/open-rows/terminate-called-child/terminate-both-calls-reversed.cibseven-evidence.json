@@ -154,12 +154,12 @@
         "afterCommandId": "s02-finish-south",
         "tasks": [
           {
-            "elementId": "UserTask_CallerOutside",
-            "name": "Update the pickup log"
-          },
-          {
             "elementId": "UserTask_AfterB",
             "name": "File the south receipt"
+          },
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
           },
           {
             "elementId": "UserTask_Finish",
@@ -175,16 +175,16 @@
         "afterCommandId": "s03-finish-north",
         "tasks": [
           {
-            "elementId": "UserTask_CallerOutside",
-            "name": "Update the pickup log"
+            "elementId": "UserTask_AfterA",
+            "name": "File the north receipt"
           },
           {
             "elementId": "UserTask_AfterB",
             "name": "File the south receipt"
           },
           {
-            "elementId": "UserTask_AfterA",
-            "name": "File the north receipt"
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
           }
         ]
       },
@@ -192,12 +192,12 @@
         "afterCommandId": "s04-file-south",
         "tasks": [
           {
-            "elementId": "UserTask_CallerOutside",
-            "name": "Update the pickup log"
-          },
-          {
             "elementId": "UserTask_AfterA",
             "name": "File the north receipt"
+          },
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
           }
         ]
       },

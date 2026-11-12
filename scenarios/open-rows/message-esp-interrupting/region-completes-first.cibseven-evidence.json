@@ -149,16 +149,16 @@
         "afterCommandId": "s02-complete-Work",
         "subscriptions": [
           {
-            "elementId": "Start_RegionAbort",
-            "eventName": "abortRegion",
-            "messageId": "Message_Abort",
+            "elementId": "Start_Cancel",
+            "eventName": "cancelOrder",
+            "messageId": "Message_Cancel",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Start_Cancel",
-            "eventName": "cancelOrder",
-            "messageId": "Message_Cancel",
+            "elementId": "Start_RegionAbort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }

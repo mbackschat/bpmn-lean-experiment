@@ -113,6 +113,10 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -123,10 +127,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",
@@ -142,16 +142,16 @@
             "name": "Review the application"
           },
           {
+            "elementId": "Review_Loop",
+            "name": "Check the signature"
+          },
+          {
             "elementId": "Scope_A",
             "name": "Inspect the north wing"
           },
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Review_Loop",
-            "name": "Check the signature"
           },
           {
             "elementId": "Child_Work",
@@ -167,20 +167,20 @@
             "name": "Review the application"
           },
           {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
+            "elementId": "Nudge_User",
+            "name": "Send a nudge"
           },
           {
             "elementId": "Review_Loop",
             "name": "Check the signature"
           },
           {
-            "elementId": "Nudge_User",
-            "name": "Send a nudge"
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -192,8 +192,16 @@
         "afterCommandId": "s04-complete-Review_Loop",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Nudge_User",
+            "name": "Send a nudge"
           },
           {
             "elementId": "Scope_A",
@@ -202,14 +210,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Nudge_User",
-            "name": "Send a nudge"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",
@@ -221,8 +221,16 @@
         "afterCommandId": "s05-fire-Deadline_Loop",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Nudge_User",
+            "name": "Send a nudge"
           },
           {
             "elementId": "Scope_A",
@@ -231,14 +239,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Nudge_User",
-            "name": "Send a nudge"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",
@@ -250,8 +250,16 @@
         "afterCommandId": "s06-fire-Deadline_Loop",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Nudge_User",
+            "name": "Send a nudge"
           },
           {
             "elementId": "Scope_A",
@@ -260,14 +268,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Nudge_User",
-            "name": "Send a nudge"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",
@@ -283,20 +283,20 @@
             "name": "Review the application"
           },
           {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
+            "elementId": "Late_Loop",
+            "name": "Chase the signature"
           },
           {
             "elementId": "Nudge_User",
             "name": "Send a nudge"
           },
           {
-            "elementId": "Late_Loop",
-            "name": "Chase the signature"
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -312,16 +312,16 @@
             "name": "Review the application"
           },
           {
+            "elementId": "Nudge_User",
+            "name": "Send a nudge"
+          },
+          {
             "elementId": "Scope_A",
             "name": "Inspect the north wing"
           },
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Nudge_User",
-            "name": "Send a nudge"
           },
           {
             "elementId": "Child_Work",

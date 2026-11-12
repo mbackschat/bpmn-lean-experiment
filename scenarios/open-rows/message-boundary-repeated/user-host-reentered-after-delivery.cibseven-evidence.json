@@ -116,12 +116,12 @@
         "afterCommandId": "s02-deliver-Ping_Loop",
         "tasks": [
           {
-            "elementId": "Host_Loop",
-            "name": "Review the order"
-          },
-          {
             "elementId": "Handler_Loop",
             "name": "Respond to the ping"
+          },
+          {
+            "elementId": "Host_Loop",
+            "name": "Review the order"
           }
         ]
       },
@@ -146,12 +146,12 @@
             "name": "Respond to the ping"
           },
           {
-            "elementId": "Host_Loop",
-            "name": "Review the order"
-          },
-          {
             "elementId": "Handler_Loop",
             "name": "Respond to the ping"
+          },
+          {
+            "elementId": "Host_Loop",
+            "name": "Review the order"
           }
         ]
       },
@@ -159,12 +159,12 @@
         "afterCommandId": "s05-complete-Handler_Loop",
         "tasks": [
           {
-            "elementId": "Host_Loop",
-            "name": "Review the order"
-          },
-          {
             "elementId": "Handler_Loop",
             "name": "Respond to the ping"
+          },
+          {
+            "elementId": "Host_Loop",
+            "name": "Review the order"
           }
         ]
       },

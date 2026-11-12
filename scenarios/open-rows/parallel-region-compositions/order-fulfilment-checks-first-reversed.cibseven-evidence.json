@@ -223,12 +223,12 @@
         "afterCommandId": "s02-effect-ChargeCard-1",
         "tasks": [
           {
-            "elementId": "PickItems",
-            "name": "Pick items",
+            "elementId": "CheckAddress",
+            "name": "Check address",
             "identityLinks": [],
             "formFields": [
               {
-                "id": "picked",
+                "id": "address",
                 "typeName": "string"
               }
             ]
@@ -245,12 +245,12 @@
             ]
           },
           {
-            "elementId": "CheckAddress",
-            "name": "Check address",
+            "elementId": "PickItems",
+            "name": "Pick items",
             "identityLinks": [],
             "formFields": [
               {
-                "id": "address",
+                "id": "picked",
                 "typeName": "string"
               }
             ]
@@ -261,23 +261,23 @@
         "afterCommandId": "s03-complete-CheckAddress-1",
         "tasks": [
           {
-            "elementId": "PickItems",
-            "name": "Pick items",
-            "identityLinks": [],
-            "formFields": [
-              {
-                "id": "picked",
-                "typeName": "string"
-              }
-            ]
-          },
-          {
             "elementId": "CheckSanctions",
             "name": "Check sanctions",
             "identityLinks": [],
             "formFields": [
               {
                 "id": "sanctions",
+                "typeName": "string"
+              }
+            ]
+          },
+          {
+            "elementId": "PickItems",
+            "name": "Pick items",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "picked",
                 "typeName": "string"
               }
             ]

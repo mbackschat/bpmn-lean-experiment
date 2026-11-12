@@ -69,16 +69,16 @@
         "afterCommandId": "s02-set-level",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the file"
+            "elementId": "Hold_Catch",
+            "name": "Hold the region"
           },
           {
             "elementId": "Hold_Esp",
             "name": "Hold the listener"
           },
           {
-            "elementId": "Hold_Catch",
-            "name": "Hold the region"
+            "elementId": "Work",
+            "name": "Prepare the file"
           }
         ]
       }

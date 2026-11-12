@@ -70,12 +70,12 @@
         "afterCommandId": "s02-fire-Start_Dated",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the shipment"
-          },
-          {
             "elementId": "Dated_Note",
             "name": "Record the dated notice"
+          },
+          {
+            "elementId": "Work",
+            "name": "Prepare the shipment"
           }
         ]
       },

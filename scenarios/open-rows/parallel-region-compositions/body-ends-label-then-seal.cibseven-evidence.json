@@ -59,12 +59,12 @@
             "name": "Label parcel"
           },
           {
-            "elementId": "SealParcel",
-            "name": "Seal parcel"
-          },
-          {
             "elementId": "Notify",
             "name": "Notify customer"
+          },
+          {
+            "elementId": "SealParcel",
+            "name": "Seal parcel"
           }
         ]
       },
@@ -72,12 +72,12 @@
         "afterCommandId": "s02-complete-LabelParcel-1",
         "tasks": [
           {
-            "elementId": "SealParcel",
-            "name": "Seal parcel"
-          },
-          {
             "elementId": "Notify",
             "name": "Notify customer"
+          },
+          {
+            "elementId": "SealParcel",
+            "name": "Seal parcel"
           }
         ]
       },

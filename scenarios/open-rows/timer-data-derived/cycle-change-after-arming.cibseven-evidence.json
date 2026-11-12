@@ -131,12 +131,12 @@
         "afterCommandId": "s03-fire-Cadence",
         "tasks": [
           {
-            "elementId": "Host_Remind",
-            "name": "Work with reminders"
-          },
-          {
             "elementId": "Handler_Cadence",
             "name": "Respond to the reminder"
+          },
+          {
+            "elementId": "Host_Remind",
+            "name": "Work with reminders"
           }
         ]
       },
@@ -144,16 +144,16 @@
         "afterCommandId": "s04-fire-Cadence",
         "tasks": [
           {
+            "elementId": "Handler_Cadence",
+            "name": "Respond to the reminder"
+          },
+          {
+            "elementId": "Handler_Cadence",
+            "name": "Respond to the reminder"
+          },
+          {
             "elementId": "Host_Remind",
             "name": "Work with reminders"
-          },
-          {
-            "elementId": "Handler_Cadence",
-            "name": "Respond to the reminder"
-          },
-          {
-            "elementId": "Handler_Cadence",
-            "name": "Respond to the reminder"
           }
         ]
       }

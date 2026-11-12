@@ -168,16 +168,16 @@
         "afterCommandId": "s02-fire-Body_Deadline",
         "tasks": [
           {
-            "elementId": "Inspect",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inspect",
-            "name": "Inspect one lot"
-          },
-          {
             "elementId": "Body_Late",
             "name": "Handle the late lot"
+          },
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
           }
         ]
       },

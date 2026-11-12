@@ -194,12 +194,12 @@
         "afterCommandId": "s03-complete-RecordWidth-1",
         "tasks": [
           {
-            "elementId": "RecordHeight",
-            "name": "Record height"
-          },
-          {
             "elementId": "FileReport",
             "name": "File report"
+          },
+          {
+            "elementId": "RecordHeight",
+            "name": "Record height"
           }
         ]
       },

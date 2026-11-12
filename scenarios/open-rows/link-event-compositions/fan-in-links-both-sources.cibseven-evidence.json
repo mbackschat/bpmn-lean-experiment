@@ -68,12 +68,12 @@
         "afterCommandId": "s02-complete-PrepareA-1",
         "tasks": [
           {
-            "elementId": "PrepareB",
-            "name": "Prepare B"
-          },
-          {
             "elementId": "Handle",
             "name": "Handle"
+          },
+          {
+            "elementId": "PrepareB",
+            "name": "Prepare B"
           }
         ]
       },

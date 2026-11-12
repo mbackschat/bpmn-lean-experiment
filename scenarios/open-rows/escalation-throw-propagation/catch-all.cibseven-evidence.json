@@ -58,16 +58,16 @@
             "name": "Assess case"
           },
           {
+            "elementId": "Notify",
+            "name": "Notify auditor"
+          },
+          {
             "elementId": "Work",
             "name": "Work on the phase"
           },
           {
             "elementId": "Wrapup",
             "name": "Wrap up audit"
-          },
-          {
-            "elementId": "Notify",
-            "name": "Notify auditor"
           }
         ]
       }

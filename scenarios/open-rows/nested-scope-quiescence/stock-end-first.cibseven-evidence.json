@@ -249,12 +249,12 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_Pick",
-            "name": "Pick items"
-          },
-          {
             "elementId": "UserTask_Invoice",
             "name": "Send the invoice"
+          },
+          {
+            "elementId": "UserTask_Pick",
+            "name": "Pick items"
           },
           {
             "elementId": "UserTask_CheckAddress",
@@ -266,12 +266,12 @@
         "afterCommandId": "s02-reserve-stock",
         "tasks": [
           {
-            "elementId": "UserTask_Pick",
-            "name": "Pick items"
-          },
-          {
             "elementId": "UserTask_Invoice",
             "name": "Send the invoice"
+          },
+          {
+            "elementId": "UserTask_Pick",
+            "name": "Pick items"
           },
           {
             "elementId": "UserTask_CheckAddress",
@@ -283,12 +283,12 @@
         "afterCommandId": "s03-check-address",
         "tasks": [
           {
-            "elementId": "UserTask_Pick",
-            "name": "Pick items"
-          },
-          {
             "elementId": "UserTask_Invoice",
             "name": "Send the invoice"
+          },
+          {
+            "elementId": "UserTask_Pick",
+            "name": "Pick items"
           }
         ]
       },

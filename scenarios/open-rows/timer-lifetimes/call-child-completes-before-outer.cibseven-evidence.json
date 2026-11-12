@@ -92,12 +92,12 @@
         "afterCommandId": "s04-fire-Child_Wait",
         "tasks": [
           {
-            "elementId": "Reserve",
-            "name": "Reserve the slot"
-          },
-          {
             "elementId": "After_Call",
             "name": "File the check"
+          },
+          {
+            "elementId": "Reserve",
+            "name": "Reserve the slot"
           }
         ]
       },
@@ -105,12 +105,12 @@
         "afterCommandId": "s05-fire-Call_Deadline",
         "tasks": [
           {
-            "elementId": "Reserve",
-            "name": "Reserve the slot"
-          },
-          {
             "elementId": "After_Call",
             "name": "File the check"
+          },
+          {
+            "elementId": "Reserve",
+            "name": "Reserve the slot"
           }
         ]
       },

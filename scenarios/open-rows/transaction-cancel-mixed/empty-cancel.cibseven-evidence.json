@@ -193,16 +193,16 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_Pick",
-            "name": "Pick the goods"
+            "elementId": "UserTask_Decide",
+            "name": "Decide whether to cancel"
           },
           {
             "elementId": "UserTask_PackItems",
             "name": "Pack the items"
           },
           {
-            "elementId": "UserTask_Decide",
-            "name": "Decide whether to cancel"
+            "elementId": "UserTask_Pick",
+            "name": "Pick the goods"
           }
         ]
       },

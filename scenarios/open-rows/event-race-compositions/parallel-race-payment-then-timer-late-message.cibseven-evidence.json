@@ -102,16 +102,16 @@
         "afterCommandId": "s01-start",
         "subscriptions": [
           {
-            "elementId": "CarrierArrived",
-            "eventName": "pickup",
-            "messageId": "Message_Pickup",
+            "elementId": "AwaitPayment",
+            "eventName": "payment",
+            "messageId": "Message_Payment",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "AwaitPayment",
-            "eventName": "payment",
-            "messageId": "Message_Payment",
+            "elementId": "CarrierArrived",
+            "eventName": "pickup",
+            "messageId": "Message_Pickup",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }

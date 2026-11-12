@@ -1,0 +1,669 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mi-service-parallel-timer-while-effect-pending",
+    "sha256": "d5817bcd75e4818c9edad70c0905cac90b6163c85fb4f9b504c8fde57634f500"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-timer-BoundaryTimer_Notify-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-effect-ServiceTask_Notify-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-effect-ServiceTask_Notify-3",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_TimedOut-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-2",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s03-fire-timer-BoundaryTimer_Notify-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_TimedOut",
+            "name": "Handle timed-out notification run"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-effect-ServiceTask_Notify-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_TimedOut",
+            "name": "Handle timed-out notification run"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-effect-ServiceTask_Notify-3",
+        "tasks": [
+          {
+            "elementId": "UserTask_TimedOut",
+            "name": "Handle timed-out notification run"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_TimedOut-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "BoundaryTimer_Notify",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-2",
+        "jobs": [
+          {
+            "elementId": "BoundaryTimer_Notify",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-timer-BoundaryTimer_Notify-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-effect-ServiceTask_Notify-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-effect-ServiceTask_Notify-3",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_TimedOut-1",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 2,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 3,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-2",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 3,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-timer-BoundaryTimer_Notify-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-effect-ServiceTask_Notify-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-effect-ServiceTask_Notify-3",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_TimedOut-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-fire-timer-BoundaryTimer_Notify-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-effect-ServiceTask_Notify-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-effect-ServiceTask_Notify-3",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_TimedOut-1",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-2",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "BoundaryTimer_Notify",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-effect-ServiceTask_Notify-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "BoundaryTimer_Notify",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-fire-timer-BoundaryTimer_Notify-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_TimedOut",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle timed-out notification run",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-effect-ServiceTask_Notify-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_TimedOut",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle timed-out notification run",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-effect-ServiceTask_Notify-3",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_TimedOut",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle timed-out notification run",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-UserTask_TimedOut-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

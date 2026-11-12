@@ -1,0 +1,445 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mi-subprocess-sequential-subtracted-numeric-text",
+    "sha256": "7918ca9a8c0161150e00fbca4272bdc42f060b7f1cb0837d8065592857461374"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
+          },
+          {
+            "name": "offset",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Inspect-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
+          },
+          {
+            "name": "offset",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Inspect-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
+          },
+          {
+            "name": "offset",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Publish-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
+          },
+          {
+            "name": "offset",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Inspect",
+            "name": "Inspect one item"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Inspect-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Inspect",
+            "name": "Inspect one item"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Inspect-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish outcome"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Publish-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Inspect-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Inspect-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Publish-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Inspect-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Inspect-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Publish-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
+          },
+          {
+            "name": "offset",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Inspect-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
+          },
+          {
+            "name": "offset",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_Inspect-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
+          },
+          {
+            "name": "offset",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Publish-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
+          },
+          {
+            "name": "offset",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

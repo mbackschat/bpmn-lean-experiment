@@ -79,16 +79,16 @@
         "afterCommandId": "start-subscription",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
           },
           {
             "elementId": "UserTask_Sibling",
             "name": "Review application"
           },
           {
-            "elementId": "IndependentAudit",
-            "name": "Complete independent audit"
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },
@@ -96,20 +96,20 @@
         "afterCommandId": "fire-timer-sha256:7a3f0604d7aaaa853c640700b6473ad9fa82d0bea166fa56bbbd3e9eb4ad9a32",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
-          },
-          {
-            "elementId": "UserTask_Sibling",
-            "name": "Review application"
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
           },
           {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
           },
           {
-            "elementId": "HandleReminder",
-            "name": "Respond to application reminder"
+            "elementId": "UserTask_Sibling",
+            "name": "Review application"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },
@@ -117,24 +117,24 @@
         "afterCommandId": "fire-timer-sha256:b4f0037064c330bc3cc767590b2f4e15e055c7c8aa873aa77f71489eff45bbbc",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
           },
           {
-            "elementId": "UserTask_Sibling",
-            "name": "Review application"
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
           },
           {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
           },
           {
-            "elementId": "HandleReminder",
-            "name": "Respond to application reminder"
+            "elementId": "UserTask_Sibling",
+            "name": "Review application"
           },
           {
-            "elementId": "HandleReminder",
-            "name": "Respond to application reminder"
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },
@@ -142,20 +142,20 @@
         "afterCommandId": "complete-UserTask_Sibling-1",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
           },
           {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
           },
           {
-            "elementId": "HandleReminder",
-            "name": "Respond to application reminder"
-          },
-          {
-            "elementId": "HandleReminder",
-            "name": "Respond to application reminder"
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },
@@ -163,16 +163,16 @@
         "afterCommandId": "complete-HandleReminder-1",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
           },
           {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
           },
           {
-            "elementId": "HandleReminder",
-            "name": "Respond to application reminder"
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },
@@ -180,12 +180,12 @@
         "afterCommandId": "complete-HandleReminder-2",
         "tasks": [
           {
-            "elementId": "UserTask_Trigger",
-            "name": "Cancel review region"
-          },
-          {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
+          },
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
           }
         ]
       },

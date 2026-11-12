@@ -97,10 +97,6 @@
         "afterCommandId": "review-with-boolean",
         "tasks": [
           {
-            "elementId": "Sign",
-            "name": "Sign claim"
-          },
-          {
             "elementId": "Collect",
             "name": "Collect notes",
             "identityLinks": [],
@@ -110,6 +106,10 @@
                 "typeName": "string"
               }
             ]
+          },
+          {
+            "elementId": "Sign",
+            "name": "Sign claim"
           }
         ]
       },
@@ -117,10 +117,6 @@
         "afterCommandId": "review-valid",
         "tasks": [
           {
-            "elementId": "Sign",
-            "name": "Sign claim"
-          },
-          {
             "elementId": "Collect",
             "name": "Collect notes",
             "identityLinks": [],
@@ -130,6 +126,10 @@
                 "typeName": "string"
               }
             ]
+          },
+          {
+            "elementId": "Sign",
+            "name": "Sign claim"
           }
         ]
       }

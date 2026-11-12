@@ -121,16 +121,16 @@
         "afterCommandId": "s03-remove-note",
         "tasks": [
           {
+            "elementId": "Handle_Delete",
+            "name": "Handle the delete condition"
+          },
+          {
             "elementId": "Host",
             "name": "Review the account"
           },
           {
             "elementId": "Host_Local",
             "name": "Review the local account"
-          },
-          {
-            "elementId": "Handle_Delete",
-            "name": "Handle the delete condition"
           }
         ]
       },
@@ -138,16 +138,16 @@
         "afterCommandId": "s04-set-note",
         "tasks": [
           {
+            "elementId": "Handle_Delete",
+            "name": "Handle the delete condition"
+          },
+          {
             "elementId": "Host",
             "name": "Review the account"
           },
           {
             "elementId": "Host_Local",
             "name": "Review the local account"
-          },
-          {
-            "elementId": "Handle_Delete",
-            "name": "Handle the delete condition"
           }
         ]
       }

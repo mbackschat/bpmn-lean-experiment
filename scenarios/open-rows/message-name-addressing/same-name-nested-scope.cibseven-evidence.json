@@ -56,12 +56,12 @@
         "afterCommandId": "s03-deliver-Catch_TwinA",
         "tasks": [
           {
-            "elementId": "Proceed_TwinB",
-            "name": "Proceed with notice B"
-          },
-          {
             "elementId": "Proceed_TwinA",
             "name": "Proceed with notice A"
+          },
+          {
+            "elementId": "Proceed_TwinB",
+            "name": "Proceed with notice B"
           }
         ]
       }

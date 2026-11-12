@@ -1,0 +1,504 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mi-service-sequential-result-locals-discarded",
+    "sha256": "e7db4e0d900b158f819a6568a5d0e8b6902ba607e97c907b1ce4122b0e78dca5"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "process-receipt"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "process-receipt"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-effect-ServiceTask_Notify-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "process-receipt"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Close-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "process-receipt"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s03-effect-ServiceTask_Notify-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_Close",
+            "name": "Close notification run"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Close-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-effect-ServiceTask_Notify-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Close-1",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-1",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 2,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-effect-ServiceTask_Notify-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Close-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-effect-ServiceTask_Notify-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Close-1",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "s02-effect-ServiceTask_Notify-1",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "s03-effect-ServiceTask_Notify-2",
+        "schedule": "plainSuccess",
+        "invocations": 2,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "process-receipt"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-effect-ServiceTask_Notify-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "process-receipt"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-effect-ServiceTask_Notify-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "process-receipt"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Close",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Close notification run",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenDelivered",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "seenReceipt",
+                  "value": {
+                    "kind": "string",
+                    "value": "process-receipt"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Close-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Recipients",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "process-receipt"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

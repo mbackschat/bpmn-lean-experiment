@@ -111,12 +111,12 @@
         "afterCommandId": "complete-conclude",
         "tasks": [
           {
-            "elementId": "ConsultExpert",
-            "name": "Consult an expert"
-          },
-          {
             "elementId": "CloseReview",
             "name": "Close the review"
+          },
+          {
+            "elementId": "ConsultExpert",
+            "name": "Consult an expert"
           },
           {
             "elementId": "Examine",

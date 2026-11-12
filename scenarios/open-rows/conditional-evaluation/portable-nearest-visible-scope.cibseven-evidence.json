@@ -107,16 +107,16 @@
         "afterCommandId": "s03-set-level2",
         "tasks": [
           {
+            "elementId": "Handle_Local",
+            "name": "Handle the local condition"
+          },
+          {
             "elementId": "Host",
             "name": "Review the account"
           },
           {
             "elementId": "Host_Local",
             "name": "Review the local account"
-          },
-          {
-            "elementId": "Handle_Local",
-            "name": "Handle the local condition"
           }
         ]
       }

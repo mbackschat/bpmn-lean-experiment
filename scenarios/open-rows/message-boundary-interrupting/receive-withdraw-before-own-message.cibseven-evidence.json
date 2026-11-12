@@ -93,18 +93,6 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "Host_User",
-            "name": "Review the claim"
-          },
-          {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
-          },
-          {
             "elementId": "Body_Seq",
             "name": "Review one item"
           },
@@ -115,6 +103,18 @@
           {
             "elementId": "Host_MiPar",
             "name": "Review every item together"
+          },
+          {
+            "elementId": "Host_User",
+            "name": "Review the claim"
+          },
+          {
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -126,6 +126,22 @@
         "afterCommandId": "s02-deliver-Withdraw_Receive",
         "tasks": [
           {
+            "elementId": "Body_Seq",
+            "name": "Review one item"
+          },
+          {
+            "elementId": "Handle_Withdraw_Receive",
+            "name": "Handle the withdrawal"
+          },
+          {
+            "elementId": "Host_MiPar",
+            "name": "Review every item together"
+          },
+          {
+            "elementId": "Host_MiPar",
+            "name": "Review every item together"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the claim"
           },
@@ -136,22 +152,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Body_Seq",
-            "name": "Review one item"
-          },
-          {
-            "elementId": "Host_MiPar",
-            "name": "Review every item together"
-          },
-          {
-            "elementId": "Host_MiPar",
-            "name": "Review every item together"
-          },
-          {
-            "elementId": "Handle_Withdraw_Receive",
-            "name": "Handle the withdrawal"
           },
           {
             "elementId": "Child_Work",
@@ -163,6 +163,22 @@
         "afterCommandId": "s03-deliver-Host_Receive",
         "tasks": [
           {
+            "elementId": "Body_Seq",
+            "name": "Review one item"
+          },
+          {
+            "elementId": "Handle_Withdraw_Receive",
+            "name": "Handle the withdrawal"
+          },
+          {
+            "elementId": "Host_MiPar",
+            "name": "Review every item together"
+          },
+          {
+            "elementId": "Host_MiPar",
+            "name": "Review every item together"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the claim"
           },
@@ -173,22 +189,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Body_Seq",
-            "name": "Review one item"
-          },
-          {
-            "elementId": "Host_MiPar",
-            "name": "Review every item together"
-          },
-          {
-            "elementId": "Host_MiPar",
-            "name": "Review every item together"
-          },
-          {
-            "elementId": "Handle_Withdraw_Receive",
-            "name": "Handle the withdrawal"
           },
           {
             "elementId": "Child_Work",
@@ -200,18 +200,6 @@
         "afterCommandId": "s04-complete-Handle_Withdraw_Receive",
         "tasks": [
           {
-            "elementId": "Host_User",
-            "name": "Review the claim"
-          },
-          {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
-          },
-          {
             "elementId": "Body_Seq",
             "name": "Review one item"
           },
@@ -222,6 +210,18 @@
           {
             "elementId": "Host_MiPar",
             "name": "Review every item together"
+          },
+          {
+            "elementId": "Host_User",
+            "name": "Review the claim"
+          },
+          {
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -235,6 +235,13 @@
         "afterCommandId": "s01-start",
         "subscriptions": [
           {
+            "elementId": "Amend_User",
+            "eventName": "amend",
+            "messageId": "Message_Amend",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
             "elementId": "Cancel_User",
             "eventName": "cancel",
             "messageId": "Message_Cancel",
@@ -242,9 +249,9 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Amend_User",
-            "eventName": "amend",
-            "messageId": "Message_Amend",
+            "elementId": "Halt_Scope",
+            "eventName": "halt",
+            "messageId": "Message_Halt",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -256,23 +263,9 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Withdraw_Receive",
-            "eventName": "withdraw",
-            "messageId": "Message_Withdraw",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
-            "elementId": "Halt_Scope",
-            "eventName": "halt",
-            "messageId": "Message_Halt",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
-            "elementId": "Stop_Call",
-            "eventName": "stop",
-            "messageId": "Message_Stop",
+            "elementId": "Quit_MiPar",
+            "eventName": "quitPar",
+            "messageId": "Message_QuitPar",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -284,9 +277,16 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Quit_MiPar",
-            "eventName": "quitPar",
-            "messageId": "Message_QuitPar",
+            "elementId": "Stop_Call",
+            "eventName": "stop",
+            "messageId": "Message_Stop",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Withdraw_Receive",
+            "eventName": "withdraw",
+            "messageId": "Message_Withdraw",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -296,16 +296,16 @@
         "afterCommandId": "s02-deliver-Withdraw_Receive",
         "subscriptions": [
           {
-            "elementId": "Cancel_User",
-            "eventName": "cancel",
-            "messageId": "Message_Cancel",
+            "elementId": "Amend_User",
+            "eventName": "amend",
+            "messageId": "Message_Amend",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Amend_User",
-            "eventName": "amend",
-            "messageId": "Message_Amend",
+            "elementId": "Cancel_User",
+            "eventName": "cancel",
+            "messageId": "Message_Cancel",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -317,9 +317,9 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Stop_Call",
-            "eventName": "stop",
-            "messageId": "Message_Stop",
+            "elementId": "Quit_MiPar",
+            "eventName": "quitPar",
+            "messageId": "Message_QuitPar",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -331,9 +331,9 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Quit_MiPar",
-            "eventName": "quitPar",
-            "messageId": "Message_QuitPar",
+            "elementId": "Stop_Call",
+            "eventName": "stop",
+            "messageId": "Message_Stop",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -343,16 +343,16 @@
         "afterCommandId": "s03-deliver-Host_Receive",
         "subscriptions": [
           {
-            "elementId": "Cancel_User",
-            "eventName": "cancel",
-            "messageId": "Message_Cancel",
+            "elementId": "Amend_User",
+            "eventName": "amend",
+            "messageId": "Message_Amend",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Amend_User",
-            "eventName": "amend",
-            "messageId": "Message_Amend",
+            "elementId": "Cancel_User",
+            "eventName": "cancel",
+            "messageId": "Message_Cancel",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -364,9 +364,9 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Stop_Call",
-            "eventName": "stop",
-            "messageId": "Message_Stop",
+            "elementId": "Quit_MiPar",
+            "eventName": "quitPar",
+            "messageId": "Message_QuitPar",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -378,9 +378,9 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Quit_MiPar",
-            "eventName": "quitPar",
-            "messageId": "Message_QuitPar",
+            "elementId": "Stop_Call",
+            "eventName": "stop",
+            "messageId": "Message_Stop",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -390,16 +390,16 @@
         "afterCommandId": "s04-complete-Handle_Withdraw_Receive",
         "subscriptions": [
           {
-            "elementId": "Cancel_User",
-            "eventName": "cancel",
-            "messageId": "Message_Cancel",
+            "elementId": "Amend_User",
+            "eventName": "amend",
+            "messageId": "Message_Amend",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Amend_User",
-            "eventName": "amend",
-            "messageId": "Message_Amend",
+            "elementId": "Cancel_User",
+            "eventName": "cancel",
+            "messageId": "Message_Cancel",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -411,9 +411,9 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Stop_Call",
-            "eventName": "stop",
-            "messageId": "Message_Stop",
+            "elementId": "Quit_MiPar",
+            "eventName": "quitPar",
+            "messageId": "Message_QuitPar",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -425,9 +425,9 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Quit_MiPar",
-            "eventName": "quitPar",
-            "messageId": "Message_QuitPar",
+            "elementId": "Stop_Call",
+            "eventName": "stop",
+            "messageId": "Message_Stop",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }

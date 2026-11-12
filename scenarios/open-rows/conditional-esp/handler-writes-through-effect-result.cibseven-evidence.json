@@ -87,12 +87,12 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the file"
-          },
-          {
             "elementId": "Inner",
             "name": "Inspect the lot"
+          },
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
           }
         ]
       },
@@ -100,12 +100,12 @@
         "afterCommandId": "s02-set-cycle",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the file"
-          },
-          {
             "elementId": "Inner",
             "name": "Inspect the lot"
+          },
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
           }
         ]
       },
@@ -113,12 +113,12 @@
         "afterCommandId": "s03-effect-Write_Cycle",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the file"
-          },
-          {
             "elementId": "Inner",
             "name": "Inspect the lot"
+          },
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
           }
         ]
       },
@@ -126,12 +126,12 @@
         "afterCommandId": "s04-effect-Write_Cycle",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the file"
-          },
-          {
             "elementId": "Inner",
             "name": "Inspect the lot"
+          },
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
           }
         ]
       },
@@ -139,12 +139,12 @@
         "afterCommandId": "s05-effect-Write_Cycle",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the file"
-          },
-          {
             "elementId": "Inner",
             "name": "Inspect the lot"
+          },
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
           }
         ]
       }

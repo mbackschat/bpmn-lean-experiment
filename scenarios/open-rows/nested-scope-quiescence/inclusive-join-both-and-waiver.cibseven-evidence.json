@@ -277,16 +277,16 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "UserTask_Invoice",
+            "name": "Send the invoice"
+          },
+          {
             "elementId": "UserTask_Pick",
             "name": "Pick items"
           },
           {
             "elementId": "UserTask_Wrap",
             "name": "Wrap gift"
-          },
-          {
-            "elementId": "UserTask_Invoice",
-            "name": "Send the invoice"
           }
         ]
       },
@@ -294,16 +294,16 @@
         "afterCommandId": "s02-premature-stage",
         "tasks": [
           {
+            "elementId": "UserTask_Invoice",
+            "name": "Send the invoice"
+          },
+          {
             "elementId": "UserTask_Pick",
             "name": "Pick items"
           },
           {
             "elementId": "UserTask_Wrap",
             "name": "Wrap gift"
-          },
-          {
-            "elementId": "UserTask_Invoice",
-            "name": "Send the invoice"
           }
         ]
       },
@@ -311,12 +311,12 @@
         "afterCommandId": "s03-wrap-gift",
         "tasks": [
           {
-            "elementId": "UserTask_Pick",
-            "name": "Pick items"
-          },
-          {
             "elementId": "UserTask_Invoice",
             "name": "Send the invoice"
+          },
+          {
+            "elementId": "UserTask_Pick",
+            "name": "Pick items"
           }
         ]
       },

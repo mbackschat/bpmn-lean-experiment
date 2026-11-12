@@ -250,12 +250,12 @@
         "afterCommandId": "s04-complete-UserTask_Mid-1",
         "tasks": [
           {
-            "elementId": "UserTask_UndoInnerA",
-            "name": "Undo inner work A"
-          },
-          {
             "elementId": "UserTask_UndoDeepWork",
             "name": "Undo deep work"
+          },
+          {
+            "elementId": "UserTask_UndoInnerA",
+            "name": "Undo inner work A"
           },
           {
             "elementId": "UserTask_UndoOuter",

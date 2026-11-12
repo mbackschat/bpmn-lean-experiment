@@ -88,12 +88,12 @@
         "afterCommandId": "s02-fire-Start_Reminder",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the shipment"
-          },
-          {
             "elementId": "Remind",
             "name": "Remind the carrier"
+          },
+          {
+            "elementId": "Work",
+            "name": "Prepare the shipment"
           }
         ]
       },
@@ -101,12 +101,12 @@
         "afterCommandId": "s03-complete-Work",
         "tasks": [
           {
-            "elementId": "Remind",
-            "name": "Remind the carrier"
-          },
-          {
             "elementId": "Inner",
             "name": "Inspect the lot"
+          },
+          {
+            "elementId": "Remind",
+            "name": "Remind the carrier"
           }
         ]
       },
@@ -114,12 +114,12 @@
         "afterCommandId": "s04-complete-Inner",
         "tasks": [
           {
-            "elementId": "Remind",
-            "name": "Remind the carrier"
-          },
-          {
             "elementId": "Finish",
             "name": "Release the shipment"
+          },
+          {
+            "elementId": "Remind",
+            "name": "Remind the carrier"
           }
         ]
       },

@@ -61,6 +61,10 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -71,10 +75,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",
@@ -86,8 +86,16 @@
         "afterCommandId": "s02-fire-Remind_Receive",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Ping_Receive",
+            "name": "Ping the sender"
           },
           {
             "elementId": "Scope_A",
@@ -96,14 +104,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Ping_Receive",
-            "name": "Ping the sender"
           },
           {
             "elementId": "Child_Work",
@@ -115,8 +115,20 @@
         "afterCommandId": "s03-fire-Late_Receive",
         "tasks": [
           {
+            "elementId": "Chase_Receive",
+            "name": "Chase the sender"
+          },
+          {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Ping_Receive",
+            "name": "Ping the sender"
           },
           {
             "elementId": "Scope_A",
@@ -125,18 +137,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Ping_Receive",
-            "name": "Ping the sender"
-          },
-          {
-            "elementId": "Chase_Receive",
-            "name": "Chase the sender"
           },
           {
             "elementId": "Child_Work",
@@ -148,8 +148,20 @@
         "afterCommandId": "s04-deliver-Host_Receive",
         "tasks": [
           {
+            "elementId": "Chase_Receive",
+            "name": "Chase the sender"
+          },
+          {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Ping_Receive",
+            "name": "Ping the sender"
           },
           {
             "elementId": "Scope_A",
@@ -158,18 +170,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Ping_Receive",
-            "name": "Ping the sender"
-          },
-          {
-            "elementId": "Chase_Receive",
-            "name": "Chase the sender"
           },
           {
             "elementId": "Child_Work",
@@ -181,8 +181,16 @@
         "afterCommandId": "s05-complete-Chase_Receive",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Ping_Receive",
+            "name": "Ping the sender"
           },
           {
             "elementId": "Scope_A",
@@ -191,14 +199,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Ping_Receive",
-            "name": "Ping the sender"
           },
           {
             "elementId": "Child_Work",
@@ -210,6 +210,10 @@
         "afterCommandId": "s06-complete-Ping_Receive",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -220,10 +224,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",

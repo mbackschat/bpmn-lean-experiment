@@ -165,12 +165,12 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
-            "elementId": "PrepareFinancialFile",
-            "name": "Prepare financial file"
-          },
-          {
             "elementId": "PrepareComplianceFile",
             "name": "Prepare compliance file"
+          },
+          {
+            "elementId": "PrepareFinancialFile",
+            "name": "Prepare financial file"
           }
         ]
       },

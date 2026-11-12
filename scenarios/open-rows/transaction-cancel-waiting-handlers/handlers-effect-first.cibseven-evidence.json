@@ -67,12 +67,12 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_Pick",
-            "name": "Pick the goods"
-          },
-          {
             "elementId": "UserTask_Decide",
             "name": "Decide to cancel"
+          },
+          {
+            "elementId": "UserTask_Pick",
+            "name": "Pick the goods"
           }
         ]
       },

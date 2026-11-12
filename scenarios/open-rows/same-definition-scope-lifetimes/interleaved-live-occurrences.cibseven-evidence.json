@@ -315,16 +315,16 @@
         "afterCommandId": "s02-intake-north",
         "tasks": [
           {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          },
+          {
             "elementId": "UserTask_IntakeSouth",
             "name": "Intake from the south desk"
           },
           {
             "elementId": "UserTask_Outside",
             "name": "Handle the unrelated request"
-          },
-          {
-            "elementId": "UserTask_Examine",
-            "name": "Examine the submission"
           }
         ]
       },
@@ -332,16 +332,16 @@
         "afterCommandId": "s03-change-seed",
         "tasks": [
           {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          },
+          {
             "elementId": "UserTask_IntakeSouth",
             "name": "Intake from the south desk"
           },
           {
             "elementId": "UserTask_Outside",
             "name": "Handle the unrelated request"
-          },
-          {
-            "elementId": "UserTask_Examine",
-            "name": "Examine the submission"
           }
         ]
       },
@@ -349,16 +349,16 @@
         "afterCommandId": "s04-intake-south",
         "tasks": [
           {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          },
+          {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          },
+          {
             "elementId": "UserTask_Outside",
             "name": "Handle the unrelated request"
-          },
-          {
-            "elementId": "UserTask_Examine",
-            "name": "Examine the submission"
-          },
-          {
-            "elementId": "UserTask_Examine",
-            "name": "Examine the submission"
           }
         ]
       },
@@ -366,12 +366,12 @@
         "afterCommandId": "s05-examine-south",
         "tasks": [
           {
-            "elementId": "UserTask_Outside",
-            "name": "Handle the unrelated request"
-          },
-          {
             "elementId": "UserTask_Examine",
             "name": "Examine the submission"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
           }
         ]
       },
@@ -379,12 +379,12 @@
         "afterCommandId": "s06-notify-south",
         "tasks": [
           {
-            "elementId": "UserTask_Outside",
-            "name": "Handle the unrelated request"
-          },
-          {
             "elementId": "UserTask_Examine",
             "name": "Examine the submission"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
           },
           {
             "elementId": "UserTask_Sign",
@@ -430,12 +430,12 @@
             "name": "Handle the unrelated request"
           },
           {
-            "elementId": "UserTask_Sign",
-            "name": "Sign the review"
-          },
-          {
             "elementId": "UserTask_Publish",
             "name": "Publish the decision"
+          },
+          {
+            "elementId": "UserTask_Sign",
+            "name": "Sign the review"
           }
         ]
       },

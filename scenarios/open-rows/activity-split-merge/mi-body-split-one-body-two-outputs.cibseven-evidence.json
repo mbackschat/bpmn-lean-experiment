@@ -146,12 +146,12 @@
         "afterCommandId": "s02-complete-Check-1",
         "tasks": [
           {
-            "elementId": "LogB",
-            "name": "Log B"
-          },
-          {
             "elementId": "LogA",
             "name": "Log A"
+          },
+          {
+            "elementId": "LogB",
+            "name": "Log B"
           }
         ]
       },

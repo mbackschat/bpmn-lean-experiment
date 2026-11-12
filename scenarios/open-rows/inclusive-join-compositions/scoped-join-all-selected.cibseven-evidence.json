@@ -253,16 +253,16 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "ApproveItem",
+            "name": "Approve item"
+          },
+          {
+            "elementId": "ApproveItem",
+            "name": "Approve item"
+          },
+          {
             "elementId": "Measure",
             "name": "Measure"
-          },
-          {
-            "elementId": "ApproveItem",
-            "name": "Approve item"
-          },
-          {
-            "elementId": "ApproveItem",
-            "name": "Approve item"
           },
           {
             "elementId": "Audit",

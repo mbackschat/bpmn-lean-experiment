@@ -104,12 +104,12 @@
         "afterCommandId": "s02-fire-Cycle_Cron",
         "tasks": [
           {
-            "elementId": "Host_Cron",
-            "name": "Review (cron)"
-          },
-          {
             "elementId": "Handler_Cron",
             "name": "Respond to the reminder (cron)"
+          },
+          {
+            "elementId": "Host_Cron",
+            "name": "Review (cron)"
           }
         ]
       },
@@ -117,16 +117,16 @@
         "afterCommandId": "s03-fire-Cycle_Cron",
         "tasks": [
           {
+            "elementId": "Handler_Cron",
+            "name": "Respond to the reminder (cron)"
+          },
+          {
+            "elementId": "Handler_Cron",
+            "name": "Respond to the reminder (cron)"
+          },
+          {
             "elementId": "Host_Cron",
             "name": "Review (cron)"
-          },
-          {
-            "elementId": "Handler_Cron",
-            "name": "Respond to the reminder (cron)"
-          },
-          {
-            "elementId": "Handler_Cron",
-            "name": "Respond to the reminder (cron)"
           }
         ]
       },

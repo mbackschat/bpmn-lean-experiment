@@ -128,16 +128,16 @@
         "afterCommandId": "s03-set-amount",
         "tasks": [
           {
+            "elementId": "Handle_Update",
+            "name": "Handle the update condition"
+          },
+          {
             "elementId": "Host",
             "name": "Review the account"
           },
           {
             "elementId": "Host_Local",
             "name": "Review the local account"
-          },
-          {
-            "elementId": "Handle_Update",
-            "name": "Handle the update condition"
           }
         ]
       },
@@ -145,20 +145,20 @@
         "afterCommandId": "s04-set-amount",
         "tasks": [
           {
+            "elementId": "Handle_Update",
+            "name": "Handle the update condition"
+          },
+          {
+            "elementId": "Handle_Update",
+            "name": "Handle the update condition"
+          },
+          {
             "elementId": "Host",
             "name": "Review the account"
           },
           {
             "elementId": "Host_Local",
             "name": "Review the local account"
-          },
-          {
-            "elementId": "Handle_Update",
-            "name": "Handle the update condition"
-          },
-          {
-            "elementId": "Handle_Update",
-            "name": "Handle the update condition"
           }
         ]
       }

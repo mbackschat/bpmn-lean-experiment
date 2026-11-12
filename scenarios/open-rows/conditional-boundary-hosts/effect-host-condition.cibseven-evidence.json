@@ -91,12 +91,12 @@
         "afterCommandId": "s03-effect-Host_Service",
         "tasks": [
           {
-            "elementId": "Writer",
-            "name": "Record the outcome"
-          },
-          {
             "elementId": "Handle_Poke",
             "name": "Handle the poke"
+          },
+          {
+            "elementId": "Writer",
+            "name": "Record the outcome"
           }
         ]
       },

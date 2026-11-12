@@ -85,12 +85,12 @@
         "afterCommandId": "s03-complete-ReviewB-1",
         "tasks": [
           {
-            "elementId": "ReviewC",
-            "name": "Review C"
-          },
-          {
             "elementId": "Decide",
             "name": "Decide"
+          },
+          {
+            "elementId": "ReviewC",
+            "name": "Review C"
           }
         ]
       },

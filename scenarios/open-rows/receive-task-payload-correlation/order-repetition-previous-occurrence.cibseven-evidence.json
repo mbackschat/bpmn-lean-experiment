@@ -117,14 +117,14 @@
         "afterCommandId": "start",
         "subscriptions": [
           {
-            "elementId": "AwaitCard",
+            "elementId": "AwaitBank",
             "eventName": "paymentReceived",
             "messageId": "Message_Payment",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "AwaitBank",
+            "elementId": "AwaitCard",
             "eventName": "paymentReceived",
             "messageId": "Message_Payment",
             "processInstanceIdMatches": true,
@@ -136,14 +136,14 @@
         "afterCommandId": "deliver-card-1",
         "subscriptions": [
           {
-            "elementId": "AwaitCard",
+            "elementId": "AwaitBank",
             "eventName": "paymentReceived",
             "messageId": "Message_Payment",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "AwaitBank",
+            "elementId": "AwaitCard",
             "eventName": "paymentReceived",
             "messageId": "Message_Payment",
             "processInstanceIdMatches": true,
@@ -155,14 +155,14 @@
         "afterCommandId": "review-card-1",
         "subscriptions": [
           {
-            "elementId": "AwaitCard",
+            "elementId": "AwaitBank",
             "eventName": "paymentReceived",
             "messageId": "Message_Payment",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "AwaitBank",
+            "elementId": "AwaitCard",
             "eventName": "paymentReceived",
             "messageId": "Message_Payment",
             "processInstanceIdMatches": true,
@@ -174,14 +174,14 @@
         "afterCommandId": "deliver-card-previous",
         "subscriptions": [
           {
-            "elementId": "AwaitCard",
+            "elementId": "AwaitBank",
             "eventName": "paymentReceived",
             "messageId": "Message_Payment",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "AwaitBank",
+            "elementId": "AwaitCard",
             "eventName": "paymentReceived",
             "messageId": "Message_Payment",
             "processInstanceIdMatches": true,
@@ -193,14 +193,14 @@
         "afterCommandId": "deliver-card-2",
         "subscriptions": [
           {
-            "elementId": "AwaitCard",
+            "elementId": "AwaitBank",
             "eventName": "paymentReceived",
             "messageId": "Message_Payment",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "AwaitBank",
+            "elementId": "AwaitCard",
             "eventName": "paymentReceived",
             "messageId": "Message_Payment",
             "processInstanceIdMatches": true,

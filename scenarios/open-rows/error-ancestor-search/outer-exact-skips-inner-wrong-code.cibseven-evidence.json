@@ -46,12 +46,12 @@
         "afterCommandId": "fail-pick-line",
         "tasks": [
           {
-            "elementId": "ScanPallet",
-            "name": "Scan pallet"
-          },
-          {
             "elementId": "Backorder",
             "name": "Create backorder"
+          },
+          {
+            "elementId": "ScanPallet",
+            "name": "Scan pallet"
           }
         ]
       }

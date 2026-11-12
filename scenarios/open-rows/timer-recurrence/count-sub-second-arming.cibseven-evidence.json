@@ -94,12 +94,12 @@
         "afterCommandId": "s03-fire-Cycle_SubSecond",
         "tasks": [
           {
-            "elementId": "Host_SubSecond",
-            "name": "Review (armed after half a second)"
-          },
-          {
             "elementId": "Handler_SubSecond",
             "name": "Respond to the reminder (armed after half a second)"
+          },
+          {
+            "elementId": "Host_SubSecond",
+            "name": "Review (armed after half a second)"
           }
         ]
       },
@@ -107,12 +107,12 @@
         "afterCommandId": "s04-fire-Cycle_SubSecond",
         "tasks": [
           {
-            "elementId": "Host_SubSecond",
-            "name": "Review (armed after half a second)"
-          },
-          {
             "elementId": "Handler_SubSecond",
             "name": "Respond to the reminder (armed after half a second)"
+          },
+          {
+            "elementId": "Host_SubSecond",
+            "name": "Review (armed after half a second)"
           }
         ]
       }

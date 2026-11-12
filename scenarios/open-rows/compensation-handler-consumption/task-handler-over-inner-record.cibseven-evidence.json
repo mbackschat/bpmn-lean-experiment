@@ -79,12 +79,12 @@
         "afterCommandId": "s02-complete-UserTask_Pause-1",
         "tasks": [
           {
-            "elementId": "UserTask_UndoInner",
-            "name": "Undo the inner task"
-          },
-          {
             "elementId": "UserTask_UndoGroup",
             "name": "Undo the group"
+          },
+          {
+            "elementId": "UserTask_UndoInner",
+            "name": "Undo the inner task"
           }
         ]
       },

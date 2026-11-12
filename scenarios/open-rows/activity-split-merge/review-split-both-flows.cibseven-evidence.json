@@ -171,12 +171,12 @@
         "afterCommandId": "s02-complete-Review-1",
         "tasks": [
           {
-            "elementId": "FollowUpB",
-            "name": "Follow up B"
-          },
-          {
             "elementId": "FollowUpA",
             "name": "Follow up A"
+          },
+          {
+            "elementId": "FollowUpB",
+            "name": "Follow up B"
           }
         ]
       },
@@ -184,12 +184,12 @@
         "afterCommandId": "s03-complete-FollowUpA-1",
         "tasks": [
           {
-            "elementId": "FollowUpB",
-            "name": "Follow up B"
-          },
-          {
             "elementId": "Archive",
             "name": "Archive"
+          },
+          {
+            "elementId": "FollowUpB",
+            "name": "Follow up B"
           }
         ]
       },

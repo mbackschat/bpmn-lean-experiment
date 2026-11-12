@@ -165,16 +165,16 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_Pick",
-            "name": "Pick the goods"
+            "elementId": "UserTask_Decide",
+            "name": "Decide whether to cancel"
           },
           {
             "elementId": "UserTask_PackItems",
             "name": "Pack the items"
           },
           {
-            "elementId": "UserTask_Decide",
-            "name": "Decide whether to cancel"
+            "elementId": "UserTask_Pick",
+            "name": "Pick the goods"
           }
         ]
       },
@@ -182,12 +182,12 @@
         "afterCommandId": "s01-complete-UserTask_Pick-1",
         "tasks": [
           {
-            "elementId": "UserTask_PackItems",
-            "name": "Pack the items"
-          },
-          {
             "elementId": "UserTask_Decide",
             "name": "Decide whether to cancel"
+          },
+          {
+            "elementId": "UserTask_PackItems",
+            "name": "Pack the items"
           }
         ]
       },
@@ -195,12 +195,12 @@
         "afterCommandId": "s02-effect-success-ServiceTask_Charge-1",
         "tasks": [
           {
-            "elementId": "UserTask_PackItems",
-            "name": "Pack the items"
-          },
-          {
             "elementId": "UserTask_Decide",
             "name": "Decide whether to cancel"
+          },
+          {
+            "elementId": "UserTask_PackItems",
+            "name": "Pack the items"
           }
         ]
       },

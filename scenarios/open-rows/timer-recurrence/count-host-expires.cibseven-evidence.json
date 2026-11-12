@@ -104,12 +104,12 @@
         "afterCommandId": "s02-fire-Cycle_Count",
         "tasks": [
           {
-            "elementId": "Host_Count",
-            "name": "Review (count)"
-          },
-          {
             "elementId": "Handler_Count",
             "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Host_Count",
+            "name": "Review (count)"
           }
         ]
       },

@@ -230,16 +230,16 @@
         "afterCommandId": "s04-fire-Start_Body_Note",
         "tasks": [
           {
-            "elementId": "Inspect",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inspect",
-            "name": "Inspect one lot"
-          },
-          {
             "elementId": "Body_Note",
             "name": "Note the slow lot"
+          },
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
           }
         ]
       },
@@ -247,16 +247,16 @@
         "afterCommandId": "s05-fire-Body_Deadline",
         "tasks": [
           {
-            "elementId": "Inspect",
-            "name": "Inspect one lot"
+            "elementId": "Body_Late",
+            "name": "Handle the late lot"
           },
           {
             "elementId": "Body_Note",
             "name": "Note the slow lot"
           },
           {
-            "elementId": "Body_Late",
-            "name": "Handle the late lot"
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
           }
         ]
       },
@@ -264,12 +264,12 @@
         "afterCommandId": "s06-complete-Body_Note",
         "tasks": [
           {
-            "elementId": "Inspect",
-            "name": "Inspect one lot"
-          },
-          {
             "elementId": "Body_Late",
             "name": "Handle the late lot"
+          },
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
           }
         ]
       },

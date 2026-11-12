@@ -66,12 +66,12 @@
         "afterCommandId": "s04-deliver-Catch_SameNested",
         "tasks": [
           {
-            "elementId": "Proceed_SameRoot",
-            "name": "Proceed after the first Operation"
-          },
-          {
             "elementId": "Proceed_SameNested",
             "name": "Proceed after the second Operation"
+          },
+          {
+            "elementId": "Proceed_SameRoot",
+            "name": "Proceed after the first Operation"
           }
         ]
       }
@@ -95,14 +95,14 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Catch_SameRoot",
+            "elementId": "Catch_SameNested",
             "eventName": "same notice",
             "messageId": "Message_Same",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Catch_SameNested",
+            "elementId": "Catch_SameRoot",
             "eventName": "same notice",
             "messageId": "Message_Same",
             "processInstanceIdMatches": true,
@@ -128,14 +128,14 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Catch_SameRoot",
+            "elementId": "Catch_SameNested",
             "eventName": "same notice",
             "messageId": "Message_Same",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Catch_SameNested",
+            "elementId": "Catch_SameRoot",
             "eventName": "same notice",
             "messageId": "Message_Same",
             "processInstanceIdMatches": true,

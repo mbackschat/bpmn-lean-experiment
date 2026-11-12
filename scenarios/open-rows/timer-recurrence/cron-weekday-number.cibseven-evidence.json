@@ -62,12 +62,12 @@
         "afterCommandId": "s02-fire-Cycle_Weekday",
         "tasks": [
           {
-            "elementId": "Host_Weekday",
-            "name": "Review (Friday 09:00)"
-          },
-          {
             "elementId": "Handler_Weekday",
             "name": "Respond to the reminder (Friday 09:00)"
+          },
+          {
+            "elementId": "Host_Weekday",
+            "name": "Review (Friday 09:00)"
           }
         ]
       }

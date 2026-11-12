@@ -76,14 +76,14 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Catch_SameRoot",
+            "elementId": "Catch_SameNested",
             "eventName": "same notice",
             "messageId": "Message_Same",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Catch_SameNested",
+            "elementId": "Catch_SameRoot",
             "eventName": "same notice",
             "messageId": "Message_Same",
             "processInstanceIdMatches": true,
@@ -102,14 +102,14 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Catch_SameRoot",
+            "elementId": "Catch_SameNested",
             "eventName": "same notice",
             "messageId": "Message_Same",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Catch_SameNested",
+            "elementId": "Catch_SameRoot",
             "eventName": "same notice",
             "messageId": "Message_Same",
             "processInstanceIdMatches": true,
@@ -128,14 +128,14 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Catch_SameRoot",
+            "elementId": "Catch_SameNested",
             "eventName": "same notice",
             "messageId": "Message_Same",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
           {
-            "elementId": "Catch_SameNested",
+            "elementId": "Catch_SameRoot",
             "eventName": "same notice",
             "messageId": "Message_Same",
             "processInstanceIdMatches": true,

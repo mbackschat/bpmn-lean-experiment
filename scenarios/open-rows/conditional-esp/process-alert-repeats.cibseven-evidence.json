@@ -115,12 +115,12 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the file"
-          },
-          {
             "elementId": "Inner",
             "name": "Inspect the lot"
+          },
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
           }
         ]
       },
@@ -128,16 +128,16 @@
         "afterCommandId": "s02-set-level",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the file"
+            "elementId": "Handle_Alert",
+            "name": "Handle the alert"
           },
           {
             "elementId": "Inner",
             "name": "Inspect the lot"
           },
           {
-            "elementId": "Handle_Alert",
-            "name": "Handle the alert"
+            "elementId": "Work",
+            "name": "Prepare the file"
           }
         ]
       },
@@ -145,20 +145,20 @@
         "afterCommandId": "s03-set-level",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the file"
+            "elementId": "Handle_Alert",
+            "name": "Handle the alert"
+          },
+          {
+            "elementId": "Handle_Alert",
+            "name": "Handle the alert"
           },
           {
             "elementId": "Inner",
             "name": "Inspect the lot"
           },
           {
-            "elementId": "Handle_Alert",
-            "name": "Handle the alert"
-          },
-          {
-            "elementId": "Handle_Alert",
-            "name": "Handle the alert"
+            "elementId": "Work",
+            "name": "Prepare the file"
           }
         ]
       },
@@ -166,16 +166,16 @@
         "afterCommandId": "s04-complete-Handle_Alert",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the file"
+            "elementId": "Handle_Alert",
+            "name": "Handle the alert"
           },
           {
             "elementId": "Inner",
             "name": "Inspect the lot"
           },
           {
-            "elementId": "Handle_Alert",
-            "name": "Handle the alert"
+            "elementId": "Work",
+            "name": "Prepare the file"
           }
         ]
       },
@@ -183,12 +183,12 @@
         "afterCommandId": "s05-complete-Handle_Alert",
         "tasks": [
           {
-            "elementId": "Work",
-            "name": "Prepare the file"
-          },
-          {
             "elementId": "Inner",
             "name": "Inspect the lot"
+          },
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
           }
         ]
       },
@@ -196,12 +196,12 @@
         "afterCommandId": "s06-complete-Work",
         "tasks": [
           {
-            "elementId": "Inner",
-            "name": "Inspect the lot"
-          },
-          {
             "elementId": "Finish",
             "name": "Release the file"
+          },
+          {
+            "elementId": "Inner",
+            "name": "Inspect the lot"
           }
         ]
       },

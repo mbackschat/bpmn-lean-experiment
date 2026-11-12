@@ -193,12 +193,12 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_Visit",
-            "name": "Visit"
-          },
-          {
             "elementId": "UserTask_Trigger",
             "name": "Trigger the first compensation"
+          },
+          {
+            "elementId": "UserTask_Visit",
+            "name": "Visit"
           }
         ]
       },

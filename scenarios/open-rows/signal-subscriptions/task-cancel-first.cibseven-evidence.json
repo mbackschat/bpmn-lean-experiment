@@ -101,16 +101,16 @@
             "name": "Decide in the region"
           },
           {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
             "elementId": "Work_Esp",
             "name": "Work in the guarded region"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
           },
           {
             "elementId": "Child_Work",
@@ -122,24 +122,24 @@
         "afterCommandId": "s02-signal-Cancel_User",
         "tasks": [
           {
+            "elementId": "Handle_Cancel",
+            "name": "Handle the cancellation"
+          },
+          {
             "elementId": "Inner",
             "name": "Decide in the region"
           },
           {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
             "elementId": "Work_Esp",
             "name": "Work in the guarded region"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Handle_Cancel",
-            "name": "Handle the cancellation"
           },
           {
             "elementId": "Child_Work",
@@ -151,24 +151,24 @@
         "afterCommandId": "s03-signal-Note_User",
         "tasks": [
           {
+            "elementId": "Handle_Cancel",
+            "name": "Handle the cancellation"
+          },
+          {
             "elementId": "Inner",
             "name": "Decide in the region"
           },
           {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
             "elementId": "Work_Esp",
             "name": "Work in the guarded region"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Handle_Cancel",
-            "name": "Handle the cancellation"
           },
           {
             "elementId": "Child_Work",
@@ -184,16 +184,16 @@
             "name": "Decide in the region"
           },
           {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
             "elementId": "Work_Esp",
             "name": "Work in the guarded region"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
-          },
-          {
-            "elementId": "Inner_Body",
-            "name": "Inspect one lot"
           },
           {
             "elementId": "Child_Work",

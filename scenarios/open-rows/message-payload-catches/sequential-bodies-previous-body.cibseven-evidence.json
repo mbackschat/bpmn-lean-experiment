@@ -163,9 +163,9 @@
         "afterCommandId": "s01-start",
         "subscriptions": [
           {
-            "elementId": "Catch_Quote",
-            "eventName": "quote",
-            "messageId": "Message_Quote",
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -177,9 +177,23 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Await_Docs",
-            "eventName": "documents",
-            "messageId": "Message_Docs",
+            "elementId": "Catch_ParBody",
+            "eventName": "parNote",
+            "messageId": "Message_ParNote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Catch_ParBody",
+            "eventName": "parNote",
+            "messageId": "Message_ParNote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Catch_Quote",
+            "eventName": "quote",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -189,20 +203,6 @@
             "messageId": "Message_SeqNote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
-          },
-          {
-            "elementId": "Catch_ParBody",
-            "eventName": "parNote",
-            "messageId": "Message_ParNote",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
-            "elementId": "Catch_ParBody",
-            "eventName": "parNote",
-            "messageId": "Message_ParNote",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
           }
         ]
       },
@@ -210,9 +210,9 @@
         "afterCommandId": "s02-deliver-Catch_SeqBody",
         "subscriptions": [
           {
-            "elementId": "Catch_Quote",
-            "eventName": "quote",
-            "messageId": "Message_Quote",
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -224,13 +224,6 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Await_Docs",
-            "eventName": "documents",
-            "messageId": "Message_Docs",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Catch_ParBody",
             "eventName": "parNote",
             "messageId": "Message_ParNote",
@@ -241,6 +234,13 @@
             "elementId": "Catch_ParBody",
             "eventName": "parNote",
             "messageId": "Message_ParNote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Catch_Quote",
+            "eventName": "quote",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -250,9 +250,9 @@
         "afterCommandId": "s03-complete-Check_Seq",
         "subscriptions": [
           {
-            "elementId": "Catch_Quote",
-            "eventName": "quote",
-            "messageId": "Message_Quote",
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -264,13 +264,6 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Await_Docs",
-            "eventName": "documents",
-            "messageId": "Message_Docs",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Catch_ParBody",
             "eventName": "parNote",
             "messageId": "Message_ParNote",
@@ -281,6 +274,13 @@
             "elementId": "Catch_ParBody",
             "eventName": "parNote",
             "messageId": "Message_ParNote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Catch_Quote",
+            "eventName": "quote",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -297,9 +297,9 @@
         "afterCommandId": "s04-deliver-Catch_SeqBody",
         "subscriptions": [
           {
-            "elementId": "Catch_Quote",
-            "eventName": "quote",
-            "messageId": "Message_Quote",
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -311,13 +311,6 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Await_Docs",
-            "eventName": "documents",
-            "messageId": "Message_Docs",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Catch_ParBody",
             "eventName": "parNote",
             "messageId": "Message_ParNote",
@@ -328,6 +321,13 @@
             "elementId": "Catch_ParBody",
             "eventName": "parNote",
             "messageId": "Message_ParNote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Catch_Quote",
+            "eventName": "quote",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -344,9 +344,9 @@
         "afterCommandId": "s05-deliver-Catch_SeqBody",
         "subscriptions": [
           {
-            "elementId": "Catch_Quote",
-            "eventName": "quote",
-            "messageId": "Message_Quote",
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -358,13 +358,6 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Await_Docs",
-            "eventName": "documents",
-            "messageId": "Message_Docs",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Catch_ParBody",
             "eventName": "parNote",
             "messageId": "Message_ParNote",
@@ -375,6 +368,13 @@
             "elementId": "Catch_ParBody",
             "eventName": "parNote",
             "messageId": "Message_ParNote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Catch_Quote",
+            "eventName": "quote",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -384,9 +384,9 @@
         "afterCommandId": "s06-complete-Check_Seq",
         "subscriptions": [
           {
-            "elementId": "Catch_Quote",
-            "eventName": "quote",
-            "messageId": "Message_Quote",
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -398,13 +398,6 @@
             "executionIdPresent": true
           },
           {
-            "elementId": "Await_Docs",
-            "eventName": "documents",
-            "messageId": "Message_Docs",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Catch_ParBody",
             "eventName": "parNote",
             "messageId": "Message_ParNote",
@@ -415,6 +408,13 @@
             "elementId": "Catch_ParBody",
             "eventName": "parNote",
             "messageId": "Message_ParNote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Catch_Quote",
+            "eventName": "quote",
+            "messageId": "Message_Quote",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }

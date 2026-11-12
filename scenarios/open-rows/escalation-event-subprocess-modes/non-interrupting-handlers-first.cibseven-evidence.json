@@ -55,16 +55,16 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
-            "elementId": "Process",
-            "name": "Process the order"
+            "elementId": "Inspect",
+            "name": "Inspect the order"
           },
           {
             "elementId": "Prepare",
             "name": "Prepare the invoice"
           },
           {
-            "elementId": "Inspect",
-            "name": "Inspect the order"
+            "elementId": "Process",
+            "name": "Process the order"
           },
           {
             "elementId": "Seal",
@@ -76,12 +76,20 @@
         "afterCommandId": "complete-prepare",
         "tasks": [
           {
+            "elementId": "Inspect",
+            "name": "Inspect the order"
+          },
+          {
             "elementId": "Process",
             "name": "Process the order"
           },
           {
-            "elementId": "Inspect",
-            "name": "Inspect the order"
+            "elementId": "Remind",
+            "name": "Remind the customer"
+          },
+          {
+            "elementId": "Remind",
+            "name": "Remind the customer"
           },
           {
             "elementId": "Seal",
@@ -90,14 +98,6 @@
           {
             "elementId": "Send",
             "name": "Send the invoice"
-          },
-          {
-            "elementId": "Remind",
-            "name": "Remind the customer"
-          },
-          {
-            "elementId": "Remind",
-            "name": "Remind the customer"
           }
         ]
       },
@@ -105,12 +105,16 @@
         "afterCommandId": "complete-remind-1",
         "tasks": [
           {
+            "elementId": "Inspect",
+            "name": "Inspect the order"
+          },
+          {
             "elementId": "Process",
             "name": "Process the order"
           },
           {
-            "elementId": "Inspect",
-            "name": "Inspect the order"
+            "elementId": "Remind",
+            "name": "Remind the customer"
           },
           {
             "elementId": "Seal",
@@ -119,10 +123,6 @@
           {
             "elementId": "Send",
             "name": "Send the invoice"
-          },
-          {
-            "elementId": "Remind",
-            "name": "Remind the customer"
           }
         ]
       },
@@ -130,12 +130,12 @@
         "afterCommandId": "complete-remind-2",
         "tasks": [
           {
-            "elementId": "Process",
-            "name": "Process the order"
-          },
-          {
             "elementId": "Inspect",
             "name": "Inspect the order"
+          },
+          {
+            "elementId": "Process",
+            "name": "Process the order"
           },
           {
             "elementId": "Seal",
@@ -151,12 +151,12 @@
         "afterCommandId": "complete-send",
         "tasks": [
           {
-            "elementId": "Process",
-            "name": "Process the order"
-          },
-          {
             "elementId": "Inspect",
             "name": "Inspect the order"
+          },
+          {
+            "elementId": "Process",
+            "name": "Process the order"
           },
           {
             "elementId": "Seal",

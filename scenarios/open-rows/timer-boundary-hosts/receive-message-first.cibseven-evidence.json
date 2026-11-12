@@ -49,6 +49,10 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -59,10 +63,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",
@@ -74,6 +74,10 @@
         "afterCommandId": "s02-deliver-Host_Receive",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -84,10 +88,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",
@@ -99,6 +99,10 @@
         "afterCommandId": "s03-fire-Remind_Receive",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -109,10 +113,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",
@@ -124,6 +124,10 @@
         "afterCommandId": "s04-fire-Late_Receive",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -134,10 +138,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",

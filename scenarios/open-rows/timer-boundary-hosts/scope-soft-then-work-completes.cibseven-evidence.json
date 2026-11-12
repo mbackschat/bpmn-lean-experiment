@@ -67,6 +67,10 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -77,10 +81,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
           },
           {
             "elementId": "Child_Work",
@@ -92,8 +92,16 @@
         "afterCommandId": "s02-fire-Soft_Scope",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
+          },
+          {
+            "elementId": "Nudge_Scope",
+            "name": "Nudge the inspectors"
           },
           {
             "elementId": "Scope_A",
@@ -102,14 +110,6 @@
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
-            "elementId": "Nudge_Scope",
-            "name": "Nudge the inspectors"
           },
           {
             "elementId": "Child_Work",
@@ -121,20 +121,20 @@
         "afterCommandId": "s03-complete-Scope_A",
         "tasks": [
           {
-            "elementId": "Host_User",
-            "name": "Review the application"
-          },
-          {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
-          },
-          {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
+            "elementId": "Host_User",
+            "name": "Review the application"
+          },
+          {
             "elementId": "Nudge_Scope",
             "name": "Nudge the inspectors"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           },
           {
             "elementId": "Child_Work",
@@ -146,20 +146,20 @@
         "afterCommandId": "s04-complete-Scope_B",
         "tasks": [
           {
-            "elementId": "Host_User",
-            "name": "Review the application"
+            "elementId": "After_Scope",
+            "name": "File the inspection"
           },
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
-            "elementId": "Nudge_Scope",
-            "name": "Nudge the inspectors"
+            "elementId": "Host_User",
+            "name": "Review the application"
           },
           {
-            "elementId": "After_Scope",
-            "name": "File the inspection"
+            "elementId": "Nudge_Scope",
+            "name": "Nudge the inspectors"
           },
           {
             "elementId": "Child_Work",
@@ -171,20 +171,20 @@
         "afterCommandId": "s05-fire-Hard_Scope",
         "tasks": [
           {
-            "elementId": "Host_User",
-            "name": "Review the application"
+            "elementId": "After_Scope",
+            "name": "File the inspection"
           },
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
-            "elementId": "Nudge_Scope",
-            "name": "Nudge the inspectors"
+            "elementId": "Host_User",
+            "name": "Review the application"
           },
           {
-            "elementId": "After_Scope",
-            "name": "File the inspection"
+            "elementId": "Nudge_Scope",
+            "name": "Nudge the inspectors"
           },
           {
             "elementId": "Child_Work",
@@ -196,16 +196,16 @@
         "afterCommandId": "s06-complete-Nudge_Scope",
         "tasks": [
           {
-            "elementId": "Host_User",
-            "name": "Review the application"
+            "elementId": "After_Scope",
+            "name": "File the inspection"
           },
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
-            "elementId": "After_Scope",
-            "name": "File the inspection"
+            "elementId": "Host_User",
+            "name": "Review the application"
           },
           {
             "elementId": "Child_Work",
@@ -217,12 +217,12 @@
         "afterCommandId": "s07-complete-After_Scope",
         "tasks": [
           {
-            "elementId": "Host_User",
-            "name": "Review the application"
-          },
-          {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
+          },
+          {
+            "elementId": "Host_User",
+            "name": "Review the application"
           },
           {
             "elementId": "Child_Work",

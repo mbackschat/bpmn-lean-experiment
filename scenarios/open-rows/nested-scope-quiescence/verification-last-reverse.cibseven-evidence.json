@@ -249,12 +249,12 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "UserTask_Pick",
-            "name": "Pick items"
-          },
-          {
             "elementId": "UserTask_Invoice",
             "name": "Send the invoice"
+          },
+          {
+            "elementId": "UserTask_Pick",
+            "name": "Pick items"
           },
           {
             "elementId": "UserTask_CheckAddress",

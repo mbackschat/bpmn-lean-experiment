@@ -37,16 +37,16 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
-            "elementId": "Process",
-            "name": "Process the order"
+            "elementId": "Inspect",
+            "name": "Inspect the order"
           },
           {
             "elementId": "Prepare",
             "name": "Prepare the invoice"
           },
           {
-            "elementId": "Inspect",
-            "name": "Inspect the order"
+            "elementId": "Process",
+            "name": "Process the order"
           },
           {
             "elementId": "Seal",
@@ -58,12 +58,8 @@
         "afterCommandId": "complete-seal",
         "tasks": [
           {
-            "elementId": "Process",
-            "name": "Process the order"
-          },
-          {
-            "elementId": "Prepare",
-            "name": "Prepare the invoice"
+            "elementId": "HandlePackEsp",
+            "name": "Handle any escalation in the event sub-process"
           },
           {
             "elementId": "Inspect",
@@ -74,8 +70,12 @@
             "name": "Label the parcel"
           },
           {
-            "elementId": "HandlePackEsp",
-            "name": "Handle any escalation in the event sub-process"
+            "elementId": "Prepare",
+            "name": "Prepare the invoice"
+          },
+          {
+            "elementId": "Process",
+            "name": "Process the order"
           }
         ]
       }

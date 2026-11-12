@@ -49,6 +49,10 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
+            "elementId": "Host_Loop",
+            "name": "Collect the signature"
+          },
+          {
             "elementId": "Host_User",
             "name": "Review the application"
           },
@@ -61,10 +65,6 @@
             "name": "Inspect the south wing"
           },
           {
-            "elementId": "Host_Loop",
-            "name": "Collect the signature"
-          },
-          {
             "elementId": "Child_Work",
             "name": "Carry out the check"
           }
@@ -74,16 +74,16 @@
         "afterCommandId": "s02-fire-Hard_Scope",
         "tasks": [
           {
-            "elementId": "Host_User",
-            "name": "Review the application"
+            "elementId": "Escalate_Scope",
+            "name": "Escalate the inspection"
           },
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
-            "elementId": "Escalate_Scope",
-            "name": "Escalate the inspection"
+            "elementId": "Host_User",
+            "name": "Review the application"
           },
           {
             "elementId": "Child_Work",
@@ -95,16 +95,16 @@
         "afterCommandId": "s03-complete-Scope_A",
         "tasks": [
           {
-            "elementId": "Host_User",
-            "name": "Review the application"
+            "elementId": "Escalate_Scope",
+            "name": "Escalate the inspection"
           },
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
           },
           {
-            "elementId": "Escalate_Scope",
-            "name": "Escalate the inspection"
+            "elementId": "Host_User",
+            "name": "Review the application"
           },
           {
             "elementId": "Child_Work",
@@ -116,12 +116,12 @@
         "afterCommandId": "s04-complete-Escalate_Scope",
         "tasks": [
           {
-            "elementId": "Host_User",
-            "name": "Review the application"
-          },
-          {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
+          },
+          {
+            "elementId": "Host_User",
+            "name": "Review the application"
           },
           {
             "elementId": "Child_Work",

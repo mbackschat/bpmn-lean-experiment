@@ -94,16 +94,16 @@
         "afterCommandId": "s02-set-process-level-and-level2",
         "tasks": [
           {
+            "elementId": "Handle_Shadow",
+            "name": "Handle the shadow condition"
+          },
+          {
             "elementId": "Host",
             "name": "Review the account"
           },
           {
             "elementId": "Host_Local",
             "name": "Review the local account"
-          },
-          {
-            "elementId": "Handle_Shadow",
-            "name": "Handle the shadow condition"
           }
         ]
       },
@@ -111,20 +111,20 @@
         "afterCommandId": "s03-set-local-level2",
         "tasks": [
           {
+            "elementId": "Handle_Shadow",
+            "name": "Handle the shadow condition"
+          },
+          {
+            "elementId": "Handle_Shadow",
+            "name": "Handle the shadow condition"
+          },
+          {
             "elementId": "Host",
             "name": "Review the account"
           },
           {
             "elementId": "Host_Local",
             "name": "Review the local account"
-          },
-          {
-            "elementId": "Handle_Shadow",
-            "name": "Handle the shadow condition"
-          },
-          {
-            "elementId": "Handle_Shadow",
-            "name": "Handle the shadow condition"
           }
         ]
       }

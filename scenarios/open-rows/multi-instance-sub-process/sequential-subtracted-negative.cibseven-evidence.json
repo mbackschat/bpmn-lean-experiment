@@ -1,0 +1,46 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mi-subprocess-sequential-subtracted-negative",
+    "sha256": "90f99dcf998e9073cced5738395f26bdcc72c589040cd71eda286e5d9140e95b"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [],
+    "taskQueries": [],
+    "timerJobs": [],
+    "historicProcessStates": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "rolledBack"
+      }
+    ]
+  }
+}
