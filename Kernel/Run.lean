@@ -40,6 +40,11 @@ process; an unreadable file is a harness error.
 one host-facing function no scenario run reaches (`fixtureAnswer`), applied to the fixture's admitted programs and input.
 A fixture never carries its expected answer; the comparing test reads that from a separate file. A malformed fixture is
 a harness error with a stable `fixture-` code.
+
+`kernelRun --batch <cases.json>` prints, per case of the array in order, `{answer}` or `{error}`: the answer of the mode
+its `entry` names over inline documents (`batchAnswer`), so the TypeScript kernel's unit cases replay against this kernel
+in one process. Besides the modes above it answers `ungated` (`ungatedRun`), `evaluate` (`evaluationAnswer`) and
+`stimulus` (the stimulus codec's refusal).
 -/
 
 public section
@@ -336,16 +341,32 @@ def capabilitiesJson (capabilities : Host.Capabilities) : Json :=
     ("correlatedChannels", Json.arr (capabilities.correlatedChannels.map correlatedChannelJson).toArray),
     ("relations", Json.arr (capabilities.relations.map Json.str).toArray)]
 
+/-- The host-view run of `stimuli` over `program`: its result, host requirements, definition capabilities and the host
+view of every committed input, none when admission refuses the program. -/
+def hostViewRun (program : Program) (stimuli : List RunStimulus) : Json :=
+  let views := if (AdmissionRegistry.admit program).isSome then [] else hostViews program none stimuli
+  Json.mkObj [("result", result program stimuli),
+    ("hostRequirements", requirementsJson (Host.hostRequirements program)),
+    ("definitionCapabilities", capabilitiesJson (Host.definitionCapabilities program)),
+    ("hostViews", Json.arr (views.map hostViewJson).toArray)]
+
 def runHostView (programPath scenarioPath : String) : IO Json := do
   let program ← orFail programPath (Codec.programFromJson (← readJson programPath))
   let stimuli ← orFail scenarioPath (stimuliFromJson (← readJson scenarioPath))
-  let views := if (AdmissionRegistry.admit program).isSome then [] else hostViews program none stimuli
-  pure (Json.mkObj [("result", result program stimuli),
-    ("hostRequirements", requirementsJson (Host.hostRequirements program)),
-    ("definitionCapabilities", capabilitiesJson (Host.definitionCapabilities program)),
-    ("hostViews", Json.arr (views.map hostViewJson).toArray)])
+  pure (hostViewRun program stimuli)
 
 /-! ## Population mode -/
+
+/-- The population result of `scenario` over the read deployment sources and the steps' digests. -/
+def populationRun (scenario : Json) (sources : List DeploymentSource) (digests : List String) : Except String Json := do
+  let scenarioId ← scenario.getObjValAs? String "id"
+  let profile ← scenario.getObjValAs? String "profile"
+  let declared ← (← scenario.getObjValAs? (Array Json) "definitions").toList.mapM fun resource => do
+    pure ({ definitionRef := ← resource.getObjValAs? String "definitionRef"
+            ref := ← definitionRefFromJson (← resource.getObjVal? "bpmn") profile } : Declared)
+  let stimuli ← stimuliOfPopulation declared sources (← scenario.getObjValAs? (Array Json) "steps").toList digests
+  let result ← Population.runStimuli Registry.hooks AdmissionRegistry.admit stimuli
+  pure (populationResultJson observationJson scenarioId result)
 
 /-- `kernelRun --population <digests.json> <source.json>... <population-scenario.json>`: one deployment source per
 deployment, in deploy order, and one digest per step. A program the admission registry refuses is a refused
@@ -353,17 +374,8 @@ deployment. -/
 def runPopulation (digestsPath : String) (sourcePaths : List String) (scenarioPath : String) : IO Json := do
   let scenario ← readJson scenarioPath
   let digests ← orFail digestsPath (Lean.fromJson? (α := List String) (← readJson digestsPath))
-  let (scenarioId, profile, resources) ← orFail scenarioPath do
-    pure (← scenario.getObjValAs? String "id", ← scenario.getObjValAs? String "profile",
-      (← scenario.getObjValAs? (Array Json) "definitions").toList)
-  let declared ← orFail scenarioPath <| resources.mapM fun resource => do
-    pure ({ definitionRef := ← resource.getObjValAs? String "definitionRef"
-            ref := ← definitionRefFromJson (← resource.getObjVal? "bpmn") profile } : Declared)
   let sources ← sourcePaths.mapM fun sourcePath => do orFail sourcePath (deploymentSourceFromJson (← readJson sourcePath))
-  let stimuli ← orFail scenarioPath
-    (stimuliOfPopulation declared sources (← orFail scenarioPath (scenario.getObjValAs? (Array Json) "steps")).toList digests)
-  let result ← orFail scenarioPath (Population.runStimuli Registry.hooks AdmissionRegistry.admit stimuli)
-  pure (populationResultJson observationJson scenarioId result)
+  orFail scenarioPath (populationRun scenario sources digests)
 
 /-- The strict codec's answer for each program file: `refusal` is `null` when it decodes, else the codec's message. -/
 def decodePrograms (paths : List String) : IO Json := do
@@ -454,6 +466,59 @@ def runFixtures (paths : List String) : IO Json := do
     pure (Json.mkObj [("fixture", Json.str path), ("answer", ← orFail path (fixtureAnswer (← readJson path)))])
   pure (Json.arr answers.toArray)
 
+/-! ## Batch mode -/
+
+/-- The run of `stimuli` over `program` without the admission gate, with the admission refusal beside it. It exists
+only to pair the TypeScript kernel's unit cases that step a program admission refuses (a profile option admission does
+not admit yet); no product path runs a refused program. It steps through the one `runStep`. -/
+def ungatedRun (program : Program) (stimuli : List RunStimulus) : Json :=
+  let (trace, outcome) := execute program none stimuli
+  Json.mkObj [("admission", nullable (AdmissionRegistry.admit program) Json.str), ("outcome", Json.str outcome),
+    ("trace", Json.arr trace.toArray),
+    ("hostViews", Json.arr ((hostViews program none stimuli).map hostViewJson).toArray)]
+
+/-- The registry's evaluator, the one `Step` uses, applied to an IL expression over wire bindings. -/
+def evaluationAnswer (case : Json) : Except String Json := do
+  let expression ← Codec.strictly (Lean.fromJson? (α := Expression)) toJson (← case.getObjVal? "expression")
+  let variables ← Codec.bindingsFromJson (← case.getObjVal? "variables")
+  let context : EvalContext := { variables, nowMs := ← case.getObjValAs? Nat "nowMs" }
+  pure <| match Registry.hooks.evaluate context expression with
+    | .value result => Json.mkObj [("value", Codec.valueToJson result)]
+    | .failure code => Json.mkObj [("failure", Json.str code)]
+    | .unsupported code => Json.mkObj [("unsupported", Json.str code)]
+
+/-- The strict codecs' answer for a program text: its refusal, or `null` and the program's canonical encoding. -/
+def decodeAnswer (text : String) : Json :=
+  match Codec.parseStrict text >>= Codec.programFromJson with
+  | .ok program => Json.mkObj [("refusal", Json.null), ("encoded", toJson program)]
+  | .error message => Json.mkObj [("refusal", Json.str message), ("encoded", Json.null)]
+
+/-- The answer of one batch case, by its `entry`: a mode of this runner over inline documents. -/
+def batchAnswer (case : Json) : Except String Json := do
+  let stimuli := fun (_ : Unit) => do stimuliFromJson (← case.getObjVal? "scenario")
+  let program := fun (_ : Unit) => do Codec.programFromJson (← case.getObjVal? "program")
+  match ← case.getObjValAs? String "entry" with
+  | "hostView" => pure (hostViewRun (← program ()) (← stimuli ()))
+  | "ungated" => pure (ungatedRun (← program ()) (← stimuli ()))
+  | "population" =>
+    let sources ← (← case.getObjValAs? (Array Json) "sources").toList.mapM deploymentSourceFromJson
+    populationRun (← case.getObjVal? "scenario") sources (← case.getObjValAs? (List String) "digests")
+  | "decode" => pure (decodeAnswer (← case.getObjValAs? String "text"))
+  | "stimulus" =>
+    pure <| match Codec.firingStimulusFromJson (← case.getObjVal? "stimulus") with
+      | .ok _ => Json.mkObj [("refusal", Json.null)]
+      | .error message => Json.mkObj [("refusal", Json.str message)]
+  | "evaluate" => evaluationAnswer case
+  | "fixture" => fixtureAnswer (← case.getObjVal? "fixture")
+  | other => throw s!"batch-entry-unknown: {other}"
+
+/-- Each case's `{answer}`, or `{error}` with the harness error that case raised, in file order. -/
+def runBatch (path : String) : IO Json := do
+  let cases ← orFail path ((← readJson path).getArr?)
+  pure (Json.arr (cases.map fun case => match batchAnswer case with
+    | .ok answer => Json.mkObj [("answer", answer)]
+    | .error message => Json.mkObj [("error", Json.str message)]))
+
 end Kernel.Run
 
 def main (args : List String) : IO UInt32 := do
@@ -463,6 +528,9 @@ def main (args : List String) : IO UInt32 := do
     pure 0
   | "--fixture" :: paths@(_ :: _) =>
     IO.println (← Kernel.Run.runFixtures paths).compress
+    pure 0
+  | ["--batch", path] =>
+    IO.println (← Kernel.Run.runBatch path).compress
     pure 0
   | "--population" :: digestsPath :: paths@(_ :: _ :: _) =>
     IO.println (← Kernel.Run.runPopulation digestsPath paths.dropLast paths.getLast!).compress
@@ -478,5 +546,6 @@ def main (args : List String) : IO UInt32 := do
       "       kernelRun --host-view <program.json> <scenario.json>\n" ++
       "       kernelRun --population <digests.json> <source.json>... <population-scenario.json>\n" ++
       "       kernelRun --decode <program.json>...\n" ++
-      "       kernelRun --fixture <fixture.json>...")
+      "       kernelRun --fixture <fixture.json>...\n" ++
+      "       kernelRun --batch <cases.json>")
     pure 64

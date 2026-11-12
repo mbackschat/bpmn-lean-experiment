@@ -524,6 +524,11 @@ export function encodeProgram(value: Program): JsonValue {
   return program.encode(value);
 }
 
+/** An IL expression, strictly (`Codec.strictly` over Lean's derived `FromJson Expression`). */
+export function decodeExpression(json: unknown): Decoded<Expression> {
+  return strictly(expression.decode, expression.encode, json);
+}
+
 /** Lean's derived `ToJson Expression`, which the definition capabilities publish for a correlation criterion. */
 export function encodeExpression(value: Expression): JsonValue {
   return expression.encode(value);

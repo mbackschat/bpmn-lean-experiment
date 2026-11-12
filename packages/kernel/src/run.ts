@@ -21,9 +21,16 @@
  * `runFixture` returns the answer of one host-facing function no scenario run reaches (`kernelRun --fixture`), applied to
  * a kernel fixture's admitted programs and input. A fixture never carries its expected answer; the comparing test reads
  * that from a separate file. A malformed fixture is a harness error with a stable `fixture-` code, thrown.
+ *
+ * `runBatchCase` returns the answer of one `kernelRun --batch` case: the mode its `entry` names over inline documents,
+ * besides the modes above `ungated` (`ungatedRun`), `evaluate` (`evaluationAnswer`) and `stimulus` (the stimulus codec's
+ * refusal), so the unit cases replay against the Lean kernel in one process.
  */
 import { assertNever, compareStrings, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
-import { bindingsToJson, decodeProgram, encodeExpression, type JsonValue } from "./il/codec.js";
+import {
+  bindingsFromJson, bindingsToJson, decodeExpression, decodeProgram, encodeExpression, encodeProgram, parseStrict, valueCodec,
+  type JsonValue,
+} from "./il/codec.js";
 import {
   channelFromJson, channelToJson, decodeCorrelation, failureCode, failureName, firingStimulusFromJson, signalAddressToJson,
   type TimerFiring,
@@ -65,11 +72,12 @@ import { runStimuli as runInstances } from "./population.js";
 import { onTimeRefusal, timerOccurrences } from "./population/timers.js";
 import { deploymentSummary, registerSummary, type DeploymentSummary } from "./population/deploy.js";
 import { matching } from "./population/messages.js";
+import { EvaluationTag } from "./hooks.js";
 import { hooks } from "./registry.js";
 import { admit } from "./admission-registry.js";
 import { arrayField, field, referenceJson, requiredString, stimulusOf } from "./run/wire.js";
 import {
-  definitionRefFromJson, deploymentSourceFromJson, populationResultJson, stimuliOfPopulation, type Declared,
+  definitionRefFromJson, deploymentSourceFromJson, populationResultJson, stimuliOfPopulation, type Declared, type DeploymentSource,
 } from "./run/population.js";
 
 /** A present value, or JSON null: the schema's nullable members. */
@@ -474,10 +482,11 @@ export function capabilitiesJson(capabilities: Capabilities): JsonValue {
   };
 }
 
-/** `kernelRun --host-view <program.json> <scenario.json>`. */
-export function runHostView(programJson: unknown, scenarioJson: unknown): unknown {
-  const program = programFromJson(programJson, "program");
-  const stimuli = stimuliFromJson(scenarioJson, "scenario");
+/**
+ * The host-view run of `stimuli` over `program`: its result, host requirements, definition capabilities and the host view
+ * of every committed input, none when admission refuses the program.
+ */
+function hostViewRun(program: Program, stimuli: readonly RunStimulus[]): JsonValue {
   const views = admit(program) !== null ? [] : hostViews(program, stimuli);
   return {
     result: result(program, stimuli),
@@ -485,6 +494,11 @@ export function runHostView(programJson: unknown, scenarioJson: unknown): unknow
     definitionCapabilities: capabilitiesJson(definitionCapabilities(program)),
     hostViews: views.map(hostViewJson),
   };
+}
+
+/** `kernelRun --host-view <program.json> <scenario.json>`. */
+export function runHostView(programJson: unknown, scenarioJson: unknown): unknown {
+  return hostViewRun(programFromJson(programJson, "program"), stimuliFromJson(scenarioJson, "scenario"));
 }
 
 // Population mode
@@ -495,6 +509,11 @@ export function runHostView(programJson: unknown, scenarioJson: unknown): unknow
  * deployment.
  */
 export function runPopulation(sourceJsons: readonly unknown[], scenarioJson: unknown, digests: readonly string[]): unknown {
+  return populationRun(scenarioJson, sourceJsons.map((json, index) => deploymentSourceFromJson(json, `source ${index}`)), digests);
+}
+
+/** The population result of `scenarioJson` over the read deployment sources and the steps' digests. */
+function populationRun(scenarioJson: unknown, sources: readonly DeploymentSource[], digests: readonly string[]): JsonValue {
   const where = "population scenario";
   const scenarioId = requiredString(scenarioJson, "id", where);
   const profile = requiredString(scenarioJson, "profile", where);
@@ -502,7 +521,6 @@ export function runPopulation(sourceJsons: readonly unknown[], scenarioJson: unk
     definitionRef: requiredString(resource, "definitionRef", where),
     ref: definitionRefFromJson(field(resource, "bpmn", where), profile, where),
   }));
-  const sources = sourceJsons.map((json, index) => deploymentSourceFromJson(json, `source ${index}`));
   const stimuli = stimuliOfPopulation(declared, sources, arrayField(scenarioJson, "steps", where), digests, where);
   const population = runInstances(hooks, admit, stimuli);
   if (!population.ok) throw new Error(`${where}: ${population.error}`);
@@ -616,4 +634,70 @@ export function runFixture(fixtureJson: unknown): unknown {
   const answer = Object.hasOwn(fixtureEntries, entry) ? fixtureEntries[entry] : undefined;
   if (answer === undefined) throw new Error(`fixture-entry-unknown: ${entry}`);
   return answer(fixtureJson, input);
+}
+
+// Batch mode
+
+/**
+ * The run of `stimuli` over `program` without the admission gate, with the admission refusal beside it. It exists only
+ * to pair the TypeScript kernel's unit cases that step a program admission refuses (a profile option admission does not
+ * admit yet); no product path runs a refused program. It steps through the one `runStep`.
+ */
+function ungatedRun(program: Program, stimuli: readonly RunStimulus[]): JsonValue {
+  const [trace, outcome] = execute(program, stimuli);
+  return { admission: admit(program), outcome, trace, hostViews: hostViews(program, stimuli).map(hostViewJson) };
+}
+
+/** The registry's evaluator, the one `step` uses, applied to an IL expression over wire bindings. */
+function evaluationAnswer(batchCase: unknown): JsonValue {
+  const expression = decodeExpression(field(batchCase, "expression", "batch"));
+  if (!expression.ok) throw new Error(`batch: ${expression.refusal}`);
+  const variables = bindingsFromJson(field(batchCase, "variables", "batch"));
+  if (!variables.ok) throw new Error(`batch: ${variables.refusal}`);
+  const evaluation = hooks.evaluate({ variables: variables.value, nowMs: natField(batchCase, "nowMs") }, expression.value);
+  switch (evaluation.tag) {
+    case EvaluationTag.Value:
+      return { value: valueCodec.encode(evaluation.result) };
+    case EvaluationTag.Failure:
+      return { failure: evaluation.code };
+    case EvaluationTag.Unsupported:
+      return { unsupported: evaluation.code };
+  }
+  return assertNever(evaluation);
+}
+
+/** The strict codecs' answer for a program text: its refusal, or `null` and the program's canonical encoding. */
+function decodeAnswer(text: string): JsonValue {
+  const parsed = parseStrict(text);
+  const decoded = parsed.ok ? decodeProgram(parsed.value) : parsed;
+  return decoded.ok ? { refusal: null, encoded: encodeProgram(decoded.value) } : { refusal: decoded.refusal, encoded: null };
+}
+
+/** The batch entries, each a mode of this runner over one case's inline documents. */
+const batchEntries: Readonly<Record<string, (batchCase: unknown) => JsonValue>> = {
+  hostView: (batchCase) => hostViewRun(programFromJson(field(batchCase, "program", "batch"), "batch"),
+    stimuliFromJson(field(batchCase, "scenario", "batch"), "batch")),
+  ungated: (batchCase) => ungatedRun(programFromJson(field(batchCase, "program", "batch"), "batch"),
+    stimuliFromJson(field(batchCase, "scenario", "batch"), "batch")),
+  population: (batchCase) => populationRun(field(batchCase, "scenario", "batch"),
+    arrayField(batchCase, "sources", "batch").map((json, index) => deploymentSourceFromJson(json, `source ${index}`)),
+    arrayField(batchCase, "digests", "batch").map((digest) => {
+      if (typeof digest !== "string") throw new Error("batch: digests: String expected");
+      return digest;
+    })),
+  decode: (batchCase) => decodeAnswer(requiredString(batchCase, "text", "batch")),
+  stimulus: (batchCase) => {
+    const decoded = firingStimulusFromJson(field(batchCase, "stimulus", "batch"));
+    return { refusal: decoded.ok ? null : decoded.refusal };
+  },
+  evaluate: evaluationAnswer,
+  fixture: (batchCase) => runFixture(field(batchCase, "fixture", "batch")) as JsonValue,
+};
+
+/** One batch case's answer (`kernelRun --batch`), by its `entry`; a harness error throws. */
+export function runBatchCase(batchCase: unknown): unknown {
+  const entry = requiredString(batchCase, "entry", "batch");
+  const answer = Object.hasOwn(batchEntries, entry) ? batchEntries[entry] : undefined;
+  if (answer === undefined) throw new Error(`batch-entry-unknown: ${entry}`);
+  return answer(batchCase);
 }
