@@ -1,0 +1,40 @@
+{
+  "kind": "scenario",
+  "id": "mi-call-standards-call-condition",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "mi-call-standards-call-condition",
+    "relativePath": "scenarios/open-rows/multi-instance-call-activity/standards-call-condition.bpmn",
+    "sha256": "ee7673081045fcde329dac610c946dbd40bdfbd88dbc8e89d512ffaa6c8f723b",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "reviewers",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "same",
+              "other"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 Table 10.29"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

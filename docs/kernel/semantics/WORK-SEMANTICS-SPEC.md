@@ -166,7 +166,8 @@ The deleted implementation admitted each work kind only in exact first-profile t
 | `work.call.multiInstanceCounterOutput` | a Call output targeting `nrOfInstances`, `nrOfActiveInstances` or `nrOfCompletedInstances` | CIB drops it (`CallableElementActivityBehavior`, [CIB-LIM-0004](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0004-a-call-output-targeting-a-multi-instance-counter-is-refused)); PC-SCOPE-04 |
 | `work.call.dataCorrespondence` | standard Call data other than one input and one output Data Association | §10.3.6 correspondence the kernel can read |
 | `activity.inputMappings`, `activity.outputMappings` | mappings on work other than User, Service and decision tasks, and a plain Task's outputs other than `camunda:outputParameter`s under `OutputContext.activityScope` | nothing would carry or submit them |
-| `activity.multiInstanceBody` | Multi-Instance on work other than a User, Service or Receive Task | [Multi-Instance rows](MULTI-INSTANCE-SEMANTICS-SPEC.md) |
+| `work.call.multiInstanceDataInput` | under the standards binding, a looping Call with an input Data Association | [Multi-Instance restrictions](MULTI-INSTANCE-SEMANTICS-SPEC.md#restrictions) |
+| `activity.multiInstanceBody` | Multi-Instance on work other than a User, Service, Receive, Script or Call Task | [Multi-Instance rows](MULTI-INSTANCE-SEMANTICS-SPEC.md) |
 | `activity.compensationHandler` | compensation on work the pipeline cannot complete | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
 | `compensation.handlerCount` | more than one compensation handler of one Activity or Scope | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
 | `scope.implicitStart` | a Receive Task or Call begun by a Scope's implicit start | no flow to wait on |
@@ -183,7 +184,7 @@ Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `u
 |---|---|
 | PC-HUM-01 | User Task inputs and results across serial, branch, rework, scoped and Multi-Instance compositions; an output reading beyond the submission (PC-DATA-06) |
 | PC-HUM-03 | correlated and payload-bearing Receive Tasks in every ownership |
-| PC-AUTO-06 | A durable-scheduling Script witness on the Temporal host whose recovery reuses the committed result, and the Multi-Instance body context, refused today (`activity.multiInstanceBody`); the kernel's Script effect, its result rule, the host evaluator, the cibseven profiles' selection and the retained CIB evidence are in place (M10 track review) |
+| PC-AUTO-06 | A durable-scheduling Script witness on the Temporal host whose recovery reuses the committed result; the kernel's Script effect, its result rule, the host evaluator, the Multi-Instance body context, the cibseven profiles' selection and the retained CIB evidence are in place |
 
 ## Sources
 

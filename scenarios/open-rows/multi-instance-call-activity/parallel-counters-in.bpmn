@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiCallParallelCountersIn"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-call-activity:parallel-counters-in">
+  <bpmn:process id="Process_MiCallParallelCountersIn" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_Start" targetRef="CallActivity_Review" />
+    <bpmn:callActivity id="CallActivity_Review" name="Review one reviewer" calledElement="Process_Review">
+      <bpmn:extensionElements>
+        <camunda:in source="loopCounter" target="slot" />
+        <camunda:in source="nrOfInstances" target="seenInstances" />
+        <camunda:in source="nrOfActiveInstances" target="seenActive" />
+        <camunda:in source="nrOfCompletedInstances" target="seenCompleted" />
+      </bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopCardinality>${count}</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_Review_Publish" sourceRef="CallActivity_Review" targetRef="UserTask_Publish" />
+    <bpmn:userTask id="UserTask_Publish" name="Publish outcome" />
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="UserTask_Publish" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+  <bpmn:process id="Process_Review" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Check" />
+    <bpmn:sequenceFlow id="Flow_Check_Start" sourceRef="StartEvent_Check" targetRef="Gateway_Instant" />
+    <bpmn:exclusiveGateway id="Gateway_Instant" default="Flow_Instant_Check" />
+    <bpmn:sequenceFlow id="Flow_Instant_End" sourceRef="Gateway_Instant" targetRef="EndEvent_Instant">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${slot == 0}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="EndEvent_Instant" />
+    <bpmn:sequenceFlow id="Flow_Instant_Check" sourceRef="Gateway_Instant" targetRef="UserTask_Check" />
+    <bpmn:userTask id="UserTask_Check" name="Check one reviewer">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="slotSeen">${slot}</camunda:inputParameter>
+          <camunda:inputParameter name="instancesSeen">${seenInstances}</camunda:inputParameter>
+          <camunda:inputParameter name="activeSeen">${seenActive}</camunda:inputParameter>
+          <camunda:inputParameter name="completedSeen">${seenCompleted}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Check_End" sourceRef="UserTask_Check" targetRef="EndEvent_Checked" />
+    <bpmn:endEvent id="EndEvent_Checked" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -262,6 +262,16 @@ def finish (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (state : 
 def loopOf? (ctx : Ctx) (run : MultiInstanceRun) : Option MultiInstance :=
   ((ctx.program.element? run.element).bind (·.envelope?)).bind (·.multiInstance)
 
+/-- The names an instance's completion leaves as result locals: an effect's result values, unless the loop names an
+output data item. A Call's writes are its output mappings, which CIB performs on the instance execution
+(`CallableElementActivityBehavior.java:132-139`), not results: an item-named target writes the instance's item local,
+which the completion condition reads and the instance's end discards, as CIB's next `performInstance` or the body's
+end does (`SequentialMultiInstanceActivityBehavior.java:53`, `ParallelMultiInstanceActivityBehavior.java:96`). -/
+def resultNames (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (writes : List (String × Value)) :
+    List String :=
+  let mapped := ((ctx.program.element? run.element).bind (·.activity?)).any fun (_, payload) => payload.work.call?.isSome
+  if loop.outputDataItem.isNone && !mapped then writes.map (·.1) else []
+
 /-- `Hooks.completeBody`: an idle body has nothing more to run. -/
 def completeBody (ctx : Ctx) (_ : Header) (_ : Envelope) (loop : MultiInstance) (occurrence : Occurrence)
     (state : State) : Outcome :=
@@ -319,7 +329,7 @@ def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes
       | .completed _ => false)
     | .error (.semanticFailure "instance-without-slot")
   let output ← submitted loop run writes
-  let results := if loop.outputDataItem.isNone then writes.map (·.1) else []
+  let results := resultNames ctx loop run writes
   let shadows := results.any fun name => multiInstanceCounterNames.contains name || some name == itemName ctx loop
   let intact := holdsCounts ctx (state.ownVariables run.scope) (bodyCounts loop run.instances) &&
     holdsCounts ctx (state.ownVariables occurrence.scope) (instanceCounts index)

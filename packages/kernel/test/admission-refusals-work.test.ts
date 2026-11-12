@@ -300,6 +300,13 @@ export const rows: readonly Row[] = [
     },
   },
   {
+    code: "work.call.multiInstanceDataInput",
+    description: "a Multi-Instance Call with an input Data Association",
+    mutate: (program) => withCalled()(withTask(callWork(mapped), { multiInstance: loop({ outputDataItem: null }) })(program)),
+    control: (program) => withCalled()(withTask(callWork({ inputs: [callVariable("in")] }),
+      { multiInstance: loop({ outputDataItem: null }) })(program)),
+  },
+  {
     code: "work.call.multiInstanceCounterOutput",
     description: "a Call output targeting a Multi-Instance counter",
     mutate: calling({ outputs: [callVariable("nrOfInstances")] }),

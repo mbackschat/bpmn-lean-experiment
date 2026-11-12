@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:tns="urn:bpmn-lean:scenarios:multi-instance-call-activity:standards-call-item"
+  id="Definitions_StandardsCallItem"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-call-activity:standards-call-item"
+  expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:itemDefinition id="ItemDefinition_String" itemKind="Information" structureRef="xsd:string" isCollection="false" />
+  <bpmn:itemDefinition id="ItemDefinition_StringList" itemKind="Information" isCollection="true" />
+  <bpmn:process id="Process_StandardsCallItem" isExecutable="true">
+    <bpmn:property id="reviewers" itemSubjectRef="ItemDefinition_StringList" />
+    <bpmn:property id="verdict" itemSubjectRef="ItemDefinition_String" />
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_Start" targetRef="CallActivity_Review" />
+    <bpmn:callActivity id="CallActivity_Review" name="Review one reviewer" calledElement="tns:Process_Review">
+      <bpmn:ioSpecification id="IoSpecification_Review">
+        <bpmn:dataInput id="DataInput_Reviewer" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+        <bpmn:dataOutput id="DataOutput_Verdict" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+        <bpmn:inputSet id="InputSet_Review">
+          <bpmn:dataInputRefs>DataInput_Reviewer</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="OutputSet_Review">
+          <bpmn:dataOutputRefs>DataOutput_Verdict</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="DataInputAssociation_Reviewer">
+        <bpmn:sourceRef>InputDataItem_Reviewer</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_Reviewer</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_Verdict">
+        <bpmn:sourceRef>DataOutput_Verdict</bpmn:sourceRef>
+        <bpmn:targetRef>verdict</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopDataInputRef>reviewers</bpmn:loopDataInputRef>
+        <bpmn:inputDataItem id="InputDataItem_Reviewer" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_Review_Publish" sourceRef="CallActivity_Review" targetRef="UserTask_Publish" />
+    <bpmn:userTask id="UserTask_Publish" name="Publish outcome" />
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="UserTask_Publish" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+  <bpmn:process id="Process_Review" isExecutable="true">
+    <bpmn:ioSpecification id="IoSpecification_Check">
+      <bpmn:dataInput id="DataInput_Subject" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+      <bpmn:dataOutput id="DataOutput_Checked" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+      <bpmn:inputSet id="InputSet_Check">
+        <bpmn:dataInputRefs>DataInput_Subject</bpmn:dataInputRefs>
+      </bpmn:inputSet>
+      <bpmn:outputSet id="OutputSet_Check">
+        <bpmn:dataOutputRefs>DataOutput_Checked</bpmn:dataOutputRefs>
+      </bpmn:outputSet>
+    </bpmn:ioSpecification>
+    <bpmn:startEvent id="StartEvent_Check" />
+    <bpmn:sequenceFlow id="Flow_Check_Start" sourceRef="StartEvent_Check" targetRef="UserTask_Check" />
+    <bpmn:userTask id="UserTask_Check" name="Check one reviewer" />
+    <bpmn:sequenceFlow id="Flow_Check_End" sourceRef="UserTask_Check" targetRef="EndEvent_Checked" />
+    <bpmn:endEvent id="EndEvent_Checked" />
+  </bpmn:process>
+</bpmn:definitions>

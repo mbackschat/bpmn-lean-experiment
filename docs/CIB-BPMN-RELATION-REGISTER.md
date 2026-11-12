@@ -22,7 +22,7 @@ The counts below cover only entries recorded by this project, including the sepa
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Normative agreement records | 23 | 0 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
+| Normative agreement records | 24 | 0 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 13 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 40 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
@@ -543,6 +543,16 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 **Evidence:** At pinned `5a45b47`, a completed User Task (`UserTaskActivityBehavior#signal`), a completed Service Task (`ServiceTaskDelegateExpressionActivityBehavior#execute`) and a Send Task, which `BpmnParse#parseSendTask` gives that same behavior through `parseServiceTaskLike`, leave through `FlowNodeActivityBehavior#leave`. `BpmnActivityBehavior#performOutgoingBehavior` collects every unconditioned non-default transition and takes them in one `leaveActivityViaTransitions`, creating no activity instance for the split. The pinned `SequenceFlowTest#testTakeAllOutgoingFlowsFromNonScopeTask` completes one User Task and asserts both successor User Tasks open after that one completion; the [retained insurance claim intake](../scenarios/activity-host-split/README.md) is the calibration model, and its CIB probe is the closure's qualification evidence.
 
 **Boundary:** a User Task, and a Service or Send Task without a BPMN Error route, of the nested scope-data profile, with one incoming flow and two or more unconditioned, non-default outgoing flows, without data associations, boundary events, Multi-Instance, listeners or task metadata, placed outside every fork region of its scope and its ancestors; public task, job and history APIs. Conditional and default outgoing flows, Tasks that both merge and split, Receive, Business Rule, Script and Manual Tasks, Calls, and every other profile stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases and the recovery witness.
+
+### CIB-AGR-0024 — a Multi-Instance Call Activity invokes one called instance per instance
+
+**Status:** Selected bounded agreement: under the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile a Call Activity is admitted as Multi-Instance work (PC-MI-03), and the retained [Call body witnesses](../scenarios/open-rows/multi-instance-call-activity/README.md) agree.
+
+**BPMN basis:** §10.3.6 makes each Call Activity instance invoke the called element; §10.3.8 and §13.3.7 make every Multi-Instance instance an Activity instance holding its item, generated together in parallel mode and one after the other in sequential mode, with the completion condition evaluated as each completes and the remaining instances cancelled when it holds.
+
+**Evidence:** At pinned `834a9874`, a looping Call is no scope of its own (`BpmnParse.java:3997-4004`), so each instance's execution evaluates the Call's `camunda:in` (`CallableElementActivityBehavior.java:116`, `CallableElement.java:88-90`), starts one called instance, and receives its `camunda:out` through `passOutputVariables` before the instance completes (`CallableElementActivityBehavior.java:132-139`). The retained [Call body witnesses](../scenarios/open-rows/multi-instance-call-activity/README.md) (CIB Seven `2.2.0`) agree in both modes and both generation forms: equal reviewers give distinct called instances, reversed completion orders, cardinality bodies, quorum completion conditions cancelling the open called instances, an interrupting Timer on the body while called work remains, a called Error caught on the body, and two Calls forked in one closure. `error-multi-instance/sequential-second-instance-fails` and `escalation-multi-instance/parallel-interrupting` and `sequential-non-interrupting` agree with Call bodies too.
+
+**Boundary:** Collection and cardinality Call bodies of both CIB profiles, called instances of the same deployment, public task, variable and Process-existence observations. A looping Call's `camunda:out` naming the item or a counter, its `camunda:in` reading the counters (`parallel-counters-in`, `sequential-counters-in`, `sequential-item-out`) and the Terminate and uncaught-Error endings of a called instance (`parallel-child-terminates`, `parallel-child-endings`) await their CIB answers. An uncaught Error in a called instance whose Call runs inside an instance stays `unsupported` under `CIB-INT-0013`'s boundary (PC-ERROR-03); compensation of called instances stays with `CIB-DEV-0012`. No Temporal refinement is claimed beyond the registered pipeline cases.
 
 ## Interpretation register
 

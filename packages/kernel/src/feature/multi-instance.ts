@@ -29,12 +29,14 @@ import {
   MultiInstanceOutputs,
   ValueTag,
   assertNever,
+  elementActivity,
   elementEnvelope,
   isAscii,
   multiInstanceCounterNames,
   parseJavaInt,
   programElement,
   withinJavaInt,
+  workCall,
   type Envelope,
   type Expression,
   type Header,
@@ -442,6 +444,20 @@ function loopOf(ctx: Ctx, run: MultiInstanceRun): MultiInstance | null {
   return (element === null ? null : elementEnvelope(element))?.multiInstance ?? null;
 }
 
+/**
+ * The names an instance's completion leaves as result locals: an effect's result values, unless the loop names an
+ * output data item. A Call's writes are its output mappings, which CIB performs on the instance execution
+ * (`CallableElementActivityBehavior.java:132-139`), not results: an item-named target writes the instance's item local,
+ * which the completion condition reads and the instance's end discards, as CIB's next `performInstance` or the body's
+ * end does (`SequentialMultiInstanceActivityBehavior.java:53`, `ParallelMultiInstanceActivityBehavior.java:96`).
+ */
+function resultNames(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, writes: readonly Binding[]): readonly string[] {
+  const element = programElement(ctx.program, run.element);
+  const activity = element === null ? null : elementActivity(element);
+  const mapped = activity !== null && workCall(activity[1].work) !== null;
+  return loop.outputDataItem === null && !mapped ? writes.map(([name]) => name) : [];
+}
+
 /** `Hooks.completeBody`: an idle body has nothing more to run. */
 export function completeBody(
   ctx: Ctx,
@@ -525,7 +541,7 @@ export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence
   if (index < 0) return failed(FailureTag.SemanticFailure, "instance-without-slot");
   const value = submitted(loop, found, writes);
   if (!value.ok) return value;
-  const results = loop.outputDataItem === null ? writes.map(([name]) => name) : [];
+  const results = resultNames(ctx, loop, found, writes);
   const item = itemName(ctx, loop);
   const shadows = results.some((name) => multiInstanceCounterNames.includes(name) || name === item);
   const intact = holdsCounts(ctx, ownVariables(state, found.scope), bodyCounts(loop, found.instances)) &&

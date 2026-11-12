@@ -1,0 +1,79 @@
+{
+  "kind": "scenario",
+  "id": "mi-call-standards-call-body",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "mi-call-standards-call-body",
+    "relativePath": "scenarios/open-rows/multi-instance-call-activity/standards-call-body.bpmn",
+    "sha256": "cb4114abde214c034db2239e84e1b92ff4f978abbc94b1c4c431533b22a79b71",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "reviewers",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "same",
+              "other"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Check-2",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:19:CallActivity_Review:2",
+        "elementId": "UserTask_Check",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_Check-1",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:19:CallActivity_Review:1",
+        "elementId": "UserTask_Check",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_Publish-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Publish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 Table 10.29"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

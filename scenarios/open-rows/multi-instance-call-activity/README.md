@@ -1,6 +1,6 @@
 # Multi-Instance Call Activity bodies
 
-Neutral inputs for [PC-MI-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) (Call Activity bodies in both modes and both generation forms, several instances of one definition in one closure), and the Call Activity parts of PC-MI-09 (completion predicates) and PC-MI-12 (body boundary handling). They are answer-free: the CIB Seven `2.2.0` evidence run supplies every expected result.
+Neutral inputs for [PC-MI-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) (Call Activity bodies in both modes and both generation forms, several instances of one definition in one closure), and the Call Activity parts of PC-MI-09 (completion predicates) and PC-MI-12 (body boundary handling, a called instance's abnormal endings). They are answer-free: the CIB Seven `2.2.0` evidence run supplies every expected result, and the `standards-*` schedules run under the `bpmn-2.0.2` profile in the kernel only.
 
 ## Models
 
@@ -13,6 +13,10 @@ Each Multi-Instance model is one Call Activity `CallActivity_Review` of the Proc
 | [sequential-quorum](sequential-quorum.bpmn), [parallel-quorum](parallel-quorum.bpmn) | sequential, parallel | collection | completion condition `${nrOfCompletedInstances >= quorum}` |
 | [sequential-boundary](sequential-boundary.bpmn), [parallel-boundary](parallel-boundary.bpmn) | sequential, parallel | collection | interrupting `PT5S` Timer and `E-REJECTED` Error Boundary Events on the body; the called Process ends in an Error End Event when `verdict = 'reject'` |
 | [fork-two-calls](fork-two-calls.bpmn) | none | none | a Parallel Gateway forks straight into two Calls of `Process_Review`, joined before `UserTask_Publish` |
+| [sequential-item-out](sequential-item-out.bpmn) | sequential | collection | the Call maps only `reviewer` in and maps the called `verdict` out onto the item name `reviewer`; completion condition `${reviewer == 'stop'}` |
+| [parallel-counters-in](parallel-counters-in.bpmn), [sequential-counters-in](sequential-counters-in.bpmn) | parallel, sequential | `loopCardinality` `${count}` | the Call maps `loopCounter`, `nrOfInstances`, `nrOfActiveInstances` and `nrOfCompletedInstances` in; the called Process ends at once for slot 0 and otherwise publishes the four values as `UserTask_Check` inputs |
+| [parallel-child-endings](parallel-child-endings.bpmn) | parallel | collection | completion condition `${nrOfCompletedInstances >= 2}`; the called Process ends in a Terminate End Event for reviewer `terminate`, in an Error End Event `E-UNLISTED` that nothing catches for reviewer `error`, and otherwise at `UserTask_Check` |
+| [standards-call-body](standards-call-body.bpmn), [standards-call-condition](standards-call-condition.bpmn), [standards-call-item](standards-call-item.bpmn) | parallel | `loopDataInputRef` `reviewers` with an `inputDataItem` | standards renditions under Simple Boolean: no Data Association; a completion condition `isPresent(InputDataItem_Reviewer)`; the item mapped into the Call by a Data Input Association |
 
 ## Schedules
 
@@ -30,5 +34,13 @@ Each Multi-Instance model is one Call Activity `CallActivity_Review` of the Proc
 | [sequential-child-error](sequential-child-error.scenario.json) | sequential-boundary | the second instance's task completes with `verdict = 'reject'` | PC-MI-12, PC-MI-03 |
 | [parallel-timer-while-work-remains](parallel-timer-while-work-remains.scenario.json) | parallel-boundary | instance 2 returns, the Timer fires, instances 1 and 3 are completed late, then the escalation | PC-MI-12 |
 | [parallel-child-error](parallel-child-error.scenario.json) | parallel-boundary | instance 1 returns, instance 3 completes with `verdict = 'reject'`, instance 2's task is completed afterwards | PC-MI-12, PC-MI-03 |
+| [sequential-item-out](sequential-item-out.scenario.json) | sequential-item-out | reviewers `a, b, c`; the first called task returns `go`, the second `stop`, which ends the body; the third called task is completed though it never exists; the Process ends without a `reviewer` variable | PC-MI-03 |
+| [parallel-counters-in](parallel-counters-in.scenario.json) | parallel-counters-in | `count = 3`; slot 0's called instance ends in the beginning closure, then the third and second called tasks complete | PC-MI-03 |
+| [sequential-counters-in](sequential-counters-in.scenario.json) | sequential-counters-in | `count = 3`; slot 0's called instance ends at once, then the second and third called tasks complete in turn | PC-MI-03 |
+| [parallel-child-terminates](parallel-child-terminates.scenario.json) | parallel-child-endings | reviewers `wait, terminate, terminate`; two called instances terminate, the condition ends the body with the first still waiting, whose task is completed late | PC-MI-12, PC-MI-03 |
+| [parallel-child-endings](parallel-child-endings.scenario.json) | parallel-child-endings | reviewers `wait, terminate, error`; one called instance terminates and one ends its path by an uncaught Error, then the first's task is completed late | PC-MI-12, PC-ERROR-03 |
+| [standards-call-body](standards-call-body.scenario.json) | standards-call-body | reviewers `same, other`, the second called task completed first | PC-MI-03 |
+| [standards-call-condition](standards-call-condition.scenario.json) | standards-call-condition | the start; the racing instances' completion condition is refused (`multiInstance.concurrentInstances`) | PC-MI-03 |
+| [standards-call-item](standards-call-item.scenario.json) | standards-call-item | the start; the item's Data Input Association into the Call is refused (`work.call.multiInstanceDataInput`) | PC-MI-03 |
 
 The Timer is one outer deadline over the whole body, so its occurrence is addressed as `BoundaryTimer_Review` activation 1 throughout.

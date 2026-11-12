@@ -39,8 +39,10 @@ def writtenTargets (mappings : List Mapping) : List String :=
   (mappings.filter (·.dialect != .dataAssociation)).map (·.target)
 
 /-- A User Task submits the loop's output data item; a Service Task's effect result is the empty OutputSet, since a
-Multi-Instance Activity has no mappings (PC-MI-02); a Receive Task's delivery carries no payload (PC-HUM-06). The
-Multi-Instance shape itself is admitted by `Kernel.Admission.MultiInstance`. -/
+Multi-Instance Activity has no mappings (PC-MI-02); a Receive Task's delivery carries no payload (PC-HUM-06); a Script
+Task's result is its result variable, which it writes as `execution.setVariable` does (PC-AUTO-06); a Call returns
+through its output mappings, which write from the instance (PC-MI-03, `CallableElementActivityBehavior.java:132-139`).
+The Multi-Instance shape itself is admitted by `Kernel.Admission.MultiInstance`. -/
 def traits : Work → Traits
   | .none => { plainTask := true, beginsWithoutToken := true }
   | .manual => { beginsWithoutToken := true }
@@ -51,9 +53,9 @@ def traits : Work → Traits
     { mapsData := true, compensable := true, instanceBody := some false, beginsWithoutToken := true, raises := true
       handlerKey := work.handlerKey }
   | .send work => { raises := true, handlerKey := work.handlerKey }
-  | .script _ => {}
+  | .script _ => { instanceBody := some false }
   | .rule _ => { mapsData := true }
-  | .call _ => { compensable := true, raises := true }
+  | .call _ => { compensable := true, instanceBody := some false, raises := true }
 
 /-- The names CIB installs from a work: its results (`Work.results`) and a Call's mapping targets, those of its input
 mappings among them, which the called instance receives. -/
@@ -324,6 +326,16 @@ def script (options : ProfileOptions) (work : ScriptWork) : Option String :=
 def service (work : ServiceWork) : Option String :=
   if work.protocol.isEmpty || work.operation.isEmpty then some "work.service.unboundImplementation" else none
 
+/-- A looping Call's input Data Associations: the reader reads the loop's item association as the Call's own input from
+the `inputDataItem`, while each instance holds the item under the Data Input that association feeds (BPMN 2.0.2
+Table 10.29, §10.3.6), and it reads the collection's association as a second input, so the called instance would not
+receive the item (`call-input-unavailable`). A forward-compatible restriction; CIB performs no Data Association
+(CIB-LIM-0013). -/
+def loopedCallInputs (envelope : Envelope) (work : CallWork) : Option String :=
+  if envelope.multiInstance.isSome && work.inputs.any (·.dialect == .dataAssociation) then
+    some "work.call.multiInstanceDataInput"
+  else none
+
 def activity (program : Program) (header : Header) (payload : ActivityPayload) : Option String :=
   let work : Option String :=
     match payload.work with
@@ -335,7 +347,7 @@ def activity (program : Program) (header : Header) (payload : ActivityPayload) :
     | .send _ => some "work.send"
     | .script work => script program.options work
     | .rule work => ruleAcrossDeployments program header <|> Decision.task program work payload.envelope
-    | .call work => call program header work
+    | .call work => loopedCallInputs payload.envelope work <|> call program header work
   let read := traits payload.work
   work <|> handlerKey program read.handlerKey <|> workEnvelope program.options read payload.envelope
 

@@ -648,6 +648,7 @@
         "work.call.dataAcrossDeployments",
         "work.call.dataCorrespondence",
         "work.call.multiInstanceCounterOutput",
+        "work.call.multiInstanceDataInput",
         "work.call.propagateAll",
         "work.call.rootProcess",
         "work.call.tenant",

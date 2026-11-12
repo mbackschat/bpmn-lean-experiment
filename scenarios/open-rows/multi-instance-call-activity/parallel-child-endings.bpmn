@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiCallParallelChildEndings"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-call-activity:parallel-child-endings">
+  <bpmn:process id="Process_MiCallParallelChildEndings" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_Start" targetRef="CallActivity_Review" />
+    <bpmn:callActivity id="CallActivity_Review" name="Review one reviewer" calledElement="Process_Review">
+      <bpmn:extensionElements>
+        <camunda:in source="reviewer" target="reviewer" />
+      </bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="reviewers" camunda:elementVariable="reviewer">
+        <bpmn:completionCondition>${nrOfCompletedInstances &gt;= 2}</bpmn:completionCondition>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_Review_Publish" sourceRef="CallActivity_Review" targetRef="UserTask_Publish" />
+    <bpmn:userTask id="UserTask_Publish" name="Publish outcome" />
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="UserTask_Publish" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+  <bpmn:error id="Error_Unlisted" errorCode="E-UNLISTED" />
+  <bpmn:process id="Process_Review" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Check" />
+    <bpmn:sequenceFlow id="Flow_Check_Start" sourceRef="StartEvent_Check" targetRef="Gateway_Ending" />
+    <bpmn:exclusiveGateway id="Gateway_Ending" default="Flow_Ending_Check" />
+    <bpmn:sequenceFlow id="Flow_Ending_Terminate" sourceRef="Gateway_Ending" targetRef="EndEvent_Terminate">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${reviewer == 'terminate'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="EndEvent_Terminate">
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Ending_Error" sourceRef="Gateway_Ending" targetRef="EndEvent_Error">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${reviewer == 'error'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="EndEvent_Error">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Unlisted" errorRef="Error_Unlisted" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Ending_Check" sourceRef="Gateway_Ending" targetRef="UserTask_Check" />
+    <bpmn:userTask id="UserTask_Check" name="Check one reviewer">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="subject">${reviewer}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Check_End" sourceRef="UserTask_Check" targetRef="EndEvent_Checked" />
+    <bpmn:endEvent id="EndEvent_Checked" />
+  </bpmn:process>
+</bpmn:definitions>

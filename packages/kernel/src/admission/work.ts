@@ -99,11 +99,11 @@ export function traits(work: Work): Traits {
     case WorkTag.Send:
       return { ...noTraits, raises: true, handlerKey: work.payload.handlerKey };
     case WorkTag.Script:
-      return noTraits;
+      return { ...noTraits, instanceBody: false };
     case WorkTag.Rule:
       return { ...noTraits, mapsData: true };
     case WorkTag.Call:
-      return { ...noTraits, compensable: true, raises: true };
+      return { ...noTraits, compensable: true, instanceBody: false, raises: true };
   }
   return assertNever(work);
 }
@@ -473,6 +473,19 @@ function service(work: ServiceWork): string | null {
   return work.protocol.length === 0 || work.operation.length === 0 ? "work.service.unboundImplementation" : null;
 }
 
+/**
+ * A looping Call's input Data Associations: the reader reads the loop's item association as the Call's own input from
+ * the `inputDataItem`, while each instance holds the item under the Data Input that association feeds (BPMN 2.0.2
+ * Table 10.29, §10.3.6), and it reads the collection's association as a second input, so the called instance would not
+ * receive the item (`call-input-unavailable`). A forward-compatible restriction; CIB performs no Data Association
+ * (CIB-LIM-0013).
+ */
+function loopedCallInputs(envelope: Envelope, work: CallWork): string | null {
+  return envelope.multiInstance !== null && work.inputs.some((mapping) => mapping.dialect === MappingDialect.DataAssociation)
+    ? "work.call.multiInstanceDataInput"
+    : null;
+}
+
 function work(program: Program, header: Header, payload: ActivityPayload): string | null {
   const assigned = payload.work;
   switch (assigned.tag) {
@@ -492,7 +505,7 @@ function work(program: Program, header: Header, payload: ActivityPayload): strin
     case WorkTag.Rule:
       return ruleAcrossDeployments(program, header) ?? Decision.task(program, assigned.payload, payload.envelope);
     case WorkTag.Call:
-      return call(program, header, assigned.payload);
+      return loopedCallInputs(payload.envelope, assigned.payload) ?? call(program, header, assigned.payload);
   }
   return assertNever(assigned);
 }
