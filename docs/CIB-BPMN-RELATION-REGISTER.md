@@ -28,7 +28,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | CIB interpretations of BPMN gaps or inconsistencies | 40 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 45 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 47 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 48 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1486,6 +1486,16 @@ BPMN 2.0.2 §10.4.2 executes an Activity's output Data Associations "When an Act
 
 **Boundary:** Compensation handlers with output parameters that end through `endCompensation`; this entry owns that witness in the ledger.
 
+### CIB-LIM-0051 — CIB deploys a Service Task whose implementation no binding matches
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile, since the kernel refuses the task at admission (`work.service.unboundImplementation`, `throw.message.unboundImplementation`); not a deviation, since a delegate, class or expression is CIB's extension, which no BPMN requirement governs
+
+BPMN 2.0.2 Table 10.8 lets a Service Task name its technology by `implementation` and the invoked Operation by `operationRef`; it says nothing of a Java bean. The project reads a declared CIB implementation through an effect binding, an overlay or built-in entry that maps the source attributes to a project-owned protocol and operation. A `camunda:delegateExpression`, `class` or `expression` that no binding matches names product code, which stays out of the program, so the reader carries no operation and admission refuses the Service Task, a Send Task performed by a handler, or a bound Message throw under `MessageThrowForms.cibForms` (CIB-EXT-0039). CIB Seven `2.2.0` builds the behavior from the declared attribute alone and deploys the model; it resolves a delegate expression only when the task executes, so an unknown token fails the job of a task behind `asyncBefore` and rolls back the command that reaches a synchronous one.
+
+**Evidence:** Pinned `bpmn/parser/BpmnParse.java:2264-2305` (`parseServiceTaskLike` sets the behavior from `type`, `class`, `delegateExpression` or `expression` and never reads `operationRef`), `bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java:101-122` (`expression.getValue` when the task executes) and `bpmn/behavior/ClassDelegateActivityBehavior.java:111-112` (the class is instantiated then); the witness [unknown-delegate](../scenarios/open-rows/automation-handler-reuse/README.md), an `asyncBefore` Service Task bound to `${noSuchHandler}`, which the kernel refuses at deployment; its CIB evidence is not retained yet.
+
+**Boundary:** A declared delegate expression, class or expression that no overlay or built-in binding matches. A registered binding is unaffected, an external task's `camunda:topic` is refused by the reader (`reader.factNotCarried`), and a Message throw's `class`, `expression` or `type` is refused there as well (`throw.message.implementation`).
+
 ## Extension register
 
 ### CIB-LIM-0025 — CIB admits two interrupting Error Event Sub-Processes of one code in one scope
@@ -1941,7 +1951,7 @@ BPMN 2.0.2 names no sending technology for a Message throw Event (Tables 10.88 a
 
 **Evidence:** The cited source; the retained [message-throw-bound](../scenarios/open-rows/message-throw-bound/README.md) answers `both-sends-succeed`, `intermediate-send-refused` and `end-send-refused`; `packages/kernel/test/message-throw.test.ts`. The [retry witness](../scenarios/open-rows/message-throw-retry/README.md) has no CIB answer, since a throw without an asynchronous continuation fails its command, and checks the single occurrence in both kernels.
 
-**Boundary:** A `camunda:delegateExpression` on a Message Intermediate throw's or Message End's event definition. `camunda:class`, `expression` and `type` (`throw.message.implementation`), `camunda:resultVariable` (`throw.message.resultVariable`), `camunda:inputOutput`, asynchronous continuations, execution listeners and Data Input Associations are refused. CIB resolves the delegate as a Service Task's, so a declared name equal to its root identifier is refused as one (`work.handlerKeyName`, CIB-LIM-0017).
+**Boundary:** A `camunda:delegateExpression` on a Message Intermediate throw's or Message End's event definition. `camunda:class`, `expression` and `type` (`throw.message.implementation`), `camunda:resultVariable` (`throw.message.resultVariable`), `camunda:inputOutput`, asynchronous continuations, execution listeners and Data Input Associations are refused. CIB resolves the delegate as a Service Task's, so a declared name equal to its root identifier is refused as one (`work.handlerKeyName`, CIB-LIM-0017), and a delegate no binding matches is refused (`throw.message.unboundImplementation`, [CIB-LIM-0051](#cib-lim-0051--cib-deploys-a-service-task-whose-implementation-no-binding-matches)).
 
 ### CIB-EXT-0040 — a Signal throw carries `camunda:in` variables and a business key
 

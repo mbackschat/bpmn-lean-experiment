@@ -76,6 +76,12 @@ export const rows: readonly Row[] = [
     control: (program) => withOptions(throwing(messageThrow(binding))(program), cibForms),
   },
   {
+    code: "throw.message.unboundImplementation",
+    description: "a bound Message throw whose handler no binding matched, under CIB's forms",
+    mutate: (program) => withOptions(throwing(messageThrow({ protocol: "##WebService", operation: "" }))(program), cibForms),
+    control: (program) => withOptions(throwing(messageThrow(binding))(program), cibForms),
+  },
+  {
     code: "throw.message.payload",
     description: "a Message throw's Data Input Associations, under CIB's forms too",
     mutate: (program) => withOptions(throwing(messageThrow(binding, [mapping("m", variable("order"), "dataAssociation")]))(program), cibForms),

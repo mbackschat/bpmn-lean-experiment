@@ -19,7 +19,7 @@ The other models bind the same handler in the remaining bodies:
 
 Notes for the target runners:
 
-- `unknown-delegate` needs the runner to wait at an effect whose delegate token it does not know; the retained runner refuses such a token while projecting the wait.
+- In `unknown-delegate` the kernel refuses the deployment (`work.service.unboundImplementation`), while CIB deploys the model and fails the job when it resolves the token ([CIB-LIM-0051](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-lim-0051--cib-deploys-a-service-task-whose-implementation-no-binding-matches)); the CIB runner projects the wait at an effect whose delegate token it does not know.
 - Per-instance effects of a Multi-Instance Service Task are not authored: the kernel reader refuses the `asyncBefore` attribute on the loop element, and `asyncBefore` on the Service Task itself places one job before the whole body.
 - "Occurrence keys survive recovery" is a host property with no schedule here.
 - No Integer, Decimal or collection value appears: the [scenario value contract](../../../scripts/scenario-variable-value-contract.ts) admits them only for registered process ids, so the typed-input witnesses carry Strings, a Boolean and a present Null.

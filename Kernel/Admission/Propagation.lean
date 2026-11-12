@@ -60,13 +60,17 @@ def signalThrow (options : ProfileOptions) (site : ThrowSite) (record : SignalTh
 standards profile refuses it bound, by a CIB handler attribute, or unbound, where passing on would drop the send;
 `MessageThrowForms.cibForms` runs both of CIB's forms (CIB-EXT-0039, CIB-INT-0027). Its Data Input Associations are
 refused under every profile: CIB never executes them. CIB resolves a bound throw's delegate token as a Service
-Task's, so a declared name equal to it is refused as one (CIB-LIM-0017). -/
+Task's, so a declared name equal to it is refused as one (CIB-LIM-0017), and a token no binding matched, which the reader
+carries as an empty operation, as an unbound Service Task is (CIB-LIM-0051). -/
 def messageThrow (options : ProfileOptions) (site : ThrowSite) (record : MessageThrow) : Option String :=
   if !record.payload.isEmpty then some "throw.message.payload"
   else match options.messageThrowForms, record.binding with
     | .refused, some _ => some "throw.message.bound"
     | .refused, none => some "throw.message.unbound"
-    | .cibForms, _ => site.handlerKey record.handlerKey
+    | .cibForms, some binding =>
+      if binding.protocol.isEmpty || binding.operation.isEmpty then some "throw.message.unboundImplementation"
+      else site.handlerKey record.handlerKey
+    | .cibForms, none => site.handlerKey record.handlerKey
 
 /-- A Compensation throw's `activityRef` names an Activity visible from the throw (BPMN 2.0.2 §10.7.2, Table 10.94,
 Tables 10.88 and 10.89). CIB resolves it from any Event Sub-Process at the parent's level (CIB-EXT-0047), which

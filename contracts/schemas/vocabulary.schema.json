@@ -621,6 +621,7 @@
         "throw.message.payload",
         "throw.message.resultVariable",
         "throw.message.unbound",
+        "throw.message.unboundImplementation",
         "throw.signal.asynchronous",
         "throw.signal.businessKey",
         "throw.signal.dataInput",

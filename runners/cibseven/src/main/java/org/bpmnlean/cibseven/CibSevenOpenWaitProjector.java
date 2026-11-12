@@ -355,8 +355,10 @@ final class CibSevenOpenWaitProjector {
       JobHandle handle) {
     var protocol = task.implementation();
     var handler = beanToken(task.delegateExpression());
-    if (!CibSevenScriptedEffect.SOURCE_PROTOCOL.equals(protocol)
-        || !CibSevenScriptedEffect.HANDLER_BEANS.contains(handler)) {
+    // A token no handler bean carries still waits at its job: CIB resolves the token only when the job runs
+    // (`ServiceTaskDelegateExpressionActivityBehavior#performExecution`), so the wait is projected like any other and
+    // the job's failure is CIB's answer (CIB-LIM-0051).
+    if (!CibSevenScriptedEffect.SOURCE_PROTOCOL.equals(protocol)) {
       throw new IllegalStateException("Task " + task.id() + " has no effect binding in this runner");
     }
     var activation = occurrences.pendingActivation(instance, task.id(), job.getExecutionId());

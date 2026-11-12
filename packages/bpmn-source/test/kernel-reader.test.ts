@@ -225,7 +225,7 @@ test("throws carry their message, binding and Signal propagation", async () => {
   assert.deepEqual(record("Err"), { error: { payload: { code: "c1", message: { literal: { value: "failed" } } } } });
   assert.deepEqual(record("ErrX").error.payload.message, { expression: { body: { variable: { name: "why" } } } });
   assert.deepEqual(record("Msg"), { message: { payload: { binding: null, handlerKey: null, payload: [] } } });
-  assert.deepEqual(record("MsgD").message.payload.binding, { protocol: "##WebService", operation: "${sender}" });
+  assert.deepEqual(record("MsgD").message.payload.binding, { protocol: "##WebService", operation: "" });
   assert.equal(record("MsgD").message.payload.handlerKey, "sender");
   assert.deepEqual(record("Sig"), { signal: { payload: {
     signalRef: { namespace: "urn:t", localName: "S" },
@@ -492,7 +492,7 @@ test("a Send Task without an implementation is read as Send work, a declared one
     operationRef: null,
   } } });
   assert.equal(element(p, "Plain").activity.header.sourceType, "sendTask");
-  assert.deepEqual(element(p, "Delegate").activity.payload.work, { service: { payload: { protocol: "##WebService", operation: "${d}", handlerKey: "d" } } });
+  assert.deepEqual(element(p, "Delegate").activity.payload.work, { service: { payload: { protocol: "##WebService", operation: "", handlerKey: "d" } } });
   // CIB records the tag name as the activity type (`BpmnParse.java:1912`), whichever behaviour performs the task.
   assert.equal(element(p, "Delegate").activity.header.sourceType, "sendTask");
 });

@@ -52,8 +52,11 @@ export function handlerKey(ctx: ReadContext, element: ElementRecord): string | n
 
 /**
  * The `EffectBinding` an element selects: an overlay or built-in binding when its source attributes match one;
- * otherwise the source's own attributes unchanged (BPMN's `implementation`, `##WebService` by default, and the declared
- * CIB implementation or `operationRef`), which `Kernel.Admission` refuses when no host implements that protocol.
+ * otherwise BPMN's `implementation` (`##WebService` by default) with the `operationRef`, which `Kernel.Admission`
+ * refuses when no host implements that protocol. A declared CIB implementation that no binding matches reads as no
+ * operation, refused as `work.service.unboundImplementation`: its delegate, class, expression or topic names product
+ * code, which stays out of the program; CIB reads only that implementation (`BpmnParse#parseServiceTaskLike`) and
+ * deploys the task (CIB-LIM-0051).
  */
 export function effectBinding(ctx: ReadContext, element: ElementRecord): KernelJson {
   const declared = declaredImplementation(ctx, element);
@@ -64,5 +67,5 @@ export function effectBinding(ctx: ReadContext, element: ElementRecord): KernelJ
     return { protocol: activityProtocol, operation: operation("compensation-single-effect") };
   }
   const operationRef = optionalId(asElement(element.operationRef) ?? {});
-  return { protocol: implementation ?? "##WebService", operation: declared?.value ?? operationRef ?? "" };
+  return { protocol: implementation ?? "##WebService", operation: declared === null ? operationRef ?? "" : "" };
 }

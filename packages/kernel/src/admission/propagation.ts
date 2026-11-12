@@ -70,7 +70,8 @@ function signalThrow(options: ProfileOptions, site: ThrowSite, record: SignalThr
  * standards profile refuses it bound, by a CIB handler attribute, or unbound, where passing on would drop the send;
  * `MessageThrowForms.CibForms` runs both of CIB's forms (CIB-EXT-0039, CIB-INT-0027). Its Data Input Associations are
  * refused under every profile: CIB never executes them. CIB resolves a bound throw's delegate token as a Service Task's,
- * so a declared name equal to it is refused as one (CIB-LIM-0017).
+ * so a declared name equal to it is refused as one (CIB-LIM-0017), and a token no binding matched, which the reader
+ * carries as an empty operation, as an unbound Service Task is (CIB-LIM-0051).
  */
 function messageThrow(options: ProfileOptions, site: ThrowSite, record: MessageThrow): string | null {
   if (record.payload.length > 0) return "throw.message.payload";
@@ -78,6 +79,9 @@ function messageThrow(options: ProfileOptions, site: ThrowSite, record: MessageT
     case MessageThrowForms.Refused:
       return record.binding === null ? "throw.message.unbound" : "throw.message.bound";
     case MessageThrowForms.CibForms:
+      if (record.binding !== null && (record.binding.protocol.length === 0 || record.binding.operation.length === 0)) {
+        return "throw.message.unboundImplementation";
+      }
       return site.handlerKey(record.handlerKey);
   }
   return assertNever(options.messageThrowForms);

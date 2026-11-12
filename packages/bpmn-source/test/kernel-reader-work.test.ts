@@ -5,7 +5,9 @@
  * Task's `camunda:resource` is read, never dropped, so admission refuses it (`work.script.resource`) rather than run the
  * empty inline source in its place; an absent `script` element reads as no source, distinct from an empty one, and
  * `camunda:resultVariableName` reads as the result variable only where `camunda:resultVariable` is absent, as CIB's
- * `BpmnParse#parseResultVariable` does.
+ * `BpmnParse#parseResultVariable` does. A Service Task's declared CIB implementation that no binding matches reads as
+ * no operation, so admission refuses it (`work.service.unboundImplementation`) and no bean, class or topic name enters
+ * the program.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -62,4 +64,24 @@ test("camunda:resultVariableName names the result variable only where camunda:re
   const both = await workOf(
     `<bpmn:scriptTask id="U" scriptFormat="javascript" camunda:resultVariable="sum" camunda:resultVariableName="total"><bpmn:script>1</bpmn:script></bpmn:scriptTask>`);
   assert.equal(both.script.payload.resultVariable, "sum");
+});
+
+test("a declared delegate that no binding matches reads as no operation", async () => {
+  const work = await workOf(
+    `<bpmn:serviceTask id="U" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="\${noSuchHandler}"/>`);
+  assert.deepEqual([work.service.payload.protocol, work.service.payload.operation], ["urn:bpmn-lean:effect:probe-v1", ""]);
+});
+
+test("a Java class or expression that no binding matches reads as no operation", async () => {
+  for (const declared of [`camunda:class="org.example.Notify"`, `camunda:expression="\${notifier.send()}"`]) {
+    const work = await workOf(`<bpmn:serviceTask id="U" ${declared}/>`);
+    assert.equal(work.service.payload.operation, "", declared);
+  }
+});
+
+test("a delegate that a built-in binding matches reads as its operation", async () => {
+  const work = await workOf(
+    `<bpmn:serviceTask id="U" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="\${bpmnLeanEffectHandler}"/>`);
+  assert.deepEqual([work.service.payload.protocol, work.service.payload.operation],
+    ["urn:bpmn-lean:effect-protocol:activity-v1", "urn:bpmn-lean:effect-operation:probe-v1"]);
 });
