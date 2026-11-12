@@ -67,6 +67,17 @@ public final class CibSevenOracleMain {
           }
           writer.write(ScenarioJson.writeFailure(new ScenarioProtocol.ScenarioHarnessFailure(
               ScenarioProtocol.SCENARIO_HARNESS_FAILURE_KIND, scenarioId, failed.toString())));
+        } catch (OutOfMemoryError exhausted) {
+          // The heap ceiling ends the batch: once the failed command unwinds, its executions are unreachable, so this
+          // one line still fits, and the engine is never reused for a later scenario. The caller re-runs the batch's
+          // halves to name the scenario that breaches alone (`scripts/replace-cibseven-evidence.ts`).
+          if (scenarioId != null) {
+            writer.write(ScenarioJson.writeFailure(new ScenarioProtocol.ScenarioHarnessFailure(
+                ScenarioProtocol.SCENARIO_HARNESS_FAILURE_KIND, scenarioId, ScenarioProtocol.SCENARIO_HEAP_EXHAUSTED)));
+            writer.newLine();
+            writer.flush();
+          }
+          throw exhausted;
         }
         writer.newLine();
         writer.flush();

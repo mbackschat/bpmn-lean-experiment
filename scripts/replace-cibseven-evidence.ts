@@ -190,12 +190,48 @@ export function bridgeOutcomes(requested: ReadonlyArray<string>, lines: Readonly
   return { results, populations, failures };
 }
 
+/** The bridge's failure text for a scenario during which the JVM exhausted its heap (`CibSevenOracleMain`). */
+const heapExhaustedFailure = "CIB_SCENARIO_HEAP_EXHAUSTED";
+
+/** A bridge call the JVM heap ceiling ended; the bridge's last line names the scenario it was running then. */
+export class CibHeapExhaustedError extends Error {
+  readonly scenarioId: string;
+
+  constructor(scenarioId: string, cause: unknown) {
+    super(`CIB exhausted the JVM heap while running ${scenarioId}`, { cause });
+    this.name = "CibHeapExhaustedError";
+    this.scenarioId = scenarioId;
+  }
+}
+
 /**
- * Runs `scenarios` through `run` under its batch deadline. When that deadline kills a batch of several scenarios, each
- * half runs again under the same deadline, recursively, so that a single scenario that alone exceeds it becomes its own
- * harness failure and keeps its retained evidence; every other failure propagates unchanged.
+ * The scenario a failed bridge call names as the one that exhausted the heap: only its last line counts, because the
+ * bridge writes that line and then ends the batch instead of reusing the engine.
  */
-export async function isolateDeadlineFailures<S extends Readonly<{ id: string }>>(
+export function exhaustedHeapScenario(lines: ReadonlyArray<string>): string | undefined {
+  const last = lines.at(-1);
+  if (last === undefined) return undefined;
+  const answer = parseWireJson<Readonly<{ kind: string; scenarioId: string; failure?: string }>>(last, "CIB last result line");
+  return answer.kind === "scenarioHarnessFailure" && answer.failure === heapExhaustedFailure ? answer.scenarioId : undefined;
+}
+
+/** The harness failure a lone scenario records when its bridge call breached a resource bound, else `undefined`. */
+function resourceBreach(error: unknown): string | undefined {
+  if (error instanceof CibHeapExhaustedError) return heapExhaustedFailure;
+  if (error instanceof Error && error.cause instanceof CommandTimeoutError) {
+    return `CIB_SCENARIO_DEADLINE_EXCEEDED budgetMs=${String(error.cause.timeoutMs)}`;
+  }
+  return undefined;
+}
+
+/**
+ * Runs `scenarios` through `run` under its two resource bounds, the batch deadline and the JVM heap. When either ends a
+ * batch of several scenarios, each half runs again in a fresh bridge call, recursively, so that a single scenario that
+ * alone breaches a bound becomes its own harness failure and keeps its retained evidence; every other failure propagates
+ * unchanged. A scenario is named only when it breaches alone, because the scenario running at the breach may only have
+ * been the last to add to its batch's cost.
+ */
+export async function isolateResourceBreaches<S extends Readonly<{ id: string }>>(
   scenarios: ReadonlyArray<S>,
   run: (batch: ReadonlyArray<S>) => Promise<BatchOutcome>,
   log: (line: string) => void,
@@ -203,23 +239,20 @@ export async function isolateDeadlineFailures<S extends Readonly<{ id: string }>
   try {
     return await run(scenarios);
   } catch (error) {
-    const timeout = error instanceof Error && error.cause instanceof CommandTimeoutError ? error.cause : undefined;
-    if (timeout === undefined) throw error;
+    const breach = resourceBreach(error);
+    if (breach === undefined) throw error;
     if (scenarios.length === 1) {
-      return {
-        results: [],
-        populations: [],
-        failures: [{ scenarioId: scenarios[0]!.id, failure: `CIB_SCENARIO_DEADLINE_EXCEEDED budgetMs=${String(timeout.timeoutMs)}` }],
-      };
+      return { results: [], populations: [], failures: [{ scenarioId: scenarios[0]!.id, failure: breach }] };
     }
     // A chunk's composition is arbitrary, so one costly scenario must not decide the fate of the others: in Verify run
     // 43069801261 the chunk holding `cycle-compositions/automatic-loop-beyond-bound` (about 13 s of engine time alone)
-    // exceeded the deadline and aborted the whole replacement. Splitting keeps the deadline and names the culprit.
-    log(`CIB batch exceeded budgetMs=${String(timeout.timeoutMs)}; splitting ${scenarios.map(({ id }) => id).join(", ")}`);
+    // exceeded the deadline, and in run 43235878488 `count-product-over-safe` exhausted the heap first, each aborting
+    // the whole replacement. Splitting keeps both bounds and names the culprit.
+    log(`CIB batch breached ${breach}; splitting ${scenarios.map(({ id }) => id).join(", ")}`);
     const middle = Math.ceil(scenarios.length / 2);
     const halves = [
-      await isolateDeadlineFailures(scenarios.slice(0, middle), run, log),
-      await isolateDeadlineFailures(scenarios.slice(middle), run, log),
+      await isolateResourceBreaches(scenarios.slice(0, middle), run, log),
+      await isolateResourceBreaches(scenarios.slice(middle), run, log),
     ];
     return {
       results: halves.flatMap(({ results }) => results),
@@ -292,13 +325,22 @@ async function runCibBatch(
       },
     );
   } catch (error) {
+    const exhausted = error instanceof CommandTimeoutError ? undefined : exhaustedHeapScenario(await bridgeLines(outputPath));
+    if (exhausted !== undefined) throw new CibHeapExhaustedError(exhausted, error);
     throw wrapCibSevenMavenFailure(engineVersion, error);
   }
-  const output = await readFile(outputPath);
-  const lines = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(output)
+  return bridgeOutcomes(scenarios.map(({ id }) => id), await bridgeLines(outputPath));
+}
+
+/** The bridge's answer lines; a failed call may have written none, or no file at all. */
+async function bridgeLines(outputPath: string): Promise<ReadonlyArray<string>> {
+  const output = await readFile(outputPath).catch((error: unknown) => {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return Buffer.alloc(0);
+    throw error;
+  });
+  return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(output)
     .split("\n")
     .filter((line) => line.length > 0);
-  return bridgeOutcomes(scenarios.map(({ id }) => id), lines);
 }
 
 /**
@@ -348,7 +390,7 @@ async function populationReplacements(
     await runCibBatch([], temporaryDirectory, engineVersion, "plainSuccess");
     for (let start = 0; start < versionSources.length; start += cibBatchChunkSize) {
       const chunk = versionSources.slice(start, start + cibBatchChunkSize);
-      const batch = await isolateDeadlineFailures(
+      const batch = await isolateResourceBreaches(
         chunk.map(({ scenario }) => scenario.value),
         (scenarios) => runCibBatch(scenarios, temporaryDirectory, engineVersion, "plainSuccess"),
         logSplit,
@@ -420,7 +462,7 @@ async function replaceEvidence() {
       const scenarios = versionSources.map(({ scenario }) => scenario.value);
       await runCibBatch([], temporaryDirectory, engineVersion, effectSchedule);
       for (let start = 0; start < scenarios.length; start += cibBatchChunkSize) {
-        const batch = await isolateDeadlineFailures(
+        const batch = await isolateResourceBreaches(
           scenarios.slice(start, start + cibBatchChunkSize),
           (chunk) => runCibBatch(chunk, temporaryDirectory, engineVersion, effectSchedule),
           logSplit,

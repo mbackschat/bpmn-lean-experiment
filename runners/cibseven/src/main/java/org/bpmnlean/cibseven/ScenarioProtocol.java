@@ -22,6 +22,8 @@ public final class ScenarioProtocol {
   public static final String SCENARIO_KIND = "scenario";
   public static final String SCENARIO_RESULT_KIND = "scenarioResult";
   public static final String SCENARIO_HARNESS_FAILURE_KIND = "scenarioHarnessFailure";
+  /** The harness failure text of the scenario during which the JVM exhausted its heap, ending its batch. */
+  public static final String SCENARIO_HEAP_EXHAUSTED = "CIB_SCENARIO_HEAP_EXHAUSTED";
   static final long MAX_SAFE_WIRE_INTEGER = 9007199254740991L;
 
   private ScenarioProtocol() {}

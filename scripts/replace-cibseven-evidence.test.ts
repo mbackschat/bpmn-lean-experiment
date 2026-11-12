@@ -4,9 +4,11 @@ import { test } from "node:test";
 import { wrapCibSevenMavenFailure } from "./cibseven-maven-budget.ts";
 import {
   bridgeOutcomes,
+  CibHeapExhaustedError,
+  exhaustedHeapScenario,
   cibBridgeDeadlineMs,
   cibEvidenceEffectSchedule,
-  isolateDeadlineFailures,
+  isolateResourceBreaches,
   requireCleanPopulation,
   requireReplacementAuthorization,
 } from "./replace-cibseven-evidence.ts";
@@ -77,14 +79,20 @@ test("gives the preparing bridge call the shared Maven ceiling and every scenari
   assert.equal(cibBridgeDeadlineMs(1, { BPMN_CIB_MAVEN_TIMEOUT_MS: "200000" }), 30_000);
 });
 
-/** A bridge stand-in that answers every scenario, or times out as `runCibBatch` does when its batch holds `slow`. */
-function bridgeStandIn(slow: string | undefined) {
+/**
+ * A bridge stand-in that answers every scenario, or fails as `runCibBatch` does when its batch holds `slow` (the batch
+ * deadline) or `hungry` (the JVM heap ceiling).
+ */
+function bridgeStandIn(slow: string | undefined, hungry?: string) {
   const invocations: string[][] = [];
   const run = async (batch: ReadonlyArray<Readonly<{ id: string }>>) => {
     const ids = batch.map(({ id }) => id);
     invocations.push(ids);
     if (slow !== undefined && ids.includes(slow)) {
       throw wrapCibSevenMavenFailure("2.2.0", new CommandTimeoutError("mvnw", 30_000, "", ""));
+    }
+    if (hungry !== undefined && ids.includes(hungry)) {
+      throw new CibHeapExhaustedError(hungry, new Error("mvnw exited with 1"));
     }
     return bridgeOutcomes(ids, ids.map((scenarioId) => JSON.stringify({ kind: "scenarioResult", scenarioId })));
   };
@@ -94,7 +102,7 @@ function bridgeStandIn(slow: string | undefined) {
 test("isolates the one scenario that exceeds the batch deadline as a harness failure and answers the rest", async () => {
   const { invocations, run } = bridgeStandIn("c");
   const logged: string[] = [];
-  const outcome = await isolateDeadlineFailures([{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }], run, (line) => {
+  const outcome = await isolateResourceBreaches([{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }], run, (line) => {
     logged.push(line);
   });
   assert.deepEqual(outcome.results.map(({ scenarioId }) => scenarioId), ["a", "b", "d"]);
@@ -105,11 +113,31 @@ test("isolates the one scenario that exceeds the batch deadline as a harness fai
   assert.match(logged[1]!, /c, d/u);
 });
 
-test("propagates a bridge failure other than the deadline unchanged, without splitting", async () => {
+test("isolates the one scenario that exhausts the JVM heap as a harness failure and answers the rest", async () => {
+  // Verify run 43235878488: `count-product-over-safe` (1,874,919,424 parallel instances) exhausted the heap after 19 s,
+  // inside the 30 s deadline, and aborted the whole replacement.
+  const { invocations, run } = bridgeStandIn(undefined, "b");
+  const outcome = await isolateResourceBreaches([{ id: "a" }, { id: "b" }, { id: "c" }], run, () => {});
+  assert.deepEqual(outcome.results.map(({ scenarioId }) => scenarioId), ["a", "c"]);
+  assert.deepEqual(outcome.failures, [{ scenarioId: "b", failure: "CIB_SCENARIO_HEAP_EXHAUSTED" }]);
+  assert.deepEqual(invocations, [["a", "b", "c"], ["a", "b"], ["a"], ["b"], ["c"]]);
+});
+
+test("reads a heap exhaustion only from the bridge's last line naming it", () => {
+  const exhausted = JSON.stringify({ kind: "scenarioHarnessFailure", scenarioId: "b", failure: "CIB_SCENARIO_HEAP_EXHAUSTED" });
+  const answered = JSON.stringify({ kind: "scenarioResult", scenarioId: "a" });
+  const other = JSON.stringify({ kind: "scenarioHarnessFailure", scenarioId: "b", failure: "java.lang.IllegalStateException" });
+  assert.equal(exhaustedHeapScenario([answered, exhausted]), "b");
+  assert.equal(exhaustedHeapScenario([exhausted, answered]), undefined);
+  assert.equal(exhaustedHeapScenario([answered, other]), undefined);
+  assert.equal(exhaustedHeapScenario([]), undefined);
+});
+
+test("propagates a bridge failure other than a resource breach unchanged, without splitting", async () => {
   const failure = new Error("mvnw exited with code 1");
   const invocations: number[] = [];
   await assert.rejects(
-    isolateDeadlineFailures([{ id: "a" }, { id: "b" }], async () => {
+    isolateResourceBreaches([{ id: "a" }, { id: "b" }], async () => {
       invocations.push(1);
       throw wrapCibSevenMavenFailure("2.2.0", failure);
     }, () => {}),
@@ -121,7 +149,7 @@ test("propagates a bridge failure other than the deadline unchanged, without spl
 test("runs a batch inside its deadline in one bridge call", async () => {
   const { invocations, run } = bridgeStandIn(undefined);
   const logged: string[] = [];
-  const outcome = await isolateDeadlineFailures([{ id: "a" }, { id: "b" }, { id: "c" }], run, (line) => {
+  const outcome = await isolateResourceBreaches([{ id: "a" }, { id: "b" }, { id: "c" }], run, (line) => {
     logged.push(line);
   });
   assert.equal(outcome.results.length, 3);
