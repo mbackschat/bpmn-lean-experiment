@@ -5,6 +5,11 @@
  */
 import type { JuelNode } from "./juel.js";
 
+/** Exhaustiveness witness for every `switch` over a kernel enum; no kernel switch has a `default:` arm. */
+export function assertNever(value: never): never {
+  throw new TypeError(`unhandled kernel variant ${JSON.stringify(value)}`);
+}
+
 /** A typed data value, as the scenario contract's `variableValue` carries it; the one nested type. */
 export enum ValueTag {
   Null = "null",

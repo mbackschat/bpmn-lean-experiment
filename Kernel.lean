@@ -41,9 +41,11 @@ public import Kernel.IL.Types.Decision
 public import Kernel.IL.Types.Expression
 public import Kernel.IL.Types.Juel
 public import Kernel.IL.Types.Lexical
+public import Kernel.IL.Types.Message
 public import Kernel.IL.Types.MultiInstance
 public import Kernel.IL.Types.Options
 public import Kernel.IL.Types.Reference
+public import Kernel.IL.Types.Work
 public import Kernel.Laws.Correlation
 public import Kernel.Laws.Flow
 public import Kernel.Laws.MultiInstance

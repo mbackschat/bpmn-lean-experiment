@@ -16,10 +16,13 @@ import {
 } from "./types/expression.js";
 import type { Decision, DecisionResource } from "./types/decision.js";
 import {
-  type CallBinding, type CallWork, callWorkSelects, callWorkNamesDefinition, type DefinitionRef, definitionRefEquals,
+  type CallWork, callWorkSelects, callWorkNamesDefinition, type DefinitionRef, definitionRefEquals,
   type ProgramIdentity, type QName,
 } from "./types/reference.js";
 import type { MultiInstance } from "./types/multi-instance.js";
+import { assertNever } from "./types/expression.js";
+import type { EffectBinding, MessageTrigger } from "./types/message.js";
+import type { Work } from "./types/work.js";
 export { integerLexeme, isAscii, parseJavaInt, parseJavaLong, signedDigits, withinJavaInt } from "./types/lexical.js";
 export {
   CollectionRead, type InstanceCount, InstanceCountTag, type MultiInstance, MultiInstanceMode,
@@ -42,14 +45,15 @@ export {
   type CallBinding, CallBindingTag, type CallWork, callWorkSelects, callWorkNamesDefinition, type DefinitionRef, definitionRefEquals,
   definitionRefEligibleFor, type ProgramIdentity, type QName,
 } from "./types/reference.js";
+export { assertNever };
+export type { CorrelationCriterion, EffectBinding, MessageTrigger } from "./types/message.js";
+export {
+  DecisionResultMapping, type ReceiveWork, type RuleWork, type ScriptWork, type SendWork, type ServiceWork, type UserWork, type Work,
+  WorkTag, workCall, workIsService, workIsUser, workReceive,
+} from "./types/work.js";
 
 export type ElementId = string;
 export type FlowId = string;
-
-/** Exhaustiveness witness for every `switch` over a kernel enum; no kernel switch has a `default:` arm. */
-export function assertNever(value: never): never {
-  throw new TypeError(`unhandled kernel variant ${JSON.stringify(value)}`);
-}
 
 /** Lean's `String` order: lexicographic by Unicode scalar value, not by UTF-16 code unit. */
 export function compareStrings(left: string, right: string): number {
@@ -124,21 +128,6 @@ export type TimerSchedule =
   | { readonly tag: TimerScheduleTag.Cycle; readonly value: ValueSource; readonly dialect: CycleDialect };
 
 export interface TimerTrigger { readonly schedule: TimerSchedule; }
-
-export interface CorrelationCriterion { readonly key: string; readonly value: Expression; }
-
-/**
- * `messageRef` is the BPMN Message's identifier, `null` for an unspecified Message (a Receive Task without
- * `messageRef`, which only its waiting occurrence addresses); `name` is that Message's `name` (BPMN 2.0.2 Table 8.48),
- * `null` when it has none; `interfaceRef` and `operationRef` name the Operation that carries it, when the model gives one.
- */
-export interface MessageTrigger {
-  readonly messageRef: string | null;
-  readonly name: ValueSource | null;
-  readonly correlation: readonly CorrelationCriterion[];
-  readonly interfaceRef: string | null;
-  readonly operationRef: string | null;
-}
 
 /**
  * `signalRef` is the Signal the event references, `null` when the model names none; `name` is that Signal's `name`
@@ -217,8 +206,6 @@ export interface Boundary {
 
 // Throws
 
-export interface EffectBinding { readonly protocol: string; readonly operation: string; }
-
 /** `binding = null` is an unbound pass-through (PC-MESSAGE-09); `handlerKey` as `ServiceWork.handlerKey`. */
 export interface MessageThrow {
   readonly binding: EffectBinding | null;
@@ -267,87 +254,6 @@ export type Throw =
   | { readonly tag: ThrowTag.Compensation; readonly payload: CompensationThrow }
   | { readonly tag: ThrowTag.Cancel }
   | { readonly tag: ThrowTag.Terminate };
-
-// Work
-
-export interface UserWork {
-  readonly name: string | null;
-  readonly assignee: ValueSource | null;
-  readonly candidateUsers: readonly ValueSource[];
-  readonly candidateGroups: readonly ValueSource[];
-  readonly formKey: string | null;
-  readonly formFields: readonly (readonly [string, string])[];
-  readonly dueDate: ValueSource | null;
-  readonly followUpDate: ValueSource | null;
-  readonly priority: ValueSource | null;
-}
-
-/** `instantiate` marks a Receive Task that instantiates its Process (BPMN 2.0.2 §10.3.3, Table 10.10). */
-export interface ReceiveWork { readonly message: MessageTrigger; readonly instantiate: boolean; }
-
-/**
- * `handlerKey` is the root identifier of the `camunda:delegateExpression` the binding was read from, which CIB resolves
- * against process variables before its beans (CIB-LIM-0017); admission compares it with the declared names.
- */
-export interface ServiceWork { readonly protocol: string; readonly operation: string; readonly handlerKey: string | null; }
-
-export interface SendWork {
-  readonly binding: EffectBinding;
-  /** As `ServiceWork.handlerKey`. */
-  readonly handlerKey: string | null;
-  // guard-exception(19): a Send Task is refused whole (`work.send`, admission/work.ts).
-  readonly recipient: ValueSource | null;
-  readonly correlation: readonly CorrelationCriterion[];
-  // guard-exception(19): refused with its Send Task, as `recipient` above.
-  readonly messageRef: string | null;
-  readonly operationRef: string | null;
-}
-
-export interface ScriptWork {
-  // guard-exception(19): a Script Task is refused whole (`work.script`, admission/work.ts).
-  readonly format: string;
-  readonly source: string;
-  readonly resultVariable: string | null;
-}
-
-export enum DecisionResultMapping {
-  SingleEntry = "singleEntry",
-  SingleResult = "singleResult",
-  CollectEntries = "collectEntries",
-  ResultList = "resultList",
-}
-
-export interface RuleWork {
-  readonly decision: ValueSource;
-  readonly resultVariable: string | null;
-  readonly binding: CallBinding;
-  readonly resultMapping: DecisionResultMapping;
-  readonly tenant: ValueSource | null;
-}
-
-/** Guarded type: `feature/work` owns matching on it. */
-export enum WorkTag {
-  None = "none",
-  Manual = "manual",
-  User = "user",
-  Receive = "receive",
-  Service = "service",
-  Send = "send",
-  Script = "script",
-  Rule = "rule",
-  Call = "call",
-}
-
-export type Work =
-  | { readonly tag: WorkTag.None }
-  | { readonly tag: WorkTag.Manual }
-  | { readonly tag: WorkTag.User; readonly payload: UserWork }
-  | { readonly tag: WorkTag.Receive; readonly payload: ReceiveWork }
-  | { readonly tag: WorkTag.Service; readonly payload: ServiceWork }
-  | { readonly tag: WorkTag.Send; readonly payload: SendWork }
-  | { readonly tag: WorkTag.Script; readonly payload: ScriptWork }
-  | { readonly tag: WorkTag.Rule; readonly payload: RuleWork }
-  | { readonly tag: WorkTag.Call; readonly payload: CallWork };
 
 // The shared activity envelope
 
@@ -680,74 +586,6 @@ export function triggerView(trigger: Trigger): TriggerView {
 export function triggerTimer(trigger: Trigger): TimerTrigger | null { return triggerView(trigger).timer; }
 export function triggerMessage(trigger: Trigger): MessageTrigger | null { return triggerView(trigger).message; }
 export function triggerCondition(trigger: Trigger): ConditionTrigger | null { return triggerView(trigger).condition; }
-
-/** The Call a work record names, if it is one. */
-export function workCall(work: Work): CallWork | null {
-  switch (work.tag) {
-    case WorkTag.Call: return work.payload;
-    case WorkTag.None:
-    case WorkTag.Manual:
-    case WorkTag.User:
-    case WorkTag.Receive:
-    case WorkTag.Service:
-    case WorkTag.Send:
-    case WorkTag.Script:
-    case WorkTag.Rule:
-      return null;
-  }
-  return assertNever(work);
-}
-
-/** Whether the work opens a host effect (a Service Task). */
-export function workIsService(work: Work): boolean {
-  switch (work.tag) {
-    case WorkTag.Service: return true;
-    case WorkTag.None:
-    case WorkTag.Manual:
-    case WorkTag.User:
-    case WorkTag.Receive:
-    case WorkTag.Send:
-    case WorkTag.Script:
-    case WorkTag.Rule:
-    case WorkTag.Call:
-      return false;
-  }
-  return assertNever(work);
-}
-
-/** Whether the work opens a User Task. */
-export function workIsUser(work: Work): boolean {
-  switch (work.tag) {
-    case WorkTag.User: return true;
-    case WorkTag.None:
-    case WorkTag.Manual:
-    case WorkTag.Receive:
-    case WorkTag.Service:
-    case WorkTag.Send:
-    case WorkTag.Script:
-    case WorkTag.Rule:
-    case WorkTag.Call:
-      return false;
-  }
-  return assertNever(work);
-}
-
-/** The Message a work record waits for, if it does. */
-export function workReceive(work: Work): MessageTrigger | null {
-  switch (work.tag) {
-    case WorkTag.Receive: return work.payload.message;
-    case WorkTag.None:
-    case WorkTag.Manual:
-    case WorkTag.User:
-    case WorkTag.Service:
-    case WorkTag.Send:
-    case WorkTag.Script:
-    case WorkTag.Rule:
-    case WorkTag.Call:
-      return null;
-  }
-  return assertNever(work);
-}
 
 /** The start subscription of an Event Sub-Process scope, if it is one. */
 export function scopeKindStart(kind: ScopeKind): Subscription | null {

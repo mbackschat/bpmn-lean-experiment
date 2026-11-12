@@ -18,7 +18,7 @@ export const vocabularyPath = "contracts/schemas/vocabulary.schema.json";
 export const enumerations: ReadonlyArray<readonly [string, string, string]> = [
   ["elementKind", "Kernel/IL/Types.lean", "Element"],
   ["eventRole", "Kernel/IL/Types.lean", "EventRole"],
-  ["workKind", "Kernel/IL/Types.lean", "Work"],
+  ["workKind", "Kernel/IL/Types/Work.lean", "Work"],
   ["trigger", "Kernel/IL/Types.lean", "Trigger"],
   ["throw", "Kernel/IL/Types.lean", "Throw"],
   ["gatewayKind", "Kernel/IL/Types.lean", "GatewayKind"],
