@@ -12,11 +12,11 @@ Answer-free schedules for [PC-DATA-02](../../../docs/PRACTICAL-CIB7-COVERAGE-TAR
 | [integer-service-boolean-human](integer-service-boolean-human.scenario.json) | The first body's Service result is an Integer and its Human completion a Boolean. | PC-DATA-02 |
 | [null-service-decimal-human](null-service-decimal-human.scenario.json) | The first body's Service result is a present Null and its Human completion a Decimal. | PC-DATA-02 |
 | [decimal-service-null-human](decimal-service-null-human.scenario.json) | The first body's Service result is a Decimal and its Human completion a present Null. | PC-DATA-02 |
+| [string-over-bytes-human-completion](string-over-bytes-human-completion.scenario.json) | The first body's Human completion is a String of 600 `é`, 1,200 UTF-8 bytes, which the scenario schema admits at a root and the portable domain does not; a valid completion of the same task follows. | PC-DATA-02 |
+| [decimal-coefficient-over-long-service-result](decimal-coefficient-over-long-service-result.scenario.json) | The first body's Service result is a Decimal whose coefficient `9223372036854775808` is one past the signed 64-bit range, which the schema admits and the domain does not; a valid result for the same effect follows. | PC-DATA-02 |
 
-The acceptance clause keeps whole-scenario support, direct command refusal and strict wire decoding apart. These schedules are the whole-scenario inputs, and each command of a schedule is also the direct command for its value; a value that is not well formed cannot appear in a schema-valid scenario, so the wire-decoding cases are not authored here.
+The acceptance clause keeps three outcomes apart at these two surfaces:
 
-Notes for the target runners:
-
-- Gap: Decimal completion values.
-- Gap: Decimal effect results.
-- Boolean and Integer values are carried by the runner already; a Null result is the retained present-Null form.
+- Whole-scenario support: the six schedules from strings-only to decimal-service-null-human, whose every command commits in both engines.
+- Direct refusal of one input: string-over-bytes-human-completion and decimal-coefficient-over-long-service-result. The kernel rejects the out-of-domain input as `value-outside-domain` with the state unchanged, and the valid input after it commits. CIB stores the long String and commits (CIB-LIM-0014). The CIB runner refuses the Decimal at decoding (`ScenarioVariableValueProjection.requireDecimal`), so that schedule is the kernel's alone and has no CIB evidence.
+- Strict wire decoding: a value the schema bounds (a negative Integer, a Decimal scale above 6, an Integer spelled as text) cannot appear in a schema-valid scenario, so no schedule here holds one. The schema test (`scripts/portable-business-value-contract.test.ts`) refuses all three and the CIB runner's decoder test (`ScenarioJsonTest`) the first two. The kernel's decoders, held to each other by `kernel-behavior-oracle.integration-test.ts`, refuse the mistyped value and read the other two, which ingress then rejects as `value-outside-domain`.

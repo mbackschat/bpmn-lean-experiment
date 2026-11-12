@@ -121,6 +121,25 @@ public class ScenarioJsonTest {
     }
   }
 
+  /**
+   * The scenario schema refuses a negative Integer and a Decimal scale above 6, and so does this decoder. A Decimal
+   * coefficient past the signed 64-bit range is schema-valid but refused here, so only the kernel answers its witness;
+   * a root String over 1,024 UTF-8 bytes is decoded and reaches CIB (CIB-LIM-0014).
+   */
+  @Test
+  public void refusesOutOfDomainScalarsAndKeepsALongRootString() throws Exception {
+    for (var value : List.of(
+        "{\"kind\":\"integer\",\"value\":-1}",
+        "{\"kind\":\"decimal\",\"coefficient\":\"1\",\"scale\":7}",
+        "{\"kind\":\"decimal\",\"coefficient\":\"9223372036854775808\",\"scale\":0}")) {
+      assertThrows(value, JsonProcessingException.class, () -> ScenarioJson.read(scenarioWithInitialValue(value)));
+    }
+    var accented = "é".repeat(600);
+    var scenario = ScenarioJson.read(scenarioWithInitialValue("{\"kind\":\"string\",\"value\":\"" + accented + "\"}"));
+    var start = (ScenarioProtocol.Start) scenario.stimuli().getFirst();
+    assertEquals(new StringValue(accented), start.variables().getFirst().value());
+  }
+
   /** Codec truth for this runner: every wait detail kind and every channel arm survives write and read. */
   @Test
   public void roundTripsEveryOpenWaitKind() throws Exception {

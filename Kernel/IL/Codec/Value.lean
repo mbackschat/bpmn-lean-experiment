@@ -33,15 +33,27 @@ partial def valueToJson : Value → Json
     Json.mkObj [("kind", "map"), ("value", Json.arr (entries.map fun (name, value) =>
       Json.mkObj [("name", Json.str name), ("value", valueToJson value)]).toArray)]
 
+/-- The bound of a wire number: TypeScript reads a JSON number as a double, exact only up to `2^53 − 1`, and its
+decoders refuse a larger magnitude, so the Lean decoders refuse it too and both kernels decode the same wire. -/
+def maxSafeInteger : Nat := 9007199254740991
+
+def safeInt (json : Json) (key : String) : Except String Int := do
+  let value ← json.getObjValAs? Int key
+  if value.natAbs ≤ maxSafeInteger then pure value else throw s!"Integer expected at {key}"
+
+def safeNat (json : Json) (key : String) : Except String Nat := do
+  let value ← json.getObjValAs? Nat key
+  if value ≤ maxSafeInteger then pure value else throw s!"Natural number expected at {key}"
+
 partial def valueFromJson (json : Json) : Except String Value := do
   match ← json.getObjValAs? String "kind" with
   | "null" => pure .null
   | "boolean" => .bool <$> json.getObjValAs? Bool "value"
-  | "integer" => .int <$> json.getObjValAs? Int "value"
+  | "integer" => .int <$> safeInt json "value"
   | "decimal" =>
     let coefficient ← json.getObjValAs? String "coefficient"
     match coefficient.toInt? with
-    | some value => .decimal value <$> json.getObjValAs? Nat "scale"
+    | some value => .decimal value <$> safeNat json "scale"
     | none => throw s!"invalid decimal coefficient {coefficient}"
   | "string" => .string <$> json.getObjValAs? String "value"
   | "stringList" => .stringList <$> json.getObjValAs? (List String) "value"

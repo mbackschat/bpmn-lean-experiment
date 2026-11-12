@@ -1138,15 +1138,15 @@ BPMN 2.0.2 §10.4.1 and §13.3.2 make an Activity's InputSet available only thro
 
 **Boundary:** Standard Data Associations on Activities and the Data Output Associations of Message catch Events, root Message starts included; Multi-Instance loop references stay `CIB-INT-0014`, and variables a delivery installs by name stay `CIB-EXT-0025`.
 
-### CIB-LIM-0014: the portable value domain rejects at ingress a structured value CIB stores
+### CIB-LIM-0014: the portable value domain rejects at ingress a value CIB stores
 
 **Status:** Profile limitation; not a deviation
 
-The portable value domain bounds a root value at four container levels, 256 value nodes and 16,384 canonical JSON bytes ([data semantics](kernel/semantics/DATA-SEMANTICS-SPEC.md#values)); the kernel rejects a Start, completion, variable update, effect result or payload carrying a value beyond them as `value-outside-domain`, with the state unchanged. CIB Seven `2.2.0` has no such bound: its default Java serialization stores the `ArrayList` and `LinkedHashMap` of any depth and size (CIB-CFG-0009), so the same command commits.
+The portable value domain bounds a root value at four container levels, 256 value nodes and 16,384 canonical JSON bytes ([data semantics](kernel/semantics/DATA-SEMANTICS-SPEC.md#values)); the kernel rejects a Start, completion, variable update, effect result or payload carrying a value beyond them as `value-outside-domain`, with the state unchanged. CIB Seven `2.2.0` has no such bound: its default Java serialization stores the `ArrayList` and `LinkedHashMap` of any depth and size (CIB-CFG-0009), so the same command commits. A root String over 1,024 UTF-8 bytes is the same case: the scenario schema bounds only a nested String, and by 1,024 code points, and the CIB runner checks no root String's length ([`ScenarioVariableValueProjection.java:94`](../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioVariableValueProjection.java)), so CIB stores it and commits.
 
-**Evidence:** The [structured-value-bounds](../scenarios/open-rows/structured-value-bounds/README.md) schedules `start-over-depth-bound`, `start-over-node-bound`, `start-over-byte-bound` and `completion-over-depth-after-valid-entry`, whose evidence run is pending (the runner refused them as protocol errors before its wire check stopped applying the domain bounds); the at-bound schedules agree.
+**Evidence:** The [structured-value-bounds](../scenarios/open-rows/structured-value-bounds/README.md) schedules `start-over-depth-bound`, `start-over-node-bound`, `start-over-byte-bound` and `completion-over-depth-after-valid-entry`, whose evidence run is pending (the runner refused them as protocol errors before its wire check stopped applying the domain bounds); the at-bound schedules agree. The [scalar-types-in-multi-instance](../scenarios/open-rows/scalar-types-in-multi-instance/README.md) schedule `string-over-bytes-human-completion` (600 `é`, 1,200 UTF-8 bytes, at a User Task completion), whose evidence run is pending.
 
-**Boundary:** The depth, node and byte bounds of a root value. The member count, String length and Decimal spelling are wire rules the scenario schema states, which no CIB command receives.
+**Boundary:** The depth, node and byte bounds of a root value and the 1,024-byte bound of a root String. The member count, a negative Integer and the Decimal spelling and scale are wire rules the scenario schema states, which no CIB command receives. A nested String over 1,024 UTF-8 bytes and a Decimal coefficient past the signed 64-bit range can be schema-valid, but the CIB runner's decoder refuses both, so their witnesses are the kernel's alone.
 
 ### CIB-LIM-0015: a `latest` decision reference binds at program assembly
 

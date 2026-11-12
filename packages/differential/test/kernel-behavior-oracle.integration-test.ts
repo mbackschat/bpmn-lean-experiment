@@ -220,6 +220,10 @@ test("the Lean and TypeScript kernels refuse the same malformed inputs with the 
   };
   const signalStart = (address: Record<string, unknown>): Record<string, unknown> =>
     ({ ...first, trigger: { kind: "signal", variables: [], ...address } });
+  // The decoders read any wire-typed value: the portable domain's bounds (an Integer from 0, a Decimal scale to 6) are
+  // ingress's, which rejects the one input, so those cases are accepted here; only the 2^53 − 1 wire bound refuses.
+  const valueStart = (value: Record<string, unknown>): string =>
+    withFirst({ ...first, variables: [{ name: "payload", value }] });
   const cases: ReadonlyArray<readonly [string, string, string, string]> = [
     ["control", programText, scenarioText, "accepted"],
     ["repeated program key", `{"variables":[],${programText.slice(1)}`, scenarioText, "codec.duplicateField"],
@@ -232,6 +236,13 @@ test("the Lean and TypeScript kernels refuse the same malformed inputs with the 
     ["Signal start addressed by signalRef", programText, withFirst(signalStart({ signalRef: { namespace: "urn:x", id: "Sig" } })), "accepted"],
     ["Signal address with name and signalRef", programText, withFirst(signalStart({ name: "S", signalRef: { id: "Sig" } })), "codec.malformed"],
     ["Signal address with neither name nor signalRef", programText, withFirst(signalStart({})), "codec.missingField"],
+    ["negative Integer value", programText, valueStart({ kind: "integer", value: -1 }), "accepted"],
+    ["Decimal value at scale 7", programText, valueStart({ kind: "decimal", coefficient: "1", scale: 7 }), "accepted"],
+    ["Integer value at 2^53 − 1", programText, valueStart({ kind: "integer", value: 9007199254740991 }), "accepted"],
+    ["Integer value at 2^53", programText, valueStart({ kind: "integer", value: 9007199254740992 }), "codec.malformed"],
+    ["Decimal scale at 2^53", programText, valueStart({ kind: "decimal", coefficient: "1", scale: 9007199254740992 }),
+      "codec.malformed"],
+    ["mistyped Integer value", programText, valueStart({ kind: "integer", value: "1" }), "codec.malformed"],
   ];
   const directory = await mkdtemp(path.join(tmpdir(), "bpmn-kernel-strict-"));
   try {
