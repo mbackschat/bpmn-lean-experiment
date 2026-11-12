@@ -16,7 +16,7 @@ import type { Outcome, Program, State } from "@bpmn-lean/kernel";
 
 import {
   activity, append, base, end, eventSubProcess, duration, flow, literalValue, loop, mapping, replace, scope, start, userWork,
-  variable, withFlows, wired,
+  variable, withFlows, withOptions, wired,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
@@ -125,4 +125,25 @@ test("each Multi-Instance instance of the declaring Scope holds its own item", (
   const held = state.variables.flatMap((frame) => frame.entries.filter(([key]) => key === "P").map(([, value]) => value));
   assert.deepEqual(held, [{ tag: "string", value: "first" }, { tag: "string", value: "second" }]);
   assert.deepEqual(open(state), ["B", "B"]);
+});
+
+test("a variable command naming an item from outside its declaring Scope acts by name, never on the item", () => {
+  // `S → W → T → E`: the root User Task `W` waits before `T`, which declares `P` and whose `B` reads it.
+  const shaped = withFlows(
+    append(replace(base(), "T", scope("T", "embedded", { items: ["P"] })), activity("W", userWork()),
+      start("TS", null, [], "T"), activity("B", userWork(), readsP, "T"), end("TE", "none", "T")),
+    flow("fw", "W", "T"), flow("t1", "TS", "B"), flow("t2", "B", "TE"));
+  const program = (undeclaredWrite: string): Program => admitted(withOptions({
+    ...shaped, flows: (shaped.flows as Json[]).map((entry) => (entry.id === "f1" ? flow("f1", "S", "W") : entry)),
+  }, { undeclaredWrite }));
+  const set: Json = {
+    kind: "command", occurrence: { processInstanceId: "I", elementId: "W", activation: 1 },
+    action: { kind: "setVariables", values: [{ name: "P", value: str("outside") }] },
+  };
+  // CIB's `setVariable` creates an undeclared name at the instance root; the standards reading refuses it.
+  const created = committed(run(program("atInstanceRoot"), [begin, set, complete("W")]));
+  assert.deepEqual(bindings(created, "P"), { root: { tag: "string", value: "outside" } });
+  assert.deepEqual(open(created), [], "the root binding never stands in for `T`'s unset item, so `B` is held");
+  assert.deepEqual(created.slots.held.length, 1);
+  assert.deepEqual(run(program("refused"), [begin, set]), { ok: false, failure: { tag: "semanticFailure", code: "undeclared-write" } });
 });
