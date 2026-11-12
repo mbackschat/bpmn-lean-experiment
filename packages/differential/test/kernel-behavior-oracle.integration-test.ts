@@ -225,6 +225,12 @@ test("the Lean and TypeScript kernels refuse the same malformed inputs with the 
   // ingress's, which rejects the one input, so those cases are accepted here; only the 2^53 − 1 wire bound refuses.
   const valueStart = (value: Record<string, unknown>): string =>
     withFirst({ ...first, variables: [{ name: "payload", value }] });
+  // The same wire refusal at the two other surfaces PC-DATA-02 names: a User Task completion and an effect result.
+  const [review, effect, ...tail] = rest as [Record<string, unknown>, Record<string, unknown>, ...Record<string, unknown>[]];
+  const atSurfaces = (value: Record<string, unknown>): ReadonlyArray<readonly [string, string]> => [
+    ["completion", JSON.stringify({ ...scenario, stimuli: [first, { ...review, action: { kind: "completeUserTask", values: [{ name: "request", value }] } }, effect, ...tail] })],
+    ["effect result", JSON.stringify({ ...scenario, stimuli: [first, review, { ...effect, outcome: { kind: "success", outputs: [{ name: "result", value }] } }, ...tail] })],
+  ];
   const cases: ReadonlyArray<readonly [string, string, string, string]> = [
     ["control", programText, scenarioText, "accepted"],
     ["repeated program key", `{"variables":[],${programText.slice(1)}`, scenarioText, "codec.duplicateField"],
@@ -244,6 +250,8 @@ test("the Lean and TypeScript kernels refuse the same malformed inputs with the 
     ["Decimal scale at 2^53", programText, valueStart({ kind: "decimal", coefficient: "1", scale: 9007199254740992 }),
       "codec.malformed"],
     ["mistyped Integer value", programText, valueStart({ kind: "integer", value: "1" }), "codec.malformed"],
+    ...[{ kind: "integer", value: "1" }, { kind: "integer", value: 9007199254740992 }].flatMap((value) =>
+      atSurfaces(value).map(([surface, text]) => [`${surface} Integer ${JSON.stringify(value.value)}`, programText, text, "codec.malformed"] as const)),
   ];
   const directory = await mkdtemp(path.join(tmpdir(), "bpmn-kernel-strict-"));
   try {
