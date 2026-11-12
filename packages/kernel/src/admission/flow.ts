@@ -55,6 +55,7 @@ import {
   type Subscription,
 } from "../il/types.js";
 import { beginReads, footprint, joined, noNames, races, union, type Footprint, type NameSet } from "../il/footprint.js";
+import { onward } from "../il/paths.js";
 
 function distinct<T>(list: readonly T[]): boolean {
   return distinctCount(list) === list.length;
@@ -470,13 +471,7 @@ function beyond(reading: Reading, program: Program, element: Element, completes:
 
 /** The elements `element`'s outgoing flows and throwing Link lead to. */
 function continuing(program: Program, element: Element): readonly Element[] {
-  const event = elementEvent(element);
-  const name = event === null ? null : eventPayloadLinkThrow(event[1]);
-  const link = event === null || name === null ? [] : programSiblings(program, event[0]).flatMap((other) => {
-    const caught = elementEvent(other);
-    return caught !== null && eventPayloadLinkCatch(caught[1]) === name ? elementOutgoing(other) : [];
-  });
-  return flowTargets(program, [...elementOutgoing(element), ...link]);
+  return flowTargets(program, onward(program, element));
 }
 
 /**

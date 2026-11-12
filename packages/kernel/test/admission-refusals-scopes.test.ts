@@ -47,12 +47,16 @@ const handledScope = (record: Json | string) => (program: Json): Json =>
 
 /**
  * `T` becomes a User Task compensable by `HT`, whose Timer boundary `BT` leads to `B`, a User Task compensable by `HB`
- * that leads to `E`; `alsoFromTask` adds a flow from `T` itself to `B`.
+ * that leads to `E`; `alsoFromTask` adds a flow from `T` itself to `B`. Under `merging` both lead to an Exclusive Gateway
+ * `G` that leads to `B`.
  */
-const boundaryConnected = (alsoFromTask: boolean) => (program: Json): Json =>
-  withFlows(append(task(activity("T", userWork(), { compensationHandlers: ["HT"], boundaries: [boundary("BT", duration("PT1S"))] }))(program),
-    activity("B", userWork(), { compensationHandlers: ["HB"] }), activity("HT", "manual", { forCompensation: true }), activity("HB", "manual", { forCompensation: true })),
-  flow("bb", "BT", "B"), flow("be", "B", "E"), ...(alsoFromTask ? [flow("tb", "T", "B")] : []));
+const boundaryConnected = (alsoFromTask: boolean, merging = false) => (program: Json): Json => {
+  const into = merging ? "G" : "B";
+  return withFlows(append(task(activity("T", userWork(), { compensationHandlers: ["HT"], boundaries: [boundary("BT", duration("PT1S"))] }))(program),
+    activity("B", userWork(), { compensationHandlers: ["HB"] }), activity("HT", "manual", { forCompensation: true }), activity("HB", "manual", { forCompensation: true }),
+    ...(merging ? [gateway("G", { exclusive: { candidates: [], default: "gb" } })] : [])),
+  flow("bb", "BT", into), flow("be", "B", "E"), ...(merging ? [flow("gb", "G", "B")] : []), ...(alsoFromTask ? [flow("tb", "T", into)] : []));
+};
 
 export const rows: readonly Row[] = [
   {
@@ -136,6 +140,13 @@ export const rows: readonly Row[] = [
     description: "a compensable Task reached from a compensable Task's boundary and from another flow",
     mutate: boundaryConnected(true),
     control: boundaryConnected(false),
+  },
+  {
+    // Issue #96: the path from the boundary Event runs on through Gateways, as compensation orders handlers along it.
+    code: "compensation.dependency.boundary",
+    description: "a compensable Task reached from a compensable Task's boundary through a merging Gateway another flow also enters",
+    mutate: boundaryConnected(true, true),
+    control: boundaryConnected(false, true),
   },
 ];
 

@@ -1,6 +1,7 @@
 module
 
 public import Kernel.IL.Types
+public import Kernel.IL.Paths
 
 /-! # Admission of Scopes and scope membership. A refusal carries a stable code. -/
 
@@ -144,12 +145,16 @@ def nestedCompensation (program : Program) (throws : List Element) (header : Hea
   else none
 
 /-- BPMN 2.0.2 §13.5.5: "If a Sub-Process A has a boundary Event connected to Activity B, then compensation of B MUST be
-performed before compensation of A if that particular Event occurred." B's record shows only that B completed, so it
-shows the Event occurred only when every incoming flow of B leaves a boundary of A; a compensable B with another
-incoming flow beside one from a compensable A's boundary is refused, since its record cannot show which arrival it stems
-from. -/
-def boundaryDependency (program : Program) (envelope : Envelope) : Option String :=
-  let hosts := envelope.incoming.map fun flow => ((program.source? flow).bind program.boundary?).map (·.1.header.id)
+performed before compensation of A if that particular Event occurred." Compensation orders B's handler first whenever a
+path (`flowReaches`) leads from a boundary of A to B, but B's record shows only that B completed, so it shows the Event
+occurred only when every path into B starts at a boundary of A. A path's origin is the element or boundary Event it
+starts at, one that `transits` does not pass; a compensable B whose origins include a boundary of a compensable A and
+anything else is refused, since its record cannot show which arrival it stems from. -/
+def boundaryDependency (program : Program) (header : Header) (envelope : Envelope) : Option String :=
+  let origins := (program.elements.flatMap fun element =>
+      element.header.id :: ((element.envelope?.map fun envelope => envelope.boundaries.map (·.id)).getD [])).filter
+    fun id => !transits program id && flowReaches program [id] header.id
+  let hosts := origins.map fun origin => (program.boundary? origin).map (·.1.header.id)
   let compensable (host : ElementId) : Bool :=
     ((program.element? host).bind (·.envelope?)).any fun hostEnvelope => !hostEnvelope.compensationHandlers.isEmpty
   if !envelope.compensationHandlers.isEmpty &&

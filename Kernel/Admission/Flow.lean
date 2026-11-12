@@ -2,6 +2,7 @@ module
 
 public import Kernel.IL.Types
 public import Kernel.IL.Footprint
+public import Kernel.IL.Paths
 
 /-! # Admission of starts, gateways, Links and flow references. A refusal carries a stable code. A start's trigger is
 admitted by `Kernel.Admission.Subscriptions.start`. -/
@@ -306,10 +307,7 @@ def beyond (reading : Reading) (program : Program) (element : Element) (complete
 
 /-- The elements `element`'s outgoing flows and throwing Link lead to. -/
 def continuing (program : Program) (element : Element) : List Element :=
-  let link := (element.event?.bind fun (header, payload) => payload.linkThrow?.map (header, ·)).map fun (header, name) =>
-    (program.siblings header).flatMap fun other =>
-      if (other.event?.bind (·.2.linkCatch?)) == some name then other.outgoing else []
-  flowTargets program (element.outgoing ++ link.getD [])
+  flowTargets program (onward program element)
 
 /-- How a walk proceeds: `stop` names the elements that only begin, and `ascends` whether a token ending in a Scope may
 complete it, a called process's end its Calls, and a looping element's instance begin the next. A branch walk does not

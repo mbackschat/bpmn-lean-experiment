@@ -222,7 +222,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
         { transaction := false, escalation := payload.work.isUser || payload.work.call?.isSome } payload.envelope.boundaries <|>
       boundaryData program header payload.envelope.boundaries <|>
       Admission.Scopes.nestedCompensation program throws header payload.envelope <|>
-      Admission.Scopes.boundaryDependency program payload.envelope
+      Admission.Scopes.boundaryDependency program header payload.envelope
   | .scope header payload =>
     Admission.Data.origin program header <|> envelopeData program header payload.envelope <|>
       Admission.Work.handlerCount payload.envelope <|>
@@ -240,7 +240,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
         { transaction := Admission.Scopes.isTransaction payload, escalation := true } payload.envelope.boundaries <|>
       boundaryData program header payload.envelope.boundaries <|>
       Admission.Scopes.nestedCompensation program throws header payload.envelope <|>
-      Admission.Scopes.boundaryDependency program payload.envelope
+      Admission.Scopes.boundaryDependency program header payload.envelope
   | .event header payload =>
     Admission.Data.origin program header <|>
       match payload.role with

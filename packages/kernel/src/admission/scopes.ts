@@ -15,7 +15,6 @@ import {
   programBoundary,
   programChildren,
   programElement,
-  programSource,
   type CalledProcess,
   type Element,
   type ElementId,
@@ -26,6 +25,7 @@ import {
   type Subscription,
   type TransactionScope,
 } from "../il/types.js";
+import { flowReaches, transits } from "../il/paths.js";
 
 /** Whether the Activity is begun by its parent Scope's implicit start. */
 export function implicitChild(program: Program, header: Header): boolean {
@@ -213,15 +213,18 @@ export function nestedCompensation(program: Program, throws: readonly Element[],
 
 /**
  * BPMN 2.0.2 §13.5.5: "If a Sub-Process A has a boundary Event connected to Activity B, then compensation of B MUST be
- * performed before compensation of A if that particular Event occurred." B's record shows only that B completed, so it
- * shows the Event occurred only when every incoming flow of B leaves a boundary of A; a compensable B with another
- * incoming flow beside one from a compensable A's boundary is refused, since its record cannot show which arrival it
- * stems from.
+ * performed before compensation of A if that particular Event occurred." Compensation orders B's handler first whenever
+ * a path (`flowReaches`) leads from a boundary of A to B, but B's record shows only that B completed, so it shows the
+ * Event occurred only when every path into B starts at a boundary of A. A path's origin is the element or boundary
+ * Event it starts at, one that `transits` does not pass; a compensable B whose origins include a boundary of a
+ * compensable A and anything else is refused, since its record cannot show which arrival it stems from.
  */
-export function boundaryDependency(program: Program, envelope: Envelope): string | null {
-  const hosts = envelope.incoming.map((flow) => {
-    const source = programSource(program, flow);
-    const found = source === null ? null : programBoundary(program, source);
+export function boundaryDependency(program: Program, header: Header, envelope: Envelope): string | null {
+  const origins = program.elements
+    .flatMap((element) => [elementHeader(element).id, ...(elementEnvelope(element)?.boundaries ?? []).map((boundary) => boundary.id)])
+    .filter((id) => !transits(program, id) && flowReaches(program, [id], header.id));
+  const hosts = origins.map((origin) => {
+    const found = programBoundary(program, origin);
     return found === null ? null : elementHeader(found[0]).id;
   });
   const compensable = (host: ElementId): boolean => {

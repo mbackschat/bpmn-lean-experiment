@@ -35,6 +35,7 @@ public import Kernel.IL.Codec.Decision
 public import Kernel.IL.Codec.Stimulus
 public import Kernel.IL.Codec.Value
 public import Kernel.IL.Footprint
+public import Kernel.IL.Paths
 public import Kernel.IL.Timer
 public import Kernel.IL.Types
 public import Kernel.IL.Types.Decision
