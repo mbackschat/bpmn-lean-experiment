@@ -17,8 +17,12 @@ begun in a context scope occurrence of its own inside that one, holding the rest
 `.compensation`. Order (§13.5.5): when A's record completed before B's, a Sequence Flow from A or from a boundary
 Event of A to B, a name B reads that A can write, or A and B being records of one subject makes B's handler complete
 before A's starts (`precedes`); handlers without such a dependency run concurrently, so every pending handler none of
-whose successors is still pending or running starts at once, in program order. Once the last handler has completed, the trigger continues as its
-thrower asked.
+whose successors is still pending or running starts at once, in program order. Once the last handler has completed,
+the trigger continues as its thrower asked.
+
+Under `ImplicitCompensation.everySubProcess` (I5) a completed Sub-Process without a handler that holds records is
+retained as one group record without a handler: compensating it runs its children as a nested run in a context holding
+the Sub-Process's own variables, which resumes the outer run once they all completed (`Resume.group`).
 
 A handler that an Error leaves uncaught fails the process instance: every token, item and occurrence is removed and
 the failure is published. BPMN 2.0.2 §13.3.2 leaves this open; it is the interpretation COMPH-FAIL-01 of the
@@ -40,30 +44,32 @@ def ownedScope? (ctx : Ctx) (occurrence : Occurrence) (state : State) : Option S
   else none
 
 /-- `Hooks.completed`, before the pipeline disposes of the owned scope: a completed Scope's inner records stay
-compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the children its handler may trigger, the others
-move to the parent. A Compensation Event Sub-Process, the handler inside its subject, restores the completed Scope's own
-variables ("snapshot data"); a boundary handler restores none (§13.5.5: it "can only perform black-box compensation"). -/
+compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the children its handler may trigger; one
+without keeps them as a group under `ImplicitCompensation.everySubProcess` (I5), else they move to the parent. A
+Compensation Event Sub-Process, the handler inside its subject, and a group restore the completed Scope's own variables
+("snapshot data"); a boundary handler restores none (§13.5.5: it "can only perform black-box compensation"). -/
 def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
   -- Admission admits at most one handler (`compensation.handlerCount`).
   let handler := ((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.compensationHandlers.head?)
   let owned := ownedScope? ctx occurrence state
   let compensation := state.slots.compensation
   let (inner, outer) := compensation.retained.partition fun record => owned.any (·.id == record.scope)
-  match handler with
-  | none =>
+  let grouped := ctx.program.options.implicitCompensation == .everySubProcess && !inner.isEmpty
+  if handler.isNone && !grouped then
     .ok (store state { compensation with
       retained := outer ++ inner.map fun record => { record with scope := occurrence.scope } })
-  | some handler =>
+  else
     let (state, completion) := state.issue
-    let inside := ((ctx.program.element? handler).bind (·.header.parent)) == some occurrence.element
+    let inside := handler.all fun handler =>
+      ((ctx.program.element? handler).bind (·.header.parent)) == some occurrence.element
     let own := (owned.map fun scope => ((state.variables.find? (·.scope == scope.id)).map (·.entries)).getD []).getD []
     let snapshot := if inside then own else []
     let reference : OccurrenceRef :=
       { processInstanceId := state.instanceOf occurrence.scope, element := occurrence.element
         activation := occurrence.activation }
     let record : Compensable :=
-      { subject := occurrence.element, handler := some handler, scope := occurrence.scope, occurrence := some reference,
-        completion, snapshot, children := inner }
+      { subject := occurrence.element, handler, scope := occurrence.scope, occurrence := some reference, completion,
+        snapshot, children := inner }
     .ok (store state { compensation with retained := outer ++ [record] })
 
 /-- Every element declared inside `element`, at any depth. -/
@@ -123,57 +129,91 @@ def precedes (ctx : Ctx) (record other : Compensable) : Bool :=
 def position (ctx : Ctx) (element : ElementId) : Nat :=
   (ctx.program.elements.map (·.header.id)).idxOf element
 
+/-- The recursion bound of `advance`: a nested run starts at most once per element nesting level, and a run's end
+resumes at most every run in progress. -/
+def runBound (ctx : Ctx) (state : State) : Nat :=
+  2 * (ctx.program.elements.length + state.slots.compensation.runs.length) + 2
+
+mutual
+
 /-- Begin `record`'s handler in a new context scope occurrence inside `scope`, where the records of its children become
-the ones a throw inside the handler compensates. -/
-def beginHandler (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) (record : Compensable) :
-    Except Failure (State × ScopeOccurrenceId) := do
-  -- Only a group lacks a handler, and no feature retains a group: an invariant failure.
-  let handler ← match record.handler with
-    | some handler => .ok handler
-    | none => .error (.semanticFailure "compensation-group-unretained")
-  let element ← match ctx.program.element? handler with
-    | some element => .ok element
-    | none => .error (.semanticFailure "compensation-handler-missing")
-  if element.activity?.isNone && element.scope?.isNone then .error (.semanticFailure "compensation-handler-not-activity")
-  else
-    let (state, context) := state.enterScope handler scope record.snapshot none
-    let compensation := state.slots.compensation
-    let children := record.children.map fun child => { child with scope := context }
-    let state := store state { compensation with retained := compensation.retained ++ children }
-    .ok (state.signal (.begin { element := handler, scope := context, continuation := .compensation scope }), context)
+the ones a throw inside the handler compensates. A group (I5) runs its children instead, as a nested run of that
+context, which resumes the run in `scope` once they all completed (`Resume.group`). -/
+def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceId) (state : State)
+    (record : Compensable) : Nat → Except Failure (State × ScopeOccurrenceId)
+  | 0 => .error (.semanticFailure "compensation-run-depth")
+  | fuel + 1 =>
+    match record.handler with
+    | none => do
+      let (state, context) := state.enterScope record.subject scope record.snapshot none
+      let pending := record.children.map fun child => { child with scope := context }
+      let compensation := state.slots.compensation
+      let nested : CompensationRun :=
+        { trigger, scope := context, pending, leave := none, resume := some (.group scope context) }
+      let state ← advance ctx context (store state { compensation with runs := compensation.runs ++ [nested] }) fuel
+      .ok (state, context)
+    | some handler =>
+      match ctx.program.element? handler with
+      | none => .error (.semanticFailure "compensation-handler-missing")
+      | some element =>
+        if element.activity?.isNone && element.scope?.isNone then
+          .error (.semanticFailure "compensation-handler-not-activity")
+        else
+          let (state, context) := state.enterScope handler scope record.snapshot none
+          let compensation := state.slots.compensation
+          let children := record.children.map fun child => { child with scope := context }
+          let state := store state { compensation with retained := compensation.retained ++ children }
+          .ok (state.signal (.begin { element := handler, scope := context, continuation := .compensation scope }),
+            context)
 
 /-- Start every pending handler of the run in `scope` that no pending or running handler's subject succeeds; once
 none is pending or running, end the run: cancel the occurrence it leaves, if any, then complete its `resume`. -/
-def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome := do
-  let compensation := state.slots.compensation
-  let run ← match compensation.runs.find? (·.scope == scope) with
-    | some run => .ok run
-    | none => .error (.semanticFailure "compensation-run-missing")
-  let others := compensation.runs.filter (·.scope != scope)
-  let remaining := run.pending ++ run.running.map (·.2)
-  let (ready, waiting) := run.pending.partition fun record => !remaining.any (precedes ctx record ·)
-  if run.pending.isEmpty && run.running.isEmpty then
-    let state := store state { compensation with runs := others }
-    let state := match run.leave with
-      | some occurrence => state.signal (.cancel occurrence)
-      | none => state
-    match run.resume with
-      | some (.complete occurrence leave) => .ok (state.signal (.complete occurrence leave [] .outward))
-      | some (.occur element at_ leave) => .ok (state.signal (.occur element at_ leave [] .outward))
-      -- Only a group's nested run resumes `group`, and no feature retains a group: an invariant failure.
-      | some (.group _ _) => .error (.semanticFailure "compensation-group-unretained")
-      | none => .ok state
-  -- Dynamic-only: a dependency cycle needs the retained set, which depends on the run.
-  else if ready.isEmpty && run.running.isEmpty then .error (.unsupported "compensation-dependency-cycle")
-  else
-    let ordered := ready.mergeSort fun left right =>
-      position ctx left.subject < position ctx right.subject ||
-        (position ctx left.subject == position ctx right.subject && right.completion ≤ left.completion)
-    let (state, started) ← ordered.foldlM (fun (state, started) record => do
-      let (state, context) ← beginHandler ctx scope state record
-      .ok (state, started ++ [(context, record)])) (state, [])
-    .ok (store state { state.slots.compensation with
-      runs := others ++ [{ run with pending := waiting, running := run.running ++ started }] })
+def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Nat → Outcome
+  | 0 => .error (.semanticFailure "compensation-run-depth")
+  | fuel + 1 => do
+    let compensation := state.slots.compensation
+    let run ← match compensation.runs.find? (·.scope == scope) with
+      | some run => .ok run
+      | none => .error (.semanticFailure "compensation-run-missing")
+    let remaining := run.pending ++ run.running.map (·.2)
+    let (ready, waiting) := run.pending.partition fun record => !remaining.any (precedes ctx record ·)
+    if run.pending.isEmpty && run.running.isEmpty then
+      let state := store state { compensation with runs := compensation.runs.filter (·.scope != scope) }
+      let state := match run.leave with
+        | some occurrence => state.signal (.cancel occurrence)
+        | none => state
+      match run.resume with
+        | some (.complete occurrence leave) => .ok (state.signal (.complete occurrence leave [] .outward))
+        | some (.occur element at_ leave) => .ok (state.signal (.occur element at_ leave [] .outward))
+        | some (.group outer context) => release ctx outer context state fuel
+        | none => .ok state
+    -- Dynamic-only: a dependency cycle needs the retained set, which depends on the run.
+    else if ready.isEmpty && run.running.isEmpty then .error (.unsupported "compensation-dependency-cycle")
+    else
+      let ordered := ready.mergeSort fun left right =>
+        position ctx left.subject < position ctx right.subject ||
+          (position ctx left.subject == position ctx right.subject && right.completion ≤ left.completion)
+      let (state, started) ← ordered.foldlM (fun (state, started) record => do
+        let (state, context) ← beginHandler ctx run.trigger scope state record fuel
+        .ok (state, started ++ [(context, record)])) (state, [])
+      -- A group's nested run joined the runs while its handlers began.
+      let compensation := state.slots.compensation
+      .ok (store state { compensation with runs := compensation.runs.filter (·.scope != scope) ++
+        [{ run with pending := waiting, running := run.running ++ started }] })
+
+/-- The handler or group that ran in `context` is done: the context is left and the run in `scope` starts what that
+releases. -/
+def release (ctx : Ctx) (scope context : ScopeOccurrenceId) (state : State) : Nat → Outcome
+  | 0 => .error (.semanticFailure "compensation-run-depth")
+  | fuel + 1 =>
+    let left := state.leaveScope context
+    let compensation := left.slots.compensation
+    let runs := compensation.runs.map fun candidate =>
+      if candidate.scope == scope then { candidate with running := candidate.running.filter (·.1 != context) }
+      else candidate
+    advance ctx scope (store left { compensation with runs }) fuel
+
+end
 
 /-- `Signal.compensate`: take the records retained in `scope` into a new run: those of `activity` when one is named,
 else all. Dynamic-only refusal: a second trigger in a scope whose run is in progress, since its relation to the
@@ -188,16 +228,11 @@ def compensate (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option Elemen
   else
     advance ctx scope (store state
       { retained := kept, runs := compensation.runs ++ [{ trigger, scope, pending := selected, leave, resume }] })
+      (runBound ctx state)
 
 /-- `Hooks.handlerCompleted`: the handler's context is left and the run starts what that releases. -/
 def handlerCompleted (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence : Occurrence) (state : State) : Outcome :=
-  let left := state.leaveScope occurrence.scope
-  let compensation := left.slots.compensation
-  let runs := compensation.runs.map fun candidate =>
-    if candidate.scope == run then
-      { candidate with running := candidate.running.filter (·.1 != occurrence.scope) }
-    else candidate
-  advance ctx run (store left { compensation with runs })
+  release ctx run occurrence.scope state (runBound ctx state)
 
 /-- `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `propagatesFromTrigger`
 (I11) the run, if a catcher that interrupted its scope occurrence has not dropped it, goes on as `handlerCompleted` does;

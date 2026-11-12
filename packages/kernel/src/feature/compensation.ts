@@ -12,8 +12,12 @@
  * `compensation`. Order (§13.5.5): when A's record completed before B's, a Sequence Flow from A or from a boundary
  * Event of A to B, a name B reads that A can write, or A and B being records of one subject makes B's handler complete
  * before A's starts (`precedes`); handlers without such a dependency run concurrently, so every pending handler none of
- * whose successors is still pending or running starts at once, in program order. Once the last handler has completed, the trigger continues as
- * its thrower asked.
+ * whose successors is still pending or running starts at once, in program order. Once the last handler has completed,
+ * the trigger continues as its thrower asked.
+ *
+ * Under `ImplicitCompensation.EverySubProcess` (I5) a completed Sub-Process without a handler that holds records is
+ * retained as one group record without a handler: compensating it runs its children as a nested run in a context
+ * holding the Sub-Process's own variables, which resumes the outer run once they all completed (`Resume.group`).
  *
  * A handler that an Error leaves uncaught fails the process instance: every token, item and occurrence is removed and
  * the failure is published. BPMN 2.0.2 §13.3.2 leaves this open; it is the interpretation COMPH-FAIL-01 of the trigger
@@ -21,6 +25,7 @@
  */
 import {
   CompensationHandlerFailureTag,
+  ImplicitCompensation,
   SubmissionRule,
   assertNever,
   elementActivity,
@@ -85,9 +90,10 @@ function ownedScope(ctx: Ctx, occurrence: Occurrence, state: State): ScopeOccurr
 
 /**
  * `Hooks.completed`, before the pipeline disposes of the owned scope: a completed Scope's inner records stay
- * compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the children its handler may trigger, the
- * others move to the parent. A Compensation Event Sub-Process, the handler inside its subject, restores the completed
- * Scope's own variables ("snapshot data"); a boundary handler restores none (§13.5.5: it "can only perform black-box
+ * compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the children its handler may trigger; one
+ * without keeps them as a group under `ImplicitCompensation.EverySubProcess` (I5), else they move to the parent. A
+ * Compensation Event Sub-Process, the handler inside its subject, and a group restore the completed Scope's own
+ * variables ("snapshot data"); a boundary handler restores none (§13.5.5: it "can only perform black-box
  * compensation").
  */
 export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
@@ -99,15 +105,16 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   const isInner = (record: Compensable): boolean => owned !== null && owned.id === record.scope;
   const inner = compensation.retained.filter(isInner);
   const outer = compensation.retained.filter((record) => !isInner(record));
-  if (handler === null) {
+  const grouped = ctx.program.options.implicitCompensation === ImplicitCompensation.EverySubProcess && inner.length > 0;
+  if (handler === null && !grouped) {
     return committed(store(state, {
       ...compensation,
       retained: [...outer, ...inner.map((record) => ({ ...record, scope: occurrence.scope }))],
     }));
   }
   const [issued, completion] = issue(state);
-  const handlerElement = programElement(ctx.program, handler);
-  const inside = handlerElement !== null && elementHeader(handlerElement).parent === occurrence.element;
+  const handlerElement = handler === null ? null : programElement(ctx.program, handler);
+  const inside = handler === null || (handlerElement !== null && elementHeader(handlerElement).parent === occurrence.element);
   const snapshot = owned === null || !inside ? [] : (issued.variables.find((scoped) => scoped.scope === owned.id)?.entries ?? []);
   const reference: OccurrenceRef = {
     processInstanceId: instanceOf(issued, occurrence.scope),
@@ -204,13 +211,33 @@ function position(ctx: Ctx, element: ElementId): number {
 }
 
 /**
- * Begin `record`'s handler in a new context scope occurrence inside `scope`, where the records of its children become
- * the ones a throw inside the handler compensates.
+ * The recursion bound of `advance`: a nested run starts at most once per element nesting level, and a run's end resumes
+ * at most every run in progress.
  */
-function beginHandler(ctx: Ctx, scope: ScopeOccurrenceId, state: State, record: Compensable): Result<readonly [State, ScopeOccurrenceId]> {
+function runBound(ctx: Ctx, state: State): number {
+  return 2 * (ctx.program.elements.length + state.slots.compensation.runs.length) + 2;
+}
+
+/**
+ * Begin `record`'s handler in a new context scope occurrence inside `scope`, where the records of its children become
+ * the ones a throw inside the handler compensates. A group (I5) runs its children instead, as a nested run of that
+ * context, which resumes the run in `scope` once they all completed (`Resume.group`).
+ */
+function beginHandler(
+  ctx: Ctx, trigger: OccurrenceRef, scope: ScopeOccurrenceId, state: State, record: Compensable, fuel: number,
+): Result<readonly [State, ScopeOccurrenceId]> {
+  if (fuel === 0) return failed(FailureTag.SemanticFailure, "compensation-run-depth");
   const handler = record.handler;
-  // Only a group lacks a handler, and no feature retains a group: an invariant failure.
-  if (handler === null) return failed(FailureTag.SemanticFailure, "compensation-group-unretained");
+  if (handler === null) {
+    const [entered, context] = enterScope(state, record.subject, scope, record.snapshot, null);
+    const pending = record.children.map((child) => ({ ...child, scope: context }));
+    const compensation = entered.slots.compensation;
+    const nested: CompensationRun = {
+      trigger, scope: context, pending, running: [], leave: null, resume: { tag: ResumeTag.Group, outer: scope, context },
+    };
+    const advanced = advance(ctx, context, store(entered, { ...compensation, runs: [...compensation.runs, nested] }), fuel - 1);
+    return advanced.ok ? committed([advanced.value, context]) : advanced;
+  }
   const element = programElement(ctx.program, handler);
   if (element === null) return failed(FailureTag.SemanticFailure, "compensation-handler-missing");
   if (elementActivity(element) === null && elementScope(element) === null) {
@@ -226,7 +253,7 @@ function beginHandler(ctx: Ctx, scope: ScopeOccurrenceId, state: State, record: 
   }), context]);
 }
 
-function resumeRun(state: State, resume: Resume | null): Outcome {
+function resumeRun(ctx: Ctx, state: State, resume: Resume | null, fuel: number): Outcome {
   if (resume === null) return committed(state);
   switch (resume.tag) {
     case ResumeTag.Complete:
@@ -241,8 +268,7 @@ function resumeRun(state: State, resume: Resume | null): Outcome {
         rule: WriteRule.Outward,
       }));
     case ResumeTag.Group:
-      // Only a group's nested run resumes `group`, and no feature retains a group: an invariant failure.
-      return failed(FailureTag.SemanticFailure, "compensation-group-unretained");
+      return release(ctx, resume.outer, resume.context, state, fuel);
   }
   return assertNever(resume);
 }
@@ -251,19 +277,19 @@ function resumeRun(state: State, resume: Resume | null): Outcome {
  * Start every pending handler of the run in `scope` that no pending or running handler's subject succeeds; once none is
  * pending or running, end the run: cancel the occurrence it leaves, if any, then complete its `resume`.
  */
-function advance(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outcome {
+function advance(ctx: Ctx, scope: ScopeOccurrenceId, state: State, fuel: number): Outcome {
+  if (fuel === 0) return failed(FailureTag.SemanticFailure, "compensation-run-depth");
   const compensation = state.slots.compensation;
   const run = compensation.runs.find((candidate) => candidate.scope === scope);
   if (run === undefined) return failed(FailureTag.SemanticFailure, "compensation-run-missing");
-  const others = compensation.runs.filter((candidate) => candidate.scope !== scope);
   const remaining = [...run.pending, ...run.running.map(([, record]) => record)];
   const isReady = (record: Compensable): boolean => !remaining.some((other) => precedes(ctx, record, other));
   const ready = run.pending.filter(isReady);
   const waiting = run.pending.filter((record) => !isReady(record));
   if (run.pending.length === 0 && run.running.length === 0) {
-    const ended = store(state, { ...compensation, runs: others });
+    const ended = store(state, { ...compensation, runs: compensation.runs.filter((candidate) => candidate.scope !== scope) });
     const left = run.leave === null ? ended : signal(ended, { tag: SignalTag.Cancel, occurrence: run.leave });
-    return resumeRun(left, run.resume);
+    return resumeRun(ctx, left, run.resume, fuel - 1);
   }
   // Dynamic-only: a dependency cycle needs the retained set, which depends on the run.
   if (ready.length === 0 && run.running.length === 0) return failed(FailureTag.Unsupported, "compensation-dependency-cycle");
@@ -273,13 +299,26 @@ function advance(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outcome {
   let current = state;
   const started: (readonly [ScopeOccurrenceId, Compensable])[] = [];
   for (const record of ordered) {
-    const begun = beginHandler(ctx, scope, current, record);
+    const begun = beginHandler(ctx, run.trigger, scope, current, record, fuel - 1);
     if (!begun.ok) return begun;
     current = begun.value[0];
     started.push([begun.value[1], record]);
   }
+  // A group's nested run joined the runs while its handlers began.
   const updated: CompensationRun = { ...run, pending: waiting, running: [...run.running, ...started] };
-  return committed(store(current, { ...current.slots.compensation, runs: [...others, updated] }));
+  const runs = current.slots.compensation.runs.filter((candidate) => candidate.scope !== scope);
+  return committed(store(current, { ...current.slots.compensation, runs: [...runs, updated] }));
+}
+
+/** The handler or group that ran in `context` is done: the context is left and the run in `scope` starts what that releases. */
+function release(ctx: Ctx, scope: ScopeOccurrenceId, context: ScopeOccurrenceId, state: State, fuel: number): Outcome {
+  if (fuel === 0) return failed(FailureTag.SemanticFailure, "compensation-run-depth");
+  const left = leaveScope(state, context);
+  const compensation = left.slots.compensation;
+  const runs = compensation.runs.map((candidate) => candidate.scope === scope
+    ? { ...candidate, running: candidate.running.filter(([running]) => running !== context) }
+    : candidate);
+  return advance(ctx, scope, store(left, { ...compensation, runs }), fuel - 1);
 }
 
 /**
@@ -306,17 +345,12 @@ export function compensate(
   return advance(ctx, scope, store(state, {
     retained: kept,
     runs: [...compensation.runs, { trigger, scope, pending: selected, running: [], leave, resume }],
-  }));
+  }), runBound(ctx, state));
 }
 
 /** `Hooks.handlerCompleted`: the handler's context is left and the run starts what that releases. */
 export function handlerCompleted(ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State): Outcome {
-  const left = leaveScope(state, occurrence.scope);
-  const compensation = left.slots.compensation;
-  const runs = compensation.runs.map((candidate) => candidate.scope === run
-    ? { ...candidate, running: candidate.running.filter(([context]) => context !== occurrence.scope) }
-    : candidate);
-  return advance(ctx, run, store(left, { ...compensation, runs }));
+  return release(ctx, run, occurrence.scope, state, runBound(ctx, state));
 }
 
 /**
