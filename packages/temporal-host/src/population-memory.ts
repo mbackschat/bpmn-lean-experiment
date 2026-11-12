@@ -102,7 +102,9 @@ export class MemoryPopulation<P, S, M> {
       const [state, action] = advance(this.port, this.ingress, atMs);
       this.ingress = state;
       if (action === null) break;
-      this.ingress = answer(this.port, this.ingress, this.perform(action, atMs), this.receivers);
+      // `perform` may re-register a chain it steps, which writes `this.ingress`, so the answer reads the ingress after it.
+      const answered = this.perform(action, atMs);
+      this.ingress = answer(this.port, this.ingress, answered, this.receivers);
     }
   }
 

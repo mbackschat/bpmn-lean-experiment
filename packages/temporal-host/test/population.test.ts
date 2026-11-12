@@ -207,3 +207,37 @@ test("a population start whose instance identity a directly started chain holds 
   });
   assert.equal(chains.get(instanceId)?.state, direct.state, "the direct chain is untouched");
 });
+
+test("a chain a population delivery steps keeps the registration that delivery made", async () => {
+  const read = await readKernelProgram({
+    bytes: await readFile(new URL("../../../scenarios/message-key-correlation/unbound-key.bpmn", import.meta.url)),
+    overlay: null, profile: "test-profile", limits: { maxBytes: 1_048_576, parserDeadlineMs: 1_000 },
+  }, kernelProfileOptions([]));
+  if (read.kind !== "read") throw new Error(`reader refused ${read.code}`);
+  const program = kernelPort.decodeProgram(JSON.parse(JSON.stringify(read.program)) as JsonValue);
+  const chains = new Map<string, PopulationChain<Program, State>>();
+  const memory = new MemoryPopulation(binding.populationPort, kernelPort.hostView, populationCapacity.receivers, chains);
+  memory.deploy("d", "digest", program, 0);
+  const channel = { kind: "operationMessage", interfaceId: "Interface_ClearingHouse", interfaceOperationId: "Operation_ConfirmSettlement",
+    messageId: "Message_SettlementConfirmed" };
+  let state: State | null = null;
+  for (const stimulus of [
+    { kind: "start", commandId: "start", instanceId: "I", variables: [] },
+    { kind: "deliver", commandId: "bind", occurrence: { processInstanceId: "I", elementId: "MessageCatch_InitialSettlement", activation: 1 },
+      trigger: { kind: "message", channel }, payload: { kind: "string", value: "s-42" } },
+  ]) {
+    const stepped = kernelPort.step(program, state, kernelPort.decodeStimulus(stimulus).input);
+    if (!stepped.committed) throw new Error(`${stimulus.commandId} did not commit: ${stepped.code}`);
+    state = stepped.state;
+    chains.set("I", { deploymentId: 1, program, state });
+    memory.committed("I", 1, program, state, stimulus.commandId);
+  }
+  const addresses = () => memory.ingress.registrations.find((registration) => registration.workflowId === "I")?.addresses.length;
+  assert.equal(addresses(), 1, "the correlated catch waits alone");
+  const answer = memory.command("p", "publish", {
+    kind: "publish", commandId: "p", address: { channel }, variables: [], mode: "executionsOnly",
+    criteria: [{ target: { kind: "processVariable", name: "CorrelationKey_SettlementReference" }, expected: { kind: "string", value: "s-42" } }],
+  }, "p", 0) as { resolution: { kind: string } };
+  assert.equal(answer.resolution.kind, "committed");
+  assert.equal(addresses() ?? 0, 0, "the ended chain's re-registration, which the delivery made, survives the driver's answer");
+});
