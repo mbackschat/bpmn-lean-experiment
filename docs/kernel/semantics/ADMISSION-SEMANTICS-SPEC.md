@@ -44,6 +44,7 @@ A profile may select only behaviour the kernel implements ([`Kernel/Admission/Pr
 | `profile.compensationOrder.allAtOnce` | starting every compensation handler of a trigger at once | PC-COMPENSATION rows |
 | `profile.compensationHandlerFailure.selected` | a selected handler-failure code | PC-COMPENSATION rows |
 | `profile.errorExitCompensation.compensatesContained` | compensating the contained work of a Sub-Process an Error leaves, for a program with a Sub-Process retaining compensable work | PC-COMPENSATION rows, PC-TX-01 |
+| `profile.multiInstanceCollection.sequentialReread` | a sequential re-read with aggregated outputs, for a program with a loop: BPMN 2.0.2 §13.3.7 aggregates in the form of an input read once | PC-MI-08 |
 | `profile.multiInstanceCompensation.perInstance` | a compensation record per instance, for a program with a Multi-Instance Task or Call with a handler | PC-COMPENSATION rows |
 | `profile.callBindingTime.invocation` | binding the called definition at invocation | PC-SCOPE-03 |
 | `profile.timerZone` | a timer zone other than UTC | PC-TIMER-02 |

@@ -11,6 +11,7 @@
 import {
   AbnormalScopeEnd,
   CallBindingTime,
+  CollectionRead,
   CompensationHandlerFailureTag,
   CompensationOrder,
   ErrorExitCompensation,
@@ -18,6 +19,7 @@ import {
   MultiInstanceCompensation,
   MultiInstanceCounters,
   MultiInstanceInputFailure,
+  MultiInstanceOutputs,
   assertNever,
   type CompensationHandlerFailure,
   type ProfileOptions,
@@ -48,10 +50,16 @@ export interface Reach {
 
 /**
  * For a program with a Multi-Instance loop, the option combinations that would read a loop expression under two engines
- * at once: JUEL without CIB's counters or its input failure, and Simple Boolean with CIB's counters.
+ * at once: JUEL without CIB's counters or its input failure, and Simple Boolean with CIB's counters. A sequential
+ * re-read with aggregated outputs is refused too: BPMN 2.0.2 §13.3.7 aggregates the output collection in the form of an
+ * input collection read once, which a re-read no longer gives.
  */
 function multiInstance(loops: boolean, selected: ProfileOptions): string | null {
   if (!loops) return null;
+  if (selected.multiInstanceCollection === CollectionRead.SequentialReread &&
+    selected.multiInstanceOutputs === MultiInstanceOutputs.Aggregates) {
+    return "profile.multiInstanceCollection.sequentialReread";
+  }
   if (selected.evaluator === Evaluator.Juel) {
     if (selected.multiInstanceCounters === MultiInstanceCounters.None) return "profile.multiInstanceCounters.none";
     if (selected.multiInstanceInputFailure === MultiInstanceInputFailure.Hold) return "profile.multiInstanceInputFailure.hold";

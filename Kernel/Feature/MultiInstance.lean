@@ -317,6 +317,44 @@ def stops (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (index : N
       | .failure code => .error (.rolledBack code)
       | .unsupported code => .error (.unsupported code)
 
+/-- The collection a sequential loop reads again before each later instance, under `CollectionRead.sequentialReread`:
+CIB re-reads it in `complete`, before `performInstance` binds the next item (`SequentialMultiInstanceActivityBehavior
+.java:56-58`); a cardinality loop has none. -/
+def rereadCollection (ctx : Ctx) (loop : MultiInstance) : Option Expression :=
+  match ctx.program.options.multiInstanceCollection, loop.count with
+  | .entrySnapshot, _ => none
+  | .sequentialReread, .collection items => if loop.mode == .sequential then some (collectionOf ctx loop items) else none
+  | .sequentialReread, .cardinality _ => none
+  | .sequentialReread, .countAndCollection _ _ => none
+
+/-- The items the instance at `next` takes its item from: the entry snapshot, or under a re-read the current collection,
+while the entry total stays and `run.collection` keeps the entry value. CIB reads it in the body's execution, which
+holds the item, `loopCounter` and the result locals of this and every earlier instance (`Sequential…:53`), so it is
+read in the completing instance's scope occurrence before that is left, as the completion condition is. A value that is
+no collection fails the operation (a `ClassCastException`, `MultiInstanceActivityBehavior.java:96-97`), as does one
+shorter than `next + 1` (`getElementAtIndex`'s iterator, `:131-138`) and a failing JUEL read. -/
+def nextItems (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (next : Nat) (scope : ScopeOccurrenceId)
+    (results : List String) (state : State) : Except Failure (List Value) :=
+  match rereadCollection ctx loop with
+  | none => .ok (run.items.getD [])
+  | some read =>
+    -- Dynamic-only: which names an earlier instance's result left on CIB's body depends on the run's effect results.
+    if run.results.any (!results.contains ·) then .error (.unsupported "multiInstance.sequentialResultLeftover")
+    else
+      -- Dynamic-only: a removed or null collection leaves CIB's previous item in place
+      -- (`MultiInstanceActivityBehavior.java:85-88`), a value the kernel does not reproduce.
+      let removed : Except Failure (List Value) := .error (.unsupported "multiInstance.collectionRemoved")
+      match ctx.evaluate { state.evalContext scope with domainChecked := false } read, read with
+      | .unsupported code, _ => .error (.unsupported code)
+      | .failure "unknown-variable", .variable _ => removed
+      | .failure code, _ => .error (.rolledBack code)
+      | .value .null, _ => removed
+      | .value value, _ =>
+        match collectionItems value with
+        | none => .error (.rolledBack "multiInstance.notACollection")
+        | some members =>
+          if next < members.length then .ok members else .error (.rolledBack "multiInstance.collectionShortened")
+
 /-- `Hooks.instanceCompleted`: fill the instance's slot, evaluate the completion condition in the instance's scope
 occurrence, leave it, then finish, close early or continue, updating the body's counter locals first. -/
 def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value))
@@ -341,10 +379,11 @@ def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes
   let stop ← if exhausted && !evaluatesFinalCondition ctx loop then .ok false
     else stops ctx loop run index occurrence.scope results state
   let run := { run with results := if loop.mode == .sequential then (run.results ++ results).eraseDups else [] }
-  let state := setRun (state.leaveScope occurrence.scope) run
-  if stop || exhausted then .ok (finish ctx loop run state)
+  let left := setRun (state.leaveScope occurrence.scope) run
+  if stop || exhausted then .ok (finish ctx loop run left)
   else
-    let counted := state.signal (.write run.scope (counterLocals ctx (bodyCounts loop run.instances)) .own)
-    .ok (beginInstances ctx loop (run.items.getD []) run counted)
+    let items ← nextItems ctx loop run (index + 1) occurrence.scope results state
+    let counted := left.signal (.write run.scope (counterLocals ctx (bodyCounts loop run.instances)) .own)
+    .ok (beginInstances ctx loop items run counted)
 
 end Kernel.Feature.MultiInstance

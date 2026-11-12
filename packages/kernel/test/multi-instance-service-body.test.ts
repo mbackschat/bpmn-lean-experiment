@@ -228,3 +228,40 @@ test("an instance's completion crosses the loop's asyncAfter mark", () => {
   assert.deepEqual(journey(run(program({ failingAfter: true, loop: { asyncAfter: true } }), stimuli)).at(-1), ["result-1", "unsupported", [1]]);
   assert.deepEqual(journey(run(program({ failingAfter: true, envelope: { asyncAfter: true } }), stimuli)).at(-1), ["result-1", "unsupported", [1]]);
 });
+
+/** The sequential program under `CollectionRead.sequentialReread`, which the profile admits only without aggregation. */
+function reread(shape: Shape = {}): Json {
+  const json = program({ ...shape, mode: "sequential" });
+  return { ...json, options: { ...(json["options"] as Json), multiInstanceCollection: "sequentialReread", multiInstanceOutputs: "none" } };
+}
+
+const replace = (commandId: string, collection: Json): Json => ({
+  kind: "command", commandId, occurrence: { processInstanceId: "I", elementId: "T", activation: 1 },
+  action: { kind: "setVariables", values: [{ name: "DataInput_Items", value: collection }] },
+});
+
+test("a sequential re-read gives the next instance the item at its index in the current collection", () => {
+  const trace = run(reread(), [start(items("a", "b")), replace("grow", items("a", "c", "d")), result(1)]);
+  assert.deepEqual(journey(trace).at(-1), ["result-1", "committed", [2]]);
+  const decoded = decodeProgram(reread());
+  assert.ok(decoded.ok);
+  let state: State | null = null;
+  for (const stimulus of [start(items("a", "b")), replace("grow", items("a", "c", "d")), result(1)]) {
+    const input = stimulusFromJson(stimulus);
+    assert.ok(input.ok);
+    const outcome = step(decoded.value, state, input.value[1]);
+    assert.ok(outcome.ok, JSON.stringify(outcome));
+    state = outcome.value;
+  }
+  assert.ok(state !== null);
+  assert.deepEqual(locals(state), [[["item", { tag: "string", value: "c" }]]]);
+});
+
+test("a re-read shorter than the next index fails the completion, after the loop's asyncAfter mark as unsupported", () => {
+  // CIB's iterator throws past the end (`MultiInstanceActivityBehavior.getElementAtIndex`); with the mark the re-read
+  // runs in the after-job, where the kernel reproduces no failed continuation (CIB-INT-0043).
+  const stimuli = [start(items("a", "b")), replace("shorten", items("a")), result(1)];
+  assert.deepEqual(journey(run(reread(), stimuli)).at(-1), ["result-1", "rolledBack", [1]]);
+  assert.deepEqual(journey(run(reread({ loop: { asyncAfter: true } }), stimuli)).at(-1), ["result-1", "unsupported", [1]]);
+  assert.deepEqual(journey(run(program({ mode: "sequential" }), stimuli)).at(-1), ["result-1", "committed", [2]]);
+});

@@ -19,6 +19,7 @@ The [profile artifact](profile.json) is the CIB Seven 2.2.0 compatibility profil
 | `multiInstanceCounters` | `cibLocals` | `CIB-INT-0018` |
 | `multiInstanceInputFailure` | `rollback` | `CIB-INT-0019` |
 | `multiInstanceCount` | `javaInt` | `CIB-EXT-0033` |
+| `multiInstanceCollection` | `sequentialReread` | `CIB-INT-0043`, `CIB-LIM-0054` |
 | `effectResultValues` | `activityLocals` | `CIB-EXT-0015` |
 | `outputContext` | `activityScope` | `CIB-EXT-0031` |
 | `conditionOrder` | `beforeOutputs` | `CIB-INT-0011` |

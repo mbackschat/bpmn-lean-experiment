@@ -18,6 +18,7 @@
  */
 import {
   BranchSchedule,
+  CollectionRead,
   ExpressionTag,
   InstanceCountTag,
   MultiInstanceBinding,
@@ -532,6 +533,54 @@ function stops(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: numb
  * `Hooks.instanceCompleted`: fill the instance's slot, evaluate the completion condition in the instance's scope
  * occurrence, leave it, then finish, close early or continue.
  */
+/**
+ * The collection a sequential loop reads again before each later instance, under `CollectionRead.sequentialReread`: CIB
+ * re-reads it in `complete`, before `performInstance` binds the next item
+ * (`SequentialMultiInstanceActivityBehavior.java:56-58`); a cardinality loop has none.
+ */
+function rereadCollection(ctx: Ctx, loop: MultiInstance): Expression | null {
+  switch (ctx.program.options.multiInstanceCollection) {
+    case CollectionRead.EntrySnapshot:
+      return null;
+    case CollectionRead.SequentialReread:
+      return loop.count.tag === InstanceCountTag.Collection && sequential(loop.mode) ? collectionOf(ctx, loop, loop.count.items) : null;
+  }
+  return assertNever(ctx.program.options.multiInstanceCollection);
+}
+
+/**
+ * The items the instance at `next` takes its item from: the entry snapshot, or under a re-read the current collection,
+ * while the entry total stays and `run.collection` keeps the entry value. CIB reads it in the body's execution, which
+ * holds the item, `loopCounter` and the result locals of this and every earlier instance (`Sequential…:53`), so it is
+ * read in the completing instance's scope occurrence before that is left, as the completion condition is. A value that
+ * is no collection fails the operation (a `ClassCastException`, `MultiInstanceActivityBehavior.java:96-97`), as does one
+ * shorter than `next + 1` (`getElementAtIndex`'s iterator, `:131-138`) and a failing JUEL read.
+ */
+function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: number, scope: number, results: readonly string[],
+  state: State): Result<readonly Value[]> {
+  const read = rereadCollection(ctx, loop);
+  if (read === null) return committed(multiInstanceRunItems(run) ?? []);
+  // Dynamic-only: which names an earlier instance's result left on CIB's body depends on the run's effect results.
+  if ((run.results ?? []).some((name) => !results.includes(name))) return failed(FailureTag.Unsupported, "multiInstance.sequentialResultLeftover");
+  // Dynamic-only: a removed or null collection leaves CIB's previous item in place
+  // (`MultiInstanceActivityBehavior.java:85-88`), a value the kernel does not reproduce.
+  const removed: Result<readonly Value[]> = failed(FailureTag.Unsupported, "multiInstance.collectionRemoved");
+  const evaluation = ctx.evaluate({ ...evalContext(state, scope), domainChecked: false }, read);
+  switch (evaluation.tag) {
+    case EvaluationTag.Unsupported:
+      return failed(FailureTag.Unsupported, evaluation.code);
+    case EvaluationTag.Failure:
+      return evaluation.code === "unknown-variable" && read.tag === ExpressionTag.Variable ? removed : failed(FailureTag.RolledBack, evaluation.code);
+    case EvaluationTag.Value: {
+      if (evaluation.result.tag === ValueTag.Null) return removed;
+      const members = collectionItems(evaluation.result);
+      if (members === null) return failed(FailureTag.RolledBack, "multiInstance.notACollection");
+      return next < members.length ? committed(members) : failed(FailureTag.RolledBack, "multiInstance.collectionShortened");
+    }
+  }
+  return assertNever(evaluation);
+}
+
 export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence, writes: readonly Binding[], state: State): Outcome {
   const found = runOf(state, body);
   if (found === null) return failed(FailureTag.SemanticFailure, "instance-without-multi-instance");
@@ -559,6 +608,8 @@ export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence
   const run: MultiInstanceRun = { ...completed, results: kept };
   const left = setRun(leaveScope(state, occurrence.scope), run);
   if (stop.value || exhausted) return committed(finish(ctx, loop, run, left));
+  const items = nextItems(ctx, loop, run, index + 1, occurrence.scope, results, state);
+  if (!items.ok) return items;
   const counted = signal(left, { tag: SignalTag.Write, scope: run.scope, writes: counterLocals(ctx, bodyCounts(loop, run.instances)), rule: WriteRule.Own });
-  return committed(beginInstances(ctx, loop, multiInstanceRunItems(run) ?? [], run, counted));
+  return committed(beginInstances(ctx, loop, items.value, run, counted));
 }

@@ -33,9 +33,13 @@ structure Reach where
 
 /-- For a program with a Multi-Instance loop, the option combinations that would read a loop expression under two
 engines at once ([Multi-Instance level](../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#option-combinations)):
-JUEL without CIB's counters or its input failure, and Simple Boolean with CIB's counters. -/
+JUEL without CIB's counters or its input failure, and Simple Boolean with CIB's counters. A sequential re-read with
+aggregated outputs is refused too: BPMN 2.0.2 §13.3.7 aggregates the output collection in the form of an input
+collection read once, which a re-read no longer gives. -/
 def multiInstance (loops : Bool) (selected : ProfileOptions) : Option String :=
   if !loops then none
+  else if selected.multiInstanceCollection == .sequentialReread && selected.multiInstanceOutputs == .aggregates then
+    some "profile.multiInstanceCollection.sequentialReread"
   else if selected.evaluator == .juel then
     if selected.multiInstanceCounters == .none then some "profile.multiInstanceCounters.none"
     else if selected.multiInstanceInputFailure == .hold then some "profile.multiInstanceInputFailure.hold"

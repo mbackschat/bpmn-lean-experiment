@@ -1,0 +1,86 @@
+{
+  "kind": "scenario",
+  "id": "mi-mutable-standards-sequential-snapshot",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "sequential-multi-instance-review",
+    "relativePath": "scenarios/sequential-multi-instance/process.bpmn",
+    "sha256": "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-sequential-review-natural",
+      "instanceId": "SequentialMultiInstance_Natural",
+      "variables": [
+        {
+          "name": "DataObjectReference_InputItems",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "contract",
+              "invoice",
+              "receipt"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-variables-UserTask_Review-1",
+      "occurrence": {
+        "processInstanceId": "SequentialMultiInstance_Natural",
+        "elementId": "UserTask_Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "DataObjectReference_InputItems",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "contract",
+                "changed",
+                "added"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-review-contract",
+      "occurrence": {
+        "processInstanceId": "SequentialMultiInstance_Natural",
+        "elementId": "UserTask_Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "accepted"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 Table 10.29"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

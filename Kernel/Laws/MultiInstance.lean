@@ -8,7 +8,7 @@ import all Kernel.Feature.MultiInstance
 
 The rules of the [Multi-Instance semantics](../../docs/kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md) over a
 running body's slot record `MultiInstanceRun` and the `State` around it, independent of `Kernel.Feature.MultiInstance`'s
-code: the instance count fixed on entry, generation numbering and the `loopCounter` local, ownership of the instance
+code: the instance count fixed on entry, a sequential re-read's item, generation numbering and the `loopCounter` local, ownership of the instance
 scope occurrences, sequential and parallel slot shapes, early completion and the output collection.
 
 The mode of a loop is `MultiInstanceMode`, whose matching `Kernel.Feature.MultiInstance` owns (guard 1), so the
@@ -102,6 +102,12 @@ def FormKept : Value → Value → Prop
   | .stringList _, .stringList _ => True
   | .list _, .list _ => True
   | _, _ => False
+
+/-- Under `CollectionRead.sequentialReread` a later sequential instance holds the item at its index in the collection
+`current` read as it is generated, while the slot count stays the entry count and `run.collection` the entry value
+(`SnapshotFixed`): a grown collection adds no instance, and one shorter than the index generates none (CIB-INT-0043). -/
+def RereadItem (run : MultiInstanceRun) (current : List Value) (index : Nat) (item : Value) : Prop :=
+  index < run.instances.length ∧ current[index]? = some item
 
 /-- An early completion: the completion condition held before every slot was filled, so the Activity completes, every
 remaining instance in its scope ends with all it holds, the body's slot record goes, and no output collection is
@@ -268,6 +274,17 @@ theorem partial_collected_rejected : ¬ Collects running (some [.string "a", .st
 theorem string_list_kept : FormKept (.stringList ["x"]) (.stringList ["y"]) := trivial
 
 theorem form_change_rejected : ¬ FormKept (.stringList ["x"]) (.list [.string "y"]) := id
+
+theorem reread_takes_current : RereadItem running [.string "a", .string "c", .string "d"] 1 (.string "c") := by
+  simp [RereadItem, running]
+
+/-- A grown collection adds no instance: its item beyond the entry count is no later instance's. -/
+theorem grown_beyond_entry_rejected : ¬ RereadItem running [.string "a", .string "c", .string "d"] 2 (.string "d") := by
+  simp [RereadItem, running]
+
+/-- A shortened collection gives the next index no item. -/
+theorem shortened_rejected : ∀ item, ¬ RereadItem running [.string "a"] 1 item := by
+  simp [RereadItem]
 
 /-- The condition held after the first instance completed: the second instance's scope occurrence and occurrence go,
 with the slot record, and the output name `out` is not written. -/

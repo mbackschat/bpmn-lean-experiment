@@ -5,7 +5,8 @@ public import Kernel.IL.Types
 /-! # Admission of Multi-Instance loop characteristics. A refusal carries a stable code.
 
 `Kernel.Feature.MultiInstance` runs one instance per item of an input collection, or per count of a cardinality,
-read once on entry; it gives each instance its item as the input data item and takes the output data item, if any,
+counted once on entry, a sequential collection read again before each later instance under
+`CollectionRead.sequentialReread`; it gives each instance its item as the input data item and takes the output data item, if any,
 from each completion; it applies no other data mapping to an instance. Under the standards profile the collection is a
 variable read and the completion condition Simple Boolean; under `Evaluator.juel` the
 [Multi-Instance level](../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#multi-instance-level) admits JUEL, a
@@ -43,14 +44,6 @@ def juelCount (juel : Bool → Expression → Option String) : InstanceCount →
 
 /-- Whether the loop runs its instances at once, not one after another (BPMN 2.0.2 §13.3.7). -/
 def runsAtOnce (loop : MultiInstance) : Bool := loop.mode == .parallel
-
-/-- A sequential loop whose collection is `.juel`, which CIB re-evaluates before every later instance (PC-MI-08). -/
-def rereads (loop : MultiInstance) : Bool :=
-  !runsAtOnce loop && match loop.count with
-    | .collection (.juel _) => true
-    | .collection _ => false
-    | .cardinality _ => false
-    | .countAndCollection _ _ => false
 
 /-- An instance's result, given whether its work submits the output data item (`Kernel.Admission.Work.instanceBody`):
 a User Task's submission fills it, except that a submission installing variables (CIB-EXT-0005) needs none, since
@@ -138,8 +131,7 @@ item named like a counter is refused: CIB sets both on one execution, so one ove
 needs its input data item, or an admitted element variable; a cardinality loop sets none
 (`MultiInstanceActivityBehavior:85`). Own input mappings are admitted under `loopReferences`, whose reads
 `ownInputNames` restricts and whose targets `counterTarget` does; own output mappings are a CIB deployment error
-(`BpmnParse.java:4855-4857`). The kernel reads a collection once, so a sequential loop whose profile re-reads it
-(`CollectionRead.sequentialReread`) or whose JUEL collection CIB re-evaluates (`rereads`) is refused (PC-MI-08). -/
+(`BpmnParse.java:4855-4857`). -/
 def activityLoop (options : ProfileOptions) (juel : Bool → Expression → Option String) (submits : Option Bool)
     (envelope : Envelope) (loop : MultiInstance) : Option String :=
   let underJuel := options.evaluator == .juel
@@ -152,8 +144,6 @@ def activityLoop (options : ProfileOptions) (juel : Bool → Expression → Opti
     (loop.completionCondition.bind fun condition =>
       if underJuel then juel counters condition else standardCondition condition) <|>
     if elementVariableRefused options loop then some "multiInstance.elementVariable"
-    else if (!runsAtOnce loop && options.multiInstanceCollection == .sequentialReread) || (underJuel && rereads loop) then
-      some "multiInstance.mutableCollection"
     else if collection && loop.inputDataItem.isNone && loop.elementVariable.isNone then some "multiInstance.inputDataItem"
     else if counters && [loop.inputDataItem, loop.inputDataItemName, loop.elementVariable].any
         (·.any multiInstanceCounterNames.contains) then

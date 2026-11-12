@@ -25,10 +25,10 @@ The counts below cover only entries recorded by this project, including the sepa
 | Normative agreement records | 24 | 0 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 13 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 40 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB interpretations of BPMN gaps or inconsistencies | 41 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 47 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 14 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 49 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 50 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -438,7 +438,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Evidence:** The [public-service lifecycle probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstanceSubprocessProbeTest.java) against CIB Seven `2.2.0` separates both orders of two inner branches, fresh Task IDs, stale completion, zero input and early completion only after the complete body. It also observes a fixed total while a changed collection supplies the next item; collection shortening rolls back completion. [Research](research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#sequential-multi-instance-sub-process-account) retains the exact source and execution boundaries. [Artifact reference verification](../scripts/contract-artifact-projections.test.ts) rejects a profile reference if this entry is removed.
 
-**Boundary:** Public Tasks, variables, completed Activity history and Process existence, with explicit command order and background jobs disabled. This is no general MI agreement, project identity equivalence or Temporal refinement. The proposed read-only collection restriction excludes mutable-collection execution without claiming CIB snapshot behavior. Candidate rules: `SMIS-ENTER-01`, `SMIS-END-01`, `SMIS-EARLY-01`.
+**Boundary:** Public Tasks, variables, completed Activity history and Process existence, with explicit command order and background jobs disabled. This is no general MI agreement, project identity equivalence or Temporal refinement. A collection changed while the body runs is `CIB-INT-0043`'s and `CIB-LIM-0054`'s. Candidate rules: `SMIS-ENTER-01`, `SMIS-END-01`, `SMIS-EARLY-01`.
 
 ### CIB-AGR-0014 — parallel repeated-body completion and cancellation
 
@@ -994,6 +994,16 @@ BPMN 2.0.2 §10.7.1 and §13.5.5 let a handler connected by a boundary Event "on
 
 **Boundary:** Boundary compensation handlers of sequential Multi-Instance Activities that read a loop variable; this entry is a later owner of `tasks-sequential-in-turn` and `call-sequential-three-reviewers`, whose first difference is CIB-DEV-0012's handler count.
 
+### CIB-INT-0043 — a sequential Multi-Instance collection is read again before each later instance
+
+**Status:** Recorded interpretation from the pinned source and retained evidence; selected by `ProfileOptions.multiInstanceCollection = sequentialReread` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile.
+
+BPMN 2.0.2 §13.3.7 evaluates the number of instances once and generates a sequential instance only after the previous one completed; Table 10.29 gives each instance one item of the `loopDataInputRef` collection. It does not say whether a later instance takes its item from the collection as it was on entry or as it is when that instance is generated. The standards profile reads it once on entry (`entrySnapshot`, the [Multi-Instance semantics](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md#entry-and-generation)). CIB Seven `2.2.0` keeps the total counted on entry and, as each sequential instance completes without ending the body, evaluates the collection again in the body's execution and binds the next item by its index in the current collection.
+
+**Evidence:** Pinned `SequentialMultiInstanceActivityBehavior.java:47-61` (`complete` tests exhaustion and the completion condition first, then calls `evaluateCollection(scopeExecution)` and `performInstance` with the next index), `:67-70` (`prepareScope` fixes `nrOfInstances` on entry), `MultiInstanceActivityBehavior.java:76-97` (`performInstance`, `evaluateCollectionVariable` and `evaluateCollection`, which casts the value to a `Collection`) and `:129-138` (`getElementAtIndex` walks an iterator, so a collection shorter than the next index throws `NoSuchElementException`). The public-service probe of `CIB-AGR-0013` observes a fixed total while a changed collection supplies the next item, and a shortened collection rolling the completion back; the retained `multi-instance-service-task/sequential-collection-shrunk-then-restored` answer rolls the shortening completion back. The kernel's `MultiInstance.nextItems`.
+
+**Boundary:** Sequential collection loops of both CIB profiles. The kernel reads the collection in the completing instance's scope occurrence before it is left, after the completion's writes, as CIB reads it in the body's execution that holds the item, `loopCounter` and the instance's result locals; a value that is no collection rolls the completion back (`multiInstance.notACollection`), as does a collection shorter than the next index (`multiInstance.collectionShortened`) and a failing JUEL read. A removed or null collection is `CIB-LIM-0054`'s. An earlier instance's result local that this one did not overwrite is `unsupported` (`multiInstance.sequentialResultLeftover`). With a loop-characteristics `asyncAfter` the re-read runs in the after-job, where a failure is `unsupported` (`async-boundary-failure`). Parallel loops and cardinality loops read nothing again; output aggregation with a re-read is refused (`profile.multiInstanceCollection.sequentialReread`).
+
 ## Known limitation register
 
 ### CIB-LIM-0001: standard sequential Multi-Instance output aggregation is absent
@@ -1102,7 +1112,7 @@ This is not a candidate deviation. CIB and the kernel never differ on an admitte
 
 **Status:** Profile limitation; not a deviation
 
-CIB Seven `2.2.0` evaluates more JUEL than the [core level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md) admits: functions, unlisted or mutating methods, floating literals and division, conditions in a named language or a Definitions-declared one, non-ASCII identifiers and whitespace, the engine-context names and Multi-Instance counters, `camunda:list` and `camunda:map` parameters, `camunda:resource` conditions and `local` Call copies, and, at the [Multi-Instance level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#codes-this-level-adds), a loop with both a cardinality and a collection, a sequential collection expression, a loop expression in a declared language, an item named like a counter, and a loop body whose whitespace-only text node the parser drops. CIB deploys each such model and evaluates the form, to a value or to a failure that rolls the operation back; the kernel refuses each with a stable admission or reader code rather than evaluate a form whose result lies outside the portable value domain or whose context is engine state; a later JUEL level widens the admitted set without reinterpreting what Core accepts.
+CIB Seven `2.2.0` evaluates more JUEL than the [core level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md) admits: functions, unlisted or mutating methods, floating literals and division, conditions in a named language or a Definitions-declared one, non-ASCII identifiers and whitespace, the engine-context names and Multi-Instance counters, `camunda:list` and `camunda:map` parameters, `camunda:resource` conditions and `local` Call copies, and, at the [Multi-Instance level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#codes-this-level-adds), a loop with both a cardinality and a collection, a loop expression in a declared language, an item named like a counter, and a loop body whose whitespace-only text node the parser drops. CIB deploys each such model and evaluates the form, to a value or to a failure that rolls the operation back; the kernel refuses each with a stable admission or reader code rather than evaluate a form whose result lies outside the portable value domain or whose context is engine state; a later JUEL level widens the admitted set without reinterpreting what Core accepts.
 
 **Evidence:** The [admission table of the expression semantics](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#admission-at-core) and the retained answers (CIB Seven `2.2.0`) of [juel-core-forms](../scenarios/open-rows/juel-core-forms/README.md) `functions` and `division`; the [core witness table](../scenarios/open-rows/juel-core-table/README.md) rows `collection-parameter`, `computed-method`, `counter-outside-multi-instance` and `decimal-against-double`; [juel-evaluation-failures](../scenarios/open-rows/juel-evaluation-failures/README.md) `division-by-zero` and the bundled refused probes (`execution-read`, `execution-mutation`, `authenticated-user-name`, `unknown-method`, `list-mutating-method`, `reflection-through-method`, one model whose first refused node is a division); [juel-form-separations](../scenarios/open-rows/juel-form-separations/README.md) `unknown-method`, `list-mutating-method` and `reflection-through-method`, and its single-probe engine-context models `execution-read`, `execution-mutation` and `authenticated-user-name` (retained in Verify run 43238005814); [condition-language-declarations](../scenarios/open-rows/condition-language-declarations/README.md) `named-juel`, `definitions-xpath-default` and `named-javascript` (CIB evaluates the JavaScript condition through GraalJS, CIB-CFG-0015, and commits); [multi-instance-expression-results](../scenarios/open-rows/multi-instance-expression-results/README.md) `count-cdata-wrapped` and `count-whitespace-only`; and [multi-instance-sub-process](../scenarios/open-rows/multi-instance-sub-process/README.md) `sequential-computed-two`, `-numeric-text`, `-noninteger`, `-negative` and `-malformed`, whose cardinality divides. CIB commits or rolls back where the kernel answers `unsupported` at deployment.
 
@@ -1515,6 +1525,16 @@ CIB Seven `2.2.0` binds `execution` and, through GraalJS host access, every Java
 **Evidence:** The cited source and probe P1 ([script semantics](kernel/semantics/SCRIPT-SEMANTICS-SPEC.md#probe-p1-2026-11-12)); witness `probe-host-mutation` of the [JavaScript Script Task witnesses](../scenarios/open-rows/script-task-javascript/README.md).
 
 **Boundary:** Scripts that reference `execution` or `Java`, read a List, Map or `stringList` variable, or return a number whose Java type the source does not fix. This entry owns the ledger entry of `probe-host-mutation`.
+
+### CIB-LIM-0054 — a sequential Multi-Instance collection removed or null before a later instance is unsupported
+
+**Status:** Known limitation within reviewed scope; selected by the cibseven profiles with `CIB-INT-0043`
+
+When the re-read of `CIB-INT-0043` finds the collection variable removed or a collection expression evaluating to null, CIB Seven `2.2.0` skips binding the item (`MultiInstanceActivityBehavior.java:85-88`, `collection != null`), so the next instance runs with the previous instance's item still set on the body's execution (`SequentialMultiInstanceActivityBehavior.java:56-58`). That value is an accident of the sequential body sharing one execution, not a BPMN meaning, and the kernel does not reproduce it: the completion is `unsupported` with the dynamic-only code `multiInstance.collectionRemoved`.
+
+**Evidence:** The pinned sources above; the kernel's `MultiInstance.nextItems`.
+
+**Boundary:** Sequential collection loops under `CollectionRead.sequentialReread` whose collection is removed or null when a later instance begins; on entry a removed or null collection is `CIB-INT-0019`'s.
 
 ## Extension register
 

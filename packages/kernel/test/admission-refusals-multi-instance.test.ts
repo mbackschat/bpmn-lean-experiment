@@ -28,7 +28,6 @@ const cibLoop = (over: Json = {}) => (program: Json): Json => withOptions(progra
 });
 /** `T` loops under the CIB options. */
 const juelLooping = (over: Json = {}, options: Json = {}) => (program: Json): Json => cibLoop(options)(looping(over)(program));
-const items = juel({ identifier: { name: "order" } }, { dot: { base: 0, property: "lines" } });
 const cardinality = (count: Json): Json => ({ count: { cardinality: { count } }, inputDataItem: null, inputDataItemName: null });
 const counter = (name: string): Json => juel({ identifier: { name } }, { integer: { digits: "1" } }, { binary: { payload: { op: "eq", left: 0, right: 1 } } });
 
@@ -143,10 +142,12 @@ export const rows: readonly Row[] = [
     control: juelLooping({ elementVariable: "element", inputDataItem: null, inputDataItemName: null }),
   },
   {
-    code: "multiInstance.mutableCollection",
-    description: "a sequential loop under a profile that re-reads its collection",
-    mutate: (program: Json) => withOptions(looping({ mode: "sequential" })(program), { multiInstanceCollection: "sequentialReread" }),
-    control: (program: Json) => withOptions(looping()(program), { multiInstanceCollection: "sequentialReread" }),
+    code: "profile.multiInstanceCollection.sequentialReread",
+    description: "a profile re-reading a sequential collection while aggregating outputs, for a program with a loop",
+    mutate: (program: Json) => withOptions(looping({ mode: "sequential" })(program),
+      { multiInstanceCollection: "sequentialReread", multiInstanceOutputs: "aggregates" }),
+    control: (program: Json) => withOptions(looping({ mode: "sequential" })(program),
+      { multiInstanceCollection: "sequentialReread", multiInstanceOutputs: "none" }),
   },
   {
     code: "multiInstance.inputDataItem",
@@ -225,12 +226,6 @@ export const rows: readonly Row[] = [
     description: "under JUEL, a loop declaring both a cardinality and a collection",
     mutate: juelLooping({ count: { countAndCollection: { count: variable("n"), items: variable("items") } } }),
     control: juelLooping(cardinality(variable("n"))),
-  },
-  {
-    code: "multiInstance.mutableCollection",
-    description: "under JUEL, a sequential loop whose collection is a JUEL expression",
-    mutate: juelLooping({ mode: "sequential", count: { collection: { items } } }),
-    control: juelLooping({ count: { collection: { items } } }),
   },
   {
     code: "multiInstance.expressionLanguage",
