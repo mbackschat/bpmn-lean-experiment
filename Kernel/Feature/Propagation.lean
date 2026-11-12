@@ -124,11 +124,15 @@ written at once from its event scope outward (`Data.writeOutputs`), so that the 
 `callOutputs`: what a raised Error or Escalation that reaches the
 root of a called instance writes into the caller, the Call's output mappings under CIB-EXT-0034
 (`Work.Call.raisedOutputs`; [scopes semantics](../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md), PC-SCOPE-06
-item 2), applied before the search goes on so that an outer Call's pass reads it. -/
+item 2), applied before the search goes on so that an outer Call's pass reads it. `dropRuns`
+(`Compensation.dropWithin`): the compensation runs inside a scope occurrence an interrupting catcher has decided to
+interrupt go at once, as its items do (`State.withdrawOccurrence`), so that the leave a raising handler queued before
+the interruption advances no run the interruption removes. -/
 structure PropagationHooks where
   mappedErrorOutputs : Ctx → Origin → List (String × Value) → State → Outcome := fun _ _ _ state => .ok state
   writeCaught : Ctx → ScopeOccurrenceId → List (String × Value) → State → Outcome := fun _ _ _ state => .ok state
   callOutputs : Ctx → ScopeOccurrence → State → Outcome := fun _ _ state => .ok state
+  dropRuns : Ctx → ScopeOccurrenceId → State → State := fun _ _ state => state
 
 /-- The Activity `origin.host` that raised a business Error leaves, with its Error-path outputs, once the search has
 decided: after every Call output pass and the catcher's variables, before the interrupted host's outputs, the
@@ -277,7 +281,7 @@ def leaveOccurrence (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (or
       (some (.occur boundary.id parent (.flows boundary.outgoing)))))
   else if boundary.interrupting then
     let host := if state.calledRoot occurrence.id then parent else occurrence.id
-    let state ← catchDecided hooks ctx origin host writes state
+    let state ← catchDecided hooks ctx origin host writes (hooks.dropRuns ctx occurrence.id state)
     (interruptedOutputs ctx occurrence parent state).map (boundary.fire occurrence.occurrence none parent [])
   else
     let state ← catchDecided hooks ctx origin parent writes state
@@ -349,6 +353,7 @@ def searchScopes (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origi
       let state ← passCallOutputs hooks ctx origin handled.isSome occurrence state
       match handled, bounded, occurrence.parent with
       | some ((element, _, interrupting), writes), _, _ =>
+        let state := if interrupting then hooks.dropRuns ctx occurrence.id state else state
         let begun := (← catchDecided hooks ctx origin occurrence.id writes state).signal (.begin { element, scope := occurrence.id })
         .ok (if interrupting then begun else throwerLeaves ctx origin begun)
       | none, some (boundary, writes), some parent =>

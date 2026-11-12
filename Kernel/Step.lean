@@ -121,9 +121,16 @@ def timerJob (failure : ContinuationFailure) (outcome : Outcome) : Outcome :=
   | .error (.rolledBack _), .rolledBack => outcome
   | .error (.rejected _), _ | .error (.semanticFailure _), _ | .error (.unsupported _), _ | .ok _, _ => outcome
 
-/-- Begin the occurrence `request` names and hand it to its feature. -/
+/-- An occurrence begins only in a scope occurrence that stands: a begin into one that is gone is an invariant failure,
+never a silent begin, since whatever removes a scope occurrence also drops what would begin in it (a run an
+interrupting catcher removes, `Compensation.dropWithin`). -/
+def requireScope (state : State) (scope : ScopeOccurrenceId) : Except Failure Unit :=
+  if state.scopes.any (·.id == scope) then .ok () else .error (.semanticFailure "begin-into-missing-scope")
+
+/-- Begin the occurrence `request` names and hand it to its feature (`requireScope`). -/
 def begin (hooks : Hooks) (ctx : Ctx) (request : BeginRequest) (state : State) : Outcome := do
   let some sourceType := ctx.program.sourceType? request.element | .error (.semanticFailure "begin-without-element")
+  requireScope state request.scope
   let (state, occurrence) := state.beginOccurrence request (roleOf ctx.program request) sourceType
   deferred ctx.program state (dispatch hooks ctx occurrence { locals := request.locals, inner := request.inner } request.trigger state)
 
@@ -186,7 +193,8 @@ def dispatchSignal (hooks : Hooks) (ctx : Ctx) : Signal → State → Outcome
   | .complete occurrence leave writes rule => complete hooks ctx occurrence leave writes rule
   | .write scope writes rule => hooks.writeOutputs ctx scope writes rule
   | .remove scope names => hooks.removeVariables ctx scope names
-  | .occur element scope leave writes rule => fun state =>
+  | .occur element scope leave writes rule => fun state => do
+    requireScope state scope
     let (state, occurrence) := state.reserve element scope
     complete hooks ctx occurrence.id leave writes rule state
   | .cancel occurrence => fun state => .ok (state.cancelOccurrence occurrence)

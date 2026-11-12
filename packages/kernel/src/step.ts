@@ -127,10 +127,21 @@ function timerJob(failure: ContinuationFailure, outcome: Outcome): Outcome {
   return rolledBack && failure === ContinuationFailure.Incident ? failed(FailureTag.Unsupported, "timer-job-failure") : outcome;
 }
 
-/** Begin the occurrence `request` names and hand it to its feature. */
+/**
+ * An occurrence begins only in a scope occurrence that stands: a begin into one that is gone is an invariant failure,
+ * never a silent begin, since whatever removes a scope occurrence also drops what would begin in it (a run an
+ * interrupting catcher removes, `Compensation.dropWithin`). `null` when it stands.
+ */
+function requireScope(state: State, scope: ScopeOccurrenceId): Outcome | null {
+  return state.scopes.some((entry) => entry.id === scope) ? null : failed(FailureTag.SemanticFailure, "begin-into-missing-scope");
+}
+
+/** Begin the occurrence `request` names and hand it to its feature (`requireScope`). */
 function begin(hooks: Hooks, ctx: Ctx, request: BeginRequest, state: State): Outcome {
   const sourceType = programSourceType(ctx.program, request.element);
   if (sourceType === null) return failed(FailureTag.SemanticFailure, "begin-without-element");
+  const missing = requireScope(state, request.scope);
+  if (missing !== null) return missing;
   const [begun, occurrence] = beginOccurrence(state, request, roleOf(ctx.program, request), sourceType);
   return deferred(ctx.program, begun, dispatch(hooks, ctx, occurrence, { locals: request.locals, inner: request.inner }, request.trigger, begun));
 }
@@ -238,6 +249,8 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
       return other((state) => hooks.removeVariables(ctx, next.scope, next.names, state));
     case SignalTag.Occur:
       return other((state) => {
+        const missing = requireScope(state, next.scope);
+        if (missing !== null) return missing;
         const [reserved, occurrence] = reserve(state, next.element, next.scope);
         return complete(hooks, ctx, occurrence.id, next.leave, next.writes, next.rule, reserved);
       });

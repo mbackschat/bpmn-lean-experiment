@@ -273,9 +273,19 @@ def compensate (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option Elemen
 def handlerCompleted (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence : Occurrence) (state : State) : Outcome :=
   release ctx run occurrence.scope state (runBound ctx state)
 
+/-- The runs in `scope` and inside it go at once, when a catcher that interrupts `scope` has decided
+(`Propagation.PropagationHooks.dropRuns`): its interruption is still queued, and a run it would remove must begin no
+handler before then. -/
+def dropWithin (_ : Ctx) (scope : ScopeOccurrenceId) (state : State) : State :=
+  let inside := state.subtree scope
+  let compensation := state.slots.compensation
+  store state { compensation with runs := compensation.runs.filter (!inside.contains ·.scope) }
+
 /-- `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `propagatesFromTrigger`
-(I11) the run, if a catcher that interrupted its scope occurrence has not dropped it, goes on as `handlerCompleted` does;
-under `failsInstance` the failure that follows ends the instance, so nothing changes. -/
+(I11) the run goes on as `handlerCompleted` does unless the catcher interrupts a scope occurrence holding it, which drops
+the run when the catch is decided (`dropWithin`), before the handler's leave arrives here; with no catcher, or one that
+does not interrupt, the run goes on. Under `failsInstance` the failure that follows ends the instance, so nothing
+changes. -/
 def handlerEnded (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence : Occurrence) (state : State) : Outcome :=
   match ctx.program.options.compensationHandlerFailure with
   | .propagatesFromTrigger =>

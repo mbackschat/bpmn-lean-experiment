@@ -227,18 +227,22 @@ function throwerRef(state: State, origin: Origin): OccurrenceRef {
  * `callOutputs`: what a raised Error or Escalation that reaches the
  * root of a called instance writes into the caller, the Call's output mappings under CIB-EXT-0034
  * (`Work.raisedOutputs`; docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md, PC-SCOPE-06 item 2), applied before the search
- * goes on so that an outer Call's pass reads it.
+ * goes on so that an outer Call's pass reads it. `dropRuns` (`Compensation.dropWithin`): the compensation runs inside a
+ * scope occurrence an interrupting catcher has decided to interrupt go at once, as its items do (`withdrawOccurrence`),
+ * so that the leave a raising handler queued before the interruption advances no run the interruption removes.
  */
 export interface PropagationHooks {
   readonly mappedErrorOutputs: (ctx: Ctx, origin: Origin, installed: readonly Binding[], state: State) => Outcome;
   readonly writeCaught: (ctx: Ctx, scope: ScopeOccurrenceId, writes: readonly Binding[], state: State) => Outcome;
   readonly callOutputs: (ctx: Ctx, root: ScopeOccurrence, state: State) => Outcome;
+  readonly dropRuns: (ctx: Ctx, scope: ScopeOccurrenceId, state: State) => State;
 }
 
 export const defaultPropagationHooks: PropagationHooks = {
   mappedErrorOutputs: (_ctx, _origin, _installed, state) => committed(state),
   writeCaught: (_ctx, _scope, _writes, state) => committed(state),
   callOutputs: (_ctx, _root, state) => committed(state),
+  dropRuns: (_ctx, _scope, state) => state,
 };
 
 /**
@@ -448,7 +452,7 @@ function leaveOccurrence(
   }
   if (boundary.interrupting) {
     const host = calledRoot(state, occurrence.id) ? parent : occurrence.id;
-    const decided = catchDecided(hooks, ctx, origin, host, writes, state);
+    const decided = catchDecided(hooks, ctx, origin, host, writes, hooks.dropRuns(ctx, occurrence.id, state));
     if (!decided.ok) return decided;
     const written = interruptedOutputs(ctx, occurrence, parent, decided.value);
     if (!written.ok) return written;
@@ -562,7 +566,8 @@ function searchScopes(
     state = passed.value;
     if (handled !== null) {
       const [[element, , interrupting], writes] = handled;
-      const decided = catchDecided(hooks, ctx, origin, occurrence.id, writes, state);
+      const dropped = interrupting ? hooks.dropRuns(ctx, occurrence.id, state) : state;
+      const decided = catchDecided(hooks, ctx, origin, occurrence.id, writes, dropped);
       if (!decided.ok) return decided;
       const begun = signal(decided.value, { tag: SignalTag.Begin, request: beginRequest({ element, scope: occurrence.id }) });
       return committed(interrupting ? begun : throwerLeaves(ctx, origin, begun));

@@ -31,6 +31,7 @@ const propagationHooks: Propagation.PropagationHooks = {
     const passed = Call.raisedOutputs(ctx, root, state);
     return passed.ok ? Data.writeOutputs(ctx, passed.value[0], passed.value[1], WriteRule.Outward, state) : passed;
   },
+  dropRuns: Compensation.dropWithin,
 };
 
 export const hooks: Hooks = {

@@ -61,6 +61,7 @@ import {
   instanceOf,
   issue,
   signal,
+  subtree,
   type Compensable,
   type CompensationRun,
   type Compensations,
@@ -390,9 +391,22 @@ export function handlerCompleted(ctx: Ctx, run: ScopeOccurrenceId, occurrence: O
 }
 
 /**
+ * The runs in `scope` and inside it go at once, when a catcher that interrupts `scope` has decided
+ * (`PropagationHooks.dropRuns`): its interruption is still queued, and a run it would remove must begin no handler before
+ * then.
+ */
+export function dropWithin(_ctx: Ctx, scope: ScopeOccurrenceId, state: State): State {
+  const inside = subtree(state, scope);
+  const compensation = state.slots.compensation;
+  return store(state, { ...compensation, runs: compensation.runs.filter((run) => !inside.includes(run.scope)) });
+}
+
+/**
  * `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `PropagatesFromTrigger` (I11)
- * the run, if a catcher that interrupted its scope occurrence has not dropped it, goes on as `handlerCompleted` does;
- * under `FailsInstance` the failure that follows ends the instance, so nothing changes.
+ * the run goes on as `handlerCompleted` does unless the catcher interrupts a scope occurrence holding it, which drops the
+ * run when the catch is decided (`dropWithin`), before the handler's leave arrives here; with no catcher, or one that
+ * does not interrupt, the run goes on. Under `FailsInstance` the failure that follows ends the instance, so nothing
+ * changes.
  */
 export function handlerEnded(ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State): Outcome {
   const failure = ctx.program.options.compensationHandlerFailure;
