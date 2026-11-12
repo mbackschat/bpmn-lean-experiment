@@ -1,7 +1,8 @@
 /**
  * Hosted witnesses of the generic Temporal host (W0.3b), run in hosted CI only: start, command, delivery, timer and
- * effect once each on durable scheduling, a Continue-As-New handoff, replay determinism of every captured history,
- * and the scenario runner on external scheduling against the TypeScript kernel's own canonical result.
+ * effect once each on durable scheduling, a Continue-As-New handoff, a Script's committed result reused by a
+ * replacement Worker (PC-AUTO-06), replay determinism of every captured history, and the scenario runner on external
+ * scheduling against the TypeScript kernel's own canonical result.
  *
  * Programs are read from the retained scenarios' BPMN by `bpmn-source` at test time, so they follow the kernel IL as
  * it changes. The scenario models' timers are due at logical 1000 ms, which the local server reaches in real time.
@@ -50,16 +51,20 @@ async function readJson<T>(relativePath: string): Promise<T> {
   return JSON.parse(await readFile(new URL(relativePath, projectRoot), "utf8")) as T;
 }
 
-async function programOf(profileId: string, bpmn: ScenarioDocument["bpmn"]): Promise<JsonValue> {
+async function profileOptions(profileId: string) {
   const profile = await readJson<Readonly<{ bpmn?: Readonly<{ relationships?: ReadonlyArray<string> }> }>>(
     `profiles/${profileId}/profile.json`);
+  return kernelProfileOptions(profile.bpmn?.relationships ?? []);
+}
+
+async function programOf(profileId: string, bpmn: ScenarioDocument["bpmn"]): Promise<JsonValue> {
   const read = await readKernelProgram({
     bytes: await readFile(new URL(bpmn.relativePath, projectRoot)),
     expectedSha256: bpmn.sha256,
     overlay: null,
     profile: profileId,
     limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
-  }, kernelProfileOptions(profile.bpmn?.relationships ?? []));
+  }, await profileOptions(profileId));
   if (read.kind === "refused") throw new Error(`${bpmn.relativePath}: kernel reader refused ${read.code}`);
   return wire(read.program);
 }
@@ -104,11 +109,7 @@ const effectRequests: EffectRequest[] = [];
 const finished: string[] = [];
 const workflowId = (label: string): string => `temporal-host-${label}-${randomUUID()}`;
 
-before(async () => {
-  environment = await createCachedLocalEnvironment({
-    identity: "bpmn-lean-temporal-host-test",
-    downloadDirectory: fileURLToPath(new URL(".cache/temporal-cli/", projectRoot)),
-  });
+async function startWorker(): Promise<void> {
   worker = await createHostWorker({
     connection: environment.nativeConnection,
     taskQueue,
@@ -119,6 +120,14 @@ before(async () => {
     },
   });
   running = worker.run();
+}
+
+before(async () => {
+  environment = await createCachedLocalEnvironment({
+    identity: "bpmn-lean-temporal-host-test",
+    downloadDirectory: fileURLToPath(new URL(".cache/temporal-cli/", projectRoot)),
+  });
+  await startWorker();
   client = new ProcessClient(environment.client, taskQueue);
 });
 
@@ -327,6 +336,65 @@ test("deployments: the ingress lists its registered programs, so a Call only dep
   assert.equal(admit(own.value), "work.call.calledProcessMissing", "deployment 2's own document cannot bind the Call");
   assert.equal(assembledRefusal(registered, crossing), null, "deployment 1's Callee answers it once assembled");
   assert.equal(assembledRefusal(registered, missing), "work.call.calledProcessMissing", "a Call nothing answers stays missing");
+});
+
+/**
+ * A Script Task whose result is a fresh random draw, shown as the next User Task's input, read under the
+ * `cibseven-2.2.0` profile that admits JavaScript Scripts (CIB-EXT-0048). Evaluating the Script again would draw
+ * another value with near certainty, so an equal value after recovery is the reuse of the committed one.
+ */
+const drawXml = `<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions" targetNamespace="urn:script-recovery">
+  <bpmn:process id="Draw" isExecutable="true">
+    <bpmn:startEvent id="Start"/>
+    <bpmn:scriptTask id="Script_Draw" scriptFormat="javascript" camunda:resultVariable="draw">
+      <bpmn:script>Math.floor(Math.random() * 2147483647)</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:userTask id="UserTask_Inspect"><bpmn:extensionElements><camunda:inputOutput>
+      <camunda:inputParameter name="shown">\${draw}</camunda:inputParameter>
+    </camunda:inputOutput></bpmn:extensionElements></bpmn:userTask>
+    <bpmn:endEvent id="End"/>
+    <bpmn:sequenceFlow id="f1" sourceRef="Start" targetRef="Script_Draw"/>
+    <bpmn:sequenceFlow id="f2" sourceRef="Script_Draw" targetRef="UserTask_Inspect"/>
+    <bpmn:sequenceFlow id="f3" sourceRef="UserTask_Inspect" targetRef="End"/>
+  </bpmn:process>
+</bpmn:definitions>`;
+
+function shownDraw(snapshot: HostSnapshot): JsonValue {
+  const task = snapshot.view?.openWaits.find((wait) => wait.id.elementId === "UserTask_Inspect")?.userTask;
+  const inputs = (task as Readonly<{ inputs?: ReadonlyArray<Readonly<{ name: string; value: JsonValue }>> }> | undefined)?.inputs;
+  const shown = inputs?.find((input) => input.name === "shown");
+  if (shown === undefined) throw new Error("the User Task shows no draw");
+  return shown.value;
+}
+
+test("script recovery: a replacement Worker reuses the committed Script result instead of evaluating it again", async () => {
+  const read = await readKernelProgram({
+    bytes: new TextEncoder().encode(drawXml), overlay: null, profile: "cibseven-2.2.0",
+    limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
+  }, await profileOptions("cibseven-2.2.0"));
+  if (read.kind === "refused") throw new Error(`kernel reader refused ${read.code}`);
+  const id = workflowId("script");
+  const start = { kind: "start", commandId: "start", instanceId: "Draw_1", variables: [] };
+  const config: HostConfig = { scheduling: Scheduling.Durable, effectStartToCloseMs: 10_000, historyEventBudget: null };
+  assert.equal((await client.start({ workflowId: id, program: wire(read.program), config, start })).outcome, "committed");
+  const drawn = shownDraw(await until("the Script's result", () => client.hostView(id), hasUserTask("UserTask_Inspect")));
+
+  // The replacement holds no cached Workflow state, so its first task rebuilds the instance from the history alone.
+  worker.shutdown();
+  await running;
+  await startWorker();
+  assert.deepEqual(shownDraw(await client.hostView(id)), drawn);
+  const complete = { kind: "command", commandId: "complete-inspect",
+    occurrence: { processInstanceId: "Draw_1", elementId: "UserTask_Inspect", activation: 1 },
+    action: { kind: "completeUserTask", values: [] } };
+  assert.equal((await client.command(id, complete)).outcome, "committed");
+  assert.equal((await client.result(id)).kind, ResultKind.Ended);
+  const history = await environment.client.workflow.getHandle(id).fetchHistory();
+  const evaluations = history.events?.filter((event) =>
+    event.activityTaskScheduledEventAttributes?.activityType?.name === "evaluateScript") ?? [];
+  assert.equal(evaluations.length, 1, "the Script was evaluated once, by its recorded Activity, and never inside the Workflow");
+  finished.push(id);
 });
 
 test("replay: every captured history replays deterministically on the same bundle", async () => {
