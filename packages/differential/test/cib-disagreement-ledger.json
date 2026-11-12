@@ -438,16 +438,14 @@
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/call-parallel-three-reviewers.cibseven-evidence.json",
     "owners": [
-      "CIB-DEV-0012",
-      "PC-MI-03"
+      "CIB-DEV-0012"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/call-sequential-three-reviewers.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0012",
-      "CIB-INT-0041",
-      "PC-MI-03"
+      "CIB-INT-0041"
     ]
   },
   {
@@ -667,12 +665,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/error-multi-instance/sequential-second-instance-fails.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-03"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/error-non-interrupting-declarations/boundary-failure-then-substitute.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0018"
@@ -688,20 +680,6 @@
     "evidence": "scenarios/open-rows/error-unhandled-outcomes/root-last-path-with-outputs.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0006"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-multi-instance/parallel-interrupting.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-02",
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-multi-instance/sequential-non-interrupting.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-02",
-      "PC-ESCALATION-03"
     ]
   },
   {
@@ -827,13 +805,13 @@
   {
     "evidence": "scenarios/open-rows/human-task-result-identity/items-parallel-counter-submission.cibseven-evidence.json",
     "owners": [
-      "PC-HUM-01"
+      "CIB-LIM-0020"
     ]
   },
   {
     "evidence": "scenarios/open-rows/human-task-result-identity/items-sequential-counter-submission.cibseven-evidence.json",
     "owners": [
-      "PC-HUM-01"
+      "CIB-LIM-0020"
     ]
   },
   {
@@ -1389,74 +1367,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-cardinality-reversed.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-child-error.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-03",
-      "PC-MI-12"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-equal-reviewers-reversed.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-quorum-reached-early.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-timer-while-work-remains.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-12"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-cardinality.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-child-error.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-03",
-      "PC-MI-12"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-completion-then-timer.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-12"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-equal-reviewers.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-quorum-reached-early.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-timer-while-work-remains.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-12"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/multi-instance-completion-failures/standards-reads-item.cibseven-evidence.json",
     "owners": [
       "CIB-INT-0014"
@@ -1574,12 +1484,6 @@
     "evidence": "scenarios/open-rows/multi-instance-nesting/sequential-sequential-equal-items.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0019"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-collection-shrunk-then-restored.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-08"
     ]
   },
   {
@@ -1906,12 +1810,6 @@
     "evidence": "scenarios/open-rows/scope-without-start/transaction-entry-rolls-back.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0024"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/script-task-javascript/multi-instance-body.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0048"
     ]
   },
   {
