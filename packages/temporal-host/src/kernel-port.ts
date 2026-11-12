@@ -36,6 +36,7 @@ import {
   type State,
 } from "@bpmn-lean/kernel";
 
+import { canonicalJson } from "./canonical-json.js";
 import { assertNever } from "./host-machine.js";
 import {
   EffectResultKind,
@@ -83,23 +84,27 @@ function effectOutcome(result: EffectResult): EffectOutcome {
       return { tag: EffectOutcomeTag.BusinessFailure, code: result.code, message: result.message, outputs: bindings(result.outputs) };
     case EffectResultKind.TechnicalFailure:
       return { tag: EffectOutcomeTag.TechnicalFailure };
+    case EffectResultKind.Unsupported:
+      return { tag: EffectOutcomeTag.Unsupported, code: result.code };
   }
   return assertNever(result);
 }
 
 /**
- * The Script Task a wait's effect belongs to, found by the public element identity the wait carries. Called
- * definitions can repeat an author's identifier, so more than one Script Task under it is a host fault rather than a
- * guess.
+ * The Script Task a wait's effect belongs to, found by the element's published identity: its author's identifier and
+ * the called definition it runs in, which tells apart two versions of one called definition that a program carries.
+ * More than one Script Task under that identity is a host fault rather than a guess.
  */
 function scriptOf(program: Program, wait: WaitView): ScriptSource | null {
+  const definition = canonicalJson(wait.definition ?? null);
   const scripts = program.elements.flatMap((element): ScriptSource[] => {
     const activity = elementActivity(element);
-    if (activity === null || elementHeader(element).origin.sourceId !== wait.id.elementId) return [];
+    const { origin } = elementHeader(element);
+    if (activity === null || origin.sourceId !== wait.id.elementId || canonicalJson(origin.definition) !== definition) return [];
     const work = activity[1].work;
     if (work.tag !== WorkTag.Script) return [];
     const { format, source, resultVariable } = work.payload;
-    // Admission refuses a Script Task without an inline source (`work.script`, `work.script.resource`).
+    // Admission refuses a Script Task without an inline source (`work.script.source`, `work.script.resource`).
     if (source === null) throw new TypeError(`the Script Task published as ${wait.id.elementId} has no inline source`);
     return [{ format, source, resultVariable }];
   });

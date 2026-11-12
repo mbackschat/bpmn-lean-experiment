@@ -3,8 +3,9 @@
  *
  * Owns matching on `Work`. An Activity's input mappings are evaluated once, when its occurrence begins, against the
  * variables visible from its scope occurrence; they become the Activity's local values (a User Task's published inputs,
- * an effect's arguments). A task without work completes at once; a User Task, a Service Task's effect and a Receive
- * Task's Message open one item each, and the input that closes the item completes the Activity through the pipeline.
+ * an effect's arguments). A task without work completes at once; a User Task, a Service or Script Task's effect and a
+ * Receive Task's Message open one item each, and the input that closes the item completes the Activity through the
+ * pipeline.
  * The boundaries of a Multi-Instance Activity belong to its body, so an instance arms none.
  *
  * A BPMN error an effect reports leaves the Activity `raised`, then raises from it, so the catcher, which may be a
@@ -24,6 +25,7 @@ import {
   WorkTag,
   assertNever,
   distinctCount,
+  elementActivity,
   elementEnvelope,
   multiInstanceCounterNames,
   programElement,
@@ -36,6 +38,7 @@ import {
   type RuleWork,
   type UserWork,
   type ValueSource,
+  workResults,
 } from "../il/types.js";
 import {
   CommandActionTag,
@@ -85,6 +88,22 @@ import {
 } from "../hooks.js";
 import * as Call from "./work/call.js";
 import * as Submission from "./work/submission.js";
+
+/**
+ * The neutral descriptor of a Script Task's effect
+ * ([script semantics](../../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3).
+ */
+export const scriptProtocol = "urn:bpmn-lean:effect-protocol:script-v1";
+
+/**
+ * A Script Task's arguments: every variable visible from `scope`, one entry per name, its nearest owner's, nearest
+ * owner first ([script semantics](../../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). The kernel
+ * cannot know which names a script reads, so it commits them all when the effect opens.
+ */
+export function scriptSnapshot(state: State, scope: ScopeOccurrenceId): readonly Binding[] {
+  const seen = new Set<string>();
+  return visible(state, scope).filter(([name]) => !seen.has(name) && seen.add(name) !== undefined);
+}
 
 /** Open `kind` for the Activity and arm its boundaries on the occurrence. */
 function openWork(kind: OpenKind, header: Header, payload: ActivityPayload, occurrence: Occurrence, state: State): State {
@@ -246,11 +265,14 @@ export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, paylo
         tag: OpenKindTag.Effect,
         detail: { protocol: work.payload.protocol, operation: work.payload.operation, arguments: inputs, failures: 0, send: null },
       }, header, payload, occurrence, entered));
-    // Admission refuses the two (`work.send`, `work.script`).
+    // Admission refuses it (`work.send`).
     case WorkTag.Send:
       return failed(FailureTag.Unsupported, "work-send");
     case WorkTag.Script:
-      return failed(FailureTag.Unsupported, "work-script");
+      return committed(openWork({
+        tag: OpenKindTag.Effect,
+        detail: { protocol: scriptProtocol, operation: "javascript", arguments: scriptSnapshot(entered, occurrence.scope), failures: 0, send: null },
+      }, header, payload, occurrence, entered));
     case WorkTag.Rule:
       return evaluateDecision(hooks, ctx, payload, work.payload, occurrence, entered);
     case WorkTag.Call:
@@ -427,11 +449,13 @@ function effectCompletion(envelope: Envelope | null, rule: ResultValues, occurre
 }
 
 /**
- * An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host, which
- * leaves only once its catcher is known (`mappedErrorOutputs`): it writes no outputs (BPMN 2.0.2 §13.3.2) unless the
- * profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A technical failure has no BPMN meaning (§13.3.3
- * defines only a fault) and refuses unless the profile opens an incident (CIB-EXT-0013, CIB-CFG-0008). An unsupported
- * result ends the input as `unsupported` with the host's code.
+ * An effect's result patch is the work's own result, the names `workResults` gives (a Script Task's result variable),
+ * which is written to the nearest scope holding each name before the Activity leaves, as `execution.setVariable` does
+ * (`ScriptTaskActivityBehavior.java:56-59`), and its OutputSet, the rest. A BPMN error raises from the Activity with
+ * the occurrence as host, which leaves only once its catcher is known (`mappedErrorOutputs`): it writes no outputs
+ * (BPMN 2.0.2 §13.3.2) unless the profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A technical
+ * failure has no BPMN meaning (§13.3.3 defines only a fault) and refuses unless the profile opens an incident
+ * (CIB-EXT-0013, CIB-CFG-0008). An unsupported result ends the input as `unsupported` with the host's code.
  */
 export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, state: State): Outcome {
   // A throw Event's effect has no envelope and so no output mappings (PC-MESSAGE-09).
@@ -442,9 +466,15 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
     case EffectOutcomeTag.Success: {
       const admitted = admitValues(outcome.outputs.map(([, value]) => value));
       if (!admitted.ok) return failedWith(admitted.failure);
-      const written = completionOutputs(ctx, state.logicalTimeMs, unconsumed(ctx, envelope), mappings, outputScope(ctx, state, item), [], outcome.outputs);
+      const activity = element === null ? null : elementActivity(element);
+      const results = activity === null ? [] : workResults(activity[1].work);
+      const own = outcome.outputs.filter(([name]) => results.includes(name));
+      const rest = outcome.outputs.filter(([name]) => !results.includes(name));
+      const written = completionOutputs(ctx, state.logicalTimeMs, unconsumed(ctx, envelope), mappings, outputScope(ctx, state, item), own, rest);
       if (!written.ok) return failedWith(written.failure);
-      return committed(signal(state, effectCompletion(envelope, unconsumed(ctx, envelope), item.occurrence, written.value, outcome.outputs)));
+      const installed = own.length === 0 ? state
+        : signal(state, { tag: SignalTag.Write, scope: ownScope(state, item.occurrence, item.scope), writes: own, rule: WriteRule.Outward });
+      return committed(signal(installed, effectCompletion(envelope, unconsumed(ctx, envelope), item.occurrence, written.value, rest)));
     }
     case EffectOutcomeTag.BusinessFailure: {
       const admitted = admitValues(outcome.outputs.map(([, value]) => value));

@@ -71,3 +71,39 @@ test("work a Terminate removed stays rejected, state unchanged, once the state c
   }
   assert.deepEqual(kernelPort.encodeState(carried), encoded);
 });
+
+// A program carries every bound version of a called definition, so one author's identifier can name two Script Tasks;
+// the wait's definition tells them apart (SCRIPT-SEMANTICS-SPEC item 3).
+test("a wait's Script Task is the one of the called definition the wait runs in", async () => {
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="D" targetNamespace="urn:t">
+  <bpmn:process id="A" isExecutable="true">
+    <bpmn:startEvent id="S"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:scriptTask id="Compute" scriptFormat="javascript" camunda:resultVariable="r"><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing><bpmn:script>0</bpmn:script></bpmn:scriptTask>
+    <bpmn:endEvent id="E"><bpmn:incoming>f2</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="S" targetRef="Compute"/><bpmn:sequenceFlow id="f2" sourceRef="Compute" targetRef="E"/>
+  </bpmn:process>
+</bpmn:definitions>`;
+  const read = await readKernelProgram({
+    bytes: new TextEncoder().encode(xml), overlay: null, profile: "cibseven-2.2.0", limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
+  }, { ...kernelProfileOptions([]), scriptTask: "javascript" });
+  assert.equal(read.kind, "read");
+  if (read.kind !== "read") return;
+  const wire = JSON.parse(JSON.stringify(read.program)) as { elements: Array<Record<string, { header: { id: string; origin: { sourceId: string } } }>> };
+  const version = (deployment: number) =>
+    ({ key: "A", namespace: "urn:t", version: deployment, versionTag: null, deployment, tenant: null, sourceSha256: null });
+  const scripts = wire.elements.flatMap((element) => {
+    const { header } = Object.values(element)[0]!;
+    if (header.origin.sourceId !== "Compute") return [];
+    return [1, 2].map((deployment) => JSON.parse(JSON.stringify(element)
+      .replaceAll(`"id":"${header.id}"`, `"id":"Compute@${deployment}"`)
+      .replace('"definition":null', `"definition":${JSON.stringify(version(deployment))}`)
+      .replace('"source":"0"', `"source":"${deployment}"`)) as typeof element);
+  });
+  assert.equal(scripts.length, 2);
+  const carried = kernelPort.decodeProgram({ ...wire, elements: [...wire.elements, ...scripts] } as never);
+  const wait = (definition: unknown) => ({ id: { processInstanceId: "I", elementId: "Compute", activation: 1 }, ...definition === null ? {} : { definition } }) as never;
+  assert.equal(kernelPort.scriptOf(carried, wait(version(2)))?.source, "2");
+  assert.equal(kernelPort.scriptOf(carried, wait(version(1)))?.source, "1");
+  assert.equal(kernelPort.scriptOf(carried, wait(null))?.source, "0");
+});

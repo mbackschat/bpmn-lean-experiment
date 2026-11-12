@@ -140,12 +140,14 @@ export enum EffectResultKind {
   Success = "success",
   BusinessFailure = "businessFailure",
   TechnicalFailure = "technicalFailure",
+  Unsupported = "unsupported",
 }
 
 /**
  * What an effect handler observed, the Activity's business result. A technical failure is the CIB-visible failure
  * that the profile turns into a retry or an incident; a transport failure is a thrown error that Temporal retries and
- * the kernel never sees.
+ * the kernel never sees. `unsupported` names a value or behavior the portable domain cannot represent
+ * (`EffectOutcome.unsupported`), never a transport or infrastructure failure.
  */
 export type EffectResult =
   | { readonly kind: EffectResultKind.Success; readonly outputs: readonly Binding[] }
@@ -155,7 +157,8 @@ export type EffectResult =
       readonly message: string | null;
       readonly outputs: readonly Binding[];
     }
-  | { readonly kind: EffectResultKind.TechnicalFailure };
+  | { readonly kind: EffectResultKind.TechnicalFailure }
+  | { readonly kind: EffectResultKind.Unsupported; readonly code: string };
 
 /** One decoded stimulus: its command identifier and the kernel input. */
 export interface DecodedStimulus<I> {

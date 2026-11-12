@@ -1,13 +1,16 @@
 /**
- * JavaScript Script Tasks, run as a recorded effect (owner decision of 2026-11-08 on PC-AUTO-05/06): the Activity's
- * result is committed like any effect result, so replay never runs a Script again.
+ * JavaScript Script Tasks, run as a recorded effect
+ * ([script semantics](../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), items 4 to 8): the Activity's result is
+ * committed like any effect result, so replay never runs a Script again.
  *
- * The Script runs in Node's built-in `vm` under a timeout. Its context holds the effect's arguments as read-only
- * globals, parsed from JSON inside the context so that no host prototype, and through it no host `Function`, is
- * reachable; string code generation is off, and no host object (`process`, `require`, timers, `console`) is
- * installed. The `vm` is no security boundary: Scripts are trusted model content. The completion value is the
- * result; a throw, a timeout or a value without a portable form is the effect's technical failure, which the profile
- * turns into a retry, an incident or a rollback.
+ * The Script runs in Node's built-in `vm` under a timeout, as one classic script in a fresh context whose global
+ * object holds the effect's arguments and the ECMAScript 2021 intrinsics: the built-ins of later editions that
+ * `removed` lists, and every host object, are taken out, so a Script calling one fails as it does on CIB's GraalJS
+ * `21.3.12`. The arguments are writable globals built from JSON inside the context, so that no host prototype, and
+ * through it no host `Function`, is reachable, and an assignment stays in the context, which is discarded. The `vm` is
+ * no security boundary: Scripts are trusted model content. What the profile cannot represent (a read of a variable it
+ * leaves out, a reference to `execution` or `Java`, a result outside the portable domain) is `unsupported`; a throw or
+ * the timeout is the effect's technical failure, which the profile turns into an incident or a rollback.
  */
 import vm from "node:vm";
 
@@ -23,113 +26,164 @@ export class UnsupportedScriptFormat extends Error {
   override readonly name = "UnsupportedScriptFormat";
 }
 
-/** The names CIB's JSR-223 lookup gives its JavaScript engine (`ScriptingEngines#getScriptEngineForLanguage`). */
+/** The names CIB's JSR-223 lookup gives its JavaScript engine (`DefaultScriptEngineResolver`), ignoring ASCII case. */
 const javascriptNames = ["javascript", "js", "ecmascript"];
 
-class NotPortable extends Error {}
+/** Java's `int` range within the portable Integer domain, the result CIB stores as an `Integer` (P1). */
+const maxResultInteger = 2 ** 31 - 1;
 
-/** A `variableValue` as plain JavaScript data; a decimal becomes the nearest double, as a Script's arithmetic needs. */
-function plain(value: JsonValue): unknown {
-  const object = record(value);
-  switch (object["kind"]) {
-    case "null": return null;
-    case "boolean": case "integer": case "string": case "stringList": return object["value"];
-    case "decimal": return Number(`${String(object["coefficient"])}e-${String(object["scale"])}`);
-    case "list": return items(object["value"]).map(plain);
-    case "map": return Object.fromEntries(items(object["value"]).map((entry) => {
-      const binding = record(entry);
-      return [String(binding["name"]), plain(binding["value"] ?? null)];
-    }));
-    default: throw new NotPortable(`unknown value kind ${String(object["kind"])}`);
-  }
-}
+/** The portable String bound ([data semantics](../../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md#values)). */
+const maxResultBytes = 1024;
+
+/**
+ * A variable's value as the context builds it: a primitive as itself, a list as `["l", items]`, a map as
+ * `["m", [[name, value], …]]`; `null` stands for JSON `null` only.
+ */
+type ScriptForm = string | number | boolean | null | readonly ["l", readonly ScriptForm[]] | readonly ["m", readonly (readonly [string, ScriptForm])[]];
+
+class LeftOut extends Error {}
 
 function record(value: JsonValue | undefined): { readonly [key: string]: JsonValue } {
   if (value === null || value === undefined || typeof value !== "object" || Array.isArray(value)) {
-    throw new NotPortable("malformed value");
+    throw new TypeError("malformed script argument");
   }
   return value as { readonly [key: string]: JsonValue };
 }
 
 function items(value: JsonValue | undefined): readonly JsonValue[] {
-  if (!Array.isArray(value)) throw new NotPortable("malformed value list");
+  if (!Array.isArray(value)) throw new TypeError("malformed script argument list");
   return value;
 }
 
-/** The shortest decimal form of a finite double, as an unscaled coefficient and a scale. */
-function decimal(number: number): JsonValue {
-  const [mantissa = "", exponentText = "0"] = number.toExponential().split("e");
-  const negative = mantissa.startsWith("-");
-  const [whole = "", fraction = ""] = mantissa.replace("-", "").split(".");
-  const scale = fraction.length - Number(exponentText);
-  const digits = `${whole}${fraction}`.replace(/^0+(?=\d)/u, "");
-  const coefficient = scale < 0 ? `${digits}${"0".repeat(-scale)}` : digits;
-  return { kind: "decimal", coefficient: `${negative ? "-" : ""}${coefficient}`, scale: Math.max(0, scale) };
+/**
+ * A `variableValue` in the context's form (item 4): String, Boolean, Null and Integer as themselves, a list or
+ * `stringList` as an array, a map as an object; a decimal, or a collection holding one, has no form and is left out.
+ */
+function scriptForm(value: JsonValue): ScriptForm {
+  const object = record(value);
+  switch (object["kind"]) {
+    case "null": return null;
+    case "boolean": case "integer": case "string": return object["value"] as boolean | number | string;
+    case "stringList": return ["l", items(object["value"]) as readonly string[]];
+    case "list": return ["l", items(object["value"]).map(scriptForm)];
+    case "map": return ["m", items(object["value"]).map((entry) => {
+      const binding = record(entry);
+      return [String(binding["name"]), scriptForm(binding["value"] ?? null)] as const;
+    })];
+    case "decimal": throw new LeftOut();
+    default: throw new TypeError(`unknown value kind ${String(object["kind"])}`);
+  }
 }
 
-/**
- * A Script's value in the portable form. Its objects belong to the Script's realm, so prototypes are compared
- * structurally, and every array is rebuilt here with `Array.from`, since `map` would keep the Script realm's `Array`.
- */
-function portable(value: unknown): JsonValue {
+/** A completion value in the portable form (item 5), `null` for none to write, `undefined` when it has none. */
+function resultValue(value: unknown): JsonValue | null | undefined {
   switch (typeof value) {
-    case "undefined": return { kind: "null" };
+    case "undefined": return null;
     case "boolean": return { kind: "boolean", value };
-    case "string": return { kind: "string", value };
     case "number":
-      if (!Number.isFinite(value)) throw new NotPortable("non-finite number");
-      return Number.isSafeInteger(value) ? { kind: "integer", value } : decimal(value);
-    case "bigint": return { kind: "decimal", coefficient: value.toString(), scale: 0 };
-    case "object": {
-      if (value === null) return { kind: "null" };
-      if (Array.isArray(value)) return { kind: "list", value: Array.from(value as readonly unknown[], portable) };
-      const prototype = Object.getPrototypeOf(value) as object | null;
-      if (Object.prototype.toString.call(value) !== "[object Object]" ||
-          (prototype !== null && Object.getPrototypeOf(prototype) !== null)) {
-        throw new NotPortable("only plain objects have a portable form");
-      }
-      return { kind: "map", value: Object.entries(value).map(([name, entry]) => ({ name, value: portable(entry) })) };
-    }
-    case "function": case "symbol": throw new NotPortable(`${typeof value} has no portable form`);
+      return Number.isInteger(value) && value >= 0 && value <= maxResultInteger ? { kind: "integer", value: value + 0 } : undefined;
+    case "string":
+      return value.isWellFormed() && Buffer.byteLength(value, "utf8") <= maxResultBytes ? { kind: "string", value } : undefined;
+    case "object": return value === null ? null : undefined;
+    case "bigint": case "function": case "symbol": return undefined;
   }
 }
 
 /**
- * Defines each argument as a frozen, non-writable global of the context, from JSON parsed inside it, after removing
- * the inspector-bound `console` V8 installs in every new context.
+ * Runs in the fresh context: takes out the host objects and the listed later-edition built-ins, defines each argument
+ * as a writable global from JSON parsed inside the context, frozen, a map as a null-prototype object, and guards each
+ * left-out name and `execution` and `Java` with an accessor that records the access and throws. It returns the probe
+ * the host reads after the run: the first unsupported access's code, or `null`. An assignment to a guarded name
+ * replaces the accessor with a plain value, since the Script then reads its own value, not the variable.
  */
-const defineArguments = `(function (text) {
+const prepare = `(function (text) {
   "use strict";
-  delete globalThis.console;
-  const freeze = (value) => {
-    if (value !== null && typeof value === "object") { Object.values(value).forEach(freeze); Object.freeze(value); }
-    return value;
+  const iterators = Object.getPrototypeOf(Object.getPrototypeOf([][Symbol.iterator]()));
+  const typed = Object.getPrototypeOf(Uint8Array).prototype;
+  const removed = [
+    [globalThis, ["console", "WebAssembly", "Temporal", "Iterator", "DisposableStack", "AsyncDisposableStack", "SuppressedError", "Float16Array"]],
+    [Array.prototype, ["at", "findLast", "findLastIndex", "toReversed", "toSorted", "toSpliced", "with"]],
+    [typed, ["at", "findLast", "findLastIndex", "toReversed", "toSorted", "with"]],
+    [String.prototype, ["at", "isWellFormed", "toWellFormed"]],
+    [Array, ["fromAsync"]],
+    [Object, ["hasOwn", "groupBy"]],
+    [Map, ["groupBy"]],
+    [Promise, ["withResolvers", "try"]],
+    [Set.prototype, ["union", "intersection", "difference", "symmetricDifference", "isSubsetOf", "isSupersetOf", "isDisjointFrom"]],
+    [iterators, ["map", "filter", "take", "drop", "flatMap", "reduce", "toArray", "forEach", "some", "every", "find"]],
+    [RegExp, ["escape"]],
+    [Math, ["f16round"]],
+    [Error, ["isError"]],
+    [Atomics, ["waitAsync", "pause"]],
+    [ArrayBuffer.prototype, ["maxByteLength", "resizable", "resize", "transfer", "transferToFixedLength", "detached"]],
+    [SharedArrayBuffer.prototype, ["maxByteLength", "growable", "grow"]],
+    [Uint8Array, ["fromBase64", "fromHex"]],
+    [Uint8Array.prototype, ["toBase64", "setFromBase64", "toHex", "setFromHex"]],
+    [DataView.prototype, ["getFloat16", "setFloat16"]],
+    [Symbol, ["dispose", "asyncDispose"]],
+  ];
+  for (const [owner, names] of removed) for (const name of names) Reflect.deleteProperty(owner, name);
+  const build = (form) => {
+    if (form === null || typeof form !== "object") return form;
+    if (form[0] === "l") return Object.freeze(form[1].map(build));
+    const map = Object.create(null);
+    for (const [name, value] of form[1]) map[name] = build(value);
+    return Object.freeze(map);
   };
-  for (const [name, value] of JSON.parse(text)) {
-    Object.defineProperty(globalThis, name, { value: freeze(value), writable: false, enumerable: true, configurable: false });
+  const plain = (name, value) =>
+    Object.defineProperty(globalThis, name, { value, writable: true, enumerable: true, configurable: true });
+  let access = null;
+  const guard = (name, code) => Object.defineProperty(globalThis, name, {
+    get() { if (access === null) access = code; throw new ReferenceError(name + " has no value in this context"); },
+    set(value) { plain(name, value); },
+    enumerable: true, configurable: true,
+  });
+  for (const [name, form, kept] of JSON.parse(text)) {
+    if (kept) plain(name, build(form)); else guard(name, "script-value-unrepresentable");
   }
+  guard("execution", "script-host-object");
+  guard("Java", "script-host-object");
+  return () => access;
 })`;
 
+function unsupported(code: string): EffectResult {
+  return { kind: EffectResultKind.Unsupported, code };
+}
+
+/**
+ * Evaluates the Script over the effect's arguments. Without a result variable the completion value is discarded
+ * whatever it is, as CIB writes nothing then (`ScriptTaskActivityBehavior.java:56-59`).
+ */
 export function evaluateScript(request: ScriptRequest, options: ScriptOptions): EffectResult {
   const { format, source, resultVariable } = request.script;
-  if (!javascriptNames.includes(format.toLowerCase())) {
+  if (!javascriptNames.includes(format.replace(/[A-Z]/gu, (letter) => letter.toLowerCase()))) {
     throw new UnsupportedScriptFormat(`script-format-unsupported: ${format}`);
   }
-  const argumentsText = JSON.stringify(request.context.map((binding) => [binding.name, plain(binding.value)]));
+  // A malformed argument is a host fault and throws here, before the context exists.
+  const argumentsText = JSON.stringify(request.context.map((binding) => {
+    try {
+      return [binding.name, scriptForm(binding.value), true];
+    } catch (error) {
+      if (error instanceof LeftOut) return [binding.name, null, false];
+      throw error;
+    }
+  }));
+  const context = vm.createContext({}, { codeGeneration: { strings: true, wasm: false }, microtaskMode: "afterEvaluate" });
+  const probe = (vm.runInContext(prepare, context) as (text: string) => () => string | null)(argumentsText);
+  let completion: unknown;
+  let failed = false;
   try {
-    const context = vm.createContext({}, {
-      codeGeneration: { strings: false, wasm: false },
-      microtaskMode: "afterEvaluate",
-    });
-    const define = vm.runInContext(defineArguments, context) as (text: string) => void;
-    define(argumentsText);
-    const completion: unknown = new vm.Script(source, { filename: `script:${request.occurrence.elementId}` })
+    completion = new vm.Script(source, { filename: `script:${request.occurrence.elementId}` })
       .runInContext(context, { timeout: options.timeoutMs });
-    const outputs = resultVariable === null ? [] : [{ name: resultVariable, value: portable(completion) }];
-    return { kind: EffectResultKind.Success, outputs };
   } catch {
-    // Every throw here is the Script's own failure (its exception, its timeout, its non-portable value), which CIB
-    // reports as the job's failure; a malformed argument, a host fault, was thrown before the context was built.
-    return { kind: EffectResultKind.TechnicalFailure };
+    // The Script's own exception, its syntax error or its timeout, which CIB reports as the command's or job's failure.
+    failed = true;
   }
+  const access = probe();
+  if (access !== null) return unsupported(access);
+  if (failed) return { kind: EffectResultKind.TechnicalFailure };
+  if (resultVariable === null) return { kind: EffectResultKind.Success, outputs: [] };
+  const value = resultValue(completion);
+  if (value === undefined) return unsupported("script-result-unrepresentable");
+  return { kind: EffectResultKind.Success, outputs: value === null ? [] : [{ name: resultVariable, value }] };
 }

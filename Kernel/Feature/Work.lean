@@ -8,9 +8,9 @@ public import Kernel.Feature.Work.Submission
 
 Owns matching on `Work`. An Activity's input mappings are evaluated once, when its occurrence begins, against the
 variables visible from its scope occurrence; they become the Activity's local values (a User Task's published inputs,
-an effect's arguments). A task without work completes at once; a User Task, a Service Task's effect and a Receive
-Task's Message open one item each, and the input that closes the item completes the Activity through the pipeline.
-The boundaries of a Multi-Instance Activity belong to its body, so an instance arms none.
+an effect's arguments). A task without work completes at once; a User Task, a Service or Script Task's effect and a
+Receive Task's Message open one item each, and the input that closes the item completes the Activity through the
+pipeline. The boundaries of a Multi-Instance Activity belong to its body, so an instance arms none.
 
 A BPMN error an effect reports leaves the Activity `raised`, then raises from it, so the catcher, which may be a
 boundary of this Activity, finds nothing of the Activity left to interrupt. A technical failure turns the effect's item
@@ -31,6 +31,16 @@ structure WorkHooks where
     fun _ _ _ => .error (.unsupported "work-rule")
   criteriaHold : State → ScopeOccurrenceId → List CorrelationMatch → Except Failure Bool :=
     fun _ _ _ => .error (.unsupported "work-criteria") -- dynamic-only: a registry without the hook
+
+/-- The neutral descriptor of a Script Task's effect
+([script semantics](../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). -/
+def scriptProtocol : String := "urn:bpmn-lean:effect-protocol:script-v1"
+
+/-- A Script Task's arguments: every variable visible from `scope`, one entry per name, its nearest owner's, nearest
+owner first ([script semantics](../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). The kernel cannot know
+which names a script reads, so it commits them all when the effect opens. -/
+def scriptSnapshot (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
+  (state.visible scope).foldl (fun kept entry => if kept.any (·.1 == entry.1) then kept else kept ++ [entry]) []
 
 /-- Open `kind` for the Activity and arm its boundaries on the occurrence. -/
 def openWork (kind : OpenKind) (header : Header) (payload : ActivityPayload) (occurrence : Occurrence)
@@ -154,9 +164,12 @@ def arriveActivity (hooks : WorkHooks) (ctx : Ctx) (header : Header) (payload : 
   | .service work =>
     .ok (openWork (.effect { protocol := work.protocol, operation := work.operation, arguments := inputs })
       header payload occurrence state)
-  -- Admission refuses the two (`work.send`, `work.script`).
+  -- Admission refuses it (`work.send`).
   | .send _ => .error (.unsupported "work-send")
-  | .script _ => .error (.unsupported "work-script")
+  | .script _ =>
+    let detail : EffectDetail :=
+      { protocol := scriptProtocol, operation := "javascript", arguments := scriptSnapshot state occurrence.scope }
+    .ok (openWork (.effect detail) header payload occurrence state)
   | .rule work => evaluateDecision hooks ctx payload work occurrence state
   | .call work =>
     if !begunByToken then .error (.unsupported "scope-implicit-start")
@@ -275,11 +288,13 @@ def mappedErrorOutputs (write : Ctx → ScopeOccurrenceId → List (String × Va
   let state ← write ctx origin.scope written .outward state
   .ok (state.signal (.complete host .raised [] .outward))
 
-/-- An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host, which
-leaves only once its catcher is known (`mappedErrorOutputs`): it writes no outputs (BPMN 2.0.2 §13.3.2) unless the
-profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A technical failure has no BPMN meaning (§13.3.3
-defines only a fault) and refuses unless the profile opens an incident (CIB-EXT-0013, CIB-CFG-0008). An unsupported
-result ends the input as `unsupported` with the host's code. -/
+/-- An effect's result patch is the work's own result, the names `Work.results` gives (a Script Task's result variable),
+which is written to the nearest scope holding each name before the Activity leaves, as `execution.setVariable` does
+(`ScriptTaskActivityBehavior.java:56-59`), and its OutputSet, the rest. A BPMN error raises from the Activity with the
+occurrence as host, which leaves only once its catcher is known (`mappedErrorOutputs`): it writes no outputs (BPMN 2.0.2
+§13.3.2) unless the profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A technical failure has no BPMN
+meaning (§13.3.3 defines only a fault) and refuses unless the profile opens an incident (CIB-EXT-0013, CIB-CFG-0008). An
+unsupported result ends the input as `unsupported` with the host's code. -/
 def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state : State) : Outcome :=
   -- A throw Event's effect has no envelope and so no output mappings (PC-MESSAGE-09).
   let envelope := (ctx.program.element? item.element).bind (·.envelope?)
@@ -287,8 +302,13 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
   match outcome with
   | .success patch => do
     admitValues (patch.map (·.2))
-    let written ← completionOutputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings (outputScope ctx state item) [] patch
-    .ok (state.signal (effectCompletion envelope (unconsumed ctx envelope) item.occurrence written patch))
+    let results := (((ctx.program.element? item.element).bind (·.activity?)).map (·.2.work.results)).getD []
+    let (own, rest) := patch.partition fun (name, _) => results.contains name
+    let written ←
+      completionOutputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings (outputScope ctx state item) own rest
+    let installed := if own.isEmpty then state
+      else state.signal (.write (state.ownScope item.occurrence item.scope) own .outward)
+    .ok (installed.signal (effectCompletion envelope (unconsumed ctx envelope) item.occurrence written rest))
   | .businessFailure code message patch => do
     admitValues (patch.map (·.2))
     match ctx.program.options.errorPathOutputs with
