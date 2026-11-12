@@ -354,7 +354,7 @@ Every schedule in [expression-cardinality-and-collections](../../../scenarios/op
 
 - **Drafts:** CIB-INT-0018 (counter values), CIB-INT-0019 (an input failure fails the operation) and CIB-EXT-0033 (count coercions), each selected by both CIB profiles.
 - **Existing entries read here:** CIB-INT-0002, CIB-INT-0009, CIB-INT-0011, CIB-INT-0014, CIB-EXT-0015, CIB-EXT-0018 and CIB-EXT-0026.
-- **CIB-LIM-0009** gains the refusals listed above: both forms together, sequential collection expressions, declared-language loop expressions, the whitespace-only text nodes and an item named like a counter.
+- **CIB-LIM-0009** gains the refusals listed above: both forms together, declared-language loop expressions, the whitespace-only text nodes and an item named like a counter.
 - **CIB-LIM-0010** gains fractional counts, counts outside `int`, results named like a counter or the item, and sequential result leftovers.
 
 ## Oracle plan and witness table
