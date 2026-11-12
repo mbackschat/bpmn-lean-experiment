@@ -1082,7 +1082,7 @@ This is not a candidate deviation. CIB and the kernel never differ on an admitte
 
 **Evidence:**
 - Retained witnesses in [event-reference-forms](../scenarios/open-rows/event-reference-forms/README.md): `multiple-event-definitions-message-then-timer` and `parallel-multiple-message-then-timer`, in which CIB arms the intermediate catch's Timer alone and rejects the Message.
-- In [event-race-compositions](../scenarios/open-rows/event-race-compositions/README.md): `instantiating-with-start-message-wins` and `parallel-with-start-both-messages`, in which CIB runs a plain race; their ledger owners are PC-BASIC-03, PC-CF-05 and PC-CF-08, and these four entries re-own to this limitation.
+- In [event-race-compositions](../scenarios/open-rows/event-race-compositions/README.md): `instantiating-with-start-message-wins` and `parallel-with-start-both-messages`, in which CIB runs a plain race; the ledger lists all four under this limitation.
 - Witnesses awaiting CIB evidence in [interchange-reference-forms](../scenarios/open-rows/interchange-reference-forms/README.md): `event-definition-ref-catch-timer-then-proceed`, `event-definition-ref-start-none-start`, `event-definition-ref-start-message-start` (`eventDefinitionRef`), `instantiating-receive-task-message-start` and `instantiating-receive-task-none-start-then-deliver` (Receive `instantiate`).
 - No witness for `isExecutable`: a non-executable source deploys nothing in CIB, so the pinned source lines above are the evidence.
 

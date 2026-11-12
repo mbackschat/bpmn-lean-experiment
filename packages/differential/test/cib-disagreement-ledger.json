@@ -695,17 +695,13 @@
   {
     "evidence": "scenarios/open-rows/event-race-compositions/instantiating-with-start-message-wins.cibseven-evidence.json",
     "owners": [
-      "PC-BASIC-03",
-      "PC-CF-05",
-      "PC-CF-08"
+      "CIB-LIM-0008"
     ]
   },
   {
     "evidence": "scenarios/open-rows/event-race-compositions/parallel-with-start-both-messages.cibseven-evidence.json",
     "owners": [
-      "PC-BASIC-03",
-      "PC-CF-05",
-      "PC-CF-08"
+      "CIB-LIM-0008"
     ]
   },
   {
@@ -855,10 +851,7 @@
   {
     "evidence": "scenarios/open-rows/inclusive-join-compositions/unselected-path-parked-then-unselected.cibseven-evidence.json",
     "owners": [
-      "CIB-DEV-0002",
-      "PC-BASIC-03",
-      "PC-CF-04",
-      "PC-CF-08"
+      "CIB-DEV-0002"
     ]
   },
   {

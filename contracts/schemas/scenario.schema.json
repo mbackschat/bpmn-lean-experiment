@@ -869,7 +869,7 @@
         },
         "variables": {
           "$ref": "#/$defs/bindings",
-          "description": "Variables the delivery carries beside its payload; the kernel rejects a non-empty list as delivery-variables-not-admitted."
+          "description": "Variables the delivery carries beside its payload; the kernel installs them under a profile that selects DeliveryVariables.installs and otherwise rejects a non-empty list as delivery-variables-not-admitted."
         },
         "at": {
           "$ref": "#/$defs/logicalTime"

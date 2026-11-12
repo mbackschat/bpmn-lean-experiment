@@ -67,7 +67,7 @@ export interface CorrelationMatch { readonly target: CriterionTarget; readonly e
 /**
  * A Message or Signal delivered to the subscription `occurrence` names. `variables` are the delivery's own variables
  * beside its payload, which CIB installs in the receiving scope (CIB-EXT-0025); `step` rejects a non-empty list
- * (`delivery-variables-not-admitted`) while no profile installs them.
+ * (`delivery-variables-not-admitted`) unless the profile selects `DeliveryVariables.Installs`.
  */
 export interface DeliveryInput {
   readonly occurrence: OccurrenceRef;

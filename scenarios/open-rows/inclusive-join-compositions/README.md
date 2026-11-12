@@ -48,7 +48,7 @@ Answer-free schedules for [PC-CF-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 
 ## Kernel restrictions these inputs reconcile
 
-The [unpaired-merge](unpaired-merge.bpmn), [parallel-fed-join](parallel-fed-join.bpmn), [unselected-path](unselected-path.bpmn), [loop-reentry](loop-reentry.bpmn) and [scoped-join](scoped-join.bpmn) models fixed CIB's answer for the unstructured Inclusive joins, and [no-default-split](no-default-split.bpmn) for a split that may select nothing, before the kernel admitted both under the [Inclusive Gateway semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-gateway). The kernel still refuses [scoped-join](scoped-join.bpmn) for its CIB element variable (`multiInstance.elementVariable`, [PC-MI-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list)); [scoped-join-counted](scoped-join-counted.bpmn) holds the same joins with a Multi-Instance form the kernel admits.
+The [unpaired-merge](unpaired-merge.bpmn), [parallel-fed-join](parallel-fed-join.bpmn), [unselected-path](unselected-path.bpmn), [loop-reentry](loop-reentry.bpmn) and [scoped-join](scoped-join.bpmn) models fixed CIB's answer for the unstructured Inclusive joins, and [no-default-split](no-default-split.bpmn) for a split that may select nothing, before the kernel admitted both under the [Inclusive Gateway semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-gateway). [scoped-join-counted](scoped-join-counted.bpmn) holds the same joins with a counted Multi-Instance body in place of [scoped-join](scoped-join.bpmn)'s element variable.
 
 Notes for the target runners:
 

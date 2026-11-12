@@ -42,12 +42,13 @@ export {
 } from "./il/types.js";
 export type { Program, Value } from "./il/types.js";
 export {
-  DeliveryTriggerTag, EffectOutcomeTag, FailureTag, InputTag, SignalAddressTag, SignalReach, StartTriggerTag,
+  DeliveryTriggerTag, EffectOutcomeTag, FailureTag, InputTag, LeaveTag, SignalAddressTag, SignalReach, StartTriggerTag,
+  leaveFlows,
 } from "./state.js";
 export { criteriaRefusal, startCriteriaRefusal } from "./state/criteria.js";
 export type {
-  Binding, BroadcastIntent, CorrelationMatch, EffectOutcome, Failure, Input, MessageChannel, OccurrenceRef, Outcome,
-  SignalAddress, StartInput, StartTrigger, State,
+  Binding, BroadcastIntent, CorrelationMatch, EffectOutcome, Failure, Input, Leave, MessageChannel, OccurrenceRef,
+  Outcome, SignalAddress, StartInput, StartTrigger, State,
 } from "./state.js";
 export { matching, messageReceivers, messageStartCandidates } from "./population/messages.js";
 export {

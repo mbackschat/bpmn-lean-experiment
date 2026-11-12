@@ -27,6 +27,6 @@ Not authored in the repository: the payload. [PC-HUM-03](../../../docs/PRACTICAL
 
 Notes for the target runners:
 
-- Every schedule here uses a `deliver` correlation, which the CIB runner does not yet realize; `items-parallel-local-correlation` also uses the `localVariable` correlation target.
+- Every schedule here uses a `deliver` correlation; `items-parallel-local-correlation` also uses the `localVariable` correlation target.
 - The called occurrence is addressed by the derived called-instance identity (`call:<byte length>:<caller>:<byte length>:<Call element>:<activation>`).
 - The timer boundary's logical deadline is relative to the start's logical time, which no schedule states and which therefore stays at zero.
