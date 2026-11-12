@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { Ajv2020, type ErrorObject, type ValidateFunction } from "ajv/dist/2020.js";
+import { verifyCanonicalBindingOrder } from "./scenario-binding-order.ts";
 import { parseWireJsonBytes } from "./strict-json.ts";
 
 const profileId = "bpmn-2.0.2" as const;
@@ -256,6 +257,7 @@ async function verifyScenarioWithValidators(projectRoot: string, value: unknown,
     throw new Error(`engine population scenario schema validation failed: ${formatErrors(validate.errors)}`);
   }
   assertNoAnswerKeys(value);
+  verifyCanonicalBindingOrder(value);
   const scenario = value as EnginePopulationScenario;
   assertNoDuplicate("definition refs", scenario.definitions.map(({ definitionRef }) => definitionRef));
   assertNoDuplicate("definition ids", scenario.definitions.map(({ bpmn }) => bpmn.id));

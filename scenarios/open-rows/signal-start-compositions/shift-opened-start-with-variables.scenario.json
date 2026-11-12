@@ -20,17 +20,17 @@
         "name": "shift-opened",
         "variables": [
           {
-            "name": "register",
-            "value": {
-              "kind": "string",
-              "value": "north"
-            }
-          },
-          {
             "name": "floatCents",
             "value": {
               "kind": "integer",
               "value": 15000
+            }
+          },
+          {
+            "name": "register",
+            "value": {
+              "kind": "string",
+              "value": "north"
             }
           }
         ]

@@ -298,7 +298,7 @@ public final class ScenarioProtocol {
   public record SignalStart(String name, SignalRef signalRef, List<VariableBinding> variables) implements StartTrigger {
     public SignalStart {
       requireOneSignalAddress(name, signalRef);
-      variables = List.copyOf(variables);
+      variables = ScenarioVariableBindings.requireCanonical(variables, "variables");
     }
   }
 

@@ -35,3 +35,22 @@ test("refuses a binding list out of order or with a repeated name, wherever the 
     effect({ kind: "businessFailure", code: "E", outputs: bind("b", "a") }),
   ]) assert.throws(() => verifyCanonicalBindingOrder(document), /names must be unique and canonically ordered/u);
 });
+
+// The lists above once were a hand-kept mirror of the runner's checks; it missed the delivery and population variables
+// added later (P5 `receive-delivery-scopes-variables-per-scope` reached CIB out of order in run 43271426944), so every
+// name-value list of a stimulus, at any depth, is checked.
+test("refuses an out-of-order name-value list in any stimulus at any depth", () => {
+  const map = (...names: string[]) => ({ kind: "map", value: names.map((name) => ({ name, value: { kind: "boolean", value: true } })) });
+  for (const document of [
+    scenario({ kind: "deliver", commandId: "d", variables: bind("note", "freshEmbedded") }),
+    scenario({ kind: "publish", commandId: "p", variables: bind("b", "a") }),
+    start([{ name: "m", value: map("b", "a") }]),
+  ]) assert.throws(() => verifyCanonicalBindingOrder(document), /names must be unique and canonically ordered/u);
+  verifyCanonicalBindingOrder(scenario({ kind: "deliver", commandId: "d", variables: bind("freshEmbedded", "note") }));
+  verifyCanonicalBindingOrder(start([{ name: "m", value: map("a", "b") }]));
+});
+
+test("refuses an out-of-order name-value list in a population scenario's steps", () => {
+  const population = { steps: [{ kind: "publish", commandId: "p", variables: bind("b", "a") }] };
+  assert.throws(() => verifyCanonicalBindingOrder(population), /names must be unique and canonically ordered/u);
+});

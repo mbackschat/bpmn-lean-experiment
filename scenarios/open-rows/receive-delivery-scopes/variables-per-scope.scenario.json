@@ -40,17 +40,17 @@
       },
       "variables": [
         {
-          "name": "note",
-          "value": {
-            "kind": "string",
-            "value": "from-embedded"
-          }
-        },
-        {
           "name": "freshEmbedded",
           "value": {
             "kind": "string",
             "value": "e"
+          }
+        },
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "from-embedded"
           }
         }
       ]
@@ -72,17 +72,17 @@
       },
       "variables": [
         {
-          "name": "note",
-          "value": {
-            "kind": "string",
-            "value": "from-called"
-          }
-        },
-        {
           "name": "freshCalled",
           "value": {
             "kind": "string",
             "value": "c"
+          }
+        },
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "from-called"
           }
         }
       ]
@@ -104,17 +104,17 @@
       },
       "variables": [
         {
-          "name": "note",
-          "value": {
-            "kind": "string",
-            "value": "from-each"
-          }
-        },
-        {
           "name": "freshEach",
           "value": {
             "kind": "string",
             "value": "m"
+          }
+        },
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "from-each"
           }
         }
       ]
