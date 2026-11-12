@@ -232,6 +232,15 @@ function runBound(ctx: Ctx, state: State): number {
 }
 
 /**
+ * Whether `run` is the one `trigger` started in `scope`. Two runs may share a scope occurrence (#103), never a trigger
+ * there: a nested group run has a context of its own.
+ */
+function isRun(scope: ScopeOccurrenceId, trigger: OccurrenceRef): (run: CompensationRun) => boolean {
+  return (run) => run.scope === scope && run.trigger.processInstanceId === trigger.processInstanceId &&
+    run.trigger.element === trigger.element && run.trigger.activation === trigger.activation;
+}
+
+/**
  * Begin `record`'s handler in a new context scope occurrence inside `scope`, where the records of its children become
  * the ones a throw inside the handler compensates. A group (I5) runs its children instead, as a nested run of that
  * context, which resumes the run in `scope` once they all completed (`Resume.group`).
@@ -248,7 +257,7 @@ function beginHandler(
     const nested: CompensationRun = {
       trigger, scope: context, pending, running: [], leave: null, resume: { tag: ResumeTag.Group, outer: scope, context },
     };
-    const advanced = advance(ctx, context, store(entered, { ...compensation, runs: [...compensation.runs, nested] }), fuel - 1);
+    const advanced = advance(ctx, context, trigger, store(entered, { ...compensation, runs: [...compensation.runs, nested] }), fuel - 1);
     return advanced.ok ? committed([advanced.value, context]) : advanced;
   }
   const element = programElement(ctx.program, handler);
@@ -281,26 +290,28 @@ function resumeRun(ctx: Ctx, state: State, resume: Resume | null, fuel: number):
         rule: WriteRule.Outward,
       }));
     case ResumeTag.Group:
-      return release(ctx, resume.outer, resume.context, state, fuel);
+      return release(ctx, resume.context, state, fuel);
   }
   return assertNever(resume);
 }
 
 /**
- * Start every pending handler of the run in `scope` that no pending or running handler's subject succeeds; once none is
- * pending or running, end the run: cancel the occurrence it leaves, if any, then complete its `resume`.
+ * Start every pending handler of the run `trigger` started in `scope` that no pending or running handler of that run
+ * succeeds; once none is pending or running, end the run: cancel the occurrence it leaves, if any, then complete its
+ * `resume`. Another run in the same scope neither delays nor ends it.
  */
-function advance(ctx: Ctx, scope: ScopeOccurrenceId, state: State, fuel: number): Outcome {
+function advance(ctx: Ctx, scope: ScopeOccurrenceId, trigger: OccurrenceRef, state: State, fuel: number): Outcome {
   if (fuel === 0) return failed(FailureTag.SemanticFailure, "compensation-run-depth");
   const compensation = state.slots.compensation;
-  const run = compensation.runs.find((candidate) => candidate.scope === scope);
+  const matches = isRun(scope, trigger);
+  const run = compensation.runs.find(matches);
   if (run === undefined) return failed(FailureTag.SemanticFailure, "compensation-run-missing");
   const remaining = [...run.pending, ...run.running.map(([, record]) => record)];
   const isReady = (record: Compensable): boolean => !remaining.some((other) => precedes(ctx, record, other));
   const ready = run.pending.filter(isReady);
   const waiting = run.pending.filter((record) => !isReady(record));
   if (run.pending.length === 0 && run.running.length === 0) {
-    const ended = store(state, { ...compensation, runs: compensation.runs.filter((candidate) => candidate.scope !== scope) });
+    const ended = store(state, { ...compensation, runs: compensation.runs.filter((candidate) => !matches(candidate)) });
     const left = run.leave === null ? ended : signal(ended, { tag: SignalTag.Cancel, occurrence: run.leave });
     return resumeRun(ctx, left, run.resume, fuel - 1);
   }
@@ -319,19 +330,25 @@ function advance(ctx: Ctx, scope: ScopeOccurrenceId, state: State, fuel: number)
   }
   // A group's nested run joined the runs while its handlers began.
   const updated: CompensationRun = { ...run, pending: waiting, running: [...run.running, ...started] };
-  const runs = current.slots.compensation.runs.filter((candidate) => candidate.scope !== scope);
+  const runs = current.slots.compensation.runs.filter((candidate) => !matches(candidate));
   return committed(store(current, { ...current.slots.compensation, runs: [...runs, updated] }));
 }
 
-/** The handler or group that ran in `context` is done: the context is left and the run in `scope` starts what that releases. */
-function release(ctx: Ctx, scope: ScopeOccurrenceId, context: ScopeOccurrenceId, state: State, fuel: number): Outcome {
+/**
+ * The handler or group that ran in `context` is done: the context is left and the run holding it, found by that
+ * context and never by its scope, which a second run may share (#103), starts what that releases.
+ */
+function release(ctx: Ctx, context: ScopeOccurrenceId, state: State, fuel: number): Outcome {
   if (fuel === 0) return failed(FailureTag.SemanticFailure, "compensation-run-depth");
+  const owner = state.slots.compensation.runs.find((candidate) => candidate.running.some(([running]) => running === context));
+  if (owner === undefined) return failed(FailureTag.SemanticFailure, "compensation-run-missing");
   const left = leaveScope(state, context);
   const compensation = left.slots.compensation;
-  const runs = compensation.runs.map((candidate) => candidate.scope === scope
+  const matches = isRun(owner.scope, owner.trigger);
+  const runs = compensation.runs.map((candidate) => matches(candidate)
     ? { ...candidate, running: candidate.running.filter(([running]) => running !== context) }
     : candidate);
-  return advance(ctx, scope, store(left, { ...compensation, runs }), fuel - 1);
+  return advance(ctx, owner.scope, owner.trigger, store(left, { ...compensation, runs }), fuel - 1);
 }
 
 /**
@@ -357,8 +374,9 @@ function visibleScopes(ctx: Ctx, state: State, scope: ScopeOccurrenceId): ScopeO
 
 /**
  * `Signal.compensate`: take into a new run in `scope` every record the throw sees (`visibleScopes`), or only
- * `activity`'s when one is named (I3). Dynamic-only refusal: a trigger while a run is in progress in a scope occurrence
- * it covers, since its relation to the running one is not selected (COMPH-EXCLUSIVE-01 of the trigger account).
+ * `activity`'s when one is named (I3). A run in progress does not hold it back: the records that run claimed, pending
+ * ones included, are Compensating from its trigger (BPMN 2.0.2 §13.5.5, Figure 13.2) and no longer retained, so the
+ * new run takes only what is left, an empty set included (COMPH-EXCLUSIVE-01, #103).
  */
 export function compensate(
   ctx: Ctx,
@@ -374,18 +392,18 @@ export function compensate(
   const selects = (record: Compensable): boolean => covered.includes(record.scope) && (activity === null || activity === record.subject);
   const selected = compensation.retained.filter(selects);
   const kept = compensation.retained.filter((record) => !selects(record));
-  if (compensation.runs.some((run) => covered.includes(run.scope))) {
-    return failed(FailureTag.Unsupported, "compensation-concurrent-trigger"); // dynamic-only: whether a run is in progress
-  }
-  return advance(ctx, scope, store(state, {
+  return advance(ctx, scope, trigger, store(state, {
     retained: kept,
     runs: [...compensation.runs, { trigger, scope, pending: selected, running: [], leave, resume }],
   }), runBound(ctx, state));
 }
 
-/** `Hooks.handlerCompleted`: the handler's context is left and the run starts what that releases. */
-export function handlerCompleted(ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State): Outcome {
-  return release(ctx, run, occurrence.scope, state, runBound(ctx, state));
+/**
+ * `Hooks.handlerCompleted`: the handler's context, the scope occurrence it began in, is left and the run holding that
+ * context starts what that releases; the run's scope `_run` cannot tell two runs of one scope apart.
+ */
+export function handlerCompleted(ctx: Ctx, _run: ScopeOccurrenceId, occurrence: Occurrence, state: State): Outcome {
+  return release(ctx, occurrence.scope, state, runBound(ctx, state));
 }
 
 /**
@@ -410,7 +428,7 @@ export function handlerEnded(ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occur
   const failure = ctx.program.options.compensationHandlerFailure;
   switch (failure.tag) {
     case CompensationHandlerFailureTag.PropagatesFromTrigger:
-      return state.slots.compensation.runs.some((candidate) => candidate.scope === run)
+      return state.slots.compensation.runs.some((candidate) => candidate.running.some(([context]) => context === occurrence.scope))
         ? handlerCompleted(ctx, run, occurrence, state)
         : committed(state);
     case CompensationHandlerFailureTag.FailsInstance:

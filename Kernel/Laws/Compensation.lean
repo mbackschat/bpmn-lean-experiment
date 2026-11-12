@@ -8,7 +8,8 @@ import all Kernel.Feature.Compensation
 The rules of the [compensation semantics](../../docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md#interpretation),
 independent of `Kernel.Feature.Compensation`'s and `Kernel.Step`'s code: only completed work with a handler is
 retained; a trigger takes the records it sees out of retention atomically, so none is compensated twice, and a second
-trigger over a run in progress is refused; a handler starts only once every handler that must complete before it has
+trigger over a run in progress takes only what is still retained, so two runs never share a record and a handler's
+completion advances only the run holding its context; a handler starts only once every handler that must complete before it has
 (§13.5.5's dependency order: a Sequence Flow from its subject, or from a boundary Event of it, to the other subject, a
 data dependency, or a later record of the same subject); a run that an interruption drops begins nothing; leaving a
 scope occurrence drops its records ("presumed abort"); the thrower, and a Transaction's one Cancel boundary
@@ -51,27 +52,52 @@ theorem LeaveDrops.noneLeft {scope : ScopeOccurrenceId} {before after : Compensa
 
 /-! ## The trigger -/
 
-/-- A trigger that no run in progress in the scope occurrences it sees (`covered`) refuses takes into its run exactly
-the retained records there, only the named Activity's when it names one, and leaves every other record retained. -/
+/-- A trigger takes into its run exactly the retained records in the scope occurrences it sees (`covered`), only the
+named Activity's when it names one, and leaves every other record retained, whether or not a run is in progress there:
+the records a run claimed, pending ones included, are Compensating from its trigger (§13.5.5, Figure 13.2) and so no
+longer retained (#103). -/
 def TakesOut (covered : ScopeOccurrenceId → Prop) (activity : Option ElementId) (before after : Compensations)
     (run : CompensationRun) : Prop :=
   let selected (record : Compensable) : Prop := covered record.scope ∧ ∀ named, activity = some named → record.subject = named
-  (∀ running ∈ before.runs, ¬ covered running.scope) →
-    (∀ record, record ∈ run.pending ↔ record ∈ before.retained ∧ selected record) ∧
-      ∀ record, record ∈ after.retained ↔ record ∈ before.retained ∧ ¬ selected record
+  (∀ record, record ∈ run.pending ↔ record ∈ before.retained ∧ selected record) ∧
+    ∀ record, record ∈ after.retained ↔ record ∈ before.retained ∧ ¬ selected record
 
 /-- So no record is both taken by the run and still retained: no later trigger compensates it again. -/
 theorem TakesOut.once {covered : ScopeOccurrenceId → Prop} {activity : Option ElementId} {before after : Compensations}
-    {run : CompensationRun} (law : TakesOut covered activity before after run)
-    (free : ∀ running ∈ before.runs, ¬ covered running.scope) {record : Compensable}
+    {run : CompensationRun} (law : TakesOut covered activity before after run) {record : Compensable}
     (taken : record ∈ run.pending) : record ∉ after.retained := fun kept =>
-  (((law free).2 record).1 kept).2 (((law free).1 record).1 taken).2
+  ((law.2 record).1 kept).2 ((law.1 record).1 taken).2
 
-/-- A trigger whose seen scope occurrences hold a run in progress is refused, its relation to that run unselected
-(`compensation-concurrent-trigger`). -/
-def ConcurrentRefused (covered : ScopeOccurrenceId → Prop) (runs : List CompensationRun)
-    (result : Except Failure State) : Prop :=
-  (∃ run ∈ runs, covered run.scope) → result = .error (.unsupported "compensation-concurrent-trigger")
+/-- The records a run has claimed: those still pending and those whose handler runs. -/
+def claimed (run : CompensationRun) : List Compensable := run.pending ++ run.running.map (·.2)
+
+/-- No record a run in progress claimed is still retained. -/
+def ClaimsApart (compensations : Compensations) : Prop :=
+  ∀ run ∈ compensations.runs, ∀ record ∈ claimed run, record ∉ compensations.retained
+
+/-- So a second trigger over a run in progress claims none of that run's records: the two runs partition what they
+claimed (#103). -/
+theorem TakesOut.apart {covered : ScopeOccurrenceId → Prop} {activity : Option ElementId} {before after : Compensations}
+    {run : CompensationRun} (law : TakesOut covered activity before after run) (apart : ClaimsApart before)
+    {other : CompensationRun} (progress : other ∈ before.runs) {record : Compensable} (taken : record ∈ run.pending) :
+    record ∉ claimed other := fun held =>
+  apart other progress record held ((law.1 record).1 taken).1
+
+/-- A handler's completion in its context scope occurrence `context` releases it from the run whose `running` holds that
+context, found by the context and never by the run's scope, which a second run may share (#103); every other run, one
+in the same scope included, is unchanged, so each thrower waits for its own run's handlers only. -/
+def ReleasesOwn (context : ScopeOccurrenceId) (before after : List CompensationRun) : Prop :=
+  after = before.map fun run => { run with running := run.running.filter (·.1 ≠ context) }
+
+/-- So a run that does not hold the context is kept as it was. -/
+theorem ReleasesOwn.othersKept {context : ScopeOccurrenceId} {before after : List CompensationRun}
+    (law : ReleasesOwn context before after) {run : CompensationRun} (kept : run ∈ before)
+    (foreign : ∀ entry ∈ run.running, entry.1 ≠ context) : run ∈ after := by
+  subst law
+  refine List.mem_map.2 ⟨run, kept, ?_⟩
+  have same : run.running.filter (fun entry => decide (entry.1 ≠ context)) = run.running :=
+    List.filter_eq_self.2 fun entry mem => by simpa using foreign entry mem
+  rw [same]
 
 /-! ## Order -/
 
@@ -219,7 +245,6 @@ theorem starts_both_rejected : ¬ Advances precedesAB both { afterFirst with pen
 /-- A trigger in `outer` takes `A` and `B` and leaves the record of `inner`. -/
 theorem takes_visible : TakesOut (· = outer) none { retained := [recordA, recordB, innerRecord] } { retained := [innerRecord] }
     both := by
-  intro _
   refine ⟨fun record => ?_, fun record => ?_⟩
   · simp only [both, List.mem_cons, List.not_mem_nil, or_false]
     constructor
@@ -242,17 +267,56 @@ theorem takes_visible : TakesOut (· = outer) none { retained := [recordA, recor
 /-- Keeping `A` retained after the run took it, so that a second trigger compensates it again, is rejected. -/
 theorem keeps_taken_rejected :
     ¬ TakesOut (· = outer) none { retained := [recordA, recordB] } { retained := [recordA] } both := fun law =>
-  law.once (by simp) (record := recordA) (by simp [both]) (by simp)
+  law.once (record := recordA) (by simp [both]) (by simp)
 
 def begun : State := { instanceId := "p", slots := { compensation := { runs := [both] } } }
 
-theorem concurrent_refused :
-    ConcurrentRefused (· = outer) [both] (.error (.unsupported "compensation-concurrent-trigger")) := fun _ => rfl
+/-! A second trigger in `outer` while the first run waits for `B`'s handler and keeps `A`'s pending: `C` completed
+after the first trigger. -/
 
-/-- Starting a second run over the one in progress is rejected. -/
-theorem concurrent_started_rejected : ¬ ConcurrentRefused (· = outer) [both] (.ok begun) := fun law => by
-  have := law ⟨both, by simp, rfl⟩
-  simp at this
+def subjectC : ElementId := ⟨"C"⟩
+def recordC : Compensable := { subject := subjectC, handler := some ⟨"UndoC"⟩, scope := outer, completion := 3 }
+def secondTrigger : OccurrenceRef := { trigger with activation := 2 }
+def second : CompensationRun := { trigger := secondTrigger, scope := outer, pending := [recordC], leave := none, resume := none }
+def secondBegun : CompensationRun := { second with pending := [], running := [(⟨2⟩, recordC)] }
+def inProgress : Compensations := { retained := [recordC], runs := [afterFirst] }
+
+theorem in_progress_apart : ClaimsApart inProgress := by
+  intro run mem record held kept
+  simp [inProgress] at mem kept
+  subst mem kept
+  simp [claimed, afterFirst, both, recordA, recordB, recordC, subjectA, subjectB, subjectC] at held
+
+/-- The second run takes `C` alone, the record still retained. -/
+theorem second_takes_remaining : TakesOut (· = outer) none inProgress { retained := [] } second := by
+  refine ⟨fun record => ?_, fun record => ?_⟩
+  · simp only [second, inProgress, List.mem_singleton]
+    constructor
+    · rintro rfl
+      exact ⟨rfl, rfl, by simp⟩
+    · rintro ⟨rfl, _⟩
+      rfl
+  · simp only [inProgress, List.mem_singleton, List.not_mem_nil]
+    constructor
+    · exact False.elim
+    · rintro ⟨rfl, unselected⟩
+      exact absurd ⟨rfl, by simp⟩ unselected
+
+/-- Taking `A` again, which the first run claimed, is rejected. -/
+theorem second_retakes_claimed_rejected :
+    ¬ TakesOut (· = outer) none inProgress { retained := [] } { second with pending := [recordA, recordC] } := fun law => by
+  have := ((law.1 recordA).1 (by simp)).1
+  simp [inProgress, recordA, recordC, subjectA, subjectC] at this
+
+/-- `B`'s handler completing in its context `inner` releases the first run alone. -/
+theorem releases_first_only :
+    ReleasesOwn inner [afterFirst, secondBegun] [{ afterFirst with running := [] }, secondBegun] := by
+  simp [ReleasesOwn, afterFirst, secondBegun, inner]
+
+/-- Releasing every run of the scope `outer`, which would end the second run's wait for `C`'s handler too, is rejected. -/
+theorem releases_by_scope_rejected :
+    ¬ ReleasesOwn inner [afterFirst, secondBegun] [{ afterFirst with running := [] }, { secondBegun with running := [] }] := by
+  simp [ReleasesOwn, afterFirst, secondBegun, inner]
 
 theorem completed_with_handler_retained : Retains true (some ⟨"UndoA"⟩) false (some recordA) :=
   ⟨rfl, .inl rfl, rfl⟩

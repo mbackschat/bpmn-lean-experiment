@@ -159,6 +159,11 @@ resumes at most every run in progress. -/
 def runBound (ctx : Ctx) (state : State) : Nat :=
   2 * (ctx.program.elements.length + state.slots.compensation.runs.length) + 2
 
+/-- Whether `run` is the one `trigger` started in `scope`. Two runs may share a scope occurrence (#103), never a trigger
+there: a nested group run has a context of its own. -/
+def isRun (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (run : CompensationRun) : Bool :=
+  run.scope == scope && run.trigger == trigger
+
 mutual
 
 /-- Begin `record`'s handler in a new context scope occurrence inside `scope`, where the records of its children become
@@ -175,7 +180,7 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
       let compensation := state.slots.compensation
       let nested : CompensationRun :=
         { trigger, scope := context, pending, leave := none, resume := some (.group scope context) }
-      let state ← advance ctx context (store state { compensation with runs := compensation.runs ++ [nested] }) fuel
+      let state ← advance ctx context trigger (store state { compensation with runs := compensation.runs ++ [nested] }) fuel
       .ok (state, context)
     | some handler =>
       match ctx.program.element? handler with
@@ -191,26 +196,27 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
           .ok (state.signal (.begin { element := handler, scope := context, continuation := .compensation scope }),
             context)
 
-/-- Start every pending handler of the run in `scope` that no pending or running handler's subject succeeds; once
-none is pending or running, end the run: cancel the occurrence it leaves, if any, then complete its `resume`. -/
-def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Nat → Outcome
+/-- Start every pending handler of the run `trigger` started in `scope` that no pending or running handler of that run
+succeeds; once none is pending or running, end the run: cancel the occurrence it leaves, if any, then complete its
+`resume`. Another run in the same scope neither delays nor ends it. -/
+def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (state : State) : Nat → Outcome
   | 0 => .error (.semanticFailure "compensation-run-depth")
   | fuel + 1 => do
     let compensation := state.slots.compensation
-    let run ← match compensation.runs.find? (·.scope == scope) with
+    let run ← match compensation.runs.find? (isRun scope trigger) with
       | some run => .ok run
       | none => .error (.semanticFailure "compensation-run-missing")
     let remaining := run.pending ++ run.running.map (·.2)
     let (ready, waiting) := run.pending.partition fun record => !remaining.any (precedes ctx record ·)
     if run.pending.isEmpty && run.running.isEmpty then
-      let state := store state { compensation with runs := compensation.runs.filter (·.scope != scope) }
+      let state := store state { compensation with runs := compensation.runs.filter (!isRun scope trigger ·) }
       let state := match run.leave with
         | some occurrence => state.signal (.cancel occurrence)
         | none => state
       match run.resume with
         | some (.complete occurrence leave) => .ok (state.signal (.complete occurrence leave [] .outward))
         | some (.occur element at_ leave) => .ok (state.signal (.occur element at_ leave [] .outward))
-        | some (.group outer context) => release ctx outer context state fuel
+        | some (.group _ context) => release ctx context state fuel
         | none => .ok state
     -- Dynamic-only: a dependency cycle needs the retained set, which depends on the run.
     else if ready.isEmpty && run.running.isEmpty then .error (.unsupported "compensation-dependency-cycle")
@@ -223,20 +229,24 @@ def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Nat → Ou
         .ok (state, started ++ [(context, record)])) (state, [])
       -- A group's nested run joined the runs while its handlers began.
       let compensation := state.slots.compensation
-      .ok (store state { compensation with runs := compensation.runs.filter (·.scope != scope) ++
+      .ok (store state { compensation with runs := compensation.runs.filter (!isRun scope trigger ·) ++
         [{ run with pending := waiting, running := run.running ++ started }] })
 
-/-- The handler or group that ran in `context` is done: the context is left and the run in `scope` starts what that
-releases. -/
-def release (ctx : Ctx) (scope context : ScopeOccurrenceId) (state : State) : Nat → Outcome
+/-- The handler or group that ran in `context` is done: the context is left and the run holding it, found by that
+context and never by its scope, which a second run may share (#103), starts what that releases. -/
+def release (ctx : Ctx) (context : ScopeOccurrenceId) (state : State) : Nat → Outcome
   | 0 => .error (.semanticFailure "compensation-run-depth")
   | fuel + 1 =>
-    let left := state.leaveScope context
-    let compensation := left.slots.compensation
-    let runs := compensation.runs.map fun candidate =>
-      if candidate.scope == scope then { candidate with running := candidate.running.filter (·.1 != context) }
-      else candidate
-    advance ctx scope (store left { compensation with runs }) fuel
+    match state.slots.compensation.runs.find? (·.running.any (·.1 == context)) with
+    | none => .error (.semanticFailure "compensation-run-missing")
+    | some owner =>
+      let left := state.leaveScope context
+      let compensation := left.slots.compensation
+      let runs := compensation.runs.map fun candidate =>
+        if isRun owner.scope owner.trigger candidate then
+          { candidate with running := candidate.running.filter (·.1 != context) }
+        else candidate
+      advance ctx owner.scope owner.trigger (store left { compensation with runs }) fuel
 
 end
 
@@ -259,24 +269,23 @@ def visibleScopes (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) : List
   go (state.scopes.length + 1) scope
 
 /-- `Signal.compensate`: take into a new run in `scope` every record the throw sees (`visibleScopes`), or only
-`activity`'s when one is named (I3). Dynamic-only refusal: a trigger while a run is in progress in a scope occurrence it
-covers, since its relation to the running one is not selected (COMPH-EXCLUSIVE-01 of the trigger account). -/
+`activity`'s when one is named (I3). A run in progress does not hold it back: the records that run claimed, pending ones
+included, are Compensating from its trigger (BPMN 2.0.2 §13.5.5, Figure 13.2) and no longer retained, so the new run
+takes only what is left, an empty set included (COMPH-EXCLUSIVE-01, #103). -/
 def compensate (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
     (leave : Option Nat) (resume : Option Resume) (state : State) : Outcome :=
   let compensation := state.slots.compensation
   let covered := visibleScopes ctx state scope
   let (selected, kept) := compensation.retained.partition fun record =>
     covered.contains record.scope && activity.all (· == record.subject)
-  if compensation.runs.any (covered.contains ·.scope) then
-    .error (.unsupported "compensation-concurrent-trigger") -- dynamic-only: whether a run is in progress
-  else
-    advance ctx scope (store state
-      { retained := kept, runs := compensation.runs ++ [{ trigger, scope, pending := selected, leave, resume }] })
-      (runBound ctx state)
+  advance ctx scope trigger (store state
+    { retained := kept, runs := compensation.runs ++ [{ trigger, scope, pending := selected, leave, resume }] })
+    (runBound ctx state)
 
-/-- `Hooks.handlerCompleted`: the handler's context is left and the run starts what that releases. -/
-def handlerCompleted (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence : Occurrence) (state : State) : Outcome :=
-  release ctx run occurrence.scope state (runBound ctx state)
+/-- `Hooks.handlerCompleted`: the handler's context, the scope occurrence it began in, is left and the run holding that
+context starts what that releases; the run's scope cannot tell two runs of one scope apart. -/
+def handlerCompleted (ctx : Ctx) (_ : ScopeOccurrenceId) (occurrence : Occurrence) (state : State) : Outcome :=
+  release ctx occurrence.scope state (runBound ctx state)
 
 /-- The runs in `scope` and inside it go at once, when a catcher that interrupts `scope` has decided
 (`Propagation.PropagationHooks.dropRuns`): its interruption is still queued, and a run it would remove must begin no
@@ -294,7 +303,9 @@ changes. -/
 def handlerEnded (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence : Occurrence) (state : State) : Outcome :=
   match ctx.program.options.compensationHandlerFailure with
   | .propagatesFromTrigger =>
-    if state.slots.compensation.runs.any (·.scope == run) then handlerCompleted ctx run occurrence state else .ok state
+    if state.slots.compensation.runs.any (·.running.any (·.1 == occurrence.scope)) then
+      handlerCompleted ctx run occurrence state
+    else .ok state
   | .failsInstance | .selected _ => .ok state
 
 /-- `Signal.compensationFailed`: an Error raised at `origin`, an effect's reported Error or an Error End Event inside a

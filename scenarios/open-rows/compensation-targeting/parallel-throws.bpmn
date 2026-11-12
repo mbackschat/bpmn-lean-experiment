@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ParallelThrows"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-targeting:parallel-throws">
+  <bpmn:process id="Process_ParallelThrows" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_Start" targetRef="Gateway_Fork" />
+    <bpmn:parallelGateway id="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Reserve" sourceRef="Gateway_Fork" targetRef="UserTask_Reserve" />
+    <bpmn:sequenceFlow id="Flow_Fork_Right" sourceRef="Gateway_Fork" targetRef="UserTask_Ship" />
+
+    <bpmn:userTask id="UserTask_Reserve" name="Reserve the stock" />
+    <bpmn:boundaryEvent id="Boundary_CompensateReserve" attachedToRef="UserTask_Reserve">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Reserve" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoReserve" name="Release the stock" isForCompensation="true" />
+    <bpmn:sequenceFlow id="Flow_Reserve_Throw" sourceRef="UserTask_Reserve" targetRef="IntermediateThrow_Left" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_Left">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Left" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_Left_After" sourceRef="IntermediateThrow_Left" targetRef="UserTask_AfterLeft" />
+    <bpmn:userTask id="UserTask_AfterLeft" name="Continue the left branch" />
+    <bpmn:sequenceFlow id="Flow_AfterLeft_End" sourceRef="UserTask_AfterLeft" targetRef="EndEvent_Left" />
+    <bpmn:endEvent id="EndEvent_Left" />
+
+    <bpmn:userTask id="UserTask_Ship" name="Ship the order" />
+    <bpmn:boundaryEvent id="Boundary_CompensateShip" attachedToRef="UserTask_Ship">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Ship" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoShip" name="Recall the shipment" isForCompensation="true" />
+    <bpmn:sequenceFlow id="Flow_Right_Throw" sourceRef="UserTask_Ship" targetRef="IntermediateThrow_Right" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_Right">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Right" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_Right_After" sourceRef="IntermediateThrow_Right" targetRef="UserTask_AfterRight" />
+    <bpmn:userTask id="UserTask_AfterRight" name="Continue the right branch" />
+    <bpmn:sequenceFlow id="Flow_AfterRight_End" sourceRef="UserTask_AfterRight" targetRef="EndEvent_Right" />
+    <bpmn:endEvent id="EndEvent_Right" />
+
+    <bpmn:association id="Association_Reserve" associationDirection="One" sourceRef="Boundary_CompensateReserve" targetRef="UserTask_UndoReserve" />
+    <bpmn:association id="Association_Ship" associationDirection="One" sourceRef="Boundary_CompensateShip" targetRef="UserTask_UndoShip" />
+  </bpmn:process>
+</bpmn:definitions>
