@@ -43,19 +43,6 @@
           "elementId": "Outer_Stop"
         }
       ]
-    },
-    {
-      "kind": "command",
-      "commandId": "s03-complete-Handle_Outer",
-      "occurrence": {
-        "processInstanceId": "Instance_1",
-        "elementId": "Handle_Outer",
-        "activation": 1
-      },
-      "action": {
-        "kind": "completeUserTask",
-        "values": []
-      }
     }
   ],
   "provenance": {

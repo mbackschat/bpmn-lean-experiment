@@ -107,7 +107,7 @@ test("two interrupting Conditional boundaries true at their host's entry refuse 
   assert.deepEqual(await refused(model, [start([go(true)])]), { tag: "unsupported", code: "conditions-simultaneous" });
 });
 
-test("an interrupting boundary and its Sub-Process host's own interrupting Event Sub-Process true at entry fire as ranked", async () => {
+test("an interrupting boundary and its Sub-Process host's own interrupting Event Sub-Process true at entry fire boundary first", async () => {
   const model = inline(`<bpmn:startEvent id="S"/><bpmn:sequenceFlow id="f1" sourceRef="S" targetRef="Host"/>
     <bpmn:subProcess id="Host"><bpmn:startEvent id="IS"/>${branch("IS", "Inner")}${eventSubProcess("ESP1", "go")}</bpmn:subProcess>
     <bpmn:sequenceFlow id="f2" sourceRef="Host" targetRef="E"/><bpmn:endEvent id="E"/>
@@ -115,9 +115,8 @@ test("an interrupting boundary and its Sub-Process host's own interrupting Event
   assert.deepEqual(await refused(model, [start([go(true)])]), { tag: "unsupported", code: "conditions-simultaneous" });
   const [boundaryFirst] = await begun(model, [start([go(true)], ["B1"])]);
   assert.deepEqual(users(boundaryFirst ?? []), ["W1"]);
-  const [both] = await begun(model, [start([go(true)], ["ESP1_Start", "B1"])]);
-  assert.deepEqual(users(both ?? []), ["W1"], "the boundary cancels the handler the start began before its work begins");
-  assert.ok(both?.includes("ESP1"), "the Event Sub-Process fired first");
+  assert.deepEqual(await refused(model, [start([go(true)], ["ESP1_Start", "B1"])]), { tag: "unsupported", code: "interrupted-before-wait" },
+    "the boundary would remove the scope the start's handler begins in before its work reaches its wait");
 });
 
 test("two interrupting Conditional Event Sub-Processes true at their scope's entry refuse the input", async () => {

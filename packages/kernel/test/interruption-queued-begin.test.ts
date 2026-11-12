@@ -1,11 +1,12 @@
 /**
- * Work a queued signal names goes with the scope occurrence or occurrence that a later signal of the same closure
- * removed (`Kernel.Step.stale`). Signals run first in, first out, and an interruption removes in two steps: its firing
- * withdraws the open items at once, its queued cancellation or interrupting begin removes the occurrences later. A
- * begin, or the arming of an Activity a queued begin started, enqueued between the two runs after the removal. CIB runs
- * the first handler to its wait before the interruption cancels it and commits; the kernel failed the input with
- * `begin-into-missing-scope`, or left an armed boundary on a removed Activity. The writes are one command's, offered in
- * write order, so no two items compete.
+ * Work an earlier firing or a scope occurrence's entry started, and that a later interruption of the same closure would
+ * remove before it reaches its first wait. Signals run first in, first out, and an interruption removes in two steps:
+ * its firing withdraws the open items at once, its queued cancellation or interrupting begin removes the occurrences
+ * later, so a begin, an arming or a token enqueued between the two never runs. CIB runs each variable event's handler to
+ * its wait before the next event's interruption cancels it, so the earlier handler's no-wait work, a Signal it throws
+ * included, happens there (CIB-LIM-0055). The kernel does not run it, and committing without it would lose that work,
+ * so the input is `unsupported` (`interrupted-before-wait`): where the walk orders two firings of one micro-step's
+ * writes (`Conditions.overtakes`), and where a queued signal finds what it names removed (`Step.stale`).
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -14,15 +15,17 @@ import { admit, decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, Program, State } from "@bpmn-lean/kernel";
 
 import {
-  activity, append, base, boundary, duration, end, eventSubProcess, flow, gateway, juel, replace, scope, start, userWork, withFlows, withOptions,
-  wired,
+  activity, append, base, boundary, catchEvent, duration, end, eventSubProcess, flow, gateway, juel, qName, replace, scope, signal, start, text,
+  userWork, withFlows, withOptions, wired,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
 const options = { evaluator: "juel", conditionalRetrigger: "eachWrite", abnormalScopeEnd: "completesNormally", submission: "installsVariables" };
 
-/** `${name}`, offered only writes of `name`. */
-const holds = (name: string): Json => ({ condition: { payload: { condition: juel({ identifier: { name } }), variableName: name, variableEvents: [] } } });
+/** `${name}`, offered only writes of `name` unless `filtered` is false. */
+const holds = (name: string, filtered = true): Json => ({
+  condition: { payload: { condition: juel({ identifier: { name } }), variableName: filtered ? name : null, variableEvents: [] } },
+});
 
 function admitted(json: Json): Program {
   const decoded = decodeProgram(wired(withOptions({ ...json, variables: ["a", "b"] }, options)));
@@ -46,11 +49,14 @@ function run(program: Program, raws: readonly Json[]): Outcome {
 }
 
 const begin: Json = { kind: "start", commandId: "start", instanceId: "I", variables: [] };
-/** `a`, then `b`, written true on `element`. */
-const writeAThenB = (element: string): Json => ({
+/** `names`, in order, written true on `element`. */
+const write = (element: string, names: readonly string[], over: Json = {}): Json => ({
   kind: "command", commandId: "write", occurrence: { processInstanceId: "I", elementId: element, activation: 1 },
-  action: { kind: "setVariables", values: ["a", "b"].map((name) => ({ name, value: { kind: "boolean", value: true } })) },
+  action: { kind: "setVariables", values: names.map((name) => ({ name, value: { kind: "boolean", value: true } })) }, ...over,
 });
+const writeAThenB = (element: string): Json => write(element, ["a", "b"]);
+const ranked = (...elements: string[]): Json => ({ conditionChoices: elements.map((elementId) => ({ elementId })) });
+const interrupted = { ok: false, failure: { tag: "unsupported", code: "interrupted-before-wait" } };
 const open = (outcome: Outcome): string[] => {
   assert.ok(outcome.ok, JSON.stringify(outcome));
   return outcome.value.openItems.map((item) => item.element).sort();
@@ -62,8 +68,8 @@ const handlers = admitted(withFlows(append(replace(base(), "T", activity("T", us
   scope("HI", eventSubProcess(holds("b"), true)), start("SI", holds("b"), [], "HI"), activity("WI", userWork(), {}, "HI"), end("EI", "none", "HI")),
   flow("n1", "SN", "WN"), flow("n2", "WN", "EN"), flow("i1", "SI", "WI"), flow("i2", "WI", "EI")));
 
-test("an interrupting Event Sub-Process removes the region a handler an earlier write started is still beginning in", () => {
-  assert.deepEqual(open(run(handlers, [begin, writeAThenB("T")])), ["WI"]);
+test("an interrupting Event Sub-Process that removes the region a handler an earlier write started is beginning in refuses the input", () => {
+  assert.deepEqual(run(handlers, [begin, writeAThenB("T")]), interrupted);
 });
 
 /** `S -> P`, a fork to the User Task `W` and to the Sub-Process `R` with the interrupting boundary `BO` (`${b}`), inside
@@ -77,8 +83,8 @@ const region = admitted(withFlows(append(replace(base(), "T", gateway("P", "para
   flow("p0", "S", "P"), flow("pe", "P", "E"), flow("p1", "P", "W"), flow("p2", "P", "R"), flow("w1", "W", "EW"), flow("r1", "R", "ER"),
   flow("bo", "BO", "HO"), flow("ho", "HO", "EHO"), flow("rs", "RS", "T2"), flow("t2", "T2", "RE"), flow("n1", "SN", "WN"), flow("n2", "WN", "EN")));
 
-test("an interrupting boundary removes the Sub-Process a handler an earlier write started is still beginning in", () => {
-  assert.deepEqual(open(run(region, [begin, writeAThenB("W")])), ["HO", "W"]);
+test("an interrupting boundary that removes the Sub-Process a handler an earlier write started is beginning in refuses the input", () => {
+  assert.deepEqual(run(region, [begin, writeAThenB("W")]), interrupted);
 });
 
 /** The Sub-Process `P`, with no start Event, holds the Sub-Process `R`, with none either, holding the User Task `X` with
@@ -92,8 +98,37 @@ const nestedImplicit = admitted(withFlows(append(replace(base(), "T", scope("P",
   end("EH", "none", "H")),
   flow("s1", "S", "P"), flow("p1", "P", "E"), flow("bx", "BX", "HX"), flow("h1", "SH", "WH"), flow("h2", "WH", "EH")));
 
-test("an interrupting Event Sub-Process removes the Activity whose boundaries a begin queued before it was still to arm", () => {
-  const outcome = run(nestedImplicit, [{ ...begin, variables: [{ name: "a", value: { kind: "boolean", value: true } }] }]);
-  assert.deepEqual(open(outcome), ["WH"]);
-  assert.ok(outcome.ok && outcome.value.occurrences.every((occurrence) => occurrence.element !== "BX"), "no reservation outlives its host");
+test("an interrupting Event Sub-Process that removes the Activity whose boundaries a queued begin was still to arm refuses the input", () => {
+  assert.deepEqual(run(nestedImplicit, [{ ...begin, variables: [{ name: "a", value: { kind: "boolean", value: true } }] }]), interrupted);
+});
+
+/** `S -> P`, a fork to the User Task `W`, the Signal catch `C` and the Sub-Process `R` with the interrupting boundary
+ * `BO`, inside which the non-interrupting Event Sub-Process `HN` starts at `SN` and throws the Signal `S` that `C`
+ * catches. `SN` holds `${a}` and `BO` holds `${b}`, each offered only writes of its variable, unless `oneVariable`
+ * makes both hold `${a}` for every write. */
+const thrower = (oneVariable: boolean): Program => {
+  const throwSignal: Json = {
+    signal: {
+      payload: { signalRef: qName("Sig"), name: text("S"), payload: [], propagateAll: null, localOnly: false, businessKey: null, asynchronous: false },
+    },
+  };
+  const stop = oneVariable ? holds("a", false) : holds("b");
+  const alert = oneVariable ? holds("a", false) : holds("a");
+  return admitted(withFlows(append(replace(base(), "T", gateway("P", "parallel", { outgoing: ["p1", "p2", "p3"] })),
+    activity("W", userWork()), end("EW"), catchEvent("C", signal()), activity("WC", userWork()), end("EC"),
+    scope("R", "embedded", {}, { boundaries: [boundary("BO", stop, { outgoing: ["bo"] })] }), end("ER"), activity("HO", userWork()), end("EHO"),
+    start("RS", null, [], "R"), activity("T2", userWork(), {}, "R"), end("RE", "none", "R"),
+    scope("HN", eventSubProcess(alert, false), {}, {}, "R"), start("SN", alert, [], "HN"), end("EN", throwSignal, "HN")),
+    flow("p0", "S", "P"), flow("pe", "P", "E"), flow("p1", "P", "W"), flow("p2", "P", "R"), flow("p3", "P", "C"), flow("c1", "C", "WC"),
+    flow("c2", "WC", "EC"), flow("w1", "W", "EW"), flow("r1", "R", "ER"), flow("bo", "BO", "HO"), flow("ho", "HO", "EHO"),
+    flow("rs", "RS", "T2"), flow("t2", "T2", "RE"), flow("n1", "SN", "EN")));
+};
+
+test("an interruption never commits without the Signal an earlier-ordered handler throws before its first wait", () => {
+  const caught = run(thrower(false), [begin, write("W", ["a"])]);
+  assert.deepEqual(open(caught), ["BO", "SN", "T2", "W", "WC"], "the handler alone throws, and the catch takes it");
+  assert.ok(caught.ok && caught.value.outbox.length === 1, "the throw is published");
+  assert.deepEqual(run(thrower(false), [begin, write("W", ["a", "b"])]), interrupted, "the write order");
+  assert.deepEqual(run(thrower(true), [begin, write("W", ["a"], ranked("SN", "BO"))]), interrupted, "the ranking");
+  assert.deepEqual(open(run(thrower(true), [begin, write("W", ["a"], ranked("BO"))])), ["C", "HO", "W"], "the interruption first");
 });

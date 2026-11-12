@@ -54,32 +54,6 @@
           "elementId": "Mix_Stop_Start"
         }
       ]
-    },
-    {
-      "kind": "command",
-      "commandId": "s03-complete-Mix_Warn_Work",
-      "occurrence": {
-        "processInstanceId": "Instance_1",
-        "elementId": "Mix_Warn_Work",
-        "activation": 1
-      },
-      "action": {
-        "kind": "completeUserTask",
-        "values": []
-      }
-    },
-    {
-      "kind": "command",
-      "commandId": "s04-complete-Mix_Stop_Work",
-      "occurrence": {
-        "processInstanceId": "Instance_1",
-        "elementId": "Mix_Stop_Work",
-        "activation": 1
-      },
-      "action": {
-        "kind": "completeUserTask",
-        "values": []
-      }
     }
   ],
   "provenance": {

@@ -4,9 +4,9 @@ public import Kernel.Hooks
 
 /-! # Step: queued work whose target is gone
 
-What a queued signal does, the scope occurrences and occurrences it names, and what becomes of it when an interruption
-removed one of them before it ran (`stale`). `Kernel.Step` builds each signal's work in its one match on `Signal`; none
-matches a guarded type here.
+What a queued signal does, the scope occurrences and occurrences it names, and the refusal of one an interruption
+removed a target of before it ran (`stale`). `Kernel.Step` builds each signal's work in its one match on `Signal`;
+none matches a guarded type here.
 -/
 
 public section
@@ -28,19 +28,23 @@ structure SignalWork where
 /-- Whether `work` names a scope occurrence or an occurrence that was issued and has since been removed. Signals run
 first in, first out, and an interruption removes in two steps: its firing withdraws the open items at once, its queued
 cancellation or interrupting Event Sub-Process begin removes the occurrences and scope occurrences later. A signal a
-micro-step between the two enqueued runs after the removal: the begin of what entering a scope occurrence queued, or the
-arming of an Activity a queued begin started. Such work goes with what it names, as a firing that finds no item does
-(`Signal.fire`). `nextIssue` counts every identity the state issues, of whatever kind, so a target below it is only
-known to have been issued: one of the wrong kind, a kernel defect, reads as removed, and only one at or above it fails
-as never issued (`requireScope`). A `raise` names its origin only as provenance and runs at the head of a queue a token
-emptied; a firing names an item; a write, a removal, a compensation and its failure name none, so what their hooks do
-with a scope occurrence that is gone stands (`compensation-handler-gone`); `endInstance` names nothing. -/
+micro-step between the two enqueued runs after the removal: the begin of what an earlier firing or the entry of a scope
+occurrence queued, the arming of what such a begin started, or the arrival of a token it moved. Only a begin, an
+arming and an `occur` name targets. `nextIssue` counts every identity the state issues, of whatever kind, so a target
+below it is only known to have been issued: one of the wrong kind, a kernel defect, reads as removed, and only one at
+or above it fails as never issued (`requireScope`). A completion and a cancellation do nothing to an occurrence that is
+gone; a firing finds no item (`Signal.fire`); a `raise` names its origin only as provenance and runs at the head of a
+queue a token emptied; a write, a removal, a compensation and its failure name none, so what their hooks do with a
+scope occurrence that is gone stands (`compensation-handler-gone`); `endInstance` names nothing. -/
 def stale (state : State) (work : SignalWork) : Bool :=
   work.scopes.any (fun scope => scope.value < state.nextIssue && !state.scopes.any (·.id == scope)) ||
     work.occurrences.any fun id => id < state.nextIssue && (state.occurrence? id).isNone
 
-/-- Run a queued signal's work, unless what it names is gone (`stale`). -/
+/-- Run a queued signal's work, unless an interruption removed what it names first (`stale`): then work an earlier
+firing of the input started never reaches its first wait, where CIB runs it there before the interruption
+(CIB-LIM-0055), so the input is `unsupported` rather than committed without that work. -/
 def SignalWork.perform (work : SignalWork) (state : State) : Outcome :=
-  if stale state work then .ok state else work.run state
+  -- dynamic-only: whether an interruption overtakes queued work depends on the run's data and order
+  if stale state work then .error (.unsupported "interrupted-before-wait") else work.run state
 
 end Kernel.Step

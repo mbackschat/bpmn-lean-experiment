@@ -43,19 +43,6 @@
           "elementId": "Fx_Stop"
         }
       ]
-    },
-    {
-      "kind": "command",
-      "commandId": "s03-complete-Handle_Fx_Stop",
-      "occurrence": {
-        "processInstanceId": "Instance_1",
-        "elementId": "Handle_Fx_Stop",
-        "activation": 1
-      },
-      "action": {
-        "kind": "completeUserTask",
-        "values": []
-      }
     }
   ],
   "provenance": {

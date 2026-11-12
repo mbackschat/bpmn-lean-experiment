@@ -214,7 +214,7 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
     case SignalTag.Complete:
       return {
         completion: true, run: (state) => complete(hooks, ctx, next.occurrence, next.leave, next.writes, next.rule, state), scopes: [],
-        occurrences: [next.occurrence],
+        occurrences: [],
       };
     case SignalTag.Write:
       return other((state) => hooks.writeOutputs(ctx, next.scope, next.writes, next.rule, state));
@@ -228,7 +228,7 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
         return complete(hooks, ctx, occurrence.id, next.leave, next.writes, next.rule, reserved);
       }, [next.scope]);
     case SignalTag.Cancel:
-      return other((state) => committed(cancelOccurrence(state, next.occurrence)), [], [next.occurrence]);
+      return other((state) => committed(cancelOccurrence(state, next.occurrence)));
     case SignalTag.Fire:
       return other((state) => {
         const open = state.openItems.find((item) => item.id === next.item);
@@ -244,7 +244,7 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
   return assertNever(next);
 }
 
-/** `Kernel.Step.dispatchSignal`: run a queued signal, unless what it names is gone (`perform`). */
+/** `Kernel.Step.dispatchSignal`: run a queued signal, refused when what it names is gone (`perform`). */
 function dispatchSignal(hooks: Hooks, ctx: Ctx, next: Signal): (state: State) => Outcome {
   const work = signalRun(hooks, ctx, next);
   return (state) => perform(work, state);

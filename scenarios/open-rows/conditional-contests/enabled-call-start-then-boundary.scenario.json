@@ -43,32 +43,6 @@
           "elementId": "Call_Stop"
         }
       ]
-    },
-    {
-      "kind": "command",
-      "commandId": "s03-complete-Child_Alert_Work",
-      "occurrence": {
-        "processInstanceId": "call:10:Instance_1:9:Host_Call:1",
-        "elementId": "Child_Alert_Work",
-        "activation": 1
-      },
-      "action": {
-        "kind": "completeUserTask",
-        "values": []
-      }
-    },
-    {
-      "kind": "command",
-      "commandId": "s04-complete-Handle_Call_Stop",
-      "occurrence": {
-        "processInstanceId": "Instance_1",
-        "elementId": "Handle_Call_Stop",
-        "activation": 1
-      },
-      "action": {
-        "kind": "completeUserTask",
-        "values": []
-      }
     }
   ],
   "provenance": {

@@ -4,7 +4,9 @@
  * Sub-Process starts of one scope, and nested cancellation regions. BPMN gives simultaneous triggers no order (§13.4.4)
  * and CIB takes one no profile selects (CIB-LIM-0053), so the input's ranking `conditionChoices` decides each contest
  * ([subscriptions semantics](../../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md#conditions)); a contest it
- * leaves undecided refuses the input as `unsupported`, and one true item, or items none withdraws, commit unranked.
+ * leaves undecided refuses the input as `unsupported`, and one true item, or items none withdraws, commit unranked. A
+ * ranking that puts a firing before an interruption of the region where its handler continues is refused as
+ * `interrupted-before-wait` (CIB-LIM-0055).
  *
  * `amount >= 1000` and `amount >= 500` are the two predicates; `amount` is unset at the start unless a case gives it.
  * The oracle is the occurrences the last input began (its journal), since a later cancellation can hide a firing.
@@ -175,9 +177,10 @@ test("two interrupting Event Sub-Process starts made true by one write refuse th
   assert.deepEqual(begun(run(handlers(true), [begin(), complete("T", amount(2000), ranked("HS2"))]), ["H1", "H2"]), ["H2"]);
 });
 
-test("an interrupting and a non-interrupting Event Sub-Process start fire in the ranked order", () => {
+test("an interrupting and a non-interrupting Event Sub-Process start fire in the ranked order, the interrupting one first", () => {
   assert.deepEqual(run(handlers(false), [begin(), complete("T", amount(2000))]), refused("conditions-simultaneous"));
-  assert.deepEqual(begun(run(handlers(false), [begin(), complete("T", amount(2000), ranked("HS2", "HS1"))]), ["H1", "H2"]), ["H2", "H1"]);
+  assert.deepEqual(run(handlers(false), [begin(), complete("T", amount(2000), ranked("HS2", "HS1"))]), refused("interrupted-before-wait"),
+    "the interrupting start clears the scope the non-interrupting handler begins in before it reaches its wait");
   assert.deepEqual(begun(run(handlers(false), [begin(), complete("T", amount(2000), ranked("HS1", "HS2"))]), ["H1", "H2"]), ["H1"]);
 });
 
@@ -192,11 +195,12 @@ const nested = (innerInterrupts: boolean): Program => admitted(withFlows(
   flow("p0", "S", "P"), flow("pe", "P", "E"), flow("p1", "P", "W"), flow("p2", "P", "R"), flow("w1", "W", "EW"), flow("r1", "R", "ER"),
   flow("bo", "BO", "HO"), flow("ho", "HO", "EHO"), flow("rs", "RS", "T2"), flow("t2", "T2", "RE"), flow("bi", "BI", "HI"), flow("hi", "HI", "EHI")));
 
-test("an outer boundary and an inner one inside its host true at one write fire in the ranked order", () => {
+test("an outer boundary and an inner one inside its host true at one write fire in the ranked order, outer first", () => {
   for (const inner of [true, false]) {
     assert.deepEqual(run(nested(inner), [begin(), complete("W", amount(2000))]), refused("conditions-simultaneous"), "unranked");
     assert.deepEqual(begun(run(nested(inner), [begin(), complete("W", amount(2000), ranked("BO"))]), ["BO", "BI"]), ["BO"]);
-    assert.deepEqual(begun(run(nested(inner), [begin(), complete("W", amount(2000), ranked("BI", "BO"))]), ["BO", "BI"]), ["BI", "BO"]);
+    assert.deepEqual(run(nested(inner), [begin(), complete("W", amount(2000), ranked("BI", "BO"))]), refused("interrupted-before-wait"),
+      "the outer interruption removes the Sub-Process the inner boundary's token leaves into");
     assert.deepEqual(run(nested(inner), [begin(), complete("W", amount(2000), ranked("BI"))]), refused("conditions-simultaneous"));
   }
   assert.deepEqual(begun(run(nested(true), [begin(), complete("W", amount(700))]), ["BO", "BI"]), ["BO"], "only the outer is true");
@@ -215,7 +219,8 @@ const crossArming = (innerInterrupts: boolean): Program => admitted(withFlows(
 test("a host's boundary and an Event Sub-Process start of the scope it opens, true when it is entered, are one contest", () => {
   for (const inner of [false, true]) {
     assert.deepEqual(run(crossArming(inner), [begin(amount(2000))]), refused("conditions-simultaneous"), "unranked");
-    assert.deepEqual(begun(run(crossArming(inner), [begin(amount(2000), ranked("SN", "BO"))]), ["HN", "BO"]), ["HN", "BO"]);
+    assert.deepEqual(run(crossArming(inner), [begin(amount(2000), ranked("SN", "BO"))]), refused("interrupted-before-wait"),
+      "the boundary removes the scope the inner handler begins in");
     assert.deepEqual(begun(run(crossArming(inner), [begin(amount(2000), ranked("BO"))]), ["HN", "BO"]), ["BO"]);
     assert.deepEqual(run(crossArming(inner), [begin(amount(2000), ranked("SN"))]), refused("conditions-simultaneous"));
   }

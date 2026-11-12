@@ -43,32 +43,6 @@
           "elementId": "Sub_Stop"
         }
       ]
-    },
-    {
-      "kind": "command",
-      "commandId": "s03-complete-Sub_Alert_Work",
-      "occurrence": {
-        "processInstanceId": "Instance_1",
-        "elementId": "Sub_Alert_Work",
-        "activation": 1
-      },
-      "action": {
-        "kind": "completeUserTask",
-        "values": []
-      }
-    },
-    {
-      "kind": "command",
-      "commandId": "s04-complete-Handle_Sub_Stop",
-      "occurrence": {
-        "processInstanceId": "Instance_1",
-        "elementId": "Handle_Sub_Stop",
-        "activation": 1
-      },
-      "action": {
-        "kind": "completeUserTask",
-        "values": []
-      }
     }
   ],
   "provenance": {

@@ -79,6 +79,14 @@ def Withdrawal.disarms : Withdrawal → Bool
   | .arms _ => true
   | .host _ | .inside _ => false
 
+/-- The scope occurrences a withdrawal's interruption removes once its queued cancellation or begin runs: those the
+host occurrence owns and everything inside them, or the scope occurrence an Event Sub-Process start interrupts and
+everything inside it, its own tokens included; disarming removes none. -/
+def Withdrawal.region (state : State) : Withdrawal → List ScopeOccurrenceId
+  | .host occurrence => (state.scopes.filter (·.occurrence == some occurrence)).flatMap fun scope => state.subtree scope.id
+  | .arms _ => []
+  | .inside scope => state.subtree scope
+
 /-- What firing `item` withdraws; `none` for an item whose firing withdraws nothing else: a non-interrupting boundary or
 start, or a catch Event. -/
 def withdrawal (ctx : Ctx) (item : OpenItem) : Option Withdrawal :=
@@ -130,14 +138,24 @@ def walk (ctx : Ctx) (withdraws : OpenItem → OpenItem → Bool) (pending conte
   -- dynamic-only: which Conditions hold at one evaluation is the run's data
   if live.isEmpty then pure firings else throw (.unsupported (contestCode ctx contest))
 
+/-- Whether a firing of `sequence` interrupts the scope occurrence in which another, earlier in it, continues: its
+handler begins there or its boundary's token leaves into it, and the kernel runs the interruption's removal before that
+work reaches its first wait, where CIB runs each firing to its wait first (CIB-LIM-0055). -/
+def overtakes (ctx : Ctx) (state : State) (sequence : List OpenItem) : Bool :=
+  sequence.zipIdx.any fun (later, index) =>
+    let region := ((withdrawal ctx later).map (·.region state)).getD []
+    (sequence.take index).any fun earlier => earlier.id != later.id && region.contains earlier.scope
+
 /-- The firings of one evaluation (one arming, or one offered write) in order. Of `fired`, the items it found true in
 evaluation order, two compete when firing one withdraws the other (`withdrawnBy`), and a contest is a connected set of
 competing items: which fires and in which order is a choice neither BPMN (§13.4.4 gives simultaneous triggers no
 order) nor CIB (CIB-LIM-0053) makes, so the input's ranking decides it (`walk`) and the kernel takes none. An
-uncontested item fires at its place in evaluation order, a contest at the place of its first member. An item a
-`pending` firing withdraws, a member of this evaluation's contests or not, takes part in none: that firing runs first
-and leaves it nothing to fire. -/
-def resolveContests (ctx : Ctx) (state : State) (pending fired : List OpenItem) : Except Failure (List OpenItem) := do
+uncontested item fires at its place in evaluation order, a contest at the place of its first member. `earlier` are
+the firings earlier writes of the micro-step enqueued; an item one of their withdrawing firings (`pending`) withdraws,
+a member of this evaluation's contests or not, takes part in none: that firing runs first and leaves it nothing to
+fire. A sequence in which a firing interrupts where an earlier one continues is `unsupported` (`overtakes`). -/
+def resolveContests (ctx : Ctx) (state : State) (earlier fired : List OpenItem) : Except Failure (List OpenItem) := do
+  let pending := earlier.filter fun item => (withdrawal ctx item).isSome
   let gone := pending.flatMap (withdrawnBy ctx state)
   let fired := fired.filter fun item => !gone.contains item.id
   let takes := fired.map fun item => (item.id, withdrawnBy ctx state item)
@@ -149,6 +167,8 @@ def resolveContests (ctx : Ctx) (state : State) (pending fired : List OpenItem) 
       | [only] => pure (firings ++ [only], handled ++ [only.id])
       | contest => pure (firings ++ (← walk ctx withdraws pending contest), handled ++ contest.map (·.id)))
     (([] : List OpenItem), ([] : List Nat))
+  -- dynamic-only: which Conditions hold at one evaluation is the run's data
+  if overtakes ctx state (earlier ++ firings) then throw (.unsupported "interrupted-before-wait")
   pure firings
 
 /-- The Conditional trigger of the element `id`'s subscription, if it has one. -/
@@ -200,7 +220,7 @@ the variable whose filters it passes, outermost first and then in opening order,
 before they are offered, so a later write can find true again an item whose interrupting firing an earlier one
 enqueued: that firing runs first and decides the later write's contest, as the explicit write order makes it do. -/
 def offerWrites (ctx : Ctx) (writes : List WriteEvent) (state : State) : Outcome := do
-  let (state, _) ← writes.foldlM (fun (state, pending) write => do
+  let (state, _) ← writes.foldlM (fun (state, earlier) write => do
     let offered := state.openItems.filterMap fun item =>
       (itemCondition? ctx item).bind fun trigger =>
         if passes trigger write && inSubtree state write.scope (homeScope state item) then some (item, trigger) else none
@@ -209,8 +229,8 @@ def offerWrites (ctx : Ctx) (writes : List WriteEvent) (state : State) : Outcome
     let (state, fired) ← ordered.foldlM (fun (state, fired) (item, trigger) => do
       let (state, fires) ← evaluateItem ctx item trigger state
       pure (state, if fires then fired ++ [item] else fired)) (state, [])
-    let firings ← resolveContests ctx state pending fired
-    pure (fireAll (some write) firings state, pending ++ firings.filter fun item => (withdrawal ctx item).isSome))
+    let firings ← resolveContests ctx state earlier fired
+    pure (fireAll (some write) firings state, earlier ++ firings))
     (state, ([] : List OpenItem))
   pure state
 

@@ -36,6 +36,7 @@ import {
   openKindView,
   ownScope,
   signal,
+  subtree,
   type OpenItem,
   type Outcome,
   type Result,
@@ -145,6 +146,23 @@ function withdrawFrom(withdraw: Withdrawal, state: State): State {
 }
 
 /**
+ * `Withdrawal.region`: the scope occurrences a withdrawal's interruption removes once its queued cancellation or begin
+ * runs: those the host occurrence owns and everything inside them, or the scope occurrence an Event Sub-Process start
+ * interrupts and everything inside it, its own tokens included; disarming removes none.
+ */
+function region(state: State, withdraw: Withdrawal): readonly ScopeOccurrenceId[] {
+  switch (withdraw.tag) {
+    case WithdrawalTag.Host:
+      return state.scopes.filter((scope) => scope.occurrence === withdraw.occurrence).flatMap((scope) => subtree(state, scope.id));
+    case WithdrawalTag.Arms:
+      return [];
+    case WithdrawalTag.Inside:
+      return subtree(state, withdraw.scope);
+  }
+  return assertNever(withdraw);
+}
+
+/**
  * What firing `item` withdraws; `null` for an item whose firing withdraws nothing else: a non-interrupting boundary or
  * start, or a catch Event.
  */
@@ -217,17 +235,32 @@ function walk(
 }
 
 /**
+ * Whether a firing of `sequence` interrupts the scope occurrence in which another, earlier in it, continues: its handler
+ * begins there or its boundary's token leaves into it, and the kernel runs the interruption's removal before that work
+ * reaches its first wait, where CIB runs each firing to its wait first (CIB-LIM-0055).
+ */
+function overtakes(ctx: Ctx, state: State, sequence: readonly OpenItem[]): boolean {
+  return sequence.some((later, index) => {
+    const withdraw = withdrawal(ctx, later);
+    const removed = withdraw === null ? [] : region(state, withdraw);
+    return sequence.slice(0, index).some((earlier) => earlier.id !== later.id && removed.includes(earlier.scope));
+  });
+}
+
+/**
  * The firings of one evaluation (one arming, or one offered write) in order. Of `fired`, the items it found true in
  * evaluation order, two compete when firing one withdraws the other (`withdrawnBy`), and a contest is a connected set of
  * competing items: which fires and in which order is a choice neither BPMN (§13.4.4 gives simultaneous triggers no
  * order) nor CIB (CIB-LIM-0053) makes, so the input's ranking decides it (`walk`) and the kernel takes none. An
- * uncontested item fires at its place in evaluation order, a contest at the place of its first member. An item a
- * `pending` firing withdraws, a member of this evaluation's contests or not, takes part in none: that firing runs first
- * and leaves it nothing to fire.
+ * uncontested item fires at its place in evaluation order, a contest at the place of its first member. `earlier` are
+ * the firings earlier writes of the micro-step enqueued; an item one of their withdrawing firings (`pending`) withdraws,
+ * a member of this evaluation's contests or not, takes part in none: that firing runs first and leaves it nothing to
+ * fire. A sequence in which a firing interrupts where an earlier one continues is `unsupported` (`overtakes`).
  */
 export function resolveContests(
-  ctx: Ctx, state: State, pending: readonly OpenItem[], offered: readonly OpenItem[],
+  ctx: Ctx, state: State, earlier: readonly OpenItem[], offered: readonly OpenItem[],
 ): Result<readonly OpenItem[]> {
+  const pending = earlier.filter((item) => withdrawal(ctx, item) !== null);
   const gone = pending.flatMap((item) => withdrawnBy(ctx, state, item));
   const fired = offered.filter((item) => !gone.includes(item.id));
   const takes = new Map(fired.map((item) => [item.id, withdrawnBy(ctx, state, item)] as const));
@@ -247,6 +280,8 @@ export function resolveContests(
     firings.push(...walked.value);
     handled.push(...contest.map((member) => member.id));
   }
+  // dynamic-only: which Conditions hold at one evaluation is the run's data
+  if (overtakes(ctx, state, [...earlier, ...firings])) return failed(FailureTag.Unsupported, "interrupted-before-wait");
   return committed(firings);
 }
 
@@ -316,7 +351,7 @@ function depth(state: State, item: OpenItem): number {
  */
 export function offerWrites(ctx: Ctx, writes: readonly WriteEvent[], state: State): Outcome {
   let current = state;
-  const pending: OpenItem[] = [];
+  const earlier: OpenItem[] = [];
   for (const write of writes) {
     const offered = current.openItems.flatMap((item): Array<readonly [OpenItem, ConditionTrigger]> => {
       const condition = conditionOf(ctx, item);
@@ -333,10 +368,10 @@ export function offerWrites(ctx: Ctx, writes: readonly WriteEvent[], state: Stat
       [current] = next.value;
       if (next.value[1]) fired.push(item);
     }
-    const firings = resolveContests(ctx, current, pending, fired);
+    const firings = resolveContests(ctx, current, earlier, fired);
     if (!firings.ok) return failedWith(firings.failure);
     current = fireAll(write, firings.value, current);
-    pending.push(...firings.value.filter((item) => withdrawal(ctx, item) !== null));
+    earlier.push(...firings.value);
   }
   return committed(current);
 }
