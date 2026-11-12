@@ -30,6 +30,5 @@ Answer-free schedules for [PC-CF-07](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 Notes for the target runners:
 
 - [no-flow-true](review-split-no-default-no-flow-true.scenario.json) has an engine step that can fail inside the completion; the CIB runner records such a step as the command outcome.
-- The kernel executes these shapes on Simple Boolean ([flow semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md)); their JUEL conditions wait for M2's core level, and a condition on an Activity's default flow stays refused as `flow.conditionalOutflow`.
 
 The schedules carry no expected route or state; the retained CIB evidence is the answer.

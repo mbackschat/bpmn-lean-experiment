@@ -24,5 +24,4 @@ Answer-free schedules for [PC-DATA-06](../../../docs/PRACTICAL-CIB7-COVERAGE-TAR
 
 Notes for the target runners:
 
-- Gap: Map results of an effect.
 - A command that fails inside the engine must be recorded as the command outcome rather than as a harness failure.
