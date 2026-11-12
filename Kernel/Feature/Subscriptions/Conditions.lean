@@ -57,33 +57,51 @@ through `Signal.fire`, so one that an earlier firing withdrew finds nothing to f
 def fireAll (write : Option WriteEvent) (items : List OpenItem) (state : State) : State :=
   items.foldl (fun state item => state.signal (.fire item.id (.condition write))) state
 
-/-- What firing `item` withdraws at once, the same removal its firing makes (`fireBoundary`, `fireCatch`,
-`fireEventStart`): an interrupting boundary whatever its host's cancellation removes, its host's other boundaries and
-everything inside the host; an Event-Based Gateway arm its gateway's arms; an interrupting Event Sub-Process start
-everything inside its scope occurrence. `none` for an item whose firing withdraws nothing else: a non-interrupting
-boundary or start, or a catch Event. -/
-def withdrawal (ctx : Ctx) (item : OpenItem) : Option (State → State) :=
+/-- What firing an item withdraws at once, the same removal its firing makes (`fireBoundary`, `fireCatch`,
+`fireEventStart`). -/
+inductive Withdrawal where
+  /-- An interrupting boundary: whatever its host occurrence's cancellation removes, the host's other boundaries and
+  everything inside the host. -/
+  | host (occurrence : Nat)
+  /-- An Event-Based Gateway arm: its gateway's arms. -/
+  | arms (gateway : Nat)
+  /-- An interrupting Event Sub-Process start: everything inside its scope occurrence. -/
+  | inside (scope : ScopeOccurrenceId)
+
+/-- Apply a withdrawal to `state`. -/
+def Withdrawal.withdrawFrom : Withdrawal → State → State
+  | .host occurrence, state => state.withdrawOccurrence occurrence
+  | .arms gateway, state => state.disarm gateway
+  | .inside scope, state => state.withdrawInside scope
+
+/-- Whether the withdrawal is an Event-Based Gateway arm's. -/
+def Withdrawal.disarms : Withdrawal → Bool
+  | .arms _ => true
+  | .host _ | .inside _ => false
+
+/-- What firing `item` withdraws; `none` for an item whose firing withdraws nothing else: a non-interrupting boundary or
+start, or a catch Event. -/
+def withdrawal (ctx : Ctx) (item : OpenItem) : Option Withdrawal :=
   match ctx.program.boundary? item.element, item.attachedTo with
-  | some (_, boundary), some host => if boundary.interrupting then some (·.withdrawOccurrence host) else none
+  | some (_, boundary), some host => if boundary.interrupting then some (.host host) else none
   | some _, none => none
-  | none, some gateway => some (·.disarm gateway)
+  | none, some gateway => some (.arms gateway)
   | none, none =>
     let interrupting := (ctx.program.element? item.element).bind (·.start?) |>.bind (·.1.parent)
       |>.bind ctx.program.element? |>.bind (·.scope?) |>.bind fun (_, payload) => (ctx.eventStart payload).map (·.2)
-    if item.passive && interrupting == some true then some (·.withdrawInside item.scope) else none
+    if item.passive && interrupting == some true then some (.inside item.scope) else none
 
 /-- The open items other than `item` that firing `item` would withdraw from `state`, by identity. -/
 def withdrawnBy (ctx : Ctx) (state : State) (item : OpenItem) : List Nat :=
   match withdrawal ctx item with
   | none => []
   | some withdraw =>
-    let kept := (withdraw state).openItems.map (·.id)
+    let kept := (withdraw.withdrawFrom state).openItems.map (·.id)
     (state.openItems.filter fun open_ => open_.id != item.id && !kept.contains open_.id).map (·.id)
 
 /-- The refusal of a contest the ranking leaves undecided: the Event-Based Gateway code when it holds an arm. -/
 def contestCode (ctx : Ctx) (contest : List OpenItem) : String :=
-  if contest.any fun item => item.attachedTo.isSome && (ctx.program.boundary? item.element).isNone then
-    "gateway-arms-simultaneous"
+  if contest.any fun item => (withdrawal ctx item).any (·.disarms) then "gateway-arms-simultaneous"
   else "conditions-simultaneous"
 
 /-- The contest of an item: the items of `fired` connected to `members` by `linked`, in evaluation order. -/

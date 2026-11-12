@@ -114,37 +114,64 @@ export function fireAll(write: WriteEvent | null, items: readonly OpenItem[], st
   return items.reduce((current, item) => signal(current, { tag: SignalTag.Fire, item: item.id, fired: { tag: FiredTag.Condition, write } }), state);
 }
 
+/** What firing an item withdraws at once, the same removal its firing makes (`fireBoundary`, `fireCatch`, `fireEventStart`). */
+enum WithdrawalTag {
+  /**
+   * An interrupting boundary: whatever its host occurrence's cancellation removes, the host's other boundaries and
+   * everything inside the host.
+   */
+  Host = "host",
+  /** An Event-Based Gateway arm: its gateway's arms. */
+  Arms = "arms",
+  /** An interrupting Event Sub-Process start: everything inside its scope occurrence. */
+  Inside = "inside",
+}
+type Withdrawal =
+  | Readonly<{ tag: WithdrawalTag.Host; occurrence: number }>
+  | Readonly<{ tag: WithdrawalTag.Arms; gateway: number }>
+  | Readonly<{ tag: WithdrawalTag.Inside; scope: ScopeOccurrenceId }>;
+
+/** `Withdrawal.withdrawFrom`: apply a withdrawal to `state`. */
+function withdrawFrom(withdraw: Withdrawal, state: State): State {
+  switch (withdraw.tag) {
+    case WithdrawalTag.Host:
+      return withdrawOccurrence(state, withdraw.occurrence);
+    case WithdrawalTag.Arms:
+      return disarm(state, withdraw.gateway);
+    case WithdrawalTag.Inside:
+      return withdrawInside(state, withdraw.scope);
+  }
+  return assertNever(withdraw);
+}
+
 /**
- * What firing `item` withdraws at once, the same removal its firing makes (`fireBoundary`, `fireCatch`,
- * `fireEventStart`): an interrupting boundary whatever its host's cancellation removes, its host's other boundaries and
- * everything inside the host; an Event-Based Gateway arm its gateway's arms; an interrupting Event Sub-Process start
- * everything inside its scope occurrence. `null` for an item whose firing withdraws nothing else: a non-interrupting
- * boundary or start, or a catch Event.
+ * What firing `item` withdraws; `null` for an item whose firing withdraws nothing else: a non-interrupting boundary or
+ * start, or a catch Event.
  */
-function withdrawal(ctx: Ctx, item: OpenItem): ((state: State) => State) | null {
+function withdrawal(ctx: Ctx, item: OpenItem): Withdrawal | null {
   const boundary = programBoundary(ctx.program, item.element);
   const host = item.attachedTo;
-  if (boundary !== null) return host !== null && boundary[1].interrupting ? (state) => withdrawOccurrence(state, host) : null;
-  if (host !== null) return (state) => disarm(state, host);
+  if (boundary !== null) return host !== null && boundary[1].interrupting ? { tag: WithdrawalTag.Host, occurrence: host } : null;
+  if (host !== null) return { tag: WithdrawalTag.Arms, gateway: host };
   const element = programElement(ctx.program, item.element);
   const start = element === null ? null : elementStart(element);
   const parent = start === null || start[0].parent === null ? null : programElement(ctx.program, start[0].parent);
   const scope = parent === null ? null : elementScope(parent);
   const interrupting = scope === null ? null : ctx.eventStart(scope[1])?.[1] ?? null;
-  return item.passive && interrupting === true ? (state) => withdrawInside(state, item.scope) : null;
+  return item.passive && interrupting === true ? { tag: WithdrawalTag.Inside, scope: item.scope } : null;
 }
 
 /** The open items other than `item` that firing `item` would withdraw from `state`, by identity. */
 function withdrawnBy(ctx: Ctx, state: State, item: OpenItem): readonly number[] {
   const withdraw = withdrawal(ctx, item);
   if (withdraw === null) return [];
-  const kept = withdraw(state).openItems.map((open) => open.id);
+  const kept = withdrawFrom(withdraw, state).openItems.map((open) => open.id);
   return state.openItems.filter((open) => open.id !== item.id && !kept.includes(open.id)).map((open) => open.id);
 }
 
 /** The refusal of a contest the ranking leaves undecided: the Event-Based Gateway code when it holds an arm. */
 function contestCode(ctx: Ctx, contest: readonly OpenItem[]): string {
-  return contest.some((item) => item.attachedTo !== null && programBoundary(ctx.program, item.element) === null)
+  return contest.some((item) => withdrawal(ctx, item)?.tag === WithdrawalTag.Arms)
     ? "gateway-arms-simultaneous"
     : "conditions-simultaneous";
 }
