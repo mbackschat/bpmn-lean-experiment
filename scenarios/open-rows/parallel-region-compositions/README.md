@@ -24,6 +24,6 @@ Answer-free schedules for [PC-CF-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 | [right-first](duplicate-arrival-join-right-first.scenario.json) | duplicate-arrival-join | The third task completes first, then one task of the merged pair, then the continuation, then the other task of the pair. |
 | [reverse-order](three-way-join-reverse-order.scenario.json) | three-way-join | The three branches complete in reverse declaration order. |
 
-[duplicate-arrival-join](duplicate-arrival-join.bpmn) is the retained-evidence input for [CIB-DEV-0001](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-dev-0001--parallel-join-activates-from-duplicate-arrivals-through-one-incoming-flow): its candidate evidence is a Java probe, not an answer-free scenario run.
+[duplicate-arrival-join](duplicate-arrival-join.bpmn) is the input of the separating witness of [CIB-DEV-0001](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-dev-0001--parallel-join-activates-from-duplicate-arrivals-through-one-incoming-flow): left-pair-first offers two arrivals on one incoming flow before any on the other, while in right-first the right arrival comes first, so both readings activate the join at the same step.
 
 The schedules carry no expected state; the retained CIB evidence is the answer.
