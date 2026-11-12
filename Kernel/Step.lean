@@ -114,17 +114,27 @@ def roleOf (program : Program) (request : BeginRequest) : ActivationRole :=
 
 /-- An occurrence begins only in a scope occurrence that stands: a begin into one that is gone is an invariant failure,
 never a silent begin, since whatever removes a scope occurrence also drops what would begin in it (a run an
-interrupting catcher removes, `Compensation.dropWithin`; a queued begin, `withdrawnScope`). -/
+interrupting catcher removes, `Compensation.dropWithin`; a queued signal, `stale`). -/
 def requireScope (state : State) (scope : ScopeOccurrenceId) : Except Failure Unit :=
   if state.scopes.any (·.id == scope) then .ok () else .error (.semanticFailure "begin-into-missing-scope")
 
-/-- Whether `scope` is a scope occurrence that was entered and has since been removed. Signals run first in, first out,
-so what entering a scope occurrence queued for it, the arming of its Event Sub-Processes and the begin of its start
-Event, can still wait when a later signal of the same closure removes it: an interrupting Event Sub-Process clearing its
-parent, or the cancellation of an interrupted host. That work goes with the scope occurrence, as a firing that finds no
-item does (`Signal.fire`); a scope occurrence that never existed stays `requireScope`'s invariant failure. -/
-def withdrawnScope (state : State) (scope : ScopeOccurrenceId) : Bool :=
-  scope.value < state.nextIssue && !state.scopes.any (·.id == scope)
+/-- What a queued signal does, and the scope occurrences and occurrences it does it in or on (`stale`). -/
+structure SignalWork where
+  scopes : List ScopeOccurrenceId := []
+  occurrences : List Nat := []
+  run : State → Outcome
+
+/-- Whether `work` names a scope occurrence or an occurrence that was issued and has since been removed. Signals run
+first in, first out, and an interruption removes in two steps: its firing withdraws the open items at once, its queued
+cancellation or interrupting Event Sub-Process begin removes the occurrences and scope occurrences later. A signal a
+micro-step between the two enqueued runs after the removal: the begin of what entering a scope occurrence queued, or the
+arming of an Activity a queued begin started. Such work goes with what it names, as a firing that finds no item does
+(`Signal.fire`); a target that never existed stays an invariant failure (`requireScope`). A `raise` names its origin
+only as provenance and runs at the head of a queue a token emptied; a firing names an item; `endInstance` names
+nothing. -/
+def stale (state : State) (work : SignalWork) : Bool :=
+  work.scopes.any (fun scope => scope.value < state.nextIssue && !state.scopes.any (·.id == scope)) ||
+    work.occurrences.any fun id => id < state.nextIssue && (state.occurrence? id).isNone
 
 /-- Begin the occurrence `request` names and hand it to its feature (`requireScope`). -/
 def begin (hooks : Hooks) (ctx : Ctx) (request : BeginRequest) (state : State) : Outcome := do
@@ -183,27 +193,36 @@ def fireItem (hooks : Hooks) (ctx : Ctx) (item : OpenItem) (fired : Fired) (stat
 def endInstance (status : InstanceStatus) (failure : Option InstanceFailure) (state : State) : State :=
   { state.clearInside State.root with status, failure }
 
-def dispatchSignal (hooks : Hooks) (ctx : Ctx) : Signal → State → Outcome
-  | .arm host element scope => hooks.arm ctx host element scope
-  | .armScope scope => fun state => if withdrawnScope state scope then .ok state else hooks.armScope ctx scope state
-  | .armGateway occurrence gateway scope => hooks.armGateway ctx occurrence gateway scope
-  | .raise event origin => hooks.raise ctx event origin
-  | .begin request => fun state => if withdrawnScope state request.scope then .ok state else begin hooks ctx request state
-  | .complete occurrence leave writes rule => complete hooks ctx occurrence leave writes rule
-  | .write scope writes rule => hooks.writeOutputs ctx scope writes rule
-  | .remove scope names => hooks.removeVariables ctx scope names
-  | .occur element scope leave writes rule => fun state => do
+def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
+  | .arm host element scope => { scopes := [scope], occurrences := [host], run := hooks.arm ctx host element scope }
+  | .armScope scope => { scopes := [scope], run := hooks.armScope ctx scope }
+  | .armGateway occurrence gateway scope =>
+    { scopes := [scope], occurrences := [occurrence], run := hooks.armGateway ctx occurrence gateway scope }
+  | .raise event origin => { run := hooks.raise ctx event origin }
+  | .begin request => { scopes := [request.scope], run := begin hooks ctx request }
+  | .complete occurrence leave writes rule =>
+    { occurrences := [occurrence], run := complete hooks ctx occurrence leave writes rule }
+  | .write scope writes rule => { scopes := [scope], run := hooks.writeOutputs ctx scope writes rule }
+  | .remove scope names => { scopes := [scope], run := hooks.removeVariables ctx scope names }
+  | .occur element scope leave writes rule => { scopes := [scope], run := fun state => do
     requireScope state scope
     let (state, occurrence) := state.reserve element scope
-    complete hooks ctx occurrence.id leave writes rule state
-  | .cancel occurrence => fun state => .ok (state.cancelOccurrence occurrence)
-  | .fire item fired => fun state =>
+    complete hooks ctx occurrence.id leave writes rule state }
+  | .cancel occurrence => { occurrences := [occurrence], run := fun state => .ok (state.cancelOccurrence occurrence) }
+  | .fire item fired => { run := fun state =>
     match state.openItems.find? (·.id == item) with
     | some open_ => fireItem hooks ctx open_ fired state
-    | none => .ok state
-  | .endInstance status failure => fun state => .ok (endInstance status failure state)
-  | .compensate scope activity trigger leave resume => hooks.compensate ctx scope activity trigger leave resume
-  | .compensationFailed handler code message origin => hooks.failCompensation ctx handler code message origin
+    | none => .ok state }
+  | .endInstance status failure => { run := fun state => .ok (endInstance status failure state) }
+  | .compensate scope activity trigger leave resume =>
+    { scopes := [scope], run := hooks.compensate ctx scope activity trigger leave resume }
+  | .compensationFailed handler code message origin =>
+    { scopes := [handler], run := hooks.failCompensation ctx handler code message origin }
+
+/-- Run a queued signal, unless what it names is gone (`stale`). -/
+def dispatchSignal (hooks : Hooks) (ctx : Ctx) (signal : Signal) (state : State) : Outcome :=
+  let work := signalWork hooks ctx signal
+  if stale state work then .ok state else work.run state
 
 /-- Run a completion when it is the only signal the micro-step enqueued, inside the micro-step. -/
 def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome :=

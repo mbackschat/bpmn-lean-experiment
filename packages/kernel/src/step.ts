@@ -107,15 +107,10 @@ function roleOf(program: Program, request: BeginRequest): ActivationRole {
 /**
  * An occurrence begins only in a scope occurrence that stands: a begin into one that is gone is an invariant failure,
  * never a silent begin, since whatever removes a scope occurrence also drops what would begin in it (a run an
- * interrupting catcher removes, `Compensation.dropWithin`; a queued begin, `withdrawnScope`). `null` when it stands.
+ * interrupting catcher removes, `Compensation.dropWithin`; a queued signal, `stale`). `null` when it stands.
  */
 function requireScope(state: State, scope: ScopeOccurrenceId): Outcome | null {
   return state.scopes.some((entry) => entry.id === scope) ? null : failed(FailureTag.SemanticFailure, "begin-into-missing-scope");
-}
-
-/** `Kernel.Step.withdrawnScope`: a scope occurrence entered and since removed, whose queued work goes with it. */
-function withdrawnScope(state: State, scope: ScopeOccurrenceId): boolean {
-  return scope < state.nextIssue && !state.scopes.some((entry) => entry.id === scope);
 }
 
 /** Begin the occurrence `request` names and hand it to its feature (`requireScope`). */
@@ -207,37 +202,55 @@ function endInstance(status: InstanceStatus, failure: InstanceFailure | null, st
   return { ...clearInside(state, root), status, failure };
 }
 
-/** A signal's transition, and whether it is a completion, the one kind `absorb` runs inside the micro-step. */
-type SignalRun = Readonly<{ completion: boolean; run: (state: State) => Outcome }>;
-const other = (run: (state: State) => Outcome): SignalRun => ({ completion: false, run });
+/**
+ * A signal's transition, whether it is a completion, the one kind `absorb` runs inside the micro-step, and the scope
+ * occurrences and occurrences it works in or on (`stale`): Lean's `SignalWork`.
+ */
+type SignalRun = Readonly<{
+  completion: boolean; run: (state: State) => Outcome; scopes: readonly ScopeOccurrenceId[]; occurrences: readonly number[];
+}>;
+const other = (run: (state: State) => Outcome, scopes: readonly ScopeOccurrenceId[] = [], occurrences: readonly number[] = []): SignalRun =>
+  ({ completion: false, run, scopes, occurrences });
+
+/**
+ * `Kernel.Step.stale`: whether a queued signal names a scope occurrence or an occurrence issued and since removed, which
+ * an interruption's queued cancellation or interrupting begin removed after a micro-step enqueued the signal.
+ */
+function stale(state: State, work: SignalRun): boolean {
+  return work.scopes.some((scope) => scope < state.nextIssue && !state.scopes.some((entry) => entry.id === scope)) ||
+    work.occurrences.some((id) => id < state.nextIssue && !state.occurrences.some((occurrence) => occurrence.id === id));
+}
 
 function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
   switch (next.tag) {
     case SignalTag.Arm:
-      return other((state) => hooks.arm(ctx, next.host, next.element, next.scope, state));
+      return other((state) => hooks.arm(ctx, next.host, next.element, next.scope, state), [next.scope], [next.host]);
     case SignalTag.ArmScope:
-      return other((state) => (withdrawnScope(state, next.scope) ? committed(state) : hooks.armScope(ctx, next.scope, state)));
+      return other((state) => hooks.armScope(ctx, next.scope, state), [next.scope]);
     case SignalTag.ArmGateway:
-      return other((state) => hooks.armGateway(ctx, next.occurrence, next.gateway, next.scope, state));
+      return other((state) => hooks.armGateway(ctx, next.occurrence, next.gateway, next.scope, state), [next.scope], [next.occurrence]);
     case SignalTag.Raise:
       return other((state) => hooks.raise(ctx, next.event, next.origin, state));
     case SignalTag.Begin:
-      return other((state) => (withdrawnScope(state, next.request.scope) ? committed(state) : begin(hooks, ctx, next.request, state)));
+      return other((state) => begin(hooks, ctx, next.request, state), [next.request.scope]);
     case SignalTag.Complete:
-      return { completion: true, run: (state) => complete(hooks, ctx, next.occurrence, next.leave, next.writes, next.rule, state) };
+      return {
+        completion: true, run: (state) => complete(hooks, ctx, next.occurrence, next.leave, next.writes, next.rule, state), scopes: [],
+        occurrences: [next.occurrence],
+      };
     case SignalTag.Write:
-      return other((state) => hooks.writeOutputs(ctx, next.scope, next.writes, next.rule, state));
+      return other((state) => hooks.writeOutputs(ctx, next.scope, next.writes, next.rule, state), [next.scope]);
     case SignalTag.Remove:
-      return other((state) => hooks.removeVariables(ctx, next.scope, next.names, state));
+      return other((state) => hooks.removeVariables(ctx, next.scope, next.names, state), [next.scope]);
     case SignalTag.Occur:
       return other((state) => {
         const missing = requireScope(state, next.scope);
         if (missing !== null) return missing;
         const [reserved, occurrence] = reserve(state, next.element, next.scope);
         return complete(hooks, ctx, occurrence.id, next.leave, next.writes, next.rule, reserved);
-      });
+      }, [next.scope]);
     case SignalTag.Cancel:
-      return other((state) => committed(cancelOccurrence(state, next.occurrence)));
+      return other((state) => committed(cancelOccurrence(state, next.occurrence)), [], [next.occurrence]);
     case SignalTag.Fire:
       return other((state) => {
         const open = state.openItems.find((item) => item.id === next.item);
@@ -246,11 +259,17 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
     case SignalTag.EndInstance:
       return other((state) => committed(endInstance(next.status, next.failure, state)));
     case SignalTag.Compensate:
-      return other((state) => hooks.compensate(ctx, next.scope, next.activity, next.trigger, next.leave, next.resume, state));
+      return other((state) => hooks.compensate(ctx, next.scope, next.activity, next.trigger, next.leave, next.resume, state), [next.scope]);
     case SignalTag.CompensationFailed:
-      return other((state) => hooks.failCompensation(ctx, next.handler, next.code, next.message, next.origin, state));
+      return other((state) => hooks.failCompensation(ctx, next.handler, next.code, next.message, next.origin, state), [next.handler]);
   }
   return assertNever(next);
+}
+
+/** `Kernel.Step.dispatchSignal`: run a queued signal, unless what it names is gone (`stale`). */
+function dispatchSignal(hooks: Hooks, ctx: Ctx, next: Signal): (state: State) => Outcome {
+  const work = signalRun(hooks, ctx, next);
+  return (state) => (stale(state, work) ? committed(state) : work.run(state));
 }
 
 /** Run a completion when it is the only signal the micro-step enqueued, inside the micro-step. */
@@ -310,7 +329,7 @@ function moveToken(hooks: Hooks, ctx: Ctx, token: Token, state: State): Outcome 
         (current) => arrive(hooks, ctx, token.flow, token.scope, current), state);
     case TokenTag.Begin: {
       const next: Signal = { tag: SignalTag.Begin, request: token.request };
-      return microStep(hooks, ctx, { tag: CauseTag.Signal, name: signalName(next) }, null, root, signalRun(hooks, ctx, next).run, state);
+      return microStep(hooks, ctx, { tag: CauseTag.Signal, name: signalName(next) }, null, root, dispatchSignal(hooks, ctx, next), state);
     }
   }
   return assertNever(token);
@@ -430,7 +449,7 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State): Outcome {
     let stepped: Outcome;
     if (next !== undefined) {
       stepped = microStep(hooks, ctx, { tag: CauseTag.Signal, name: signalName(next) }, null, root,
-        signalRun(hooks, ctx, next).run, { ...state, signals });
+        dispatchSignal(hooks, ctx, next), { ...state, signals });
     } else if (token !== undefined) {
       stepped = moveToken(hooks, ctx, token, { ...state, tokens });
     } else if (ready !== undefined) {
