@@ -30,9 +30,11 @@ first in, first out, and an interruption removes in two steps: its firing withdr
 cancellation or interrupting Event Sub-Process begin removes the occurrences and scope occurrences later. A signal a
 micro-step between the two enqueued runs after the removal: the begin of what entering a scope occurrence queued, or the
 arming of an Activity a queued begin started. Such work goes with what it names, as a firing that finds no item does
-(`Signal.fire`); a target that never existed stays an invariant failure (`requireScope`). A `raise` names its origin
-only as provenance and runs at the head of a queue a token emptied; a firing names an item; `endInstance` names
-nothing. -/
+(`Signal.fire`). `nextIssue` counts every identity the state issues, of whatever kind, so a target below it is only
+known to have been issued: one of the wrong kind, a kernel defect, reads as removed, and only one at or above it fails
+as never issued (`requireScope`). A `raise` names its origin only as provenance and runs at the head of a queue a token
+emptied; a firing names an item; a write, a removal, a compensation and its failure name none, so what their hooks do
+with a scope occurrence that is gone stands (`compensation-handler-gone`); `endInstance` names nothing. -/
 def stale (state : State) (work : SignalWork) : Bool :=
   work.scopes.any (fun scope => scope.value < state.nextIssue && !state.scopes.any (·.id == scope)) ||
     work.occurrences.any fun id => id < state.nextIssue && (state.occurrence? id).isNone

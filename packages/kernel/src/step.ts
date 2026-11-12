@@ -217,9 +217,9 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
         occurrences: [next.occurrence],
       };
     case SignalTag.Write:
-      return other((state) => hooks.writeOutputs(ctx, next.scope, next.writes, next.rule, state), [next.scope]);
+      return other((state) => hooks.writeOutputs(ctx, next.scope, next.writes, next.rule, state));
     case SignalTag.Remove:
-      return other((state) => hooks.removeVariables(ctx, next.scope, next.names, state), [next.scope]);
+      return other((state) => hooks.removeVariables(ctx, next.scope, next.names, state));
     case SignalTag.Occur:
       return other((state) => {
         const missing = requireScope(state, next.scope);
@@ -237,9 +237,9 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
     case SignalTag.EndInstance:
       return other((state) => committed(endInstance(next.status, next.failure, state)));
     case SignalTag.Compensate:
-      return other((state) => hooks.compensate(ctx, next.scope, next.activity, next.trigger, next.leave, next.resume, state), [next.scope]);
+      return other((state) => hooks.compensate(ctx, next.scope, next.activity, next.trigger, next.leave, next.resume, state));
     case SignalTag.CompensationFailed:
-      return other((state) => hooks.failCompensation(ctx, next.handler, next.code, next.message, next.origin, state), [next.handler]);
+      return other((state) => hooks.failCompensation(ctx, next.handler, next.code, next.message, next.origin, state));
   }
   return assertNever(next);
 }

@@ -24,7 +24,9 @@ export type SignalRun = Readonly<{
 
 /**
  * `Kernel.Step.stale`: whether a queued signal names a scope occurrence or an occurrence issued and since removed, which
- * an interruption's queued cancellation or interrupting begin removed after a micro-step enqueued the signal.
+ * an interruption's queued cancellation or interrupting begin removed after a micro-step enqueued the signal. `nextIssue`
+ * counts every identity of whatever kind, so a target below it is only known to have been issued: one of the wrong kind
+ * reads as removed, and only one at or above it fails as never issued (`requireScope`).
  */
 function stale(state: State, work: SignalRun): boolean {
   return work.scopes.some((scope) => scope < state.nextIssue && !state.scopes.some((entry) => entry.id === scope)) ||
