@@ -31,7 +31,7 @@ The wire form is Lean's derived JSON encoding of the IL types ([`Kernel/IL/Codec
 | `options` | the profile's `ProfileOptions` ([below](#profile-options)) |
 | `elements` | the flat element table, every element and boundary of the root and called processes |
 | `flows` | Sequence Flows: `id`, `source`, `target`, optional `condition` expression |
-| `variables` | the item names the root process declares (Properties, Data Objects and references, its own Data Inputs and Outputs), declared at the instance root before any value is bound (BPMN 2.0.2 §10.4.1) |
+| `variables` | the item names the root process declares (Properties, Data Objects, its own Data Inputs and Outputs; a Data Object reference declares none), declared at the instance root before any value is bound (BPMN 2.0.2 §10.4.1) |
 | `processes` | the called processes the program carries: bound `definition` (`DefinitionRef`), process-level `children`, declared `variables`, `executable` |
 | `executable` | the root process's `isExecutable` (Table 10.1), absent read as `false` |
 

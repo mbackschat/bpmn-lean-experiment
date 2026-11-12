@@ -205,9 +205,9 @@ function readFlow(ctx: ReadContext, flow: ElementRecord): KernelJson {
 }
 
 /**
- * The item names a process declares at its instance root (BPMN 2.0.2 §10.4.1): its Properties, the Data Objects and
- * Data Object references among its own flow elements (`containerItems`), and its own Data Inputs and Outputs. A
- * Sub-Process's items are its own (`ScopePayload.items`).
+ * The item names a process declares at its instance root (BPMN 2.0.2 §10.4.1): its Properties, the Data Objects among
+ * its own flow elements (`containerItems`), and its own Data Inputs and Outputs; a Data Object reference declares none
+ * (`itemName`). A Sub-Process's items are its own (`ScopePayload.items`).
  */
 function declaredItems(process: ElementRecord): string[] {
   const io = asElement(process.ioSpecification) ?? {};
