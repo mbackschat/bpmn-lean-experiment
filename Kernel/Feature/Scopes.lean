@@ -46,7 +46,7 @@ def implicitStart (ctx : Ctx) (scope : ElementId) : Except Failure (List Element
 
 def enter (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurrence : Occurrence) (entry : ScopeEntry)
     (state : State) : Outcome := do
-  let locals ← ctx.requireMappings (state.evalContext occurrence.scope) payload.envelope.inputs
+  let locals ← ctx.requireMappings (state.evalContext ctx.program occurrence.scope) payload.envelope.inputs
   let (state, scope) := state.enterScope header.id occurrence.scope (locals ++ entry.locals) (some occurrence.id)
   let state :=
     if payload.envelope.boundaries.isEmpty || payload.envelope.multiInstance.isSome then state
@@ -78,7 +78,7 @@ def arriveScope (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurren
 (`Ctx.outputReads`). -/
 def completeScope (ctx : Ctx) (_ : Header) (payload : ScopePayload) (scope : ScopeOccurrence) (owner : Occurrence)
     (state : State) : Outcome := do
-  let outer := (scope.parent.map state.visible).getD []
+  let outer := (scope.parent.map (state.visible ctx.program)).getD []
   let reads := ctx.outputReads state.logicalTimeMs (state.ownVariables scope.id) [] outer
   let outputs ← ctx.requireMappingsWith reads payload.envelope.outputs
   .ok (state.signal (.complete owner.id .outgoing outputs .outward))

@@ -383,7 +383,7 @@ function interruptedOutputs(ctx: Ctx, occurrence: ScopeOccurrence, parent: Scope
   switch (selected) {
     case ErrorPathOutputs.Mapped: {
       if (mappings.length === 0) return committed(state);
-      const outer = occurrence.parent === null ? [] : visible(state, occurrence.parent);
+      const outer = occurrence.parent === null ? [] : visible(state, ctx.program, occurrence.parent);
       const reads = ctxOutputReads(ctx, state.logicalTimeMs, ownVariables(state, occurrence.id), [], outer);
       const outputs = ctxRequireMappingsWith(ctx, reads, mappings);
       if (!outputs.ok) return outputs;
@@ -746,10 +746,10 @@ function thrownDelivery(ctx: Ctx, state: State, address: SignalAddress, variable
 }
 
 function throwSignal(ctx: Ctx, payload: EventPayload, record: SignalThrow, origin: Origin, occurrence: Occurrence, state: State): Outcome {
-  const context = evalContext(state, occurrence.scope);
+  const context = evalContext(state, ctx.program, occurrence.scope);
   const businessKey = signalBusinessKey(ctx, context, record.businessKey);
   if (!businessKey.ok) return failedWith(businessKey.failure);
-  const variables = signalPayload(ctx, context, visible(state, occurrence.scope), record);
+  const variables = signalPayload(ctx, context, visible(state, ctx.program, occurrence.scope), record);
   if (!variables.ok) return failedWith(variables.failure);
   const address = thrownAddress(ctx, context, record);
   if (!address.ok) return failedWith(address.failure);

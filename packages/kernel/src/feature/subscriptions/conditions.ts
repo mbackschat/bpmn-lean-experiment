@@ -51,7 +51,7 @@ function homeScope(state: State, item: OpenItem): ScopeOccurrenceId {
  * included (`:51`), and any other failure roll the input back.
  */
 export function predicateHolds(ctx: Ctx, state: State, scope: ScopeOccurrenceId, condition: Expression): Result<boolean> {
-  const evaluation = ctx.evaluate(evalContext(state, scope), condition);
+  const evaluation = ctx.evaluate(evalContext(state, ctx.program, scope), condition);
   switch (evaluation.tag) {
     case EvaluationTag.Value:
       return evaluation.result.tag === ValueTag.Bool

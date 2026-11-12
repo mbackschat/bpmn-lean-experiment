@@ -79,7 +79,7 @@ def firstTrue (ctx : Ctx) (context : EvalContext) : List FlowId → Except Failu
 
 def exclusive (ctx : Ctx) (candidates : List FlowId) (default : Option FlowId) (occurrence : Occurrence)
     (state : State) : Outcome := do
-  let chosen ← firstTrue ctx (state.evalContext occurrence.scope) candidates
+  let chosen ← firstTrue ctx (state.evalContext ctx.program occurrence.scope) candidates
   match chosen <|> default with
   | some flow => .ok (signalComplete state occurrence.id (.flows [flow]))
   | none => .error (.rolledBack "exclusive-gateway-no-outgoing-flow")
@@ -87,7 +87,7 @@ def exclusive (ctx : Ctx) (candidates : List FlowId) (default : Option FlowId) (
 /-- The flows an inclusive split takes. A gateway that lists no candidates is a pure join. -/
 def inclusiveFlows (ctx : Ctx) (candidates : List FlowId) (default : Option FlowId) (outgoing : List FlowId)
     (scope : ScopeOccurrenceId) (state : State) : Except Failure (List FlowId) :=
-  inclusiveChoice ctx (state.evalContext scope) candidates default outgoing "inclusive-gateway-no-outgoing-flow"
+  inclusiveChoice ctx (state.evalContext ctx.program scope) candidates default outgoing "inclusive-gateway-no-outgoing-flow"
 
 /-- `Hooks.select`. Under `ConditionOrder.beforeOutputs` a completion's outgoing conditions are evaluated before its
 output writes, from inside the scope occurrence it still owns, which holds an Activity's locals (CIB-INT-0011); under
@@ -102,7 +102,7 @@ def select (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State)
     | none => .error (.semanticFailure "outflow-without-element")
     | some element => do
       let inside := ((state.scopes.find? (·.occurrence == some occurrence.id)).map (·.id)).getD occurrence.scope
-      .ok (.flows (← ownFlows ctx element (state.evalContext inside)))
+      .ok (.flows (← ownFlows ctx element (state.evalContext ctx.program inside)))
 
 /-- The flows a position held by `element` continues on: its outgoing flows and, under the standards reach, its Boundary
 Events' flows, since an attached Event can still fire (BPMN 2.0.2 §10.5.4); CIB's `isReachable` follows outgoing
@@ -231,7 +231,7 @@ def outflow (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State
   | .outgoing =>
     match ctx.program.element? occurrence.element with
     | some element => do
-      let selected ← ownFlows ctx element (state.evalContext occurrence.scope)
+      let selected ← ownFlows ctx element (state.evalContext ctx.program occurrence.scope)
       .ok (state.emit (queued ctx selected) occurrence.scope)
     | none => .error (.semanticFailure "outflow-without-element")
   | .raised => .error (.semanticFailure "outflow-of-raised-occurrence")

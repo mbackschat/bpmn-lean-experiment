@@ -24,7 +24,7 @@ def homeScope (state : State) (item : OpenItem) : ScopeOccurrenceId :=
 `UelExpressionCondition.tryEvaluate` swallows `PropertyNotFoundException` (`:57-67`); a non-Boolean result, `null`
 included (`:51`), and any other failure roll the input back. -/
 def predicateHolds (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (condition : Expression) : Except Failure Bool :=
-  match ctx.evaluate (state.evalContext scope) condition with
+  match ctx.evaluate (state.evalContext ctx.program scope) condition with
   | .value (.bool value) => .ok value
   | .value _ => .error (.rolledBack "condition-not-boolean")
   | .failure code =>

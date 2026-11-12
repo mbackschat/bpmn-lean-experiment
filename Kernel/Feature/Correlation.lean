@@ -100,7 +100,7 @@ the trigger without keys (`message.correlation.modeled`). `Kernel.Feature.Subscr
 def correlationAccepts (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (trigger : Trigger)
     (correlation : List CorrelationMatch) : Except Failure Bool :=
   match ctx.program.options.messageCorrelation with
-  | .modeledKey => correlationMatches ctx (state.evalContext scope) (criteria trigger) correlation
+  | .modeledKey => correlationMatches ctx (state.evalContext ctx.program scope) (criteria trigger) correlation
   | .apiCriteria => criteriaHold state scope correlation
 
 /-- `Hooks.correlates`. Under `modeledKey` a publication reaches only a subscription that models a key. -/

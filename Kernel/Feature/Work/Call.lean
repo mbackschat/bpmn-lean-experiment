@@ -46,7 +46,7 @@ def invoke (ctx : Ctx) (header : Header) (payload : ActivityPayload) (work : Cal
     (state : State) : Outcome := do
   let process ← calledProcess ctx header work
   let children := ctx.program.processChildren process
-  let inputs ← copy ctx "call-input-unavailable" (state.evalContext occurrence.scope) work.inputs
+  let inputs ← copy ctx "call-input-unavailable" (state.evalContext ctx.program occurrence.scope) work.inputs
   match children.findSome? fun child => child.start?.bind fun (start, payload) =>
       if payload.subscription.isNone then some start else none with
   | none => .error (.semanticFailure "called-process-without-none-start")
@@ -60,7 +60,7 @@ def invoke (ctx : Ctx) (header : Header) (payload : ActivityPayload) (work : Cal
 /-- The body of `Hooks.completeCall`: return from the idle called instance whose root is `root`. -/
 def returnFromCall (ctx : Ctx) (_ : Header) (_ : ActivityPayload) (work : CallWork) (root : ScopeOccurrence)
     (owner : Occurrence) (state : State) : Outcome := do
-  let outputs ← copy ctx "call-output-unavailable" (state.evalContext root.id) work.outputs
+  let outputs ← copy ctx "call-output-unavailable" (state.evalContext ctx.program root.id) work.outputs
   .ok (state.signal (.complete owner.id .outgoing outputs .outward))
 
 /-- What `PropagationHooks.callOutputs` writes when a raised Error or Escalation reaches the called root `root`: its
@@ -74,7 +74,7 @@ def raisedOutputs (ctx : Ctx) (root : ScopeOccurrence) (state : State) :
   let some work := ((root.element.bind ctx.program.element?).bind (·.activity?)).bind (·.2.work.call?)
     | .error (.semanticFailure "called-root-without-call")
   let some caller := root.parent | .error (.semanticFailure "called-root-without-caller")
-  let outputs ← copy ctx "call-output-unavailable" (state.evalContext root.id) work.outputs
+  let outputs ← copy ctx "call-output-unavailable" (state.evalContext ctx.program root.id) work.outputs
   .ok (caller, outputs)
 
 /-- The root-level names a User Task submission inside the called instance of `scope` may carry under the

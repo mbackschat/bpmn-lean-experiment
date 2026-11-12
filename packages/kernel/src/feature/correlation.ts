@@ -182,7 +182,7 @@ export function correlationAccepts(
 ): Result<boolean> {
   switch (ctx.program.options.messageCorrelation) {
     case MessageCorrelation.ModeledKey:
-      return correlationMatches(ctx, evalContext(state, scope), criteria(trigger), correlation);
+      return correlationMatches(ctx, evalContext(state, ctx.program, scope), criteria(trigger), correlation);
     case MessageCorrelation.ApiCriteria:
       return criteriaHold(state, scope, correlation);
   }

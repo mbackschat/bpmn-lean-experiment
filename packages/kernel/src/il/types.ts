@@ -306,8 +306,8 @@ export interface ScopePayload {
   readonly children: readonly ElementId[];
   readonly localVariables: readonly string[];
   /**
-   * The item names the Scope declares, which exist per Scope occurrence (BPMN 2.0.2 §10.4.1): its Properties, Data
-   * Objects and their references. Admission refuses every reference to one (`data.scopedItem`).
+   * The item names the Scope declares, which exist per Scope occurrence (BPMN 2.0.2 §10.4.1): its Properties and Data
+   * Objects, read and written in the declaring occurrence (`programItemScope`).
    */
   readonly items: readonly string[];
   readonly envelope: Envelope;
@@ -669,6 +669,15 @@ export function programChildren(program: Program, parent: ElementId | null): rea
 export function programDeclares(program: Program, definition: DefinitionRef | null, name: string): boolean {
   if (definition === null) return program.variables.includes(name);
   return program.processes.some((process) => definitionRefEquals(process.definition, definition) && process.variables.includes(name));
+}
+
+/**
+ * The Scope element that declares the item `name` (`ScopePayload.items`); `null` for any other name, a process's item
+ * included. Element identifiers are unique, so at most one Scope declares it.
+ */
+export function programItemScope(program: Program, name: string): ElementId | null {
+  const declaring = program.elements.find((element) => elementScope(element)?.[1].items.includes(name) ?? false);
+  return declaring === undefined ? null : elementHeader(declaring).id;
 }
 
 /**

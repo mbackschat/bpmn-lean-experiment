@@ -234,7 +234,7 @@ def interruptedOutputs (ctx : Ctx) (occurrence : ScopeOccurrence) (parent : Scop
   | .mapped =>
     if mappings.isEmpty then .ok state
     else
-      let outer := (occurrence.parent.map state.visible).getD []
+      let outer := (occurrence.parent.map (state.visible ctx.program)).getD []
       let reads := ctx.outputReads state.logicalTimeMs (state.ownVariables occurrence.id) [] outer
       (ctx.requireMappingsWith reads mappings).map fun outputs =>
         state.signal (.write parent outputs .outward)
@@ -451,9 +451,9 @@ def thrownDelivery (ctx : Ctx) (state : State) (address : SignalAddress) (variab
 
 def throwSignal (ctx : Ctx) (payload : EventPayload) (record : SignalThrow) (origin : Origin) (occurrence : Occurrence)
     (state : State) : Outcome := do
-  let context := state.evalContext occurrence.scope
+  let context := state.evalContext ctx.program occurrence.scope
   let businessKey ← signalBusinessKey ctx context record.businessKey
-  let variables ← signalPayload ctx context (state.visible occurrence.scope) record
+  let variables ← signalPayload ctx context (state.visible ctx.program occurrence.scope) record
   let address ← thrownAddress ctx context record
   let fired := (ownReceivers state address).foldl (fun state item =>
     state.signal (.fire item.id (.signal (thrownDelivery ctx state address variables item)))) state

@@ -177,8 +177,8 @@ def State.hold (state : State) (held : Held) : State :=
   { state with slots := { state.slots with held := state.slots.held ++ [held] } }
 
 /-- What an expression evaluated from `scope` reads. -/
-def State.evalContext (state : State) (scope : ScopeOccurrenceId) : EvalContext :=
-  { variables := state.visible scope, nowMs := state.logicalTimeMs }
+def State.evalContext (state : State) (program : Program) (scope : ScopeOccurrenceId) : EvalContext :=
+  { variables := state.visible program scope, nowMs := state.logicalTimeMs }
 
 /-- The variables `scope` itself holds, without the chain behind it. -/
 def State.ownVariables (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=

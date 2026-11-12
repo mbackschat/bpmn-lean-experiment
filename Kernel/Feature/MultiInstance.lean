@@ -194,7 +194,7 @@ under `rollback` both fail the operation. -/
 def entryInput (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (expression : Expression)
     (rule : Value → Except Failure α) : Except Failure (Option α) :=
   let rollback := ctx.program.options.multiInstanceInputFailure == .rollback
-  match ctx.evaluate { state.evalContext scope with domainChecked := false } expression with
+  match ctx.evaluate { state.evalContext ctx.program scope with domainChecked := false } expression with
   | .unsupported code => .error (.unsupported code)
   | .failure code => if rollback then .error (.rolledBack code) else .ok none
   | .value value =>
@@ -295,7 +295,7 @@ the instance's zero-based index; the count; the active instances, which CIB neve
 1 in sequential mode (`SequentialMultiInstanceActivityBehavior:41`); the completed ones, this one included. -/
 def conditionContext (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (index : Nat) (scope : ScopeOccurrenceId)
     (state : State) : EvalContext :=
-  let context := state.evalContext scope
+  let context := state.evalContext ctx.program scope
   let counters := counterLocals ctx (instanceCounts index ++ bodyCounts loop run.instances)
   { context with variables := counters ++ context.variables }
 
@@ -344,7 +344,7 @@ def nextItems (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (next 
       -- Dynamic-only: a removed or null collection leaves CIB's previous item in place
       -- (`MultiInstanceActivityBehavior.java:85-88`), a value the kernel does not reproduce.
       let removed : Except Failure (List Value) := .error (.unsupported "multiInstance.collectionRemoved")
-      match ctx.evaluate { state.evalContext scope with domainChecked := false } read, read with
+      match ctx.evaluate { state.evalContext ctx.program scope with domainChecked := false } read, read with
       | .unsupported code, _ => .error (.unsupported code)
       | .failure "unknown-variable", .variable _ => removed
       | .failure code, _ => .error (.rolledBack code)

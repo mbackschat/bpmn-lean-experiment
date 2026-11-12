@@ -93,7 +93,7 @@ export function invoke(ctx: Ctx, header: Header, payload: ActivityPayload, work:
   const process = calledProcess(ctx, header, work);
   if (!process.ok) return process;
   const children = programProcessChildren(ctx.program, process.value);
-  const inputs = copy(ctx, "call-input-unavailable", evalContext(state, occurrence.scope), work.inputs);
+  const inputs = copy(ctx, "call-input-unavailable", evalContext(state, ctx.program, occurrence.scope), work.inputs);
   if (!inputs.ok) return inputs;
   const start = children.map(elementStart).find((entry) => entry !== null && entry[1].subscription === null) ?? null;
   if (start === null) return failed(FailureTag.SemanticFailure, "called-process-without-none-start");
@@ -115,7 +115,7 @@ export function returnFromCall(
   owner: Occurrence,
   state: State,
 ): Outcome {
-  const outputs = copy(ctx, "call-output-unavailable", evalContext(state, root.id), work.outputs);
+  const outputs = copy(ctx, "call-output-unavailable", evalContext(state, ctx.program, root.id), work.outputs);
   if (!outputs.ok) return outputs;
   return committed(signal(state, completeSignal(owner.id, leaveOutgoing, outputs.value, WriteRule.Outward)));
 }
@@ -134,7 +134,7 @@ export function raisedOutputs(ctx: Ctx, root: ScopeOccurrence, state: State): Re
   const work = activity === null ? null : workCall(activity[1].work);
   if (work === null) return failed(FailureTag.SemanticFailure, "called-root-without-call");
   if (root.parent === null) return failed(FailureTag.SemanticFailure, "called-root-without-caller");
-  const outputs = copy(ctx, "call-output-unavailable", evalContext(state, root.id), work.outputs);
+  const outputs = copy(ctx, "call-output-unavailable", evalContext(state, ctx.program, root.id), work.outputs);
   if (!outputs.ok) return outputs;
   return committed([root.parent, outputs.value] as const);
 }

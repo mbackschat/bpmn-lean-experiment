@@ -346,7 +346,7 @@ function countOf(rule: MultiInstanceCount, value: Value): Result<number> {
  */
 function entryInput<T>(ctx: Ctx, state: State, scope: number, expression: Expression, rule: (value: Value) => Result<T>): Result<T | null> {
   const rollback = ctx.program.options.multiInstanceInputFailure === MultiInstanceInputFailure.Rollback;
-  const evaluation = ctx.evaluate({ ...evalContext(state, scope), domainChecked: false }, expression);
+  const evaluation = ctx.evaluate({ ...evalContext(state, ctx.program, scope), domainChecked: false }, expression);
   switch (evaluation.tag) {
     case EvaluationTag.Unsupported:
       return failed(FailureTag.Unsupported, evaluation.code);
@@ -500,7 +500,7 @@ function activeIn(slot: Iteration, scope: number): boolean {
  * below 1 in sequential mode (`SequentialMultiInstanceActivityBehavior:41`); the completed ones, this one included.
  */
 function conditionContext(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: number, scope: number, state: State): EvalContext {
-  const context = evalContext(state, scope);
+  const context = evalContext(state, ctx.program, scope);
   const counters = counterLocals(ctx, [...instanceCounts(index), ...bodyCounts(loop, run.instances)]);
   return { ...context, variables: [...counters, ...context.variables] };
 }
@@ -565,7 +565,7 @@ function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: n
   // Dynamic-only: a removed or null collection leaves CIB's previous item in place
   // (`MultiInstanceActivityBehavior.java:85-88`), a value the kernel does not reproduce.
   const removed: Result<readonly Value[]> = failed(FailureTag.Unsupported, "multiInstance.collectionRemoved");
-  const evaluation = ctx.evaluate({ ...evalContext(state, scope), domainChecked: false }, read);
+  const evaluation = ctx.evaluate({ ...evalContext(state, ctx.program, scope), domainChecked: false }, read);
   switch (evaluation.tag) {
     case EvaluationTag.Unsupported:
       return failed(FailureTag.Unsupported, evaluation.code);

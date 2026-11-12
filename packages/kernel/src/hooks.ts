@@ -334,8 +334,8 @@ export function hold(state: State, held: Held): State {
 }
 
 /** What an expression evaluated from `scope` reads. */
-export function evalContext(state: State, scope: ScopeOccurrenceId): EvalContext {
-  return { variables: visible(state, scope), nowMs: state.logicalTimeMs };
+export function evalContext(state: State, program: Program, scope: ScopeOccurrenceId): EvalContext {
+  return { variables: visible(state, program, scope), nowMs: state.logicalTimeMs };
 }
 
 /** The variables `scope` itself holds, without the chain behind it. */

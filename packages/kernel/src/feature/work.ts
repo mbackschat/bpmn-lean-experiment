@@ -99,9 +99,9 @@ export const scriptProtocol = "urn:bpmn-lean:effect-protocol:script-v1";
  * owner first ([script semantics](../../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). The kernel
  * cannot know which names a script reads, so it commits them all when the effect opens.
  */
-export function scriptSnapshot(state: State, scope: ScopeOccurrenceId): readonly Binding[] {
+export function scriptSnapshot(program: Program, state: State, scope: ScopeOccurrenceId): readonly Binding[] {
   const seen = new Set<string>();
-  return visible(state, scope).filter(([name]) => !seen.has(name) && seen.add(name) !== undefined);
+  return visible(state, program, scope).filter(([name]) => !seen.has(name) && seen.add(name) !== undefined);
 }
 
 /** Open `kind` for the Activity and arm its boundaries on the occurrence. */
@@ -225,7 +225,7 @@ export const defaultWorkHooks: WorkHooks = {
 export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, payload: ActivityPayload, occurrence: Occurrence,
   state: State): Outcome {
   const handler = ctx.scopeRole(state, occurrence.scope) === ScopeRole.CompensationHandler;
-  const evaluated = ctxEvaluateMappings(ctx, evalContext(state, occurrence.scope), payload.envelope.inputs);
+  const evaluated = ctxEvaluateMappings(ctx, evalContext(state, ctx.program, occurrence.scope), payload.envelope.inputs);
   if (!evaluated.ok) return failedWith(evaluated.failure);
   if (evaluated.value === null) return committed(hold(state, { occurrence: occurrence.id, scope: occurrence.scope }));
   const inputs = evaluated.value;
@@ -264,7 +264,7 @@ export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, paylo
     case WorkTag.Script:
       return committed(openWork({
         tag: OpenKindTag.Effect,
-        detail: { protocol: scriptProtocol, operation: "javascript", arguments: scriptSnapshot(entered, occurrence.scope), failures: 0, send: null },
+        detail: { protocol: scriptProtocol, operation: "javascript", arguments: scriptSnapshot(ctx.program, entered, occurrence.scope), failures: 0, send: null },
       }, header, payload, occurrence, entered));
     case WorkTag.Rule:
       return evaluateDecision(hooks, ctx, payload, work.payload, occurrence, entered);
@@ -286,7 +286,7 @@ export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, paylo
 function evaluateDecision(hooks: WorkHooks, ctx: Ctx, payload: ActivityPayload, work: RuleWork, occurrence: Occurrence,
   state: State): Outcome {
   const scope = ownScope(state, occurrence.id, occurrence.scope);
-  const writes = hooks.runDecision(ctx.program, work, evalContext(state, scope).variables);
+  const writes = hooks.runDecision(ctx.program, work, evalContext(state, ctx.program, scope).variables);
   if (!writes.ok) return writes;
   const written = completionOutputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, activityScope(ctx, state, occurrence.id, occurrence.scope), writes.value, []);
   if (!written.ok) return failedWith(written.failure);
@@ -403,7 +403,7 @@ function activityScope(ctx: Ctx, state: State, occurrence: number, scope: ScopeO
       return [[], []];
     case OutputContext.ActivityScope: {
       const local = localScope(state, occurrence);
-      return [local === null ? [] : ownVariables(state, local), visible(state, scope)];
+      return [local === null ? [] : ownVariables(state, local), visible(state, ctx.program, scope)];
     }
   }
   return assertNever(ctx.program.options.outputContext);

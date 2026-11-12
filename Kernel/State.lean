@@ -462,15 +462,37 @@ def subtree (state : State) (scope : ScopeOccurrenceId) : List ScopeOccurrenceId
       go fuel (rest ++ children) (seen ++ [next])
   go (state.scopes.length + 1) [scope] []
 
-/-- Variables visible from `scope`, innermost first, up to the root of its process instance. -/
-def visible (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
+/-- Whether the frame of `scope` shows its binding of `name`: a Scope's item only in an occurrence of the Scope that
+declares it, any other name in every frame. BPMN references data by element identity (§10.4.1), so another frame's
+binding of an item's identifier neither shadows the item nor stands in for it while it is unset. -/
+def shows (state : State) (program : Program) (scope : ScopeOccurrenceId) (name : String) : Bool :=
+  match program.itemScope? name with
+  | none => true
+  | some declaring => ((state.scopes.find? (·.id == scope)).bind (·.element)) == some declaring
+
+/-- Variables visible from `scope`, innermost first, up to the root of its process instance, each frame's as it
+`shows` them. -/
+def visible (state : State) (program : Program) (scope : ScopeOccurrenceId) : List (String × Value) :=
   let rec go (fuel : Nat) (current : Option ScopeOccurrenceId) : List (String × Value) :=
     match fuel, current with
     | 0, _ | _, none => []
     | fuel + 1, some id =>
-      let own := ((state.variables.find? (·.scope == id)).map (·.entries)).getD []
+      let own := (((state.variables.find? (·.scope == id)).map (·.entries)).getD []).filter (state.shows program id ·.1)
       if state.calledRoot id then own else own ++ go fuel ((state.scopes.find? (·.id == id)).bind (·.parent))
   go state.scopes.length (some scope)
+
+/-- The nearest occurrence of the Scope `element` from `scope` outward, up to the root of its process instance: the
+occurrence whose frame holds the items `element` declares for a site in `scope`. -/
+def declaring? (state : State) (scope : ScopeOccurrenceId) (element : ElementId) : Option ScopeOccurrenceId :=
+  let rec go (fuel : Nat) (current : ScopeOccurrenceId) : Option ScopeOccurrenceId :=
+    match fuel with
+    | 0 => none
+    | fuel + 1 =>
+      let occurrence := state.scopes.find? (·.id == current)
+      if (occurrence.bind (·.element)) == some element then some current
+      else if state.calledRoot current then none
+      else (occurrence.bind (·.parent)).bind (go fuel)
+  go state.scopes.length scope
 
 /-- The innermost scope visible from `scope` that declares `name`, up to the root of its process instance. -/
 def owner? (state : State) (scope : ScopeOccurrenceId) (name : String) : Option ScopeOccurrenceId :=

@@ -13,7 +13,7 @@
  * (guard 17).
  */
 import {
-  VariableEvent, assertNever, definitionRefEquals, programChildren, programProcessChildren, programPublicId, utf8ByteSize,
+  VariableEvent, assertNever, definitionRefEquals, programChildren, programItemScope, programProcessChildren, programPublicId, utf8ByteSize,
   type DefinitionRef, type Element, type ElementId, type FlowId, type Program, type Value,
 } from "./il/types.js";
 import {
@@ -754,16 +754,42 @@ function ownEntries(state: State, scope: ScopeOccurrenceId): readonly Binding[] 
   return state.variables.find((entry) => entry.scope === scope)?.entries ?? null;
 }
 
-/** Variables visible from `scope`, innermost first, up to the root of its process instance. */
-export function visible(state: State, scope: ScopeOccurrenceId): readonly Binding[] {
+/**
+ * Whether the frame of `scope` shows its binding of `name`: a Scope's item only in an occurrence of the Scope that
+ * declares it, any other name in every frame. BPMN references data by element identity (§10.4.1), so another frame's
+ * binding of an item's identifier neither shadows the item nor stands in for it while it is unset.
+ */
+export function shows(state: State, program: Program, scope: ScopeOccurrenceId, name: string): boolean {
+  const declaring = programItemScope(program, name);
+  return declaring === null || scopeOf(state, scope)?.element === declaring;
+}
+
+/** Variables visible from `scope`, innermost first, up to the root of its process instance, each frame's as it `shows` them. */
+export function visible(state: State, program: Program, scope: ScopeOccurrenceId): readonly Binding[] {
   const out: Binding[] = [];
   let current: ScopeOccurrenceId | null = scope;
   for (let fuel = state.scopes.length; fuel > 0 && current !== null; fuel -= 1) {
-    out.push(...(ownEntries(state, current) ?? []));
+    const frame = current;
+    out.push(...(ownEntries(state, frame) ?? []).filter(([name]) => shows(state, program, frame, name)));
     if (calledRoot(state, current)) break;
     current = scopeOf(state, current)?.parent ?? null;
   }
   return out;
+}
+
+/**
+ * The nearest occurrence of the Scope `element` from `scope` outward, up to the root of its process instance: the
+ * occurrence whose frame holds the items `element` declares for a site in `scope`.
+ */
+export function declaring(state: State, scope: ScopeOccurrenceId, element: ElementId): ScopeOccurrenceId | null {
+  let current: ScopeOccurrenceId | null = scope;
+  for (let fuel = state.scopes.length; fuel > 0 && current !== null; fuel -= 1) {
+    const occurrence = scopeOf(state, current);
+    if (occurrence?.element === element) return current;
+    if (calledRoot(state, current)) return null;
+    current = occurrence?.parent ?? null;
+  }
+  return null;
 }
 
 /** The innermost scope visible from `scope` that declares `name`, up to the root of its process instance. */

@@ -223,8 +223,8 @@ structure ScopePayload where
   kind : ScopeKind
   children : List ElementId
   localVariables : List String := []
-  /-- The item names the Scope declares, which exist per Scope occurrence (BPMN 2.0.2 §10.4.1): its Properties, Data
-  Objects and their references. Admission refuses every reference to one (`data.scopedItem`). -/
+  /-- The item names the Scope declares, which exist per Scope occurrence (BPMN 2.0.2 §10.4.1): its Properties and Data
+  Objects, read and written in the declaring occurrence (`Program.itemScope?`). -/
   items : List String := []
   envelope : Envelope := {}
   deriving Repr
@@ -546,6 +546,11 @@ def declares (program : Program) (definition : Option DefinitionRef) (name : Str
   match definition with
   | none => program.variables.contains name
   | some bound => program.processes.any fun process => process.definition == bound && process.variables.contains name
+
+/-- The Scope element that declares the item `name` (`ScopePayload.items`); `none` for any other name, a process's item
+included. Element identifiers are unique, so at most one Scope declares it. -/
+def itemScope? (program : Program) (name : String) : Option ElementId :=
+  (program.elements.find? fun element => ((element.scope?).map (·.2.items.contains name)).getD false).map (·.header.id)
 
 /-- The carried processes a Call's selector admits for a caller deployed at `callerDeployment` (`CallWork.selects`);
 admission requires exactly one. Two versions of one key coexist because `Header.id` stays unique (PC-SCOPE-03). -/

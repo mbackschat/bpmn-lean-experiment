@@ -169,7 +169,7 @@ export function outflow(ctx: Ctx, occurrence: Occurrence, leave: Leave, state: S
     case LeaveTag.Outgoing: {
       const element = programElement(ctx.program, occurrence.element);
       if (element === null) return failed(FailureTag.SemanticFailure, "outflow-without-element");
-      const selected = ownFlows(ctx, element, evalContext(state, occurrence.scope));
+      const selected = ownFlows(ctx, element, evalContext(state, ctx.program, occurrence.scope));
       return selected.ok
         ? committed(emit(state, queued(ctx, selected.value), occurrence.scope))
         : failedWith(selected.failure);
@@ -181,7 +181,7 @@ export function outflow(ctx: Ctx, occurrence: Occurrence, leave: Leave, state: S
 }
 
 function exclusive(ctx: Ctx, candidates: readonly FlowId[], fallback: FlowId | null, occurrence: Occurrence, state: State): Outcome {
-  const chosen = holding(ctx, evalContext(state, occurrence.scope), candidates, true);
+  const chosen = holding(ctx, evalContext(state, ctx.program, occurrence.scope), candidates, true);
   if (!chosen.ok) return failedWith(chosen.failure);
   const flow = chosen.value[0] ?? fallback;
   return flow === null
@@ -198,7 +198,7 @@ function inclusiveFlows(
   scope: ScopeOccurrenceId,
   state: State,
 ): Result<readonly FlowId[]> {
-  return inclusiveChoice(ctx, evalContext(state, scope), candidates, fallback, outgoing, "inclusive-gateway-no-outgoing-flow");
+  return inclusiveChoice(ctx, evalContext(state, ctx.program, scope), candidates, fallback, outgoing, "inclusive-gateway-no-outgoing-flow");
 }
 
 /**
@@ -225,7 +225,7 @@ function selectBeforeOutputs(ctx: Ctx, occurrence: Occurrence, leave: Leave, sta
       const element = programElement(ctx.program, occurrence.element);
       if (element === null) return failed(FailureTag.SemanticFailure, "outflow-without-element");
       const inside = state.scopes.find((scope) => scope.occurrence === occurrence.id)?.id ?? occurrence.scope;
-      const chosen = ownFlows(ctx, element, evalContext(state, inside));
+      const chosen = ownFlows(ctx, element, evalContext(state, ctx.program, inside));
       return chosen.ok ? committed(leaveFlows(chosen.value)) : failedWith(chosen.failure);
     }
   }

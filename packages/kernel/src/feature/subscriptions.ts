@@ -46,6 +46,7 @@ import {
   type ConditionTrigger,
   type Mapping,
   type ProfileOptions,
+  type Program,
   type SignalTrigger,
   type Subscription,
   type TimerTrigger,
@@ -210,9 +211,9 @@ function signalAddress(ctx: Ctx, context: EvalContext, trigger: SignalTrigger): 
  * What the variables visible from `scope`'s parent read, without `scope`'s own: none at a root or a called root, whose
  * start or call variables CIB sets after it subscribes (`PvmExecutionImpl.java:278-286`).
  */
-function enclosingContext(state: State, scope: ScopeOccurrenceId): EvalContext {
+function enclosingContext(program: Program, state: State, scope: ScopeOccurrenceId): EvalContext {
   const parent = calledRoot(state, scope) ? null : state.scopes.find((entry) => entry.id === scope)?.parent ?? null;
-  return { variables: parent === null ? [] : visible(state, parent), nowMs: state.logicalTimeMs };
+  return { variables: parent === null ? [] : visible(state, program, parent), nowMs: state.logicalTimeMs };
 }
 
 /**
@@ -357,7 +358,7 @@ export function arm(ctx: Ctx, host: number, element: ElementId, scope: ScopeOccu
   if (envelope === null) return failed(FailureTag.SemanticFailure, "arm-without-envelope");
   return subscribeAll(ctx, state, envelope.boundaries, (current, boundary) => {
     const arming = {
-      values: evalContext(current, ownScope(current, host, scope)), names: evalContext(current, scope), repeats: !boundary.interrupting,
+      values: evalContext(current, ctx.program, ownScope(current, host, scope)), names: evalContext(current, ctx.program, scope), repeats: !boundary.interrupting,
     };
     return subscribe(ctx, arming, current, boundary.subscription, boundary.id, scope, host, false);
   });
@@ -378,7 +379,7 @@ export function armGateway(ctx: Ctx, occurrence: number, gateway: ElementId, sco
     const event = element === null ? null : elementEvent(element);
     const subscription = event === null ? null : eventPayloadCatch(event[1]);
     if (event === null || subscription === null) return failed(FailureTag.Unsupported, "gateway-event-based-receive-arm");
-    const values = evalContext(current, scope);
+    const values = evalContext(current, ctx.program, scope);
     return subscribe(ctx, { values, names: values, repeats: false }, current, subscription, event[0].id, scope, occurrence, false);
   });
 }
@@ -403,7 +404,7 @@ export function armScope(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outc
     const start = declared === null ? null : ctx.eventStart(declared[1]);
     if (declared === null || start === null) return committed([current, null]);
     const subscription = start[0];
-    const arming = { values: evalContext(current, scope), names: enclosingContext(current, scope), repeats: !start[1] };
+    const arming = { values: evalContext(current, ctx.program, scope), names: enclosingContext(ctx.program, current, scope), repeats: !start[1] };
     const kind = waitKind(ctx, arming, subscription);
     if (!kind.ok) return failedWith(kind.failure);
     const startId = startEvent(ctx, declared[0].id);
@@ -676,7 +677,7 @@ export function trigger(hooks: SubscriptionsHooks, ctx: Ctx, item: OpenItem, fir
 
 /** `Hooks.arriveCatch`: the catch Event's occurrence waits on its subscription. */
 export function arriveCatch(ctx: Ctx, _header: Header, _payload: EventPayload, subscription: Subscription, occurrence: Occurrence, state: State): Outcome {
-  const values = evalContext(state, occurrence.scope);
+  const values = evalContext(state, ctx.program, occurrence.scope);
   const kind = waitKind(ctx, { values, names: values, repeats: false }, subscription);
   if (!kind.ok) return failedWith(kind.failure);
   // Admission refuses every trigger reaching `null` here (`event.catch.error`, `.escalation`, `.compensation`, `.cancel`);

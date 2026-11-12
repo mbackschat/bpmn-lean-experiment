@@ -39,8 +39,8 @@ def scriptProtocol : String := "urn:bpmn-lean:effect-protocol:script-v1"
 /-- A Script Task's arguments: every variable visible from `scope`, one entry per name, its nearest owner's, nearest
 owner first ([script semantics](../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). The kernel cannot know
 which names a script reads, so it commits them all when the effect opens. -/
-def scriptSnapshot (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
-  (state.visible scope).foldl (fun kept entry => if kept.any (·.1 == entry.1) then kept else kept ++ [entry]) []
+def scriptSnapshot (program : Program) (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
+  (state.visible program scope).foldl (fun kept entry => if kept.any (·.1 == entry.1) then kept else kept ++ [entry]) []
 
 /-- Open `kind` for the Activity and arm its boundaries on the occurrence. -/
 def openWork (kind : OpenKind) (header : Header) (payload : ActivityPayload) (occurrence : Occurrence)
@@ -109,7 +109,7 @@ def activityScope (ctx : Ctx) (state : State) (occurrence : Nat) (scope : ScopeO
     List (String × Value) × List (String × Value) :=
   match ctx.program.options.outputContext with
   | .submission => ([], [])
-  | .activityScope => (((state.localScope? occurrence).map state.ownVariables).getD [], state.visible scope)
+  | .activityScope => (((state.localScope? occurrence).map state.ownVariables).getD [], state.visible ctx.program scope)
 
 /-- A decision task (PC-AUTO-07, PC-AUTO-08) reads its inputs, which CIB holds as locals of the task's scope
 (`BpmnParse.java:2357-2360`), and writes the mapped result outward from that scope, as `setVariable` on the task's
@@ -120,7 +120,7 @@ the result where that write left it, behind an earlier output's write of its nam
 def evaluateDecision (hooks : WorkHooks) (ctx : Ctx) (payload : ActivityPayload) (work : RuleWork) (occurrence : Occurrence)
     (state : State) : Outcome := do
   let scope := state.ownScope occurrence.id occurrence.scope
-  let writes ← hooks.runDecision ctx.program work (state.evalContext scope).variables
+  let writes ← hooks.runDecision ctx.program work (state.evalContext ctx.program scope).variables
   let written ← completionOutputs ctx state.logicalTimeMs .activityLocals payload.envelope.outputs
     (activityScope ctx state occurrence.id occurrence.scope) writes []
   let result := if writes.isEmpty then state else state.signal (.write scope writes .outward)
@@ -136,7 +136,7 @@ instead of holding (`Ctx.evaluateMappings`). -/
 def arriveActivity (hooks : WorkHooks) (ctx : Ctx) (header : Header) (payload : ActivityPayload) (occurrence : Occurrence)
     (state : State) : Outcome := do
   let handler := ctx.scopeRole state occurrence.scope == .compensationHandler
-  let some inputs ← ctx.evaluateMappings (state.evalContext occurrence.scope) payload.envelope.inputs
+  let some inputs ← ctx.evaluateMappings (state.evalContext ctx.program occurrence.scope) payload.envelope.inputs
     | .ok (state.hold { occurrence := occurrence.id, scope := occurrence.scope })
   let state := enterLocal header inputs occurrence state
   -- An instance of a Multi-Instance body, the only occurrence of a looping Activity this hook sees, follows the token
@@ -162,7 +162,7 @@ def arriveActivity (hooks : WorkHooks) (ctx : Ctx) (header : Header) (payload : 
   | .send _ => .error (.unsupported "work-send")
   | .script _ =>
     let detail : EffectDetail :=
-      { protocol := scriptProtocol, operation := "javascript", arguments := scriptSnapshot state occurrence.scope }
+      { protocol := scriptProtocol, operation := "javascript", arguments := scriptSnapshot ctx.program state occurrence.scope }
     .ok (openWork (.effect detail) header payload occurrence state)
   | .rule work => evaluateDecision hooks ctx payload work occurrence state
   | .call work =>

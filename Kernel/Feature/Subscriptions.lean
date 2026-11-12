@@ -159,7 +159,7 @@ def arm (ctx : Ctx) (host : Nat) (element : ElementId) (scope : ScopeOccurrenceI
   | some envelope =>
     subscribeAll ctx state envelope.boundaries fun state boundary =>
       let arming : Arming :=
-        { values := state.evalContext (state.ownScope host scope), names := state.evalContext scope
+        { values := state.evalContext ctx.program (state.ownScope host scope), names := state.evalContext ctx.program scope
           repeats := !boundary.interrupting }
       subscribe ctx arming state boundary.subscription boundary.id scope (some host) false
 
@@ -176,14 +176,14 @@ def armGateway (ctx : Ctx) (occurrence : Nat) (gateway : ElementId) (scope : Sco
         target.event?.bind fun (header, event) => event.catch?.map (header.id, ·)
       match arm with
       | some (element, subscription) =>
-        subscribe ctx { values := state.evalContext scope } state subscription element scope (some occurrence) false
+        subscribe ctx { values := state.evalContext ctx.program scope } state subscription element scope (some occurrence) false
       | none => .error (.unsupported "gateway-event-based-receive-arm")
 
 /-- What the variables visible from `scope`'s parent read, without `scope`'s own: none at a root or a called root,
 whose start or call variables CIB sets after it subscribes (`PvmExecutionImpl.java:278-286`). -/
-def enclosingContext (state : State) (scope : ScopeOccurrenceId) : EvalContext :=
+def enclosingContext (program : Program) (state : State) (scope : ScopeOccurrenceId) : EvalContext :=
   let parent := if state.calledRoot scope then none else (state.scopes.find? (·.id == scope)).bind (·.parent)
-  { variables := (parent.map state.visible).getD [], nowMs := state.logicalTimeMs }
+  { variables := (parent.map (state.visible program)).getD [], nowMs := state.logicalTimeMs }
 
 /-- The start Event of an Event Sub-Process. -/
 def startEvent? (ctx : Ctx) (eventSubProcess : ElementId) : Option ElementId :=
@@ -197,7 +197,7 @@ def armScope (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome :
     match child.scope?.bind fun (header, payload) => (ctx.eventStart payload).map (header.id, ·) with
     | none => .ok (state, none)
     | some (eventSubProcess, subscription, interrupting) => do
-      let arming := { values := state.evalContext scope, names := enclosingContext state scope, repeats := !interrupting }
+      let arming := { values := state.evalContext ctx.program scope, names := enclosingContext ctx.program state scope, repeats := !interrupting }
       match startEvent? ctx eventSubProcess, ← waitKind ctx arming subscription with
       | some start, _ => subscribe ctx arming state subscription start scope none true
       | none, none => .ok (state, none)
@@ -381,7 +381,7 @@ def trigger (hooks : SubscriptionsHooks) (ctx : Ctx) (item : OpenItem) (fired : 
 /-- `Hooks.arriveCatch`: the catch Event's occurrence waits on its subscription. -/
 def arriveCatch (ctx : Ctx) (_ : Header) (_ : EventPayload) (subscription : Subscription) (occurrence : Occurrence)
     (state : State) : Outcome := do
-  match ← waitKind ctx { values := state.evalContext occurrence.scope } subscription with
+  match ← waitKind ctx { values := state.evalContext ctx.program occurrence.scope } subscription with
   | some kind =>
     let state := state.openItem kind occurrence
     match state.openItems.getLast? with

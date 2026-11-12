@@ -96,7 +96,7 @@ function implicitStart(ctx: Ctx, scope: ElementId): Result<readonly ElementId[]>
 }
 
 function enter(ctx: Ctx, header: Header, payload: ScopePayload, occurrence: Occurrence, entry: ScopeEntry, state: State): Outcome {
-  const locals = ctxRequireMappings(ctx, evalContext(state, occurrence.scope), payload.envelope.inputs);
+  const locals = ctxRequireMappings(ctx, evalContext(state, ctx.program, occurrence.scope), payload.envelope.inputs);
   if (!locals.ok) return locals;
   const [entered, scope] = enterScope(state, header.id, occurrence.scope, [...locals.value, ...entry.locals], occurrence.id);
   const armed = payload.envelope.boundaries.length === 0 || payload.envelope.multiInstance !== null
@@ -144,7 +144,7 @@ export function completeScope(
   owner: Occurrence,
   state: State,
 ): Outcome {
-  const outer = scope.parent === null ? [] : visible(state, scope.parent);
+  const outer = scope.parent === null ? [] : visible(state, ctx.program, scope.parent);
   const reads = ctxOutputReads(ctx, state.logicalTimeMs, ownVariables(state, scope.id), [], outer);
   const outputs = ctxRequireMappingsWith(ctx, reads, payload.envelope.outputs);
   if (!outputs.ok) return outputs;
