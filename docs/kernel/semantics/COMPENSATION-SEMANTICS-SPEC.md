@@ -123,7 +123,7 @@ Interpretation of track M9 (PC-COMPENSATION-01 to -05, PC-TX-01 to -03), drafted
 - CIB: a boundary handler starts with `PvmAtomicOperation.ACTIVITY_START` on a compensating execution that `throwCompensationEvent` placed under the throwing execution (`CompensationEventHandler.java:73-78`, `CompensationUtil.java:62-75`), so its input mappings read the throw's live scope chain (an unresolved `camunda:inputParameter` rolls the command back), and its `camunda:asyncBefore` is never honored: `ACTIVITY_START` is no asynchronous operation (the asynchronous ones are listed in CIB-INT-0035's evidence). A Service Task handler's effect therefore runs inside the triggering command.
 - Witnesses: retained, refused by the kernel as `activity.compensationHandler.input`: `compensation-eligibility/late-third-second-throw`, `two-records-live-data`, `unfinished-third-ineligible`, `transaction-cancel-mixed/*` (5 retained); as `compensation.handlerWork`, since removed: `compensation-handler-bodies/*`, `compensation-handler-bodies-without-receive/*` (Receive, effect, Call and Sub-Process handler bodies), all admitted since; CIB never subscribes the Receive Task handler of `compensation-handler-bodies/*` to its Message (CIB-LIM-0049); synchronous handler effects: `compensation-handler-failures/*` (7; CIB's handler effect runs in the command that completes `UserTask_Book2`; in `one-fails-caught` that command fails inside CIB, CIB-LIM-0046, which is no business-failure answer), `transaction-cancel-waiting-handlers/handlers-user-first`, `stale-interior-result-while-handlers-wait` (CIB never waits for the Service Task handler).
 - Relation: the kernel admits input mappings on a handler, read in the handler's context occurrence (live data from the run scope's chain, I12), and handler bodies of every work kind the kernel otherwise admits; a Service Task handler stays an asynchronous effect. A handler begins without a token, so `Work.arriveActivity` counts an occurrence whose continuation is `.compensation` as begun, as it counts a Multi-Instance instance: a Receive or Call handler no longer returns `scope-implicit-start`. A handler whose Data Input is unavailable (data-association mappings, the standards reading of §10.4.2) is held in `FeatureSlots.held` as any Activity is, with no arrival flow (M11's I-K2, [#104](https://github.com/mbackschat/bpmn-lean-experiment/issues/104), which lifted the earlier restriction `compensation.handlerInputUnavailable`); the kernel runs Data Input Associations under the cibseven profiles as well, where CIB never reads them and opens the handler (CIB-LIM-0013); under the cibseven profiles an unresolved `camunda:inputParameter` rolls back, as in CIB. CIB's synchronous handler is a limitation (D7): [CIB-LIM-0042](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0042--cib-ignores-the-asynchronous-continuation-of-a-boundary-compensation-handler).
-- Shape: none for inputs and bodies (`Envelope.inputs` and `Work` exist; `Parked` unchanged, S5); admission drops `activity.compensationHandler.input` and `compensation.handlerWork`, since every work kind the kernel otherwise admits may be a handler body. `compensation.handlerMultiInstance` stays (CIB skips a handler's Multi-Instance asynchronous marks, `BpmnParse.java:2412-2425`).
+- Shape: none for inputs and bodies (`Envelope.inputs` and `Work` exist; an unavailable input is held in `Held`, which M11 split from `Parked`, S5); admission drops `activity.compensationHandler.input` and `compensation.handlerWork`, since every work kind the kernel otherwise admits may be a handler body. `compensation.handlerMultiInstance` stays (CIB skips a handler's Multi-Instance asynchronous marks, `BpmnParse.java:2412-2425`).
 
 #### I11 — An Error, Escalation or Terminate leaving a handler (PC-COMPENSATION-01, PC-COMPENSATION-04)
 
@@ -245,7 +245,7 @@ IL (`Kernel/IL/Types.lean`, `packages/kernel/src/il/types.ts`):
 State (`Kernel/State/Slots.lean`, `packages/kernel/src/state/slots.ts`):
 - `Compensable.handler : ElementId` becomes `Option ElementId` (TS `handler: ElementId | null`); `none` is a group: a handler-less Sub-Process's inner records (I5) or a Multi-Instance Sub-Process's instance records (I9).
 - `Resume.group (outer context : ScopeOccurrenceId)` (TS `ResumeTag.Group`, `{ tag, outer, context }`): a nested group run's end, which leaves the group's `context` and advances the run in `outer` as a completed handler does (S1). Until I5's behavior commit produces it, `Compensation.advance`'s arm for it and `beginHandler`'s for a `none` handler are invariant failures.
-- `Parked` unchanged: an unavailable handler input is the dynamic-only `compensation.handlerInputUnavailable` (S5, I10).
+- `Parked` unchanged, and a handler whose input is unavailable is held in `FeatureSlots.held`, a `Held` list of its own since M11 (S5, I10), which lifted the dynamic-only `compensation.handlerInputUnavailable`.
 - `InstanceFailure` unchanged (S9).
 
 Hooks (`Kernel/Hooks.lean`, `packages/kernel/src/hooks.ts`):
@@ -312,9 +312,7 @@ Superseded first-profile restrictions: the old checkpoints fixed one flat root w
 
 ## Open rows
 
-| Row | Decision owed or not yet implemented |
-|---|---|
-| PC-COMPENSATION-02 | The batch's CIB answers for the repeated throw during a run ([#103](https://github.com/mbackschat/bpmn-lean-experiment/issues/103)): `compensation-targeting/second-throw-while-handler-waits` and `second-throw-compensates-later-record`. |
+None: every row this document owns is closed.
 
 ## Sources
 

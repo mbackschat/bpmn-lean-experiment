@@ -132,14 +132,7 @@ Superseded first-profile restrictions: the sequential and parallel User Task pro
 
 | Row | Decision owed or not yet implemented |
 |---|---|
-| PC-MI-01 | Cardinality generation and both modes on User Task bodies under the selected CIB result account, witnessed without CIB-LIM-0019's own-input reads ([SMI account][smi-normative]). |
-| PC-MI-04, PC-MI-05 | Sequential and parallel Multi-Instance Sub-Processes are admitted; closure is joint with PC-HUM-01; under the standards profile racing parallel instances are refused (`multiInstance.concurrentInstances`). |
-| PC-MI-06 | Cardinality-driven Sub-Process bodies with a fixed total. |
-| PC-MI-07 | Typed collection and cardinality expressions (JUEL level M5). |
-| PC-MI-09 | Typed completion predicates for every body kind; classification of CIB's mode-specific final test (CIB-INT-0009). |
-| PC-MI-10 | Body data and result effects with local initialization, completed-body reset and sibling isolation (CIB-EXT-0017, CIB-EXT-0018). |
-| PC-MI-11 | Nested and repeated Multi-Instance composition and re-entry through a cycle. |
-| PC-MI-12 | Outer interruption and current-body boundaries for every body kind, fencing late results; `numberOfTerminatedInstances` on the reopen triggers of [terminated instances](#terminated-instances-pc-mi-12) ([SMI contract][smi-contract]). |
+| PC-MI-04, PC-MI-05 | Sequential and parallel Multi-Instance Sub-Processes are admitted, and PC-HUM-01, the row their closure was joint with, closed on the M11 track review; under the standards profile racing parallel instances are refused (`multiInstance.concurrentInstances`). |
 
 ## Sources
 

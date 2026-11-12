@@ -85,7 +85,7 @@ The [scopes semantics](SCOPES-SEMANTICS-SPEC.md#pc-scope-06-exceptional-call-ret
 
 **Refusals.** None new beyond the shared rethrow codes.
 
-**Witnesses.** Modes (5) and nesting (2, the `Wrapper` ⊃ `Core` rethrow among them) agree; call propagation and relay as above, the double pass through a called root's handler ([escalation-call-relay](../../../scenarios/open-rows/escalation-call-relay/README.md)) included; the code variable read by an interrupted host's output parameter, the CIB-EXT-0016 widening ([escalation-catch-write-origin](../../../scenarios/open-rows/escalation-catch-write-origin/README.md)); [escalation-multi-instance](../../../scenarios/open-rows/escalation-multi-instance/README.md) (6), whose two Multi-Instance Call hosts wait for PC-MI-03's admission of Call bodies.
+**Witnesses.** Modes (5) and nesting (2, the `Wrapper` ⊃ `Core` rethrow among them) agree; call propagation and relay as above, the double pass through a called root's handler ([escalation-call-relay](../../../scenarios/open-rows/escalation-call-relay/README.md)) included; the code variable read by an interrupted host's output parameter, the CIB-EXT-0016 widening ([escalation-catch-write-origin](../../../scenarios/open-rows/escalation-catch-write-origin/README.md)); [escalation-multi-instance](../../../scenarios/open-rows/escalation-multi-instance/README.md) (6), the two Multi-Instance Call hosts included.
 
 ### PC-ERROR-02: rethrow from an Event Sub-Process
 
@@ -208,12 +208,7 @@ Registered with PC-MESSAGE-09's behavior (2026-11-11): [CIB-INT-0027](../../CIB-
 
 ## Open rows
 
-| Row | Decision owed or not yet implemented |
-|---|---|
-| PC-ERROR-03 | Called children: an uncaught Error ends its path and the called instance returns, the Call's outputs pass at the called root (CIB-EXT-0034), a busy called root whose own Event Sub-Process catches is refused, and a raising Service Task leaves after the passes and the catch variables (`error-called-child`, `error-called-child-error-data` and the `error-thrower-leave` witnesses agree; `finance-unlisted-code` is CIB-LIM-0006's). The Multi-Instance hosts `sequential-second-instance-fails` and `parallel-error-data-to-host-boundary` agree; open: `parallel-second-child-fails` waits for the batch's evidence |
-| PC-ESCALATION-02 | The two Multi-Instance Call witnesses the ledger charges to the row (`escalation-multi-instance/parallel-interrupting`, `sequential-non-interrupting`) wait for PC-MI-03's admission of Call bodies |
-| PC-ESCALATION-03 | The same two Multi-Instance Call witnesses as PC-ESCALATION-02 |
-| PC-SIGNAL-01 | Signal throws and their broadcast intent: implemented under both address readings; closes with PC-SIGNAL-02's catch side once the cibseven profiles select CIB-INT-0028, CIB-EXT-0040 to CIB-EXT-0043 and the retained witnesses agree |
+None: every row this document owns is closed.
 
 ## Sources
 
