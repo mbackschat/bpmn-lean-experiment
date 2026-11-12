@@ -257,7 +257,7 @@ export function compareTargetResults(
 
 /** The inputs a CIB Seven evidence document records about delegates it ran inside another command. */
 export type SynchronousEffects = Readonly<{
-  /** Commands after which CIB recorded a delegate execution (`producerObservations.mappingExecutions`). */
+  /** Commands after which CIB recorded a delegate or Script Task execution (`producerObservations.mappingExecutions`). */
   synchronousAfter: ReadonlySet<string>;
   /** The scenario's effect-result inputs. */
   effectInputs: ReadonlySet<string>;

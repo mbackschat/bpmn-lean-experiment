@@ -89,6 +89,21 @@ final class CibSevenScriptedEffect {
     return consumed.contains(commandId);
   }
 
+  /**
+   * A Script Task CIB evaluated inside the current command, recorded as an execution of the handler
+   * {@code script:<element>} with no arguments or patch: the differential needs only the command it ran in.
+   */
+  void scriptEvaluated(String elementId) {
+    var handler = "script:" + elementId;
+    mappings.add(
+        new MappingExecutionSnapshot(
+            Objects.requireNonNull(currentCommandId, "currentCommandId"),
+            handler,
+            List.of(),
+            List.of(),
+            mappings.stream().filter(mapping -> mapping.handler().equals(handler)).count() + 1));
+  }
+
   List<MappingExecutionSnapshot> mappingExecutions() {
     return List.copyOf(mappings);
   }

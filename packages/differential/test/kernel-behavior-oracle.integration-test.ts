@@ -5,8 +5,9 @@
  * committed input's host view with its registration addresses), and on every scenario with retained CIB Seven
  * evidence the kernel's result equals the retained one at the CIB observation boundary (`compareTargetResults`, which
  * drops the kernel-only `code` and `scopes` members and sorts open waits, after `foldSynchronousEffects` folds the
- * effect inputs of delegates CIB ran inside another command), as on every population with retained evidence
- * (`comparePopulationResults`). Discovery is by directory
+ * effect inputs of delegates and Script Tasks CIB ran inside another command), as on every population with retained
+ * evidence (`comparePopulationResults`). Both kernels take a Script Task's result as the input the host evaluator
+ * records once (`withScriptResults`). Discovery is by directory
  * (`scenario-discovery.ts`), so a new scenario or evidence file joins without an edit here.
  *
  * No disagreement between the kernels is expected. A disagreement with retained evidence is expected exactly when the
@@ -37,6 +38,8 @@ import {
 } from "@bpmn-lean/differential";
 import type { PopulationResultDocument, ScenarioDisagreement, ValueDisagreement } from "@bpmn-lean/differential";
 import { decodeProgram, parseStrict, runFixture, runHostView, runPopulation, runScenario } from "@bpmn-lean/kernel";
+import type { JsonValue } from "@bpmn-lean/temporal-host/host";
+import { withScriptResults } from "@bpmn-lean/temporal-host/testing";
 
 import { pipelineTestTimeoutMs } from "../../../scripts/pipeline-budget.ts";
 import { ledgerViolations, readCibDisagreementLedger } from "./cib-disagreement-ledger.ts";
@@ -44,7 +47,7 @@ import {
   decodeLeanPrograms, runLeanKernelFixtures, runLeanKernelHostView, runLeanKernelPopulation, runLeanKernelScenario,
   writeProgram,
 } from "./kernel-targets.ts";
-import { projectRoot } from "./pipeline-target-support.ts";
+import { projectRoot, scriptTimeoutMs } from "./pipeline-target-support.ts";
 import { populationStepDigests } from "./population-digest.ts";
 import { populationPrograms } from "./population-programs.ts";
 import { DiscoveredKind, discoverScenarios, kernelProgramFor, scenarioKernelInput } from "./scenario-discovery.ts";
@@ -122,12 +125,20 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
         case DiscoveredKind.Scenario: {
           const input = await scenarioKernelInput(scenario.relativePath, scenario.document.bpmn, scenario.document.profile);
           let typeScript: CanonicalResult;
+          let document = scenario.document;
           if (input.kind === "refused") typeScript = input.result;
           else {
             const programPath = path.join(directory, `scenario-${String(index)}.json`);
             await writeProgram(programPath, input.program);
-            const lean = await runLeanKernelHostView(programPath, scenarioPath) as HostViewRun;
-            const hosted = wireValue(runHostView(input.program, scenario.document)) as HostViewRun;
+            document = withScriptResults(wireValue(input.program) as JsonValue, wireValue(scenario.document) as JsonValue,
+              { timeoutMs: scriptTimeoutMs }) as unknown as ScenarioDocument;
+            let runPath = scenarioPath;
+            if (document.stimuli.length !== scenario.document.stimuli.length) {
+              runPath = path.join(directory, `scenario-${String(index)}.scenario.json`);
+              await writeFile(runPath, JSON.stringify(document), "utf8");
+            }
+            const lean = await runLeanKernelHostView(programPath, runPath) as HostViewRun;
+            const hosted = wireValue(runHostView(input.program, document)) as HostViewRun;
             typeScript = hosted.result;
             const difference = compared(label(scenario), lean, hosted);
             if (difference !== null) kernelDisagreements.push(difference);
@@ -143,7 +154,7 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
             { target: DifferentialTarget.RetainedCibEvidence, result: scenario.evidence.result },
             [{ target: DifferentialTarget.KernelTs, result: foldSynchronousEffects(typeScript, scenario.evidence.result, {
               synchronousAfter: scenario.evidence.synchronousAfter,
-              effectInputs: effectInputsOf(scenario.document),
+              effectInputs: effectInputsOf(document),
             }) }],
           );
           if (comparison.kind === ComparisonKind.Disagreement) {

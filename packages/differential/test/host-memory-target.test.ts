@@ -4,6 +4,7 @@
  * binding and `applyInput` the process Workflow uses, and its canonical result equals the TypeScript kernel's whole
  * result. Any decision the runner makes on a single-instance input that the host's chain does not share, such as a
  * Timer start's on-time refusal, shows here before the hosted target (`temporal-host-target.temporal-test.ts`) runs.
+ * The memory host evaluates no Script, so both take a Script Task's recorded result as an input (`withScriptResults`).
  */
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -16,9 +17,9 @@ import type { ValueDisagreement } from "@bpmn-lean/differential";
 import { runScenario as runKernelScenario } from "@bpmn-lean/kernel";
 import type { JsonValue } from "@bpmn-lean/temporal-host/host";
 import { createMemoryProcessHost } from "@bpmn-lean/temporal-host/memory-host";
-import { runScenario } from "@bpmn-lean/temporal-host/testing";
+import { runScenario, withScriptResults } from "@bpmn-lean/temporal-host/testing";
 
-import { projectRoot } from "./pipeline-target-support.ts";
+import { projectRoot, scriptTimeoutMs } from "./pipeline-target-support.ts";
 import { DiscoveredKind, discoverScenarios, scenarioKernelInput } from "./scenario-discovery.ts";
 
 const wire = (value: unknown): JsonValue => JSON.parse(JSON.stringify(value)) as JsonValue;
@@ -41,7 +42,8 @@ test("the memory host returns the kernel's result on every discovered single-ins
     const input = await scenarioKernelInput(scenario.relativePath, scenario.document.bpmn, scenario.document.profile);
     if (input.kind === "refused") continue;
     const program = wire(input.program);
-    const document = wire(JSON.parse(await readFile(path.join(projectRoot, scenario.relativePath), "utf8")));
+    const document = withScriptResults(program, wire(JSON.parse(await readFile(path.join(projectRoot, scenario.relativePath), "utf8"))),
+      { timeoutMs: scriptTimeoutMs });
     const hosted = await runScenario(program, document, { client, workflowIdPrefix: `memory-${randomUUID()}` });
     const difference = firstValueDisagreement(wire(runKernelScenario(program, document)), wire(hosted), "result");
     if (difference !== null) disagreements.push({ scenario: scenario.relativePath, ...difference });

@@ -1,5 +1,6 @@
 /**
- * Test support: the ephemeral Temporal servers, and the scenario runner bound to the TypeScript kernel.
+ * Test support: the ephemeral Temporal servers, the scenario runner bound to the TypeScript kernel, and a scenario's
+ * recorded Script results (`withScriptResults`).
  */
 import { kernelPort } from "./kernel-port.js";
 import type { JsonValue } from "./port.js";
@@ -12,6 +13,7 @@ export {
   type CachedEnvironmentOptions,
 } from "./ephemeral-server.js";
 export type { ScenarioHost } from "./scenario-runner.js";
+export { withScriptResults } from "./script-results.js";
 
 /**
  * Drives `scenarioJson` on `programJson` (the kernel IL's wire form) through a host Worker serving `host.client`'s

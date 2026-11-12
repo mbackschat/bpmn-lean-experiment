@@ -1,17 +1,39 @@
 package org.bpmnlean.cibseven;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.ProcessEngineConfiguration;
+import org.cibseven.bpm.engine.delegate.ExecutionListener;
+import org.cibseven.bpm.engine.impl.bpmn.parser.AbstractBpmnParseListener;
+import org.cibseven.bpm.engine.impl.bpmn.parser.BpmnParseListener;
 import org.cibseven.bpm.engine.impl.cfg.IdGenerator;
 import org.cibseven.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
+import org.cibseven.bpm.engine.impl.pvm.process.ActivityImpl;
+import org.cibseven.bpm.engine.impl.pvm.process.ScopeImpl;
+import org.cibseven.bpm.engine.impl.util.xml.Element;
 
 /** Builds one engine bundle per environment for the streaming oracle facade. */
 final class CibSevenEngineBundleFactory {
 
   private CibSevenEngineBundleFactory() {}
+
+  /**
+   * Reports each Script Task CIB evaluates inside a command, so the differential folds the kernel's recorded result
+   * into that command as for a synchronous delegate (CIB-OP-0002). A built-in end listener runs only once the Script
+   * completed, so a failing Script, which rolls the command back, is never reported.
+   */
+  private static BpmnParseListener scriptReporter(CibSevenScriptedEffect effects) {
+    ExecutionListener evaluated = execution -> effects.scriptEvaluated(execution.getCurrentActivityId());
+    return new AbstractBpmnParseListener() {
+      @Override
+      public void parseScriptTask(Element scriptTaskElement, ScopeImpl scope, ActivityImpl activity) {
+        activity.addBuiltInListener(ExecutionListener.EVENTNAME_END, evaluated);
+      }
+    };
+  }
 
   static EngineBundle create(boolean incidentCreationEnabled) {
     var startedAt = System.nanoTime();
@@ -45,6 +67,7 @@ final class CibSevenEngineBundleFactory {
       beans.put(handler, effects.delegate(handler));
     }
     configuration.setBeans(beans);
+    configuration.setCustomPostBPMNParseListeners(List.of(scriptReporter(effects)));
     var engine = configuration.buildProcessEngine();
     ids.markBoot();
     return new EngineBundle(

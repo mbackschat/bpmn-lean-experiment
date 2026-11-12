@@ -24,3 +24,6 @@ export function runProcess(
     ...(stdoutEncoding === undefined ? {} : { stdoutEncoding }),
   });
 }
+
+/** The host evaluator's deadline for a witness's Script: host configuration, not semantics (SCRIPT-SEMANTICS-SPEC item 8). */
+export const scriptTimeoutMs = 1_000;
