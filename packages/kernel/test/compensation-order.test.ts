@@ -12,15 +12,7 @@ import {
   variable, wired, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
-import { chain, compensateAll, complete, drive, driveFrom, handlerTask, parts, userTask, waiting } from "./compensation-support.ts";
-
-/** An Intermediate throw Event `id` in `parent` throwing `record`. */
-const throwing = (id: string, record: Json, parent: string | null = null): Json => ({
-  event: {
-    header: { id, origin: { definition: null, sourceId: id }, sourceType: "intermediateThrowEvent", parent },
-    payload: { role: { throw: { record } }, placement: "intermediate", incoming: [], outgoing: [], alternativeThrows: [] },
-  },
-});
+import { chain, compensateAll, complete, drive, driveFrom, handlerTask, parts, throwing, userTask, waiting } from "./compensation-support.ts";
 
 const text = (value: string): Json => literalValue({ kind: "string", value });
 

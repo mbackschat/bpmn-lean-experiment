@@ -533,21 +533,20 @@ export function eventPayloadLinkCatch(payload: EventPayload): string | null {
  * receivers install (its payload targets, and every visible name under `propagateAll`), `effect` is a bound Message
  * throw's (PC-MESSAGE-09).
  */
-export interface ThrowView { readonly terminates: boolean; readonly compensates: boolean; readonly signal: SignalTrigger | null;
+export interface ThrowView { readonly terminates: boolean; readonly signal: SignalTrigger | null;
   readonly installs: readonly string[]; readonly installsAll: boolean; readonly effect: EffectBinding | null; }
 
 export function throwView(thrown: Throw): ThrowView {
-  const none: ThrowView = { terminates: false, compensates: false, signal: null, installs: [], installsAll: false, effect: null };
+  const none: ThrowView = { terminates: false, signal: null, installs: [], installsAll: false, effect: null };
   switch (thrown.tag) {
     case ThrowTag.Terminate: return { ...none, terminates: true };
-    case ThrowTag.Compensation: return { ...none, compensates: true };
     case ThrowTag.Signal:
       return {
         ...none, signal: { signalRef: thrown.payload.signalRef, name: thrown.payload.name },
         installs: thrown.payload.payload.map((mapping) => mapping.target), installsAll: thrown.payload.propagateAll !== null,
       };
     case ThrowTag.Message: return { ...none, effect: thrown.payload.binding };
-    case ThrowTag.None: case ThrowTag.Error: case ThrowTag.Escalation: case ThrowTag.Cancel: return none;
+    case ThrowTag.None: case ThrowTag.Error: case ThrowTag.Escalation: case ThrowTag.Compensation: case ThrowTag.Cancel: return none;
   }
   return assertNever(thrown);
 }

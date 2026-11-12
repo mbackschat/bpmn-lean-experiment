@@ -424,13 +424,12 @@ def EventPayload.linkCatch? (payload : EventPayload) : Option String :=
   | .throw _ => none
   | .linkThrow _ => none
 
-/-- What a throw is read for outside its owners: whether it terminates its scope or throws Compensation, the Signal it
+/-- What a throw is read for outside its owners: whether it terminates its scope, the Signal it
 references, whose name `Kernel.Admission.Subscriptions.signalDefinitionNames` compares, what that Signal's receivers
 install (its payload targets, and every visible name under `propagateAll`), and the effect a bound Message throw opens
 (PC-MESSAGE-09). The IL's one match on `Throw`. -/
 structure ThrowView where
   terminates : Bool := false
-  compensates : Bool := false
   signal : Option SignalTrigger := none
   installs : List String := []
   installsAll : Bool := false
@@ -438,7 +437,7 @@ structure ThrowView where
 
 def throwView : Throw → ThrowView
   | .terminate => { terminates := true }
-  | .compensation _ => { compensates := true }
+  | .compensation _ => {}
   | .signal record =>
     { signal := some { signalRef := record.signalRef, name := record.name }, installs := record.payload.map (·.target)
       installsAll := record.propagateAll.isSome }

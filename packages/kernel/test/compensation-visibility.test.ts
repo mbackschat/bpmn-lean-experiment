@@ -8,15 +8,7 @@ import { test } from "node:test";
 
 import { end, errorTrigger, eventSubProcess, flow, scope, start } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
-import { chain, compensateAll, compensateOne, complete, drive, handlerTask, parts, raiseError, userTask, waiting } from "./compensation-support.ts";
-
-/** An Intermediate throw Event `id` in `parent` throwing `record`. */
-const throwing = (id: string, record: Json, parent: string | null = null): Json => ({
-  event: {
-    header: { id, origin: { definition: null, sourceId: id }, sourceType: "intermediateThrowEvent", parent },
-    payload: { role: { throw: { record } }, placement: "intermediate", incoming: [], outgoing: [], alternativeThrows: [] },
-  },
-});
+import { chain, compensateAll, compensateOne, complete, drive, handlerTask, parts, raiseError, throwing, userTask, waiting } from "./compensation-support.ts";
 
 /**
  * The Event Sub-Process `id` in `parent`, started by `trigger`, running `<id>S -> <id>C -> <id>E`, where `<id>C` throws

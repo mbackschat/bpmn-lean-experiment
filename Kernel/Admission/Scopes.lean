@@ -119,10 +119,12 @@ def membership (program : Program) : Option String :=
 
 /-- When a Sub-Process completes, the records retained in it pass to its compensation handler or, without one, to its
 parent (BPMN 2.0.2 §13.5.5); that implicit compensation is contradictory while BPMN21-403 is open. A subject is refused
-when the Scope retaining it hands its records to the parent occurrence, where a Compensation throw shares that parent,
+when the Scope retaining it hands its records to the parent occurrence, where a throw that begins compensation shares
+that parent,
 unless `ImplicitCompensation.everySubProcess` keeps them there as the Scope's group (CIB-INT-0036). A Scope with a
 handler keeps them for that handler, whose own throws compensate them recursively (§10.7.1). `throws` lists the
-Compensation throws. -/
+throws that begin compensation handlers: Compensation throws and Cancel Ends, which compensate their Transaction
+(§10.5.5 Cancel Event; `Kernel.Admission.Propagation.throwReading`). -/
 def handOn (program : Program) (throws : List Element) : Nat → Option ElementId → Option String
   | 0, _ => none
   | _, none => none

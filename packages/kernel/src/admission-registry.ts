@@ -194,10 +194,6 @@ function thrown(entry: Element): readonly [Header, ThrowView] | null {
   return event === null || record === null ? null : [event[0], throwView(record)];
 }
 
-function compensationThrow(entry: Element): boolean {
-  return thrown(entry)?.[1].compensates ?? false;
-}
-
 function eventRole(program: Program, header: Header, payload: EventPayload): string | null {
   const role = payload.role;
   switch (role.tag) {
@@ -334,7 +330,7 @@ function signalDeclarations(program: Program): string | null {
     Subscriptions.signalNames(program.options, subscribed);
 }
 
-/** `throws` lists the program's Compensation throws. */
+/** `throws` lists the program's throws that begin compensation handlers: its Compensation throws and Cancel Ends. */
 function element(program: Program, throws: readonly Element[], entry: Element): string | null {
   const header = entry.header;
   switch (entry.tag) {
@@ -564,7 +560,7 @@ function located<T>(items: readonly T[], id: (item: T) => string, check: (item: 
  * A flow's, an element's or a loop's own refusal names it, so a host can point at the refused element.
  */
 export function admitLocated(program: Program): AdmissionRefusal | null {
-  const throws = program.elements.filter(compensationThrow);
+  const throws = program.elements.filter(reading(program).compensates);
   const elementId = (entry: Element): string => elementHeader(entry).id;
   for (const check of [
     unlocated(() => FlowAdmission.references(program)),

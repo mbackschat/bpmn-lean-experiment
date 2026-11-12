@@ -40,6 +40,17 @@ const retaining = (over: Json = {}) => (program: Json): Json =>
 /** `E` becomes a Compensation End beside the Sub-Process. */
 const compensatingEnd = (program: Json): Json => replace(program, "E", end("E", compensate));
 
+/**
+ * `T` becomes a Transaction `XS -> P -> X` whose Cancel End `X` its Cancel boundary `XB` catches, and `P` a Sub-Process
+ * `PS -> W -> PE` without a handler whose User Task `W` is compensable by `HW`.
+ */
+const cancellingAfterRetaining = (program: Json): Json =>
+  withFlows(append(task(scope("T", { transaction: { payload: { method: "compensate" } } }, {}, { boundaries: [boundary("XB", "cancel")] }))(program),
+    start("XS", null, [], "T"), scope("P", "embedded", {}, {}, "T"), end("X", "cancel", "T"),
+    start("PS", null, [], "P"), activity("W", userWork(), { compensationHandlers: ["HW"] }, "P"), end("PE", "none", "P"),
+    activity("HW", "manual", { forCompensation: true }, "P")),
+  flow("xp", "XS", "P"), flow("px", "P", "X"), flow("pw", "PS", "W"), flow("wp", "W", "PE"));
+
 /** `T` hands its records to its handler `K`, a Sub-Process `KS -> KE` whose End throws `record`. */
 const handledScope = (record: Json | string) => (program: Json): Json =>
   withFlows(append(retaining({ compensationHandlers: ["K"] })(program),
@@ -133,6 +144,13 @@ export const rows: readonly Row[] = [
     description: "a compensable Task in a Sub-Process without a handler, beside a Compensation throw, unless implicit compensation groups it",
     mutate: (program) => compensatingEnd(retaining()(program)),
     control: (program) => compensatingEnd(retaining()(withOptions(program, { implicitCompensation: "everySubProcess" }))),
+  },
+  {
+    // A Cancel End begins the Transaction's handlers as a Compensation throw does (BPMN 2.0.2 §10.5.5 Cancel Event).
+    code: "compensation.implicit",
+    description: "a compensable Task in a Sub-Process without a handler, beside a Transaction's Cancel End, unless implicit compensation groups it",
+    mutate: cancellingAfterRetaining,
+    control: (program) => cancellingAfterRetaining(withOptions(program, { implicitCompensation: "everySubProcess" })),
   },
   {
     // BPMN 2.0.2 §13.5.5: B's record shows that the boundary Event occurred only when B has no other way in.

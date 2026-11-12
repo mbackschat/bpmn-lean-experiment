@@ -117,9 +117,6 @@ def throwSite (program : Program) (header : Header) : Admission.Propagation.Thro
 def thrown (element : Element) : Option (Header × ThrowView) :=
   element.event?.bind fun (header, payload) => payload.throw?.map fun record => (header, throwView record)
 
-def compensationThrow (element : Element) : Bool :=
-  (thrown element).any (·.2.compensates)
-
 /-- The starts of the Event Sub-Processes among `elements`, in document order. -/
 def eventSubProcessStarts (elements : List Element) : List (Subscription × Bool) :=
   elements.filterMap fun element => element.scope?.bind fun (_, payload) => Admission.Scopes.eventSubProcess? payload
@@ -203,7 +200,7 @@ def signalDeclarations (program : Program) : Option String :=
   Admission.Subscriptions.signalDefinitionNames program.options (subscribed.map (·.trigger) ++ throws) <|>
     Admission.Subscriptions.signalNames program.options subscribed
 
-/-- `throws` lists the program's Compensation throws. -/
+/-- `throws` lists the program's throws that begin compensation handlers: its Compensation throws and Cancel Ends. -/
 def element (program : Program) (throws : List Element) : Element → Option String
   | .activity header payload =>
     Admission.Data.origin program header <|> envelopeData program header payload.envelope <|>
@@ -364,7 +361,7 @@ def admitLocated (program : Program) : Option AdmissionRefusal :=
     unlocated (program.processes.findSome? calledProcessBinding) <|>
     unlocated (processEventSubProcesses program) <|>
     located program.flows (·.id.value) (flow program) <|>
-    located program.elements elementId (element program (program.elements.filter compensationThrow)) <|>
+    located program.elements elementId (element program (program.elements.filter (reading program).compensates)) <|>
     located program.elements elementId (loopInstances program) <|>
     unlocated (Admission.Subscriptions.startConditions program) <|>
     unlocated (Admission.Subscriptions.messageNames program.options (program.elements.flatMap (sites program messages))) <|>

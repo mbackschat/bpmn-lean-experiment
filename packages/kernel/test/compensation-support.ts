@@ -26,6 +26,14 @@ export const userTask = (id: string, handler: string | null = null, parent: stri
 export const handlerTask = (id: string, parent: string | null = null): Json =>
   activity(id, userWork(), { incoming: [], outgoing: [], forCompensation: true }, parent);
 
+/** An Intermediate throw Event `id` in `parent` throwing `record`. */
+export const throwing = (id: string, record: Json, parent: string | null = null): Json => ({
+  event: {
+    header: { id, origin: { definition: null, sourceId: id }, sourceType: "intermediateThrowEvent", parent },
+    payload: { role: { throw: { record } }, placement: "intermediate", incoming: [], outgoing: [], alternativeThrows: [] },
+  },
+});
+
 /** Elements and flows a program gains beside its main sequence. */
 export type Part = Readonly<{ elements: Json[]; flows: Json[] }>;
 
