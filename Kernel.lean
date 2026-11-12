@@ -69,6 +69,7 @@ public import Kernel.Population.Signals
 public import Kernel.Population.Timers
 public import Kernel.Publish
 public import Kernel.Registry
+public import Kernel.Run.Fixture
 public import Kernel.Run.Population
 public import Kernel.Run.Wire
 public import Kernel.State

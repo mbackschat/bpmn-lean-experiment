@@ -9,6 +9,7 @@ public import Kernel.AdmissionRegistry
 public import Kernel.IL.Codec
 public import Kernel.IL.Codec.Stimulus
 public import Kernel.Run.Population
+public import Kernel.Run.Fixture
 
 /-! # Kernel scenario runner
 
@@ -52,12 +53,6 @@ public section
 namespace Kernel.Run
 
 open Lean (Json toJson)
-
-/-- A present value, or JSON null: the schema's nullable members. -/
-def nullable {α : Type} (value : Option α) (encode : α → Json) : Json :=
-  match value with
-  | some value => encode value
-  | none => Json.null
 
 def inputTagName : InputTag → String
   | .start => "start"
@@ -441,7 +436,8 @@ def occurrenceAnswers (programs : List Program) (input : Json) : Except String J
 
 /-- The answer of the host-facing function a fixture's `entry` names: `rootStarts`, `refusesSignalVariables`,
 `matching` (over the state its stimuli commit, for a delivery's channel and correlation), `registerSummary` or
-`definitionCapabilities` (as the host view renders it) or `timerOccurrences`. -/
+`definitionCapabilities` (as the host view renders it) or `timerOccurrences`, or one of the population functions of
+`Kernel.Run.Fixture` and the Signal address codec's round trip (`signalAddress`). -/
 def fixtureAnswer (fixture : Json) : Except String Json := do
   let input ← fixture.getObjVal? "input"
   match ← fixture.getObjValAs? String "entry" with
@@ -459,6 +455,27 @@ def fixtureAnswer (fixture : Json) : Except String Json := do
   | "definitionCapabilities" =>
     pure (capabilitiesJson (Host.definitionCapabilities (← onlyProgram (← fixturePrograms fixture))))
   | "timerOccurrences" => occurrenceAnswers (← fixturePrograms fixture) input
+  | "timerStartCheck" => timerChecks (← fixturePrograms fixture) input
+  | "signalReceivers" =>
+    let program ← onlyProgram (← fixturePrograms fixture)
+    signalReceiversAnswer program (← committedState program (← input.getObjValAs? (List Json) "stimuli")) input
+  | "reachOccurrence" =>
+    let program ← onlyProgram (← fixturePrograms fixture)
+    reachAnswers Registry.hooks program (← committedState program (← input.getObjValAs? (List Json) "stimuli")) input
+  | "messageReceivers" =>
+    let program ← onlyProgram (← fixturePrograms fixture)
+    messageReceiversAnswer Registry.hooks program (← committedState program (← input.getObjValAs? (List Json) "stimuli")) input
+  | "signalStartReceivers" =>
+    let address ← Codec.signalAddressFromJson (← input.getObjVal? "address")
+    let receivers := Population.signalStartReceivers Registry.hooks (← input.getObjValAs? Nat "deploymentId")
+      (← onlyProgram (← fixturePrograms fixture)) address (← Codec.bindingsAt input "variables")
+    pure (Json.arr (receivers.map receiverJson).toArray)
+  | "messageStartCandidates" => startCandidatesAnswer (← onlyProgram (← fixturePrograms fixture)) input
+  | "conditionalStartVerdict" => conditionalVerdictAnswer Registry.hooks (← onlyProgram (← fixturePrograms fixture)) input
+  | "linearizeReceivers" => linearizedAnswer input
+  | "fanOut" => fanOutScript input
+  | "instanceId" => instanceIdAnswer input
+  | "signalAddress" => signalAddressJson <$> Codec.signalAddressFromJson (← input.getObjVal? "address")
   | other => throw s!"fixture-entry-unknown: {other}"
 
 def runFixtures (paths : List String) : IO Json := do

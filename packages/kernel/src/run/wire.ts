@@ -13,6 +13,11 @@ export function referenceJson(ref: OccurrenceRef): JsonValue {
   return { processInstanceId: ref.processInstanceId, elementId: ref.element, activation: ref.activation };
 }
 
+/** A present value, or JSON null: the schema's nullable members. */
+export function nullable<T>(value: T | null, encode: (value: T) => JsonValue): JsonValue {
+  return value === null ? null : encode(value);
+}
+
 /** Lean's `Json.getObjVal?`: the key must be present. */
 export function field(json: unknown, key: string, where: string): unknown {
   if (!isObject(json) || !Object.hasOwn(json, key)) throw new Error(`${where}: property not found: ${key}`);

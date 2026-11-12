@@ -32,7 +32,7 @@ import {
   type JsonValue,
 } from "./il/codec.js";
 import {
-  channelFromJson, channelToJson, decodeCorrelation, failureCode, failureName, firingStimulusFromJson, signalAddressToJson,
+  channelFromJson, channelToJson, decodeBindings, decodeCorrelation, decodeSignalAddress, failureCode, failureName, firingStimulusFromJson, signalAddressToJson,
   type TimerFiring,
 } from "./il/codec/stimulus.js";
 import {
@@ -72,18 +72,19 @@ import { runStimuli as runInstances } from "./population.js";
 import { onTimeRefusal, timerOccurrences } from "./population/timers.js";
 import { deploymentSummary, registerSummary, type DeploymentSummary } from "./population/deploy.js";
 import { matching } from "./population/messages.js";
+import { signalStartReceivers } from "./population/signals.js";
 import { EvaluationTag } from "./hooks.js";
 import { hooks } from "./registry.js";
 import { admit } from "./admission-registry.js";
-import { arrayField, field, referenceJson, requiredString, stimulusOf } from "./run/wire.js";
+import { arrayField, field, nullable, referenceJson, requiredString, stimulusOf } from "./run/wire.js";
 import {
-  definitionRefFromJson, deploymentSourceFromJson, populationResultJson, stimuliOfPopulation, type Declared, type DeploymentSource,
+  definitionRefFromJson, deploymentSourceFromJson, populationResultJson, receiverJson, stimuliOfPopulation, type Declared,
+  type DeploymentSource,
 } from "./run/population.js";
-
-/** A present value, or JSON null: the schema's nullable members. */
-function nullable<T>(value: T | null, encode: (value: T) => JsonValue): JsonValue {
-  return value === null ? null : encode(value);
-}
+import {
+  conditionalVerdictAnswer, fanOutScript, instanceIdAnswer, linearizedAnswer, messageReceiversAnswer, reachAnswers, signalAddressJson,
+  signalReceiversAnswer, startCandidatesAnswer, timerChecks,
+} from "./run/fixture.js";
 
 const jsonString = (value: string): JsonValue => value;
 const number = (value: number): JsonValue => value;
@@ -625,6 +626,37 @@ const fixtureEntries: Readonly<Record<string, (fixture: unknown, input: unknown)
   registerSummary: (fixture, input) => registrations(fixturePrograms(fixture), arrayField(input, "deploymentIds", "fixture")),
   definitionCapabilities: (fixture) => capabilitiesJson(definitionCapabilities(onlyProgram(fixturePrograms(fixture)))),
   timerOccurrences: (fixture, input) => occurrenceAnswers(fixturePrograms(fixture), input),
+  timerStartCheck: (fixture, input) => timerChecks(fixturePrograms(fixture), input),
+  signalReceivers: (fixture, input) => {
+    const program = onlyProgram(fixturePrograms(fixture));
+    return signalReceiversAnswer(program, committedState(program, arrayField(input, "stimuli", "fixture")), input);
+  },
+  reachOccurrence: (fixture, input) => {
+    const program = onlyProgram(fixturePrograms(fixture));
+    return reachAnswers(hooks, program, committedState(program, arrayField(input, "stimuli", "fixture")), input);
+  },
+  messageReceivers: (fixture, input) => {
+    const program = onlyProgram(fixturePrograms(fixture));
+    return messageReceiversAnswer(hooks, program, committedState(program, arrayField(input, "stimuli", "fixture")), input);
+  },
+  signalStartReceivers: (fixture, input) => {
+    const address = decodeSignalAddress(field(input, "address", "fixture"));
+    if (!address.ok) throw new Error(`fixture: ${address.refusal}`);
+    const variables = decodeBindings(input, "variables");
+    if (!variables.ok) throw new Error(`fixture: ${variables.refusal}`);
+    return signalStartReceivers(hooks, natField(input, "deploymentId"), onlyProgram(fixturePrograms(fixture)), address.value, variables.value)
+      .map(receiverJson);
+  },
+  messageStartCandidates: (fixture, input) => startCandidatesAnswer(onlyProgram(fixturePrograms(fixture)), input),
+  conditionalStartVerdict: (fixture, input) => conditionalVerdictAnswer(hooks, onlyProgram(fixturePrograms(fixture)), input),
+  linearizeReceivers: (_fixture, input) => linearizedAnswer(input),
+  fanOut: (_fixture, input) => fanOutScript(input),
+  instanceId: (_fixture, input) => instanceIdAnswer(input),
+  signalAddress: (_fixture, input) => {
+    const address = decodeSignalAddress(field(input, "address", "fixture"));
+    if (!address.ok) throw new Error(`fixture: ${address.refusal}`);
+    return signalAddressJson(address.value);
+  },
 };
 
 /** `kernelRun --fixture <fixture.json>`, for one fixture. */

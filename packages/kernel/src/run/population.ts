@@ -118,13 +118,13 @@ function declaredOf(declared: readonly Declared[], definitionRef: string, where:
     harnessRefusal(where, "population-unknown-definition", definitionRef);
 }
 
-function decoded<T>(value: Decoded<T>, where: string): T {
+export function decoded<T>(value: Decoded<T>, where: string): T {
   if (!value.ok) throw new Error(`${where}: ${value.refusal}`);
   return value.value;
 }
 
 /** Lean's `getObjValAs? Nat`. */
-function natural(json: unknown, key: string, where: string): number {
+export function natural(json: unknown, key: string, where: string): number {
   const value = isObject(json) && Object.hasOwn(json, key) ? json[key] : null;
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) throw new Error(`${where}: ${key}: Nat expected`);
   return value;
@@ -147,7 +147,7 @@ function selectorFromJson(json: unknown, where: string): DefinitionSelector | nu
 }
 
 /** A discovery order's entry: `{kind: "occurrence", occurrence}` or `{kind: "start", deploymentId, startEvent}`. */
-function receiverFromJson(json: unknown, where: string): Receiver {
+export function receiverFromJson(json: unknown, where: string): Receiver {
   const kind = requiredString(json, "kind", where);
   if (kind === "occurrence") return { tag: ReceiverTag.Occurrence, ref: decoded(occurrenceFromJson(field(json, "occurrence", where)), where) };
   if (kind === "start") {
@@ -162,7 +162,7 @@ function orderFromJson(json: unknown, where: string): readonly Receiver[] | null
 
 const publishModes: ReadonlyMap<string, PublishMode> = new Map(Object.values(PublishMode).map((mode) => [mode, mode]));
 
-function publicationFromJson(json: unknown, where: string): Publication {
+export function publicationFromJson(json: unknown, where: string): Publication {
   const address = field(json, "address", where);
   const channel = optional(address, "channel");
   const name = optional(address, "name");
@@ -289,11 +289,11 @@ function instanceStimulus(declared: readonly Declared[], scripts: Script[], json
   return { tag: StimulusTag.Input, instanceId: script.instanceId, definitionRef: script.definitionRef, commandId, input };
 }
 
-function failureFields(failure: Failure): Record<string, JsonValue> {
+export function failureFields(failure: Failure): Record<string, JsonValue> {
   return { outcome: failureName(failure), code: failureCode(failure) };
 }
 
-function receiverJson(receiver: Receiver): JsonValue {
+export function receiverJson(receiver: Receiver): JsonValue {
   switch (receiver.tag) {
     case ReceiverTag.Occurrence:
       return { kind: "occurrence", occurrence: referenceJson(receiver.ref) };
