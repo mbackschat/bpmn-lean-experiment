@@ -14,12 +14,14 @@
       <bpmn:ioSpecification id="IoSpecification_Review">
         <bpmn:dataInput id="DataInput_Items" itemSubjectRef="ItemDefinition_StringList" isCollection="true" />
         <bpmn:dataInput id="DataInput_Item" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+        <bpmn:dataOutput id="DataOutput_Result" itemSubjectRef="ItemDefinition_String" isCollection="false" />
         <bpmn:inputSet id="InputSet_Review">
           <bpmn:dataInputRefs>DataInput_Items</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>DataInput_Item</bpmn:dataInputRefs>
           <bpmn:outputSetRefs>OutputSet_Review</bpmn:outputSetRefs>
         </bpmn:inputSet>
         <bpmn:outputSet id="OutputSet_Review">
+          <bpmn:dataOutputRefs>DataOutput_Result</bpmn:dataOutputRefs>
           <bpmn:inputSetRefs>InputSet_Review</bpmn:inputSetRefs>
         </bpmn:outputSet>
       </bpmn:ioSpecification>
@@ -31,9 +33,14 @@
         <bpmn:sourceRef>InputDataItem_Item</bpmn:sourceRef>
         <bpmn:targetRef>DataInput_Item</bpmn:targetRef>
       </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_Result">
+        <bpmn:sourceRef>DataOutput_Result</bpmn:sourceRef>
+        <bpmn:targetRef>OutputDataItem_Result</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
       <bpmn:multiInstanceLoopCharacteristics isSequential="false">
         <bpmn:loopDataInputRef>DataInput_Items</bpmn:loopDataInputRef>
         <bpmn:inputDataItem id="InputDataItem_Item" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+        <bpmn:outputDataItem id="OutputDataItem_Result" itemSubjectRef="ItemDefinition_String" isCollection="false" />
       </bpmn:multiInstanceLoopCharacteristics>
     </bpmn:userTask>
     <bpmn:boundaryEvent id="Boundary_CompensateReview" attachedToRef="UserTask_Review">

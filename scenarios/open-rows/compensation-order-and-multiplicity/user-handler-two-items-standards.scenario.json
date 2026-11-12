@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-order-and-multiplicity-user-parallel-handler-standards",
     "relativePath": "scenarios/open-rows/compensation-order-and-multiplicity/user-parallel-handler-standards.bpmn",
-    "sha256": "4f48d5b769e34696db0bf820c2c68cf546de9a370714d199968ca87afe8158aa",
+    "sha256": "58522ab70d6b502932bf392c03d63d4a05c4b4018636c7b3064bda2ce47dcde0",
     "sourceOverlay": null
   },
   "stimuli": [
@@ -36,7 +36,15 @@
       },
       "action": {
         "kind": "completeUserTask",
-        "values": []
+        "values": [
+          {
+            "name": "DataOutput_Result",
+            "value": {
+              "kind": "string",
+              "value": "reviewed-1"
+            }
+          }
+        ]
       }
     },
     {
@@ -49,7 +57,15 @@
       },
       "action": {
         "kind": "completeUserTask",
-        "values": []
+        "values": [
+          {
+            "name": "DataOutput_Result",
+            "value": {
+              "kind": "string",
+              "value": "reviewed-2"
+            }
+          }
+        ]
       }
     },
     {
