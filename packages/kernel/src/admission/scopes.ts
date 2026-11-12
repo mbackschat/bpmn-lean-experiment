@@ -183,33 +183,19 @@ export function membership(program: Program): string | null {
   return resolved ? null : "il.reference";
 }
 
-/** Whether `id` lies in the subtree of `ancestor`, itself included. */
-function within(program: Program, ancestor: ElementId, fuel: number, id: ElementId | null): boolean {
-  if (fuel === 0 || id === null) return false;
-  if (id === ancestor) return true;
-  const element = programElement(program, id);
-  return within(program, ancestor, fuel - 1, element === null ? null : elementHeader(element).parent);
-}
-
 /**
  * When a Sub-Process completes, the records retained in it pass to its compensation handler or, without one, to its
- * parent (BPMN 2.0.2 §13.5.5); that implicit and recursive compensation is contradictory while BPMN21-403 is open. A
- * subject is refused when the Scope retaining it can hand its records on: to the parent occurrence, where a Compensation
- * throw shares that parent, unless `ImplicitCompensation.EverySubProcess` keeps them there as the Scope's group
- * (CIB-INT-0036), or to the Scope's handler, whose body throws Compensation (PC-COMPENSATION-03). `throws` lists the
+ * parent (BPMN 2.0.2 §13.5.5); that implicit compensation is contradictory while BPMN21-403 is open. A subject is
+ * refused when the Scope retaining it hands its records to the parent occurrence, where a Compensation throw shares that
+ * parent, unless `ImplicitCompensation.EverySubProcess` keeps them there as the Scope's group (CIB-INT-0036). A Scope
+ * with a handler keeps them for that handler, whose own throws compensate them recursively (§10.7.1). `throws` lists the
  * Compensation throws.
  */
 function handOn(program: Program, throws: readonly Element[], fuel: number, scope: ElementId | null): string | null {
   if (fuel === 0 || scope === null) return null;
   const retaining = programElement(program, scope);
   if (retaining === null) return null;
-  const handlers = elementEnvelope(retaining)?.compensationHandlers ?? [];
-  if (handlers.length > 0) {
-    return handlers.some((handler) =>
-      throws.some((thrower) => within(program, handler, program.elements.length + 1, elementHeader(thrower).id)))
-      ? "compensation.recursive"
-      : null;
-  }
+  if ((elementEnvelope(retaining)?.compensationHandlers.length ?? 0) > 0) return null;
   const parent = elementHeader(retaining).parent;
   switch (program.options.implicitCompensation) {
     case ImplicitCompensation.Refused:

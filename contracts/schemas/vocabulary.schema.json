@@ -449,7 +449,6 @@
         "compensation.handlerNotForCompensation",
         "compensation.implicit",
         "compensation.processEventSubProcess",
-        "compensation.recursive",
         "data.scopedItem",
         "decision.blankOutput",
         "decision.duplicateId",

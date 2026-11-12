@@ -131,12 +131,6 @@ export const rows: readonly Row[] = [
     control: (program) => compensatingEnd(retaining()(withOptions(program, { implicitCompensation: "everySubProcess" }))),
   },
   {
-    code: "compensation.recursive",
-    description: "a compensable Task in a Sub-Process whose handler throws Compensation",
-    mutate: handledScope(compensate),
-    control: handledScope("none"),
-  },
-  {
     // BPMN 2.0.2 §13.5.5: B's record shows that the boundary Event occurred only when B has no other way in.
     code: "compensation.dependency.boundary",
     description: "a compensable Task reached from a compensable Task's boundary and from another flow",
@@ -146,6 +140,10 @@ export const rows: readonly Row[] = [
 ];
 
 refusalTests("scopes", rows);
+
+test("scopes: a Sub-Process whose handler throws Compensation over the records it holds is admitted", () => {
+  assert.equal(refusalOf(handledScope(compensate)(base())), null);
+});
 
 test("scopes: an element its parent does not list, or a child naming another parent, is refused as il.reference", () => {
   const wiredScope = wired(append(task(scope("T", "embedded"))(base()), start("XS", null, [], "T")));

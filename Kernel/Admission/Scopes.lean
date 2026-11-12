@@ -116,17 +116,11 @@ def membership (program : Program) : Option String :=
       program.processes.all called then none
   else some "il.reference"
 
-/-- Whether `id` lies in the subtree of `ancestor`, itself included. -/
-def within (program : Program) (ancestor : ElementId) : Nat → Option ElementId → Bool
-  | 0, _ => false
-  | _, none => false
-  | fuel + 1, some id => id == ancestor || within program ancestor fuel ((program.element? id).bind (·.header.parent))
-
 /-- When a Sub-Process completes, the records retained in it pass to its compensation handler or, without one, to its
-parent (BPMN 2.0.2 §13.5.5); that implicit and recursive compensation is contradictory while BPMN21-403 is open. A
-subject is refused when the Scope retaining it can hand its records on: to the parent occurrence, where a Compensation
-throw shares that parent, unless `ImplicitCompensation.everySubProcess` keeps them there as the Scope's group
-(CIB-INT-0036), or to the Scope's handler, whose body throws Compensation (PC-COMPENSATION-03). `throws` lists the
+parent (BPMN 2.0.2 §13.5.5); that implicit compensation is contradictory while BPMN21-403 is open. A subject is refused
+when the Scope retaining it hands its records to the parent occurrence, where a Compensation throw shares that parent,
+unless `ImplicitCompensation.everySubProcess` keeps them there as the Scope's group (CIB-INT-0036). A Scope with a
+handler keeps them for that handler, whose own throws compensate them recursively (§10.7.1). `throws` lists the
 Compensation throws. -/
 def handOn (program : Program) (throws : List Element) : Nat → Option ElementId → Option String
   | 0, _ => none
@@ -142,11 +136,7 @@ def handOn (program : Program) (throws : List Element) : Nat → Option ElementI
           if throws.any (·.header.parent == retaining.header.parent) then some "compensation.implicit"
           else handOn program throws fuel retaining.header.parent
         | .everySubProcess => handOn program throws fuel retaining.header.parent
-      | handlers =>
-        if handlers.any fun handler =>
-            throws.any fun thrower => within program handler (program.elements.length + 1) (some thrower.header.id) then
-          some "compensation.recursive"
-        else none
+      | _ => none
 
 def nestedCompensation (program : Program) (throws : List Element) (header : Header) (envelope : Envelope) :
     Option String :=
