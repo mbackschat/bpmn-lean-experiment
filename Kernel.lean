@@ -50,6 +50,7 @@ public import Kernel.IL.Types.Work
 public import Kernel.Laws.Compensation
 public import Kernel.Laws.Correlation
 public import Kernel.Laws.Data
+public import Kernel.Laws.Decision
 public import Kernel.Laws.Flow
 public import Kernel.Laws.MultiInstance
 public import Kernel.Laws.Population
