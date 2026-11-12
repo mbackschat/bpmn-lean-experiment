@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_MessageKeySignalled"
+  targetNamespace="https://bpmn-lean.org/scenarios/message-key-correlation/signalled-key">
+  <bpmn:itemDefinition id="ItemDefinition_SettlementReference" />
+  <bpmn:message
+    id="Message_SettlementConfirmed"
+    name="Settlement confirmed"
+    itemRef="ItemDefinition_SettlementReference" />
+  <bpmn:signal id="Signal_PaymentReleased" name="Payment released" />
+  <bpmn:interface id="Interface_ClearingHouse" name="Clearing house">
+    <bpmn:operation id="Operation_ConfirmSettlement" name="Confirm settlement">
+      <bpmn:inMessageRef>Message_SettlementConfirmed</bpmn:inMessageRef>
+    </bpmn:operation>
+  </bpmn:interface>
+  <bpmn:correlationProperty
+    id="CorrelationProperty_SettlementReference"
+    name="Settlement reference">
+    <bpmn:correlationPropertyRetrievalExpression
+      id="RetrievalExpression_SettlementReference"
+      messageRef="Message_SettlementConfirmed">
+      <bpmn:messagePath
+        id="MessagePath_SettlementReference"
+        language="urn:bpmn-lean:correlation-scalar-path:v1">payload</bpmn:messagePath>
+    </bpmn:correlationPropertyRetrievalExpression>
+  </bpmn:correlationProperty>
+  <bpmn:process
+    id="Process_SettlementSignalled"
+    isExecutable="true"
+    definitionalCollaborationRef="Collaboration_SettlementSignalled">
+    <bpmn:property id="Property_SettlementReference" />
+    <bpmn:startEvent id="StartEvent_PaymentInstructed">
+      <bpmn:outgoing>Flow_Instructed_Fork</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Instructed_Fork"
+      sourceRef="StartEvent_PaymentInstructed"
+      targetRef="Gateway_Fork" />
+    <bpmn:parallelGateway id="Gateway_Fork">
+      <bpmn:incoming>Flow_Instructed_Fork</bpmn:incoming>
+      <bpmn:outgoing>Flow_Fork_PaymentReleased</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Fork_CorrelatedSettlement</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow
+      id="Flow_Fork_PaymentReleased"
+      sourceRef="Gateway_Fork"
+      targetRef="SignalCatch_PaymentReleased" />
+    <bpmn:sequenceFlow
+      id="Flow_Fork_CorrelatedSettlement"
+      sourceRef="Gateway_Fork"
+      targetRef="MessageCatch_CorrelatedSettlement" />
+    <bpmn:intermediateCatchEvent id="SignalCatch_PaymentReleased">
+      <bpmn:incoming>Flow_Fork_PaymentReleased</bpmn:incoming>
+      <bpmn:outgoing>Flow_Released_Join</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_PaymentReleased" signalRef="Signal_PaymentReleased" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Released_Join"
+      sourceRef="SignalCatch_PaymentReleased"
+      targetRef="Gateway_Join" />
+    <bpmn:intermediateCatchEvent id="MessageCatch_CorrelatedSettlement">
+      <bpmn:incoming>Flow_Fork_CorrelatedSettlement</bpmn:incoming>
+      <bpmn:outgoing>Flow_Correlated_Join</bpmn:outgoing>
+      <bpmn:messageEventDefinition
+        id="MessageEventDefinition_CorrelatedSettlement"
+        messageRef="Message_SettlementConfirmed">
+        <bpmn:operationRef>Operation_ConfirmSettlement</bpmn:operationRef>
+      </bpmn:messageEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Correlated_Join"
+      sourceRef="MessageCatch_CorrelatedSettlement"
+      targetRef="Gateway_Join" />
+    <bpmn:parallelGateway id="Gateway_Join">
+      <bpmn:incoming>Flow_Released_Join</bpmn:incoming>
+      <bpmn:incoming>Flow_Correlated_Join</bpmn:incoming>
+      <bpmn:outgoing>Flow_Join_Recorded</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow
+      id="Flow_Join_Recorded"
+      sourceRef="Gateway_Join"
+      targetRef="EndEvent_SettlementRecorded" />
+    <bpmn:endEvent id="EndEvent_SettlementRecorded">
+      <bpmn:incoming>Flow_Join_Recorded</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:correlationSubscription
+      id="CorrelationSubscription_SettlementReference"
+      correlationKeyRef="CorrelationKey_SettlementReference">
+      <bpmn:correlationPropertyBinding
+        id="CorrelationPropertyBinding_SettlementReference"
+        correlationPropertyRef="CorrelationProperty_SettlementReference">
+        <bpmn:dataPath
+          id="DataPath_SettlementReference"
+          language="urn:bpmn-lean:correlation-scalar-path:v1">property:Property_SettlementReference</bpmn:dataPath>
+      </bpmn:correlationPropertyBinding>
+    </bpmn:correlationSubscription>
+  </bpmn:process>
+  <bpmn:collaboration id="Collaboration_SettlementSignalled">
+    <bpmn:participant
+      id="Participant_ExternalClearingHouse"
+      name="External clearing house" />
+    <bpmn:participant
+      id="Participant_SettlementProcess"
+      name="Settlement process"
+      processRef="Process_SettlementSignalled" />
+    <bpmn:messageFlow
+      id="MessageFlow_CorrelatedSettlement"
+      sourceRef="Participant_ExternalClearingHouse"
+      targetRef="MessageCatch_CorrelatedSettlement"
+      messageRef="Message_SettlementConfirmed" />
+    <bpmn:conversation id="Conversation_Settlement">
+      <bpmn:participantRef>Participant_ExternalClearingHouse</bpmn:participantRef>
+      <bpmn:participantRef>Participant_SettlementProcess</bpmn:participantRef>
+      <bpmn:messageFlowRef>MessageFlow_CorrelatedSettlement</bpmn:messageFlowRef>
+      <bpmn:correlationKey
+        id="CorrelationKey_SettlementReference"
+        name="Settlement reference">
+        <bpmn:correlationPropertyRef>CorrelationProperty_SettlementReference</bpmn:correlationPropertyRef>
+      </bpmn:correlationKey>
+    </bpmn:conversation>
+  </bpmn:collaboration>
+</bpmn:definitions>

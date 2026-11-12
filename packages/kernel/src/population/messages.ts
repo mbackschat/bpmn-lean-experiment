@@ -25,6 +25,7 @@ import {
   type StartInput,
   type State,
   committed,
+  failedWith,
 } from "../state.js";
 import { criteriaRefusal, startCriteriaRefusal } from "../state/criteria.js";
 import { context, step } from "../step.js";
@@ -86,13 +87,26 @@ export function occurrence(program: Program, state: State, item: OpenItem): Occu
 }
 
 /**
+ * The refusal with the least code in the codes' string order, so the code a publication reports never depends on the
+ * order its candidates are scanned in; of two refusals with one code the first is kept, which only a scan's refusal kinds
+ * could tell apart, and a scan refuses only as `unsupported`. The codes are ASCII, so UTF-16 order is code-point order.
+ */
+export function leastRefusal(refusals: readonly Failure[]): Failure | null {
+  let least: Failure | null = null;
+  for (const failure of refusals) {
+    if (least === null || failure.code < least.code) least = failure;
+  }
+  return least;
+}
+
+/**
  * The open Message subscriptions of one instance of `program` a publication reaches, each with the channel its delivery
  * names: those on the publication's channel, or, for a name, those that resolved that name when they opened (only under
  * `MessageNames.addresses`, CIB-LIM-0022), that belong, when the publication carries a business key, to an instance with
  * that key, a called instance's own (CIB `processInstanceBusinessKey`), and that accept the criteria
  * (`Hooks.correlates`). A reached subscription whose acceptance is refused, a modeled key outside the key domain,
- * refuses the publication: the refusal is the command's, never read as no match. Criteria `criteriaRefusal` refuses are
- * the command's refusal too, which the caller decides before this scan.
+ * refuses the publication with the least such refusal (`leastRefusal`): the refusal is the command's, never read as no
+ * match. Criteria `criteriaRefusal` refuses are the command's refusal too, which the caller decides before this scan.
  */
 export function messageReceivers(
   hooks: Hooks,
@@ -102,6 +116,7 @@ export function messageReceivers(
 ): Result<readonly (readonly [OccurrenceRef, MessageChannel])[]> {
   const ctx = context(hooks, program);
   const receivers: (readonly [OccurrenceRef, MessageChannel])[] = [];
+  const refusals: Failure[] = [];
   for (const item of state.openItems) {
     const view = openKindView(item.kind);
     const message = publication.message;
@@ -109,12 +124,14 @@ export function messageReceivers(
     const businessKey = publication.businessKey;
     const keyed = businessKey === null ||
       state.slots.instances.find((instance) => instance.root === instanceRoot(state, item.scope))?.businessKey === businessKey;
+    // A wait the business key excludes is not reached, so its key is never evaluated.
     if (channel === null || !keyed) continue;
     const accepts = hooks.correlates(ctx, item, channel, publication.criteria, state);
-    if (!accepts.ok) return accepts;
-    if (accepts.value) receivers.push([occurrence(program, state, item), channel]);
+    if (!accepts.ok) refusals.push(accepts.failure);
+    else if (accepts.value) receivers.push([occurrence(program, state, item), channel]);
   }
-  return committed(receivers);
+  const refusal = leastRefusal(refusals);
+  return refusal === null ? committed(receivers) : failedWith(refusal);
 }
 
 /**
@@ -227,7 +244,7 @@ function refused(instances: readonly Instance[], failure: Failure): Refusable<re
       return { ok: true, value: [instances, { tag: ResolutionTag.Unsupported, code: failure.code }, null] };
     case FailureTag.RolledBack:
     case FailureTag.SemanticFailure:
-      return { ok: false, error: "criteria-refusal-not-command-level" };
+      return { ok: false, error: "publication-refusal-not-command-level" };
   }
   return assertNever(failure.tag);
 }
@@ -241,7 +258,8 @@ function refused(instances: readonly Instance[], failure: Failure): Refusable<re
  * registered deployment refuse the command before any receiver or start is sought (`rejected criteria-duplicate` or
  * `criteria-start-only`, or `unsupported`, which CIB answers by rolling the correlation back), a selector naming no
  * registered deployment `rejected definition-not-deployed`, and a reached subscription whose modeled key lies outside the
- * key domain `unsupported` with its code (`messageReceivers`); the sole start candidate it falls through to starts only if
+ * key domain `unsupported` with the least code any instance's scan refuses with (`messageReceivers`, `leastRefusal`),
+ * whatever the instances' order; the sole start candidate it falls through to starts only if
  * `startCriteriaRefusal` admits the criteria under that deployment's reading. A delivery also answers its receiver's root instance, whose committed step's
  * intents cascade next.
  */
@@ -260,14 +278,17 @@ export function publish(
   const scope = selected(registry, publication.definition);
   if (scope === undefined) return answer({ tag: ResolutionTag.Rejected, code: "definition-not-deployed" });
   const reached: (readonly [number, OccurrenceRef, MessageChannel])[] = [];
+  const refusals: Failure[] = [];
   if (publication.mode !== PublishMode.StartOnly) {
     for (const [index, member] of instances.entries()) {
       if (scope !== null && scope.deploymentId !== member.deployment.deploymentId) continue;
       const receivers = messageReceivers(hooks, member.deployment.program, member.state, publication);
-      if (!receivers.ok) return refused(instances, receivers.failure);
-      reached.push(...receivers.value.map(([target, channel]) => [index, target, channel] as const));
+      if (!receivers.ok) refusals.push(receivers.failure);
+      else reached.push(...receivers.value.map(([target, channel]) => [index, target, channel] as const));
     }
   }
+  const scanRefusal = leastRefusal(refusals);
+  if (scanRefusal !== null) return refused(instances, scanRefusal);
   const sole = reached[0];
   if (reached.length > 1) return answer({ tag: ResolutionTag.Ambiguous });
   if (sole !== undefined) {

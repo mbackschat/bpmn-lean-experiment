@@ -63,7 +63,7 @@ def criteriaHold (state : State) (scope : ScopeOccurrenceId) (criteria : List Co
 def criteria (trigger : Trigger) : List CorrelationCriterion :=
   (trigger.message?.map (·.correlation)).getD []
 
-/-- The key a criterion binds, evaluated in `variables`. An unbound key is BPMN's uninitialized key (§8.3.3), which
+/-- The key a criterion binds, evaluated in `variables`. An unbound key is BPMN's uninitialized key (§8.4.2), which
 the key domain excludes, so it is refused like an empty or non-String one, never read as a mismatch. -/
 def keyValue (ctx : Ctx) (context : EvalContext) (criterion : CorrelationCriterion) :
     Except Failure String :=

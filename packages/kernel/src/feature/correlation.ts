@@ -106,7 +106,7 @@ function criteria(trigger: Trigger): readonly CorrelationCriterion[] {
 }
 
 /**
- * The key a criterion binds, evaluated in `variables`. An unbound key is BPMN's uninitialized key (§8.3.3), which the
+ * The key a criterion binds, evaluated in `variables`. An unbound key is BPMN's uninitialized key (§8.4.2), which the
  * key domain excludes, so it is refused like an empty or non-String one, never read as a mismatch.
  */
 function keyValue(ctx: Ctx, context: EvalContext, criterion: CorrelationCriterion): Result<string> {

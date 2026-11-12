@@ -1,0 +1,110 @@
+{
+  "kind": "populationScenario",
+  "id": "message-key-correlation-kernel-key-refusals-registration-order-standards",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "message-key-correlation-signalled-key",
+      "bpmn": {
+        "id": "message-key-correlation-signalled-key",
+        "relativePath": "scenarios/message-key-correlation/signalled-key.bpmn",
+        "sha256": "1de129e297bb138c5859c4ab5eddecb3808da21f96c39acccfed779dca45045c",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "message-key-correlation-unbound-key",
+      "bpmn": {
+        "id": "message-key-correlation-unbound-key",
+        "relativePath": "scenarios/message-key-correlation/unbound-key.bpmn",
+        "sha256": "08e2798c5799ee010c383103deb4b4a2f84d6164285e9718140774ca3526e993",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "message-key-correlation-signalled-key",
+      "instanceId": "SettlementSignalled",
+      "stimulus": {
+        "kind": "start",
+        "commandId": "start-SettlementSignalled",
+        "instanceId": "SettlementSignalled",
+        "variables": [
+          {
+            "name": "Property_SettlementReference",
+            "value": {
+              "kind": "string",
+              "value": ""
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "message-key-correlation-unbound-key",
+      "instanceId": "SettlementUnsignalled",
+      "stimulus": {
+        "kind": "start",
+        "commandId": "start-SettlementUnsignalled",
+        "instanceId": "SettlementUnsignalled",
+        "variables": [
+          {
+            "name": "Property_SettlementReference",
+            "value": {
+              "kind": "integer",
+              "value": 42
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "broadcast-payment-released",
+      "address": {
+        "signalRef": {
+          "id": "Signal_PaymentReleased",
+          "namespace": "https://bpmn-lean.org/scenarios/message-key-correlation/signalled-key"
+        }
+      },
+      "variables": []
+    },
+    {
+      "kind": "publish",
+      "commandId": "publish-beside-two-keys-outside-the-domain",
+      "address": {
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ClearingHouse",
+          "interfaceOperationId": "Operation_ConfirmSettlement",
+          "messageId": "Message_SettlementConfirmed"
+        }
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "CorrelationKey_SettlementReference"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "settlement-42"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly"
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 Clause 10.5.1"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

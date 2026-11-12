@@ -18,31 +18,47 @@ def occurrence (program : Program) (state : State) (item : OpenItem) : Occurrenc
   { processInstanceId := state.instanceOf item.scope, element := program.publicId item.element
     activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
 
+/-- The code a refusal carries. -/
+def refusalCode : Failure → String
+  | .rejected code | .rolledBack code | .semanticFailure code | .unsupported code => code
+
+/-- The refusal with the least code in the codes' string order, so the code a publication reports never depends on the
+order its candidates are scanned in; of two refusals with one code the first is kept, which only a scan's refusal kinds
+could tell apart, and a scan refuses only as `unsupported`. -/
+def leastRefusal (refusals : List Failure) : Option Failure :=
+  refusals.foldl (init := none) fun least failure => match least with
+    | some kept => if refusalCode failure < refusalCode kept then some failure else some kept
+    | none => some failure
+
 /-- The open Message subscriptions of one instance of `program` a publication reaches, each with the channel its
 delivery names: those on the publication's channel, or, for a name, those that resolved that name when they opened
 (only under `MessageNames.addresses`, CIB-LIM-0022), that belong, when the publication carries a business key, to an
 instance with that key, a called instance's own (CIB `processInstanceBusinessKey`), and that accept the criteria
 (`Hooks.correlates`). A reached subscription whose acceptance is refused, a modeled key outside the key domain, refuses
-the publication: the refusal is the command's, never read as no match. Criteria `criteriaRefusal` refuses are the
-command's refusal too, which the caller decides before this scan. -/
+the publication with the least such refusal (`leastRefusal`): the refusal is the command's, never read as no match.
+Criteria `criteriaRefusal` refuses are the command's refusal too, which the caller decides before this scan. -/
 def messageReceivers (hooks : Hooks) (program : Program) (state : State) (publication : Publication) :
     Except Failure (List (OccurrenceRef × MessageChannel)) :=
   let ctx := Step.context hooks program
-  state.openItems.filterMapM fun item => do
+  let verdicts := state.openItems.filterMap fun item =>
     let view := item.kind.view
     let channel? := match publication.message with
       | .channel channel => some channel
       | .name name => if view.name == some name then view.channel else none
     let keyed := publication.businessKey.all fun key =>
       ((state.slots.instances.find? (·.root == state.instanceRoot item.scope)).bind (·.businessKey)) == some key
-    match channel? with
-    | some channel =>
-      -- A wait the business key excludes is not reached, so its key is never evaluated.
-      if !keyed then pure none
-      else if ← hooks.correlates ctx item channel publication.criteria state then
-        pure (some (occurrence program state item, channel))
-      else pure none
-    | none => pure none
+    -- A wait the business key excludes is not reached, so its key is never evaluated.
+    channel?.bind fun channel => if keyed then
+      some (occurrence program state item, channel, hooks.correlates ctx item channel publication.criteria state)
+      else none
+  let refusals := verdicts.filterMap fun (_, _, verdict) => match verdict with
+    | .error failure => some failure
+    | .ok _ => none
+  match leastRefusal refusals with
+  | some failure => .error failure
+  | none => .ok (verdicts.filterMap fun (target, channel, verdict) => match verdict with
+    | .ok true => some (target, channel)
+    | .ok false | .error _ => none)
 
 /-- The root Message starts of `program` a publication of `message` reaches, in document order, each with its channel:
 those on the channel, or, for a name, those whose literal name it is under the program's `MessageNames.addresses`
@@ -102,7 +118,7 @@ harness defect. -/
 def refusalOf : Failure → Except String Resolution
   | .rejected code => pure (.rejected code)
   | .unsupported code => pure (.unsupported code)
-  | .rolledBack _ | .semanticFailure _ => throw "criteria-refusal-not-command-level"
+  | .rolledBack _ | .semanticFailure _ => throw "publication-refusal-not-command-level"
 
 /-- Route one publication at `atMs` (PC-MESSAGE-02, PC-MESSAGE-08): unless start-only, deliver to its sole receiver
 among the instances of its selected deployment, or of every deployment without a selector; when there is none and it
@@ -112,7 +128,8 @@ every instance unchanged; candidate order never picks a winner. Criteria `criter
 of any registered deployment refuse the command before any receiver or start is sought (`rejected criteria-duplicate`
 or `criteria-start-only`, or `unsupported`, which CIB answers by rolling the correlation back), a selector naming no
 registered deployment `rejected definition-not-deployed`, and a reached subscription whose modeled key lies outside the
-key domain `unsupported` with its code (`messageReceivers`); the sole start candidate it falls through to starts only if
+key domain `unsupported` with the least code any instance's scan refuses with (`messageReceivers`, `leastRefusal`),
+whatever the instances' order; the sole start candidate it falls through to starts only if
 `startCriteriaRefusal` admits the criteria under that deployment's reading. A delivery also answers its receiver's root instance, whose committed step's intents
 cascade next. -/
 def publish (hooks : Hooks) (registry : List Deployment) (instances : List Instance) (atMs : Nat)
@@ -121,14 +138,18 @@ def publish (hooks : Hooks) (registry : List Deployment) (instances : List Insta
   if let some failure := criteriaRefusal readings (publication.mode == .startOnly) publication.criteria then
     return (instances, ← refusalOf failure, none)
   let some scope := selected registry publication.definition | return (instances, .rejected "definition-not-deployed", none)
-  let scanned : Except Failure (List (List (Nat × OccurrenceRef × MessageChannel))) :=
-    if publication.mode == .startOnly then pure [] else
-    instances.zipIdx.mapM fun (member, index) =>
-      if scope.any (·.deploymentId != member.deployment.deploymentId) then pure []
+  let scans : List (Except Failure (List (Nat × OccurrenceRef × MessageChannel))) :=
+    if publication.mode == .startOnly then [] else
+    instances.zipIdx.map fun (member, index) =>
+      if scope.any (·.deploymentId != member.deployment.deploymentId) then .ok []
       else (·.map (index, ·)) <$> messageReceivers hooks member.deployment.program member.state publication
-  let reached ← match scanned with
-    | .ok lists => pure lists.flatten
-    | .error failure => return (instances, ← refusalOf failure, none)
+  if let some failure := leastRefusal (scans.filterMap fun scan => match scan with
+      | .error failure => some failure
+      | .ok _ => none) then
+    return (instances, ← refusalOf failure, none)
+  let reached := (scans.filterMap fun scan => match scan with
+    | .ok receivers => some receivers
+    | .error _ => none).flatten
   match reached with
   | [(index, target, channel)] =>
     let delivery : Input := .deliver { occurrence := target, trigger := .message channel

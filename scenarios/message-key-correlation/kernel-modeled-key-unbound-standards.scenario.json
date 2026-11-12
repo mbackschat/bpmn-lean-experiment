@@ -48,7 +48,6 @@
   ],
   "provenance": {
     "normativeRefs": [
-      "BPMN 2.0.2 Clause 8.3.3",
       "BPMN 2.0.2 Clause 8.4.2"
     ],
     "cibRevision": "not-applicable",

@@ -14,7 +14,8 @@
 import { canonicalJson } from "./canonical-json.js";
 import type { HostConfig } from "./host-contract.js";
 import type {
-  CommandView, JsonValue, MessageScan, OccurrenceId, PopulationPort, WaitAddressView, ReachOutcome, ResolutionParts, SelectorView, Wire,
+  CommandView, JsonValue, MessageScan, OccurrenceId, PopulationPort, WaitAddressView, ReachOutcome, RefusalParts, ResolutionParts,
+  SelectorView, Wire,
 } from "./port.js";
 
 /** Host restrictions of the ingress, each refused with a stable code, never a meaning of the construct. */
@@ -612,9 +613,11 @@ export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressSta
     }
     case "messageScan": {
       if (given.kind !== "messageScan" || view?.kind !== "publish") break;
-      // A reached wait's refusal is the command's, whatever the other chains reach (`Population.publish`).
-      const refused = given.chains.find((chain) => chain.scan.kind === "refused")?.scan;
-      if (refused?.kind === "refused") return resolve(port, state, refused.refusal);
+      // A reached wait's refusal is the command's, whatever the other chains reach, and the least code wins whatever the
+      // registrations' order (`Population.publish`, `leastRefusal`).
+      const refused = given.chains.reduce<RefusalParts | null>((least, chain) =>
+        chain.scan.kind === "refused" && (least === null || chain.scan.refusal.code < least.code) ? chain.scan.refusal : least, null);
+      if (refused !== null) return resolve(port, state, refused);
       const matches = given.chains.flatMap((chain) => chain.scan.kind === "receivers"
         ? chain.scan.receivers.map(([target, channel]) => ({ workflowId: chain.workflowId, target, channel })) : []);
       if (matches.length > 1) return resolve(port, state, { kind: "ambiguous" });

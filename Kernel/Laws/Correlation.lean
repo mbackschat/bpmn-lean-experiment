@@ -122,7 +122,7 @@ def StartInstallsOnly (written : List (String × Value)) (started : State) (root
 /-! ## A modeled key's value -/
 
 /-- The verdict on a modeled key evaluated when a delivery is matched (`messageCorrelation = modeledKey`): a non-empty
-String is the key; an empty String, another value and an unbound variable, BPMN's uninitialized key (§8.3.3), lie
+String is the key; an empty String, another value and an unbound variable, BPMN's uninitialized key (§8.4.2), lie
 outside the key domain and are `unsupported`, never a mismatch or a semantic failure; any other evaluation failure
 rolls the command back, and an unsupported evaluation stays unsupported. -/
 def KeyVerdict (evaluation : Evaluation) (verdict : Except Failure String) : Prop :=

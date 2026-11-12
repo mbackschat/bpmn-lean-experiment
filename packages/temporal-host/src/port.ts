@@ -243,13 +243,16 @@ export type ResolutionParts =
   | { readonly kind: "rejected"; readonly code: string }
   | { readonly kind: "unsupported"; readonly code: string };
 
+/** A command-level refusal of a publication, which carries the code it is ordered by. */
+export type RefusalParts = Extract<ResolutionParts, { readonly kind: "rejected" | "unsupported" }>;
+
 /**
  * One chain's receiver scan for a publication: the open waits it reaches, each `[target, channel]`, or the publication's
  * refusal when a reached wait refuses its criteria (a modeled key outside the key domain), which is the command's.
  */
 export type MessageScan =
   | { readonly kind: "receivers"; readonly receivers: readonly (readonly [Wire, Wire])[] }
-  | { readonly kind: "refused"; readonly refusal: ResolutionParts };
+  | { readonly kind: "refused"; readonly refusal: RefusalParts };
 
 /** A population input's step: its committed state, or the kernel's failure. */
 export type PopulationStep<S> = { readonly kind: "committed"; readonly state: S } | { readonly kind: "failed"; readonly failure: Wire };

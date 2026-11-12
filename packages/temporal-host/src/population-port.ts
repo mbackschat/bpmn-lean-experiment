@@ -81,7 +81,9 @@ import {
 
 import { assertNever } from "./host-machine.js";
 import { fanOutCapacityCode } from "./population.js";
-import type { CommandView, FanOutStep, JsonValue, PopulationPort, PopulationStep, ReceiverView, ResolutionParts, SelectorView, Wire } from "./port.js";
+import type {
+  CommandView, FanOutStep, JsonValue, PopulationPort, PopulationStep, ReceiverView, RefusalParts, ResolutionParts, SelectorView, Wire,
+} from "./port.js";
 import { fromWire, toWire } from "./wire-codec.js";
 
 /** The kernel's own stop code of a fan-out past its cascade bound (`Kernel.Population.Signals.machineStop`). */
@@ -262,7 +264,7 @@ function startRequest(request: StartRequest): Wire {
 /** A publication's criteria refusal as resolution parts; the kernel's criteria refusals only reject or refuse as
  * unsupported, as `publish` relies on too. */
 /** A publication's command-level refusal; it only rejects or refuses as unsupported, so another failure is a defect. */
-function refusalParts(refusal: Failure): ResolutionParts {
+function refusalParts(refusal: Failure): RefusalParts {
   switch (refusal.tag) {
     case FailureTag.Rejected: return { kind: "rejected", code: refusal.code };
     case FailureTag.Unsupported: return { kind: "unsupported", code: refusal.code };

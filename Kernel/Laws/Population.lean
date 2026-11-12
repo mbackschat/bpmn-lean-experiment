@@ -316,6 +316,37 @@ def TimerResolves (fired : TimerStart) (verdict : Option String) (before after :
       after = before ++ [{ deploymentId := fired.deploymentId, startEvent := fired.startEvent, dueMs := fired.dueMs }]) ∨
     (∃ receiver failure, resolution = .fanOut [.failed receiver failure] ∧ after = before)
 
+/-! ## Publication refusals -/
+
+/-- The refusals among a publication's per-instance receiver scans. -/
+def scanRefusals {α : Type} (scans : List (Except Failure α)) : List Failure :=
+  scans.filterMap fun scan => match scan with
+    | .error failure => some failure
+    | .ok _ => none
+
+/-- The code a refusal carries. -/
+def codeOf : Failure → String
+  | .rejected code | .rolledBack code | .semanticFailure code | .unsupported code => code
+
+/-- A publication any of whose per-instance receiver scans refuses resolves to a refusal carrying the least refused code
+in the codes' string order and leaves every instance as it was: a refusal decides the resolution whatever the other
+scans reach, and the law reads the scans only through membership, so the code never depends on the order the instances
+or the host's registrations are scanned in (`ScanRefusalDecides.perm`;
+[population semantics](../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation)). -/
+def ScanRefusalDecides {α σ : Type} (scans : List (Except Failure α)) (resolution : Resolution)
+    (before after : List σ) : Prop :=
+  0 < (scanRefusals scans).length →
+    after = before ∧ ∃ code, (resolution = .unsupported code ∨ resolution = .rejected code) ∧
+      code ∈ (scanRefusals scans).map codeOf ∧ ∀ other ∈ (scanRefusals scans).map codeOf, code ≤ other
+
+/-- Reordering the scans changes nothing the law asks. -/
+theorem ScanRefusalDecides.perm {α σ : Type} {scans scans' : List (Except Failure α)} {resolution : Resolution}
+    {before after : List σ} (moved : scans.Perm scans') :
+    ScanRefusalDecides scans resolution before after ↔ ScanRefusalDecides scans' resolution before after := by
+  have refusals : (scanRefusals scans).Perm (scanRefusals scans') := moved.filterMap _
+  have codes := refusals.map codeOf
+  simp only [ScanRefusalDecides, refusals.length_eq, codes.mem_iff]
+
 /-! ## Non-vacuity -/
 
 def refA : OccurrenceRef := { processInstanceId := "a", element := ⟨"Catch"⟩, activation := 1 }
@@ -611,5 +642,32 @@ theorem command_identity_rejected (version : Nat) (other : startedInstanceId "c"
 theorem refusal_consumes_rejected :
     ¬ TimerResolves (firing 2 60000) (some "timer-not-due") [] spentOnce (.rejected "timer-not-due") :=
   fun ⟨_, kept⟩ => by simp [spentOnce] at kept
+
+
+/-- Two scans refuse, one reaches nothing: the least code decides. -/
+def refusingScans : List (Except Failure Unit) := [.error (.unsupported "b"), .ok (), .error (.unsupported "a")]
+
+theorem least_refusal_decides : ScanRefusalDecides refusingScans (.unsupported "a") [0] [0] :=
+  fun _ => ⟨rfl, "a", .inl rfl, by decide +kernel, by decide +kernel⟩
+
+/-- The first refusal in scan order is not the answer when a lesser code is refused. -/
+theorem first_refusal_rejected : ¬ ScanRefusalDecides refusingScans (.unsupported "b") [0] [0] := by
+  intro decides
+  obtain ⟨_, code, chosen, refused⟩ := decides (by decide +kernel)
+  have least := refused.2
+  have named : code = "b" := by
+    rcases chosen with same | same
+    · exact (Resolution.unsupported.inj same).symm
+    · exact Resolution.noConfusion same
+  subst named
+  exact absurd (least "a" (by decide +kernel)) (by decide +kernel)
+
+/-- A refused publication that changes an instance is rejected. -/
+theorem refusal_changing_rejected : ¬ ScanRefusalDecides refusingScans (.unsupported "a") [0] [1] :=
+  fun decides => absurd (decides (by decide +kernel)).1 (by decide +kernel)
+
+/-- Without a refusal the law asks nothing. -/
+theorem no_refusal_free : ScanRefusalDecides [(.ok () : Except Failure Unit)] .noMatch [0] [1] :=
+  fun refused => absurd refused (by decide +kernel)
 
 end Kernel.Laws.Population
