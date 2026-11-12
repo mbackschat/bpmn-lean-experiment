@@ -79,3 +79,20 @@ test("an input after the chain ended carries the kernel's verdict, never the hos
   assert.ok(Array.isArray(trace));
   assert.deepEqual(trace.at(-2), { kind: "command", commandId: "stale", outcome: "rejected", code: "instance-not-running" });
 });
+
+test("a run starts its chain under the host's history budget, the program's own when it names none", async () => {
+  const program = await userTaskProgram();
+  const budgets: Array<number | null> = [];
+  const recording = (client: ScenarioClient): ScenarioClient => ({
+    ...client,
+    start: (request) => {
+      budgets.push(request.config.historyEventBudget);
+      return client.start(request);
+    },
+  });
+  const scenario = { stimuli: [{ kind: "start", commandId: "start", instanceId: "I", variables: [] }] };
+  await runScenarioThroughHost(kernelPort, { client: recording(closingClient(program)), workflowIdPrefix: "w" }, program, scenario);
+  await runScenarioThroughHost(kernelPort, { client: recording(closingClient(program)), workflowIdPrefix: "w", historyEventBudget: 12 },
+    program, scenario);
+  assert.deepEqual(budgets, [null, 12]);
+});

@@ -25,6 +25,11 @@ export interface ScenarioHost {
   readonly client: ScenarioClient;
   /** Prefix of the Workflow IDs this run starts; one per start attempt until an instance exists. */
   readonly workflowIdPrefix: string;
+  /**
+   * The chain's history budget (`HostConfig.historyEventBudget`); absent or `null` takes the program's own. A small one
+   * makes a test hand the chain over by Continue-As-New mid-run.
+   */
+  readonly historyEventBudget?: number | null;
 }
 
 /** The scenario's stimuli, which `Kernel.Run.run` reads. */
@@ -56,7 +61,7 @@ export async function runScenarioThroughHost<P, S, I>(
   const config: HostConfig = {
     scheduling: Scheduling.External,
     effectStartToCloseMs: 60_000,
-    historyEventBudget: null,
+    historyEventBudget: host.historyEventBudget ?? null,
   };
   const trace: JsonValue[] = [{ kind: "deployment", outcome: "committed" }];
   let instance: string | null = null;

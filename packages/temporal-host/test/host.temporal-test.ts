@@ -212,6 +212,27 @@ test("chain handoff: a Run past its history budget continues as new with its sta
   finished.push(id);
 });
 
+test("chain handoff mid-population: Multi-Instance bodies continue as new with the kernel's canonical result", async () => {
+  // PC-MI-04 and PC-MI-05: the body's slots, instance scopes and counters cross every handoff, and each Run replays.
+  for (const path of [
+    "scenarios/open-rows/multi-instance-sub-process/parallel-sixteen-bodies-reversed.scenario.json",
+    "scenarios/open-rows/multi-instance-sub-process/sequential-two-bodies.scenario.json",
+  ]) {
+    const { program, scenario } = await retainedCase(path);
+    const prefix = workflowId("mi-chain");
+    const hosted = await runScenario(program, wire(scenario), { client, workflowIdPrefix: prefix, historyEventBudget: 12 });
+    assert.deepEqual(wire(hosted), wire(runKernelScenario(program, scenario)), path);
+    let runs = 0;
+    for (let runId: string | undefined = undefined; ; runs += 1) {
+      const history = await environment.client.workflow.getHandle(`${prefix}-1`, runId).fetchHistory();
+      await replayHistory(history, `${prefix}-1`);
+      runId = history.events?.[0]?.workflowExecutionStartedEventAttributes?.continuedExecutionRunId ?? undefined;
+      if (runId === undefined || runId === "") break;
+    }
+    assert.ok(runs > 0, `${path}: the chain continued as new at least once`);
+  }
+});
+
 /** A population of its own with the Timer start scenario registered once per `registrations` request ID. */
 async function timerPopulation(...registrations: readonly string[]) {
   const { program, scenario } = await retainedCase("scenarios/timer-start-event/scenario.json");
