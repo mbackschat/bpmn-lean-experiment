@@ -2,7 +2,7 @@
  * The population runner's contract: deployments in deploy order, each taking the next deployment source, with versions
  * per process key; a program admission refuses or a source the reader refused as a `deploymentRefused` deployment; an
  * instance input addressing nothing deployed as `definition-not-deployed`; each command at its given or inherited logical
- * time; and the three harness refusals of a malformed scenario.
+ * time; and the harness refusals of a malformed scenario, each with its stable code.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -113,8 +113,16 @@ test("a malformed population scenario is a harness refusal with its stable code"
     ["population-time-mismatch", [instance("a", "I", { at: 40 }, { at: 41 })]],
     ["population-unknown-definition", [instance("undeclared", "I")]],
     ["population-unknown-definition", [{ kind: "deploy", definitionRef: "undeclared" }]],
+    ["population-unsupported-step", [{ kind: "rewind", commandId: "r" }]],
+    ["population-publication-mode", [publish("p", { mode: "eventually" })]],
+    ["population-publication-address", [publish("p", { address: { definition: { deploymentId: 1 }, channel, name: "M" } })]],
+    ["population-receiver-kind", [{ kind: "broadcast", commandId: "b", address: { name: "S" }, variables: [], order: [{ kind: "subscription" }] }]],
+    ["population-instance-start", [instance("a", "I", {}, { instanceId: "J" })]],
   ];
   for (const [code, steps] of refusals) {
-    assert.throws(() => run([program], ["a"], steps), new RegExp(code, "u"), code);
+    assert.throws(() => run([program], ["a"], steps), new RegExp(`${code}: `, "u"), code);
   }
+  assert.throws(() => run([program, program], ["a", "b"], [instance("a", "I"), instance("b", "I")]), /population-instance-definitions: /u);
+  const scenario = { kind: "populationScenario", id: "population-contract", profile: identity.profile, definitions: [definition("a")], steps: [] };
+  assert.throws(() => runPopulation([program], scenario, ["digest-0"]), /population-step-digests: /u);
 });

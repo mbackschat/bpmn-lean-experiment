@@ -2,10 +2,13 @@
  * Kernel runner for population scenarios, transcribed from `Kernel/Run/Population.lean`: reads a population scenario
  * (`contracts/schemas/engine-population-scenario.schema.json`) into the population's stimuli and renders the
  * engine-population result (`contracts/schemas/engine-population-result.schema.json`). `run.ts` runs the stimuli,
- * because it is the one module that may import both registries. A malformed population scenario is a harness error,
- * these with stable codes: `population-time-backward`, `population-time-mismatch`, `population-unknown-definition`
- * and, for the deployment sources, `population-source-missing`, `population-sources-unused`,
- * `population-source-refused-shape` and `population-source-identity`.
+ * because it is the one module that may import both registries. A malformed population scenario is a harness error:
+ * a missing or mistyped field is the JSON reading's own error, and every other has a stable code:
+ * `population-time-backward`, `population-time-mismatch`, `population-unknown-definition`,
+ * `population-unsupported-step`, `population-step-digests`, `population-receiver-kind`, `population-publication-mode`,
+ * `population-publication-address`, `population-instance-start`, `population-instance-definitions` and, for the
+ * deployment sources, `population-source-missing`, `population-sources-unused`, `population-source-refused-shape` and
+ * `population-source-identity`.
  *
  * The harness passes one source per deployment, in deploy order: the definitions no `deploy` step names, in list order,
  * then every `deploy` step in step order, so the n-th source is what deployment ordinal n deploys (`population.ts`
@@ -154,7 +157,7 @@ export function receiverFromJson(json: unknown, where: string): Receiver {
   if (kind === "start") {
     return { tag: ReceiverTag.Start, deploymentId: natural(json, "deploymentId", where), startEvent: requiredString(json, "startEvent", where) };
   }
-  throw new Error(`${where}: unknown receiver kind ${kind}`);
+  return harnessRefusal(where, "population-receiver-kind", kind);
 }
 
 function orderFromJson(json: unknown, where: string): readonly Receiver[] | null {
@@ -167,9 +170,12 @@ export function publicationFromJson(json: unknown, where: string): Publication {
   const address = field(json, "address", where);
   const channel = optional(address, "channel");
   const name = optional(address, "name");
-  if ((channel === undefined) === (name === undefined)) throw new Error(`${where}: a publication names a channel or a name`);
-  const mode = publishModes.get(requiredString(json, "mode", where));
-  if (mode === undefined) throw new Error(`${where}: unknown publication mode`);
+  if ((channel === undefined) === (name === undefined)) {
+    harnessRefusal(where, "population-publication-address", "a publication names a channel or a name");
+  }
+  const modeName = requiredString(json, "mode", where);
+  const mode = publishModes.get(modeName);
+  if (mode === undefined) harnessRefusal(where, "population-publication-mode", modeName);
   const payload = optional(json, "payload");
   return {
     commandId: requiredString(json, "commandId", where),
@@ -239,7 +245,7 @@ function instanceInput(json: unknown, at: number | null, where: string): Scenari
  */
 export function stimuliOfPopulation(declared: readonly Declared[], sources: readonly DeploymentSource[], steps: readonly unknown[],
   digests: readonly string[], where: string): Stimulus[] {
-  if (digests.length !== steps.length) throw new Error(`${where}: ${steps.length} steps, ${digests.length} digests`);
+  if (digests.length !== steps.length) harnessRefusal(where, "population-step-digests", `${steps.length} steps, ${digests.length} digests`);
   const deployedByStep = steps.flatMap((json) => requiredString(json, "kind", where) === "deploy"
     ? [declaredOf(declared, requiredString(json, "definitionRef", where), where).definitionRef] : []);
   const pending = [...sources];
@@ -262,7 +268,7 @@ export function stimuliOfPopulation(declared: readonly Declared[], sources: read
       return;
     }
     const command = populationCommandFromJson(kind, json, where);
-    if (command === null) throw new Error(`${where}: unsupported population step ${kind}`);
+    if (command === null) harnessRefusal(where, "population-unsupported-step", kind);
     stimuli.push({ tag: StimulusTag.Command, command, atMs: clock, digest: digests[index] ?? "" });
   });
   if (pending.length > 0) {
@@ -278,7 +284,7 @@ function instanceStimulus(declared: readonly Declared[], scripts: Script[], json
   const stimulus = field(json, "stimulus", where);
   if (isObject(stimulus) && stimulus["kind"] === "start") {
     const started = requiredString(stimulus, "instanceId", where);
-    if (started !== script.instanceId) throw new Error(`${where}: step of ${script.instanceId} starts ${started}`);
+    if (started !== script.instanceId) harnessRefusal(where, "population-instance-start", `step of ${script.instanceId} starts ${started}`);
   }
   const [commandId, input] = instanceInput(json, at, where);
   const index = scripts.findIndex((known) => known.instanceId === script.instanceId);
@@ -287,7 +293,7 @@ function instanceStimulus(declared: readonly Declared[], scripts: Script[], json
     return { tag: StimulusTag.Input, instanceId: script.instanceId, definitionRef: script.definitionRef, commandId, input };
   }
   if (scripts[index]?.definitionRef !== script.definitionRef) {
-    throw new Error(`${where}: instance ${script.instanceId} names two definitions`);
+    harnessRefusal(where, "population-instance-definitions", `instance ${script.instanceId} names two definitions`);
   }
   return { tag: StimulusTag.Input, instanceId: script.instanceId, definitionRef: script.definitionRef, commandId, input };
 }

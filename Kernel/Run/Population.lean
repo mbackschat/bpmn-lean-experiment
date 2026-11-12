@@ -9,9 +9,12 @@ public import Kernel.Run.Wire
 Reads a [population scenario](../../contracts/schemas/engine-population-scenario.schema.json) into the population's
 stimuli and renders the [engine-population result](../../contracts/schemas/engine-population-result.schema.json).
 `Kernel.Run` reads the files and runs the stimuli, because it is the one module that may import both registries. A
-malformed population scenario is a harness error, these with stable codes: `population-time-backward`,
-`population-time-mismatch`, `population-unknown-definition` and, for the deployment sources, `population-source-missing`,
-`population-sources-unused`, `population-source-refused-shape` and `population-source-identity`.
+malformed population scenario is a harness error: a missing or mistyped field is the JSON reading's own error, and every
+other has a stable code: `population-time-backward`, `population-time-mismatch`, `population-unknown-definition`,
+`population-unsupported-step`, `population-step-digests`, `population-receiver-kind`, `population-publication-mode`,
+`population-publication-address`, `population-instance-start`, `population-instance-definitions` and, for the
+deployment sources, `population-source-missing`, `population-sources-unused`, `population-source-refused-shape` and
+`population-source-identity`.
 
 The harness passes one source per deployment, in deploy order: the definitions no `deploy` step names, in list order,
 then every `deploy` step in step order, so the n-th source is what deployment ordinal n deploys (`Population.apply`
@@ -101,7 +104,7 @@ def receiverFromJson (json : Json) : Except String Population.Receiver := do
   match ← json.getObjValAs? String "kind" with
   | "occurrence" => .occurrence <$> Codec.occurrenceFromJson (← json.getObjVal? "occurrence")
   | "start" => pure (.start (← json.getObjValAs? Nat "deploymentId") (← json.getObjValAs? String "startEvent"))
-  | other => throw s!"unknown receiver kind {other}"
+  | other => harnessRefusal "population-receiver-kind" other
 
 def orderFromJson (json : Json) : Except String (Option (List Population.Receiver)) := do
   match optional json "order" with
@@ -112,14 +115,14 @@ def publishModeFromJson : String → Except String Population.PublishMode
   | "any" => pure .any
   | "executionsOnly" => pure .executionsOnly
   | "startOnly" => pure .startOnly
-  | other => throw s!"unknown publication mode {other}"
+  | other => harnessRefusal "population-publication-mode" other
 
 def publicationFromJson (json : Json) : Except String Population.Publication := do
   let address ← json.getObjVal? "address"
   let message : Population.MessageAddress ← match optional address "channel", optional address "name" with
     | some channel, none => .channel <$> Codec.channelFromJson channel
     | none, some _ => .name <$> address.getObjValAs? String "name"
-    | _, _ => throw "a publication names a channel or a name"
+    | _, _ => harnessRefusal "population-publication-address" "a publication names a channel or a name"
   pure { commandId := ← json.getObjValAs? String "commandId"
          definition := ← selectorFromJson (optional address "definition")
          message
@@ -168,12 +171,13 @@ def instanceStimulus (declared : List Declared) (scripts : List Script) (json : 
   let stimulus ← json.getObjVal? "stimulus"
   if (stimulus.getObjValAs? String "kind").toOption == some "start" then
     let started ← stimulus.getObjValAs? String "instanceId"
-    unless started == script.instanceId do throw s!"step of {script.instanceId} starts {started}"
+    unless started == script.instanceId do
+      harnessRefusal "population-instance-start" s!"step of {script.instanceId} starts {started}"
   let (commandId, input) ← instanceInput stimulus stepAt
   match scripts.findIdx? (·.instanceId == script.instanceId) with
   | some index =>
     unless (scripts[index]?.map (·.definitionRef)) == some script.definitionRef do
-      throw s!"instance {script.instanceId} names two definitions"
+      harnessRefusal "population-instance-definitions" s!"instance {script.instanceId} names two definitions"
     pure (scripts, .input script.instanceId script.definitionRef commandId input)
   | none => pure (scripts ++ [script], .input script.instanceId script.definitionRef commandId input)
 
@@ -183,7 +187,8 @@ which never decreases. Each deployment takes the next of `sources`, which must a
 step's digest of its content, which the harness computes. -/
 def stimuliOfPopulation (declared : List Declared) (sources : List DeploymentSource) (steps : List Json)
     (digests : List String) : Except String (List Population.Stimulus) := do
-  unless digests.length == steps.length do throw s!"{steps.length} steps, {digests.length} digests"
+  unless digests.length == steps.length do
+    harnessRefusal "population-step-digests" s!"{steps.length} steps, {digests.length} digests"
   let mut deployedByStep : List String := []
   for json in steps do
     if (← json.getObjValAs? String "kind") == "deploy" then
@@ -216,7 +221,7 @@ def stimuliOfPopulation (declared : List Declared) (sources : List DeploymentSou
     | kind =>
       match ← populationCommandFromJson json kind with
       | some command => stimuli := stimuli ++ [.command command clock (digests.getD index "")]
-      | none => throw s!"unsupported population step {kind}"
+      | none => harnessRefusal "population-unsupported-step" kind
   unless pending.isEmpty do
     harnessRefusal "population-sources-unused" s!"{sources.length} deployment sources, {sources.length - pending.length} deployments"
   pure stimuli
