@@ -52,6 +52,7 @@ public import Kernel.Laws.Correlation
 public import Kernel.Laws.Flow
 public import Kernel.Laws.MultiInstance
 public import Kernel.Laws.Population
+public import Kernel.Laws.Propagation
 public import Kernel.Laws.Starts
 public import Kernel.Laws.State
 public import Kernel.Laws.Subscriptions
