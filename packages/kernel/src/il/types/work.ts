@@ -42,8 +42,11 @@ export interface SendWork {
 export interface ScriptWork {
   // guard-exception(19): a Script Task is refused whole (`work.script`, admission/work.ts).
   readonly format: string;
-  readonly source: string;
+  /** The inline `script` element's text; `null` when the element is absent, which CIB refuses unless a resource is given. */
+  readonly source: string | null;
   readonly resultVariable: string | null;
+  /** The external script a `camunda:resource` names instead of an inline `script`; refused (`work.script.resource`). */
+  readonly resource: string | null;
 }
 
 export enum DecisionResultMapping {

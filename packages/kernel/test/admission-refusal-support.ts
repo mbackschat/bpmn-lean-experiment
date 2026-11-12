@@ -98,7 +98,8 @@ export const callWork = (over: Json = {}): Json => {
 };
 
 export const sendWork = (): Json => ({ send: { payload: { binding: { protocol: "http", operation: "post" }, handlerKey: null, recipient: null, correlation: [], messageRef: null, operationRef: null } } });
-export const scriptWork = (): Json => ({ script: { payload: { format: "js", source: "1", resultVariable: null } } });
+export const scriptWork = (over: Json = {}): Json =>
+  ({ script: { payload: { format: "js", source: "1", resultVariable: null, resource: null, ...over } } });
 export const ruleWork = (over: Json = {}): Json =>
   ({ rule: { payload: { decision: text("d"), resultVariable: null, binding: "latest", resultMapping: "singleEntry", tenant: null, ...over } } });
 

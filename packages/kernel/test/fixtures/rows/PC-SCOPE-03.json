@@ -69,6 +69,7 @@
     "multiInstanceInputFailure": "hold",
     "multiInstanceCount": "integer",
     "businessRuleTask": "refused",
+    "scriptTask": "refused",
     "inclusiveJoinReach": "withBoundaries",
     "branchSchedule": "orderInvariant",
     "conditionalRetrigger": "edge",

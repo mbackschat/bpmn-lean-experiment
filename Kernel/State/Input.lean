@@ -106,10 +106,15 @@ structure TimerInput where
   atMs : Option Nat := none
   deriving Repr
 
+/-- An effect's result as its host reports it. `unsupported` reports a value or behavior the effect produced or needed that
+the portable domain cannot represent, such as a result outside the value domain; the kernel ends the input as the
+semantic outcome `unsupported` with that code and the state unchanged, for every effect kind alike. A host never
+reports a transport or infrastructure failure through it: those are host outcomes, kept apart from semantic ones. -/
 inductive EffectOutcome where
   | success (outputs : List (String × Value))
   | businessFailure (code : String) (message : Option String) (outputs : List (String × Value))
   | technicalFailure
+  | unsupported (code : String)
   deriving Repr
 
 structure EffectInput where

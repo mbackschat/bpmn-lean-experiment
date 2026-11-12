@@ -75,6 +75,9 @@ const copiedCallee = (program: Json): Json => {
   };
 };
 
+/** The profile option that selects JavaScript Script Tasks. */
+const javascript = { scriptTask: "javascript" };
+
 export const rows: readonly Row[] = [
   {
     code: "activity.inputMappings",
@@ -415,7 +418,30 @@ export const rows: readonly Row[] = [
     control: withTask(serviceWork()),
   },
   { code: "work.send", description: "a Send Task", mutate: withTask(sendWork()) },
-  { code: "work.script", description: "a Script Task", mutate: withTask(scriptWork()) },
+  {
+    code: "work.script", description: "a Script Task under the standards reading",
+    mutate: withTask(scriptWork()),
+    control: (program) => withOptions(withTask(scriptWork())(program), javascript),
+  },
+  {
+    code: "work.script.resource", description: "a Script Task whose script is an external resource",
+    mutate: (program) => withOptions(withTask(scriptWork({ source: null, resource: "scripts/total.js" }))(program), javascript),
+  },
+  {
+    code: "work.script.language", description: "a Script Task in a language other than JavaScript",
+    mutate: (program) => withOptions(withTask(scriptWork({ format: "juel" }))(program), javascript),
+    control: (program) => withOptions(withTask(scriptWork({ format: "ECMAScript" }))(program), javascript),
+  },
+  {
+    code: "work.script.source", description: "a Script Task with neither a script nor a resource",
+    mutate: (program) => withOptions(withTask(scriptWork({ source: null }))(program), javascript),
+    control: (program) => withOptions(withTask(scriptWork({ source: "" }))(program), javascript),
+  },
+  {
+    code: "work.script.sourceExpression", description: "a Script Task whose source CIB evaluates as JUEL first",
+    mutate: (program) => withOptions(withTask(scriptWork({ source: "\n ${total}" }))(program), javascript),
+    control: (program) => withOptions(withTask(scriptWork({ source: "'${total}'" }))(program), javascript),
+  },
   {
     code: "work.rule.decisionMissing", description: "a Business Rule Task naming a decision the program does not carry",
     mutate: (program) => withOptions(withTask(ruleWork())(program), { businessRuleTask: "decisionTable" }),

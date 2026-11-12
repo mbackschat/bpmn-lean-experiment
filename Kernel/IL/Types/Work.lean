@@ -49,10 +49,15 @@ structure SendWork where
   operationRef : Option String := none
   deriving Repr
 
+/-- `source` is the inline `script` element's text, `none` when the element is absent, which CIB refuses at deployment
+unless a resource is given (`ScriptUtil#getScript`); `resource` is the external script a `camunda:resource` names
+instead (CIB's `BpmnParse#parseScriptTaskElement`), which admission refuses (`work.script.resource`,
+SCRIPT-SEMANTICS-SPEC). -/
 structure ScriptWork where
   format : String
-  source : String
+  source : Option String := none
   resultVariable : Option String := none
+  resource : Option String := none
   deriving Repr
 
 inductive DecisionResultMapping where

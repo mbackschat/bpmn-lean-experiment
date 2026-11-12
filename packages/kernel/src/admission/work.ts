@@ -16,6 +16,7 @@ import {
   WorkTag,
   assertNever,
   CalledElementResolution,
+  ScriptTask,
   callWorkNamesDefinition,
   definitionRefEligibleFor,
   definitionRefEquals,
@@ -41,6 +42,7 @@ import {
   type Program,
   type ProfileOptions,
   type ReceiveWork,
+  type ScriptWork,
   type ServiceWork,
   type UserWork,
   type ValueSource,
@@ -420,6 +422,42 @@ function userTask(task: UserWork): string | null {
   return null;
 }
 
+/**
+ * The `scriptFormat` names CIB runs on its JavaScript engine, compared ignoring ASCII case: `javascript` and `ecmascript`
+ * by name (`DefaultScriptEngineResolver.java:76-89`), `js` by the engine's own (probe P1, 2026-11-12).
+ */
+const javascriptFormats: readonly string[] = ["javascript", "ecmascript", "js"];
+
+const asciiLower = (text: string): string => text.replace(/[A-Z]/gu, (letter) => letter.toLowerCase());
+
+/**
+ * A source CIB evaluates as a JUEL expression before it runs the value as the script: its text after the characters
+ * Java's `trim` drops starts with `${` or `#{` (`ScriptUtil.java:89-93,192-194`, `StringUtil.java:58-61`).
+ */
+function sourceExpression(source: string): boolean {
+  const text = source.replace(/^[\u0000-\u0020]+/u, "");
+  return text.startsWith("${") || text.startsWith("#{");
+}
+
+/**
+ * A Script Task ([script semantics](../../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md)). The standards profile
+ * names no script language and refuses every one. Under `ScriptTask.Javascript` it is admitted as an inline JavaScript
+ * source; a Script referenced by `camunda:resource` has no source in the program, and one with neither a source nor a
+ * resource CIB refuses at deployment (`ScriptUtil.java:66-75`).
+ */
+function script(options: ProfileOptions, work: ScriptWork): string | null {
+  if (work.resource !== null) return "work.script.resource";
+  switch (options.scriptTask) {
+    case ScriptTask.Refused:
+      return "work.script";
+    case ScriptTask.Javascript:
+      if (!javascriptFormats.includes(asciiLower(work.format))) return "work.script.language";
+      if (work.source === null) return "work.script.source";
+      return sourceExpression(work.source) ? "work.script.sourceExpression" : null;
+  }
+  return assertNever(options.scriptTask);
+}
+
 function service(work: ServiceWork): string | null {
   return work.protocol.length === 0 || work.operation.length === 0 ? "work.service.unboundImplementation" : null;
 }
@@ -439,7 +477,7 @@ function work(program: Program, header: Header, payload: ActivityPayload): strin
     case WorkTag.Send:
       return "work.send";
     case WorkTag.Script:
-      return "work.script";
+      return script(program.options, assigned.payload);
     case WorkTag.Rule:
       return ruleAcrossDeployments(program, header) ?? Decision.task(program, assigned.payload, payload.envelope);
     case WorkTag.Call:

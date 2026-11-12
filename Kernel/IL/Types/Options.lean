@@ -251,6 +251,14 @@ inductive BusinessRuleTask where
   | decisionTable
   deriving DecidableEq, Repr
 
+/-- What a Script Task executes ([script semantics](../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md)). -/
+inductive ScriptTask where
+  /-- BPMN 2.0.2 §10.3.3 names no script language, so a Script Task has no meaning the kernel executes. -/
+  | refused
+  /-- A JavaScript Script Task is an effect the host evaluates over a committed snapshot of the visible variables. -/
+  | javascript
+  deriving DecidableEq, Repr
+
 /-- Where a position held by an element continues when a converging Inclusive Gateway asks whether it can still reach
 one of its empty inputs ([flow semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-join-activation-and-reach)). -/
 inductive InclusiveJoinReach where
@@ -403,6 +411,7 @@ structure ProfileOptions where
   multiInstanceInputFailure : MultiInstanceInputFailure := .hold
   multiInstanceCount : MultiInstanceCount := .integer
   businessRuleTask : BusinessRuleTask := .refused
+  scriptTask : ScriptTask := .refused
   inclusiveJoinReach : InclusiveJoinReach := .withBoundaries
   branchSchedule : BranchSchedule := .orderInvariant
   conditionalRetrigger : ConditionalRetrigger := .edge

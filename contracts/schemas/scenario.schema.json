@@ -1131,6 +1131,23 @@
               "const": "technicalFailure"
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "A value or behavior the effect produced or needed that the portable domain cannot represent; never a transport or infrastructure failure. CIB has no such result, so the CIB runner refuses it.",
+          "required": [
+            "kind",
+            "code"
+          ],
+          "properties": {
+            "kind": {
+              "const": "unsupported"
+            },
+            "code": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
         }
       ]
     },

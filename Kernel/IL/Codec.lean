@@ -48,7 +48,7 @@ deriving instance FromJson, ToJson for JuelFunctionNode, JuelCallNode, JuelCompu
   CompensationHandlerFailure, ImplicitCompensation, ErrorExitCompensation, MultiInstanceCompensation, TransactionMethods,
   CompensationReferenceScope, AbnormalScopeEnd, UnhandledError, ErrorCatchVariables, CallBindingTime, Evaluator, ConditionOrder,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
-  BusinessRuleTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames, ScopeStart,
+  BusinessRuleTask, ScriptTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames, ScopeStart,
   SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms, ProfileOptions,
   CalledProcess, Program
 

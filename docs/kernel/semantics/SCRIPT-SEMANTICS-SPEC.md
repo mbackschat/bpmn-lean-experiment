@@ -44,15 +44,17 @@ The kernel's effect result for a Script Task accepts only the empty patch or the
 
 ## IL shape
 
-`ScriptWork` lacks the external script reference CIB reads (`camunda:resource`); per the [forward-compatible rule](../../../CLAUDE.md#forward-compatible-restrictions) it needs a field that admission refuses. Proposed `kernel-shape` hunk, with its TypeScript, codec, schema and fixture pairs:
+`ScriptWork` lacks the external script reference CIB reads (`camunda:resource`); per the [forward-compatible rule](../../../CLAUDE.md#forward-compatible-restrictions) it needs a field that admission refuses. The `kernel-shape` commit of track M10 added it with its TypeScript, codec, schema and fixture pairs; the reader reads `camunda:resource` into it, and admission refuses it (`work.script.resource`) ahead of `work.script`:
 
 ```lean
 structure ScriptWork where
   format : String
-  source : String
-  resultVariable : Option String := none
+  source : Option String := none                   -- absent `script` element: none; CIB refuses it without a resource
+  resultVariable : Option String := none           -- `camunda:resultVariable`, else `camunda:resultVariableName`
   resource : Option String := none                 -- PC-AUTO-05; refused (`work.script.resource`)
 ```
+
+The reader reads `camunda:resultVariableName` only where `camunda:resultVariable` is absent, CIB's precedence (`BpmnParse.java:2221-2228`), and an absent `script` element as `none`, distinct from an empty one, since `ScriptUtil#getScript` refuses a Script Task with neither (`ScriptUtil.java:66-75`).
 
 No state shape changes: the effect item reuses `EffectDetail`, and the source stays in the program.
 

@@ -333,6 +333,9 @@ function effectOutcomeFromJson(json: unknown): EffectOutcome {
     case "technicalFailure":
       fields(json, ["kind"]);
       return { tag: EffectOutcomeTag.TechnicalFailure };
+    case "unsupported":
+      fields(json, ["kind", "code"]);
+      return { tag: EffectOutcomeTag.Unsupported, code: get(stringField(json, "code")) };
   }
   throw new Refusal(`unknown effect outcome kind ${kind}`);
 }

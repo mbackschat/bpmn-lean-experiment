@@ -257,6 +257,14 @@ export enum BusinessRuleTask {
   DecisionTable = "decisionTable",
 }
 
+/** What a Script Task executes ([script semantics](../../../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md)). */
+export enum ScriptTask {
+  /** BPMN 2.0.2 §10.3.3 names no script language, so a Script Task has no meaning the kernel executes. */
+  Refused = "refused",
+  /** A JavaScript Script Task is an effect the host evaluates over a committed snapshot of the visible variables. */
+  Javascript = "javascript",
+}
+
 /**
  * Where a position held by an element continues when a converging Inclusive Gateway asks whether it can still reach one
  * of its empty inputs.
@@ -440,6 +448,7 @@ export interface ProfileOptions {
   readonly multiInstanceInputFailure: MultiInstanceInputFailure;
   readonly multiInstanceCount: MultiInstanceCount;
   readonly businessRuleTask: BusinessRuleTask;
+  readonly scriptTask: ScriptTask;
   readonly inclusiveJoinReach: InclusiveJoinReach;
   readonly branchSchedule: BranchSchedule;
   readonly conditionalRetrigger: ConditionalRetrigger;

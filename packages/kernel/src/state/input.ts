@@ -118,8 +118,15 @@ export enum EffectOutcomeTag {
   Success = "success",
   BusinessFailure = "businessFailure",
   TechnicalFailure = "technicalFailure",
+  Unsupported = "unsupported",
 }
 
+/**
+ * An effect's result as its host reports it. `unsupported` reports a value or behavior the effect produced or needed that
+ * the portable domain cannot represent, such as a result outside the value domain; the kernel ends the input as the
+ * semantic outcome `unsupported` with that code and the state unchanged, for every effect kind alike. A host never
+ * reports a transport or infrastructure failure through it: those are host outcomes, kept apart from semantic ones.
+ */
 export type EffectOutcome =
   | { readonly tag: EffectOutcomeTag.Success; readonly outputs: readonly Binding[] }
   | {
@@ -128,7 +135,8 @@ export type EffectOutcome =
       readonly message: string | null;
       readonly outputs: readonly Binding[];
     }
-  | { readonly tag: EffectOutcomeTag.TechnicalFailure };
+  | { readonly tag: EffectOutcomeTag.TechnicalFailure }
+  | { readonly tag: EffectOutcomeTag.Unsupported; readonly code: string };
 
 export interface EffectInput { readonly occurrence: OccurrenceRef; readonly outcome: EffectOutcome; readonly atMs: number | null; }
 

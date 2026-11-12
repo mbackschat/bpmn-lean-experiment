@@ -146,11 +146,20 @@ function sendWork(ctx: ReadContext, element: ElementRecord): KernelJson {
   } });
 }
 
+/**
+ * A Script Task as CIB parses it (`BpmnParse#parseScriptTaskElement`): an absent `script` element is `none`, distinct
+ * from an empty one, since CIB refuses a Script Task with neither a source nor a resource at deployment
+ * (`ScriptUtil#getScript`); `camunda:resultVariableName` is the older spelling CIB reads only when
+ * `camunda:resultVariable` is absent (`BpmnParse#parseResultVariable`).
+ */
 function scriptWork(ctx: ReadContext, element: ElementRecord): KernelJson {
+  const resultVariable = ctx.attribute(element, "resultVariable");
+  const legacyResultVariable = ctx.attribute(element, "resultVariableName");
   return ctor("script", { payload: {
     format: text(element, "scriptFormat") ?? "",
-    source: text(element, "script") ?? "",
-    resultVariable: ctx.attribute(element, "resultVariable"),
+    source: text(element, "script"),
+    resultVariable: resultVariable ?? legacyResultVariable,
+    resource: ctx.attribute(element, "resource"),
   } });
 }
 

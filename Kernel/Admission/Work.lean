@@ -287,6 +287,30 @@ def userTask (task : UserWork) : Option String :=
     some "work.user.formField"
   else none
 
+/-- The `scriptFormat` names CIB runs on its JavaScript engine, compared ignoring ASCII case: `javascript` and `ecmascript`
+by name (`DefaultScriptEngineResolver.java:76-89`), `js` by the engine's own (probe P1, 2026-11-12). -/
+def javascriptFormats : List String := ["javascript", "ecmascript", "js"]
+
+/-- A source CIB evaluates as a JUEL expression before it runs the value as the script: its text after the characters
+Java's `trim` drops starts with `${` or `#{` (`ScriptUtil.java:89-93,192-194`, `StringUtil.java:58-61`). -/
+def sourceExpression (source : String) : Bool :=
+  let text := source.dropWhile (· ≤ ' ')
+  text.startsWith "${" || text.startsWith "#{"
+
+/-- A Script Task ([script semantics](../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md)). The standards profile
+names no script language and refuses every one. Under `ScriptTask.javascript` it is admitted as an inline JavaScript
+source; a Script referenced by `camunda:resource` has no source in the program, and one with neither a source nor a
+resource CIB refuses at deployment (`ScriptUtil.java:66-75`). -/
+def script (options : ProfileOptions) (work : ScriptWork) : Option String :=
+  if work.resource.isSome then some "work.script.resource"
+  else match options.scriptTask with
+    | .refused => some "work.script"
+    | .javascript =>
+      if !javascriptFormats.contains work.format.toLower then some "work.script.language"
+      else match work.source with
+        | none => some "work.script.source"
+        | some source => if sourceExpression source then some "work.script.sourceExpression" else none
+
 def service (work : ServiceWork) : Option String :=
   if work.protocol.isEmpty || work.operation.isEmpty then some "work.service.unboundImplementation" else none
 
@@ -299,7 +323,7 @@ def activity (program : Program) (header : Header) (payload : ActivityPayload) :
     | .receive work => receive program.options work
     | .service work => service work
     | .send _ => some "work.send"
-    | .script _ => some "work.script"
+    | .script work => script program.options work
     | .rule work => ruleAcrossDeployments program header <|> Decision.task program work payload.envelope
     | .call work => call program header work
   let read := traits payload.work

@@ -98,7 +98,10 @@ function scriptOf(program: Program, wait: WaitView): ScriptSource | null {
     if (activity === null || elementHeader(element).origin.sourceId !== wait.id.elementId) return [];
     const work = activity[1].work;
     if (work.tag !== WorkTag.Script) return [];
-    return [{ format: work.payload.format, source: work.payload.source, resultVariable: work.payload.resultVariable }];
+    const { format, source, resultVariable } = work.payload;
+    // Admission refuses a Script Task without an inline source (`work.script`, `work.script.resource`).
+    if (source === null) throw new TypeError(`the Script Task published as ${wait.id.elementId} has no inline source`);
+    return [{ format, source, resultVariable }];
   });
   if (scripts.length > 1) throw new TypeError(`more than one Script Task is published as ${wait.id.elementId}`);
   return scripts[0] ?? null;

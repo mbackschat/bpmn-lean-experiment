@@ -45,6 +45,7 @@ import {
   MultiInstanceCompensation,
   MultiInstanceCount,
   BusinessRuleTask,
+  ScriptTask,
   InclusiveJoinReach,
   BranchSchedule,
   ConditionalRetrigger,
@@ -306,7 +307,9 @@ const work = inductive<Work>("Work", {
       operationRef: option(string),
     }),
   },
-  [WorkTag.Script]: { payload: struct("ScriptWork", { format: string, source: string, resultVariable: option(string) }) },
+  [WorkTag.Script]: {
+    payload: struct("ScriptWork", { format: string, source: option(string), resultVariable: option(string), resource: option(string) }),
+  },
   [WorkTag.Rule]: {
     payload: struct("RuleWork", {
       decision: valueSource,
@@ -479,6 +482,7 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   multiInstanceInputFailure: members("MultiInstanceInputFailure", MultiInstanceInputFailure),
   multiInstanceCount: members("MultiInstanceCount", MultiInstanceCount),
   businessRuleTask: members("BusinessRuleTask", BusinessRuleTask),
+  scriptTask: members("ScriptTask", ScriptTask),
   inclusiveJoinReach: members("InclusiveJoinReach", InclusiveJoinReach),
   branchSchedule: members("BranchSchedule", BranchSchedule),
   conditionalRetrigger: members("ConditionalRetrigger", ConditionalRetrigger),

@@ -430,7 +430,8 @@ function effectCompletion(envelope: Envelope | null, rule: ResultValues, occurre
  * An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host, which
  * leaves only once its catcher is known (`mappedErrorOutputs`): it writes no outputs (BPMN 2.0.2 §13.3.2) unless the
  * profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A technical failure has no BPMN meaning (§13.3.3
- * defines only a fault) and refuses unless the profile opens an incident (CIB-EXT-0013, CIB-CFG-0008).
+ * defines only a fault) and refuses unless the profile opens an incident (CIB-EXT-0013, CIB-CFG-0008). An unsupported
+ * result ends the input as `unsupported` with the host's code.
  */
 export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, state: State): Outcome {
   // A throw Event's effect has no envelope and so no output mappings (PC-MESSAGE-09).
@@ -459,6 +460,9 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
     }
     case EffectOutcomeTag.TechnicalFailure:
       return technicalFailure(ctx, item, state);
+    case EffectOutcomeTag.Unsupported:
+      // dynamic-only: what a host could not represent is known only once the effect ran
+      return failed(FailureTag.Unsupported, outcome.code);
   }
   return assertNever(outcome);
 }

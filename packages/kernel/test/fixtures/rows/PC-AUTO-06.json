@@ -168,6 +168,7 @@
     "multiInstanceInputFailure": "rollback",
     "multiInstanceCount": "javaInt",
     "businessRuleTask": "decisionTable",
+    "scriptTask": "refused",
     "inclusiveJoinReach": "outgoingOnly",
     "branchSchedule": "declarationDepthFirst",
     "conditionalRetrigger": "eachWrite",
@@ -299,7 +300,8 @@
               "payload": {
                 "format": "javascript",
                 "source": "parseInt(lineTotal, 10) - 5",
-                "resultVariable": "lineTotal"
+                "resultVariable": "lineTotal",
+                "resource": null
               }
             }
           },
@@ -366,7 +368,8 @@
               "payload": {
                 "format": "javascript",
                 "source": "'ITEM-' + loopCounter",
-                "resultVariable": "label"
+                "resultVariable": "label",
+                "resource": null
               }
             }
           },

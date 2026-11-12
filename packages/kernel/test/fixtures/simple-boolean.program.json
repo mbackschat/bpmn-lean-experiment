@@ -39,7 +39,7 @@
     "timerZone": null,
     "multiInstanceBinding": "dataAssociations",
     "effectResultValues": "outputSet", "outputContext": "submission",
-    "multiInstanceCounters": "none", "multiInstanceInputFailure": "hold", "multiInstanceCount": "integer", "businessRuleTask": "refused",
+    "multiInstanceCounters": "none", "multiInstanceInputFailure": "hold", "multiInstanceCount": "integer", "businessRuleTask": "refused", "scriptTask": "refused",
     "inclusiveJoinReach": "withBoundaries", "branchSchedule": "orderInvariant",
     "conditionalRetrigger": "edge", "malformedTimer": "refused", "messageNames": "description",
     "scopeStart": "implicit",

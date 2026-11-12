@@ -118,7 +118,8 @@
       "enum": [
         "success",
         "businessFailure",
-        "technicalFailure"
+        "technicalFailure",
+        "unsupported"
       ]
     },
     "waitKind": {
@@ -349,6 +350,12 @@
           "enum": [
             "refused",
             "decisionTable"
+          ]
+        },
+        "scriptTask": {
+          "enum": [
+            "refused",
+            "javascript"
           ]
         },
         "inclusiveJoinReach": {
@@ -650,6 +657,10 @@
         "work.rule.resultVariable",
         "work.rule.tenant",
         "work.script",
+        "work.script.language",
+        "work.script.resource",
+        "work.script.source",
+        "work.script.sourceExpression",
         "work.send",
         "work.service.unboundImplementation",
         "work.user.assignee",

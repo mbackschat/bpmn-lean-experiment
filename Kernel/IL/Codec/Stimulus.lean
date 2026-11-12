@@ -146,6 +146,7 @@ def effectOutcomeFromJson (json : Json) : Except String EffectOutcome := do
     pure (.businessFailure (← json.getObjValAs? String "code") (← optionalString json "message")
       (← bindingsAt json "outputs"))
   | "technicalFailure" => fields json ["kind"]; pure .technicalFailure
+  | "unsupported" => fields json ["kind", "code"]; pure (.unsupported (← json.getObjValAs? String "code"))
   | other => throw s!"unknown effect outcome kind {other}"
 
 /-- The firing a start stimulus states when its trigger is a Timer: the start it names, if any, and the due instant its

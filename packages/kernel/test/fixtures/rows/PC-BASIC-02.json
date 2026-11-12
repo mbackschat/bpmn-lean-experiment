@@ -169,6 +169,7 @@
     "multiInstanceInputFailure": "rollback",
     "multiInstanceCount": "javaInt",
     "businessRuleTask": "decisionTable",
+    "scriptTask": "refused",
     "inclusiveJoinReach": "outgoingOnly",
     "branchSchedule": "declarationDepthFirst",
     "conditionalRetrigger": "eachWrite",
