@@ -184,7 +184,8 @@ Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `u
 | PC-AUTO-01 | public named handlers across task and scope bodies |
 | PC-AUTO-03 | incidents in Multi-Instance Sub-Process bodies |
 | PC-AUTO-04 | Nothing owed: the configured send of CIB-EXT-0023 agrees with every retained [send-task-configured-send](../../../scenarios/open-rows/send-task-configured-send/README.md) answer, and a Message-addressed Send Task stays refused (`work.send`) as a forward-compatible restriction, since CIB gives it no execution meaning; closes at the M3 track review |
-| PC-AUTO-05, PC-AUTO-06 | Script binding per the owner decision |
+| PC-AUTO-05 | Nothing owed: the [script semantics](SCRIPT-SEMANTICS-SPEC.md) are the reviewed contract (2026-11-12); closes at the M3 track review |
+| PC-AUTO-06 | Script execution per that contract: `ProfileOptions.scriptTask`, the effect and its admission, the `unsupported` effect outcome, the host evaluator's alignment, and the harness fold; facts marked P1 hypotheses wait on the root's GraalJS probe |
 
 ## Sources
 
