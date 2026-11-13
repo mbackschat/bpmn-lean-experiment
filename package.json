@@ -95,9 +95,9 @@
     "test:kernel-behavior-oracle:built": "node --test --test-concurrency=1 packages/differential/test/kernel-behavior-oracle.integration-test.ts packages/differential/test/row-fixtures.integration-test.ts packages/differential/test/closure-reach.integration-test.ts packages/differential/test/kernel-unit-pairing.integration-test.ts",
     "test:differential:built": "node --test --test-concurrency=1 packages/differential/test/*.test.ts",
     "test:differential:hosted": "pnpm build:differential && pnpm test:differential:hosted:built",
-    "test:differential:hosted:built": "node --test --test-concurrency=1 --test-timeout=180000 packages/differential/test/*.temporal-test.ts",
+    "test:differential:hosted:built": "node --test --test-concurrency=1 --test-timeout=180000 --test-force-exit packages/differential/test/*.temporal-test.ts",
     "test:engine-api:hosted": "pnpm --filter @bpmn-lean/engine-api... --if-present run build && pnpm test:engine-api:hosted:built",
-    "test:engine-api:hosted:built": "node --test --test-concurrency=1 --test-timeout=180000 packages/engine-api/test/*.temporal-test.ts",
+    "test:engine-api:hosted:built": "node --test --test-concurrency=1 --test-timeout=180000 --test-force-exit packages/engine-api/test/*.temporal-test.ts",
     "test:infrastructure": "pnpm check:harness-types && pnpm test:infrastructure:runtime",
     "test:infrastructure:runtime": "node --test --test-concurrency=2 scripts/*.test.ts",
     "test:evaluation-distribution:structure": "node --test scripts/evaluation-distribution.platform-test.ts showcase/platform-browser-walkthrough/test/screenshot-catalog.test.ts",
@@ -174,7 +174,7 @@
     "test:bpmn-source:built": "node scripts/check-bpmn-semantic-process-metamodel.ts && node --test --test-concurrency=1 packages/bpmn-source/test/*.test.ts",
     "test:temporal-host": "pnpm build:temporal-host && tsc -p packages/temporal-host/tsconfig.test.json && node --test --test-concurrency=1 packages/temporal-host/test/*.test.ts",
     "test:temporal-host:hosted": "pnpm build:temporal-host && pnpm test:temporal-host:hosted:built",
-    "test:temporal-host:hosted:built": "node --test --test-concurrency=1 --test-timeout=180000 packages/temporal-host/test/*.temporal-test.ts"
+    "test:temporal-host:hosted:built": "node --test --test-concurrency=1 --test-timeout=180000 --test-force-exit packages/temporal-host/test/*.temporal-test.ts"
   },
   "devDependencies": {
     "@types/node": "24.13.3",

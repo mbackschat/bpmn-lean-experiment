@@ -161,7 +161,7 @@ test("default verification runs every hosted Temporal gate exactly once, on prep
   await assertLineOccursOnce(verifyScriptPath, 'return "$temporal_status"');
   for (const gate of ["test:temporal-host:hosted:built", "test:differential:hosted:built", "test:engine-api:hosted:built"]) {
     await assertLineOccursOnce(verifyScriptPath, `./scripts/pnpm.sh run ${gate} || temporal_status=1`);
-    assert.match(manifest.scripts?.[gate] ?? "", /^node --test --test-concurrency=1 --test-timeout=\d+ packages\/[\w-]+\/test\/\*\.temporal-test\.ts$/u, gate);
+    assert.match(manifest.scripts?.[gate] ?? "", /^node --test --test-concurrency=1 --test-timeout=\d+ --test-force-exit packages\/[\w-]+\/test\/\*\.temporal-test\.ts$/u, gate);
   }
 });
 
@@ -637,5 +637,8 @@ test("every hosted Temporal suite bounds each test, so a hang fails by name inst
   assert.ok(hosted.length >= 3, "the hosted Temporal suites are found");
   for (const [name, command] of hosted) {
     assert.match(command, /--test-timeout=\d+ /u, `${name} bounds each test`);
+    // A timed-out test leaves its await pending, which keeps the file's process alive: the file never reports and the
+    // suites after it never run (Verify run 43409989365).
+    assert.match(command, /--test-force-exit /u, `${name} ends a file whose timed-out test left work pending`);
   }
 });
