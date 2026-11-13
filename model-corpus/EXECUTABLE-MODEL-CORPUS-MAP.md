@@ -34,8 +34,8 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Remediate audit findings | retainedScenario | audit-remediation-concurrent-findings | accepted | concurrent-activations-audit-interleaved-and-stale | notSelected | notCatalogReady |
 | Assess a credit application | retainedScenario | credit-intake-concurrent-assessments | accepted | concurrent-activations-intake-reverse-assessments | notSelected | notCatalogReady |
 | Screen a new supplier | retainedScenario | supplier-screening-concurrent-checks | accepted | concurrent-scope-effects-supplier-review-first | retainedEvidence | notCatalogReady |
-| Take in an insurance claim | retainedScenario | claim-intake-priced-assessments | accepted | concurrent-scope-effects-claim-price-two-first | notSelected | notCatalogReady |
-| Assess claim damage | retainedScenario | claim-damage-assessment-concurrent-pricing | accepted | concurrent-scope-data-claim-fetch-one-first | notSelected | notCatalogReady |
+| Take in an insurance claim | retainedScenario | claim-intake-priced-assessments | accepted | concurrent-scope-effects-claim-price-two-first | retainedEvidence | notCatalogReady |
+| Assess claim damage | retainedScenario | claim-damage-assessment-concurrent-pricing | accepted | concurrent-scope-data-claim-fetch-one-first | retainedEvidence | notCatalogReady |
 | Inspect a facility | retainedScenario | facility-inspection-concurrent-checks | accepted | concurrent-scope-data-facility-inspection | retainedEvidence | notCatalogReady |
 | Ask two experts about a supplier at once | retainedScenario | supplier-onboarding-concurrent-expert-calls | accepted | concurrent-mapped-calls-supplier-compliance-first | retainedEvidence | notCatalogReady |
 | Prepare a business trip | retainedScenario | travel-request-concurrent-checks | accepted | concurrent-mapped-calls-travel-request | retainedEvidence | notCatalogReady |

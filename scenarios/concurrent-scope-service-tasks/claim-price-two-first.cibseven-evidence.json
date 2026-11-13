@@ -1,0 +1,655 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "concurrent-scope-effects-claim-price-two-first",
+    "sha256": "3134ea5779f3029240ced507d5ab89709267124e8be80ab1edd74c96f36bb6fa"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-collect-police-report",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:c571e923aa00fbb8918834fba98201579ba50b638e248193d4afdd409cc189e7",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:5e282af7c4844baa3674b816119329ff7feb108503d68cd01a98f53fce3f295f",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-confirm-assessment",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:cc98368792abe73e5d4157fb3ec5b2ba8694025c8371a012f0c4b39936e283b0",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-confirm-assessment-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-settle-claim",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "UserTask_CollectPoliceReport",
+            "name": "Collect police report"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-collect-police-report",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:c571e923aa00fbb8918834fba98201579ba50b638e248193d4afdd409cc189e7",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:5e282af7c4844baa3674b816119329ff7feb108503d68cd01a98f53fce3f295f",
+        "tasks": [
+          {
+            "elementId": "UserTask_ConfirmAssessment",
+            "name": "Confirm assessment"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-confirm-assessment",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:cc98368792abe73e5d4157fb3ec5b2ba8694025c8371a012f0c4b39936e283b0",
+        "tasks": [
+          {
+            "elementId": "UserTask_ConfirmAssessment",
+            "name": "Confirm assessment"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-confirm-assessment-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_SettleClaim",
+            "name": "Settle claim"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-settle-claim",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-collect-police-report",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:c571e923aa00fbb8918834fba98201579ba50b638e248193d4afdd409cc189e7",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:5e282af7c4844baa3674b816119329ff7feb108503d68cd01a98f53fce3f295f",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-confirm-assessment",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:cc98368792abe73e5d4157fb3ec5b2ba8694025c8371a012f0c4b39936e283b0",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-confirm-assessment-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-settle-claim",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_FetchPolicy",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "policyLookup",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-collect-police-report",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_FetchPolicy",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "policyLookup",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "ServiceTask_PriceDamage",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "damagePricing",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:c571e923aa00fbb8918834fba98201579ba50b638e248193d4afdd409cc189e7",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_PriceDamage",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "damagePricing",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "ServiceTask_PriceDamage",
+            "activation": 2,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "damagePricing",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:5e282af7c4844baa3674b816119329ff7feb108503d68cd01a98f53fce3f295f",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_PriceDamage",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "damagePricing",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-confirm-assessment",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_PriceDamage",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "damagePricing",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:cc98368792abe73e5d4157fb3ec5b2ba8694025c8371a012f0c4b39936e283b0",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-confirm-assessment-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-settle-claim",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-collect-police-report",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:c571e923aa00fbb8918834fba98201579ba50b638e248193d4afdd409cc189e7",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:5e282af7c4844baa3674b816119329ff7feb108503d68cd01a98f53fce3f295f",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-confirm-assessment",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:cc98368792abe73e5d4157fb3ec5b2ba8694025c8371a012f0c4b39936e283b0",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-confirm-assessment-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-settle-claim",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "complete-effect-sha256:c571e923aa00fbb8918834fba98201579ba50b638e248193d4afdd409cc189e7",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:5e282af7c4844baa3674b816119329ff7feb108503d68cd01a98f53fce3f295f",
+        "schedule": "plainSuccess",
+        "invocations": 2,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:cc98368792abe73e5d4157fb3ec5b2ba8694025c8371a012f0c4b39936e283b0",
+        "schedule": "plainSuccess",
+        "invocations": 3,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_FetchPolicy",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "policyLookup",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CollectPoliceReport",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Collect police report",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-collect-police-report",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_FetchPolicy",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "policyLookup",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_PriceDamage",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "damagePricing",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:c571e923aa00fbb8918834fba98201579ba50b638e248193d4afdd409cc189e7",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_PriceDamage",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "damagePricing",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_PriceDamage",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "damagePricing",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:5e282af7c4844baa3674b816119329ff7feb108503d68cd01a98f53fce3f295f",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_PriceDamage",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "damagePricing",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ConfirmAssessment",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Confirm assessment",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-confirm-assessment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_PriceDamage",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "damagePricing",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:cc98368792abe73e5d4157fb3ec5b2ba8694025c8371a012f0c4b39936e283b0",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ConfirmAssessment",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Confirm assessment",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-confirm-assessment-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_SettleClaim",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Settle claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-settle-claim",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

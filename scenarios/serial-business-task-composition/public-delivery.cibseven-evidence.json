@@ -1,0 +1,682 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "public-delivery-classification",
+    "sha256": "409e73ded3ac32fd42c571609a88ada9e03466374b089f8769886c5b67c8f009"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "payload",
+            "value": {
+              "kind": "string",
+              "value": "parent-payload"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "initial"
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "parent-result"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "payload",
+            "value": {
+              "kind": "string",
+              "value": "parent-payload"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "parent-result"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:88873c2dd48feb536e28a259dc6df22497ed6546063ef71f0a3b91b1bf549230",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "payload",
+            "value": {
+              "kind": "string",
+              "value": "parent-payload"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "parent-result"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:a701f25ee7c4a345c21d681ce12fc7fe9f6787938f28a78bfed54c0da15ca15e",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "classification",
+            "value": {
+              "kind": "string",
+              "value": "standard"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "payload",
+            "value": {
+              "kind": "string",
+              "value": "parent-payload"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "parent-result"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "finalize",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "classification",
+            "value": {
+              "kind": "string",
+              "value": "standard"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "payload",
+            "value": {
+              "kind": "string",
+              "value": "parent-payload"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "parent-result"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": "Review invoice details",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "reviewers"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "request",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:88873c2dd48feb536e28a259dc6df22497ed6546063ef71f0a3b91b1bf549230",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:a701f25ee7c4a345c21d681ce12fc7fe9f6787938f28a78bfed54c0da15ca15e",
+        "tasks": [
+          {
+            "elementId": "Finalize",
+            "name": "Record validation decision",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "reviewers"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "request",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "finalize",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:88873c2dd48feb536e28a259dc6df22497ed6546063ef71f0a3b91b1bf549230",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:a701f25ee7c4a345c21d681ce12fc7fe9f6787938f28a78bfed54c0da15ca15e",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "finalize",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review",
+        "jobs": [
+          {
+            "elementId": "Validate",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "invoiceValidator",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:88873c2dd48feb536e28a259dc6df22497ed6546063ef71f0a3b91b1bf549230",
+        "jobs": [
+          {
+            "elementId": "Classify",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "invoiceClassifier",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:a701f25ee7c4a345c21d681ce12fc7fe9f6787938f28a78bfed54c0da15ca15e",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "finalize",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "review",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:88873c2dd48feb536e28a259dc6df22497ed6546063ef71f0a3b91b1bf549230",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:a701f25ee7c4a345c21d681ce12fc7fe9f6787938f28a78bfed54c0da15ca15e",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "finalize",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "complete-effect-sha256:88873c2dd48feb536e28a259dc6df22497ed6546063ef71f0a3b91b1bf549230",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:a701f25ee7c4a345c21d681ce12fc7fe9f6787938f28a78bfed54c0da15ca15e",
+        "schedule": "plainSuccess",
+        "invocations": 2,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "payload",
+            "value": {
+              "kind": "string",
+              "value": "parent-payload"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "initial"
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "parent-result"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "invoice",
+              "elementId": "Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review invoice details",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "reviewers"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "request",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "review",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "payload",
+            "value": {
+              "kind": "string",
+              "value": "parent-payload"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "parent-result"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "invoice",
+              "elementId": "Validate",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "invoiceValidator",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:88873c2dd48feb536e28a259dc6df22497ed6546063ef71f0a3b91b1bf549230",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "payload",
+            "value": {
+              "kind": "string",
+              "value": "parent-payload"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "parent-result"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "invoice",
+              "elementId": "Classify",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "invoiceClassifier",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:a701f25ee7c4a345c21d681ce12fc7fe9f6787938f28a78bfed54c0da15ca15e",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "classification",
+            "value": {
+              "kind": "string",
+              "value": "standard"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "payload",
+            "value": {
+              "kind": "string",
+              "value": "parent-payload"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "parent-result"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "invoice",
+              "elementId": "Finalize",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record validation decision",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "reviewers"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "request",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "finalize",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "classification",
+            "value": {
+              "kind": "string",
+              "value": "standard"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "payload",
+            "value": {
+              "kind": "string",
+              "value": "parent-payload"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "parent-result"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

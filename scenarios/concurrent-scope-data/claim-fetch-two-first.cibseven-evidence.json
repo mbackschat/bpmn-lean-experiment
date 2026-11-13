@@ -1,0 +1,938 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "concurrent-scope-data-claim-fetch-two-first",
+    "sha256": "950e790d1d22bd1a829eceb5c60e4779d48c05fe6de96a9a3929703bcb010545"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-inspect-vehicle",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-inspect-property",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-assess-damage",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-assess-damage-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:dff6cc4c9216fb018392dcfdb027190b17903138754425aeac8bf10e815cf2ce",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "lastEstimate",
+            "value": {
+              "kind": "string",
+              "value": "4200"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:4e9bc1070aef2452d845c714e02b06102174f63660c3e53d8482850f86211b43",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "lastEstimate",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-review-claim",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "lastEstimate",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "InspectProperty",
+            "name": "Inspect property"
+          },
+          {
+            "elementId": "InspectVehicle",
+            "name": "Inspect vehicle"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-inspect-vehicle",
+        "tasks": [
+          {
+            "elementId": "AssessDamage",
+            "name": "Assess damage"
+          },
+          {
+            "elementId": "InspectProperty",
+            "name": "Inspect property"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-inspect-property",
+        "tasks": [
+          {
+            "elementId": "AssessDamage",
+            "name": "Assess damage"
+          },
+          {
+            "elementId": "AssessDamage",
+            "name": "Assess damage"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-assess-damage",
+        "tasks": [
+          {
+            "elementId": "AssessDamage",
+            "name": "Assess damage"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-assess-damage-2",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:dff6cc4c9216fb018392dcfdb027190b17903138754425aeac8bf10e815cf2ce",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:4e9bc1070aef2452d845c714e02b06102174f63660c3e53d8482850f86211b43",
+        "tasks": [
+          {
+            "elementId": "ReviewClaim",
+            "name": "Review claim"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-review-claim",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-inspect-vehicle",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-inspect-property",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-assess-damage",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-assess-damage-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:dff6cc4c9216fb018392dcfdb027190b17903138754425aeac8bf10e815cf2ce",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:4e9bc1070aef2452d845c714e02b06102174f63660c3e53d8482850f86211b43",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-review-claim",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-inspect-vehicle",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-inspect-property",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-assess-damage",
+        "jobs": [
+          {
+            "elementId": "FetchRates",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "rateLookup",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-assess-damage-2",
+        "jobs": [
+          {
+            "elementId": "FetchRates",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "rateLookup",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "FetchRates",
+            "activation": 2,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "rateLookup",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:dff6cc4c9216fb018392dcfdb027190b17903138754425aeac8bf10e815cf2ce",
+        "jobs": [
+          {
+            "elementId": "FetchRates",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "rateLookup",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:4e9bc1070aef2452d845c714e02b06102174f63660c3e53d8482850f86211b43",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-review-claim",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-inspect-vehicle",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-inspect-property",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-assess-damage",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-assess-damage-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:dff6cc4c9216fb018392dcfdb027190b17903138754425aeac8bf10e815cf2ce",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:4e9bc1070aef2452d845c714e02b06102174f63660c3e53d8482850f86211b43",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-review-claim",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "complete-effect-sha256:dff6cc4c9216fb018392dcfdb027190b17903138754425aeac8bf10e815cf2ce",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:4e9bc1070aef2452d845c714e02b06102174f63660c3e53d8482850f86211b43",
+        "schedule": "plainSuccess",
+        "invocations": 2,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "InspectProperty",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect property",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "InspectVehicle",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect vehicle",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-inspect-vehicle",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AssessDamage",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess damage",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "InspectProperty",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect property",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-inspect-property",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AssessDamage",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess damage",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AssessDamage",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess damage",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-assess-damage",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AssessDamage",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess damage",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "FetchRates",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "rateLookup",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-assess-damage-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "FetchRates",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "rateLookup",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "FetchRates",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "rateLookup",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:dff6cc4c9216fb018392dcfdb027190b17903138754425aeac8bf10e815cf2ce",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "lastEstimate",
+            "value": {
+              "kind": "string",
+              "value": "4200"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "FetchRates",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "rateLookup",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:4e9bc1070aef2452d845c714e02b06102174f63660c3e53d8482850f86211b43",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "lastEstimate",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewClaim",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-review-claim",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "adjuster",
+            "value": {
+              "kind": "string",
+              "value": "desk"
+            }
+          },
+          {
+            "name": "lastEstimate",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          },
+          {
+            "name": "noAdjuster",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}
