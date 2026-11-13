@@ -378,11 +378,17 @@ def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes
   let stop ← if exhausted && !evaluatesFinalCondition ctx loop then .ok false
     else stops ctx loop run index occurrence.scope results state
   let run := { run with results := if loop.mode == .sequential then (run.results ++ results).eraseDups else [] }
+  -- CIB updates the body's counters before it decides whether to leave (`ParallelMultiInstanceActivityBehavior
+  -- :84-87`, `SequentialMultiInstanceActivityBehavior:48-51`), and the body's compensation snapshot copies them as they
+  -- then stand (`MultiInstanceActivityBehavior.java:172-175`), so every path writes them (#106); without counter
+  -- locals there is no write.
   let left := setRun (state.leaveScope occurrence.scope) run
-  if stop || exhausted then .ok (finish ctx loop run left)
+  let counted := match counterLocals ctx (bodyCounts loop run.instances) with
+    | [] => left
+    | counts => left.signal (.write run.scope counts .own)
+  if stop || exhausted then .ok (finish ctx loop run counted)
   else
     let items ← nextItems ctx loop run (index + 1) occurrence.scope results state
-    let counted := left.signal (.write run.scope (counterLocals ctx (bodyCounts loop run.instances)) .own)
     .ok (beginInstances ctx loop items run counted)
 
 end Kernel.Feature.MultiInstance

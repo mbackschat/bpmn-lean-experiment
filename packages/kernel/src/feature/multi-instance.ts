@@ -606,10 +606,15 @@ export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence
   if (!stop.ok) return stop;
   const kept = sequential(loop.mode) ? [...new Set([...(found.results ?? []), ...results])] : [];
   const run: MultiInstanceRun = { ...completed, results: kept };
+  // CIB updates the body's counters before it decides whether to leave (`ParallelMultiInstanceActivityBehavior:84-87`,
+  // `SequentialMultiInstanceActivityBehavior:48-51`), and the body's compensation snapshot copies them as they then
+  // stand (`MultiInstanceActivityBehavior.java:172-175`), so every path writes them (#106); without counter locals
+  // there is no write.
   const left = setRun(leaveScope(state, occurrence.scope), run);
-  if (stop.value || exhausted) return committed(finish(ctx, loop, run, left));
+  const counts = counterLocals(ctx, bodyCounts(loop, run.instances));
+  const counted = counts.length === 0 ? left : signal(left, { tag: SignalTag.Write, scope: run.scope, writes: counts, rule: WriteRule.Own });
+  if (stop.value || exhausted) return committed(finish(ctx, loop, run, counted));
   const items = nextItems(ctx, loop, run, index + 1, occurrence.scope, results, state);
   if (!items.ok) return items;
-  const counted = signal(left, { tag: SignalTag.Write, scope: run.scope, writes: counterLocals(ctx, bodyCounts(loop, run.instances)), rule: WriteRule.Own });
   return committed(beginInstances(ctx, loop, items.value, run, counted));
 }

@@ -11,7 +11,7 @@ import { test } from "node:test";
 
 import type { Outcome } from "@bpmn-lean/kernel";
 
-import { activity, end, eventSubProcess, flow, literalValue, loop, mapping, scope, start, userWork, variable } from "./admission-refusal-support.ts";
+import { activity, end, eventSubProcess, flow, juel, literalValue, loop, mapping, scope, start, userWork, variable } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 import { chain, committedState, compensateAll, complete, driveFrom, parts, userTask } from "./compensation-support.ts";
 
@@ -116,6 +116,38 @@ for (const mode of ["parallel", "sequential"]) {
     const state = committedState(driveFrom(json, items, complete("T", 1), complete("T", 2)));
     const body = state.slots.compensation.retained.find((record) => record.subject === "A" && record.handler === null);
     assert.deepEqual(body?.children.map((record) => record.snapshot), [[], []]);
+  });
+}
+
+/** The body counters a handler captures under `cibLocals` (CIB-INT-0018). */
+const counters: [string, string][] =
+  [["seenInstances", "nrOfInstances"], ["seenActive", "nrOfActiveInstances"], ["seenCompleted", "nrOfCompletedInstances"]];
+
+/** What one handler run captured of the counters, as `[instances, active, completed]`. */
+const countersSeen = (outcome: Outcome): unknown[] => counters.map(([input]) => seen(outcome, input));
+
+/** A completion condition that holds once `count` instances completed. */
+const completedAtLeast = (count: number): Json => juel({ identifier: { name: "nrOfCompletedInstances" } },
+  { integer: { digits: `${count}` } }, { binary: { payload: { op: "ge", left: 0, right: 1 } } });
+
+// CIB updates the counters before the body decides to leave and copies them when it leaves
+// (`ParallelMultiInstanceActivityBehavior.java:84-87`, `SequentialMultiInstanceActivityBehavior.java:48-51`,
+// `MultiInstanceActivityBehavior.java:172-175`), so the last completion counts on every path out of the body (#106).
+for (const mode of ["parallel", "sequential"]) {
+  const active = mode === "parallel" ? 0 : 1;
+  for (const form of ["group", "eventSubProcess"] as const) {
+    test(`a ${mode} body's ${form} handlers read its counters as its last completion left them`, () => {
+      const json = program(form, mode, cib, counters);
+      assert.deepEqual(countersSeen(driveFrom(json, items, ...ran)), [counter(2), counter(active), counter(2)]);
+      assert.deepEqual(countersSeen(driveFrom(json, items, ...ran, complete("HT", 1))), [counter(2), counter(active), counter(2)]);
+    });
+  }
+
+  test(`a ${mode} body closed early by its completion condition counts the closing completion`, () => {
+    const json = program("group", mode, cib, counters, {},
+      { multiInstance: { ...looping(mode, cib), completionCondition: completedAtLeast(1) } });
+    const closed = driveFrom(json, items, complete("T", 1), complete("U", 1, [["item", text("late")]]));
+    assert.deepEqual(countersSeen(closed), [counter(2), counter(1), counter(1)]);
   });
 }
 
