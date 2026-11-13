@@ -52,12 +52,11 @@ final class PvmDefinitionProjector {
         Collections.newSetFromMap(
             new IdentityHashMap<ActivityImpl, Boolean>());
     collect(definition, definition, sourceProcessId, projected, visited);
+    // BpmnParse#selectInitial selects no initial activity for a Process without a none or timer start unless it has
+    // exactly one start event. That is CIB's own answer, so the projection reports it absent instead of choosing one.
     var initial = definition.getInitial();
-    if (initial == null) {
-      throw new IllegalStateException("Process has no initial activity: " + sourceProcessId);
-    }
     return new PvmDefinitionProjection(
-        sourceProcessId, initial.getId(), List.copyOf(projected.values()));
+        sourceProcessId, initial == null ? null : initial.getId(), List.copyOf(projected.values()));
   }
 
   private void collect(

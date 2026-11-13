@@ -200,11 +200,13 @@ public final class ScenarioDiagnosticsProtocol {
       long cleanupNanos,
       long totalNanos) {}
 
+  /** The initial activity is absent when CIB selects none, as for a Process with several typed start events. */
   public record PvmDefinitionProjection(
-      String processId, String initialActivityId, List<PvmActivityProjection> activities) {
+      String processId,
+      @JsonInclude(JsonInclude.Include.NON_NULL) String initialActivityId,
+      List<PvmActivityProjection> activities) {
     public PvmDefinitionProjection {
       Objects.requireNonNull(processId, "processId");
-      Objects.requireNonNull(initialActivityId, "initialActivityId");
       activities = List.copyOf(activities);
     }
   }

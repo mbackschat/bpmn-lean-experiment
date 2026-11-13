@@ -204,6 +204,15 @@ public class ScenarioJsonTest {
         ScenarioJson.write(result));
   }
 
+  /** A definition CIB selects no initial activity for carries no `initialActivityId` rather than a null one. */
+  @Test
+  public void omitsTheInitialActivityOfADefinitionWithoutOne() throws JsonProcessingException {
+    var projection = new ScenarioDiagnosticsProtocol.PvmDefinitionProjection("Process_1", null, List.of());
+
+    assertEquals(
+        "{\"processId\":\"Process_1\",\"activities\":[]}", new ObjectMapper().writeValueAsString(projection));
+  }
+
   /** The evidence schema requires a task's `name` as an explicit null for an unnamed User Task (run 43279665960). */
   @Test
   public void anUnnamedTaskKeepsItsNullName() throws JsonProcessingException {
