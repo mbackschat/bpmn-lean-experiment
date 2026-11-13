@@ -41,7 +41,7 @@ export class ConfirmedProcessInstancePublicationService {
     return await this.#deliver(record);
   }
 
-  /** Dispatches only from a freshly won reserved-to-starting transition. */
+  /** Dispatches only from a freshly won reserved-to-starting transition; a lost one is left to its winner. */
   async startDirect(
     reservation: DirectProcessInstanceReservation,
     host: DirectProcessInstanceHost,
@@ -86,10 +86,9 @@ export class ConfirmedProcessInstancePublicationService {
         }
         record = await this.#describeOnly(record, snapshot, host);
       }
-    } else if (
-      record.state === ConfirmedProcessInstanceState.Starting ||
-      record.state === ConfirmedProcessInstanceState.Indeterminate
-    ) {
+    } else if (record.state === ConfirmedProcessInstanceState.Indeterminate) {
+      // Without the dispatch right only `indeterminate` is described. A `starting` row belongs to the dispatcher that
+      // won it: a description now answers `missing` while that start is in flight and would demote the owner's row.
       record = await this.#describeOnly(record, snapshot, host);
     }
 

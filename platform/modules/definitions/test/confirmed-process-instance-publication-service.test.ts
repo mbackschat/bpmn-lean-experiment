@@ -311,6 +311,95 @@ test("definitive direct-start rejection converges after recovery marks the dispa
   );
 });
 
+test("a request that loses the dispatch right never describes or demotes the owner's starting row", async () => {
+  const repository = new DispatchRightLostRepository(null);
+  const host = countingHost();
+  const service = directPublicationService(repository);
+
+  const result = await service.startDirect(directReservation(), host);
+
+  assert.equal(result.state, ConfirmedProcessInstanceState.Starting);
+  assert.deepEqual(host.calls, { starts: 0, describes: 0 });
+  assert.notEqual(
+    await repository.compareAndSetState(
+      publication.instance.processInstanceId,
+      ConfirmedProcessInstanceState.Starting,
+      ConfirmedProcessInstanceState.Confirmed,
+    ),
+    null,
+    "the owner's definitive success lands on the row it left starting",
+  );
+});
+
+test("a request that loses the dispatch right answers from the owner's definitive state", async () => {
+  const confirmedHost = countingHost();
+  const confirmed = await directPublicationService(
+    new DispatchRightLostRepository(ConfirmedProcessInstanceState.Confirmed),
+  ).startDirect(directReservation(), confirmedHost);
+  assert.deepEqual(confirmedHost.calls, { starts: 0, describes: 0 });
+  assert.equal(confirmed.state, ConfirmedProcessInstanceState.Confirmed);
+  assert.equal(confirmed.operatePending, false);
+  assert.equal(confirmed.workPending, false);
+
+  const failedHost = countingHost();
+  await assert.rejects(
+    directPublicationService(
+      new DispatchRightLostRepository(ConfirmedProcessInstanceState.IntegrityFailure),
+    ).startDirect(directReservation(), failedHost),
+    /integrity/u,
+  );
+  assert.deepEqual(failedHost.calls, { starts: 0, describes: 0 });
+});
+
+/** Lets another dispatcher win reserved-to-starting just before the request's own compare-and-set. */
+class DispatchRightLostRepository extends InMemoryConfirmedProcessInstanceRepository {
+  readonly #ownerOutcome: ConfirmedProcessInstanceStateValue | null;
+  #interposed = false;
+
+  constructor(ownerOutcome: ConfirmedProcessInstanceStateValue | null) {
+    super();
+    this.#ownerOutcome = ownerOutcome;
+  }
+
+  override async compareAndSetState(
+    processInstanceId: string,
+    expected: ConfirmedProcessInstanceStateValue,
+    next: ConfirmedProcessInstanceStateValue,
+  ): Promise<ConfirmedProcessInstanceRecord | null> {
+    if (
+      !this.#interposed &&
+      expected === ConfirmedProcessInstanceState.Reserved &&
+      next === ConfirmedProcessInstanceState.Starting
+    ) {
+      this.#interposed = true;
+      await super.compareAndSetState(processInstanceId, expected, next);
+      if (this.#ownerOutcome !== null) {
+        await super.compareAndSetState(
+          processInstanceId,
+          ConfirmedProcessInstanceState.Starting,
+          this.#ownerOutcome,
+        );
+      }
+    }
+    return await super.compareAndSetState(processInstanceId, expected, next);
+  }
+}
+
+function countingHost() {
+  const calls = { starts: 0, describes: 0 };
+  return {
+    calls,
+    start: async () => {
+      calls.starts += 1;
+      return { status: "started" as const };
+    },
+    describe: async () => {
+      calls.describes += 1;
+      return { status: "missing" as const };
+    },
+  };
+}
+
 class ConcurrentIndeterminateRepository extends InMemoryConfirmedProcessInstanceRepository {
   readonly #target: ConfirmedProcessInstanceStateValue;
   #interposed = false;
