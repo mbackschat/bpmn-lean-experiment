@@ -53,7 +53,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Process structure",
     element: "Process",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Executable finite graphs only in registered profiles; this is not general BPMN graph admission. The nested scope-data profile also admits a Process without an embedded Sub-Process, at its root alone or beside a called Process, in every form it admits with one; the embedded completion profile, the only other profile reaching these analyses, still requires a Sub-Process or a Call.",
+    restriction: "An executable Process, root or called, whose body follows the same flow rules as a Sub-Process body, so no Sub-Process is required. A Process not marked executable and a document without an executable Process are refused (process.notExecutable, source.noProcess); an automatic burst that does not settle within the kernel's closure bound is unsupported at run time, where CIB runs it to its end (CIB-LIM-0016).",
     cibEvidence: exactCib("user-task-assignment-form-metadata"),
   },
   {
@@ -61,7 +61,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Process structure",
     element: "Sequence Flow",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Profile-owned control flow; conditions use only the exact Simple Boolean subset where selected.",
+    restriction: "Conditions sit only on gateway candidates and on an Activity's or Scope's non-default outgoing flows (flow.conditionalOutflow), evaluated by the profile's evaluator: Simple Boolean under the standards reading, the JUEL core level under the cibseven profiles (CIB-CFG-0011). A condition without a declared language is JUEL (CIB-EXT-0030) and is refused under Simple Boolean (flow.condition.foreign). An Activity's several outgoing flows form a parallel split and conditioned ones an inclusive split; a completion that takes none rolls back (CIB-INT-0012).",
     cibEvidence: exactCib("user-task-assignment-form-metadata"),
   },
   {
@@ -69,7 +69,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Start Events",
     element: "None Start Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Ordinary starts only inside the bounded registered Process shapes. Under the nested scope-data profile, a Process root None Start outside every fork region may leave on two or more unconditioned flows, and the start command opens all of them.",
+    restriction: "A None Start puts one token on each of its outgoing flows when its Process or Sub-Process is entered. A second None or Timer Start of a Process and a second start of a Sub-Process are refused (start.rootCombination, start.subProcessCombination); a Sub-Process without a start Event is the Embedded Sub-Process row's.",
     cibEvidence: exactCib("user-task-assignment-form-metadata"),
   },
   {
@@ -77,7 +77,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Start Events",
     element: "Message Start Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One top-level operation-addressed, payload-free start with one target; no fanout or correlation keys.",
+    restriction: "A root Message Start Event starts an instance when a start input or a publication names its Message's channel or, under the cibseven profiles, its literal name (CIB-LIM-0022); a declared Data Output receives the payload, which pinned CIB never writes (CIB-LIM-0013). A name expression and a modeled correlation key on a start are refused (start.messageNameExpression, message.correlation), and under the cibseven profiles so are two root Message starts of one name (message.duplicateName).",
     cibEvidence: notSelected,
   },
   {
@@ -85,7 +85,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Start Events",
     element: "Timer Start Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One top-level PT1S start from one resolved occurrence; no recurrence or calendar form.",
+    restriction: "A root Timer Start fires each due occurrence of a literal duration without years or months, a literal date, an undated ISO cycle or a literal Cron expression once, counted from its deployment's logical deploy time and only while that deployment is current (CIB-INT-0029). Any other form, an expression included, is refused under its kind's code (timer.duration, timer.date, timer.cycle, timer.cron); CIB skips missed cycle occurrences (CIB-DEV-0008).",
     cibEvidence: notSelected,
   },
   {
@@ -109,7 +109,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "End Events",
     element: "None End Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Ordinary completion only inside the bounded registered Process and scope shapes. The nested scope-data profile also admits several incoming flows at the None End of its Process root body when that body routes through Exclusive Gateways and never forks: each arriving token ends there on its own, never waiting for another flow; Ends inside Sub-Process bodies or the called Process keep one incoming flow. Under that profile the root body and Sub-Process bodies may also hold several None Ends reached from Parallel branches; each ends its own branch, and the scope completes only once no branch is live.",
+    restriction: "A None End consumes only its own token, however many incoming flows reach it; its scope completes once it owns no token, wait, begun occurrence or child scope, and the root's completion completes the instance. Several None Ends and unjoined branches ending at their own End are ordinary.",
     cibEvidence: exactCib("user-task-assignment-form-metadata"),
   },
   {
@@ -117,7 +117,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "End Events",
     element: "Error End Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One exact-code throw inside a directly enclosed Sub-Process with one exact parent handler.",
+    restriction: "An Error End raises its code from its scope occurrence to the nearest catcher outward through enclosing Sub-Processes and Calls, at each level an Event Sub-Process before a boundary and an exact code before a catch-all (CIB-INT-0010). Uncaught, it fails the instance under the standards reading and ends only its own path under the cibseven profiles (CIB-INT-0013). An Error End without a code and an Error message given by an expression are refused (reader.throwWithoutCode, throw.error.message).",
     cibEvidence: exactCib("subprocess-error-propagation-trigger-first"),
   },
   {
@@ -125,7 +125,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "End Events",
     element: "Terminate End Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One nested Terminate End cancels only its containing Sub-Process occurrence before parent continuation.",
+    restriction: "A Terminate End removes every other live owner in its scope occurrence, which then completes normally: at the root the instance completes, and inside a Sub-Process or at a called Process's level the parent or Call continues once, the reading the cibseven profiles select (CIB-INT-0007). Under the standards reading such a Terminate End is refused (profile.abnormalScopeEnd.withoutOutflow).",
     cibEvidence: notSelected,
   },
   {
@@ -173,7 +173,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Occurrence-bound wait and completion; string/null normally, with one Boolean and one literal group/form profile. Under the nested scope-data profile, a User Task without data, boundary or Multi-Instance variants may merge several incoming flows in the Process root of a re-entry graph, each arriving token starting a fresh occurrence. With one incoming flow, it may instead leave on two or more unconditioned flows outside every fork region, its completion taking all of them.",
+    restriction: "Each arriving token opens one User Task wait addressed by its occurrence, publishing its literal assignee, candidate users and groups, form key, exact UTC due and follow-up instants, priority and string, long, boolean or date form fields; an expression-valued or other field is refused (work.user.assignee, work.user.candidateUsers, work.user.candidateGroupExpression, work.user.formKey, work.user.dueDate, work.user.followUpDate, work.user.priority, work.user.formField). Its completion writes its OutputSet under the standards reading and installs the submitted variables under the cibseven profiles (CIB-EXT-0005), restricted to declared locals under the cibseven-2.2.0-scope-chain profile (CIB-EXT-0020).",
     cibEvidence: exactCib("user-task-assignment-form-metadata"),
   },
   {
@@ -181,7 +181,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "User Task with a direct Data Input",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One required scalar DataInput in one InputSet, filled by one direct Data Input Association from one Process Property, with an empty OutputSet; an absent source is unavailable data and explicit null is available.",
+    restriction: "A User Task whose Data Inputs are filled by Data Input Associations from items visible to it, carrying any value of the data semantics' portable domain: an absent source holds the begun task in its Ready state, with no re-evaluation, while a present null is available. An item outside the Scopes enclosing the association is refused (data.itemInaccessible); pinned CIB opens the task without running the associations (CIB-LIM-0013).",
     cibEvidence: notSelected,
   },
   {
@@ -189,7 +189,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "User Task with direct Data Input and Output",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One required String/null input and output per User Task occurrence, using distinct Process Properties or, only within the bounded scalar Call profile, its owning called Process interface. Acyclic serial or paired Exclusive composition admits only supplied or definitely written later inputs. The portable handoff profile instead carries one structured item from a None Start through exactly two serial User Tasks, the second reading the first's output, to a None End through three Process Properties: a String of at most 1,024 UTF-8 bytes, Null, Boolean, an Integer in 0..2^53−1, an exact Decimal with a signed 64-bit coefficient and scale 0..6, or a Map whose fields may nest Lists and Maps, but never a root List, within four container levels, 32 members per container, 256 value nodes and 16,384 canonical bytes. A hosted Start whose successful journey cannot fit the capacity envelope is refused; the browser offers no form editor for these values; Message, effect, Call, Multi-Instance and expression use of them is excluded. Accepted completion atomically writes the declared output and disposes the local input scope.",
+    restriction: "The Data Input and Data Output rows together on one User Task: its inputs are evaluated once against the enclosing context into the occurrence's own scope, its completion's outputs are written outward through the Data Output Associations, and its inputs are disposed with the occurrence. Values are any of the data semantics' portable domain; pinned CIB runs neither association (CIB-LIM-0013).",
     cibEvidence: notSelected,
   },
   {
@@ -197,7 +197,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "User Task with a direct Data Output",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One required scalar DataOutput in one OutputSet with an empty InputSet, filled by the completion under its exact DataOutput id and written by one direct Data Output Association into one Process Property; entry never waits for data, and a completion that omits the output is refused.",
+    restriction: "A User Task whose completion fills its Data Outputs, written by Data Output Associations to items visible to it; entry never waits for outputs. Under submission = outputSet, the standards reading, the completion submits exactly the OutputSet and a missing, repeated or undeclared output is rejected; under the cibseven profiles the submitted values are installed first (CIB-EXT-0005), and pinned CIB runs no Data Output Association (CIB-LIM-0013).",
     cibEvidence: notSelected,
   },
   {
@@ -230,7 +230,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Service Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Exact registered bindings only: payload-free effects, bounded scalar mappings, one generation-1 incident account, or overlay-bound named operations with immutable enclosing String/null inputs and complete local results in serial or single-control mixed task graphs. The portable effect-data profile instead admits a serial chain of Service Tasks without Human Tasks whose handler results carry one structured item per output: a String of at most 1,024 UTF-8 bytes, Null, Boolean, Integer, exact Decimal, or a Map whose fields may nest Lists and Maps, but never a root List, within 16,384 canonical bytes. Inputs receive copies, so a handler changes Process data only through its result. A hosted Start is refused when the reserved result of a task or the successful journey cannot fit the capacity envelope; earlier profiles refuse structured results. The embedded completion profile also admits data-free overlay-bound Service Tasks wherever it admits a User Task in nested and concurrent Sub-Process bodies, never in a called body or beside a Call, at most 32 counted once per merge branch like its task bound; their Activities run concurrently with each other and with human work, and in a Program with scope data they may map exact ${name} inputs and outputs resolved along their own Sub-Process occurrence's chain. Under the nested scope-data profile, such a Service Task without a BPMN Error route may merge several incoming flows in the Process root of a re-entry graph, each arriving token starting a fresh occurrence, or, with one incoming flow, leave on two or more unconditioned flows outside every fork region, its completion taking all of them. No general JUEL or Java delegate compatibility.",
+    restriction: "Each occurrence opens one effect whose operation, bound by its implementation and delegate expression or by a source overlay, and whose arguments are fixed when it opens; its result writes the task's outputs, a business error raises a BPMN Error from it, and a technical failure is unsupported unless the profile selects incidents, as the cibseven profiles do (CIB-EXT-0013). An unbound implementation and a declared name equal to a delegate token are refused (work.service.unboundImplementation, CIB-LIM-0051; work.handlerKeyName, CIB-LIM-0017); no Java delegate runs.",
     cibEvidence: exactCib("service-task-effect-success"),
   },
   {
@@ -238,7 +238,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Send Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Under the nested scope-data profile only: a Send Task performed by a handler the source overlay binds through camunda:delegateExpression, with camunda:asyncBefore and input parameters, wherever that profile admits a mapped Service Task. It executes as that Service Task's effect, whose published arguments carry the send data, such as the recipient and the correlation key, and its handler result must be empty, since no output is admitted on a Send Task. No Message is constructed and no Message Flow, messageRef or operationRef is read; mail, external, class and expression implementations and every other profile are refused. Like that Service Task, it may merge several incoming flows in the Process root of a re-entry graph, or split onto several unconditioned outgoing flows.",
+    restriction: "A Send Task in CIB's configured-service form, a delegate expression with no messageRef, operationRef, output parameter or result variable, runs as a Service Task's effect whose arguments carry the send data and whose result is empty; no Message is constructed and no Message Flow is read (CIB-EXT-0023). Every other Send Task is refused under every profile (work.send).",
     cibEvidence: notSelected,
   },
   {
@@ -246,7 +246,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Receive Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One direct-Message, payload-free, non-instantiating Receive Task; or, under its own profile, one root Receive Task without a Message that only a delivery naming its published wait occurrence resumes; no buffering or correlation.",
+    restriction: "A Receive Task opens one Message wait on its Message's channel that a delivery naming its occurrence completes once; a delivery before the wait opens is rejected, not buffered. Its at most one Data Output requires a payload and receives it, a task without one rejecting a payload that CIB commits (CIB-LIM-0037), and without a messageRef it waits for an occurrence-addressed trigger (CIB-INT-0004). A correlated Receive Task, a Message named by an expression, an instantiating one and several Data Outputs are refused (work.receive.correlation, work.receive.messageExpression, work.receive.instantiate, work.receive.dataOutputs), and under the cibseven profiles an unnamed Message (message.unnamed).",
     cibEvidence: exactCib("message-addressed-receive-task"),
   },
   {
@@ -254,7 +254,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Task with BPMN Lean task definition",
     support: BpmnCapabilitySupport.ProjectExtension,
-    restriction: "One exact project extension binding to the existing Probe effect; not a general BPMN Task execution claim.",
+    restriction: "A bpmn:task carrying the project extension bpmnLean:taskDefinition is an extended Task type, neither an Abstract nor a Service Task: its handler type names a neutral effect operation, and it waits for that external work and completes with its result. CIB ignores the extension and is not its oracle.",
     cibEvidence: notApplicable,
   },
   {
@@ -262,7 +262,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Abstract Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Under the nested scope-data profile only: a plain Task with only an id and a name, one incoming flow and one unconditioned, non-default outgoing flow, on the serial path of the Process root or a Sub-Process body, on a Choice branch or cycle of a re-entry root graph, or on a Parallel branch of the Process root or a Sub-Process body. Several incoming flows are admitted in the Process root of a re-entry graph, where each arriving token passes the Task once on its own, and several unconditioned outgoing flows wherever a Parallel fork of that arity is admitted, where one activation puts a token on each; never both at once. It passes the token on at once and publishes one occurrence that starts and ends in that step, a fresh one on each re-entry. A Parallel branch that reaches its join may hold only such Tasks, and so may a branch that ends at its own None End, whether or not a Sub-Process of the model declares locals; a Call never follows only such Tasks from its body's Start. A model holding one is admitted only when every automatic burst stays within eight steps. No called Processes, merges under a fork, conditioned or default outgoing flows, asynchronous continuations, mappings, listeners, Multi-Instance or boundary Events.",
+    restriction: "An Abstract Task completes on activation: each arriving token begins and ends one occurrence in one micro-step, with no wait and no data change, and leaves on its outgoing flows as any Activity does, a re-entry publishing a fresh occurrence. Mappings and a Multi-Instance loop on it are refused (activity.inputMappings, activity.outputMappings, activity.multiInstanceBody), except camunda:outputParameter mappings under outputContext = activityScope, the cibseven profiles' reading (CIB-EXT-0031).",
     cibEvidence: notSelected,
   },
   {
@@ -294,15 +294,15 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Call Activity",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One in-document called Process, empty data, normal return, no recursion, deployment resolution, or Child Workflow identity. The embedded completion profile also admits empty-data Calls in Process root bodies, repeated serially, concurrent on Parallel branches and nested to depth three, each called body a serial chain of one to three User Tasks or Calls; one closure invokes a definition at most once, two branches never share a Call-bearing definition, and empty-data Calls inside Sub-Processes and cycles are refused.",
+    restriction: "Each Call activation starts its own instance of a carried Process at its None Start, which sees none of the caller's variables, and continues the Call once that instance completes normally. The called element must be a literal naming exactly one carried Process other than the root, bound when the caller is deployed (CIB-INT-0034; work.call.calledElementExpression, work.call.rootProcess, work.call.calledProcessMissing, work.call.ambiguous); a recursive Call, a tenant and a business key are refused (work.call.cycle, CIB-LIM-0034; work.call.tenant; work.call.businessKey).",
     cibEvidence: notSelected,
   },
   {
     id: "callActivityScalarData",
     family: "Activities",
-    element: "Call Activity with scalar data",
+    element: "Call Activity with Data Associations",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One in-document called Process with one String-or-null input and output, isolated interfaces and normal return; no child Properties, repeated or concurrent Calls, recursion or deployment resolution.",
+    restriction: "A Call whose standard Data Inputs and Outputs correspond to the called Process's through exactly one input and one output Data Association, never mixed with variable mappings (work.call.dataCorrespondence), each value of the data semantics' portable domain copied by value. Data Associations to a callee of another deployment are refused (work.call.dataAcrossDeployments, CIB-LIM-0035); no CIB relation is selected for them.",
     cibEvidence: notSelected,
   },
   {
@@ -310,7 +310,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Call Activity with variable mappings",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Under the nested scope-data profile, up to two Calls of one in-document Process of one to three serial User Tasks, each on the caller's root serial path or on the serial path of an embedded Sub-Process body at depth one or two. Each camunda:in copies a named value, read along the Call's own enclosing Sub-Processes and then the Process, into the called instance at invocation, an absent source becoming a present null; called tasks read and write only their own Call's copied names and never reach caller data. At normal return each camunda:out writes a named called value from the Call's position, so a target that an enclosing Sub-Process declares lands in that Sub-Process's local, a never-set source becoming a present null; a second Call of the same Process gets its own called instance and task activations. Expressions, variables=\"all\", local mappings, business keys, version binding, a third Call, nested Calls, called Service Tasks, Gateways or Sub-Processes, boundary Events, Multi-Instance, cancellation and recursion are excluded; without Parallel branches a hosted Start whose copied values cannot fit the capacity envelope is refused. Both Calls may also sit on concurrent Parallel branches inside a Sub-Process body, never as a branch body's first step, in the forking body itself or beside a Service Task, each copying structured values into and out of its own called instance in either completion order. The embedded completion profile also admits mapped Calls in a model with scope-local data: on concurrent Parallel branches of the root body and, never as a body's first step, on the serial path of a Sub-Process body at depth one or two that is not a merge target; each call reads its inputs and writes its outputs through its own caller occurrence, whatever the completion order, with bounded String or null values. There a fork never leads straight into two Calls of one Process, one Process is never called both with and without mappings, and a model with a Call holds no Service Task. Under the nested scope-data profile a root-body cycle may invoke the same Call again: each invocation gets a fresh called instance holding only its own copied inputs, and a completion addressed to an earlier called instance is rejected unchanged.",
+    restriction: "A Call with camunda:in and camunda:out mappings (CIB-EXT-0021): each input is read along the Call's enclosing chain at invocation, an absent source becoming a present null, and the called instance holds exactly the input targets; at normal return each output reads the called root and writes by the nearest-owner rule from the Call's position. variables=\"all\", a business key and an output targeting a Multi-Instance counter are refused (work.call.propagateAll, work.call.businessKey, work.call.multiInstanceCounterOutput, CIB-LIM-0004).",
     cibEvidence: notSelected,
   },
   {
@@ -384,7 +384,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Gateways",
     element: "Exclusive Gateway",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Simple Boolean v1 only: exact two-condition splits and bounded cycle merge, acyclic paired two-condition/default regions with scalar Human Task handoff, or single-control mixed task graphs with ordered conditions, required default, pass-through merges and task-separated cycles. Admitted resumptions close within eight automatic steps; cyclic termination is not guaranteed. The embedded completion profile also admits an identity-only converging merge of one Parallel fork's task branches into an embedded Sub-Process, which passes each arriving token on its own. The nested scope-data profile admits Choices with one or more conditions and a default, tested in declaration order, and pass-through merges in the Process root body only, where a cycle may re-enter an earlier Sub-Process or Call when a User or Service Task outside the called Process separates it, never in a model that also forks. There a Choice may also omit its default when it has two or more conditional flows; when every condition is false, the Start or User Task completion whose closure reached it rolls back, leaving no instance or the task open, and a Choice that a Service or Send Task's result could reach in the same command is refused.",
+    restriction: "A Choice takes the first candidate in declaration order whose condition holds and its default only when none does; with neither, the input whose closure reached it rolls back (CIB-INT-0003). A merge passes each arriving token on alone, and a cycle through it re-enters with fresh activations. Two unconditioned non-default flows or one beside a default, a sole conditioned flow without a default and no outgoing flow are refused (gateway.exclusive.unconditionedFlow, gateway.exclusive.singleConditionWithoutDefault, gateway.exclusive.noOutgoingFlow).",
     cibEvidence: notSelected,
   },
   {
@@ -392,7 +392,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Gateways",
     element: "Parallel Gateway",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Balanced two-branch fork/join in its registered profiles; the subscription profile additionally admits acyclic divergent fork forests within its complete-burst bound. The bounded Transaction profile uses one two-way split into one-or-two-Task branches ending at Cancel and None respectively. The embedded completion profile admits paired forks and joins of two or more branches inside Sub-Process bodies, and in a child body only terminal unjoined forks to separate None Ends, or a fork whose task branches all end at one Exclusive merge into a Sub-Process; those branches may hold data-free Service Tasks whose Activities run concurrently. The nested scope-data profile admits the same paired forks and joins inside Sub-Process bodies and in the Process root body, never into a merge, with structured data on their branches; a model whose root body forks holds no Call in it. There a fork's branches may also end unjoined at their own None Ends, in the root body or a Sub-Process body, and a scope completes only when its last branch has ended; such a branch may reach its End without a User or Service Task whether or not a Sub-Process of the model declares locals.",
+    restriction: "A fork puts one token on every outgoing flow; a join fires once every incoming flow holds a token of its scope occurrence, consuming one per flow and keeping any excess, where CIB counts duplicate arrivals through one flow (CIB-DEV-0001), and unjoined branches may end at their own Ends. Under the standards reading a fork whose branches race on a name or on each other's work is refused (flow.concurrentWrite, flow.concurrentInterference); the cibseven profiles run its branches in declaration order instead (CIB-OP-0016).",
     cibEvidence: exactCib("parallel-fork-join-a-then-b"),
   },
   {
@@ -400,7 +400,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Gateways",
     element: "Inclusive Gateway",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Two Simple Boolean conditions plus default, direct User Task branches, and the paired selected-subset join. The nested scope-data profile admits paired Inclusive regions of two or more branches in the Process root body only, each output with one Simple Boolean v1 condition or none, an absent condition always taken, and a default only on a split whose outputs are all conditioned; every true branch runs, the default only when none is, and the join waits for every selected branch. Branches hold the root body content a Parallel fork admits, nested Parallel regions included, and each reaches a User Task, Service Task or Sub-Process first. An Inclusive Gateway in a Sub-Process or called body, on a branch of another Inclusive region or beside one on a sibling branch of a fork, beside a Choice, a cycle or a Call Activity, or in a pass-through, unpaired or unstructured region is refused.",
+    restriction: "A split takes every candidate whose condition holds or is absent (CIB-INT-0005) and its default only when none does; with neither, the input rolls back (CIB-INT-0012). A join fires once no position of its scope occurrence can still reach an empty incoming flow, its reach following a host's Boundary Events under the standards reading and not under the cibseven profiles (CIB-INT-0020); a join that becomes ready without an arrival fires, where CIB stalls (CIB-DEV-0002). One without an outgoing flow is refused (gateway.inclusive.noOutgoingFlow).",
     cibEvidence: notSelected,
   },
   {
@@ -408,7 +408,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Gateways",
     element: "Event-Based Gateway",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One non-instantiating race between an operation-addressed Message catch and an exact PT1S Timer catch.",
+    restriction: "A deferred choice among its Message, Timer, Signal and Conditional catch arms: the first trigger admitted in input order completes its arm and disarms the others, and Conditional arms true at one evaluation need the input's ranking. A Receive Task or other non-catch arm, a Link arm and an instantiating or Parallel Event-Based Gateway are refused (gateway.eventBased.receiveArm, gateway.eventBased.linkArm, gateway.eventBased.instantiate, CIB-LIM-0008).",
     cibEvidence: notSelected,
   },
   {
@@ -416,7 +416,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Intermediate Catch Events",
     element: "Message Intermediate Catch Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One operation-addressed, payload-free subscription; no Message Flow, key, buffering, or global correlation.",
+    restriction: "Each arriving token opens one Message wait on the channel of the catch's messageRef; a delivery naming that occurrence on that channel resumes it once, and one before the wait opens is rejected, not buffered. Under the cibseven profiles the wait is addressed by its Message's name (CIB-LIM-0022) and API criteria (CIB-EXT-0025). A catch without a messageRef, and there an unnamed Message or two subscriptions of one name in one CIB event scope, are refused (message.unspecified, message.unnamed, message.duplicateName).",
     cibEvidence: notSelected,
   },
   {
@@ -424,15 +424,15 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Intermediate Catch Events",
     element: "Message Intermediate Catch Event with a direct Data Output",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One operation-addressed subscription with one required scalar DataOutput in one OutputSet and one direct Data Output Association into a Process Property; String and explicit null payloads are written, while an absent payload is refused and leaves the subscription live. The portable Message-payload profile instead admits one structured item: a String of at most 1,024 UTF-8 bytes, Null, Boolean, Integer, exact Decimal, or a Map whose fields may nest Lists and Maps, but never a root List, within 16,384 canonical bytes, and writes a copy of it to the Property. Process Start and User Task completion carry no values there, a hosted Start is refused when the reserved payload delivery cannot fit the capacity envelope, and the browser offers no delivery form for these values; earlier profiles refuse structured payloads.",
+    restriction: "A Message catch whose Data Output receives the delivered payload, any value of the data semantics' portable domain, written into scope by its Data Output Association in the same step; a payload-free delivery to it is rejected and leaves the wait open, as is a payload delivered to a catch without one. Pinned CIB runs no catch Data Output Association (CIB-LIM-0013).",
     cibEvidence: notSelected,
   },
   {
     id: "messageKeyCorrelation",
     family: "Message correlation",
-    element: "Definition-scoped Message key correlation",
+    element: "Message key correlation",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One complete definition-scoped address and one non-empty String key derived from the incoming payload and a Process Property; a publication advances exactly one matching Process instance and preserves every instance on zero or ambiguous matches.",
+    restriction: "Under messageCorrelation = modeledKey, the standards reading, a correlated catch's key is one non-empty String evaluated when a publication is matched; a publication that reaches exactly one waiting instance is delivered, and zero or several reject it and change no instance, while a key outside that domain makes it unsupported. Under the cibseven profiles a modeled key is refused (message.correlation.modeled, CIB-LIM-0002), and under every profile one on a boundary, a start or a Receive Task (message.correlation, work.receive.correlation).",
     cibEvidence: notSelected,
   },
   {
@@ -464,7 +464,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Intermediate Throw Events",
     element: "None Intermediate Throw Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Under the nested scope-data profile only: an Intermediate Throw Event without an EventDefinition, with only an id and a name, wherever that profile admits a pass-through Abstract Task, with the same incoming and outgoing flows. It passes the token on at once and publishes one occurrence that starts and ends in that step, a fresh one on each re-entry; with several outgoing flows that one activation puts a token on each. No Event that both merges and splits, asynchronous continuations, listeners, called Processes, Multi-Instance bodies or throw triggers.",
+    restriction: "An Intermediate Throw Event without an EventDefinition passes each arriving token on at once: its occurrence begins and ends in that micro-step and one token reaches each outgoing flow, a re-entry publishing a fresh occurrence.",
     cibEvidence: notSelected,
   },
   {
@@ -496,7 +496,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Intermediate Throw Events",
     element: "Link Intermediate Throw and Catch Event pair",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Under the nested scope-data profile only: one throw and one catch of each Link name in one scope of the executed Process, the throw with one incoming flow and the catch with one unconditioned outgoing flow. The pair behaves exactly as the Sequence Flow it replaces and publishes no occurrence or wait. Several throws of one name are admitted only where their catch leads to a merging User, Service or Send Task in the Process root. No other several throws of one name, chains, source or target references, asynchronous continuations, listeners, called Processes or Multi-Instance bodies.",
+    restriction: "A throwing Link continues at the one catching Link of its name in the same Process level or Sub-Process, as the Sequence Flow it replaces, and neither publishes an occurrence; several throws may target one catch, and a catch a Sequence Flow also reaches passes that token on (CIB-AGR-0018). A throw without exactly one catch among its siblings, two catches of one name anywhere in the program and a Link arm on an Event-Based Gateway are refused (link.catch, link.duplicateCatch, gateway.eventBased.linkArm).",
     cibEvidence: notSelected,
   },
   {
@@ -512,7 +512,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Message Boundary Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "A Message boundary on any Activity or Sub-Process host, interrupting or not, addressed by its Message's name; the rows below state the User Task's outcomes. An unnamed Message and two subscriptions of one name in one CIB event scope are refused (message.unnamed, message.duplicateName).",
+    restriction: "A Message boundary on any Activity or Sub-Process host, interrupting or not, addressed as the Message Intermediate Catch Event is; the rows below state the User Task's outcomes. A boundary without a messageRef is refused (message.unspecified), and under the cibseven profiles an unnamed Message and two subscriptions of one name in one CIB event scope (message.unnamed, message.duplicateName, CIB-LIM-0022).",
     cibEvidence: notSelected,
   },
   {
@@ -552,7 +552,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Interrupting Timer Boundary Event on User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One exact PT1S deadline that withdraws its attached User Task.",
+    restriction: "An interrupting duration or date Timer on a User Task, in any such form the kernel admits: it arms with the task, and firing cancels the task and follows only the boundary flow. Completing the task first withdraws the Timer, and the losing input is rejected with the state unchanged.",
     cibEvidence: notSelected,
   },
   {
@@ -560,7 +560,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Interrupting Message Boundary Event on User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One operation-addressed, payload-free withdrawal Message withdraws the active User Task; exact task completion withdraws the subscription, and either stale loser is refused.",
+    restriction: "An interrupting Message boundary on a User Task, addressed as the Message Boundary Event row states: a delivery cancels the task and follows only the boundary flow, the task's completion first withdraws the subscription, and either losing input is rejected with the state unchanged.",
     cibEvidence: notSelected,
   },
   {
@@ -584,7 +584,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Non-interrupting Timer Boundary Event on User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One exact PT1S firing that preserves the host and spawns one handler branch.",
+    restriction: "A non-interrupting duration or date Timer on a User Task, in any such form the kernel admits: it fires at most once per task activation, starting a handler path beside the running task, and the task's completion before it withdraws it; the enclosing scope completes only when both paths are done.",
     cibEvidence: notSelected,
   },
   {
@@ -592,7 +592,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Non-interrupting Message Boundary Event on User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One payload-free operation-addressed boundary preserves its User Task and subscription across repeated deliveries, with overlapping handler occurrences; host completion withdraws future triggers, while containing-scope cancellation removes owned work.",
+    restriction: "A non-interrupting Message boundary on a User Task keeps its subscription open with the same identity, each delivery starting a further handler path beside the task and the earlier ones; the task's completion withdraws future deliveries without cancelling started handlers, and cancelling an enclosing region removes every wait inside it.",
     cibEvidence: notSelected,
   },
   {
@@ -600,7 +600,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Recurring non-interrupting Timer Boundary Event on User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Exact R/PT1S cycle with fresh Timer identity and one logical-second deadline increment per firing; one Timer and one boundary per definition, passive handlers, and completion-first ordering within one host activation batch.",
+    restriction: "A non-interrupting ISO or Cron cycle Timer on a User Task, first due one period after arming (CIB-INT-0008) and each later time one period, or the next Cron match, after the deadline it fired at; a finite cycle fires its count. Each firing starts a further handler path, and the task's completion withdraws future firings without cancelling started handlers; CIB skips missed occurrences (CIB-DEV-0008).",
     cibEvidence: notSelected,
   },
   {
@@ -608,7 +608,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Recurring non-interrupting Timer Boundary Event on Sub-Process",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Exact R/PT1S cycle on the sole depth-one embedded Sub-Process; repeated handlers remain in the parent, body completion withdraws future triggers, and inner Terminate preserves outside work.",
+    restriction: "A non-interrupting cycle Timer on an embedded Sub-Process, armed on entry and repeating as the User Task's does; its handler paths run in the parent scope, and the Sub-Process's quiescent completion withdraws future firings without cancelling started handlers.",
     cibEvidence: notSelected,
   },
   {
@@ -616,7 +616,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Non-interrupting Timer Boundary Event on Sub-Process",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One exact PT1S firing on the sole depth-one embedded Sub-Process; its handler survives ordinary body completion, and containing-region cancellation follows exact ownership.",
+    restriction: "A non-interrupting duration or date Timer on an embedded Sub-Process, armed on entry before its first token moves: it fires at most once per activation, starting a handler path in the parent beside the running body, and the body's quiescent completion before it withdraws it.",
     cibEvidence: notSelected,
   },
   {
@@ -624,7 +624,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Interrupting Timer Boundary Event on Sub-Process",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One exact PT1S deadline on a depth-one Sub-Process; the subscription profile also permits bounded passive fork forests and independent outside work.",
+    restriction: "An interrupting duration or date Timer on an embedded Sub-Process, armed on entry before its first token moves: firing terminates every non-final owner inside the Sub-Process, waiting tasks included, and follows only the boundary flow, and quiescent completion first withdraws it.",
     cibEvidence: notSelected,
   },
   {
@@ -632,7 +632,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Error Boundary Event on Service Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "The legacy mapped Service Task binding or single-control mixed task graphs with at most one interrupting exact-code Error boundary per Service Task. Match only the active occurrence's attached route, require complete String/null local results on success and Error, and clean its exact owner atomically. No catch-all, ancestor propagation or technical-failure conversion.",
+    restriction: "An Error boundary on a Service Task catches a business error its effect result reports, the task's own boundaries searched first and an exact code before a catch-all (CIB-INT-0010); otherwise the search goes on outward. The error path writes the task's outputs only under errorPathOutputs = mapped, the cibseven profiles' reading (CIB-EXT-0016), and a technical failure never enters an Error route. Two boundaries of one host with one code are refused (boundary.error.duplicateCode).",
     cibEvidence: exactCib("mapped-boundary-error-service-task-caught"),
   },
   {
@@ -640,7 +640,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Error Boundary Event on Sub-Process",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One exact-code handler attached to the directly enclosing Sub-Process; no ancestor or catch-all search.",
+    restriction: "An Error boundary on an embedded Sub-Process catches an Error raised anywhere inside it that no nearer catcher takes, the Sub-Process's own Event Sub-Processes before the boundary and an exact code before a catch-all (CIB-INT-0010); it cancels everything inside and follows the boundary flow once. Under errorPathOutputs = mapped, the cibseven profiles' reading, the interrupted Sub-Process first writes its output mappings (CIB-EXT-0016).",
     cibEvidence: exactCib("subprocess-error-propagation-trigger-first"),
   },
 ] satisfies ReadonlyArray<MvpBpmnCapability>);

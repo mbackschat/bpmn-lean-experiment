@@ -56,7 +56,7 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   assert.match(html, /Process Execution Conformance target/u);
   assert.match(html, /CIB Seven 2\.2\.0/u);
   assert.match(html, /Not a conformance claim/u);
-  // Each row renders its catalog text verbatim; what that text must disclose is guarded beside the catalog in
+  // Each row renders its catalog text verbatim; the facts that text names are checked beside the catalog in
   // `scripts/capability-catalog-disclosures.test.ts`, so wording changes never need a second copy here.
   for (const capability of mvpCapabilityCatalog.capabilities) {
     const rowStart = html.indexOf(`data-capability-id="${capability.id}"`);
