@@ -17,6 +17,22 @@ test("allocates distinct released loopback ports for one Playwright run", async 
   await Promise.all([assertBindable(ports.apiPort), assertBindable(ports.webPort)]);
 });
 
+// The ephemeral Temporal server a showcase host starts takes its ports by binding port 0 (sdk-core
+// `ephemeral_server::get_free_port`), so a run-local port from that range could be taken between its release here and
+// the host's bind (EADDRINUSE, UI quality 43472923853).
+test("allocates run-local ports below every operating system's ephemeral range", async () => {
+  delete process.env.BPMN_PLAYWRIGHT_API_PORT;
+  delete process.env.BPMN_PLAYWRIGHT_WEB_PORT;
+  for (let round = 0; round < 20; round += 1) {
+    const ports = await allocatePlaywrightLoopbackPorts();
+    assert.ok(ports.apiPort >= 20_000 && ports.apiPort < 32_768, String(ports.apiPort));
+    assert.ok(ports.webPort >= 20_000 && ports.webPort < 32_768, String(ports.webPort));
+    assert.notEqual(ports.apiPort, ports.webPort);
+    delete process.env.BPMN_PLAYWRIGHT_API_PORT;
+    delete process.env.BPMN_PLAYWRIGHT_WEB_PORT;
+  }
+});
+
 test("every browser project declares either run-local servers or one external origin", async () => {
   const showcaseConfigs = await discoverPlaywrightConfigs(showcaseRoot);
   assert.ok(showcaseConfigs.length > 0);
