@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_Booking" targetNamespace="urn:bpmn-lean:journeys:booking-recovery">
+  <error id="Error_NoCar" name="No car available" errorCode="NO_CAR" />
+  <error id="Error_CardDeclined" name="Card declined" errorCode="CARD_DECLINED" />
+
+  <process id="Process_Booking" name="Book a trip and recover from a failed reservation" isExecutable="true">
+    <startEvent id="BookingRequested" name="Booking requested" />
+    <transaction id="BookTrip" name="Book the trip">
+      <startEvent id="TripOpened" />
+      <parallelGateway id="Fork" />
+      <serviceTask id="ReserveFlight" name="Reserve the flight" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                   camunda:delegateExpression="${reserveFlight}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="bookingId">${bookingId}</camunda:inputParameter>
+            <camunda:inputParameter name="route">${route}</camunda:inputParameter>
+            <camunda:outputParameter name="flightRef">${flightReference}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <boundaryEvent id="FlightCompensable" attachedToRef="ReserveFlight">
+        <compensateEventDefinition id="FlightCompensable_Compensation" />
+      </boundaryEvent>
+      <serviceTask id="CancelFlight" name="Cancel the flight" isForCompensation="true" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                   camunda:delegateExpression="${cancelFlight}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="reference">${flightRef}</camunda:inputParameter>
+            <camunda:inputParameter name="bookingId">${bookingId}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <endEvent id="FlightBooked" />
+
+      <subProcess id="ReserveHotel" name="Reserve the hotel">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="roomRef">unassigned</camunda:inputParameter>
+            <camunda:inputParameter name="roomType">${roomPreference}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+        <startEvent id="HotelOpened" />
+        <serviceTask id="ReserveRoom" name="Reserve the room" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                     camunda:delegateExpression="${reserveRoom}" camunda:asyncBefore="true">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="bookingId">${bookingId}</camunda:inputParameter>
+              <camunda:inputParameter name="roomType">${roomType}</camunda:inputParameter>
+              <camunda:inputParameter name="nights">${nights}</camunda:inputParameter>
+              <camunda:outputParameter name="roomRef">${roomReference}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </serviceTask>
+        <serviceTask id="ConfirmRoom" name="Confirm the room" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                     camunda:delegateExpression="${confirmRoom}" camunda:asyncBefore="true">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="reference">${roomRef}</camunda:inputParameter>
+              <camunda:outputParameter name="roomRef">${confirmedReference}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </serviceTask>
+        <endEvent id="HotelReserved" />
+        <subProcess id="RoomRelease" name="Release the room" triggeredByEvent="true">
+          <startEvent id="RoomReleaseRequested" isInterrupting="false">
+            <compensateEventDefinition id="RoomReleaseRequested_Compensation" />
+          </startEvent>
+          <serviceTask id="ReleaseRoom" name="Release the room" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                       camunda:delegateExpression="${releaseRoom}" camunda:asyncBefore="true">
+            <extensionElements>
+              <camunda:inputOutput>
+                <camunda:inputParameter name="reference">${roomRef}</camunda:inputParameter>
+                <camunda:inputParameter name="roomType">${roomType}</camunda:inputParameter>
+              </camunda:inputOutput>
+            </extensionElements>
+          </serviceTask>
+          <endEvent id="RoomReleased" />
+          <sequenceFlow id="Flow_ReleaseRequested_Release" sourceRef="RoomReleaseRequested" targetRef="ReleaseRoom" />
+          <sequenceFlow id="Flow_Release_Released" sourceRef="ReleaseRoom" targetRef="RoomReleased" />
+        </subProcess>
+        <sequenceFlow id="Flow_HotelOpened_Reserve" sourceRef="HotelOpened" targetRef="ReserveRoom" />
+        <sequenceFlow id="Flow_Reserve_Confirm" sourceRef="ReserveRoom" targetRef="ConfirmRoom" />
+        <sequenceFlow id="Flow_Confirm_Reserved" sourceRef="ConfirmRoom" targetRef="HotelReserved" />
+      </subProcess>
+
+      <callActivity id="ReserveCar" name="Reserve the car" calledElement="Process_CarRental">
+        <extensionElements>
+          <camunda:in source="bookingId" target="bookingId" />
+          <camunda:in source="traveler" target="traveler" />
+          <camunda:out source="carRef" target="carRef" />
+        </extensionElements>
+      </callActivity>
+      <boundaryEvent id="CarCompensable" attachedToRef="ReserveCar">
+        <compensateEventDefinition id="CarCompensable_Compensation" />
+      </boundaryEvent>
+      <userTask id="CancelCar" name="Cancel the car at the rental desk" isForCompensation="true" camunda:candidateGroups="agents">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="reference">${carRef}</camunda:inputParameter>
+            <camunda:inputParameter name="guest">${traveler.name}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <boundaryEvent id="NoCarAvailable" name="No car available" attachedToRef="ReserveCar" cancelActivity="true">
+        <errorEventDefinition id="NoCarAvailable_Error" errorRef="Error_NoCar" />
+      </boundaryEvent>
+      <userTask id="OfferOtherCar" name="Offer another car class" camunda:candidateGroups="agents" />
+      <endEvent id="CarBooked" />
+      <endEvent id="CarSkipped" />
+      <endEvent id="HotelBooked" />
+
+      <userTask id="DecideBooking" name="Decide whether to keep the booking" camunda:candidateGroups="agents">
+        <extensionElements>
+          <camunda:formData>
+            <camunda:formField id="decision" type="string" />
+          </camunda:formData>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="decision">keep</camunda:inputParameter>
+            <camunda:outputParameter name="bookingDecision">${decision}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <exclusiveGateway id="KeepOrCancel" gatewayDirection="Diverging" default="Flow_Decision_Keep" />
+      <endEvent id="BookingKept" />
+      <endEvent id="BookingWithdrawn">
+        <cancelEventDefinition id="BookingWithdrawn_Cancel" />
+      </endEvent>
+
+      <sequenceFlow id="Flow_Opened_Fork" sourceRef="TripOpened" targetRef="Fork" />
+      <sequenceFlow id="Flow_Fork_Flight" sourceRef="Fork" targetRef="ReserveFlight" />
+      <sequenceFlow id="Flow_Fork_Hotel" sourceRef="Fork" targetRef="ReserveHotel" />
+      <sequenceFlow id="Flow_Fork_Car" sourceRef="Fork" targetRef="ReserveCar" />
+      <sequenceFlow id="Flow_Fork_Decide" sourceRef="Fork" targetRef="DecideBooking" />
+      <sequenceFlow id="Flow_Flight_Booked" sourceRef="ReserveFlight" targetRef="FlightBooked" />
+      <sequenceFlow id="Flow_Hotel_Done" sourceRef="ReserveHotel" targetRef="HotelBooked" />
+      <sequenceFlow id="Flow_Car_Booked" sourceRef="ReserveCar" targetRef="CarBooked" />
+      <sequenceFlow id="Flow_NoCar_Offer" sourceRef="NoCarAvailable" targetRef="OfferOtherCar" />
+      <sequenceFlow id="Flow_Offer_Skipped" sourceRef="OfferOtherCar" targetRef="CarSkipped" />
+      <sequenceFlow id="Flow_Decide_Route" sourceRef="DecideBooking" targetRef="KeepOrCancel" />
+      <sequenceFlow id="Flow_Decision_Withdraw" sourceRef="KeepOrCancel" targetRef="BookingWithdrawn">
+        <conditionExpression xsi:type="tFormalExpression">${bookingDecision == 'cancel'}</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_Decision_Keep" sourceRef="KeepOrCancel" targetRef="BookingKept" />
+      <association id="Association_Flight" associationDirection="One" sourceRef="FlightCompensable" targetRef="CancelFlight" />
+      <association id="Association_Car" associationDirection="One" sourceRef="CarCompensable" targetRef="CancelCar" />
+    </transaction>
+    <boundaryEvent id="TripCancelled" name="Trip cancelled" attachedToRef="BookTrip">
+      <cancelEventDefinition id="TripCancelled_Cancel" />
+    </boundaryEvent>
+    <boundaryEvent id="PaymentDeclined" name="Card declined" attachedToRef="BookTrip">
+      <errorEventDefinition id="PaymentDeclined_Error" errorRef="Error_CardDeclined" />
+    </boundaryEvent>
+    <userTask id="SendItinerary" name="Send the itinerary" camunda:candidateGroups="agents" />
+    <userTask id="NotifyTraveler" name="Tell the traveler the booking is cancelled" camunda:candidateGroups="agents" />
+    <userTask id="HandlePaymentFailure" name="Handle the payment failure" camunda:candidateGroups="finance" />
+    <endEvent id="TripBooked" name="Trip booked" />
+    <endEvent id="BookingCancelled" name="Booking cancelled" />
+    <endEvent id="BookingFailed" name="Booking failed" />
+    <sequenceFlow id="Flow_Requested_Trip" sourceRef="BookingRequested" targetRef="BookTrip" />
+    <sequenceFlow id="Flow_Trip_Itinerary" sourceRef="BookTrip" targetRef="SendItinerary" />
+    <sequenceFlow id="Flow_Itinerary_Booked" sourceRef="SendItinerary" targetRef="TripBooked" />
+    <sequenceFlow id="Flow_Cancelled_Notify" sourceRef="TripCancelled" targetRef="NotifyTraveler" />
+    <sequenceFlow id="Flow_Notify_Cancelled" sourceRef="NotifyTraveler" targetRef="BookingCancelled" />
+    <sequenceFlow id="Flow_Declined_Handle" sourceRef="PaymentDeclined" targetRef="HandlePaymentFailure" />
+    <sequenceFlow id="Flow_Handle_Failed" sourceRef="HandlePaymentFailure" targetRef="BookingFailed" />
+  </process>
+
+  <process id="Process_CarRental" name="Reserve a rental car" isExecutable="true">
+    <startEvent id="CarRequested" name="Car requested" />
+    <userTask id="ConfirmCar" name="Confirm the car with the rental desk" camunda:candidateGroups="rental-desk">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="carStatus" type="string" />
+          <camunda:formField id="carRef" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="CarOutcome" name="Car confirmed?" gatewayDirection="Diverging" default="Flow_Outcome_Confirmed" />
+    <endEvent id="CarConfirmed" name="Car confirmed" />
+    <endEvent id="CarUnavailable" name="Raise no car available">
+      <errorEventDefinition id="CarUnavailable_Error" errorRef="Error_NoCar" />
+    </endEvent>
+    <endEvent id="CardRefused" name="Raise card declined">
+      <errorEventDefinition id="CardRefused_Error" errorRef="Error_CardDeclined" />
+    </endEvent>
+    <sequenceFlow id="Flow_Requested_Confirm" sourceRef="CarRequested" targetRef="ConfirmCar" />
+    <sequenceFlow id="Flow_Confirm_Outcome" sourceRef="ConfirmCar" targetRef="CarOutcome" />
+    <sequenceFlow id="Flow_Outcome_Unavailable" sourceRef="CarOutcome" targetRef="CarUnavailable">
+      <conditionExpression xsi:type="tFormalExpression">${carStatus == 'unavailable'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Outcome_Declined" sourceRef="CarOutcome" targetRef="CardRefused">
+      <conditionExpression xsi:type="tFormalExpression">${carStatus == 'declined'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Outcome_Confirmed" sourceRef="CarOutcome" targetRef="CarConfirmed" />
+  </process>
+</definitions>

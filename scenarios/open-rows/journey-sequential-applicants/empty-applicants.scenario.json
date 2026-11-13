@@ -1,0 +1,194 @@
+{
+  "kind": "scenario",
+  "id": "journey-sequential-applicants-empty-applicants",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "journey-sequential-applicants-process",
+    "relativePath": "scenarios/open-rows/journey-sequential-applicants/sequential-screening.bpmn",
+    "sha256": "4759a126ddd587df0b030efdf9d211963d6c0f69b02533ec264d6f4e1de44cd0",
+    "sourceOverlay": {
+      "id": "sequential-screening-handlers",
+      "sha256": "54ca98c5d5c0c54b9e30f61f9f7bb232ce71d8aa1ab83f897e63afbf6e36d692"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Case_1",
+      "variables": [
+        {
+          "name": "applicants",
+          "value": {
+            "kind": "list",
+            "value": []
+          }
+        },
+        {
+          "name": "caseId",
+          "value": {
+            "kind": "string",
+            "value": "CASE-2026-0412"
+          }
+        },
+        {
+          "name": "declines",
+          "value": {
+            "kind": "integer",
+            "value": 0
+          }
+        },
+        {
+          "name": "lastBand",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "lastNote",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "lastScreened",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "lastVerdict",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "scoreSum",
+          "value": {
+            "kind": "integer",
+            "value": 0
+          }
+        },
+        {
+          "name": "screened",
+          "value": {
+            "kind": "integer",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s02-fire-window-never-armed",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "ScreeningWindow",
+        "activation": 1
+      },
+      "logicalTimeMs": 259200000
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-interview-of-no-applicant",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "InterviewApplicant",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "interviewNote",
+            "value": {
+              "kind": "string",
+              "value": "nobody"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s04-credit-of-no-applicant",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "CheckCredit",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "band",
+                  "value": {
+                    "kind": "string",
+                    "value": "prime"
+                  }
+                },
+                {
+                  "name": "score",
+                  "value": {
+                    "kind": "integer",
+                    "value": 700
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-decide-case",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "DecideCase",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "refer to a manager"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

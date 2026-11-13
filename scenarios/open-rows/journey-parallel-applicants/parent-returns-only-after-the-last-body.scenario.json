@@ -1,0 +1,597 @@
+{
+  "kind": "scenario",
+  "id": "journey-parallel-applicants-parent-returns-only-after-the-last-body",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "journey-parallel-applicants-process",
+    "relativePath": "scenarios/open-rows/journey-parallel-applicants/parallel-screening.bpmn",
+    "sha256": "b2542bce7655ebccfd37c752dfbc0e4fdd4e94972695470b591e82c9126eb5a1",
+    "sourceOverlay": {
+      "id": "parallel-screening-handlers",
+      "sha256": "be74d7a8f43e0cc02b1c24a2fbd95bbaf50106a277ee063e53444d5abba45f4f"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Case_1",
+      "variables": [
+        {
+          "name": "applicants",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "map",
+                "value": [
+                  {
+                    "name": "incomeCents",
+                    "value": {
+                      "kind": "integer",
+                      "value": 420000
+                    }
+                  },
+                  {
+                    "name": "name",
+                    "value": {
+                      "kind": "string",
+                      "value": "Mara Berger"
+                    }
+                  }
+                ]
+              },
+              {
+                "kind": "map",
+                "value": [
+                  {
+                    "name": "incomeCents",
+                    "value": {
+                      "kind": "integer",
+                      "value": 310000
+                    }
+                  },
+                  {
+                    "name": "name",
+                    "value": {
+                      "kind": "string",
+                      "value": "Tomas Okafor"
+                    }
+                  }
+                ]
+              },
+              {
+                "kind": "map",
+                "value": [
+                  {
+                    "name": "incomeCents",
+                    "value": {
+                      "kind": "integer",
+                      "value": 265000
+                    }
+                  },
+                  {
+                    "name": "name",
+                    "value": {
+                      "kind": "string",
+                      "value": "Ines Vidal"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "caseId",
+          "value": {
+            "kind": "string",
+            "value": "CASE-2026-0733"
+          }
+        },
+        {
+          "name": "declines",
+          "value": {
+            "kind": "integer",
+            "value": 0
+          }
+        },
+        {
+          "name": "lastBand",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "lastNote",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "lastScreened",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "lastVerdict",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "scoreSum",
+          "value": {
+            "kind": "integer",
+            "value": 0
+          }
+        },
+        {
+          "name": "screened",
+          "value": {
+            "kind": "integer",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s02-credit-before-any-interview",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "CheckCredit",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "band",
+                  "value": {
+                    "kind": "string",
+                    "value": "prime"
+                  }
+                },
+                {
+                  "name": "score",
+                  "value": {
+                    "kind": "integer",
+                    "value": 710
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-interview-4-beyond-the-collection",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "InterviewApplicant",
+        "activation": 4
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "interviewNote",
+            "value": {
+              "kind": "string",
+              "value": "nobody"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-interview-2",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "InterviewApplicant",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "interviewNote",
+            "value": {
+              "kind": "string",
+              "value": "Okafor interview"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-interview-2-again",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "InterviewApplicant",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "interviewNote",
+            "value": {
+              "kind": "string",
+              "value": "changed afterwards"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "hold"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s06-credit-check-2-before-it-begins",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "CheckCredit",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "band",
+                  "value": {
+                    "kind": "string",
+                    "value": "decline"
+                  }
+                },
+                {
+                  "name": "score",
+                  "value": {
+                    "kind": "integer",
+                    "value": 300
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s07-credit-of-body-2-check-1",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "CheckCredit",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "band",
+                  "value": {
+                    "kind": "string",
+                    "value": "standard"
+                  }
+                },
+                {
+                  "name": "score",
+                  "value": {
+                    "kind": "integer",
+                    "value": 640
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-decide-case-after-one-body",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "DecideCase",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s09-interview-1",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "InterviewApplicant",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "interviewNote",
+            "value": {
+              "kind": "string",
+              "value": "Berger interview"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s10-credit-of-body-1-check-2",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "CheckCredit",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "band",
+                  "value": {
+                    "kind": "string",
+                    "value": "prime"
+                  }
+                },
+                {
+                  "name": "score",
+                  "value": {
+                    "kind": "integer",
+                    "value": 710
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s11-credit-check-2-again",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "CheckCredit",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "band",
+                  "value": {
+                    "kind": "string",
+                    "value": "decline"
+                  }
+                },
+                {
+                  "name": "score",
+                  "value": {
+                    "kind": "integer",
+                    "value": 300
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s12-decide-case-after-two-bodies",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "DecideCase",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s13-interview-3",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "InterviewApplicant",
+        "activation": 3
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "interviewNote",
+            "value": {
+              "kind": "string",
+              "value": "Vidal interview"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s14-decide-case-while-the-last-credit-is-open",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "DecideCase",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s15-credit-of-body-3-check-3",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "CheckCredit",
+        "activation": 3
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "band",
+                  "value": {
+                    "kind": "string",
+                    "value": "standard"
+                  }
+                },
+                {
+                  "name": "score",
+                  "value": {
+                    "kind": "integer",
+                    "value": 655
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s16-decide-case",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "DecideCase",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

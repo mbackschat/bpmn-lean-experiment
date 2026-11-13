@@ -1,0 +1,335 @@
+{
+  "kind": "scenario",
+  "id": "journey-booking-recovery-late-changes-reach-the-handlers",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "journey-booking-recovery-process",
+    "relativePath": "scenarios/open-rows/journey-booking-recovery/booking.bpmn",
+    "sha256": "7605ab6507f23e285323f31fe5883e4daca65379d2d09e0e4b969c344a05c753",
+    "sourceOverlay": {
+      "id": "booking-handlers",
+      "sha256": "9ac3ed205e54acb159a2e935364b95ecba544a72433161699427634c8435b104"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Booking_1",
+      "variables": [
+        {
+          "name": "bookingId",
+          "value": {
+            "kind": "string",
+            "value": "BK-7731"
+          }
+        },
+        {
+          "name": "carRef",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "flightRef",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "nights",
+          "value": {
+            "kind": "integer",
+            "value": 3
+          }
+        },
+        {
+          "name": "roomPreference",
+          "value": {
+            "kind": "string",
+            "value": "double"
+          }
+        },
+        {
+          "name": "roomRef",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "roomType",
+          "value": {
+            "kind": "string",
+            "value": "unset"
+          }
+        },
+        {
+          "name": "route",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "date",
+                "value": {
+                  "kind": "string",
+                  "value": "2026-12-01"
+                }
+              },
+              {
+                "name": "from",
+                "value": {
+                  "kind": "string",
+                  "value": "FRA"
+                }
+              },
+              {
+                "name": "to",
+                "value": {
+                  "kind": "string",
+                  "value": "LIS"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "traveler",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "email",
+                "value": {
+                  "kind": "string",
+                  "value": "lena.marsh@example.org"
+                }
+              },
+              {
+                "name": "name",
+                "value": {
+                  "kind": "string",
+                  "value": "Lena Marsh"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s02-flight-reserved",
+      "occurrence": {
+        "processInstanceId": "Booking_1",
+        "elementId": "ReserveFlight",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "flightReference",
+            "value": {
+              "kind": "string",
+              "value": "FL-4471"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s03-room-reserved",
+      "occurrence": {
+        "processInstanceId": "Booking_1",
+        "elementId": "ReserveRoom",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "roomReference",
+            "value": {
+              "kind": "string",
+              "value": "RM-204"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s04-room-confirmed",
+      "occurrence": {
+        "processInstanceId": "Booking_1",
+        "elementId": "ConfirmRoom",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "confirmedReference",
+            "value": {
+              "kind": "string",
+              "value": "RM-204-UPG"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-car-confirmed",
+      "occurrence": {
+        "processInstanceId": "call:9:Booking_1:10:ReserveCar:1",
+        "elementId": "ConfirmCar",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "CR-889"
+            }
+          },
+          {
+            "name": "carStatus",
+            "value": {
+              "kind": "string",
+              "value": "confirmed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-rebook-flight-and-overwrite-room-names",
+      "occurrence": {
+        "processInstanceId": "Booking_1",
+        "elementId": "DecideBooking",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "FL-4471-REBOOKED"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "RM-LATE"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-decide-cancel",
+      "occurrence": {
+        "processInstanceId": "Booking_1",
+        "elementId": "DecideBooking",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-car-cancelled",
+      "occurrence": {
+        "processInstanceId": "Booking_1",
+        "elementId": "CancelCar",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s09-room-released",
+      "occurrence": {
+        "processInstanceId": "Booking_1",
+        "elementId": "ReleaseRoom",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s10-flight-cancelled",
+      "occurrence": {
+        "processInstanceId": "Booking_1",
+        "elementId": "CancelFlight",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s11-notify-traveler",
+      "occurrence": {
+        "processInstanceId": "Booking_1",
+        "elementId": "NotifyTraveler",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §10.7.2",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4",
+      "BPMN 2.0.2 §13.5.5"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

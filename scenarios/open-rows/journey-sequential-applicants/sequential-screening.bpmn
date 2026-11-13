@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ApplicantScreening" targetNamespace="urn:bpmn-lean:journeys:sequential-applicants">
+  <process id="Process_ApplicantScreening" name="Screen the applicants of a case one after the other" isExecutable="true">
+    <startEvent id="CaseOpened" name="Case opened" />
+    <subProcess id="ScreenApplicant" name="Screen one applicant">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="verdict">pending</camunda:inputParameter>
+          <camunda:inputParameter name="interviewNote">none</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="true" camunda:collection="applicants" camunda:elementVariable="applicant">
+        <completionCondition xsi:type="tFormalExpression">${declines &gt;= 1}</completionCondition>
+      </multiInstanceLoopCharacteristics>
+      <startEvent id="ScreeningOpened" />
+      <userTask id="InterviewApplicant" name="Interview the applicant" camunda:candidateGroups="screeners">
+        <extensionElements>
+          <camunda:formData>
+            <camunda:formField id="verdict" type="string" />
+            <camunda:formField id="interviewNote" type="string" />
+          </camunda:formData>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="applicantName">${applicant.name}</camunda:inputParameter>
+            <camunda:inputParameter name="declaredIncomeCents">${applicant.incomeCents}</camunda:inputParameter>
+            <camunda:inputParameter name="position">${loopCounter + 1}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <serviceTask id="CheckCredit" name="Check the applicant's credit" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                   camunda:delegateExpression="${checkCredit}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="applicantName">${applicant.name}</camunda:inputParameter>
+            <camunda:inputParameter name="incomeCents">${applicant.incomeCents}</camunda:inputParameter>
+            <camunda:inputParameter name="verdict">${verdict}</camunda:inputParameter>
+            <camunda:inputParameter name="interviewNote">${interviewNote}</camunda:inputParameter>
+            <camunda:outputParameter name="screened">${screened + 1}</camunda:outputParameter>
+            <camunda:outputParameter name="scoreSum">${scoreSum + result.score}</camunda:outputParameter>
+            <camunda:outputParameter name="declines">${declines + (result.band == 'decline' ? 1 : 0)}</camunda:outputParameter>
+            <camunda:outputParameter name="lastScreened">${applicant.name}</camunda:outputParameter>
+            <camunda:outputParameter name="lastBand">${result.band}</camunda:outputParameter>
+            <camunda:outputParameter name="lastVerdict">${verdict}</camunda:outputParameter>
+            <camunda:outputParameter name="lastNote">${interviewNote}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <endEvent id="ApplicantScreened" />
+      <sequenceFlow id="Flow_Opened_Interview" sourceRef="ScreeningOpened" targetRef="InterviewApplicant" />
+      <sequenceFlow id="Flow_Interview_Credit" sourceRef="InterviewApplicant" targetRef="CheckCredit" />
+      <sequenceFlow id="Flow_Credit_Screened" sourceRef="CheckCredit" targetRef="ApplicantScreened" />
+    </subProcess>
+    <boundaryEvent id="ScreeningWindow" name="Screening window closes" attachedToRef="ScreenApplicant" cancelActivity="true">
+      <timerEventDefinition id="ScreeningWindow_Timer">
+        <timeDuration xsi:type="tFormalExpression">P3D</timeDuration>
+      </timerEventDefinition>
+    </boundaryEvent>
+    <userTask id="DecideCase" name="Decide the case" camunda:candidateGroups="underwriters">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="decision" type="string" />
+        </camunda:formData>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="screened">${screened}</camunda:inputParameter>
+          <camunda:inputParameter name="scoreSum">${scoreSum}</camunda:inputParameter>
+          <camunda:inputParameter name="declines">${declines}</camunda:inputParameter>
+          <camunda:inputParameter name="lastScreened">${lastScreened}</camunda:inputParameter>
+          <camunda:inputParameter name="lastBand">${lastBand}</camunda:inputParameter>
+          <camunda:inputParameter name="lastVerdict">${lastVerdict}</camunda:inputParameter>
+          <camunda:inputParameter name="lastNote">${lastNote}</camunda:inputParameter>
+          <camunda:inputParameter name="decision">pending</camunda:inputParameter>
+          <camunda:outputParameter name="caseDecision">${decision}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="CloseExpiredCase" name="Close the expired case" camunda:candidateGroups="underwriters">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="closure" type="string" />
+        </camunda:formData>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="screened">${screened}</camunda:inputParameter>
+          <camunda:inputParameter name="scoreSum">${scoreSum}</camunda:inputParameter>
+          <camunda:inputParameter name="declines">${declines}</camunda:inputParameter>
+          <camunda:inputParameter name="lastScreened">${lastScreened}</camunda:inputParameter>
+          <camunda:inputParameter name="lastBand">${lastBand}</camunda:inputParameter>
+          <camunda:inputParameter name="lastVerdict">${lastVerdict}</camunda:inputParameter>
+          <camunda:inputParameter name="lastNote">${lastNote}</camunda:inputParameter>
+          <camunda:inputParameter name="closure">pending</camunda:inputParameter>
+          <camunda:outputParameter name="caseClosure">${closure}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="CaseDecided" name="Case decided" />
+    <endEvent id="CaseExpired" name="Case expired" />
+    <sequenceFlow id="Flow_Opened_Screen" sourceRef="CaseOpened" targetRef="ScreenApplicant" />
+    <sequenceFlow id="Flow_Screen_Decide" sourceRef="ScreenApplicant" targetRef="DecideCase" />
+    <sequenceFlow id="Flow_Decide_Decided" sourceRef="DecideCase" targetRef="CaseDecided" />
+    <sequenceFlow id="Flow_Window_Close" sourceRef="ScreeningWindow" targetRef="CloseExpiredCase" />
+    <sequenceFlow id="Flow_Close_Expired" sourceRef="CloseExpiredCase" targetRef="CaseExpired" />
+  </process>
+</definitions>

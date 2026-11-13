@@ -1,0 +1,370 @@
+{
+  "kind": "scenario",
+  "id": "journey-sequential-applicants-ordinary-three-applicants",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "journey-sequential-applicants-process",
+    "relativePath": "scenarios/open-rows/journey-sequential-applicants/sequential-screening.bpmn",
+    "sha256": "4759a126ddd587df0b030efdf9d211963d6c0f69b02533ec264d6f4e1de44cd0",
+    "sourceOverlay": {
+      "id": "sequential-screening-handlers",
+      "sha256": "54ca98c5d5c0c54b9e30f61f9f7bb232ce71d8aa1ab83f897e63afbf6e36d692"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Case_1",
+      "variables": [
+        {
+          "name": "applicants",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "map",
+                "value": [
+                  {
+                    "name": "incomeCents",
+                    "value": {
+                      "kind": "integer",
+                      "value": 420000
+                    }
+                  },
+                  {
+                    "name": "name",
+                    "value": {
+                      "kind": "string",
+                      "value": "Mara Berger"
+                    }
+                  }
+                ]
+              },
+              {
+                "kind": "map",
+                "value": [
+                  {
+                    "name": "incomeCents",
+                    "value": {
+                      "kind": "integer",
+                      "value": 310000
+                    }
+                  },
+                  {
+                    "name": "name",
+                    "value": {
+                      "kind": "string",
+                      "value": "Tomas Okafor"
+                    }
+                  }
+                ]
+              },
+              {
+                "kind": "map",
+                "value": [
+                  {
+                    "name": "incomeCents",
+                    "value": {
+                      "kind": "integer",
+                      "value": 420000
+                    }
+                  },
+                  {
+                    "name": "name",
+                    "value": {
+                      "kind": "string",
+                      "value": "Mara Berger"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "caseId",
+          "value": {
+            "kind": "string",
+            "value": "CASE-2026-0412"
+          }
+        },
+        {
+          "name": "declines",
+          "value": {
+            "kind": "integer",
+            "value": 0
+          }
+        },
+        {
+          "name": "lastBand",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "lastNote",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "lastScreened",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "lastVerdict",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        },
+        {
+          "name": "scoreSum",
+          "value": {
+            "kind": "integer",
+            "value": 0
+          }
+        },
+        {
+          "name": "screened",
+          "value": {
+            "kind": "integer",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-interview-1",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "InterviewApplicant",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "interviewNote",
+            "value": {
+              "kind": "string",
+              "value": "Berger, first interview"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s03-credit-1",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "CheckCredit",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "band",
+                  "value": {
+                    "kind": "string",
+                    "value": "prime"
+                  }
+                },
+                {
+                  "name": "score",
+                  "value": {
+                    "kind": "integer",
+                    "value": 710
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-interview-2",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "InterviewApplicant",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "interviewNote",
+            "value": {
+              "kind": "string",
+              "value": "Okafor interview"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s05-credit-2",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "CheckCredit",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "band",
+                  "value": {
+                    "kind": "string",
+                    "value": "standard"
+                  }
+                },
+                {
+                  "name": "score",
+                  "value": {
+                    "kind": "integer",
+                    "value": 640
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-interview-3",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "InterviewApplicant",
+        "activation": 3
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "interviewNote",
+            "value": {
+              "kind": "string",
+              "value": "Berger, second interview"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "hold"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s07-credit-3",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "CheckCredit",
+        "activation": 3
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "band",
+                  "value": {
+                    "kind": "string",
+                    "value": "prime"
+                  }
+                },
+                {
+                  "name": "score",
+                  "value": {
+                    "kind": "integer",
+                    "value": 695
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-decide-case",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "DecideCase",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}
