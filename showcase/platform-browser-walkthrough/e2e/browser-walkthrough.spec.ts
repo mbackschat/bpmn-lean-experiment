@@ -73,7 +73,7 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   await capture(page, "07-definition-triggers.png", page.getByRole("button", { name: "Hide Triggers", exact: true }), captured);
   await page.getByRole("button", { name: "Hide Triggers", exact: true }).click();
 
-  const expenseInstanceId = await startSelectedDefinition(page, 1);
+  const expenseInstanceId = await startSelectedDefinition(page, 1, StartView.Result);
   await navigate(page, "Work");
   const tasks = page.getByRole("region", { name: "Tasks" });
   const expenseTask = tasks.getByRole("table", { name: "Current tasks" })
@@ -268,18 +268,32 @@ async function deployDefinition(
   await expect(page.getByRole("dialog", { name: "Add BPMN definition", exact: true })).toBeHidden();
 }
 
-async function startSelectedDefinition(page: Page, version: number): Promise<string> {
+/** Where a start's outcome shows: in place, or, for a guided catalog showcase, in its opened instance. */
+enum StartView {
+  Result = "result",
+  Instance = "instance",
+}
+
+async function startSelectedDefinition(page: Page, version: number, view: StartView): Promise<string> {
   const [response] = await Promise.all([
     page.waitForResponse((candidate) => candidate.request().method() === "POST" && candidate.url().endsWith("/start")),
     page.getByRole("button", { name: `Start version ${version}`, exact: true }).click(),
   ]);
   expect(response.ok(), await response.text()).toBe(true);
-  await expect(page.getByText("Process instance started", { exact: true })).toBeVisible();
-  const instanceId = page.getByTestId("started-instance-id").filter({ visible: true });
-  await expect(instanceId).toHaveCount(1);
-  const value = await instanceId.textContent();
-  if (value === null || !instanceIdPattern.test(value)) {
+  const started = await response.json() as Readonly<{ status?: unknown; instance?: Readonly<{ processInstanceId?: unknown }> }>;
+  const value = started.instance?.processInstanceId;
+  if (started.status !== "started" || typeof value !== "string" || !instanceIdPattern.test(value)) {
     throw new Error("The public start result did not expose one Process-instance ID.");
+  }
+  switch (view) {
+    case StartView.Result: {
+      await expect(page.getByText("Process instance started", { exact: true })).toBeVisible();
+      await expect(page.getByTestId("started-instance-id").filter({ visible: true })).toHaveText(value);
+      break;
+    }
+    case StartView.Instance:
+      await expect(page.getByRole("region", { name: `Process instance ${value}` })).toBeVisible();
+      break;
   }
   return value;
 }
@@ -370,7 +384,8 @@ async function deployAndStartIncidentProfile(
     incidentProcessId,
     String(version),
   );
-  return await startSelectedDefinition(page, version);
+  // The incident model's exact source and profile are a guided catalog showcase, which opens its instance on start.
+  return await startSelectedDefinition(page, version, StartView.Instance);
 }
 
 async function refreshIncidentsUntilVisible(
