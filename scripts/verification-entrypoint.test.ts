@@ -161,7 +161,7 @@ test("default verification runs every hosted Temporal gate exactly once, on prep
   await assertLineOccursOnce(verifyScriptPath, 'return "$temporal_status"');
   for (const gate of ["test:temporal-host:hosted:built", "test:differential:hosted:built", "test:engine-api:hosted:built"]) {
     await assertLineOccursOnce(verifyScriptPath, `./scripts/pnpm.sh run ${gate} || temporal_status=1`);
-    assert.match(manifest.scripts?.[gate] ?? "", /^node --test --test-concurrency=1 packages\/[\w-]+\/test\/\*\.temporal-test\.ts$/u, gate);
+    assert.match(manifest.scripts?.[gate] ?? "", /^node --test --test-concurrency=1 --test-timeout=\d+ packages\/[\w-]+\/test\/\*\.temporal-test\.ts$/u, gate);
   }
 });
 
@@ -627,4 +627,15 @@ test("rejects a bare Lean command in a newly added executable surface", () => {
     ]),
     ["scripts/new-gate.sh:2: lake build"],
   );
+});
+
+test("every hosted Temporal suite bounds each test, so a hang fails by name instead of cancelling the lane", async () => {
+  // Without a per-test bound one never-settling await consumed the whole 15-minute `verify Temporal` job and named
+  // nothing (PR #135, Verify run 43406412932).
+  const scripts = (JSON.parse(await readFile(rootPackageManifestPath, "utf8")) as { scripts: Record<string, string> }).scripts;
+  const hosted = Object.entries(scripts).filter(([, command]) => /\*\.temporal-test\.ts/u.test(command));
+  assert.ok(hosted.length >= 3, "the hosted Temporal suites are found");
+  for (const [name, command] of hosted) {
+    assert.match(command, /--test-timeout=\d+ /u, `${name} bounds each test`);
+  }
 });
