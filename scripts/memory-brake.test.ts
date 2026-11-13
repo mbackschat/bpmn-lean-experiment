@@ -48,7 +48,7 @@ function runWrapper(fakeBin: string, brakeMib: string, extra: Readonly<Record<st
 
 test("the Lean wrapper terminates a process tree above the memory brake", async () => {
   await withFakeLake(
-    `"${process.execPath}" -e 'const held = Buffer.alloc(300 * 1024 * 1024, 1); ` +
+    `"${process.execPath}" -e 'process.on("SIGTERM", () => {}); const held = Buffer.alloc(300 * 1024 * 1024, 1); ` +
       `require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setTimeout(() => held, 45000)' "$(dirname "$0")/child.pid"`,
     async (fakeBin) => {
       const started = Date.now();
@@ -150,16 +150,16 @@ function runPnpmWrapper(fakeBin: string, brakeMib: string, extra: Readonly<Recor
 
 test("the pnpm wrapper terminates a process tree above the memory brake", async () => {
   await withFakePnpm(
-    `"${process.execPath}" -e 'const held = []; ` +
+    `"${process.execPath}" -e 'process.on("SIGTERM", () => {}); const held = []; ` +
       `const timer = setInterval(() => { if (held.length < 16) held.push(Buffer.alloc(16 * 1024 * 1024, 1)); }, 100); ` +
       `require("node:fs").writeFileSync(process.argv[1], String(process.pid)); ` +
-      `setTimeout(() => { clearInterval(timer); process.exit(0); }, 8000)' "$(dirname "$0")/child.pid"`,
+      `setTimeout(() => { clearInterval(timer); process.exit(0); }, 12000)' "$(dirname "$0")/child.pid"`,
     async (fakeBin) => {
       const started = Date.now();
       const braked = runPnpmWrapper(fakeBin, "64");
       assert.equal(braked.status, 70, braked.stdout + braked.stderr);
       assert.match(braked.stderr, /NODE_MEMORY_BRAKE .*64 MiB/u);
-      assert.ok(Date.now() - started < 7_000, "the brake did not fire before the fake's own deadline");
+      assert.ok(Date.now() - started < 11_000, "the brake did not fire before the fake's own deadline");
       const childPid = Number(await readFile(path.join(fakeBin, "child.pid"), "utf8"));
       assert.throws(() => process.kill(childPid, 0), "the braked child survived its wrapper");
     },

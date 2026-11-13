@@ -157,6 +157,8 @@ if [ -n "${LEAN_MEMORY_PEAK_FILE:-}" ] && [ -s "$lean_memory_brake_marker.peak" 
   fi
 fi
 if [ -s "$lean_memory_brake_marker" ]; then
+  # The brake ends the whole tree before it exits; returning earlier would leave an orphan running.
+  wait "$lean_memory_brake_pid" 2>/dev/null || true
   echo "LEAN_MEMORY_BRAKE terminated the Lean process tree at $(($(cat "$lean_memory_brake_marker") / 1024)) MiB, above the ${lean_memory_brake_mib} MiB brake; record the breach and diagnose its mechanism before rebuilding" >&2
   exit 70
 fi

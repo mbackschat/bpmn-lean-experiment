@@ -74,8 +74,22 @@ footprint_kib() {
   esac
 }
 
+# The tree is walked once, before the first signal: a descendant whose parent dies is re-parented out of
+# the wrapper's tree, so a later walk misses exactly the process that outlived TERM, and that orphan
+# then keeps running and holds the wrapper's output open. The doomed set is gone before the brake
+# exits, and the wrappers wait for the brake, so no braked process outlives its wrapper. Reusing a
+# doomed pid within the two-second grace would take a wrap of the whole pid space.
 terminate() {
-  for pid in $(descendants); do kill "-$1" "$pid" 2>/dev/null; done
+  doomed=$(descendants)
+  for pid in $doomed; do kill -TERM "$pid" 2>/dev/null; done
+  sleep 2
+  for pid in $doomed $(descendants); do kill -KILL "$pid" 2>/dev/null; done
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    alive=
+    for pid in $doomed; do kill -0 "$pid" 2>/dev/null && alive=1; done
+    [ -z "$alive" ] && return
+    sleep 1
+  done
 }
 
 peak_kib=0
@@ -92,9 +106,7 @@ while kill -0 "$wrapper_pid" 2>/dev/null; do
   fi
   if [ "$total_kib" -gt "$limit_kib" ]; then
     printf '%s\n' "$total_kib" > "$marker"
-    terminate TERM
-    sleep 2
-    terminate KILL
+    terminate
     exit 0
   fi
   sleep 2
