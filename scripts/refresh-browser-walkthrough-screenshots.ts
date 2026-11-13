@@ -18,9 +18,9 @@ export type BrowserWalkthroughRefreshOptions = Readonly<{
 /**
  * Captures against a fresh isolated evaluation stack using the distribution's
  * 30-second read tolerance, proactive 5-second projection refresh, and a
- * dynamically allocated loopback port. The transient Compose volumes are
- * removed after success or failure; simultaneous capture and cleanup failures
- * are reported together.
+ * dynamically allocated loopback port. After a failure the services' logs are
+ * printed. The transient Compose volumes are removed after success or failure;
+ * simultaneous capture and cleanup failures are reported together.
  */
 export async function refreshBrowserWalkthroughScreenshots(
   options: BrowserWalkthroughRefreshOptions = {},
@@ -54,6 +54,9 @@ export async function refreshBrowserWalkthroughScreenshots(
     ], environment);
   } catch (error: unknown) {
     primaryFailure = error;
+    // The services log a request's internal failure only to their own output, which `down` discards; a log read that
+    // fails itself must not hide the capture failure.
+    await run("docker", [...composePrefix, "logs", "--no-color"], environment).catch(() => undefined);
   }
 
   try {

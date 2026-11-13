@@ -27,7 +27,7 @@ function pngDimensions(bytes: Buffer): Readonly<{ width: number; height: number 
   });
 }
 
-test("refreshes through an isolated Compose project and always removes its volumes", async () => {
+test("refreshes through an isolated Compose project, prints its service logs after a failure and always removes its volumes", async () => {
   const commands: Array<Readonly<{ command: string; args: readonly string[] }>> = [];
   const failure = new Error("capture failed");
 
@@ -71,6 +71,7 @@ test("refreshes through an isolated Compose project and always removes its volum
         "test",
       ],
     },
+    { command: "docker", args: ["compose", "--project-name", "bpmn-lean-walkthrough-912", "logs", "--no-color"] },
     {
       command: "docker",
       args: [
