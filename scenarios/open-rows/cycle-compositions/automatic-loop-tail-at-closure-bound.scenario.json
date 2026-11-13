@@ -1,0 +1,69 @@
+{
+  "kind": "scenario",
+  "id": "cycle-compositions-automatic-loop-tail-at-closure-bound",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "cycle-compositions-automatic-loop-tail",
+    "relativePath": "scenarios/open-rows/cycle-compositions/automatic-loop-tail.bpmn",
+    "sha256": "6da5f28b60f7353a83cf1db5a2732ff17ba9fadb2c0f62094a758b3ad0fea781",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "limit",
+          "value": {
+            "kind": "integer",
+            "value": 33331
+          }
+        },
+        {
+          "name": "n",
+          "value": {
+            "kind": "integer",
+            "value": 0
+          }
+        },
+        {
+          "name": "tail",
+          "value": {
+            "kind": "integer",
+            "value": 2
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Report-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Report",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a713.3.1",
+      "BPMN 2.0.2 \u00a713.2",
+      "BPMN 2.0.2 \u00a710.6.2",
+      "BPMN 2.0.2 \u00a713.4.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ExclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BpmnActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java"
+    ]
+  }
+}

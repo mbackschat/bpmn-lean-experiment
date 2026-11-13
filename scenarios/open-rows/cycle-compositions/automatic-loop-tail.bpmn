@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_AutomaticLoopTail" targetNamespace="urn:bpmn-lean:scenarios:cycle-compositions:automatic-loop-tail">
+  <process id="Process_AutomaticLoopTail" name="An internal cycle of automatic steps whose exit runs zero to two more steps" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <exclusiveGateway id="LoopStart" name="Loop start" gatewayDirection="Converging" />
+    <task id="Count" name="Count">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="n">${n + 1}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </task>
+    <exclusiveGateway id="More" name="More" gatewayDirection="Diverging" default="Flow_Done" />
+    <exclusiveGateway id="Tail" name="Tail" gatewayDirection="Diverging" default="Flow_NoTail" />
+    <task id="TailOne" name="Tail one" />
+    <task id="TailTwo" name="Tail two" />
+    <exclusiveGateway id="TailEnd" name="Tail end" gatewayDirection="Converging" />
+    <userTask id="Report" name="Report" />
+    <endEvent id="Finished" name="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="LoopStart" />
+    <sequenceFlow id="Flow_LoopStarted" sourceRef="LoopStart" targetRef="Count" />
+    <sequenceFlow id="Flow_Counted" sourceRef="Count" targetRef="More" />
+    <sequenceFlow id="Flow_More" sourceRef="More" targetRef="LoopStart">
+      <conditionExpression xsi:type="tFormalExpression">${n &lt; limit}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Done" sourceRef="More" targetRef="Tail" />
+    <sequenceFlow id="Flow_NoTail" sourceRef="Tail" targetRef="TailEnd" />
+    <sequenceFlow id="Flow_TailOne" sourceRef="Tail" targetRef="TailOne">
+      <conditionExpression xsi:type="tFormalExpression">${tail == 1}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_TailTwo" sourceRef="Tail" targetRef="TailTwo">
+      <conditionExpression xsi:type="tFormalExpression">${tail == 2}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_TailOneEnd" sourceRef="TailOne" targetRef="TailEnd" />
+    <sequenceFlow id="Flow_TailTwoNext" sourceRef="TailTwo" targetRef="TailOne" />
+    <sequenceFlow id="Flow_TailEnd" sourceRef="TailEnd" targetRef="Report" />
+    <sequenceFlow id="Flow_Reported" sourceRef="Report" targetRef="Finished" />
+  </process>
+</definitions>

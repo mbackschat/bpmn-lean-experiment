@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_AutomaticLoopWaitingBranch" targetNamespace="urn:bpmn-lean:scenarios:cycle-compositions:automatic-loop-waiting-branch">
+  <process id="Process_AutomaticLoopWaitingBranch" name="An internal cycle that leaves one waiting User Task behind each iteration" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <exclusiveGateway id="LoopStart" name="Loop start" gatewayDirection="Converging" />
+    <task id="Count" name="Count">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="n">${n + 1}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </task>
+    <exclusiveGateway id="More" name="More" gatewayDirection="Diverging" default="Flow_Done" />
+    <parallelGateway id="Fork" name="Fork" gatewayDirection="Diverging" />
+    <userTask id="Review" name="Review" />
+    <endEvent id="Reviewed" name="Reviewed" />
+    <userTask id="Report" name="Report" />
+    <endEvent id="Finished" name="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="LoopStart" />
+    <sequenceFlow id="Flow_LoopStarted" sourceRef="LoopStart" targetRef="Count" />
+    <sequenceFlow id="Flow_Counted" sourceRef="Count" targetRef="More" />
+    <sequenceFlow id="Flow_More" sourceRef="More" targetRef="Fork">
+      <conditionExpression xsi:type="tFormalExpression">${n &lt; limit}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ForkReview" sourceRef="Fork" targetRef="Review" />
+    <sequenceFlow id="Flow_ForkLoop" sourceRef="Fork" targetRef="LoopStart" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Review" targetRef="Reviewed" />
+    <sequenceFlow id="Flow_Done" sourceRef="More" targetRef="Report" />
+    <sequenceFlow id="Flow_Reported" sourceRef="Report" targetRef="Finished" />
+  </process>
+</definitions>
