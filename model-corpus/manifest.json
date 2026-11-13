@@ -4539,6 +4539,7 @@
       "mechanisms": [
         "processLifecycle",
         "sequenceFlow",
+        "conditionalEvent",
         "userTaskWait",
         "userTaskCompletion"
       ],
@@ -4578,6 +4579,7 @@
       "mechanisms": [
         "processLifecycle",
         "sequenceFlow",
+        "conditionalEvent",
         "eventRace",
         "userTaskWait",
         "userTaskCompletion"
@@ -4618,6 +4620,7 @@
       "mechanisms": [
         "processLifecycle",
         "sequenceFlow",
+        "escalationEvent",
         "embeddedSubProcess",
         "userTaskWait",
         "userTaskCompletion"
