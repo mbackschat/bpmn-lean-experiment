@@ -88,7 +88,7 @@ None: publication and observation are project contracts, and CIB-visible facts e
 
 | Row | Owed |
 |---|---|
-| W0.3 host publication | Commit time: one deterministic Workflow clock sample per committed batch, as [Host publication](#host-publication) states; neither the host's `Batch` nor the schema's `committedTransitionBatch` carries one |
+| W0.3 host publication | Commit time: one deterministic Workflow clock sample per committed batch, as [Host publication](#host-publication) states; neither the host's `Batch` nor the schema's `committedTransitionBatch` carries one; tracked by [#134](https://github.com/mbackschat/bpmn-lean-experiment/issues/134) |
 | Proof wave | `Step` proved sound against the declarative `Kernel.Laws.*` modules written with each feature, including the immateriality of `Step.settle`'s fixed order; deferred until the coverage rows close ([owner decision](../ARCHITECTURE-SPEC.md#owner-decisions-on-the-path), [open proof lanes](../KERNEL-STATUS-MAP.md#open-proof-lanes)) |
 
 ## Sources
