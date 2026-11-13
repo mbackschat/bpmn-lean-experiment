@@ -95,11 +95,9 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   const web = scripts(webSource);
   const uiKit = scripts(uiKitSource);
   assert.equal(root["test:infrastructure:runtime"], "node --test --test-concurrency=2 scripts/*.test.ts");
-  // The server-free component tests run first so a break fails before any Temporal server starts, and each hosted
-  // lane globs the file convention deciding its membership rather than naming files by hand.
+  // The server-free component tests run first so a break fails before any Temporal server starts; the hosted lanes'
+  // exact command form is owned by verification-entrypoint.test.ts.
   assert.equal(root["test:temporal-host"], "pnpm build:temporal-host && tsc -p packages/temporal-host/tsconfig.test.json && node --test --test-concurrency=1 packages/temporal-host/test/*.test.ts");
-  assert.equal(root["test:temporal-host:hosted:built"], "node --test --test-concurrency=1 packages/temporal-host/test/*.temporal-test.ts");
-  assert.equal(root["test:differential:hosted:built"], "node --test --test-concurrency=1 packages/differential/test/*.temporal-test.ts");
   for (const lane of ["test:temporal-host:hosted:built", "test:differential:hosted:built"]) {
     assert.doesNotMatch(root[lane] ?? "", /(?:^|\s)(?:pnpm\s+)?(?:run\s+)?build(?::|\s)/u, `${lane} must reuse prepared artifacts`);
   }
