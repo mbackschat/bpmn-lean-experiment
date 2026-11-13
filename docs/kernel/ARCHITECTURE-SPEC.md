@@ -277,7 +277,7 @@ A row is done when its acceptance clause in the [coverage target](../PRACTICAL-C
 
 ## Owner decisions on the path
 
-Decided on 2026-11-08 under the owner's direction to decide autonomously, and the rows marked 2026-11-13 during the integration track, by the owner or, where marked root, by the root under that direction; none adds a dependency or a JVM.
+Decided on 2026-11-08 under the owner's direction to decide autonomously, and the rows marked 2026-11-13 or 2026-11-14 during the integration track, by the owner or, where marked root, by the root under that direction; none adds a dependency or a JVM.
 
 | Item | Decision | Basis |
 |---|---|---|
@@ -292,6 +292,7 @@ Decided on 2026-11-08 under the owner's direction to decide autonomously, and th
 | Host capacity bounds (2026-11-13) | The owner ratified the state bound of 256 KiB, measuring variables and open work, and 32 pending service Activities, raised from 64 KiB and 1 ([lifecycle spec](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md)) | the old values refused 68 accepted witnesses of 18 done rows and the realistic sixteen-body parallel Multi-Instance journey; both bounds still refuse before commit with stable codes |
 | Event History backstops (2026-11-13, root) | The host keeps 8 MiB and 8,000 Events as its own Continue-As-New triggers; a default server suggests Continue-As-New first, at 4 MiB or 4,096 Events | lowering them to the defaults changes nothing on a default server and drops the protection on a server configured higher |
 | PC-QUALIFY-06 distribution (2026-11-13, root) | The qualified evaluation distribution is the evaluation stack built from source at the final accepted head (evaluation-distribution dispatch with its browser flows, images not published); the README's `v0.2.0-rc.1` bundle precedes the kernel and is not re-qualified, and a published bundle waits for an owner tag request | tags move only on an owner request, and the old bundle runs the previous engine generation |
+| Start description (2026-11-14, root) | A retained direct or Message start is described `matching` only once its chain holds the kernel's committed verdict, `pending` while it is undecided and `notCommitted` once it ended uncommitted; the verdict is read through the chain's `hostView` Query, so description needs a Worker and answers `unavailable` without one, which recovery retries | speculative start state is never exposed as committed observation (#141); a Worker-free reading would need the Workflow to publish its verdict in a memo, a Workflow change no requirement asks for |
 
 ## Exclusions
 
