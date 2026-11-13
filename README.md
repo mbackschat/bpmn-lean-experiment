@@ -4,9 +4,21 @@ This project builds a BPMN execution engine on Temporal Workflows, with Lean to 
 
 The goal is practical BPMN 2.0.2 execution within **CIB Seven's implemented element breadth and feature depth**. [Practical CIB7 Coverage](docs/PRACTICAL-CIB7-COVERAGE-TARGET.md) is the delivery target, covering useful feature depth and whole-process combinations. Full OMG Process Execution Conformance is not promised. A BPM platform adds human work and process operations through the engine's public API.
 
-- 🐳 **Evaluate the release candidate:** [Run the Docker or Rancher Desktop demo](#try-the-release-candidate-with-docker-or-rancher-desktop). No checkout or build needed.
+- 🧱 **Evaluate the current kernel:** [Build and run the stack from a checkout](#evaluate-the-current-kernel) with Docker Compose only.
+- 🐳 **Try the earlier release candidate:** [Run the Docker or Rancher Desktop demo](#try-the-release-candidate-with-docker-or-rancher-desktop) without a checkout or build. It runs the engine generation that preceded the current kernel.
 - 🔬 **Understand the approach:** Read [why this project exists](#why-this-project-exists) and [the architecture at a glance](#architecture-at-a-glance).
 - 🛠️ **Contribute:** [Prepare a contributor environment](#prepare-a-contributor-environment).
+
+## Evaluate the current kernel
+
+The qualified evaluation distribution of the current kernel is the evaluation stack built from a repository checkout; no bundle of it is published yet, and the [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) and its screenshots describe it ([decision](docs/kernel/ARCHITECTURE-SPEC.md#owner-decisions-on-the-path)). From the checkout, with Docker Compose only, run these commands and open `http://localhost:3000/`; `docker compose down --volumes` removes the stack and its data:
+
+```sh
+docker compose build
+docker compose up --no-build --wait temporal
+docker compose run --rm --no-deps bpmn-worker initialize-fresh-namespace --retention-seconds 86400
+docker compose up --no-build --wait
+```
 
 ## Try the release candidate with Docker or Rancher Desktop
 
@@ -29,16 +41,7 @@ The last command downloads the published images, starts the stack, and prepares 
 
 **🌐 3. Try a process.** Open the printed `LIVE_DEMO_READY` address. Choose **Definitions → Explore process showcases**, start a prepared process, then complete its task under **Work**.
 
-The [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#zero-build-demo-machine) covers the full journey and evaluation limits. From the same directory, use `./deploy/evaluation/demo stop` when finished and `./deploy/evaluation/demo start` to resume later.
-
-**🧱 Evaluate the current kernel.** The qualified evaluation distribution of the current kernel is the same stack built from a repository checkout; no bundle of it is published yet ([decision](docs/kernel/ARCHITECTURE-SPEC.md#owner-decisions-on-the-path)). From the checkout, with Docker Compose only, run these commands and open `http://localhost:3000/`; `docker compose down --volumes` removes the stack and its data:
-
-```sh
-docker compose build
-docker compose up --no-build --wait temporal
-docker compose run --rm --no-deps bpmn-worker initialize-fresh-namespace --retention-seconds 86400
-docker compose up --no-build --wait
-```
+The [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#zero-build-demo-machine) covers the evaluation limits; its steps describe the current kernel, whose History and behavior differ in places from this release candidate. From the same directory, use `./deploy/evaluation/demo stop` when finished and `./deploy/evaluation/demo start` to resume later.
 
 ## Why this project exists
 
