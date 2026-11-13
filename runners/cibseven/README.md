@@ -28,7 +28,7 @@ Run the complete pinned oracle gate:
 
 The script uses Java 21 and the repository Maven wrapper. `BPMN_JAVA_HOME`, `BPMN_MAVEN_SETTINGS`, and `BPMN_MAVEN_REPO_LOCAL` override the Java installation, Maven settings, and isolated artifact cache.
 
-Ordinary verification never rewrites retained evidence. Use `./scripts/pnpm.sh run replace:cib-evidence` only for the explicit verifier-checked replacement operation.
+Ordinary verification never rewrites retained evidence. Use `./scripts/pnpm.sh run replace:cib-evidence` only for the explicit verifier-checked replacement operation; the hosted Verify workflow runs it as parallel shards (`--shard <i>/<n>`) when dispatched with `replace_cib_evidence`.
 
 ## Learn more
 

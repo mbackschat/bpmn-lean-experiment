@@ -11,10 +11,11 @@ import { fileURLToPath } from "node:url";
 
 import type { ValidateFunction } from "ajv/dist/2020.js";
 
+import { parseShard, shardCases } from "./cib-evidence-shards.ts";
+import type { Shard } from "./cib-evidence-shards.ts";
 import { resolveCibSevenMavenTimeoutMs, wrapCibSevenMavenFailure } from "./cibseven-maven-budget.ts";
-import { populationEvidenceCases, populationEvidenceDocument, populationEvidenceValidator } from "./cibseven-population-evidence.ts";
-import type { CibPopulationResult } from "./cibseven-population-evidence.ts";
-import { oracleEvidenceCases } from "./contract-artifact-cases.ts";
+import { populationEvidenceDocument, populationEvidenceValidator } from "./cibseven-population-evidence.ts";
+import type { CibPopulationResult, PopulationEvidenceCase } from "./cibseven-population-evidence.ts";
 import { resolveJavaHome } from "./java-home.ts";
 import { CommandTimeoutError, runCommand } from "./run-command.ts";
 import { parseWireJson, parseWireJsonBytes } from "./strict-json.ts";
@@ -66,17 +67,20 @@ type CibRunnerResult = Readonly<{
   }>;
 }>;
 
+/**
+ * Admits only `--replace`, optionally followed by `--shard <i>/<n>`, and returns the shard: the hosted replay runs one job
+ * per shard (`cib-evidence-shards.ts`), while a replay without one covers every case.
+ */
 export function requireReplacementAuthorization(
   args: ReadonlyArray<string>,
-): void {
-  if (
-    args.length !== 1 ||
-    args[0] !== "--replace"
-  ) {
+): Shard | undefined {
+  const sharded = args.length === 3 && args[1] === "--shard";
+  if (args[0] !== "--replace" || (args.length !== 1 && !sharded)) {
     throw new Error(
-      "CIB evidence replacement requires the exact --replace flag",
+      "CIB evidence replacement requires the exact --replace flag, optionally followed by --shard <i>/<n>",
     );
   }
+  return sharded ? parseShard(args[2]!) : undefined;
 }
 
 async function readJsonWithBytes<Value>(
@@ -393,13 +397,15 @@ export function requireCleanPopulation(result: CibPopulationResult, profile: Sem
 }
 
 /**
- * The evidence of every population an evidence run covers (`populationEvidenceCases`). The bridge runs a population in
- * the default engine environment, the only one it runs in, so every population takes the plain schedule.
+ * The evidence of every population in `cases`, all or one shard's part of those an evidence run covers
+ * (`populationEvidenceCases`). The bridge runs a population in the default engine environment, the only one it runs in,
+ * so every population takes the plain schedule.
  */
 async function populationReplacements(
+  cases: ReadonlyArray<PopulationEvidenceCase>,
   temporaryDirectory: string,
 ): Promise<Readonly<{ replacements: ReadonlyArray<Replacement>; failures: ReadonlyArray<string> }>> {
-  const sources = await Promise.all(populationEvidenceCases(projectRoot).map(async (artifactCase) => {
+  const sources = await Promise.all(cases.map(async (artifactCase) => {
     const scenario = await readJsonWithBytes<Readonly<{ id: string; profile: string }>>(artifactCase.scenarioRelativePath);
     const profile = await readJsonWithBytes<SemanticProfile>(`profiles/${scenario.value.profile}/profile.json`);
     return { artifactCase, scenario, profile };
@@ -439,9 +445,10 @@ async function populationReplacements(
   return { replacements, failures };
 }
 
-async function replaceEvidence() {
+async function replaceEvidence(shard: Shard | undefined) {
+  const cases = shardCases(shard);
   const sources = await Promise.all(
-    oracleEvidenceCases.map(async (artifactCase) => {
+    cases.scenarios.map(async (artifactCase) => {
       const scenario = await readJsonWithBytes<ScenarioDocument>(
         artifactCase.scenarioRelativePath,
       );
@@ -599,7 +606,7 @@ async function replaceEvidence() {
         };
       },
     );
-    const population = await populationReplacements(temporaryDirectory);
+    const population = await populationReplacements(cases.populations, temporaryDirectory);
     failures.push(...population.failures);
     const scenarioAdmission = admitReplacements(replacements, await scenarioEvidenceValidator(projectRoot));
     const populationAdmission = admitReplacements(population.replacements, await populationEvidenceValidator(projectRoot));
@@ -627,6 +634,5 @@ async function replaceEvidence() {
 
 const invokedPath = process.argv[1] && path.resolve(process.argv[1]);
 if (invokedPath === fileURLToPath(import.meta.url)) {
-  requireReplacementAuthorization(process.argv.slice(2));
-  await replaceEvidence();
+  await replaceEvidence(requireReplacementAuthorization(process.argv.slice(2)));
 }

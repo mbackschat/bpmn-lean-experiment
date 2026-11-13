@@ -198,6 +198,7 @@ match = [
   "scripts/run-cibseven-tests.ts",
   "scripts/test-cibseven-oracle.sh",
   "scripts/replace-cibseven-evidence.ts",
+  "scripts/cib-evidence-shards.ts",
   "scripts/contract-cib-*.ts",
 ]
 kind = ["source"]

@@ -1,12 +1,14 @@
 name: CIB evidence branch
 
 # Copies the replaced CIB evidence of one Verify run onto a branch, so a development computer that cannot reach the
-# artifact storage host fetches it with git instead. The evidence bytes are the artifact's own; nothing is regenerated.
+# artifact storage host fetches it with git instead. The evidence bytes are the artifacts' own; nothing is regenerated.
+# The replay runs in shards (`replace_cib_evidence` in verify.yml), one artifact each, and installing them refuses a set
+# that lacks a shard, so a lost artifact fails here instead of producing a partial evidence commit.
 on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: ID of the Verify run whose replaced-cib-evidence artifact to deliver
+        description: ID of the Verify run whose replaced-cib-evidence-<i>-of-<n> artifacts to deliver
         type: string
         required: true
 
@@ -36,21 +38,34 @@ jobs:
         id: pins
         run: |
           eval "$(./scripts/pinned-toolchain.sh)"
-          printf 'node=%s\n' "$required_node_version" >> "$GITHUB_OUTPUT"
+          {
+            printf 'node=%s\n' "$required_node_version"
+            printf 'pnpm=%s\n' "$required_pnpm_version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: ${{ steps.pins.outputs.pnpm }}
 
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ steps.pins.outputs.node }}
+          cache: pnpm
 
-      # upload-artifact stores the files below their common ancestor, `scenarios/`, so they unpack back into it.
-      - name: Install the artifact's evidence
+      # The shard installer reads the evidence cases, which load the workspace's schema validator.
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Each shard artifact holds `shard-<i>-of-<n>/scenarios/...`; the installer writes them back into `scenarios/`.
+      - name: Install the artifacts' evidence
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ inputs.run_id }}
         run: |
-          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name replaced-cib-evidence --dir "$RUNNER_TEMP/evidence"
-          cp -R "$RUNNER_TEMP/evidence/." scenarios/
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --pattern 'replaced-cib-evidence-*' --dir "$RUNNER_TEMP/evidence"
+          node scripts/cib-evidence-shards.ts install "$RUNNER_TEMP/evidence"
           # Every changed file must be evidence lying beside its own scenario, so a misplaced unpack fails here.
           git status --porcelain --untracked-files=all | cut -c4- | while read -r changed; do
             case "$changed" in (*cibseven-evidence.json) ;; (*) echo "not CIB evidence: $changed" >&2; exit 1;; esac

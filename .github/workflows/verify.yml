@@ -237,12 +237,92 @@ jobs:
           path: .lake
           key: verify-lean-checks-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-  verify_runtime:
-    name: verify runtime
-    needs: changes
-    if: needs.changes.outputs.product1 == 'true'
+  # The retained-evidence replay ran every scenario in one job and outgrew its 20-minute limit as scenarios were retained
+  # (Verify run 43375697737 was cancelled at that limit; the replay step alone took 15.5 minutes in run 43370273960), so
+  # each shard replays its own deterministic part (`scripts/cib-evidence-shards.ts`) in a job of its own, and
+  # `verify_runtime` verifies the runtime once, against the evidence of every shard. The libxml2, Lean and external-source
+  # setup of the runtime job is absent here because the replay reads only the repository and the Maven bridge.
+  replace_cib_evidence:
+    name: replace CIB evidence (shard ${{ matrix.shard }} of ${{ strategy.job-total }})
+    if: github.event_name == 'workflow_dispatch' && inputs.replace_cib_evidence == true
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      # A shard that fails on scenarios CIB cannot run still uploads what it produced, so the others must not be cancelled.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve pinned toolchain versions
+        id: pins
+        run: |
+          eval "$(./scripts/pinned-toolchain.sh)"
+          {
+            printf 'node=%s\n' "$required_node_version"
+            printf 'pnpm=%s\n' "$required_pnpm_version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: ${{ steps.pins.outputs.pnpm }}
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.pins.outputs.node }}
+          cache: pnpm
+
+      - name: Set up Java
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: runners/cibseven/pom.xml
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Require clean committed HEAD
+        run: node scripts/clean-committed-head.ts
+
+      # Evidence pins its scenario and profile bytes, so a profile change needs fresh CIB runs; the oracle runs here
+      # because its suites stay off the development computer.
+      - name: Replace retained CIB evidence
+        run: ./scripts/pnpm.sh run replace:cib-evidence --shard "${{ matrix.shard }}/${{ strategy.job-total }}"
+
+      # Stages and uploads even when the replacement failed on scenarios CIB cannot run, which it reports after writing the rest.
+      - name: Stage this shard's CIB evidence
+        if: always()
+        run: node scripts/cib-evidence-shards.ts stage "${{ matrix.shard }}/${{ strategy.job-total }}" "$RUNNER_TEMP/cib-evidence-shard"
+
+      - name: Upload replaced CIB evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: replaced-cib-evidence-${{ matrix.shard }}-of-${{ strategy.job-total }}
+          if-no-files-found: error
+          retention-days: 14
+          path: ${{ runner.temp }}/cib-evidence-shard
+
+  verify_runtime:
+    name: verify runtime
+    needs:
+      - changes
+      - replace_cib_evidence
+    # `!cancelled()` lets the job run when the replay was not requested (its job is then skipped); only a replay that
+    # succeeded in every shard lets it run otherwise.
+    if: needs.changes.outputs.product1 == 'true' && !cancelled() && (needs.replace_cib_evidence.result == 'success' || needs.replace_cib_evidence.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # `gh run download` reads this run's shard artifacts, as cib-evidence-branch.yml reads a finished run's.
+    permissions:
+      contents: read
+      actions: read
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -308,21 +388,17 @@ jobs:
       - name: Require clean committed HEAD
         run: node scripts/clean-committed-head.ts
 
-      # Evidence pins its scenario and profile bytes, so a profile change needs fresh CIB runs; the oracle runs here
-      # because its suites stay off the development computer. The runtime step below then verifies the new evidence.
-      - name: Replace retained CIB evidence
+      # The replay shards (`replace_cib_evidence`) produced fresh evidence; the runtime step below verifies it. Installing
+      # refuses a set that lacks a shard, so a lost artifact never verifies against a mix of old and new evidence.
+      - name: Download the replaced CIB evidence
         if: github.event_name == 'workflow_dispatch' && inputs.replace_cib_evidence == true
-        run: ./scripts/pnpm.sh run replace:cib-evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --pattern 'replaced-cib-evidence-*' --dir "$RUNNER_TEMP/replaced-cib-evidence"
 
-      # Uploads even when the replacement failed on scenarios CIB cannot run, which it reports after writing the rest.
-      - name: Upload replaced CIB evidence
-        if: always() && github.event_name == 'workflow_dispatch' && inputs.replace_cib_evidence == true
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: replaced-cib-evidence
-          if-no-files-found: error
-          retention-days: 14
-          path: scenarios/**/*cibseven-evidence.json
+      - name: Install the replaced CIB evidence
+        if: github.event_name == 'workflow_dispatch' && inputs.replace_cib_evidence == true
+        run: node scripts/cib-evidence-shards.ts install "$RUNNER_TEMP/replaced-cib-evidence"
 
       # The CIB test Maven call took 99 s of the 120 s workstation deadline on main (run 42787486975, 733 retained
       # evidence files, 2026-11-10), and each retained file adds a reproduction; 1,000 files breached it in three runs.
@@ -503,6 +579,7 @@ jobs:
       - verify_runtime
       - verify_temporal
       - verify_pipeline
+      - replace_cib_evidence
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -515,6 +592,7 @@ jobs:
           echo "runtime verification result: ${{ needs.verify_runtime.result }}"
           echo "Temporal verification result: ${{ needs.verify_temporal.result }}"
           echo "integration verification result: ${{ needs.verify_pipeline.result }}"
+          echo "CIB evidence replay result: ${{ needs.replace_cib_evidence.result }}"
           test "${{ needs.changes.outputs.product1 }}" = "false" || {
             test "${{ needs.verify_lean.result }}" = "success"
             test "${{ needs.verify_lean_checks.result }}" = "success"
@@ -522,6 +600,8 @@ jobs:
             test "${{ needs.verify_temporal.result }}" = "success"
             test "${{ needs.verify_pipeline.result }}" = "success"
           }
+          # A requested replay must have run and succeeded in every shard; a skipped job is no success.
+          test "${{ github.event_name == 'workflow_dispatch' && inputs.replace_cib_evidence == true }}" = "false" || test "${{ needs.replace_cib_evidence.result }}" = "success"
 
   # Staged handoffs are restored only within their own run, so a verified run
   # deletes them instead of leaving them to crowd the incremental `lake-` caches

@@ -36,9 +36,24 @@ test("requires explicit authorization before replacing CIB evidence", () => {
     () => requireReplacementAuthorization(["--replace", "--extra"]),
     /exact --replace flag/,
   );
-  assert.doesNotThrow(
-    () => requireReplacementAuthorization(["--replace"]),
-  );
+  assert.equal(requireReplacementAuthorization(["--replace"]), undefined);
+});
+
+test("takes an optional shard of the replay next to the authorization and refuses every other form", () => {
+  assert.deepEqual(requireReplacementAuthorization(["--replace", "--shard", "2/3"]), { index: 2, count: 3 });
+  for (const refused of [
+    ["--shard", "2/3"],
+    ["--shard", "2/3", "--replace"],
+    ["--replace", "--shard"],
+    ["--replace", "--shard=2/3"],
+    ["--replace", "--shard", "2/3", "--extra"],
+    ["--replace", "--shard", "2/3", "--shard", "1/3"],
+  ]) {
+    assert.throws(() => requireReplacementAuthorization(refused), /exact --replace flag/u, refused.join(" "));
+  }
+  for (const malformed of ["0/3", "4/3", "2", "a/b", ""]) {
+    assert.throws(() => requireReplacementAuthorization(["--replace", "--shard", malformed]), /--shard needs/u, malformed);
+  }
 });
 
 test("reads each scenario's answer or harness failure from the bridge output, in request order", () => {

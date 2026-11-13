@@ -91,10 +91,12 @@ test("makes clean committed HEAD the shared local and GitHub pre-push boundary",
   // Derived rather than counted: each hosted slice runs one `verify.sh` stage, so the two counts must agree.
   const hostedSlices = verifyWorkflow.match(/run: \.\/scripts\/verify\.sh [a-z-]+/gu)?.length ?? 0;
   assert.ok(hostedSlices > 0, "no hosted Product 1 slice was found");
+  // The evidence replay shards write repository files, so each binds itself to the exact checkout before it replays.
+  const replayShardJobs = 1;
   assert.equal(
     verifyWorkflow.match(/run: node scripts\/clean-committed-head\.ts/gu)?.length,
-    hostedSlices,
-    "every hosted Product 1 slice must bind itself to the exact checkout",
+    hostedSlices + replayShardJobs,
+    "every hosted Product 1 slice and the evidence replay must bind itself to the exact checkout",
   );
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh lean-library/u);
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh lean-checks/u);
