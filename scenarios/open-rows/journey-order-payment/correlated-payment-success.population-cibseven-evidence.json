@@ -1,0 +1,141 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "journey-order-payment-correlated-payment-success",
+    "sha256": "1264ab2798533e3e51bdfde861059c48e2bf007648cc8e446b608b345f0bad51"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "order-payment",
+        "versions": [
+          {
+            "key": "Process_OrderPayment",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s03-pay-order_2",
+        "ordinal": 1,
+        "at": 1000,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "committed",
+          "target": {
+            "processInstanceId": "Order_2",
+            "elementId": "AwaitPayment",
+            "activation": 1
+          }
+        }
+      },
+      {
+        "commandId": "s06-pay-b-2-again",
+        "ordinal": 2,
+        "at": 4000,
+        "outcome": "rolledBack",
+        "resolution": {
+          "kind": "noMatch"
+        }
+      },
+      {
+        "commandId": "s07-pay-order_1",
+        "ordinal": 3,
+        "at": 5000,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "committed",
+          "target": {
+            "processInstanceId": "Order_1",
+            "elementId": "AwaitPayment",
+            "activation": 1
+          }
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "completed",
+        "logicalTimeMs": 7000,
+        "variables": [
+          {
+            "name": "amountCents",
+            "value": {
+              "kind": "integer",
+              "value": 45900
+            }
+          },
+          {
+            "name": "customer",
+            "value": {
+              "kind": "string",
+              "value": "Nordlicht GmbH"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ],
+        "openWaits": []
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_2",
+        "status": "completed",
+        "logicalTimeMs": 7000,
+        "variables": [
+          {
+            "name": "amountCents",
+            "value": {
+              "kind": "integer",
+              "value": 12800
+            }
+          },
+          {
+            "name": "customer",
+            "value": {
+              "kind": "string",
+              "value": "Atelier Moreau"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "B-2"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,223 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "cycle-compositions-automatic-loop-tail-beyond-closure-bound",
+    "sha256": "1a3aaaf94d2ac737e0c09a473ab0b1b41909e36c44b9d978440d84bd1c7636f6"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "limit",
+            "value": {
+              "kind": "integer",
+              "value": 33332
+            }
+          },
+          {
+            "name": "n",
+            "value": {
+              "kind": "integer",
+              "value": 33332
+            }
+          },
+          {
+            "name": "tail",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Report-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "limit",
+            "value": {
+              "kind": "integer",
+              "value": 33332
+            }
+          },
+          {
+            "name": "n",
+            "value": {
+              "kind": "integer",
+              "value": 33332
+            }
+          },
+          {
+            "name": "tail",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Report",
+            "name": "Report"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Report-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-Report-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-Report-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "limit",
+            "value": {
+              "kind": "integer",
+              "value": 33332
+            }
+          },
+          {
+            "name": "n",
+            "value": {
+              "kind": "integer",
+              "value": 33332
+            }
+          },
+          {
+            "name": "tail",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Report",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Report",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-Report-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "limit",
+            "value": {
+              "kind": "integer",
+              "value": 33332
+            }
+          },
+          {
+            "name": "n",
+            "value": {
+              "kind": "integer",
+              "value": 33332
+            }
+          },
+          {
+            "name": "tail",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

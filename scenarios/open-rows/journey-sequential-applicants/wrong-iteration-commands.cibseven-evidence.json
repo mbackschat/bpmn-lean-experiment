@@ -1,0 +1,4541 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "journey-sequential-applicants-wrong-iteration-commands",
+    "sha256": "c6bac719b6574487b9bd74f112ac0896410fde17474f2177554d805ef8dbc62a"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-credit-1-before-the-interview",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-interview-2-before-body-2-begins",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-credit-2-before-body-2-begins",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-interview-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-interview-1-again",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-interview-2-while-credit-1-is-open",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-credit-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "prime"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Berger interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Mara Berger"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 710
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-credit-1-again",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "prime"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Berger interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Mara Berger"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 710
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-interview-1-after-its-body-ended",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "prime"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Berger interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Mara Berger"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 710
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-interview-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "prime"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Berger interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Mara Berger"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 710
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-credit-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "standard"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Okafor interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Tomas Okafor"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 1350
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s13-interview-3-beyond-the-collection",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "standard"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Okafor interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Tomas Okafor"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 1350
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s14-decide-case",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseDecision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "standard"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Okafor interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Tomas Okafor"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 1350
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "InterviewApplicant",
+            "name": "Interview the applicant",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "screeners"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              },
+              {
+                "id": "interviewNote",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-credit-1-before-the-interview",
+        "tasks": [
+          {
+            "elementId": "InterviewApplicant",
+            "name": "Interview the applicant",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "screeners"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              },
+              {
+                "id": "interviewNote",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-interview-2-before-body-2-begins",
+        "tasks": [
+          {
+            "elementId": "InterviewApplicant",
+            "name": "Interview the applicant",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "screeners"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              },
+              {
+                "id": "interviewNote",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-credit-2-before-body-2-begins",
+        "tasks": [
+          {
+            "elementId": "InterviewApplicant",
+            "name": "Interview the applicant",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "screeners"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              },
+              {
+                "id": "interviewNote",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-interview-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s06-interview-1-again",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s07-interview-2-while-credit-1-is-open",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s08-credit-1",
+        "tasks": [
+          {
+            "elementId": "InterviewApplicant",
+            "name": "Interview the applicant",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "screeners"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              },
+              {
+                "id": "interviewNote",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-credit-1-again",
+        "tasks": [
+          {
+            "elementId": "InterviewApplicant",
+            "name": "Interview the applicant",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "screeners"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              },
+              {
+                "id": "interviewNote",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-interview-1-after-its-body-ended",
+        "tasks": [
+          {
+            "elementId": "InterviewApplicant",
+            "name": "Interview the applicant",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "screeners"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              },
+              {
+                "id": "interviewNote",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-interview-2",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s12-credit-2",
+        "tasks": [
+          {
+            "elementId": "DecideCase",
+            "name": "Decide the case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "underwriters"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "decision",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s13-interview-3-beyond-the-collection",
+        "tasks": [
+          {
+            "elementId": "DecideCase",
+            "name": "Decide the case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "underwriters"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "decision",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s14-decide-case",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-credit-1-before-the-interview",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-interview-2-before-body-2-begins",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-credit-2-before-body-2-begins",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-interview-1",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-interview-1-again",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-interview-2-while-credit-1-is-open",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-credit-1",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-credit-1-again",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-interview-1-after-its-body-ended",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-interview-2",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-credit-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s13-interview-3-beyond-the-collection",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s14-decide-case",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-credit-1-before-the-interview",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-interview-2-before-body-2-begins",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-credit-2-before-body-2-begins",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-interview-1",
+        "jobs": [
+          {
+            "elementId": "CheckCredit",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "checkCredit",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-interview-1-again",
+        "jobs": [
+          {
+            "elementId": "CheckCredit",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "checkCredit",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-interview-2-while-credit-1-is-open",
+        "jobs": [
+          {
+            "elementId": "CheckCredit",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "checkCredit",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-credit-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-credit-1-again",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s10-interview-1-after-its-body-ended",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s11-interview-2",
+        "jobs": [
+          {
+            "elementId": "CheckCredit",
+            "activation": 2,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "checkCredit",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-credit-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s13-interview-3-beyond-the-collection",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s14-decide-case",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-credit-1-before-the-interview",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-interview-2-before-body-2-begins",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-credit-2-before-body-2-begins",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-interview-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-interview-1-again",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-interview-2-while-credit-1-is-open",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-credit-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s09-credit-1-again",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s10-interview-1-after-its-body-ended",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s11-interview-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s12-credit-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s13-interview-3-beyond-the-collection",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s14-decide-case",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "s08-credit-1",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "s12-credit-2",
+        "schedule": "plainSuccess",
+        "invocations": 2,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "InterviewApplicant",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Interview the applicant",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "screeners"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                },
+                {
+                  "key": "interviewNote",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "applicantName",
+                  "value": {
+                    "kind": "string",
+                    "value": "Mara Berger"
+                  }
+                },
+                {
+                  "name": "declaredIncomeCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 420000
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-credit-1-before-the-interview",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "InterviewApplicant",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Interview the applicant",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "screeners"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                },
+                {
+                  "key": "interviewNote",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "applicantName",
+                  "value": {
+                    "kind": "string",
+                    "value": "Mara Berger"
+                  }
+                },
+                {
+                  "name": "declaredIncomeCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 420000
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-interview-2-before-body-2-begins",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "InterviewApplicant",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Interview the applicant",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "screeners"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                },
+                {
+                  "key": "interviewNote",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "applicantName",
+                  "value": {
+                    "kind": "string",
+                    "value": "Mara Berger"
+                  }
+                },
+                {
+                  "name": "declaredIncomeCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 420000
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-credit-2-before-body-2-begins",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "InterviewApplicant",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Interview the applicant",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "screeners"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                },
+                {
+                  "key": "interviewNote",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "applicantName",
+                  "value": {
+                    "kind": "string",
+                    "value": "Mara Berger"
+                  }
+                },
+                {
+                  "name": "declaredIncomeCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 420000
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-interview-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "CheckCredit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "checkCredit",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-interview-1-again",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "CheckCredit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "checkCredit",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-interview-2-while-credit-1-is-open",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "CheckCredit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "checkCredit",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-credit-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "prime"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Berger interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Mara Berger"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 710
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "InterviewApplicant",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Interview the applicant",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "screeners"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                },
+                {
+                  "key": "interviewNote",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "applicantName",
+                  "value": {
+                    "kind": "string",
+                    "value": "Tomas Okafor"
+                  }
+                },
+                {
+                  "name": "declaredIncomeCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 310000
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s09-credit-1-again",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "prime"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Berger interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Mara Berger"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 710
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "InterviewApplicant",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Interview the applicant",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "screeners"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                },
+                {
+                  "key": "interviewNote",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "applicantName",
+                  "value": {
+                    "kind": "string",
+                    "value": "Tomas Okafor"
+                  }
+                },
+                {
+                  "name": "declaredIncomeCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 310000
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s10-interview-1-after-its-body-ended",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "prime"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Berger interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Mara Berger"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 710
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "InterviewApplicant",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Interview the applicant",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "screeners"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                },
+                {
+                  "key": "interviewNote",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "applicantName",
+                  "value": {
+                    "kind": "string",
+                    "value": "Tomas Okafor"
+                  }
+                },
+                {
+                  "name": "declaredIncomeCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 310000
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s11-interview-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "prime"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Berger interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Mara Berger"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 710
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "CheckCredit",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "checkCredit",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s12-credit-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "standard"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Okafor interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Tomas Okafor"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 1350
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "DecideCase",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "underwriters"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "decision",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "decision",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                },
+                {
+                  "name": "declines",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "lastBand",
+                  "value": {
+                    "kind": "string",
+                    "value": "standard"
+                  }
+                },
+                {
+                  "name": "lastNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "Okafor interview"
+                  }
+                },
+                {
+                  "name": "lastScreened",
+                  "value": {
+                    "kind": "string",
+                    "value": "Tomas Okafor"
+                  }
+                },
+                {
+                  "name": "lastVerdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "proceed"
+                  }
+                },
+                {
+                  "name": "scoreSum",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1350
+                  }
+                },
+                {
+                  "name": "screened",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s13-interview-3-beyond-the-collection",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "standard"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Okafor interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Tomas Okafor"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 1350
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "DecideCase",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "underwriters"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "decision",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "decision",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                },
+                {
+                  "name": "declines",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "lastBand",
+                  "value": {
+                    "kind": "string",
+                    "value": "standard"
+                  }
+                },
+                {
+                  "name": "lastNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "Okafor interview"
+                  }
+                },
+                {
+                  "name": "lastScreened",
+                  "value": {
+                    "kind": "string",
+                    "value": "Tomas Okafor"
+                  }
+                },
+                {
+                  "name": "lastVerdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "proceed"
+                  }
+                },
+                {
+                  "name": "scoreSum",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1350
+                  }
+                },
+                {
+                  "name": "screened",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s14-decide-case",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseDecision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "standard"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "Okafor interview"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "Tomas Okafor"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 1350
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

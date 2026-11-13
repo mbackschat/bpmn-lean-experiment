@@ -1,0 +1,628 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "journey-scheduled-case-stale-firing-after-escalation",
+    "sha256": "033fcc1a7e2073429214ab73c1f616261b239f3aaa84eba70f3fe843fc1ec145"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 28800000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-fire-reminder-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 43200000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-fire-deadline",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 201600000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s04-reminder-after-escalation",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 201600000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s05-review-after-escalation",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 201600000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s06-follow-up-after-escalation",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 201600000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s07-handle-overdue",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 201600000,
+        "variables": [
+          {
+            "name": "resolution",
+            "value": {
+              "kind": "string",
+              "value": "Escalated to the board"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "ReviewFindings",
+            "name": "Review the case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "reviewers"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-reminder-1",
+        "tasks": [
+          {
+            "elementId": "FollowUp",
+            "name": "Follow up with the reviewer",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "coordinators"
+              }
+            ],
+            "formFields": []
+          },
+          {
+            "elementId": "ReviewFindings",
+            "name": "Review the case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "reviewers"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-deadline",
+        "tasks": [
+          {
+            "elementId": "HandleOverdue",
+            "name": "Handle the overdue case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "managers"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-reminder-after-escalation",
+        "tasks": [
+          {
+            "elementId": "HandleOverdue",
+            "name": "Handle the overdue case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "managers"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-review-after-escalation",
+        "tasks": [
+          {
+            "elementId": "HandleOverdue",
+            "name": "Handle the overdue case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "managers"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-follow-up-after-escalation",
+        "tasks": [
+          {
+            "elementId": "HandleOverdue",
+            "name": "Handle the overdue case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "managers"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-handle-overdue",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "DeadlinePassed",
+            "dueDateDeltaMs": 201600000,
+            "executable": false
+          },
+          {
+            "elementId": "ReminderDue",
+            "dueDateDeltaMs": 43200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-reminder-1",
+        "jobs": [
+          {
+            "elementId": "DeadlinePassed",
+            "dueDateDeltaMs": 201600000,
+            "executable": false
+          },
+          {
+            "elementId": "ReminderDue",
+            "dueDateDeltaMs": 57600000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-deadline",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-reminder-after-escalation",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-review-after-escalation",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-follow-up-after-escalation",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-handle-overdue",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-fire-reminder-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-fire-deadline",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-reminder-after-escalation",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-review-after-escalation",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-follow-up-after-escalation",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-handle-overdue",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 28800000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "DeadlinePassed",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 201600000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ReminderDue",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 43200000,
+              "recurrence": {
+                "periodMs": 14400000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ReviewFindings",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "reviewers"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-fire-reminder-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 43200000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "DeadlinePassed",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 201600000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "FollowUp",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Follow up with the reviewer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "coordinators"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ReminderDue",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 57600000,
+              "recurrence": {
+                "periodMs": 14400000,
+                "cron": null,
+                "remaining": 2
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ReviewFindings",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "reviewers"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-fire-deadline",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 201600000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "HandleOverdue",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the overdue case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "managers"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-reminder-after-escalation",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 201600000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "HandleOverdue",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the overdue case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "managers"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-review-after-escalation",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 201600000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "HandleOverdue",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the overdue case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "managers"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-follow-up-after-escalation",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 201600000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "HandleOverdue",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the overdue case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "managers"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-handle-overdue",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "completed",
+        "logicalTimeMs": 201600000,
+        "variables": [
+          {
+            "name": "resolution",
+            "value": {
+              "kind": "string",
+              "value": "Escalated to the board"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

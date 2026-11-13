@@ -1,0 +1,2440 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "journey-booking-recovery-cancel-while-reservations-are-still-open",
+    "sha256": "f109c55f0ef4de319fd6a4be4e9f9fdee3130cb71d788238a5044f8ea7429800"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-decide-cancel",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-flight-reserved",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-room-reserved",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-car-confirmed",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-flight-cancelled-though-never-reserved",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-room-released-though-never-reserved",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-notify-traveler",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "DecideBooking",
+            "name": "Decide whether to keep the booking",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "agents"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "decision",
+                "typeName": "string"
+              }
+            ]
+          },
+          {
+            "elementId": "ConfirmCar",
+            "name": "Confirm the car with the rental desk",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "rental-desk"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "carStatus",
+                "typeName": "string"
+              },
+              {
+                "id": "carRef",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-decide-cancel",
+        "tasks": [
+          {
+            "elementId": "NotifyTraveler",
+            "name": "Tell the traveler the booking is cancelled",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "agents"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-flight-reserved",
+        "tasks": [
+          {
+            "elementId": "NotifyTraveler",
+            "name": "Tell the traveler the booking is cancelled",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "agents"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-room-reserved",
+        "tasks": [
+          {
+            "elementId": "NotifyTraveler",
+            "name": "Tell the traveler the booking is cancelled",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "agents"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-car-confirmed",
+        "tasks": [
+          {
+            "elementId": "NotifyTraveler",
+            "name": "Tell the traveler the booking is cancelled",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "agents"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-flight-cancelled-though-never-reserved",
+        "tasks": [
+          {
+            "elementId": "NotifyTraveler",
+            "name": "Tell the traveler the booking is cancelled",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "agents"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-room-released-though-never-reserved",
+        "tasks": [
+          {
+            "elementId": "NotifyTraveler",
+            "name": "Tell the traveler the booking is cancelled",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "agents"
+              }
+            ],
+            "formFields": []
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-notify-traveler",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-decide-cancel",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-flight-reserved",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-room-reserved",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-car-confirmed",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-flight-cancelled-though-never-reserved",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-room-released-though-never-reserved",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-notify-traveler",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "ReserveFlight",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "reserveFlight",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "ReserveRoom",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "reserveRoom",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-decide-cancel",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-flight-reserved",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-room-reserved",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-car-confirmed",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-flight-cancelled-though-never-reserved",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-room-released-though-never-reserved",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-notify-traveler",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-decide-cancel",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-flight-reserved",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-room-reserved",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-car-confirmed",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-flight-cancelled-though-never-reserved",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-room-released-though-never-reserved",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-notify-traveler",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Booking_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Booking_1",
+              "elementId": "DecideBooking",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide whether to keep the booking",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "agents"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "decision",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "decision",
+                  "value": {
+                    "kind": "string",
+                    "value": "keep"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Booking_1",
+              "elementId": "ReserveFlight",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "reserveFlight",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Booking_1",
+              "elementId": "ReserveRoom",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "reserveRoom",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:9:Booking_1:10:ReserveCar:1",
+              "elementId": "ConfirmCar",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_CarRental",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Confirm the car with the rental desk",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "rental-desk"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "carStatus",
+                  "type": "string"
+                },
+                {
+                  "key": "carRef",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-decide-cancel",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Booking_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Booking_1",
+              "elementId": "NotifyTraveler",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Tell the traveler the booking is cancelled",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "agents"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-flight-reserved",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Booking_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Booking_1",
+              "elementId": "NotifyTraveler",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Tell the traveler the booking is cancelled",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "agents"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-room-reserved",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Booking_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Booking_1",
+              "elementId": "NotifyTraveler",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Tell the traveler the booking is cancelled",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "agents"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-car-confirmed",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Booking_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Booking_1",
+              "elementId": "NotifyTraveler",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Tell the traveler the booking is cancelled",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "agents"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-flight-cancelled-though-never-reserved",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Booking_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Booking_1",
+              "elementId": "NotifyTraveler",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Tell the traveler the booking is cancelled",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "agents"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-room-released-though-never-reserved",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Booking_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Booking_1",
+              "elementId": "NotifyTraveler",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Tell the traveler the booking is cancelled",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "agents"
+              ],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-notify-traveler",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Booking_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "bookingDecision",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          },
+          {
+            "name": "bookingId",
+            "value": {
+              "kind": "string",
+              "value": "BK-7731"
+            }
+          },
+          {
+            "name": "carRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "flightRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "nights",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "roomPreference",
+            "value": {
+              "kind": "string",
+              "value": "double"
+            }
+          },
+          {
+            "name": "roomRef",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "roomType",
+            "value": {
+              "kind": "string",
+              "value": "unset"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "date",
+                  "value": {
+                    "kind": "string",
+                    "value": "2026-12-01"
+                  }
+                },
+                {
+                  "name": "from",
+                  "value": {
+                    "kind": "string",
+                    "value": "FRA"
+                  }
+                },
+                {
+                  "name": "to",
+                  "value": {
+                    "kind": "string",
+                    "value": "LIS"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "traveler",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "email",
+                  "value": {
+                    "kind": "string",
+                    "value": "lena.marsh@example.org"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lena Marsh"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}
