@@ -33,9 +33,7 @@ export interface ReceiveWork {
 /**
  * `handlerKey` is the root identifier of the `camunda:delegateExpression` the binding was read from, which CIB resolves
  * against process variables before its beans (CIB-LIM-0017); admission compares it with the declared names.
- */
-/**
- * As `Kernel.ServiceWork`: `taskDefinition` marks the work of a Task that carries the project's `bpmnLean:taskDefinition`
+ * `taskDefinition` marks the work of a Task that carries the project's `bpmnLean:taskDefinition`
  * extension, which CIB ignores (CIB-LIM-0011), so admission can refuse it where a profile selects
  * `ConfiguredTask.Refused`.
  */
