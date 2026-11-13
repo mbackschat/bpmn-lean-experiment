@@ -302,8 +302,13 @@ test("runs the complete durable Human Work slice", async () => {
     const historyEvents = (attribute: keyof NonNullable<typeof history.events>[number]) =>
       (history.events ?? []).filter((event) => event[attribute] != null);
     assert.equal(historyEvents("workflowExecutionStartedEventAttributes").length, 1);
-    assert.equal(historyEvents("workflowExecutionUpdateAcceptedEventAttributes").length, 1);
-    assert.equal(historyEvents("workflowExecutionUpdateCompletedEventAttributes").length, 1);
+    // The start's `settle` Update, sent with it, then the one completion command.
+    assert.deepEqual(
+      historyEvents("workflowExecutionUpdateAcceptedEventAttributes")
+        .map((event) => event.workflowExecutionUpdateAcceptedEventAttributes?.acceptedRequest?.input?.name),
+      ["settle", "command"],
+    );
+    assert.equal(historyEvents("workflowExecutionUpdateCompletedEventAttributes").length, 2);
     assert.equal(historyEvents("workflowExecutionCompletedEventAttributes").length, 1);
     assert.equal(historyEvents("activityTaskScheduledEventAttributes").length, 0);
     await worker.shutdown();

@@ -103,6 +103,8 @@ export async function replayEveryRun(journey: string, histories: readonly Tempor
 }
 
 function evidenceFor(histories: readonly TemporalHistory[], replayedRuns: number): JourneyEvidence {
+  assert.equal(histories.flatMap(acceptedUpdateNames).filter((name) => name === "settle").length, 1);
+  assert.equal(acceptedUpdateNames(histories[0]!)[0], "settle");
   const outcomes = histories.flatMap(updateOutcomes);
   assert.equal(outcomes.every((outcome) => outcome === "committed"), true);
   return {
@@ -124,9 +126,24 @@ function historyEvents(history: TemporalHistory, attribute: keyof HistoryEntry):
   return (history.events ?? []).filter((event) => event[attribute] !== undefined && event[attribute] !== null);
 }
 
-/** The kernel outcome of every completed Update, from its `CommandResult` (`packages/temporal-host/src/host-contract.ts`). */
+/** The name of every accepted Update, in history order. */
+function acceptedUpdateNames(history: TemporalHistory): readonly string[] {
+  return historyEvents(history, "workflowExecutionUpdateAcceptedEventAttributes")
+    .map((event) => event.workflowExecutionUpdateAcceptedEventAttributes?.acceptedRequest?.input?.name ?? "");
+}
+
+/**
+ * The kernel outcome of every completed population-command Update, from its `CommandResult`
+ * (`packages/temporal-host/src/host-contract.ts`). The `settle` Update a start carries answers the start's revision
+ * instead (`packages/temporal-host/src/client.ts`), so it is matched to its acceptance by Update ID and left out.
+ */
 function updateOutcomes(history: TemporalHistory): readonly string[] {
-  return historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes").map((event) => {
+  const settles = new Set(historyEvents(history, "workflowExecutionUpdateAcceptedEventAttributes")
+    .filter((event) => event.workflowExecutionUpdateAcceptedEventAttributes?.acceptedRequest?.input?.name === "settle")
+    .map((event) => event.workflowExecutionUpdateAcceptedEventAttributes?.acceptedRequest?.meta?.updateId));
+  return historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes")
+    .filter((event) => !settles.has(event.workflowExecutionUpdateCompletedEventAttributes?.meta?.updateId))
+    .map((event) => {
     const data = event.workflowExecutionUpdateCompletedEventAttributes?.outcome?.success?.payloads?.[0]?.data;
     if (!(data instanceof Uint8Array)) throw new TypeError("completed Update carries no JSON result payload");
     const result = JSON.parse(Buffer.from(data).toString("utf8")) as Readonly<{ outcome?: unknown }>;

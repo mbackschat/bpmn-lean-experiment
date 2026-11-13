@@ -143,7 +143,8 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   await page.getByRole("combobox", { name: "Definition", exact: true })
     .selectOption(expenseProcessId);
   await page.getByRole("combobox", { name: "Version", exact: true }).selectOption("1");
-  await page.getByRole("link", { name: "View process metrics", exact: true }).click();
+  await page.getByRole("region", { name: `${expenseProcessId}, version 1`, exact: true })
+    .getByRole("link", { name: "View process metrics", exact: true }).click();
   const metrics = page.getByRole("region", {
     name: `Process metrics for ${expenseProcessId}, version 1`,
   });

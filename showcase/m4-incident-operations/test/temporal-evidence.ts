@@ -89,6 +89,7 @@ function evidenceFor(
   status: "completed" | "cancelled",
   incidents: number,
 ): ProcessEvidence {
+  assert.deepEqual(acceptedUpdateNames(history), ["settle", "command"]);
   assert.deepEqual(updateOutcomes(history), ["committed"]);
   return {
     status,
@@ -104,9 +105,24 @@ function historyEvents(history: TemporalHistory, attribute: keyof HistoryEntry):
   return (history.events ?? []).filter((event) => event[attribute] !== undefined && event[attribute] !== null);
 }
 
-/** The kernel outcome of every completed Update, from its `CommandResult` (`packages/temporal-host/src/host-contract.ts`). */
+/** The name of every accepted Update, in history order. */
+function acceptedUpdateNames(history: TemporalHistory): readonly string[] {
+  return historyEvents(history, "workflowExecutionUpdateAcceptedEventAttributes")
+    .map((event) => event.workflowExecutionUpdateAcceptedEventAttributes?.acceptedRequest?.input?.name ?? "");
+}
+
+/**
+ * The kernel outcome of every completed population-command Update, from its `CommandResult`
+ * (`packages/temporal-host/src/host-contract.ts`). The `settle` Update a start carries answers the start's revision
+ * instead (`packages/temporal-host/src/client.ts`), so it is matched to its acceptance by Update ID and left out.
+ */
 function updateOutcomes(history: TemporalHistory): readonly string[] {
-  return historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes").map((event) => {
+  const settles = new Set(historyEvents(history, "workflowExecutionUpdateAcceptedEventAttributes")
+    .filter((event) => event.workflowExecutionUpdateAcceptedEventAttributes?.acceptedRequest?.input?.name === "settle")
+    .map((event) => event.workflowExecutionUpdateAcceptedEventAttributes?.acceptedRequest?.meta?.updateId));
+  return historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes")
+    .filter((event) => !settles.has(event.workflowExecutionUpdateCompletedEventAttributes?.meta?.updateId))
+    .map((event) => {
     const payload = event.workflowExecutionUpdateCompletedEventAttributes?.outcome?.success?.payloads?.[0];
     const data = payload?.data;
     if (!(data instanceof Uint8Array)) throw new TypeError("completed Update carries no JSON result payload");

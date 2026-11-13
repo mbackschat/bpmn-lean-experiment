@@ -182,7 +182,8 @@ async function startRetainedDefinition(page: import("@playwright/test").Page): P
   await navigate(page, "Definitions");
   await page.getByRole("combobox", { name: "Definition", exact: true })
     .selectOption("Process_ExpenseExceptionReview");
-  await page.getByRole("button", { name: /Start version \d+/u }).click();
+  await page.getByRole("region", { name: /^Process_ExpenseExceptionReview, version \d+$/u })
+    .getByRole("button", { name: /Start version \d+/u }).click();
   await expect(page.getByText("Process instance started", { exact: true })).toBeVisible();
   const processInstanceId = await page.getByTestId("started-instance-id").textContent();
   expect(processInstanceId).not.toBeNull();
