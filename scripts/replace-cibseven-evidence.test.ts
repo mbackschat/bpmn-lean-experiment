@@ -195,3 +195,22 @@ test("a replacement outside its evidence schema is reported as a failure and nev
   assert.equal(failures.length, 1);
   assert.match(failures[0]!, /^elsewhere\.cibseven-evidence\.json: evidence violates its schema: .*name/u);
 });
+
+// A Message whose name expression resolves to null leaves CIB's subscription without a name: the engine stores the
+// resolved value unchecked (`EventSubscriptionDeclaration.java:172-184`), which `message-name-addressing/expression-name-null`
+// witnesses. The raw observation keeps that null; an empty name stays outside the contract.
+test("the evidence schema keeps a Message subscription whose name resolved to null and refuses an empty name", async () => {
+  const relativePath = "scenarios/message-payload-catch/absent-payload.cibseven-evidence.json";
+  const evidence = JSON.parse(await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8")) as {
+    producerObservations: { messageSubscriptions: Array<{ subscriptions: Array<Record<string, unknown>> }> };
+  };
+  const validate = await scenarioEvidenceValidator(new URL("..", import.meta.url).pathname);
+  const withName = (eventName: unknown) => {
+    const changed = structuredClone(evidence);
+    changed.producerObservations.messageSubscriptions[0]!.subscriptions[0]!["eventName"] = eventName;
+    return validate(changed);
+  };
+  assert.equal(withName("Settlement confirmed"), true, JSON.stringify(validate.errors));
+  assert.equal(withName(null), true, JSON.stringify(validate.errors));
+  assert.equal(withName(""), false);
+});

@@ -92,7 +92,7 @@ final class CibSevenOpenWaitProjector {
 
   private static final Comparator<MessageSubscription> SUBSCRIPTION_ORDER =
       Comparator.comparing(MessageSubscription::elementId, WireStrings::compare)
-          .thenComparing(MessageSubscription::eventName, WireStrings::compare)
+          .thenComparing(MessageSubscription::eventName, NULLABLE_WIRE_ORDER)
           .thenComparing(MessageSubscription::messageId, WireStrings::compare)
           .thenComparing(MessageSubscription::processInstanceIdMatches)
           .thenComparing(MessageSubscription::executionIdPresent);

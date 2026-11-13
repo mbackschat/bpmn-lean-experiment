@@ -220,4 +220,14 @@ public class ScenarioJsonTest {
         "{\"elementId\":\"Hold\",\"name\":null}",
         new ObjectMapper().writeValueAsString(new ScenarioDiagnosticsProtocol.TaskQueryTask("Hold", null)));
   }
+
+  /** A Message whose name expression resolved to null keeps a subscription without a name (`expression-name-null`). */
+  @Test
+  public void aSubscriptionWithoutAResolvedNameKeepsItsNullName() throws JsonProcessingException {
+    assertEquals(
+        "{\"elementId\":\"Catch_Null\",\"eventName\":null,\"messageId\":\"Message_NullName\","
+            + "\"processInstanceIdMatches\":true,\"executionIdPresent\":true}",
+        new ObjectMapper().writeValueAsString(
+            new CibStateQueryEvidence.MessageSubscription("Catch_Null", null, "Message_NullName", true, true)));
+  }
 }

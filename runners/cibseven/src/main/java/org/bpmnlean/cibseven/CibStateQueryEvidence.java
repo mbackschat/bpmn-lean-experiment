@@ -74,6 +74,10 @@ public final class CibStateQueryEvidence {
     }
   }
 
+  /**
+   * One Message subscription. Its `eventName` is null when the Message's name expression resolved to null: CIB stores
+   * the resolved value unchecked (`EventSubscriptionDeclaration.java:172-184`).
+   */
   public record MessageSubscription(
       String elementId,
       String eventName,
@@ -82,7 +86,6 @@ public final class CibStateQueryEvidence {
       boolean executionIdPresent) {
     public MessageSubscription {
       Objects.requireNonNull(elementId, "elementId");
-      Objects.requireNonNull(eventName, "eventName");
       Objects.requireNonNull(messageId, "messageId");
     }
   }

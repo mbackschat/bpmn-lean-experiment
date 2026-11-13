@@ -368,7 +368,10 @@
           "minLength": 1
         },
         "eventName": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "minLength": 1
         },
         "messageId": {

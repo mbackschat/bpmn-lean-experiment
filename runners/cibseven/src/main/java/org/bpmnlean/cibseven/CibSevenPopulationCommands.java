@@ -179,7 +179,7 @@ final class CibSevenPopulationCommands {
     var hit = waits.stream()
         .filter(waiting -> waiting.projected().handle() instanceof SubscriptionHandle subscription
             && subscription.executionId().equals(executionId)
-            && subscription.eventName().equals(name))
+            && name.equals(subscription.eventName()))
         .toList();
     if (hit.size() != 1) {
       throw new IllegalStateException(
