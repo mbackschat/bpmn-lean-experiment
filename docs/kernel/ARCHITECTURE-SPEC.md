@@ -277,7 +277,7 @@ A row is done when its acceptance clause in the [coverage target](../PRACTICAL-C
 
 ## Owner decisions on the path
 
-Decided on 2026-11-08 under the owner's direction to decide autonomously; none adds a dependency or a JVM.
+Decided on 2026-11-08 under the owner's direction to decide autonomously, and the rows marked 2026-11-13 by the owner during the integration track; none adds a dependency or a JVM.
 
 | Item | Decision | Basis |
 |---|---|---|
@@ -286,6 +286,9 @@ Decided on 2026-11-08 under the owner's direction to decide autonomously; none a
 | PC-AUTO-07 decisions | DMN decision tables evaluated in the kernel, Lean and TypeScript, with the hit policies UNIQUE, FIRST, ANY, COLLECT and RULE ORDER and a bounded FEEL unary-test subset (literals, comparisons, ranges, lists, negation); other FEEL is refused | the same treatment as the JUEL subset: the specification is normative, CIB's DMN engine the oracle, Lean the authority |
 | PC-TIMER-02 Cron | CIB's cron dialect, with its seconds field, evaluated in the kernel over UTC from logical time; CIB's use of the JVM default time zone is a classified register difference; other zones are refused | deterministic and replay-safe without time-zone data |
 | PC-DELIVERY-01, PC-QUALIFY-03 | Stay held; re-qualified against the generic Temporal host, since TD-001 and TD-002 arose in the deleted adapter's code paths | SDK work stays prohibited; the [Temporal defects ledger](../TEMPORAL-DEFECTS-LEDGER.md) keeps the dispositions |
+| PC-QUALIFY-03 (2026-11-13) | One upstream release check first; an entry no released dependency corrects and whose exposure on the generic host the evidence cannot exclude takes a disclosed qualification exception | SDK repair stays prohibited, so adoption of a released correction or a disclosed exception are the only dispositions; the ledger's [qualification exceptions](../TEMPORAL-DEFECTS-LEDGER.md#qualification-exceptions) and the About panel carry it |
+| PC-DELIVERY-01 hold (2026-11-13) | Lifts when the three invoice journeys are green on the generic Temporal host, the PostgreSQL and browser specs are green hosted, a fresh cold public closure approves and PC-QUALIFY-03 is resolved | the hold existed because the deleted adapter carried the journeys; these conditions re-qualify them on the host that replaced it |
+| PC-QUALIFY-08 counterparts (2026-11-13) | The hosted Ubuntu lanes at the exact head are the counterparts of the local pre-push gates; no `verify.sh` or other heavy lane runs on the development machine | the local heavy-lane ban in [CLAUDE.md](../../CLAUDE.md#verification) stands, and Rule 1 keeps macOS out of routine CI |
 
 ## Exclusions
 
