@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_GroupListSpaced" targetNamespace="urn:bpmn-lean:metadata-group-list-spaced">
+  <process id="Process_GroupListSpaced" name="Review with a candidate group list with spaces around its entries" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <userTask id="Review" name="Review request" camunda:candidateGroups=" triagers , leads " />
+    <endEvent id="RequestClosed" name="Request closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="Review" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Review" targetRef="RequestClosed" />
+  </process>
+</definitions>

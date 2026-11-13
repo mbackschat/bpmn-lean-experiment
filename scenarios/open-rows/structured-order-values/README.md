@@ -11,6 +11,8 @@ Answer-free schedules for [PC-DATA-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TAR
 | [absent-and-null-fields](absent-and-null-fields.scenario.json) | An order whose `note` is a present Null and whose `memo`, `total` and `address` no Map holds; the review returns a Map whose only field is a present Null. | PC-DATA-03, PC-DATA-05 |
 | [empty-containers](empty-containers.scenario.json) | An order whose customer is an empty Map, whose lines are an empty List and whose note is an empty String; the review returns an empty List and the receipt an empty Map. | PC-DATA-03, PC-DATA-05 |
 
+[root-list-completion](root-list-completion.scenario.json) reuses the [sequential User Task source](../../user-task-discovery-completion/process.bpmn): the completion of *Approve* writes two root Lists that are not Lists of Strings, `quantities` with the Integers 3, 3 and 1, and `checks` with a String, a present Null, a Boolean, a List and a Map. The other schedules complete a User Task with Lists only inside a Map, and a root List of Strings is observed as `stringList` (`CIB-OP-0015`).
+
 Notes for the target runners:
 
 - Gap: List, Map and Decimal values at every surface.

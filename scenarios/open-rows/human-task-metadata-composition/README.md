@@ -26,6 +26,18 @@ The remaining models are the forms the row says fail:
 | [task-metadata-condition](task-metadata-condition.scenario.json) | [metadata-control.bpmn](metadata-control.bpmn) | A Sequence Flow condition that reads the task's assignee through the engine-context name `task`. |
 | [undeclared-handler-key](undeclared-handler-key.scenario.json) | [handler-key-undeclared.bpmn](handler-key-undeclared.bpmn) | The same completion as `writable-handler-key` on a task that declares no such field: the token's name arrives only as an undeclared submitted value. |
 
+The last models carry metadata forms the kernel admits beyond the retained answers, which hold a one-entry or a plain two-entry `candidateGroups` list (`CIB-EXT-0011`) and `string` and `boolean` form fields (`CIB-EXT-0012`). Each runs *Review request* once: the start opens it and a completion without values closes it.
+
+| Schedule | Model | Case it separates |
+|---|---|---|
+| [group-list-spaced](group-list-spaced.scenario.json) | [group-list-spaced.bpmn](group-list-spaced.bpmn) | `candidateGroups=" triagers , leads "`: spaces around each entry. |
+| [group-list-empty-entry](group-list-empty-entry.scenario.json) | [group-list-empty-entry.bpmn](group-list-empty-entry.bpmn) | `candidateGroups="triagers,,leads"`: an empty entry between two commas. |
+| [group-list-edge-commas](group-list-edge-commas.scenario.json) | [group-list-edge-commas.bpmn](group-list-edge-commas.bpmn) | `candidateGroups=",triagers,leads, "`: a leading comma and a last entry of one space. |
+| [group-list-repeated](group-list-repeated.scenario.json) | [group-list-repeated.bpmn](group-list-repeated.bpmn) | `candidateGroups="leads,triagers,leads"`: one group named twice. |
+| [group-list-dollar](group-list-dollar.scenario.json) | [group-list-dollar.bpmn](group-list-dollar.bpmn) | `candidateGroups="cost$center,finance"`: a literal entry holding `$` without `{` before a comma. |
+| [group-list-no-break-space](group-list-no-break-space.scenario.json) | [group-list-no-break-space.bpmn](group-list-no-break-space.bpmn) | `candidateGroups="&#160;triagers,leads"`: an entry starting with U+00A0, which JavaScript's `trim` removes and Java's `String.trim` keeps. |
+| [form-field-long-date](form-field-long-date.scenario.json) | [form-field-long-date.bpmn](form-field-long-date.bpmn) | Four form fields alternating `long` and `date`: `amount`, `dueOn`, `quantity`, `shippedOn`. |
+
 Notes for the target runners:
 
 - `untyped-form-field` is a model CIB may refuse at deployment; the runner must record a refused deployment as the start's outcome.

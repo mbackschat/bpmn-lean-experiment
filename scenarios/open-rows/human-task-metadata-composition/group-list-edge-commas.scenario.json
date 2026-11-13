@@ -1,0 +1,44 @@
+{
+  "kind": "scenario",
+  "id": "human-task-metadata-composition-group-list-edge-commas",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "metadata-group-list-edge-commas",
+    "relativePath": "scenarios/open-rows/human-task-metadata-composition/group-list-edge-commas.bpmn",
+    "sha256": "a6f0712aa1e0e0a5cd9d7ade51460980f3fe9c74dd73538f4f824313343a3fd5",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Request_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-review",
+      "occurrence": {
+        "processInstanceId": "Request_1",
+        "elementId": "Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0011",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java#parseCommaSeparatedList(String)",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java"
+    ]
+  }
+}

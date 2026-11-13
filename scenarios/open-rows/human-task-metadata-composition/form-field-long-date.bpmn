@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_FormFieldLongDate" targetNamespace="urn:bpmn-lean:metadata-form-field-long-date">
+  <process id="Process_FormFieldLongDate" name="Review with Long and Date form fields" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <userTask id="Review" name="Review request" camunda:candidateGroups="reviewers">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="amount" type="long" />
+          <camunda:formField id="dueOn" type="date" />
+          <camunda:formField id="quantity" type="long" />
+          <camunda:formField id="shippedOn" type="date" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <endEvent id="RequestClosed" name="Request closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="Review" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Review" targetRef="RequestClosed" />
+  </process>
+</definitions>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_GroupListNoBreakSpace" targetNamespace="urn:bpmn-lean:metadata-group-list-no-break-space">
+  <process id="Process_GroupListNoBreakSpace" name="Review with a candidate group list whose entry starts with a no-break space" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <userTask id="Review" name="Review request" camunda:candidateGroups="&#160;triagers,leads" />
+    <endEvent id="RequestClosed" name="Request closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="Review" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Review" targetRef="RequestClosed" />
+  </process>
+</definitions>
