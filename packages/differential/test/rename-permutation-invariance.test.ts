@@ -12,9 +12,10 @@
  * CIB-INT-0001 reads it as XML Sequence Flow declaration order); the Boundary Events of one host and the Event
  * Sub-Processes of one scope, among which a thrown Error, Escalation or Message picks its catcher in declaration order
  * where several match; and the root start Events of one Process, which a population reaches in document order when
- * one command fires several of them. Names, Error and Escalation codes, and data items keep their identifiers: a name
- * or a code is a value a schedule, a catch or an expression matches, and a data item is named by expressions the
- * reader does not resolve. A schedule that addresses a Message by identifier (`messageId`) or a Signal by reference
+ * one command fires several of them. Names, Error and Escalation codes, Process identifiers and data items keep their
+ * identifiers: a name or a code is a value a schedule, a catch or an expression matches, a Process identifier is the
+ * definition key a deployment registers and a Call Activity's `calledElement` names, and a data item is named by
+ * expressions the reader does not resolve. A schedule that addresses a Message by identifier (`messageId`) or a Signal by reference
  * (`signalRef.id`) is renamed with the model. A derived instance identifier embeds
  * element identifiers (a called instance's its Call Activity's, a started one's its start Event's, a cascade-started
  * one's its emitter's), so it is renamed through its encoding.
