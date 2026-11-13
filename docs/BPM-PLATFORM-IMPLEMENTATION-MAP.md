@@ -4,7 +4,7 @@ This detail map owns exact current Product 2 modules, persistence, HTTP, UI, dep
 
 ## Current boundary
 
-M1 through M6 and Horizon 1 shared persistence are closed. Local mode remains single-node; shared mode uses PostgreSQL 18 with replicated API and bounded recovery-worker composition. The evaluation Compose distribution has explicit native Namespace initialization and enrollment readiness, with passing bounded Docker composition evidence under the [deployment specification](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-SPEC.md#implemented-checkpoint-boundary). No production-capacity, database-high-availability, or complete external-instance-discovery claim is made.
+M1 through M6 and Horizon 1 shared persistence are closed. Local mode remains single-node; shared mode uses PostgreSQL 18 with replicated API and bounded recovery-worker composition. The evaluation Compose distribution has explicit Namespace initialization and a Worker readiness probe (polling on a registered Namespace); the native Worker Deployment Versioning of the [deployment specification](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-SPEC.md#implemented-checkpoint-boundary) belongs to the retired adapter and is not part of the generic host. No production-capacity, database-high-availability, or complete external-instance-discovery claim is made.
 
 The closure-reviewed [structured Human Work specification](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) is evidence-closed across Product 1 semantics and Product 2 forms.
 

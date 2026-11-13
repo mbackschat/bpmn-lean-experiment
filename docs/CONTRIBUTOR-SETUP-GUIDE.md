@@ -57,6 +57,8 @@ Open [http://localhost:3000](http://localhost:3000). The first start builds the 
 
 The Compose topology runs PostgreSQL 18.4, the Temporal development service, the separate migration application, one persistent Product 1 BPMN Worker, the shared Product 2 API serving the built web bundle, and the Product 2 recovery Worker. It exposes only port 3000. It is neither a production Temporal deployment nor evidence of throughput or capacity.
 
+The BPMN Worker is the `@bpmn-lean/temporal-host` evaluation entry (`packages/temporal-host/src/evaluation-worker-main.ts`). It reads only `BPMN_TEMPORAL_*` and `BPMN_WORKER_*` variables, refuses a missing or unknown one before it connects, and serves the business handlers that `BPMN_WORKER_EFFECTS_JSON` declares by effect protocol and operation, never by model identity. An effect no entry declares is refused, so its Process stays open instead of committing an undeclared result. The distribution declares the probe operation of `scenarios/service-task-effect`, which reports one incident and then succeeds after a Retry; declare another handler by adding an entry to that variable in `compose.yaml`.
+
 The maintained [browser walkthrough](BPM-PLATFORM-BROWSER-WALKTHROUGH.md) is text-first and needs no screenshot tooling. A maintainer who intentionally refreshes its images additionally installs the screenshot project's pinned Chromium revision, then runs one isolated capture command:
 
 ```sh

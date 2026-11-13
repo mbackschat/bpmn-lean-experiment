@@ -156,7 +156,7 @@ docker compose run --rm --no-deps bpmn-worker initialize-fresh-namespace --reten
 
 Open [http://localhost:3000](http://localhost:3000). The shell should show Work, Definitions, Operations, and About, plus `Signed in as demo-user`.
 
-Keep those two environment values for every lifecycle command. PostgreSQL and Temporal state survive an ordinary stop; restart with `evaluation:start` alone. Readiness requires native Current and complete Workflow/Activity queue registration. Fresh initialization refuses an existing Namespace and is never a restart or migration operation.
+Keep those two environment values for every lifecycle command. PostgreSQL and Temporal state survive an ordinary stop; restart with `evaluation:start` alone. The BPMN Worker is ready only while it polls and its Namespace answers; the platform starts after that. Fresh initialization registers the Namespace once and refuses an existing one, so it is never a restart or migration operation.
 
 To deliberately clear this selected evaluation project for the exact version numbers and empty collections described below, reset and initialize it again:
 

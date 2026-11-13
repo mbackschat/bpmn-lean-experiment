@@ -65,8 +65,13 @@ services:
       BPMN_TEMPORAL_ADDRESS: temporal:7233
       BPMN_TEMPORAL_NAMESPACE: ${BPMN_EVALUATION_NAMESPACE:-default}
       BPMN_TEMPORAL_TASK_QUEUE: bpmn-semantic
+      # The Service Task of `scenarios/service-task-effect` binds the probe operation; its first run reports one
+      # incident, and an operator's Retry then succeeds, as the browser walkthrough's incident section needs. Any
+      # other effect descriptor is refused, and a Process waiting on it stays open.
+      BPMN_WORKER_EFFECTS_JSON: '[{"protocol":"urn:bpmn-lean:effect-protocol:activity-v1","operation":"urn:bpmn-lean:effect-operation:probe-v1","technicalFailures":1,"result":{"kind":"success","localPatch":[]}}]'
       BPMN_WORKER_HEALTH_PORT: "8080"
       BPMN_WORKER_IDENTITY: evaluation-bpmn-worker
+      BPMN_WORKER_SCRIPT_TIMEOUT_MS: "5000"
     depends_on:
       temporal:
         condition: service_healthy

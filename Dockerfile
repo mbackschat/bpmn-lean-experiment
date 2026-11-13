@@ -15,14 +15,14 @@ RUN pnpm \
     --filter @bpmn-lean/platform-recovery-worker... \
     --filter @bpmn-lean/platform-postgresql-migrate... \
     --filter @bpmn-lean/platform-web... \
-    --filter @bpmn-lean/temporal-runner... \
+    --filter @bpmn-lean/temporal-host... \
     --if-present run build
 
 FROM builder AS packager
 RUN pnpm --config.inject-workspace-packages=true --filter @bpmn-lean/platform-server deploy --prod /out/platform-api
 RUN pnpm --config.inject-workspace-packages=true --filter @bpmn-lean/platform-recovery-worker deploy --prod /out/platform-recovery-worker
 RUN pnpm --config.inject-workspace-packages=true --filter @bpmn-lean/platform-postgresql-migrate deploy --prod /out/platform-migrate
-RUN pnpm --config.inject-workspace-packages=true --filter @bpmn-lean/temporal-runner deploy --prod /out/bpmn-worker
+RUN pnpm --config.inject-workspace-packages=true --filter @bpmn-lean/temporal-host deploy --prod /out/bpmn-worker
 RUN cp -R platform/apps/web/dist /out/platform-web
 
 FROM ${NODE_IMAGE} AS runtime-base

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -218,6 +218,42 @@ test("runtime images contain only deployed production closures", async () => {
   ]) {
     assert.match(dockerignore, new RegExp(`^${escapeRegex(ignored)}$`, "mu"));
   }
+});
+
+test("every runtime target runs an entry that the package it deploys builds", async () => {
+  const dockerfile = await readFile(dockerfilePath, "utf8");
+  const root = fileURLToPath(new URL("..", import.meta.url));
+  const packageDirectories = new Map<string, string>();
+  for (const manifest of (await Promise.all(["packages", "platform"].map((workspace) => manifestPaths(path.join(root, workspace))))).flat()) {
+    const name = (JSON.parse(await readFile(manifest, "utf8")) as { name?: string }).name;
+    if (name !== undefined) packageDirectories.set(name, path.dirname(manifest));
+  }
+  const deployed = new Map([...dockerfile.matchAll(/--filter (?<name>@[\w./-]+) deploy --prod \/out\/(?<out>[\w-]+)$/gmu)]
+    .map((match) => [match.groups!.out!, match.groups!.name!]));
+  const builderFilters = [...dockerfile.matchAll(/--filter (?<name>@[\w./-]+)\.\.\. /gu)].map((match) => match.groups!.name!);
+  for (const target of ["platform-api", "platform-recovery-worker", "platform-migrate", "bpmn-worker"]) {
+    const stage = runtimeStage(dockerfile, target);
+    const out = /^COPY --from=packager --chown=node:node \/out\/(?<out>[\w-]+)\/ /mu.exec(stage)?.groups?.out;
+    assert.ok(out !== undefined, `${target} must copy one deployed closure`);
+    const name = deployed.get(out);
+    assert.ok(name !== undefined, `${target}: /out/${out} must be produced by a pnpm deploy`);
+    assert.ok(builderFilters.includes(name), `${target}: the builder must build ${name} and its dependencies`);
+    const directory = packageDirectories.get(name);
+    assert.ok(directory !== undefined, `${target}: ${name} is not a workspace package`);
+    const entry = /^(?:ENTRYPOINT|CMD) \["node", "dist\/(?<entry>[\w-]+)\.js"/mu.exec(stage)?.groups?.entry;
+    assert.ok(entry !== undefined, `${target} must run one built entry`);
+    await stat(path.join(directory, "src", `${entry}.ts`));
+  }
+});
+
+test("the Worker and both platform processes serve one Task Queue", async () => {
+  const compose = await readFile(composePath, "utf8");
+  const queue = (service: string, variable: string): string | undefined =>
+    new RegExp(`^ {6}${variable}: (\\S+)$`, "mu").exec(serviceBlock(compose, service))?.[1];
+  const worker = queue("bpmn-worker", "BPMN_TEMPORAL_TASK_QUEUE");
+  assert.ok(worker !== undefined);
+  assert.equal(queue("platform-api", "PLATFORM_TEMPORAL_TASK_QUEUE"), worker);
+  assert.equal(queue("platform-recovery-worker", "PLATFORM_TEMPORAL_TASK_QUEUE"), worker);
 });
 
 test("evaluation readiness and fresh setup share one explicitly selected Namespace", async () => {
@@ -439,6 +475,18 @@ function runtimeStage(dockerfile: string, target: string): string {
   assert.notEqual(start, -1, `missing Docker runtime target ${target}`);
   const next = dockerfile.indexOf("\nFROM ", start + marker.length);
   return dockerfile.slice(start, next === -1 ? undefined : next);
+}
+
+async function manifestPaths(directory: string): Promise<string[]> {
+  const found: string[] = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    if (entry.isDirectory() && !["node_modules", "dist"].includes(entry.name)) {
+      found.push(...await manifestPaths(path.join(directory, entry.name)));
+    } else if (entry.isFile() && entry.name === "package.json") {
+      found.push(path.join(directory, entry.name));
+    }
+  }
+  return found;
 }
 
 function escapeRegex(value: string): string {
