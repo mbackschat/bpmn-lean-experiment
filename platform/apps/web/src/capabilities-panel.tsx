@@ -66,7 +66,7 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
         </div>
       </dl>
       <aside className={styles.boundary} aria-label="Coverage boundary">
-        <strong>Not a conformance claim.</strong> Each row is an exact, restricted executable profile. BPMN coverage, selected CIB compatibility evidence, and platform journey coverage remain separate measures.
+        <strong>Not a conformance claim.</strong> Each row is an exact, restricted executable variant. BPMN coverage, selected CIB compatibility evidence, and platform journey coverage remain separate measures.
       </aside>
       <InlineDisclosure title="Implementation checkpoints">
       <div className={styles.beta}>
