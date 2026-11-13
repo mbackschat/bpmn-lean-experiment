@@ -68,6 +68,9 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
       <aside className={styles.boundary} aria-label="Coverage boundary">
         <strong>Not a conformance claim.</strong> Each row is an exact, restricted executable variant. BPMN coverage, selected CIB compatibility evidence, and platform journey coverage remain separate measures.
       </aside>
+      <aside className={styles.boundary} aria-label="Runtime qualification exceptions">
+        <strong>Runtime qualification exceptions.</strong> Three recorded runtime defects have no released correction and are accepted as disclosed exceptions: TD-001, where a read of a process can time out while Temporal evicts its Workflow Run; TD-002, where an input delivered during a read can be timed differently live and on replay; and TD-005, where a Script Task stopped by its timeout can abort its Worker process. The Temporal defects ledger records each one.
+      </aside>
       <InlineDisclosure title="Implementation checkpoints">
       <div className={styles.beta}>
         <h3 id="implementation-checkpoints-heading">Implementation checkpoints</h3>
