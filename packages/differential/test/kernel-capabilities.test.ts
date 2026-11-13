@@ -43,13 +43,13 @@ test("a Task claims its configured variant only with a BPMN Lean task definition
   ["abstractTask", "noneEndEvent", "noneStartEvent", "process", "sequenceFlow"]);
 });
 
-test("a looping User Task claims the loop beside its mode, and its boundary Timer the host's looping variant", async () => {
+test("a looping User Task claims the loop beside its mode, and its boundary Timer the generic and the host's looping variant", async () => {
   assert.deepEqual(await claimsOf(definitions(`<bpmn:userTask id="W"><bpmn:multiInstanceLoopCharacteristics isSequential="true">
     <bpmn:loopCardinality>2</bpmn:loopCardinality></bpmn:multiInstanceLoopCharacteristics></bpmn:userTask>
     <bpmn:boundaryEvent id="B" attachedToRef="W"><bpmn:timerEventDefinition><bpmn:timeDuration>PT1H</bpmn:timeDuration>
     </bpmn:timerEventDefinition></bpmn:boundaryEvent><bpmn:sequenceFlow id="f3" sourceRef="B" targetRef="E"/>`)), [
     "interruptingSequentialMultiInstanceBoundaryTimerEvent", "multiInstanceActivity", "noneEndEvent", "noneStartEvent",
-    "process", "sequenceFlow", "sequentialMultiInstanceUserTask", "userTask",
+    "process", "sequenceFlow", "sequentialMultiInstanceUserTask", "timerBoundaryEvent", "userTask",
   ]);
 });
 
@@ -58,6 +58,26 @@ test("an Event Sub-Process's start claims with it, and a Compensation one marks 
   assert.ok(claims.includes("compensationHandlerServiceTask"), claims.join(", "));
   const outer = await claimsOf(retained("scenarios/open-rows/compensation-context-live-outer/esp-reads-and-writes-outer.bpmn"));
   assert.ok(outer.includes("eventSubProcess") && outer.includes("compensationEventSubProcess"), outer.join(", "));
+});
+
+test("a boundary on a host without a host-specific row claims its trigger's generic variant alone", async () => {
+  const claims = await claimsOf(definitions(`<bpmn:serviceTask id="W" implementation="urn:bpmn-lean:effect:compensation-single-effect-v1"/>
+    <bpmn:boundaryEvent id="B" attachedToRef="W" cancelActivity="false"><bpmn:timerEventDefinition>
+    <bpmn:timeCycle>R2/PT1H</bpmn:timeCycle></bpmn:timerEventDefinition></bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f3" sourceRef="B" targetRef="X"/><bpmn:endEvent id="X"/>`));
+  assert.deepEqual(claims.filter((id) => /timer/iu.test(id)), ["timerBoundaryEvent"]);
+});
+
+test("every Compensation intermediate throw claims the Compensation throw variant, targeted or inside a scope", async () => {
+  const claims = await claimsOf(definitions(`<bpmn:subProcess id="W"><bpmn:startEvent id="WS"/>
+    <bpmn:sequenceFlow id="w1" sourceRef="WS" targetRef="Book"/><bpmn:userTask id="Book"/>
+    <bpmn:boundaryEvent id="BookUndo" attachedToRef="Book"><bpmn:compensateEventDefinition/></bpmn:boundaryEvent>
+    <bpmn:serviceTask id="Unbook" isForCompensation="true" implementation="urn:bpmn-lean:effect:compensation-single-effect-v1"/>
+    <bpmn:sequenceFlow id="w2" sourceRef="Book" targetRef="Undo"/>
+    <bpmn:intermediateThrowEvent id="Undo"><bpmn:compensateEventDefinition activityRef="Book"/></bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="w3" sourceRef="Undo" targetRef="WE"/><bpmn:endEvent id="WE"/>
+    <bpmn:association id="a1" associationDirection="One" sourceRef="BookUndo" targetRef="Unbook"/></bpmn:subProcess>`));
+  assert.ok(claims.includes("compensationIntermediateThrowEvent"), claims.join(", "));
 });
 
 test("an admitted construct without a catalog variant fails the program, naming every such construct", async () => {

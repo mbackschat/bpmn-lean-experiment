@@ -77,7 +77,7 @@ function elementClaims(element: Element, scopes: ReadonlyMap<string, ScopeFacts>
       return;
     }
     case ElementTag.Event:
-      eventClaims(element.header, element.payload, claims);
+      eventClaims(element.payload, claims);
       return;
     case ElementTag.Gateway:
       claims.add(gatewayVariant(element.payload.kind));
@@ -216,14 +216,14 @@ function gatewayVariant(kind: GatewayKind): MvpBpmnCapabilityId {
   return assertNever(kind);
 }
 
-function eventClaims(head: Header, payload: EventPayload, claims: Claims): void {
+function eventClaims(payload: EventPayload, claims: Claims): void {
   const role = payload.role;
   switch (role.tag) {
     case EventRoleTag.Catch:
       subscriptionClaims(role.subscription, { at: "catch" }, claims);
       return;
     case EventRoleTag.Throw:
-      throwClaims(role.record, isFinish(payload.placement), head.parent === null, claims);
+      throwClaims(role.record, isFinish(payload.placement), claims);
       return;
     case EventRoleTag.LinkCatch:
     case EventRoleTag.LinkThrow:
@@ -233,7 +233,7 @@ function eventClaims(head: Header, payload: EventPayload, claims: Claims): void 
   assertNever(role);
 }
 
-function throwClaims(thrown: Throw, end: boolean, processLevel: boolean, claims: Claims): void {
+function throwClaims(thrown: Throw, end: boolean, claims: Claims): void {
   const site = end ? "end" : "intermediate";
   switch (thrown.tag) {
     case ThrowTag.None:
@@ -252,11 +252,8 @@ function throwClaims(thrown: Throw, end: boolean, processLevel: boolean, claims:
       else claims.unclassified(`cancel ${site} throw`);
       return;
     case ThrowTag.Compensation:
-      if (!end && processLevel && thrown.payload.activity === null && thrown.payload.waitForCompletion) {
-        claims.add("compensationIntermediateThrowEvent");
-      } else {
-        claims.unclassified(`compensation ${site} throw${thrown.payload.activity === null ? "" : " with activityRef"}${processLevel ? "" : " inside a scope"}`);
-      }
+      if (end) claims.unclassified(`compensation ${site} throw`);
+      else claims.add("compensationIntermediateThrowEvent");
       return;
     case ThrowTag.Message:
     case ThrowTag.Signal:
@@ -285,7 +282,10 @@ function subscriptionClaims(subscription: Subscription, site: Site, claims: Clai
     case TriggerTag.Timer:
       if (site.at === "start") claims.add("timerStartEvent");
       else if (site.at === "catch") claims.add("intermediateCatchTimerEvent");
-      else if (site.at === "boundary") timerBoundaryClaims(site, isCycle(trigger.payload.schedule.tag), claims);
+      else if (site.at === "boundary") {
+        claims.add("timerBoundaryEvent");
+        timerBoundaryClaims(site, isCycle(trigger.payload.schedule.tag), claims);
+      }
       return false;
     case TriggerTag.Message:
       if (trigger.payload.correlation.length > 0) claims.add("messageKeyCorrelation");
@@ -294,15 +294,18 @@ function subscriptionClaims(subscription: Subscription, site: Site, claims: Clai
         claims.add("intermediateCatchMessageEvent");
         if (subscription.outputs.some(isDataAssociation)) claims.add("messagePayloadCatchEvent");
       } else if (site.at === "boundary") {
+        claims.add("messageBoundaryEvent");
         if (site.host === "userTask") {
           claims.add(site.interrupting ? "interruptingUserTaskBoundaryMessageEvent" : "nonInterruptingUserTaskBoundaryMessageEvent");
-        } else claims.unclassified(`message boundary on ${site.host}`);
+        }
       }
       return false;
     case TriggerTag.Error:
-      if (site.at === "boundary" && site.host === "serviceTask") claims.add("serviceTaskBoundaryErrorEvent");
-      else if (site.at === "boundary" && site.host === "embeddedSubProcess") claims.add("subProcessBoundaryErrorEvent");
-      else if (site.at !== "eventSubProcess") claims.unclassified(`error ${siteName(site)}`);
+      if (site.at === "boundary") {
+        claims.add("errorBoundaryEvent");
+        if (site.host === "serviceTask") claims.add("serviceTaskBoundaryErrorEvent");
+        else if (site.host === "embeddedSubProcess") claims.add("subProcessBoundaryErrorEvent");
+      } else if (site.at !== "eventSubProcess") claims.unclassified(`error ${siteName(site)}`);
       return false;
     case TriggerTag.Cancel:
       if (site.at === "boundary") claims.add("transactionCancelBoundaryEvent");
@@ -322,20 +325,19 @@ function subscriptionClaims(subscription: Subscription, site: Site, claims: Clai
   return assertNever(trigger);
 }
 
+/** The host-specific Timer boundary rows, claimed beside the generic one where a row names the host and the form. */
 function timerBoundaryClaims(site: BoundarySite, recurring: boolean, claims: Claims): void {
   if (recurring) {
-    if (site.interrupting || site.loop !== null) claims.unclassified(`recurring timer boundary on ${site.host}`);
-    else if (site.host === "userTask") claims.add("recurringUserTaskBoundaryTimerEvent");
+    if (site.interrupting || site.loop !== null) return;
+    if (site.host === "userTask") claims.add("recurringUserTaskBoundaryTimerEvent");
     else if (site.host === "embeddedSubProcess") claims.add("recurringSubProcessBoundaryTimerEvent");
-    else claims.unclassified(`recurring timer boundary on ${site.host}`);
   } else if (site.host === "userTask") {
     if (site.loop === null) {
       claims.add(site.interrupting ? "interruptingUserTaskBoundaryTimerEvent" : "nonInterruptingUserTaskBoundaryTimerEvent");
     } else if (site.interrupting) claims.add(multiInstanceVariants(site.loop).boundaryTimer);
-    else claims.unclassified("non-interrupting timer boundary on a Multi-Instance userTask");
   } else if (site.host === "embeddedSubProcess") {
     claims.add(site.interrupting ? "interruptingSubProcessBoundaryTimerEvent" : "nonInterruptingSubProcessBoundaryTimerEvent");
-  } else claims.unclassified(`timer boundary on ${site.host}`);
+  }
 }
 
 function siteName(site: Site): string {

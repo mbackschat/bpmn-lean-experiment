@@ -5,7 +5,7 @@ This file is generated from `manifest.json` by the executable corpus guard. Edit
 ## Current result
 
 The first tranche contains 103 retained executable models and 7 exact external candidates. The kernel admits 103 and refuses 7; 0 differ from their recorded admission, and 12 are eligible for the browser catalog.
-The retained MVP suite covers all 55 registered executable BPMN element or semantic variants.
+The retained MVP suite covers all 58 registered executable BPMN element or semantic variants.
 Browser eligibility separates 3 human-work journeys from 9 guided simulations with explicit host participants.
 
 ## Models
@@ -157,7 +157,7 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Activities | Event Sub-Process | `confirmed-travel-cancellation` |
 | Boundary Events | Interrupting Transaction Cancel Boundary Event | `reservation-withdrawal` |
 | Compensation | Compensation Boundary Event | `confirmed-travel-cancellation`, `reservation-withdrawal` |
-| Compensation | Global synchronous Compensation Intermediate Throw Event | `confirmed-travel-cancellation` |
+| Compensation | Compensation Intermediate Throw Event | `confirmed-travel-cancellation` |
 | Compensation | Compensation Event Sub-Process | `confirmed-travel-cancellation` |
 | Compensation | Compensation handler Service Task | `confirmed-travel-cancellation`, `reservation-withdrawal` |
 | Gateways | Exclusive Gateway | `expense-exception-review`, `boolean-decision-routing`, `structured-invoice-handoff`, `audit-remediation-concurrent-findings`, `credit-intake-concurrent-assessments`, `claim-intake-priced-assessments`, `claim-damage-assessment-concurrent-pricing`, `claim-assessment-rework`, `contract-revision-legal-review`, `document-intake-triage`, `complaint-handling-routing`, `travel-request-routed-closure`, `warranty-repair-milestones`, `claim-archiving`, `warranty-repair-links`, `claim-review-expert-opinion`, `invoice-clearing-single-scope`, `expense-routing-without-default`, `ticket-triage-without-default`, `request-review-rework`, `invoice-validation-rework`, `invoice-business-error-recovery` |
@@ -170,6 +170,9 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Intermediate Catch Events | Timer Intermediate Catch Event | `timed-review-window`, `message-or-deadline-routing`, `application-subscription-catch-timer`, `alarm-debounce-acknowledgement` |
 | Intermediate Throw Events | None Intermediate Throw Event | `warranty-repair-milestones`, `employee-onboarding-milestones`, `warranty-repair-links`, `employee-onboarding-links`, `purchase-request-single-scope`, `invoice-clearing-single-scope` |
 | Intermediate Throw Events | Link Intermediate Throw and Catch Event pair | `warranty-repair-links`, `employee-onboarding-links` |
+| Boundary Events | Timer Boundary Event | `task-deadline-escalation`, `work-package-deadline-escalation`, `non-interrupting-work-reminder`, `ordered-batch-document-review`, `deadline-escalated-batch-review`, `parallel-risk-review-all`, `parallel-risk-review-first`, `deadline-escalated-parallel-risk-review`, `application-subscription-boundary-timer`, `application-subscription-subprocess-boundary-timer`, `application-subscription-subprocess-boundary-one-shot` |
+| Boundary Events | Message Boundary Event | `application-withdrawal-during-review`, `application-subscription-boundary-message`, `application-subscription-message-host-with-child-entry` |
+| Boundary Events | Error Boundary Event | `scoped-business-error-recovery`, `mapped-business-error-review`, `invoice-business-error-recovery` |
 | Boundary Events | Interrupting Timer Boundary Event on User Task | `task-deadline-escalation` |
 | Boundary Events | Interrupting Message Boundary Event on User Task | `application-withdrawal-during-review` |
 | Boundary Events | Interrupting Timer Boundary Event on sequential Multi-Instance User Task | `ordered-batch-document-review`, `deadline-escalated-batch-review` |

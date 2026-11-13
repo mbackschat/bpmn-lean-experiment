@@ -294,9 +294,9 @@ export const mvpBpmnCapabilities = Object.freeze([
   {
     id: "compensationIntermediateThrowEvent",
     family: "Compensation",
-    element: "Global synchronous Compensation Intermediate Throw Event",
+    element: "Compensation Intermediate Throw Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One global blocking trigger activates the complete simultaneous maximal frontier in reverse dependency order; no targeted or asynchronous throws, concurrent triggers, Transactions, or CIB Compensation claim.",
+    restriction: "A Compensation throw at any level: without activityRef it compensates every eligible record retained in its own scope occurrence, with one only that Activity's, which must be visible from it; the thrower continues once every handler has completed, handlers running in reverse dependency order. An asynchronous throw and an activityRef naming no visible Activity are refused (throw.compensation.asynchronous, throw.compensation.activityLevel, throw.compensation.notActivity).",
     cibEvidence: notSelected,
   },
   {
@@ -394,6 +394,30 @@ export const mvpBpmnCapabilities = Object.freeze([
     support: BpmnCapabilitySupport.BoundedStandard,
     restriction: "Under the nested scope-data profile only: one throw and one catch of each Link name in one scope of the executed Process, the throw with one incoming flow and the catch with one unconditioned outgoing flow. The pair behaves exactly as the Sequence Flow it replaces and publishes no occurrence or wait. Several throws of one name are admitted only where their catch leads to a merging User, Service or Send Task in the Process root. No other several throws of one name, chains, source or target references, asynchronous continuations, listeners, called Processes or Multi-Instance bodies.",
     cibEvidence: notSelected,
+  },
+  {
+    id: "timerBoundaryEvent",
+    family: "Boundary Events",
+    element: "Timer Boundary Event",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "A Timer boundary on any Activity or Sub-Process host, interrupting or not, in any duration, date or cycle form the kernel admits; the rows below state the outcomes of particular hosts. The Timer refusal codes are its restrictions (timer.duration, timer.date, timer.cycle, timer.cron), and a boundary on an Event Sub-Process is refused (scope.eventSubProcess.boundary).",
+    cibEvidence: notSelected,
+  },
+  {
+    id: "messageBoundaryEvent",
+    family: "Boundary Events",
+    element: "Message Boundary Event",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "A Message boundary on any Activity or Sub-Process host, interrupting or not, addressed by its Message's name; the rows below state the User Task's outcomes. An unnamed Message and two subscriptions of one name in one CIB event scope are refused (message.unnamed, message.duplicateName).",
+    cibEvidence: notSelected,
+  },
+  {
+    id: "errorBoundaryEvent",
+    family: "Boundary Events",
+    element: "Error Boundary Event",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "An Error boundary on any Activity or Sub-Process host, catching an Error raised inside its host by exact code before a catch-all one; the rows below state particular hosts. An Error always interrupts, so a non-interrupting one is refused (boundary.error.nonInterrupting).",
+    cibEvidence: exactCib("mapped-boundary-error-service-task-caught"),
   },
   {
     id: "interruptingUserTaskBoundaryTimerEvent",
