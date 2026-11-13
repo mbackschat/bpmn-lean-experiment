@@ -82,7 +82,7 @@ function place(program: Program, id: ElementId): string | null {
 }
 
 /** The flows that leave an element or boundary by its own lists. */
-function leaving(program: Program, id: ElementId): readonly FlowId[] {
+export function leaving(program: Program, id: ElementId): readonly FlowId[] {
   const element = programElement(program, id);
   if (element !== null) return elementOutgoing(element);
   return programBoundary(program, id)?.[1].outgoing ?? [];
@@ -276,13 +276,13 @@ export function awaitsStimulus(element: Element): boolean {
  * An element a branch stops at within its closure: one that awaits a stimulus, or a converging Parallel or Inclusive
  * Gateway, which joins the branches (CIB parks its execution there too).
  */
-function branchStop(element: Element): boolean {
+export function branchStop(element: Element): boolean {
   const gateway = elementGateway(element);
   return awaitsStimulus(element) || (gateway !== null && routing(gateway[1]).concurrent && gateway[1].incoming.length >= 2);
 }
 
 /** The elements `flows` lead to. */
-const flowTargets = (program: Program, flows: readonly FlowId[]): readonly Element[] => flows.flatMap((flow) => {
+export const flowTargets = (program: Program, flows: readonly FlowId[]): readonly Element[] => flows.flatMap((flow) => {
   const target = programTarget(program, flow);
   const element = target === null ? null : programElement(program, target);
   return element === null ? [] : [element];
@@ -292,7 +292,7 @@ const flowTargets = (program: Program, flows: readonly FlowId[]): readonly Eleme
  * The children an occurrence of the Scope `id` begins on entry: its start Events, or, without one, the children that
  * begin implicitly (`elementBeginsImplicitly`), as `feature/scopes.ts` `implicitStart` begins them.
  */
-function enteredChildren(program: Program, id: ElementId): readonly Element[] {
+export function enteredChildren(program: Program, id: ElementId): readonly Element[] {
   const children = programChildren(program, id);
   return children.some((child) => elementStart(child) !== null)
     ? children.filter((child) => elementStart(child) !== null)
@@ -306,7 +306,8 @@ function enteredChildren(program: Program, id: ElementId): readonly Element[] {
  * variables, what its Signal's receivers install, a loop's output collection), the names a looping element writes into
  * scope occurrences of its own (its counters and each instance's items), what a boundary writes when it fires, whether an element's run may raise an Error, Escalation or Cancel in its
  * closure, whether a subscription catches such a raise, whether an element begins compensation handlers, whether a
- * subscription starts a Compensation Event Sub-Process, and whether a looping element may run no instance.
+ * subscription starts a Compensation Event Sub-Process, whether a looping element may run no instance, and whether
+ * beginning an element removes everything else in its parent's interior (an interrupting Event Sub-Process).
  */
 export type Reading = Readonly<{
   writes: (element: Element) => NameSet;
@@ -317,6 +318,7 @@ export type Reading = Readonly<{
   compensates: (element: Element) => boolean;
   compensationStart: (subscription: Subscription) => boolean;
   mayRunNone: (element: Element) => boolean;
+  interrupts: (element: Element) => boolean;
 }>;
 
 /**
@@ -331,19 +333,40 @@ export type Visit =
   | { readonly tag: VisitTag.Fires; readonly boundary: Boundary }
   | { readonly tag: VisitTag.Passes; readonly element: Element };
 
-const toEnter = (element: Element): Visit => ({ tag: VisitTag.Enters, element });
+export const toEnter = (element: Element): Visit => ({ tag: VisitTag.Enters, element });
 const toComplete = (element: Element): Visit => ({ tag: VisitTag.Completes, element });
 const toFire = (attached: Boundary): Visit => ({ tag: VisitTag.Fires, boundary: attached });
 const toPass = (element: Element): Visit => ({ tag: VisitTag.Passes, element });
 
 /**
- * What a walk found: the footprint of the shared names, whether a token may end, every element and boundary it reached
- * (walked through, stopped at or fired), and the names written into scope occurrences of their own.
+ * A region a closure may remove at once with all the work in it: the interior of `root`, its own occurrence included
+ * when `inclusive` (an interrupting boundary's host), else only what it holds (an interrupting Event Sub-Process's or a
+ * Terminate End's Scope); `root = null` is the process level of `source`, the element whose run removes it.
  */
-export type Closure = Readonly<{ footprint: Footprint; ends: boolean; reached: readonly ElementId[]; locals: readonly string[] }>;
+export type Withdrawal = Readonly<{ source: ElementId; root: ElementId | null; inclusive: boolean }>;
+
+/**
+ * What a walk found: the footprint of the shared names, whether a token may end, every element and boundary it reached
+ * (walked through, stopped at or fired), and the names written into scope occurrences of their own; and what it may do
+ * to other work in the instance (`interferes`): the elements it begins and completes, the regions it may remove, the
+ * elements whose open Signal subscriptions (`resumes`) or compensation records (`compensates`) it may act on, and the
+ * resumptions of the Signal subscriptions it leaves open (`wakes`).
+ */
+export type Closure = Readonly<{
+  footprint: Footprint;
+  ends: boolean;
+  reached: readonly ElementId[];
+  locals: readonly string[];
+  begun: readonly ElementId[];
+  completed: readonly ElementId[];
+  withdraws: readonly Withdrawal[];
+  resumes: readonly ElementId[];
+  compensates: readonly ElementId[];
+  wakes: readonly Visit[];
+}>;
 
 /** The elements enclosing the element whose parent is `parent`, innermost first. */
-function ancestors(program: Program, parent: ElementId | null): Element[] {
+export function ancestors(program: Program, parent: ElementId | null): Element[] {
   const found: Element[] = [];
   let id = parent;
   for (let fuel = program.elements.length; fuel > 0 && id !== null; fuel -= 1) {
@@ -368,7 +391,7 @@ const startingSubProcesses = (level: readonly Element[], starts: (subscription: 
   });
 
 /** The Call Activities whose called process is `process`. */
-function callers(program: Program, process: CalledProcess): Element[] {
+export function callers(program: Program, process: CalledProcess): Element[] {
   return program.elements.filter((element) => {
     const activity = elementActivity(element);
     const work = activity === null ? null : workCall(activity[1].work);
@@ -455,7 +478,7 @@ export function conditionalCatches(program: Program): Visit[] {
  * every trigger that may begin it and that trigger's continuation; and every Signal catch a Signal throw resumes in the
  * instance (CIB-OP-0019).
  */
-function beyond(reading: Reading, program: Program, element: Element, completes: boolean): Visit[] {
+export function beyond(reading: Reading, program: Program, element: Element, completes: boolean): Visit[] {
   const raised = reading.raises(element) ? catchers(reading, program, element, program.elements.length + 1) : [];
   const compensated = reading.compensates(element) ? handlersOf(reading, program, element).map(toEnter) : [];
   const id = elementHeader(element).id;
@@ -552,6 +575,105 @@ function visitKey(visit: Visit): string {
   return assertNever(visit);
 }
 
+/** Whether `element` is a Terminate End, which ends everything in the Scope or process level it sits in. */
+function terminates(element: Element): boolean {
+  const event = elementEvent(element);
+  const thrown = event === null ? null : eventPayloadThrow(event[1]);
+  return thrown !== null && throwView(thrown).terminates;
+}
+
+/** The region beginning `element` removes: an interrupting Event Sub-Process's and a Terminate End's parent. */
+function removal(reading: Reading, element: Element): Withdrawal[] {
+  const header = elementHeader(element);
+  return reading.interrupts(element) || terminates(element) ? [{ source: header.id, root: header.parent, inclusive: false }] : [];
+}
+
+/** The region an interrupting boundary's firing removes: its host with everything in it. */
+function interruption(program: Program, attached: Boundary): Withdrawal[] {
+  const found = attached.interrupting ? programBoundary(program, attached.id) : null;
+  if (found === null) return [];
+  const host = elementHeader(found[0]).id;
+  return [{ source: host, root: host, inclusive: true }];
+}
+
+/**
+ * The element a resumed Signal subscription waits on: a catch and the Event-Based Gateway it is an arm of, a boundary's
+ * host, an Event Sub-Process's Scope.
+ */
+function anchors(program: Program, visit: Visit): ElementId[] {
+  switch (visit.tag) {
+    case VisitTag.Completes: {
+      const id = elementHeader(visit.element).id;
+      return [id, ...program.flows.filter((entry) => entry.target === id).flatMap((entry) => {
+        const source = programElement(program, entry.source);
+        const gateway = source === null ? null : elementGateway(source);
+        return gateway !== null && routing(gateway[1]).waits ? [entry.source] : [];
+      })];
+    }
+    case VisitTag.Fires: {
+      const found = programBoundary(program, visit.boundary.id);
+      return found === null ? [] : [elementHeader(found[0]).id];
+    }
+    case VisitTag.Enters: {
+      const parent = elementHeader(visit.element).parent;
+      return parent === null ? [] : [parent];
+    }
+    case VisitTag.Passes:
+      return [];
+  }
+  return assertNever(visit);
+}
+
+/**
+ * The elements whose open Signal subscriptions a Signal throw of `element` resumes: they are open only once the work
+ * that opens them began.
+ */
+function resumed(program: Program, element: Element): ElementId[] {
+  const event = elementEvent(element);
+  const thrown = event === null ? null : eventPayloadThrow(event[1]);
+  return thrown !== null && throwView(thrown).signal !== null
+    ? program.elements.flatMap((other) => catching(signalled, other)).flatMap((visit) => anchors(program, visit))
+    : [];
+}
+
+/**
+ * The Activities and Scopes whose records a Compensation throw or Cancel End of `element` may compensate: a handler's
+ * subject is the Activity naming it, a Compensation Event Sub-Process's its Scope. A record exists only once its subject
+ * completed.
+ */
+function compensated(reading: Reading, program: Program, element: Element): ElementId[] {
+  if (!reading.compensates(element)) return [];
+  return handlersOf(reading, program, element).flatMap((handlerElement) => {
+    const header = elementHeader(handlerElement);
+    const subjects = program.elements.filter((subject) => (elementEnvelope(subject)?.compensationHandlers ?? []).includes(header.id))
+      .map((subject) => elementHeader(subject).id);
+    return elementIsCompensationActivity(handlerElement) || header.parent === null ? subjects : [...subjects, header.parent];
+  });
+}
+
+/**
+ * The resumptions of the Signal subscriptions beginning `element` opens and leaves waiting: its catch and its boundaries
+ * when it `stops` there, an Event-Based Gateway's Signal arms, and a Scope's Signal Event Sub-Process starts.
+ */
+function opened(program: Program, element: Element, stops: boolean): Visit[] {
+  const event = elementEvent(element);
+  const caught = event === null ? null : eventPayloadCatch(event[1]);
+  const gateway = elementGateway(element);
+  const scope = elementScope(element);
+  return [
+    ...(stops && caught !== null && signalled(caught) ? [toComplete(element)] : []),
+    ...(stops ? (elementEnvelope(element)?.boundaries ?? []).filter((attached) => signalled(attached.subscription)).map(toFire) : []),
+    ...(gateway !== null && routing(gateway[1]).waits
+      ? flowTargets(program, elementOutgoing(element)).filter((arm) => {
+        const armEvent = elementEvent(arm);
+        const armCatch = armEvent === null ? null : eventPayloadCatch(armEvent[1]);
+        return armCatch !== null && signalled(armCatch);
+      }).map(toComplete)
+      : []),
+    ...(scope === null ? [] : startingSubProcesses(programChildren(program, scope[0].id), signalled).map(toEnter)),
+  ];
+}
+
 /**
  * Walk one closure from `begun`. Every element, boundary and passed host is taken at most once per kind of visit; a
  * write arms every Conditional of the program once, since it may resume one in the same closure (CIB-EXT-0035).
@@ -565,10 +687,21 @@ export function closureWalk(reading: Reading, program: Program, walk: Walk, begu
   let ends = false;
   const reached: ElementId[] = [];
   const locals: string[] = [];
+  const begunIds: ElementId[] = [];
+  const completed: ElementId[] = [];
+  const withdraws: Withdrawal[] = [];
+  const resumes: ElementId[] = [];
+  const compensates: ElementId[] = [];
+  const wakes: Visit[] = [];
   let armed = false;
   const add = ([part, own]: readonly [Footprint, readonly string[]]): void => {
     found = joined(found, part);
     locals.unshift(...own);
+  };
+  const acts = (element: Element): void => {
+    completed.unshift(elementHeader(element).id);
+    resumes.unshift(...resumed(program, element));
+    compensates.unshift(...compensated(reading, program, element));
   };
   // What one visit adds to the walk, and the visits it leads to.
   const visited = (visit: Visit): Visit[] => {
@@ -576,6 +709,7 @@ export function closureWalk(reading: Reading, program: Program, walk: Walk, begu
       case VisitTag.Fires:
         reached.unshift(visit.boundary.id);
         add([{ reads: noNames, writes: { names: reading.fires(visit.boundary), all: false } }, []]);
+        withdraws.unshift(...interruption(program, visit.boundary));
         return flowTargets(program, visit.boundary.outgoing).map(toEnter);
       case VisitTag.Passes: {
         reached.unshift(elementHeader(visit.element).id);
@@ -586,18 +720,24 @@ export function closureWalk(reading: Reading, program: Program, walk: Walk, begu
       case VisitTag.Completes:
         reached.unshift(elementHeader(visit.element).id);
         add(runs(reading, program, visit.element));
+        acts(visit.element);
         return [...after(reading, program, walk, visit.element),
           ...(walk.ascends && elementEnvelope(visit.element)?.multiInstance != null ? [toEnter(visit.element)] : [])];
       case VisitTag.Enters: {
         const element = visit.element;
         reached.unshift(elementHeader(element).id);
-        if (walk.stop(element) && !runsThrough(reading, element)) {
+        const stops = walk.stop(element) && !runsThrough(reading, element);
+        begunIds.unshift(elementHeader(element).id);
+        withdraws.unshift(...removal(reading, element));
+        wakes.push(...opened(program, element, stops));
+        if (stops) {
           found = joined(found, { reads: beginReads(element), writes: noNames });
           return entering(reading, program, element);
         }
         const scope = elementScope(element);
         const onward = [...continuing(program, element), ...(scope === null ? [] : enteredChildren(program, scope[0].id))];
         add(runs(reading, program, element));
+        acts(element);
         ends ||= onward.length === 0;
         return [...entering(reading, program, element), ...after(reading, program, walk, element)];
       }
@@ -617,65 +757,7 @@ export function closureWalk(reading: Reading, program: Program, walk: Walk, begu
     frontier = arms ? [...rest, ...next, ...conditionalCatches(program)] : [...rest, ...next];
     armed ||= arms;
   }
-  return { footprint: found, ends, reached, locals };
-}
-
-/** What the work a token on `start` reaches may read and write in one closure; an element it stops at only begins. */
-const branchFootprint = (reading: Reading, program: Program, start: FlowId): Footprint =>
-  closureWalk(reading, program, { stop: branchStop, ascends: false }, flowTargets(program, [start]).map(toEnter)).footprint;
-
-/**
- * Under `BranchSchedule.orderInvariant`, no branch of a split may write a name another branch reads or writes in the
- * same closure: BPMN 2.0.2 lets concurrent branches interleave in any order (Table 13.1, §13.3.1), so the value left or
- * read would depend on the closure's order, which no input states. CIB runs the first-declared branch first
- * (CIB-OP-0016), the profile option `declarationDepthFirst` (PC-BASIC-03). A split is a Parallel or Inclusive Gateway,
- * or any element or Boundary Event with several outgoing flows. A forward-compatible restriction, and a conservative
- * one: a branch counts what its elements write (`Reading.writes`), what the catchers, handlers and Signal and Conditional
- * catches it may resume in the closure do, and a loop that may run no instance as completing (issue #99); a Call's
- * output mappings count as written even when the called instance waits, and a JUEL text as reading every name; a later
- * profile may take the interleaving as a choice input instead. Not counted: what an element it stops at evaluates
- * besides its input mappings and Multi-Instance definition.
- */
-export function concurrentWrite(reading: Reading, program: Program, flow: Flow): string | null {
-  switch (program.options.branchSchedule) {
-    case BranchSchedule.DeclarationDepthFirst:
-      return null;
-    case BranchSchedule.OrderInvariant: {
-      const source = programElement(program, flow.source);
-      const gateway = source === null ? null : elementGateway(source);
-      if (gateway !== null && !routing(gateway[1]).concurrent) return null;
-      const own = branchFootprint(reading, program, flow.id);
-      return leaving(program, flow.source).some((other) => other !== flow.id && races(own, branchFootprint(reading, program, other)))
-        ? "flow.concurrentWrite"
-        : null;
-    }
-  }
-  return assertNever(program.options.branchSchedule);
-}
-
-/**
- * What the instances of a looping element do in the closure that begins them, which
- * `concurrentInstances` (`admission/multi-instance.ts`) reads: `races` when one instance writes a name before it waits,
- * since every instance has the same footprint and so meets its own, and `completes` when an instance may complete there.
- */
-export type InstanceClosure = Readonly<{ races: boolean; completes: boolean }>;
-
-/**
- * A Sub-Process instance runs from its `enteredChildren` and continues past a join, which the instance's own branches reach
- * in that closure; a task instance is its work, which completes at once unless it awaits a stimulus. `completes`
- * over-approximates: a token reaching an element that neither waits nor continues, ignoring that a sibling branch of a
- * Parallel split may wait, which flows a condition selects and whether a nested Call waits.
- */
-export function instanceClosure(reading: Reading, program: Program, element: Element): InstanceClosure {
-  const scope = elementScope(element);
-  if (scope !== null) {
-    const closure = closureWalk(reading, program, { stop: awaitsStimulus, ascends: false }, enteredChildren(program, scope[0].id).map(toEnter));
-    return { races: races(closure.footprint, closure.footprint), completes: closure.ends };
-  }
-  if (awaitsStimulus(element)) return { races: false, completes: false };
-  const own = footprint(program, element);
-  const run: Footprint = { reads: own.reads, writes: union(own.writes, reading.writes(element)) };
-  return { races: races(run, run), completes: true };
+  return { footprint: found, ends, reached, locals, begun: begunIds, completed, withdraws, resumes, compensates, wakes };
 }
 
 /**

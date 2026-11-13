@@ -2,6 +2,7 @@ module
 
 public import Kernel.Admission.Data
 public import Kernel.Admission.Flow
+public import Kernel.Admission.Flow.Concurrency
 public import Kernel.Admission.Profile
 public import Kernel.Admission.Work
 public import Kernel.Admission.MultiInstance
@@ -315,8 +316,8 @@ def loopedHandler (program : Program) : Bool :=
 /-- What `Admission.Flow`'s closure walk reads beyond the IL's footprints, each part from its owner: what an element
 and a fired boundary write (`Kernel.writes`, `Kernel.catchWrites`), whether a work may raise (`Admission.Work.traits`),
 whether a catch catches a raise or starts compensation (`Admission.Subscriptions`), whether a throw raises or begins
-compensation handlers (`Admission.Propagation.throwReading`), and a loop's own names and whether it may run no instance
-(`Admission.MultiInstance`). -/
+compensation handlers (`Admission.Propagation.throwReading`), a loop's own names and whether it may run no instance
+(`Admission.MultiInstance`), and whether a Scope is an interrupting Event Sub-Process (`Admission.Scopes`). -/
 def reading (program : Program) : Admission.Flow.Reading :=
   let thrownOf (element : Element) : Option Admission.Propagation.Thrown :=
     element.event?.bind fun (_, payload) => payload.throw?.map (Admission.Propagation.throwReading program.options {} .caught)
@@ -330,7 +331,9 @@ def reading (program : Program) : Admission.Flow.Reading :=
     catchesRaise := fun subscription => (Admission.Subscriptions.catchView subscription).raised
     compensates := fun element => (thrownOf element).any (·.compensates)
     compensationStart := Admission.Subscriptions.compensates
-    mayRunNone := fun element => (loop element).any Admission.MultiInstance.mayRunNone }
+    mayRunNone := fun element => (loop element).any Admission.MultiInstance.mayRunNone
+    interrupts := fun element =>
+      element.scope?.any fun (_, payload) => (Admission.Scopes.interruptingStart payload).isSome }
 
 /-- What one closure from `begun` may reach and write, ascending out of Scopes and called processes: the walk every
 closure of a run is held to by the closure law (`packages/differential/test/closure-reach.integration-test.ts`). -/
@@ -341,15 +344,15 @@ def closureReach (program : Program) (begun : List Admission.Flow.Visit) : Admis
 `Admission.Flow`'s, the loop's mode and condition `Admission.MultiInstance`'s. -/
 def loopInstances (program : Program) (element : Element) : Option String :=
   (element.envelope?.bind (·.multiInstance)).bind fun loop =>
-    let closure := Admission.Flow.instanceClosure (reading program) program element
+    let closure := Admission.Flow.Concurrency.instanceClosure (reading program) program element
     Admission.MultiInstance.concurrentInstances program.options loop closure.races closure.completes
 
-/-- A flow's condition, evaluated in its source's enclosing scope, then where it may sit, then whether its branch races
-a sibling's write. -/
+/-- A flow's condition, evaluated in its source's enclosing scope, then where it may sit, then whether its branch
+conflicts with a sibling's. -/
 def flow (program : Program) (entry : Flow) : Option String :=
   let here := site program ((program.element? entry.source).bind (·.header.parent))
   Admission.Data.flowCondition program.options.evaluator here entry <|> Admission.Flow.conditionalOutflow program entry <|>
-    Admission.Flow.concurrentWrite (reading program) program entry
+    Admission.Flow.Concurrency.concurrentBranches (reading program) program entry
 
 /-- A called process's deployment, version and version tag are the population's stamps, which `Population.deploy`
 validates against its registry (PC-SCOPE-03); the population has one tenant, so a tenant stays refused

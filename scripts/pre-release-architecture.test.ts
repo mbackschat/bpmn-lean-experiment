@@ -80,6 +80,7 @@ const kernelTerminateFiles: ReadonlySet<string> = new Set([
   "packages/bpmn-source/src/kernel-reader/assembly.ts",
   "packages/bpmn-source/src/kernel-reader/events.ts",
   "packages/kernel/src/il/types.ts",
+  "packages/kernel/test/admission-refusals-flow-interference.test.ts",
   "packages/kernel/test/admission-refusals-profile.test.ts",
   "contracts/schemas/vocabulary.schema.json",
 ]);

@@ -46,6 +46,7 @@ import {
 } from "./il/types.js";
 import * as Data from "./admission/data.js";
 import * as FlowAdmission from "./admission/flow.js";
+import * as Concurrency from "./admission/flow/concurrency.js";
 import * as Decision from "./admission/work/decision.js";
 import * as Profile from "./admission/profile.js";
 import * as Work from "./admission/work.js";
@@ -495,8 +496,9 @@ const neutralSite: Propagation.ThrowSite = {
  * What `admission/flow.ts`'s closure walk reads beyond the IL's footprints, each part from its owner: what an element
  * and a fired boundary write (`il/footprint.ts` `writes`, `catchWrites`), whether a work may raise (`admission/work.ts`
  * `traits`), whether a catch catches a raise or starts compensation (`admission/subscriptions.ts`), whether a throw
- * raises or begins compensation handlers (`admission/propagation.ts` `throwReading`), and a loop's own names and whether
- * it may run no instance (`admission/multi-instance.ts`).
+ * raises or begins compensation handlers (`admission/propagation.ts` `throwReading`), a loop's own names and whether it
+ * may run no instance (`admission/multi-instance.ts`), and whether a Scope is an interrupting Event Sub-Process
+ * (`admission/scopes.ts`).
  */
 function reading(program: Program): FlowAdmission.Reading {
   const thrownOf = (element: Element): Propagation.Thrown | null => {
@@ -524,6 +526,10 @@ function reading(program: Program): FlowAdmission.Reading {
       const found = loop(element);
       return found !== null && MultiInstance.mayRunNone(found);
     },
+    interrupts: (element) => {
+      const scope = elementScope(element);
+      return scope !== null && Scopes.interruptingStart(scope[1]) !== null;
+    },
   };
 }
 
@@ -542,19 +548,19 @@ export function closureReach(program: Program, begun: readonly FlowAdmission.Vis
 function loopInstances(program: Program, entry: Element): string | null {
   const loop = elementEnvelope(entry)?.multiInstance ?? null;
   if (loop === null) return null;
-  const closure = FlowAdmission.instanceClosure(reading(program), program, entry);
+  const closure = Concurrency.instanceClosure(reading(program), program, entry);
   return MultiInstance.concurrentInstances(program.options, loop, closure.races, closure.completes);
 }
 
 /**
- * A flow's condition, evaluated in its source's enclosing scope, then where it may sit, then whether its branch races a
- * sibling's write.
+ * A flow's condition, evaluated in its source's enclosing scope, then where it may sit, then whether its branch
+ * conflicts with a sibling's.
  */
 function flow(program: Program, entry: Flow): string | null {
   const source = programElement(program, entry.source);
   const here = site(program, source === null ? null : source.header.parent);
   return Data.flowCondition(program.options.evaluator, here, entry) ?? FlowAdmission.conditionalOutflow(program, entry) ??
-    FlowAdmission.concurrentWrite(reading(program), program, entry);
+    Concurrency.concurrentBranches(reading(program), program, entry);
 }
 
 /**

@@ -507,6 +507,7 @@
         "expression.juel.syntax",
         "expression.outsideJuel",
         "expression.outsideSimpleBoolean",
+        "flow.concurrentInterference",
         "flow.concurrentWrite",
         "flow.condition.foreign",
         "flow.conditionalOutflow",

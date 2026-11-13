@@ -27,8 +27,8 @@ const holds = (name: string, filtered = true): Json => ({
   condition: { payload: { condition: juel({ identifier: { name } }), variableName: filtered ? name : null, variableEvents: [] } },
 });
 
-function admitted(json: Json): Program {
-  const decoded = decodeProgram(wired(withOptions({ ...json, variables: ["a", "b"] }, options)));
+function admitted(json: Json, over: Json = {}): Program {
+  const decoded = decodeProgram(wired(withOptions({ ...json, variables: ["a", "b"] }, { ...options, ...over })));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   assert.equal(admit(decoded.value), null);
   return decoded.value;
@@ -105,8 +105,10 @@ test("an interrupting Event Sub-Process that removes the Activity whose boundari
 /** `S -> P`, a fork to the User Task `W`, the Signal catch `C` and the Sub-Process `R` with the interrupting boundary
  * `BO`, inside which the non-interrupting Event Sub-Process `HN` starts at `SN` and throws the Signal `S` that `C`
  * catches. `SN` holds `${a}` and `BO` holds `${b}`, each offered only writes of its variable, unless `oneVariable`
- * makes both hold `${a}` for every write. */
-const thrower = (oneVariable: boolean): Program => {
+ * makes both hold `${a}` for every write. The fork runs under CIB's schedule (CIB-OP-0016): `HN` may start as `R` is
+ * entered and throw before or after the fork's third branch opens `C`, which the standards schedule refuses
+ * (`flow.concurrentInterference`, #81). */
+const throwerModel = (oneVariable: boolean): Json => {
   const throwSignal: Json = {
     signal: {
       payload: { signalRef: qName("Sig"), name: text("S"), payload: [], propagateAll: null, localOnly: false, businessKey: null, asynchronous: false },
@@ -114,15 +116,22 @@ const thrower = (oneVariable: boolean): Program => {
   };
   const stop = oneVariable ? holds("a", false) : holds("b");
   const alert = oneVariable ? holds("a", false) : holds("a");
-  return admitted(withFlows(append(replace(base(), "T", gateway("P", "parallel", { outgoing: ["p1", "p2", "p3"] })),
+  return withFlows(append(replace(base(), "T", gateway("P", "parallel", { outgoing: ["p1", "p2", "p3"] })),
     activity("W", userWork()), end("EW"), catchEvent("C", signal()), activity("WC", userWork()), end("EC"),
     scope("R", "embedded", {}, { boundaries: [boundary("BO", stop, { outgoing: ["bo"] })] }), end("ER"), activity("HO", userWork()), end("EHO"),
     start("RS", null, [], "R"), activity("T2", userWork(), {}, "R"), end("RE", "none", "R"),
     scope("HN", eventSubProcess(alert, false), {}, {}, "R"), start("SN", alert, [], "HN"), end("EN", throwSignal, "HN")),
     flow("p0", "S", "P"), flow("pe", "P", "E"), flow("p1", "P", "W"), flow("p2", "P", "R"), flow("p3", "P", "C"), flow("c1", "C", "WC"),
     flow("c2", "WC", "EC"), flow("w1", "W", "EW"), flow("r1", "R", "ER"), flow("bo", "BO", "HO"), flow("ho", "HO", "EHO"),
-    flow("rs", "RS", "T2"), flow("t2", "T2", "RE"), flow("n1", "SN", "EN")));
+    flow("rs", "RS", "T2"), flow("t2", "T2", "RE"), flow("n1", "SN", "EN"));
 };
+const thrower = (oneVariable: boolean): Program => admitted(throwerModel(oneVariable), { branchSchedule: "declarationDepthFirst" });
+
+test("the standards schedule refuses the fork whose Event Sub-Process may throw before or after a sibling opens the catch", () => {
+  const decoded = decodeProgram(wired(withOptions({ ...throwerModel(false), variables: ["a", "b"] }, options)));
+  assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
+  assert.equal(admit(decoded.value), "flow.concurrentInterference");
+});
 
 test("an interruption never commits without the Signal an earlier-ordered handler throws before its first wait", () => {
   const caught = run(thrower(false), [begin, write("W", ["a"])]);
