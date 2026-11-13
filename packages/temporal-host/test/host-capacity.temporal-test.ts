@@ -1,9 +1,9 @@
 /**
  * Hosted witnesses of the capacity table (PC-QUALIFY-10), run in hosted CI only: a real Continue-As-New carrying exactly
- * the continuation bound and the candidate one byte past it refused before Event History; the Event History byte
- * trigger; the 128th Run and the refused 129th; one byte pair through an Update validator; and the realistic
- * sixteen-body parallel Multi-Instance journey on durable scheduling with its sixteen effects as concurrent Activities,
- * forced across Runs mid-Multi-Instance. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since
+ * the continuation bound and the candidate one byte past it refused before Event History; the rollover at the server's
+ * history-size suggestion; the 128th Run and the refused 129th; one byte pair through an Update validator; and the
+ * realistic sixteen-body parallel Multi-Instance journey on durable scheduling with its sixteen effects as concurrent
+ * Activities, forced across Runs mid-Multi-Instance. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since
  * it judges candidates with the Workflow's own measure.
  */
 import assert from "node:assert/strict";
@@ -26,7 +26,6 @@ import * as fx from "./fixtures/capacity-journey.ts";
 const projectRoot = new URL("../../../", import.meta.url);
 const taskQueue = "bpmn-lean-temporal-host-capacity-test";
 const deadlineMs = 60_000;
-const MiB = 1_024 * 1_024;
 
 const external = (historyEventBudget: number | null): HostConfig =>
   ({ scheduling: Scheduling.External, effectStartToCloseMs: 10_000, historyEventBudget });
@@ -147,27 +146,31 @@ test("continuation: a Run continues as new carrying exactly 448 KiB, and the can
   assert.equal((await client.hostView(over)).revision, head, "nothing published");
 });
 
-test("Event History bytes: a Run continues as new once its history reaches 8 MiB, never before", async () => {
+/** `temporal.api.enums.v1.SuggestContinueAsNewReason.SUGGEST_CONTINUE_AS_NEW_REASON_HISTORY_SIZE_TOO_LARGE`. */
+const historySizeTooLarge = 1;
+
+test("Event History bytes: a Run continues as new in the first Workflow Task the server suggests it for history size", async () => {
   const program = await fx.cibProgram(fx.armingModel("timer"));
   const id = workflowId("history-bytes");
   await client.start({ workflowId: id, program, config: external(null), start: { kind: "start", commandId: "s", instanceId: fx.instanceId, variables: [] } });
   const handle = environment.client.workflow.getHandle(id);
   const firstRun = (await handle.describe()).runId;
-  let below = 0;
-  for (let activation = 1; activation <= 200; activation += 1) {
-    const description = await handle.describe();
-    if (description.runId !== firstRun) break;
-    const size = description.historySize ?? Number.NaN;
-    assert.ok(size < 8 * MiB + 128 * 1_024, `the Run rolls over at its first activation past 8 MiB (${String(size)})`);
-    below = size;
-    // Each completion overwrites one 60,000-character variable, so the state stays small while history grows.
+  // Each completion overwrites four 15,000-character variables: history grows by about 62 KB an input, while the
+  // state, the retained publication (about 2 KB a batch) and the Event count stay far below their triggers.
+  for (let activation = 1; activation <= 200 && (await handle.describe()).runId === firstRun; activation += 1) {
     await committed(id, [fx.completeTask(`arm-${String(activation)}`, "Arm", activation, fx.sizingVariables(["blob"], 15_000)
       .concat(fx.sizingVariables(["blob2"], 15_000), fx.sizingVariables(["blob3"], 15_000), fx.sizingVariables(["blob4"], 15_000)))]);
   }
-  assert.ok(below >= 7 * MiB, "the Run reached the trigger's neighbourhood before it rolled over");
-  await until("the next Run", () => handle.describe(), (description) => description.runId !== firstRun);
-  const closed = await environment.client.workflow.getHandle(id, firstRun).describe();
-  assert.ok((closed.historySize ?? 0) >= 8 * MiB, `the closed Run crossed the trigger (${String(closed.historySize)})`);
+  const events = (await environment.client.workflow.getHandle(id, firstRun).fetchHistory()).events ?? [];
+  assert.ok(events.at(-1)?.workflowExecutionContinuedAsNewEventAttributes != null, "the first Run continued as new");
+  const tasks = events.map((event) => event.workflowTaskStartedEventAttributes).filter((task) => task != null);
+  const suggested = tasks.findIndex((task) => task.suggestContinueAsNew === true);
+  assert.equal(suggested, tasks.length - 1, "the Run continued as new in the first Workflow Task the server suggested it");
+  assert.deepEqual([...tasks[suggested]?.suggestContinueAsNewReasons ?? []], [historySizeTooLarge], "suggested for its history size");
+  // Temporal Server 1.31.2 suggests it at 4 MiB by default (`limit.historySize.suggestContinueAsNew`), before the table's
+  // own trigger.
+  assert.ok(Number(tasks[suggested]?.historySizeBytes) < chainCapacity.historyBytes,
+    `suggested below 8 MiB (${String(tasks[suggested]?.historySizeBytes)})`);
 });
 
 test("Run count: the 128th Run commits its input, and a chain needing a 129th halts with host.capacity.runs", async () => {
