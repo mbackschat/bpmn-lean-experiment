@@ -18,7 +18,7 @@ import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.bpmn.parser.BpmnParse;
 import org.cibseven.bpm.engine.repository.ProcessDefinition;
 import org.cibseven.bpm.engine.runtime.ActivityInstance;
-import org.cibseven.bpm.engine.runtime.TransitionInstance;
+import org.cibseven.bpm.engine.runtime.Job;
 import org.cibseven.bpm.model.bpmn.BpmnModelInstance;
 import org.cibseven.bpm.model.bpmn.instance.Activity;
 import org.cibseven.bpm.model.bpmn.instance.BoundaryEvent;
@@ -80,6 +80,8 @@ final class CibSevenOccurrences {
   private final Map<String, ArrayDeque<Long>> pendingBegins = new HashMap<>();
   /** The activation each begun activity instance of a subscription element took. */
   private final Map<String, Long> begun = new HashMap<>();
+  /** Per instance and job definition, the id of every job observed so far, the jobs since run or removed included. */
+  private final Map<String, Set<String>> observedJobs = new HashMap<>();
 
   /** `calledDefinition` names the definition a called instance runs, as its open waits publish it. */
   CibSevenOccurrences(ProcessEngine engine, Function<ProcessDefinition, DefinitionRef> calledDefinition) {
@@ -490,25 +492,79 @@ final class CibSevenOccurrences {
   }
 
   /**
-   * The activation of an asynchronous continuation that has not begun its activity instance. An inner instance of a
-   * Multi-Instance Activity takes its generation order, `loopCounter + 1` (the instance's own sequence number, BPMN
-   * 2.0.2 Table 10.30), because CIB begins an asynchronous instance only when the runner releases its job, so a begin
-   * order would follow the result schedule. Any other element takes one more than its begun activations, and two such
-   * waits of one element cannot be ordered and fail the projection.
+   * The activation of an asynchronous continuation that has not begun its activity instance.
+   *
+   * <p>An inner instance of a Multi-Instance Activity takes its generation order, `loopCounter + 1` (the instance's own
+   * sequence number, BPMN 2.0.2 Table 10.30), because CIB begins an asynchronous instance only when the runner releases
+   * its job, so a begin order would follow the result schedule.
+   *
+   * <p>Any other element takes its arrival rank among every occurrence that arrived at it in the process instance,
+   * begun, pending or removed. The kernel counts an activation per begun occurrence in arrival order and begins an
+   * effect when its token arrives, where CIB's wait is the `asyncBefore` job that precedes the activity (CIB-EXT-0001,
+   * CIB-EXT-0038). An occurrence arrives when CIB inserts that job, which draws its id as it inserts it
+   * (`JobEntity#insert`, `JobManager#insertJob`, `DbEntityManager#insert` and `#ensureHasId`) from a generator that
+   * counts up (`DbIdGenerator#getNextId`, the runner's `ScenarioIds`), so the numeric order of job ids is the order of
+   * arrival, whichever job the runner releases first. A job leaves the runtime when it runs or its scope is cancelled,
+   * and only the historic job log keeps it. CIB writes that log at history level full alone
+   * (`HistoryLevelFull.java:36-38`, `HistoricJobLogManager.java:183-185`; `HistoryLevelAudit.java:43-53` omits it) and
+   * this runner's engine records audit, so every projection keeps the ids it sees (`observeJobs`): each pending job is
+   * projected, and one projection precedes every command that can run or remove it. The rank is one more than the
+   * observed jobs of the same job definition with a smaller id, so a wait whose earlier arrivals all began answers
+   * what a count of begun activity instances plus one would.
+   *
+   * <p>The projection fails rather than guess when a job id is not a number, or when a begun occurrence has no observed
+   * job, since its arrival could then fall on either side of this wait. A job created and removed inside one command
+   * is never observed, so it takes no activation.
    */
-  long pendingActivation(Instance instance, String activityId, String executionId) {
+  long pendingActivation(Instance instance, String activityId, Job job) {
     if (instance.model().getModelElementById(activityId) instanceof Activity activity
         && activity.getLoopCharacteristics() instanceof MultiInstanceLoopCharacteristics) {
-      return generatedInstanceActivation(instance, activityId, executionId);
+      return generatedInstanceActivation(instance, activityId, job.getExecutionId());
     }
-    var waiting = transitionInstances(instance.tree(), activityId);
-    if (waiting.size() != 1) {
+    observeJobs(instance.engineId());
+    var arrivals =
+        observedJobs.computeIfAbsent(
+            key(instance.engineId(), job.getJobDefinitionId()), ignored -> new LinkedHashSet<>());
+    var pending =
+        engine.getManagementService().createJobQuery().processInstanceId(instance.engineId())
+            .jobDefinitionId(job.getJobDefinitionId()).count();
+    var begun =
+        engine.getHistoryService().createHistoricActivityInstanceQuery()
+            .processInstanceId(instance.engineId()).activityId(activityId).count();
+    var removed = arrivals.size() - pending;
+    if (begun > removed) {
       throw new IllegalStateException(
-          "Asynchronous waits of " + activityId + " cannot be numbered: " + waiting.size());
+          "Asynchronous waits of " + activityId + " cannot be numbered by arrival: " + (begun - removed)
+              + " begun occurrences have no observed job");
     }
-    return engine.getHistoryService().createHistoricActivityInstanceQuery()
-            .processInstanceId(instance.engineId()).activityId(activityId).count()
-        + 1;
+    var own = sequence(activityId, job.getId());
+    var earlier = 0L;
+    for (var arrived : arrivals) {
+      if (sequence(activityId, arrived) < own) {
+        earlier++;
+      }
+    }
+    return earlier + 1;
+  }
+
+  /** The position of a job id in the engine's id sequence. */
+  private static long sequence(String activityId, String jobId) {
+    try {
+      return Long.parseLong(jobId);
+    } catch (NumberFormatException notNumeric) {
+      throw new IllegalStateException(
+          "Asynchronous waits of " + activityId + " cannot be ordered by arrival: job id " + jobId
+              + " is not a sequence number",
+          notNumeric);
+    }
+  }
+
+  /** Remembers every job `engineId` has now, so a job later run or removed keeps its place in arrival order. */
+  private void observeJobs(String engineId) {
+    for (var job : engine.getManagementService().createJobQuery().processInstanceId(engineId).list()) {
+      observedJobs.computeIfAbsent(key(engineId, job.getJobDefinitionId()), ignored -> new LinkedHashSet<>())
+          .add(job.getId());
+    }
   }
 
   /**
@@ -574,18 +630,6 @@ final class CibSevenOccurrences {
     walk(tree, node -> {
       if (activityId.equals(node.getActivityId())) {
         found.add(node);
-      }
-    });
-    return found;
-  }
-
-  static List<TransitionInstance> transitionInstances(ActivityInstance tree, String activityId) {
-    var found = new ArrayList<TransitionInstance>();
-    walk(tree, node -> {
-      for (var transition : node.getChildTransitionInstances()) {
-        if (activityId.equals(transition.getActivityId())) {
-          found.add(transition);
-        }
       }
     });
     return found;

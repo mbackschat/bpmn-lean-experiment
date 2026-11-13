@@ -412,7 +412,7 @@ final class CibSevenOpenWaitProjector {
     // (`ServiceTaskDelegateExpressionActivityBehavior#performExecution`), so the wait is projected like any other and
     // the job's failure is CIB's answer (CIB-LIM-0051).
     var bound = effectBindings.effect(task.id(), task.declaredImplementation(), task.delegateExpression());
-    var activation = occurrences.pendingActivation(instance, task.id(), job.getExecutionId());
+    var activation = occurrences.pendingActivation(instance, task.id(), job);
     projection.effects().add(
         new EffectJob(
             task.id(), activation, task.implementation(), bound.handler(), job.getRetries(), executable,
