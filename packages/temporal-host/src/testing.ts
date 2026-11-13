@@ -1,6 +1,6 @@
 /**
- * Test support: the ephemeral Temporal servers, the scenario runner bound to the TypeScript kernel, and a scenario's
- * recorded Script results (`withScriptResults`).
+ * Test support: the ephemeral Temporal servers, the scenario runner bound to the TypeScript kernel, a scenario's
+ * recorded Script results (`withScriptResults`), and a chain's Event Histories with the replay of its closed Runs.
  */
 import { kernelPort } from "./kernel-port.js";
 import type { JsonValue } from "./port.js";
@@ -12,6 +12,7 @@ export {
   temporalCliVersion,
   type CachedEnvironmentOptions,
 } from "./ephemeral-server.js";
+export { chainHistories, fetchRunHistory, replayClosedRuns, type RunHistory, type RunHistoryEvent } from "./chain-history.js";
 export type { ScenarioHost } from "./scenario-runner.js";
 export { withScriptResults } from "./script-results.js";
 

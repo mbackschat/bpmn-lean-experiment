@@ -12,15 +12,17 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
 
-import { defaultPayloadConverter, type Connection, type WorkflowHandle } from "@temporalio/client";
+import { defaultPayloadConverter } from "@temporalio/client";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import type { Worker } from "@temporalio/worker";
 
 import { ProcessClient, ResultKind, Scheduling, type HostConfig, type JsonValue } from "@bpmn-lean/temporal-host/client";
 import { canonicalBytes, chainCapacity } from "@bpmn-lean/temporal-host/host";
 import { createMemoryProcessHost } from "@bpmn-lean/temporal-host/memory-host";
-import { createCachedLocalEnvironment } from "@bpmn-lean/temporal-host/testing";
-import { EffectResultKind, createHostWorker, replayHistory, type EffectResult } from "@bpmn-lean/temporal-host/worker";
+import {
+  chainHistories, createCachedLocalEnvironment, fetchRunHistory, replayClosedRuns, type RunHistory,
+} from "@bpmn-lean/temporal-host/testing";
+import { EffectResultKind, createHostWorker, type EffectResult } from "@bpmn-lean/temporal-host/worker";
 
 import * as fx from "./fixtures/capacity-journey.ts";
 
@@ -76,59 +78,8 @@ async function until<T>(label: string, read: () => Promise<T>, done: (value: T) 
   }
 }
 
-type HistoryEvent = NonNullable<Awaited<ReturnType<WorkflowHandle["fetchHistory"]>>["events"]>[number];
-type History = Readonly<{ events: HistoryEvent[] }>;
-type HistoryPage = Awaited<ReturnType<Connection["workflowService"]["getWorkflowExecutionHistory"]>>;
-
-/**
- * A Run's Event History, read four Events a page. The client's gRPC channel takes at most 4 MiB a message (the grpc-js
- * default), and `fetchHistory` asks for the server's default page, which outgrew it at a Run near the server's 4 MiB
- * history suggestion (Verify 43419579034). No Event of this host exceeds the 448 KiB continuation argument, so four
- * stay far below the limit. The Worker is not exposed: sdk-core raises its own limit to 128 MiB (`get_decode_max_size`).
- */
-async function fetchHistory(id: string, runId?: string): Promise<History> {
-  const events: HistoryEvent[] = [];
-  let nextPageToken: Uint8Array | null = null;
-  do {
-    const page: HistoryPage = await environment.client.workflowService.getWorkflowExecutionHistory({
-      namespace: environment.client.options.namespace,
-      execution: { workflowId: id, runId: runId ?? null },
-      maximumPageSize: 4,
-      nextPageToken,
-    });
-    events.push(...page.history?.events ?? []);
-    nextPageToken = page.nextPageToken ?? null;
-  } while (nextPageToken != null && nextPageToken.length > 0);
-  return { events };
-}
-
-/** The Event Histories of the chain's Runs, newest first; a Run's start names the Run it continued. */
-async function chainHistories(id: string): Promise<History[]> {
-  const histories: History[] = [];
-  for (let runId: string | undefined = undefined; ;) {
-    const history = await fetchHistory(id, runId);
-    histories.push(history);
-    runId = history.events?.[0]?.workflowExecutionStartedEventAttributes?.continuedExecutionRunId ?? undefined;
-    if (runId === undefined || runId === "") return histories;
-  }
-}
-
-/**
- * Replays closed Runs only. `Worker.runReplayHistory` settles on the replay Worker's eviction, which sdk-core requests
- * after the first activation that is no longer replaying (`replay/mod.rs`, `get_post_activate_hook`, SDK 1.21.0); the
- * replay of an open Run's history never settled in the hosted runs of 2026-11-13.
- */
-async function replayClosed(id: string, histories: readonly History[]): Promise<void> {
-  for (const history of histories) {
-    const last = history.events?.at(-1);
-    assert.ok(last?.workflowExecutionContinuedAsNewEventAttributes != null || last?.workflowExecutionCompletedEventAttributes != null,
-      "only a Run that continued as new or completed is replayed");
-    await replayHistory(history, id);
-  }
-}
-
 /** The canonical bytes of the argument a Run continued as new with. */
-function carriedBytes(history: History | undefined): number {
+function carriedBytes(history: RunHistory | undefined): number {
   const payload = history?.events?.at(-1)?.workflowExecutionContinuedAsNewEventAttributes?.input?.payloads?.[0];
   assert.ok(payload != null, "the Run continued as new");
   return canonicalBytes(defaultPayloadConverter.fromPayload(payload));
@@ -159,10 +110,10 @@ test("continuation: a Run continues as new carrying exactly 448 KiB, and the can
   await committed(fits, [...inputs.slice(1), last(knob)]);
   // Each input commits in a Run of its own, so the exact fit commits in the sixth Run and the seventh holds the effect
   // *Send* open with the carried state: on external scheduling it waits for the caller's effect result.
-  const chain = await until("the Run after the exact fit", () => chainHistories(fits), (runs) => runs.length >= inputs.length + 2);
+  const chain = await until("the Run after the exact fit", () => chainHistories(environment.client, fits), (runs) => runs.length >= inputs.length + 2);
   assert.equal(chain.length, inputs.length + 2);
   assert.equal(carriedBytes(chain[1]), chainCapacity.continuationBytes);
-  await replayClosed(fits, chain.slice(1));
+  await replayClosedRuns(fits, chain.slice(1));
   assert.ok((await client.hostView(fits)).view?.openWaits.some((wait) => wait.id.elementId === "Send"));
 
   const over = workflowId("continuation-over");
@@ -188,7 +139,7 @@ test("Event History bytes: a Run continues as new in the first Workflow Task the
     await committed(id, [fx.completeTask(`arm-${String(activation)}`, "Arm", activation, fx.sizingVariables(["blob"], 15_000)
       .concat(fx.sizingVariables(["blob2"], 15_000), fx.sizingVariables(["blob3"], 15_000), fx.sizingVariables(["blob4"], 15_000)))]);
   }
-  const events = (await fetchHistory(id, firstRun)).events;
+  const events = (await fetchRunHistory(environment.client, id, firstRun)).events;
   assert.ok(events.at(-1)?.workflowExecutionContinuedAsNewEventAttributes != null, "the first Run continued as new");
   const tasks = events.map((event) => event.workflowTaskStartedEventAttributes).filter((task) => task != null);
   const suggested = tasks.findIndex((task) => task.suggestContinueAsNew === true);
@@ -272,7 +223,7 @@ test("the realistic sixteen-body parallel journey runs on durable scheduling acr
   await committed(id, [journey.publish]);
   const result = await client.result(id);
   assert.equal(result.kind === ResultKind.Ended ? result.status : result.kind, "completed");
-  const chain = await chainHistories(id);
-  await replayClosed(id, chain);
+  const chain = await chainHistories(environment.client, id);
+  await replayClosedRuns(id, chain);
   assert.ok(chain.length > 2, "the journey crossed Runs mid-Multi-Instance");
 });
