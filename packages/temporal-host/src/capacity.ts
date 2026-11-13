@@ -2,7 +2,7 @@
  * The Workflow-chain capacity table ([lifecycle specification](../../../docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-capacity))
  * and its one measure, the UTF-8 bytes of a value's canonical JSON: the bytes Temporal's JSON converter writes for it,
  * since key order does not change a length. Every module that checks a bound reads it here, and no value is raised
- * without reopening the owner-approved table (2026-08-17; the two raises of 2026-11-13 are stated there).
+ * without reopening the owner-approved table (2026-08-17; the two raises of 2026-11-13, which the owner ratified, are stated there).
  *
  * A bound is checked on the candidate the kernel's step produced, before the host commits it, publishes its journal or
  * starts its work, so an overflow commits nothing; it is refused with `host.capacity.<bound>`, a host restriction,

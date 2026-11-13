@@ -277,7 +277,7 @@ A row is done when its acceptance clause in the [coverage target](../PRACTICAL-C
 
 ## Owner decisions on the path
 
-Decided on 2026-11-08 under the owner's direction to decide autonomously, and the rows marked 2026-11-13 by the owner during the integration track; none adds a dependency or a JVM.
+Decided on 2026-11-08 under the owner's direction to decide autonomously, and the rows marked 2026-11-13 during the integration track, by the owner or, where marked root, by the root under that direction; none adds a dependency or a JVM.
 
 | Item | Decision | Basis |
 |---|---|---|
@@ -289,6 +289,9 @@ Decided on 2026-11-08 under the owner's direction to decide autonomously, and th
 | PC-QUALIFY-03 (2026-11-13) | One upstream release check first; an entry no released dependency corrects and whose exposure on the generic host the evidence cannot exclude takes a disclosed qualification exception | SDK repair stays prohibited, so adoption of a released correction or a disclosed exception are the only dispositions; the ledger's [qualification exceptions](../TEMPORAL-DEFECTS-LEDGER.md#qualification-exceptions) and the About panel carry it |
 | PC-DELIVERY-01 hold (2026-11-13) | Lifts when the three invoice journeys are green on the generic Temporal host, the PostgreSQL and browser specs are green hosted, a fresh cold public closure approves and PC-QUALIFY-03 is resolved | the hold existed because the deleted adapter carried the journeys; these conditions re-qualify them on the host that replaced it |
 | PC-QUALIFY-08 counterparts (2026-11-13) | The hosted Ubuntu lanes at the exact head are the counterparts of the local pre-push gates; no `verify.sh` or other heavy lane runs on the development machine | the local heavy-lane ban in [CLAUDE.md](../../CLAUDE.md#verification) stands, and Rule 1 keeps macOS out of routine CI |
+| Host capacity bounds (2026-11-13) | The owner ratified the state bound of 256 KiB, measuring variables and open work, and 32 pending service Activities, raised from 64 KiB and 1 ([lifecycle spec](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md)) | the old values refused 68 accepted witnesses of 18 done rows and the realistic sixteen-body parallel Multi-Instance journey; both bounds still refuse before commit with stable codes |
+| Event History backstops (2026-11-13, root) | The host keeps 8 MiB and 8,000 Events as its own Continue-As-New triggers; a default server suggests Continue-As-New first, at 4 MiB or 4,096 Events | lowering them to the defaults changes nothing on a default server and drops the protection on a server configured higher |
+| PC-QUALIFY-06 distribution (2026-11-13, root) | The qualified evaluation distribution is the evaluation stack built from source at the final accepted head (evaluation-distribution dispatch with its browser flows, images not published); the README's `v0.2.0-rc.1` bundle precedes the kernel and is not re-qualified, and a published bundle waits for an owner tag request | tags move only on an owner request, and the old bundle runs the previous engine generation |
 
 ## Exclusions
 
