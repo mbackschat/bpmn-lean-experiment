@@ -197,9 +197,13 @@ test("About exposes the versioned capability boundary without overflow @responsi
   expect(await capabilityTable.locator("tbody tr").evaluateAll((rows) =>
     rows.map((row) => row.getAttribute("data-capability-id")).sort()
   )).toEqual(mvpCapabilityCatalog.capabilities.map(({ id }) => id).sort());
+  // The row renders the catalog's own element and restriction text; a copied phrase went stale when the catalog was
+  // restated from the kernel semantics (ae0ba57fd).
+  const timerStartEntry = mvpCapabilityCatalog.capabilities.find(({ id }) => id === "timerStartEvent");
+  if (timerStartEntry === undefined) throw new Error("The catalog must list the Timer Start Event.");
   const timerStart = capabilityTable.locator('[data-capability-id="timerStartEvent"]');
-  await expect(timerStart).toContainText("Timer Start Event");
-  await expect(timerStart).toContainText("no recurrence or calendar form");
+  await expect(timerStart).toContainText(timerStartEntry.element);
+  await expect(timerStart).toContainText(timerStartEntry.restriction);
   await expect(timerStart).toContainText("No CIB target selected");
 
   await assertNoOverflow(page.locator("html"), "About document");
