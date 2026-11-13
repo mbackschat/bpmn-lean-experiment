@@ -77,7 +77,7 @@ The sole documentation registry. Every maintained document under `docs/` is list
 | Document | Audience and ownership |
 |---|---|
 | [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) | Host contributors and reviewers; semantic-lifetime Workflow, Process addressing, Update identity, result recovery and post-closure outcomes |
-| [RUNNABLE-TEMPORAL-MVP-SPEC.md](RUNNABLE-TEMPORAL-MVP-SPEC.md) | Product users and host contributors; the engine-runner contract, interaction driver, pre-start gates and exit classifications |
+| [RUNNABLE-TEMPORAL-MVP-SPEC.md](RUNNABLE-TEMPORAL-MVP-SPEC.md) | Historical record of the runner deleted in `f0ba57716`: its contract, interaction driver, pre-start gates and exit classifications; its top section lists where the current pieces live |
 | [TEMPORAL-WORKER-DEPLOYMENT-REPAIR-SPEC.md](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-SPEC.md) | Host contributors; record of the deleted adapter's native Worker routing and retained-Run Query isolation, which the generic host does not implement |
 | [TEMPORAL-DEFECTS-LEDGER.md](TEMPORAL-DEFECTS-LEDGER.md) | Contributors; stable runtime-defect IDs, attribution, impact, project disposition and closure evidence |
 | [TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md) | Product, platform and host contributors; scale assessment and post-MVP roadmap, outside the current target |

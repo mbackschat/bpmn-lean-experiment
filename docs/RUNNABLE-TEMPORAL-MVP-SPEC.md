@@ -2,7 +2,15 @@
 
 ## Status
 
-**Implemented current pre-release product contract; not an immutable release or production-history baseline.** The product surface spans every registered semantic profile through one driver keyed to published enabled interactions. Exact implemented and absent evidence belongs in the [kernel status map](kernel/KERNEL-STATUS-MAP.md).
+**Historical record of the deleted runner.** The W0.4 rewrite (`f0ba57716`) deleted the command-line runner this specification described, `packages/temporal-adapter/runner`, together with its Worker and acceptance witnesses. Every section below records that runner and states no current contract: where one says the repository ships or checks something, that was the deleted runner. The review receipt at the end belongs to it as well.
+
+## Where the current pieces live
+
+- The Worker is the generic host, `packages/temporal-host` ([`worker.ts`](../packages/temporal-host/src/worker.ts), composed by the evaluation Worker in [`evaluation-worker.ts`](../packages/temporal-host/src/evaluation-worker.ts)); the kernel architecture's [Temporal hosting and refinement preflight](kernel/ARCHITECTURE-SPEC.md#temporal-hosting-and-refinement-preflight), the [lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) and the [architecture](ARCHITECTURE.md#applications) describe it.
+- Declared effect handlers are served by [`configured-effects.ts`](../packages/temporal-host/src/configured-effects.ts) in the `effectHandlers` wire form of the neutral configurations in `examples/temporal-mvp`, which the showcases read and the evaluation Worker shares.
+- The interaction driver lives showcase-side in [`host-interactions.ts`](../showcase/mue-preview-alpha/src/host-interactions.ts), a port of the runner's driver onto the engine's observation and the host's Updates.
+- [The evaluation Worker test](../packages/temporal-host/test/evaluation-worker.test.ts) decodes every neutral configuration's `effectHandlers` against the configured-effects wire form and checks the Compose file's Worker environment; [the evaluation-distribution guard](../scripts/evaluation-distribution.platform-test.ts) requires the distribution's Worker to answer each catalog showcase's effect descriptors with the configuration's declared result; [the RC showcase catalog](../scripts/rc-showcase-catalog.ts) refuses a showcase configuration whose BPMN file or semantic profile differs from its retained model's.
+- The hosted suites that witness live durable execution run in the hosted lane, not in the local loop: [the host suite](../packages/temporal-host/test/host.temporal-test.ts), [the population witnesses](../packages/differential/test/population-host.temporal-test.ts) and [the differential host target](../packages/differential/test/temporal-host-target.temporal-test.ts).
 
 ## Scope
 
@@ -92,15 +100,7 @@ Two distinct gates run before any Workflow exists and neither may widen. Source 
 
 ## Acceptance evidence
 
-Product evidence separates two claims and must not be reported as one.
-
-Configuration is checked without a Temporal service. [The evaluation Worker test](../packages/temporal-host/test/evaluation-worker.test.ts) decodes every neutral configuration's `effectHandlers` against the configured-effects wire form and checks the Compose file's Worker environment, [the evaluation-distribution guard](../scripts/evaluation-distribution.platform-test.ts) requires the distribution's Worker to answer each catalog showcase's effect descriptors with the configuration's declared result, and [the RC showcase catalog](../scripts/rc-showcase-catalog.ts) refuses a showcase configuration whose BPMN file or semantic profile differs from its retained model's.
-
-Live durable execution is witnessed by the host's hosted suites, which run in the hosted lane and not in the local loop: [the host suite](../packages/temporal-host/test/host.temporal-test.ts) (the effect Activity and a refused command, Message delivery by occurrence identity, a durable Timer, chain handoff, a one-shot Schedule start and a Schedule of a superseded deployment, script recovery, history replay), [the population witnesses](../packages/differential/test/population-host.temporal-test.ts) and [the differential host target](../packages/differential/test/temporal-host-target.temporal-test.ts).
-
-Both halves compose the already-evidenced compiler, program, semantic core, Workflow, and client. Neither is an independent semantic evidence lane, and neither supports a BPMN conformance or broad CIB compatibility claim.
-
-The runner command and its acceptance witnesses (the completion and incident-retry Updates, concurrent published tasks answered in plan order, the `executeBpmnEffect` Activity's success, business-error and technical-failure arms, and the host timer winning against an enabled interaction) belonged to the deleted adapter: the W0.4 rewrite (`f0ba57716`) removed `packages/temporal-adapter/runner`, and none of those witnesses is a claim about the generic host.
+Product evidence separated two claims and was never reported as one: admission and configuration without a Temporal service, and live durable execution. The runner's acceptance witnesses were the completion and incident-retry Updates, concurrent published tasks answered in plan order, the `executeBpmnEffect` Activity's success, business-error and technical-failure arms, and the host timer winning against an enabled interaction. They are the deleted runner's record, and the checks that remain are listed under [where the current pieces live](#where-the-current-pieces-live).
 
 ## Explicit exclusions
 
