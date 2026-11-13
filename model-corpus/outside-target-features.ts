@@ -12,8 +12,6 @@
 export const OutsideTargetReach = {
   /** Only the standards profile runs it; the cibseven profiles refuse the model or, for an aggregate, write none. */
   StandardsProfile: "standardsProfile",
-  /** Every profile runs it, while CIB ignores the construct. */
-  EveryProfile: "everyProfile",
 } as const;
 
 export type OutsideTargetReach = typeof OutsideTargetReach[keyof typeof OutsideTargetReach];

@@ -122,7 +122,6 @@ test("discloses every feature outside the Practical CIB7 target and marks the ca
   }));
   const reachLabels: Readonly<Record<OutsideTargetReach, string>> = {
     [OutsideTargetReach.StandardsProfile]: "Standards profile only",
-    [OutsideTargetReach.EveryProfile]: "Every profile",
   };
   const note = "Outside the Practical CIB7 target";
 

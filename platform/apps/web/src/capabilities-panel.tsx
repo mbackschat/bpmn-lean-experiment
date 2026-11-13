@@ -252,8 +252,6 @@ function reachLabel(reach: OutsideTargetReachValue): string {
   switch (reach) {
     case OutsideTargetReach.StandardsProfile:
       return "Standards profile only";
-    case OutsideTargetReach.EveryProfile:
-      return "Every profile";
   }
 }
 
