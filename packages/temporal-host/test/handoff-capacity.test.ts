@@ -204,3 +204,33 @@ test("three repeats of a command whose answer filled the Query bound settle in o
     assert.equal((population.takeAnswer(after, ticket)?.[1] as { resolution: JsonValue } | undefined)?.resolution, full.resolution);
   }
 });
+
+// The cold audit's A5: a deployment request is evaluated again once its Workflow started, since the ingress took other
+// inputs during the start. A refusal then answered the first, registered verdict and left the ordinal free, so the next
+// request would take it and find the started Workflow holding this program.
+test("a deployment the ingress no longer takes once its Workflow started is refused and still consumes its ordinal", () => {
+  const registry = port({ registerSummary: (_registry: readonly Wire[], _id: number, summary: Wire) => ({ summary, key: "k", versions: [] }) });
+  const candidate = { summary: "s".repeat(1_000), identifierBytes: 1 };
+  const base = restingAt(admissible - 5_000);
+  const [first, deployed] = population.registerDeployment(registry, frame, base, "late", "d", candidate, 0);
+  assert.ok(first !== base && "deploymentId" in deployed, "the first evaluation registers it");
+  // During the start, emits take the room the deployment needs.
+  let filled = base;
+  for (let index = 0; ; index += 1) {
+    const offered = population.enqueueEmit(frame, filled, reference(commandId(index), chainId(index)), []);
+    if (!("state" in offered)) break;
+    filled = offered.state;
+  }
+  const admits = () => true;
+  const [settled, answer] = population.startedDeployment(registry, frame, filled, "late", "d", candidate, 0, deployed.deploymentId, admits);
+  assert.deepEqual(answer, { refused: carry.ingressContinuationCode });
+  assert.equal(settled.deployments, deployed.deploymentId, "the started Workflow's ordinal is consumed");
+  assert.equal(population.deploymentOf(settled, "late"), null, "nothing was registered");
+  const [, next] = population.registerDeployment(registry, frame, { ...settled, queue: [] }, "next", "n", candidate, 0);
+  assert.ok("deploymentId" in next && next.deploymentId === deployed.deploymentId + 1, "the next request takes a fresh ordinal");
+  const rolling = population.startedDeployment(registry, frame, base, "late", "d", candidate, 0, deployed.deploymentId, () => false);
+  assert.deepEqual(rolling[1], { refused: carry.ingressContinuationCode }, "one the rolling Run could not carry is refused alike");
+  assert.equal(rolling[0].deployments, deployed.deploymentId);
+  const taken = population.startedDeployment(registry, frame, base, "late", "d", candidate, 0, deployed.deploymentId, admits);
+  assert.deepEqual(taken, [first, deployed], "one that still fits is registered as first answered");
+});

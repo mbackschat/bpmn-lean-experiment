@@ -250,6 +250,22 @@ export function registerDeployment<P, S, M>(port: PopulationPort<P, S, M>, frame
   return fitted === null ? [state, { refused: ingressContinuationCode }] : [fitted, answer];
 }
 
+/**
+ * A deployment request evaluated again once its Workflow started under ordinal `started`, since the ingress took other
+ * inputs meanwhile; `admits` is the rollover's own test (`rollingAdmits`). A request it no longer takes is refused and
+ * still consumes `started`: that Workflow holds this program, and a later request under the ordinal would find it
+ * (`USE_EXISTING`). The consumed ordinal grows the state at rest by at most one digit, which the item in flight absorbs
+ * as it absorbs its own ordinal's (`restingIngressBytes`).
+ */
+export function startedDeployment<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, state: IngressState<M>,
+  deploymentRequestId: string, digest: string, candidate: DeploymentCandidate, atMs: number, started: number,
+  admits: (candidate: IngressState<M>) => boolean): readonly [IngressState<M>, DeploymentAnswer] {
+  const [next, answer] = registerDeployment(port, frame, state, deploymentRequestId, digest, candidate, atMs);
+  if (next !== state && admits(next)) return [next, answer];
+  const consumed = { ...state, deployments: started };
+  return [admittedAtRest(frame, consumed) ?? consumed, { refused: ingressContinuationCode }];
+}
+
 function withDeployment<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>, deploymentRequestId: string, digest: string,
   candidate: DeploymentCandidate, atMs: number): readonly [IngressState<M>, DeploymentAnswer] {
   const deploymentId = state.deployments + 1;

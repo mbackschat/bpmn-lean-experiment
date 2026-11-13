@@ -103,7 +103,8 @@ export function ingressContinuationBytes<P, S, M>(port: PopulationPort<P, S, M>,
  * measured only when the ingress would continue as new during it, and holds that rollover until it settles when it
  * does not fit. Two growths happen while the item is in flight and are absorbed by that entry's bytes beyond its
  * identifiers, which `answerReserve` leaves free: a Timer start's consumed occurrence, added when the start answers, and
- * the ordinal's digit growth when the item is taken (a `timerStart` command carries the occurrence's fields in its entry).
+ * the ordinal's digit growth when the item is taken (a `timerStart` command carries the occurrence's fields in its entry),
+ * and likewise the digit growth of a deployment ordinal a refused started deployment consumes (`startedDeployment`).
  */
 export function restingIngressBytes<M>(frame: IngressFrame, state: IngressState<M>): number {
   const released = releaseHandlers(state);

@@ -63,6 +63,7 @@ import {
   registerDeployment,
   registeredDeploymentIds,
   sameEmit,
+  startedDeployment,
   takeAnswer,
   type Action,
   type Queued,
@@ -194,13 +195,17 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
       const [next, deployed] = registerDeployment(port, frame, state, request.deploymentRequestId, request.digest, candidate, atMs);
       if (next === state) return deployed;
       if (!admits(next)) return { refused: ingressContinuationCode };
-      if ("deploymentId" in deployed) {
-        await activities.startDeployment({ population: args.population, deploymentId: deployed.deploymentId, program: request.program });
+      if (!("deploymentId" in deployed)) {
+        state = next;
+        return deployed;
       }
-      // Only registrations change the deployment ordinal, and they are serialized here, so the ordinal is still free.
-      const [registered] = registerDeployment(port, frame, state, request.deploymentRequestId, request.digest, candidate, atMs);
+      await activities.startDeployment({ population: args.population, deploymentId: deployed.deploymentId, program: request.program });
+      // Only registrations change the deployment ordinal, and they are serialized here, so the ordinal is still the one
+      // the Workflow started under; the room it needs may not be.
+      const [registered, answer] = startedDeployment(port, frame, state, request.deploymentRequestId, request.digest, candidate,
+        atMs, deployed.deploymentId, admits);
       state = registered;
-      return deployed;
+      return answer;
     });
     registering = turn.catch(() => undefined);
     return turn;
