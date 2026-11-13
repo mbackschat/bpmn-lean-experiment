@@ -342,6 +342,20 @@ test("keeps the current state exact: kind, instance, status and the failure only
     rejectPage(pageWithState({ ...completedState, status, failure: instanceFailure }), /public fields/u);
   }
   rejectPage(pageWithState({ ...completedState, status: "failed", failure: "failed" }), /must be an object/u);
+  const related = { name: "trigger", occurrence: instanceFailure.occurrence };
+  const withRelated = pageWithState({ ...completedState, status: "failed", failure: { ...instanceFailure, related: [related] } });
+  assert.deepEqual(decodePage(withRelated), withRelated);
+  for (const failure of [
+    { ...instanceFailure, code: "" },
+    { ...instanceFailure, message: 7 },
+    { ...instanceFailure, extra: true },
+    { code: instanceFailure.code, message: null, occurrence: instanceFailure.occurrence },
+    { ...instanceFailure, occurrence: { ...instanceFailure.occurrence, activation: 0 } },
+    { ...instanceFailure, related: [{ name: "trigger" }] },
+    { ...instanceFailure, related: [{ ...related, occurrence: { elementId: "Task_A", activation: 1 } }] },
+  ]) {
+    rejectPage(pageWithState({ ...completedState, status: "failed", failure }), /failure/u);
+  }
   rejectPage(pageWithState({ ...completedState, status: "failed" }), /public fields/u);
   rejectPage(pageWithState({ ...runningState, status: "failed", failure: instanceFailure }),
     /openWaits must be empty when the instance failed/u);

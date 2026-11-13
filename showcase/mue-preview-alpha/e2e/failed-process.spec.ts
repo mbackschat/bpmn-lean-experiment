@@ -79,9 +79,9 @@ test("public Compensation start preserves success and failure through restart, i
   await page.route(damagedRoute, async (route) => {
     const response = await route.fetch();
     const payload = await response.json();
-    if (payload.current?.state.status === "failed") {
-      payload.current.state.failure.related[1].occurrence.processInstanceId = "wrong-process";
-    }
+    // A failure without its code breaks the published instanceFailure form (canonical-result.schema.json), which the
+    // decoder must refuse whole rather than render in part.
+    if (payload.current?.state.status === "failed") delete payload.current.state.failure.code;
     await route.fulfill({ response, json: payload });
   });
   await openDetail(page, failedInstance);

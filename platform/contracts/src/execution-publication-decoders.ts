@@ -283,7 +283,7 @@ function requireState(value: unknown, processInstanceId: string, label: string):
   });
   if (threw) requireList(readOwn(value, "broadcasts"), `${label}.broadcasts`, requireBroadcast);
   if (failed) {
-    requirePublicJsonObject(readOwn(value, "failure"), `${label}.failure`);
+    requireInstanceFailure(readOwn(value, "failure"), `${label}.failure`);
     if ((readOwn(value, "openWaits") as readonly unknown[]).length > 0) {
       throw new TypeError(`${label}.openWaits must be empty when the instance failed`);
     }
@@ -305,6 +305,22 @@ function requireOccurrenceId(value: unknown, label: string): void {
   requireNonemptyString(readOwn(value, "processInstanceId"), `${label}.processInstanceId`);
   requireNonemptyString(readOwn(value, "elementId"), `${label}.elementId`);
   requirePositiveSafeInteger(readOwn(value, "activation"), `${label}.activation`);
+}
+
+/** `canonical-result.schema.json#/$defs/instanceFailure`: the failure's code, message, failed and related occurrences. */
+function requireInstanceFailure(value: unknown, label: string): void {
+  requireObject(value, label);
+  exact(value, label, ["code", "message", "occurrence", "related"]);
+  requireNonemptyString(readOwn(value, "code"), `${label}.code`);
+  const message = readOwn(value, "message");
+  if (message !== null && typeof message !== "string") throw new TypeError(`${label}.message must be a string or null`);
+  requireOccurrenceId(readOwn(value, "occurrence"), `${label}.occurrence`);
+  requireList(readOwn(value, "related"), `${label}.related`, (entry, itemLabel) => {
+    requireObject(entry, itemLabel);
+    exact(entry, itemLabel, ["name", "occurrence"]);
+    requireNonemptyString(readOwn(entry, "name"), `${itemLabel}.name`);
+    requireOccurrenceId(readOwn(entry, "occurrence"), `${itemLabel}.occurrence`);
+  });
 }
 
 /** `canonical-result.schema.json#/$defs/broadcast`: a Signal named by `name` or addressed by `signalRef`, never both. */
