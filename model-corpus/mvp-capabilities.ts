@@ -489,3 +489,99 @@ export const mvpCapabilityCatalog = Object.freeze({
   }),
   capabilities: mvpBpmnCapabilities,
 });
+
+/**
+ * A restriction the kernel states by refusing a model: the stable refusal code, what the code refuses, and where its
+ * reason is recorded, as a semantics document name under `docs/kernel/semantics/` or a register entry ID, joined by `;`.
+ * The text is the cited restriction table's cell or register entry, shortened.
+ *
+ * A source the kernel admits claims capabilities; a source it refuses claims the restriction its code names. The
+ * corpus guard (`scripts/executable-model-corpus.ts`) requires a row for every refusal code a claiming witness exhibits
+ * and refuses a row whose code no retained scenario exhibits. The About page does not read these rows yet.
+ */
+export type MvpBpmnRestriction = Readonly<{
+  refusalCode: string;
+  restriction: string;
+  basis: string;
+}>;
+
+const refusal = (refusalCode: string, restriction: string, basis: string): MvpBpmnRestriction =>
+  Object.freeze({ refusalCode, restriction, basis });
+
+export const mvpBpmnRestrictions: ReadonlyArray<MvpBpmnRestriction> = Object.freeze([
+  refusal("boundary.cancel.duplicate", "A second Cancel boundary on one Transaction.", "COMPENSATION-SEMANTICS-SPEC"),
+  refusal("boundary.cancel.host", "A Cancel boundary on an element that is not a Transaction (§10.5.5, §10.3.5).", "COMPENSATION-SEMANTICS-SPEC"),
+  refusal("boundary.cancel.nonInterrupting", "A non-interrupting Cancel boundary (§10.5.5, §10.3.5).", "COMPENSATION-SEMANTICS-SPEC"),
+  refusal("boundary.error.nonInterrupting", "A non-interrupting Error boundary: an Error always interrupts (Tables 10.86 and 10.87, §13.5.4).", "PROPAGATION-SEMANTICS-SPEC; CIB-LIM-0018"),
+  refusal("boundary.escalation.duplicate", "Two Escalation boundaries of one host declaring one code: §10.5.6 allows one handler per Event Declaration.", "PROPAGATION-SEMANTICS-SPEC; CIB-LIM-0021"),
+  refusal("boundary.escalation.host", "An Escalation boundary on a host other than a User Task, a Call Activity, a Sub-Process or a Transaction: pinned CIB refuses the deployment (BpmnParse.java:3335-3342) although §10.5.6 restricts no host.", "PROPAGATION-SEMANTICS-SPEC"),
+  refusal("compensation.handlerCount", "More than one compensation handler of one Activity or Scope: two Compensation boundaries, two Compensation Event Sub-Processes, or one of each.", "COMPENSATION-SEMANTICS-SPEC; CIB-LIM-0044"),
+  refusal("compensation.handlerFlow", "A compensation handler marked isForCompensation that has a Sequence Flow (§10.7.1, Table 10.3).", "COMPENSATION-SEMANTICS-SPEC"),
+  refusal("compensation.handlerNotForCompensation", "An element a compensation Association names that is not marked isForCompensation (§10.7.1, Table 10.3): CIB reads a handler from the mark alone.", "COMPENSATION-SEMANTICS-SPEC"),
+  refusal("compensation.implicit", "A compensable Activity whose records a completed Sub-Process would hand to its parent beside a Compensation throw or a Transaction's Cancel End, unless implicitCompensation = everySubProcess keeps them as the Sub-Process's group.", "COMPENSATION-SEMANTICS-SPEC; CIB-INT-0036"),
+  refusal("compensation.processEventSubProcess", "A Compensation Event Sub-Process at Process level.", "COMPENSATION-SEMANTICS-SPEC; CIB-LIM-0044"),
+  refusal("event.multipleDefinitions", "An Event with several event definitions, a Multiple Event (§10.5.1): pinned CIB keeps one, chosen by a precedence that depends on the position, and erases the rest.", "FLOW-SEMANTICS-SPEC; CIB-LIM-0008"),
+  refusal("event.parallelMultiple", "A Parallel Multiple Event (parallelMultiple=\"true\", §10.5.1), which pinned CIB never reads.", "FLOW-SEMANTICS-SPEC; CIB-LIM-0008"),
+  refusal("expression.juel.computedMethod", "A JUEL method call on a bracket target: only the closed list of methods is admitted.", "EXPRESSION-SEMANTICS-SPEC"),
+  refusal("expression.juel.division", "The JUEL operators / and div: over Integers the result is a Double, outside the portable domain.", "EXPRESSION-SEMANTICS-SPEC"),
+  refusal("expression.juel.engineContext", "A JUEL identifier execution, task, caseExecution, externalTask or authenticatedUserId, ${execution} included: CIB resolves them before any variable (VariableScopeElResolver.java:51-90), and the kernel has no task bean.", "EXPRESSION-SEMANTICS-SPEC; CIB-LIM-0012"),
+  refusal("expression.juel.floatLiteral", "A floating literal in a JUEL text: a Double is outside the portable domain.", "EXPRESSION-SEMANTICS-SPEC"),
+  refusal("expression.juel.function", "Any JUEL function call; CIB registers currentUser, currentUserGroups, now and dateTime.", "EXPRESSION-SEMANTICS-SPEC"),
+  refusal("expression.juel.method", "A JUEL method call of an unlisted name or argument count, mutating methods included: only the closed list of methods is admitted.", "EXPRESSION-SEMANTICS-SPEC"),
+  refusal("expression.juel.multiInstanceCounter", "A Multi-Instance counter name (loopCounter, nrOfInstances, nrOfActiveInstances, nrOfCompletedInstances) in a JUEL text: refused at every site unless the profile selects cibLocals, and under cibLocals still outside every instance and in a loop's own count expressions.", "EXPRESSION-SEMANTICS-SPEC"),
+  refusal("expression.juel.syntax", "JUEL text the reader cannot parse at the pinned grammar: CIB refuses the deployment too.", "EXPRESSION-SEMANTICS-SPEC"),
+  refusal("flow.condition.foreign", "A Sequence Flow condition outside the profile's evaluator: a profile selects one evaluator, Simple Boolean or the JUEL core level.", "FLOW-SEMANTICS-SPEC"),
+  refusal("gateway.eventBased.instantiate", "An instantiating Exclusive or a Parallel Event-Based Gateway (§10.6.6), which pinned CIB never reads.", "FLOW-SEMANTICS-SPEC; CIB-LIM-0008"),
+  refusal("gateway.eventBased.linkArm", "An Event-Based Gateway arm that is a catching Link: §10.6.6 lists Link among the invalid triggers, and CIB refuses it at parse.", "FLOW-SEMANTICS-SPEC"),
+  refusal("gateway.eventBased.receiveArm", "An Event-Based Gateway arm that is not a catch Event, a Receive Task included: pinned CIB refuses every arm that is not an intermediate catch at parse.", "FLOW-SEMANTICS-SPEC"),
+  refusal("gateway.exclusive.singleConditionWithoutDefault", "An Exclusive Gateway whose one outgoing flow is conditioned, with no default: CIB refuses it at parse.", "FLOW-SEMANTICS-SPEC"),
+  refusal("gateway.exclusive.unconditionedFlow", "A diverging Exclusive Gateway with two unconditioned non-default flows, or one beside a default: CIB refuses both at parse.", "FLOW-SEMANTICS-SPEC"),
+  refusal("link.catch", "A throwing Link without exactly one catching Link of its name among its siblings (§10.5.5).", "FLOW-SEMANTICS-SPEC"),
+  refusal("link.duplicateCatch", "Two catching Links of one name anywhere in the program: CIB refuses a second catch of one name across the resource.", "FLOW-SEMANTICS-SPEC; CIB-AGR-0018"),
+  refusal("message.correlation.modeled", "A correlated catch under messageCorrelation = apiCriteria: CIB executes no modeled correlation key.", "SUBSCRIPTIONS-SEMANTICS-SPEC; CIB-LIM-0002"),
+  refusal("message.duplicateName", "Two Message subscriptions of one CIB event scope and start mark with one name, a literal by its text and an expression by its parsed form.", "SUBSCRIPTIONS-SEMANTICS-SPEC; CIB-LIM-0022"),
+  refusal("message.unnamed", "A Message without a name or with a blank one, where Messages are addressed by name.", "SUBSCRIPTIONS-SEMANTICS-SPEC; CIB-LIM-0022"),
+  refusal("multiInstance.concurrentInstances", "Under BranchSchedule.orderInvariant, a parallel loop whose instances may meet one another's writes or removals: §13.3.7 fixes no order among the instances, so this is a conservative, forward-compatible restriction.", "MULTI-INSTANCE-SEMANTICS-SPEC"),
+  refusal("multiInstance.counterTarget", "Under cibLocals, a target named like a Multi-Instance counter written inside an instance.", "MULTI-INSTANCE-SEMANTICS-SPEC; CIB-LIM-0020"),
+  refusal("multiInstance.mappings", "An output mapping on a Multi-Instance Activity, a CIB deployment error; under the standards binding also an input mapping.", "MULTI-INSTANCE-SEMANTICS-SPEC"),
+  refusal("multiInstance.ownInputReadsInstance", "Under loopReferences, a looping Activity's own input mapping that reads a counter name or the item name.", "MULTI-INSTANCE-SEMANTICS-SPEC; CIB-LIM-0019"),
+  refusal("profile.abnormalScopeEnd.withoutOutflow", "Under the standards reading, a program with a Terminate End inside a Sub-Process or at a called process's level, or any interrupting Event Sub-Process: the kernel has only the normal continuation.", "SCOPES-SEMANTICS-SPEC; CIB-INT-0007"),
+  refusal("reader.conditionExpressionType", "An explicit xsi:type=\"tExpression\" on a Sequence Flow condition: a CIB deployment error, and BPMN calls that type non-executable too.", "EXPRESSION-SEMANTICS-SPEC"),
+  refusal("reader.eventDefinitionRef", "An Event naming a root-level EventDefinition (eventDefinitionRef), which pinned CIB never resolves.", "ADMISSION-SEMANTICS-SPEC; CIB-LIM-0008"),
+  refusal("reader.unknownExtension", "Extension content the reader has no faithful IL field for, such as a camunda:list or camunda:map parameter value.", "ADMISSION-SEMANTICS-SPEC"),
+  refusal("scope.eventSubProcess.boundary", "A Boundary Event on an Event Sub-Process: it is outside normal flow (§10.3.5), so the boundary's exception flow has nowhere to lead (§13.5.4).", "SCOPES-SEMANTICS-SPEC; CIB-LIM-0005"),
+  refusal("scope.eventSubProcess.errorDuplicateCode", "Two Error Event Sub-Processes of one scope with the same code (§10.5.6).", "PROPAGATION-SEMANTICS-SPEC"),
+  refusal("scope.eventSubProcess.escalationDuplicate", "Two Escalation Event Sub-Processes of one scope declaring one code: §10.5.6 allows one handler per Event Declaration.", "PROPAGATION-SEMANTICS-SPEC; CIB-LIM-0021"),
+  refusal("scope.withoutStart", "Under scopeStart = required, an embedded Sub-Process or Transaction without a start Event: CIB cannot deploy or enter it.", "SCOPES-SEMANTICS-SPEC; CIB-LIM-0024"),
+  refusal("signal.duplicateName", "Two Signal subscriptions of one CIB event scope and start mark with one name.", "SUBSCRIPTIONS-SEMANTICS-SPEC; CIB-LIM-0026"),
+  refusal("source.loopBodyWhitespace", "A Multi-Instance loop body with a whitespace-only text node, which bpmn-moddle drops.", "EXPRESSION-SEMANTICS-SPEC"),
+  refusal("source.reference", "A reference that does not resolve inside the document, by the QName rule of the flow semantics.", "ADMISSION-SEMANTICS-SPEC"),
+  refusal("source.schema", "A document the pinned OMG BPMN20.xsd rejects.", "ADMISSION-SEMANTICS-SPEC"),
+  refusal("start.condition", "A root Conditional start under conditionalStart = refused: Table 10.84 puts its environment outside the standard.", "SUBSCRIPTIONS-SEMANTICS-SPEC"),
+  refusal("start.condition.duplicate", "Two root Conditional starts of one process level with one parsed predicate.", "SUBSCRIPTIONS-SEMANTICS-SPEC; CIB-LIM-0027"),
+  refusal("start.error.nonInterrupting", "A non-interrupting Error Event Sub-Process: an Error always interrupts (Tables 10.86 and 10.87, §13.5.4).", "PROPAGATION-SEMANTICS-SPEC; CIB-LIM-0018"),
+  refusal("start.messageNameExpression", "A root Message start whose name is an expression: CIB refuses it at deployment.", "SUBSCRIPTIONS-SEMANTICS-SPEC"),
+  refusal("start.rootCombination", "A second None or Timer Start of a process: pinned CIB parses one.", "FLOW-SEMANTICS-SPEC"),
+  refusal("start.subProcessCombination", "A second start of a Sub-Process: pinned CIB parses one.", "FLOW-SEMANTICS-SPEC"),
+  refusal("throw.cancel.outsideTransaction", "A Cancel throw whose direct parent is not a Transaction (§10.5.5).", "PROPAGATION-SEMANTICS-SPEC"),
+  refusal("throw.cancel.uncaught", "A Cancel throw whose Transaction has no Cancel boundary: the boundary directs the flow after the cancellation (§10.3.5).", "PROPAGATION-SEMANTICS-SPEC; CIB-LIM-0043"),
+  refusal("throw.compensation.activityLevel", "A Compensation throw whose activityRef names an element not visible from it (Tables 10.88 and 10.89).", "COMPENSATION-SEMANTICS-SPEC"),
+  refusal("throw.compensation.asynchronous", "A Compensation throw with waitForCompletion = false, which CIB runs synchronously.", "COMPENSATION-SEMANTICS-SPEC; CIB-LIM-0041"),
+  refusal("throw.compensation.notActivity", "A Compensation throw whose activityRef names no Activity (Table 10.94).", "COMPENSATION-SEMANTICS-SPEC; CIB-EXT-0046"),
+  refusal("timer.cron", "A Cron timer outside the Quartz subset, or a malformed one where malformed timers are refused.", "SUBSCRIPTIONS-SEMANTICS-SPEC"),
+  refusal("timer.cycle", "A dated, zero-count, signed-count or nominal-period cycle, or a malformed one where malformed timers are refused.", "SUBSCRIPTIONS-SEMANTICS-SPEC"),
+  refusal("timer.date", "A date outside the supported subset (zone-less, before 1970, sub-millisecond, other ISO formats), or a malformed one where malformed timers are refused.", "SUBSCRIPTIONS-SEMANTICS-SPEC"),
+  refusal("timer.duration", "A duration outside the supported subset, or an expression outside the Events level; at a root start also one with years or months.", "SUBSCRIPTIONS-SEMANTICS-SPEC; CIB-LIM-0003"),
+  refusal("work.call.calledProcessMissing", "A Call whose called element is not a literal naming exactly one eligible carried Process other than the root.", "WORK-SEMANTICS-SPEC; CIB-INT-0034; CIB-LIM-0032"),
+  refusal("work.call.cycle", "A Call on a carried process whose bound callee leads back to that process.", "WORK-SEMANTICS-SPEC; CIB-LIM-0034"),
+  refusal("work.call.multiInstanceCounterOutput", "A Call output targeting nrOfInstances, nrOfActiveInstances or nrOfCompletedInstances: CIB drops it.", "WORK-SEMANTICS-SPEC; CIB-LIM-0004"),
+  refusal("work.call.multiInstanceDataInput", "Under the standards binding, a looping Call with an input Data Association: a conservative restriction.", "MULTI-INSTANCE-SEMANTICS-SPEC"),
+  refusal("work.call.tenant", "A Call's tenant, or a carried definition bound to a tenant.", "WORK-SEMANTICS-SPEC; CIB-LIM-0033"),
+  refusal("work.handlerKeyName", "A declared name equal to a bound delegate token.", "WORK-SEMANTICS-SPEC; CIB-LIM-0017"),
+  refusal("work.receive.instantiate", "A Receive Task with instantiate=\"true\", which pinned CIB never reads.", "FLOW-SEMANTICS-SPEC; CIB-LIM-0008"),
+  refusal("work.rule.decisionMissing", "A decisionRef that no carried resource declares.", "DECISION-SEMANTICS-SPEC"),
+  refusal("work.script.language", "A scriptFormat other than javascript, ecmascript or js, ignoring ASCII case, the absent one included.", "SCRIPT-SEMANTICS-SPEC"),
+  refusal("work.send", "A Send Task that is not exactly the configured-service form: a delegate expression with no messageRef, operationRef, output parameter or result variable.", "WORK-SEMANTICS-SPEC; CIB-EXT-0023"),
+  refusal("work.service.unboundImplementation", "Service work without protocol and operation, a declared CIB implementation no binding matches included: no handler to invoke, and CIB deploys it and fails it when it runs.", "WORK-SEMANTICS-SPEC; CIB-LIM-0051"),
+  refusal("work.user.formField", "A form field without an id, or of a type other than string, long, boolean and date.", "WORK-SEMANTICS-SPEC"),
+]);

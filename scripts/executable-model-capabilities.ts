@@ -28,6 +28,24 @@ function hasCallVariableMapping(element: XmlElement): boolean {
     child.children.some(({ name }) => name === "in" || name === "out"));
 }
 
+/** The kernel's admission decision for one source, supplied by the caller so this module stays free of package code. */
+export type SourceAdmission = Readonly<{ status: "accepted" } | { status: "rejected"; refusal: string }>;
+
+export type SourceClaim =
+  | Readonly<{ kind: "capabilities"; capabilities: ReadonlyArray<MvpBpmnCapabilityId> }>
+  | Readonly<{ kind: "restriction"; refusalCode: string }>;
+
+/**
+ * What a claiming source claims, decided by the kernel and never declared: an admitted source claims the capabilities
+ * the detector reads from it, and a refused source claims the restriction its refusal code names, so the detector never
+ * reads a model the kernel refuses.
+ */
+export function claimOfSource(xml: string, admission: SourceAdmission): SourceClaim {
+  return admission.status === "accepted"
+    ? { kind: "capabilities", capabilities: detectExecutableBpmnCapabilities(xml) }
+    : { kind: "restriction", refusalCode: admission.refusal };
+}
+
 export function detectExecutableBpmnCapabilities(
   xml: string,
 ): ReadonlyArray<MvpBpmnCapabilityId> {

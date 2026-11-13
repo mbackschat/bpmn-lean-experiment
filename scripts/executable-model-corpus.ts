@@ -17,6 +17,7 @@ import path from "node:path";
 import {
   CibCapabilityEvidenceKind,
   mvpBpmnCapabilities,
+  mvpBpmnRestrictions,
 } from "../model-corpus/mvp-capabilities.ts";
 import type {
   MvpBpmnCapability,
@@ -27,7 +28,7 @@ import {
   parseXmlElements,
 } from "./minimal-xml-tree.ts";
 import { isOpenRowWitness } from "./contract-artifact-cases.ts";
-import { detectExecutableBpmnCapabilities } from "./executable-model-capabilities.ts";
+import { claimOfSource, detectExecutableBpmnCapabilities } from "./executable-model-capabilities.ts";
 import { compareCanonicalStrings } from "./strict-json.ts";
 import type {
   CorpusModel,
@@ -65,6 +66,12 @@ export type CorpusScenario = Readonly<{
 export type CorpusDecoding = Readonly<{ ok: true } | { ok: false; refusal: string }>;
 
 export type CorpusAdmission = Readonly<{ status: "accepted" } | { status: "rejected"; refusal: string }>;
+
+/** Reads and admits one BPMN source a scenario binds, under the scenario's profile and overlay. */
+export type CorpusSourceAdmitter = (
+  scenario: CorpusScenario,
+  source: CorpusScenario["sources"][number],
+) => Promise<CorpusAdmission>;
 
 /** Reads and admits one model: a retained model with the scenario it binds, an external one with `null`. */
 export type CorpusAdmitter = (
@@ -230,6 +237,7 @@ export async function inspectExecutableModelCorpus(
     externalRoot: string;
     scenarios: ReadonlyArray<CorpusScenario>;
     admitModel: CorpusAdmitter;
+    admitSource: CorpusSourceAdmitter;
     /** The kernel's own stimulus and value codec, supplied by the caller like `admitModel`. */
     decodeStimulus: (stimulus: unknown) => CorpusDecoding;
   }>,
@@ -254,9 +262,30 @@ export async function inspectExecutableModelCorpus(
   if (undecodable.length > 0) {
     throw new Error(`the kernel codec refuses scenario stimuli:\n${undecodable.slice(0, 10).join("\n")}`);
   }
-  for (const relativePath of new Set(claiming.flatMap(({ sources }) => sources.map((source) => source.relativePath)))) {
-    const xml = await readFile(path.join(options.projectRoot, relativePath), "utf8");
-    for (const capability of detectExecutableBpmnCapabilities(xml)) exercised.add(capability);
+  // What a source claims is the kernel's decision: an admitted one its capabilities, a refused one the restriction its
+  // refusal code names. A refusal code a claiming witness exhibits needs its row, and a row needs a scenario that
+  // exhibits its code, claiming or not, so a witness of a refusal can never widen the capability catalog.
+  const claimingPaths = new Set(claiming.map(({ relativePath }) => relativePath));
+  const restricted = new Set(mvpBpmnRestrictions.map(({ refusalCode }) => refusalCode));
+  const exhibited = new Set<string>();
+  const read = new Set<string>();
+  for (const scenario of options.scenarios) {
+    for (const source of scenario.sources) {
+      const admission = await options.admitSource(scenario, source);
+      if (admission.status === "rejected") exhibited.add(admission.refusal);
+      if (!claimingPaths.has(scenario.relativePath)) continue;
+      if (admission.status === "rejected") {
+        if (!restricted.has(admission.refusal)) {
+          throw new Error(`no restriction row for refusal code ${admission.refusal}, exhibited by witness ${scenario.relativePath} (${source.relativePath})`);
+        }
+        continue;
+      }
+      const key = `${scenario.profile}\0${source.relativePath}\0${source.sha256}`;
+      if (read.has(key)) continue;
+      read.add(key);
+      const claim = claimOfSource(await readFile(path.join(options.projectRoot, source.relativePath), "utf8"), admission);
+      if (claim.kind === "capabilities") for (const capability of claim.capabilities) exercised.add(capability);
+    }
   }
   const catalogCapabilities = new Set(mvpBpmnCapabilities.map(({ id }) => id));
   const catalogDrift = [...new Set([...exercised, ...catalogCapabilities])]
@@ -363,6 +392,11 @@ export async function inspectExecutableModelCorpus(
     .map(({ id }) => id);
   if (uncoveredMvpCapabilities.length > 0) {
     throw new Error(`retained MVP models do not cover ${uncoveredMvpCapabilities.join(", ")}`);
+  }
+
+  const staleRestrictions = mvpBpmnRestrictions.filter(({ refusalCode }) => !exhibited.has(refusalCode));
+  if (staleRestrictions.length > 0) {
+    throw new Error(`restriction rows no retained scenario exhibits: ${staleRestrictions.map(({ refusalCode }) => refusalCode).join(", ")}`);
   }
 
   const supportedMechanisms = new Set(

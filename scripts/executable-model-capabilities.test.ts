@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
+  claimOfSource,
   detectExecutableBpmnCapabilities,
 } from "./executable-model-capabilities.ts";
-import { artifactCases, isOpenRowWitness, normativeArtifactCases } from "./contract-artifact-cases.ts";
-import { enginePopulationScenarioRelativePaths } from "./engine-population-artifacts.ts";
 import { requireExecutableModelCorpusManifest } from "./executable-model-corpus-manifest.ts";
-import { CibCapabilityEvidenceKind, mvpBpmnCapabilities } from "../model-corpus/mvp-capabilities.ts";
+import { CibCapabilityEvidenceKind, mvpBpmnCapabilities, mvpBpmnRestrictions } from "../model-corpus/mvp-capabilities.ts";
 
 const compensationCapabilityIds = ["compensationBoundaryEvent", "compensationEventSubProcess", "compensationHandlerServiceTask", "compensationIntermediateThrowEvent"];
 
@@ -134,35 +134,41 @@ test("refuses unclassified dormant, standalone and unrelated Compensation marker
   ]) assert.throws(() => detectExecutableBpmnCapabilities(xml), /unclassified executable BPMN/u);
 });
 
-test("the actual registered source union equals the catalog and remains covered by retained models", async () => {
-  const manifest = requireExecutableModelCorpusManifest(JSON.parse(await readFile(new URL("../model-corpus/manifest.json", import.meta.url), "utf8")));
-  const registeredSources = new Set<string>();
-  for (const artifact of [...artifactCases, ...normativeArtifactCases]) {
-    // An open-row witness claims no capability (`isOpenRowWitness`), so it widens no catalog.
-    if (isOpenRowWitness(artifact.scenarioRelativePath)) continue;
-    const scenario = JSON.parse(await readFile(new URL(`../${artifact.scenarioRelativePath}`, import.meta.url), "utf8"));
-    registeredSources.add(scenario.bpmn.relativePath);
-  }
-  for (const relativePath of enginePopulationScenarioRelativePaths) {
-    const scenario = JSON.parse(await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8"));
-    for (const definition of scenario.definitions) registeredSources.add(definition.bpmn.relativePath);
-  }
-  const detected = new Set<string>();
-  for (const relativePath of registeredSources) {
-    for (const capability of detectExecutableBpmnCapabilities(await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8"))) detected.add(capability);
-  }
-  const retained = new Set<string>();
-  for (const model of manifest.models) {
-    if (model.source.kind !== "retainedScenario") continue;
-    for (const capability of detectExecutableBpmnCapabilities(await readFile(new URL(`../${model.source.bpmnRelativePath}`, import.meta.url), "utf8"))) retained.add(capability);
-  }
-  assert.deepEqual([...detected].sort(), mvpBpmnCapabilities.map(({ id }) => id).sort());
-  assert.deepEqual([...retained].sort(), [...detected].sort());
+test("the Compensation capability rows disclose that no CIB evidence is selected for them", () => {
   for (const id of compensationCapabilityIds) {
     const row = mvpBpmnCapabilities.find((entry) => entry.id === id);
     assert.ok(row);
     assert.equal(row.cibEvidence.kind, CibCapabilityEvidenceKind.NotSelected);
   }
+});
+
+// The catalog-against-sources union lives in the corpus guard (`model-corpus/test/executable-model-corpus.test.ts`),
+// because what a source claims depends on the kernel's admission, which script gates cannot reach before the builds.
+test("what a source claims is decided by its admission: capabilities when admitted, its refusal code when refused", () => {
+  const unclassifiable = "<bpmn:process><bpmn:subProcess><bpmn:multiInstanceLoopCharacteristics /></bpmn:subProcess></bpmn:process>";
+  assert.throws(() => detectExecutableBpmnCapabilities(unclassifiable), /unclassified executable BPMN/u);
+  assert.deepEqual(claimOfSource(unclassifiable, { status: "rejected", refusal: "multiInstance.mappings" }),
+    { kind: "restriction", refusalCode: "multiInstance.mappings" });
+  assert.throws(() => claimOfSource(unclassifiable, { status: "accepted" }), /unclassified executable BPMN/u);
+  const admitted = claimOfSource(`<bpmn:process><bpmn:userTask /></bpmn:process>`, { status: "accepted" });
+  assert.deepEqual(admitted, { kind: "capabilities", capabilities: ["process", "userTask"] });
+});
+
+test("every restriction row names one refusal code once, in order, and cites a register entry or a semantics document", async () => {
+  const register = await readFile(new URL("../docs/CIB-BPMN-RELATION-REGISTER.md", import.meta.url), "utf8");
+  const faults: string[] = [];
+  mvpBpmnRestrictions.forEach(({ refusalCode, restriction, basis }, index) => {
+    if (index > 0 && mvpBpmnRestrictions[index - 1]!.refusalCode >= refusalCode) faults.push(`${refusalCode}: out of order or repeated`);
+    if (!/^[a-z][A-Za-z]*(\.[A-Za-z]+)+$/u.test(refusalCode)) faults.push(`${refusalCode}: not a refusal code`);
+    if (restriction.length < 20 || restriction.length > 400) faults.push(`${refusalCode}: restriction text of ${restriction.length} characters`);
+    for (const cited of basis.split(";").map((token) => token.trim())) {
+      const known = /^CIB-[A-Z]+-\d{4}$/u.test(cited)
+        ? register.includes(`\n### ${cited}`)
+        : /^[A-Z-]+-SPEC$/u.test(cited) && existsSync(new URL(`../docs/kernel/semantics/${cited}.md`, import.meta.url));
+      if (!known) faults.push(`${refusalCode}: basis ${cited} is no register entry or semantics document`);
+    }
+  });
+  assert.equal(faults.length, 0, faults.slice(0, 10).join("\n"));
 });
 
 test("the retained travel model binds exact engine evidence and a guided browser journey", async () => {

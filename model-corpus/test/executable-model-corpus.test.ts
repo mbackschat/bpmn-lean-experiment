@@ -16,7 +16,7 @@ import {
   discoverScenarios,
   readSourceFor,
 } from "../../packages/differential/test/scenario-discovery.ts";
-import type { DiscoveredScenario } from "../../packages/differential/test/scenario-discovery.ts";
+import type { DiscoveredScenario, SourceDefinition } from "../../packages/differential/test/scenario-discovery.ts";
 import { isOpenRowWitness, readOpenRowOwners } from "../../scripts/contract-artifact-cases.ts";
 import {
   inspectExecutableModelCorpus,
@@ -24,8 +24,10 @@ import {
   requireExecutableModelCorpusManifest,
 } from "../../scripts/executable-model-corpus.ts";
 import type {
+  CorpusAdmission,
   CorpusAdmitter,
   CorpusScenario,
+  CorpusSourceAdmitter,
   ExecutableModelCorpusManifest,
 } from "../../scripts/executable-model-corpus.ts";
 import { externalRoot } from "../../scripts/external-root.ts";
@@ -84,10 +86,32 @@ const admitModel: CorpusAdmitter = async (model, bytes, scenario) => {
   return kernelAdmission(await readSourceFor(found.relativePath, source, found.document.profile));
 };
 
-const inspect = (manifest: ExecutableModelCorpusManifest, selected: ReadonlyArray<CorpusScenario> = scenarios) =>
-  inspectExecutableModelCorpus(manifest, {
-    projectRoot, externalRoot, scenarios: selected, admitModel, decodeStimulus: kernelStimulusDecoding,
-  });
+/** Every discovered source by what admission reads: its profile, bytes and the overlay and decisions it binds. */
+const sourceDefinitions = new Map<string, { found: DiscoveredScenario; definition: SourceDefinition }>(discovered.flatMap((found) =>
+  (found.kind === DiscoveredKind.Scenario ? [found.document.bpmn] : found.document.definitions.map(({ bpmn }) => bpmn))
+    .map((definition): [string, { found: DiscoveredScenario; definition: SourceDefinition }] =>
+      [`${found.document.profile}\0${definition.relativePath}\0${definition.sha256}`, { found, definition }])));
+const sourceAdmissions = new Map<string, Promise<CorpusAdmission>>();
+
+/** The kernel's admission of one scenario source under the scenario's profile, once per distinct source. */
+const admitSource: CorpusSourceAdmitter = (scenario, source) => {
+  const key = `${scenario.profile}\0${source.relativePath}\0${source.sha256}`;
+  const known = sourceDefinitions.get(key);
+  assert.ok(known !== undefined, `${scenario.relativePath} binds no discovered source ${source.relativePath}`);
+  const identity = `${key}\0${known.definition.sourceOverlay?.sha256 ?? ""}\0${(known.definition.decisions ?? []).map(({ sha256 }) => sha256).join(",")}`;
+  const admission = sourceAdmissions.get(identity) ??
+    readSourceFor(known.found.relativePath, known.definition, known.found.document.profile).then(kernelAdmission);
+  sourceAdmissions.set(identity, admission);
+  return admission;
+};
+
+const inspect = (
+  manifest: ExecutableModelCorpusManifest,
+  selected: ReadonlyArray<CorpusScenario> = scenarios,
+  admit: CorpusSourceAdmitter = admitSource,
+) => inspectExecutableModelCorpus(manifest, {
+  projectRoot, externalRoot, scenarios: selected, admitModel, admitSource: admit, decodeStimulus: kernelStimulusDecoding,
+});
 
 test("the kernel admits every model exactly as the corpus records it", async () => {
   const report = await inspect(requireExecutableModelCorpusManifest(await loadManifest()));
@@ -189,6 +213,66 @@ test("a witness of an open row claims nothing, so the codec reads none of its va
   if (directory === undefined) return;
   const planted = plantedScenario(`scenarios/open-rows/${directory}/planted.scenario.json`, { name: "x", value: { kind: "integer", value: 1.5 } });
   await assert.doesNotReject(inspect(manifest, [...scenarios, planted]));
+});
+
+/** The discovered scenarios whose source admission refuses with `code`. */
+async function exhibiting(code: string): Promise<ReadonlyArray<CorpusScenario>> {
+  const exhibitors: CorpusScenario[] = [];
+  for (const scenario of scenarios) {
+    for (const source of scenario.sources) {
+      const admission = await admitSource(scenario, source);
+      if (admission.status === "rejected" && admission.refusal === code) { exhibitors.push(scenario); break; }
+    }
+  }
+  return exhibitors;
+}
+
+test("a refused claiming source needs the restriction row its refusal code names, and names the witness without it", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const witness = scenarios.find(({ relativePath }) => relativePath.startsWith("scenarios/timer-start-event/"));
+  assert.ok(witness !== undefined);
+  await assert.rejects(
+    inspect(manifest, scenarios, async (scenario, source) =>
+      scenario === witness ? { status: "rejected", refusal: "planted.unrestricted" } : admitSource(scenario, source)),
+    new RegExp(`no restriction row for refusal code planted\\.unrestricted, exhibited by witness ${witness.relativePath}`, "u"),
+  );
+});
+
+test("a source the kernel refuses claims no capability, so a refused exerciser leaves its catalog row unexercised", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  await assert.rejects(
+    inspect(manifest, scenarios, async (scenario, source) => scenario.sources.some(({ relativePath }) =>
+      relativePath.startsWith("scenarios/timer-start-event/"))
+      ? { status: "rejected", refusal: "scope.withoutStart" }
+      : admitSource(scenario, source)),
+    /MVP capability catalog differs from the discovered scenarios: .*timerStartEvent/u,
+  );
+});
+
+test("the detector never reads a source the kernel refuses, and reads one it admits", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const refusalWitness = scenarios.find(({ relativePath }) =>
+    relativePath.startsWith("scenarios/open-rows/transaction-cancel-refusals/") && relativePath.endsWith("cancel-end-at-process-level.scenario.json"));
+  assert.ok(refusalWitness !== undefined);
+  const planted = { ...refusalWitness, id: "planted-refusal-witness", relativePath: "scenarios/planted/refusal-witness.scenario.json" };
+  const refused = await admitSource(planted, planted.sources[0]!);
+  assert.equal(refused.status, "rejected");
+  await assert.doesNotReject(inspect(manifest, [...scenarios, planted]));
+  await assert.rejects(
+    inspect(manifest, [...scenarios, planted], async (scenario, source) =>
+      scenario === planted ? { status: "accepted" } : admitSource(scenario, source)),
+    /unclassified executable BPMN/u,
+  );
+});
+
+test("a restriction row whose refusal code no retained scenario exhibits is stale", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const exhibitors = await exhibiting("scope.withoutStart");
+  assert.ok(exhibitors.length > 0, "the restriction row for scope.withoutStart has a witness");
+  await assert.rejects(
+    inspect(manifest, scenarios.filter((scenario) => !exhibitors.includes(scenario))),
+    /restriction rows no retained scenario exhibits: .*scope\.withoutStart/u,
+  );
 });
 
 test("rejects source clones split across different clone families", async () => {
