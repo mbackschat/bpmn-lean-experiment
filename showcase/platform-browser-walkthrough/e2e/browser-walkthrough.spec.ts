@@ -292,7 +292,9 @@ async function startSelectedDefinition(page: Page, version: number, view: StartV
       break;
     }
     case StartView.Instance:
-      await expect(page.getByRole("region", { name: `Process instance ${value}` })).toBeVisible();
+      // The app routes to the instance at once; its detail appears only after the projection serves it, which the
+      // incident steps below wait for through their own refreshes.
+      await expect(page).toHaveURL(new RegExp(`#/operations\\?(?:.*&)?instance=${value}(?:&|$)`, "u"));
       break;
   }
   return value;
