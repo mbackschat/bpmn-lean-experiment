@@ -291,8 +291,9 @@ export enum InclusiveJoinReach {
 export enum BranchSchedule {
   /**
    * BPMN 2.0.2 Table 13.1, §13.3.1: branches are concurrent and any interleaving is permitted, so admission refuses a
-   * split one of whose branches writes a name another reads or writes in the closure (`flow.concurrentWrite`), and the
-   * closure's order is immaterial.
+   * split one of whose branches writes a name another reads or writes in the closure (`flow.concurrentWrite`), or
+   * removes, resumes, compensates or wakes work another branch begins or completes (`flow.concurrentInterference`), so
+   * the closure's order is immaterial.
    */
   OrderInvariant = "orderInvariant",
   /**
