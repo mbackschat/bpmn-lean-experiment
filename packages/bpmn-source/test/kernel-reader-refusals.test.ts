@@ -48,10 +48,16 @@ const timer = (duration = "PT1S"): string =>
   `<bpmn:timerEventDefinition><bpmn:timeDuration xsi:type="bpmn:tFormalExpression">${duration}</bpmn:timeDuration></bpmn:timerEventDefinition>`;
 
 const task = model(`<bpmn:task id="T"/>`);
-const overlayJson = `{"kind":"bpmnSourceOverlay","effectBindings":[],"inertAttributes":[]}`;
+const overlayWith = (fields: string): string => `{"kind":"bpmnSourceOverlay",${fields}"effectBindings":[],"inertAttributes":[]}`;
+const overlayJson = overlayWith(`"id":"overlay","semanticProfile":"refusal-profile",`);
 const overlayOf = (text: string, digest: string = sha256(bytesOf(text))): Partial<KernelSource> =>
   ({ overlay: { id: "overlay", sha256: digest, bytes: bytesOf(text) } });
 const withOverlay = (text: string, digest?: string): Case => ({ xml: task, source: overlayOf(text, digest) });
+/** A selected overlay whose artifact carries `id` and names the selection by the same `id`. */
+const overlayIdentifiedAs = (id: string): KernelSource["overlay"] => {
+  const bytes = bytesOf(overlayWith(`"id":${JSON.stringify(id)},"semanticProfile":"refusal-profile",`));
+  return { id, sha256: sha256(bytes), bytes };
+};
 
 const boundaryOn = (cancelActivity: string): string =>
   model(`<bpmn:task id="T"/><bpmn:boundaryEvent id="B" attachedToRef="T" cancelActivity="${cancelActivity}">${timer()}</bpmn:boundaryEvent>`);
@@ -119,6 +125,41 @@ export const rows: readonly Row[] = [
     description: "an overlay that is not a source overlay",
     evidence: "overlay contract",
     refused: withOverlay(`{"kind":"other","effectBindings":[],"inertAttributes":[]}`),
+    control: withOverlay(overlayJson),
+  },
+  {
+    code: "source.overlay",
+    description: "an overlay authored for another semantic profile",
+    evidence: "semanticProfile",
+    refused: withOverlay(overlayWith(`"id":"overlay","semanticProfile":"other-profile",`)),
+    control: withOverlay(overlayJson),
+  },
+  {
+    code: "source.overlay",
+    description: "an overlay that names no semantic profile",
+    evidence: "semanticProfile",
+    refused: withOverlay(overlayWith(`"id":"overlay",`)),
+    control: withOverlay(overlayJson),
+  },
+  {
+    code: "source.overlay",
+    description: "an overlay without an id",
+    evidence: "overlay id",
+    refused: withOverlay(overlayWith(`"semanticProfile":"refusal-profile",`)),
+    control: withOverlay(overlayJson),
+  },
+  {
+    code: "source.overlay",
+    description: "an overlay whose id is longer than 256 Unicode scalar values",
+    evidence: "overlay id",
+    refused: { xml: task, source: { overlay: overlayIdentifiedAs("🚀".repeat(257)) } },
+    control: { xml: task, source: { overlay: overlayIdentifiedAs("🚀".repeat(256)) } },
+  },
+  {
+    code: "source.overlay",
+    description: "an overlay whose id is not the selected overlay's",
+    evidence: "overlay id",
+    refused: withOverlay(overlayWith(`"id":"another-overlay","semanticProfile":"refusal-profile",`)),
     control: withOverlay(overlayJson),
   },
   {

@@ -65,7 +65,7 @@ This document owns what one input commits and what is observed of it: the outcom
 
 ### Deployment input
 
-- A definition is deployed from its exact bytes and an optional source overlay whose identifier, digest and bytes are present together or absent together; the selection is captured at entry and the compiler's returned identity must equal it; omission selects no overlay, never a default ([deployment contract][bpd-deploy]). An overlay selects no semantic family: it binds exact source tokens and inert metadata only to capabilities the profile already admits ([overlay contract][a12-overlay]); a digest mismatch or non-strict overlay is refused as `source.overlay` ([admission](ADMISSION-SEMANTICS-SPEC.md)).
+- A definition is deployed from its exact bytes and an optional source overlay whose identifier, digest and bytes are present together or absent together; the selection is captured at entry and the compiler's returned identity must equal it; omission selects no overlay, never a default ([deployment contract][bpd-deploy]). An overlay selects no semantic family: it binds exact source tokens and inert metadata only to capabilities the profile already admits ([overlay contract][a12-overlay]); a digest mismatch, a non-strict overlay, an overlay `id` other than the selected identifier or a `semanticProfile` other than the selected profile is refused as `source.overlay` ([admission](ADMISSION-SEMANTICS-SPEC.md)).
 
 ### Platform consumption
 

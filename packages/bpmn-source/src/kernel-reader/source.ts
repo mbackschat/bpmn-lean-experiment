@@ -11,7 +11,10 @@ import { bindReference } from "./references.js";
 import { firstSchemaViolation } from "./schema.js";
 import { droppedLoopWhitespace } from "./multi-instance.js";
 
-/** One BPMN source and its optional overlay; `profile` is identity data and selects no reader behaviour. */
+/**
+ * One BPMN source and its optional overlay; `profile` is identity data and selects no reader behaviour: an overlay is
+ * read only when it names this profile as its `semanticProfile` and the selected `overlay.id` as its own `id`.
+ */
 export type KernelSource = Readonly<{
   bytes: Uint8Array;
   expectedSha256?: string;
@@ -107,6 +110,10 @@ function readBinding(value: unknown): EffectBinding | undefined {
 
 type OverlayFacts = Pick<ParsedSource, "bindings" | "inertAttributes">;
 
+/** The overlay schema's `identityString`: 1 to 256 Unicode scalar values. */
+const isIdentityString = (value: unknown): value is string =>
+  typeof value === "string" && value.isWellFormed() && value.length > 0 && [...value].length <= 256;
+
 async function readOverlay(source: KernelSource): Promise<OverlayFacts> {
   if (source.overlay === null) return { bindings: [], inertAttributes: new Set() };
   if (await sha256Of(source.overlay.bytes) !== source.overlay.sha256) refuse(ReadRefusalCode.SourceOverlay, "overlay digest mismatch");
@@ -120,6 +127,12 @@ async function readOverlay(source: KernelSource): Promise<OverlayFacts> {
   const attributes = asElementArray(artifact?.inertAttributes);
   if (artifact?.kind !== "bpmnSourceOverlay" || bindings.includes(undefined) || attributes === undefined) {
     refuse(ReadRefusalCode.SourceOverlay, "overlay does not satisfy the overlay contract");
+  }
+  if (!isIdentityString(artifact?.id) || artifact.id !== source.overlay.id) {
+    refuse(ReadRefusalCode.SourceOverlay, `overlay id is not the selected overlay id ${JSON.stringify(source.overlay.id)}`);
+  }
+  if (artifact?.semanticProfile !== source.profile) {
+    refuse(ReadRefusalCode.SourceOverlay, `overlay semanticProfile is not the selected profile ${JSON.stringify(source.profile)}`);
   }
   return {
     bindings: bindings as EffectBinding[],
