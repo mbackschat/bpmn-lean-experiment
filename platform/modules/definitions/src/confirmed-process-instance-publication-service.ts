@@ -75,6 +75,7 @@ export class ConfirmedProcessInstancePublicationService {
             await this.#transitionToIntegrity(record);
             throw new ConfirmedProcessInstanceIntegrityError(
               record.instance.processInstanceId,
+              `the prepared start answered ${result.status}: ${result.evidence}`,
             );
           default:
             return assertNever(result);
@@ -99,6 +100,7 @@ export class ConfirmedProcessInstancePublicationService {
       case ConfirmedProcessInstanceState.IntegrityFailure:
         throw new ConfirmedProcessInstanceIntegrityError(
           record.instance.processInstanceId,
+          "the durable direct start is already integrityFailure",
         );
       case ConfirmedProcessInstanceState.Reserved:
       case ConfirmedProcessInstanceState.Starting:
@@ -160,7 +162,10 @@ export class ConfirmedProcessInstancePublicationService {
     }
     if (initial.intent === null || initial.startCommandBytes === null) {
       await this.#transitionToIntegrity(initial);
-      throw new ConfirmedProcessInstanceIntegrityError(processInstanceId);
+      throw new ConfirmedProcessInstanceIntegrityError(
+        processInstanceId,
+        "the durable direct start lacks its retained intent or command",
+      );
     }
     const reservation = {
       instance: structuredClone(initial.instance),
@@ -206,6 +211,7 @@ export class ConfirmedProcessInstancePublicationService {
         await this.#transitionToIntegrity(record);
         throw new ConfirmedProcessInstanceIntegrityError(
           record.instance.processInstanceId,
+          "the host retains a divergent start",
         );
       default:
         return assertNever(description.status);
@@ -263,6 +269,7 @@ export class ConfirmedProcessInstancePublicationService {
         case ConfirmedProcessInstanceState.IntegrityFailure:
           throw new ConfirmedProcessInstanceIntegrityError(
             current.instance.processInstanceId,
+            `the outcome ${target} meets the durable state ${current.state}`,
           );
         default:
           return assertNever(current.state);
@@ -277,6 +284,7 @@ export class ConfirmedProcessInstancePublicationService {
     if (record.state !== ConfirmedProcessInstanceState.Confirmed) {
       throw new ConfirmedProcessInstanceIntegrityError(
         record.instance.processInstanceId,
+        `delivery found the durable state ${record.state}`,
       );
     }
     if (record.operatePending) {
@@ -307,7 +315,10 @@ export class ConfirmedProcessInstancePublicationService {
   ): Promise<ConfirmedProcessInstanceRecord> {
     const record = await this.#repository.get(processInstanceId);
     if (record === null) {
-      throw new ConfirmedProcessInstanceIntegrityError(processInstanceId);
+      throw new ConfirmedProcessInstanceIntegrityError(
+        processInstanceId,
+        "the durable record is missing",
+      );
     }
     return record;
   }

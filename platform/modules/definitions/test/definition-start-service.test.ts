@@ -17,6 +17,7 @@ import type {
   DefinitionVersionStarter,
 } from "@bpmn-lean/platform-engine-gateway";
 import {
+  ConfirmedProcessInstanceIntegrityError,
   ConfirmedProcessInstancePublicationService,
   DefinitionArtifactIntegrityError,
   DefinitionStartIntegrityError,
@@ -276,6 +277,22 @@ test("an unresolved start keeps the engine failure that left it indeterminate as
   await assert.rejects(
     fixture.service.start({ processId: "Process_A", version: 1 }, emptyStartCommand),
     (error: unknown) => error instanceof DefinitionStartIntegrityError && error.cause === lost,
+  );
+});
+
+test("a start the publication lifecycle failed keeps that failure and the host's evidence as its cause", async () => {
+  const bytes = encoder.encode("divergent-answer-source");
+  const stored = definition(1, "divergent-answer-source", "9".repeat(64), bytes);
+  const fixture = createFixture([stored], new Map([[stored.source.sha256, bytes]]), {
+    startedDrift: { processInstanceId: "returned-other-instance" },
+    startOnlyDrift: true,
+  });
+  await assert.rejects(
+    fixture.service.start({ processId: "Process_A", version: 1 }, emptyStartCommand),
+    (error: unknown) =>
+      error instanceof DefinitionStartIntegrityError &&
+      error.cause instanceof ConfirmedProcessInstanceIntegrityError &&
+      error.cause.message.includes("integrityFailure: prepared direct start returned divergent identity"),
   );
 });
 

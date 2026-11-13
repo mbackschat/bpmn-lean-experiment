@@ -113,8 +113,12 @@ export interface DirectProcessInstanceHost {
 export class ConfirmedProcessInstanceIntegrityError extends Error {
   readonly processInstanceId: string;
 
-  constructor(processInstanceId: string) {
-    super(`confirmed Process instance ${processInstanceId} failed integrity validation`);
+  /** `evidence` names the observation that failed, so the operator log can tell the integrity paths apart. */
+  constructor(processInstanceId: string, evidence?: string) {
+    super(
+      `confirmed Process instance ${processInstanceId} failed integrity validation` +
+        (evidence === undefined ? "" : `: ${evidence}`),
+    );
     this.name = "ConfirmedProcessInstanceIntegrityError";
     this.processInstanceId = processInstanceId;
   }

@@ -149,7 +149,7 @@ export class DefinitionStartService {
           );
         } catch (error: unknown) {
           if (error instanceof ConfirmedProcessInstanceIntegrityError) {
-            throw new DefinitionStartIntegrityError(selectedReference);
+            throw new DefinitionStartIntegrityError(selectedReference, { cause: error });
           }
           throw error;
         }
