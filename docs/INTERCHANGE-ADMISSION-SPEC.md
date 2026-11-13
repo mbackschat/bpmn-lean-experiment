@@ -4,6 +4,8 @@
 
 **Implemented, independently closure-reviewed, evidence-closed, and graduated.** One registered profile composes the existing CIB Seven User Task String/Null Process-data account with the existing standard-notation preservation capability. It changes admission identity and corpus classification without adding a transition, runtime field, public observation, Product contract, or broader BPMN/CIB claim.
 
+The profile identities, profile-by-surface matrices and `retained-*` profile-feature atoms below are the pre-consolidation registry: since 2026-11-09 (`3a10a909a`) the profiles are `bpmn-2.0.2`, `cibseven-2.2.0` and `cibseven-2.2.0-scope-chain`, the profile artifacts carry no per-variant feature list, and the kernel's admission plus its `ProfileOptions` are the admitted field set ([profiles](../profiles/README.md)). Read every profile name below other than those three as that retired registry's record, not as a profile that exists today.
+
 ## Contract boundary
 
 The implemented profile is `cibseven-2.2.0`. It preserves the selected standard notation only in exact source bytes while executing the predecessor CIB Seven User Task Process-data graph and String/Null data account unchanged. Both predecessor profiles remain separating negatives, and all five reclassified external CIB rows remain rejected for independent unsupported content.

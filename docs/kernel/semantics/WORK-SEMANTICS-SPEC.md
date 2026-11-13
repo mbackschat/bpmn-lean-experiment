@@ -171,7 +171,7 @@ The deleted implementation admitted each work kind only in exact first-profile t
 | `activity.compensationHandler` | compensation on work the pipeline cannot complete | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
 | `compensation.handlerCount` | more than one compensation handler of one Activity or Scope | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
 | `scope.implicitStart` | a Receive Task or Call begun by a Scope's implicit start | no flow to wait on |
-| dynamic: `effect-technical-failure` | technical failure without the incident profile | no BPMN meaning (§13.3.3) |
+| dynamic: `effect-technical-failure` | technical failure while `technicalFailure = hostFailure` | no BPMN meaning (§13.3.3) |
 | dynamic: the host's code | an `unsupported` effect result | a value or behavior the portable domain cannot represent |
 | dynamic: `call-input-unavailable`, `call-output-unavailable` | an unavailable Data Association source at a Call | PC-DATA-09 |
 | dynamic: `async-boundary-failure` | a failure after an input crossed `asyncBefore`/`asyncAfter` | PC-AUTO-03 |

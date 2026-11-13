@@ -1,6 +1,6 @@
 # Confirmed travel cancellation
 
-[travel-cancellation.bpmn](travel-cancellation.bpmn) confirms a hotel, ground travel, and insurance itinerary before reversing the confirmed arrangements. Its display names explain the business work; its identities, topology, declarations and limits retain the reviewed source checkpoint. The [profile](../../profiles/bpmn-2.0.2/README.md) and [trigger account](../../docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md) own the bounded semantics.
+[travel-cancellation.bpmn](travel-cancellation.bpmn) confirms a hotel, ground travel, and insurance itinerary before reversing the confirmed arrangements. Its display names explain the business work; its identities, topology, declarations and limits retain the reviewed source checkpoint. The scenarios declare the [`bpmn-2.0.2` profile](../../profiles/bpmn-2.0.2/README.md), and the [trigger account](../../docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md) owns the bounded semantics.
 
 A is hotel reservation, B is ground travel, and C is insurance. Ground travel depends on the hotel reservation; insurance is independent. Compensation reverses that dependency, so B and C become active together and A becomes active only after B succeeds.
 

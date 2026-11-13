@@ -4,6 +4,8 @@
 
 Implemented and evidence-closed. Owner-approved proposal correction `8ae9b66`, semantic-checkpoint correction `398719b`, and closure correction `8d6ea1a` establish the stable boundary below. The MIT engine and platform contain no A12-specific production decision. A12-specific material is retained only as optional adoption evidence and a future separately owned add-on input.
 
+The per-variant engine profiles this specification names were consolidated into `bpmn-2.0.2`, `cibseven-2.2.0` and `cibseven-2.2.0-scope-chain` on 2026-11-09 (`3a10a909a`, [profiles](../profiles/README.md)); the frozen legacy A12 profiles survive only under `adoption/a12/legacy/source-tree/profiles`, and no profile under `profiles/` carries an A12 identity.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -104,18 +106,18 @@ The generic compiler reads supported Camunda/CIB extension structures, validates
 
 The built-in compilation registry contains only engine-owned profile readers and the generic fallback. Overlay lookup occurs within the mandatory admission policy, so an overlay cannot bypass reference validation, foreign-attribute classification, per-element diagnostics, checked-graph validation, or lowering validation.
 
-## Product-neutral profiles
+## Product-neutral fixtures
 
-Two product-neutral CIB Seven `2.0.0` profiles own the retained behavior:
+Two product-neutral Service Task fixtures own the retained behavior. They were two CIB Seven `2.0.0` profiles until the 2026-11-09 consolidation; their scenarios now declare `cibseven-2.2.0` and carry CIB Seven `2.2.0` evidence:
 
-- a bounded mapped-success Service Task profile with one literal string input, one Activity-local string result, and one simple local-variable output mapping;
-- a bounded mapped-boundary-Error Service Task profile with the existing string/null patch, caught-path output mapping, exact-code interrupting route, and trailing User Task.
+- the [mapped-success Service Task](../scenarios/mapped-success-service-task/README.md), with one literal string input, one Activity-local string result, and one simple local-variable output mapping;
+- the [mapped-boundary-Error Service Task](../scenarios/mapped-boundary-error-service-task/README.md), with the existing string/null patch, caught-path output mapping, exact-code interrupting route, and trailing User Task.
 
-Their project-authored fixtures use neutral identities, names, values, Error code, handler tokens, and built-in source bindings. Their profile-owned `effectBindings` define the descriptors an optional overlay may reference. Product fixtures, profiles, diagnostics, Lean, the semantic core, Temporal branches, and examples contain no A12 business decision.
+Their project-authored fixtures use neutral identities, names, values, Error code, handler tokens, and built-in source bindings. Product fixtures, profiles, diagnostics, Lean, the semantic core, Temporal branches, and examples contain no A12 business decision.
 
-The neutral profiles use fresh CIB relationship entries and evidence. Existing A12-specific relationship entries and evidence remain adoption evidence and are not relabeled as generic proof.
+The neutral fixtures use fresh CIB relationship entries and evidence. Existing A12-specific relationship entries and evidence remain adoption evidence and are not relabeled as generic proof.
 
-The non-A12 payload-free Service Task profile and BPMN source remain byte-identical to immutable baseline `02330ad0f980a5fc282cc0aa93600a9632b86c3e`. Its scenario adds only `bpmn.sourceOverlay: null`; its evidence rebinds the resulting scenario SHA-256 and follows required canonical-result schema replacements with empty values for mechanisms that scenario does not exercise.
+At extraction the non-A12 payload-free Service Task profile and BPMN source remained byte-identical to immutable baseline `02330ad0f980a5fc282cc0aa93600a9632b86c3e`. Its scenario added only `bpmn.sourceOverlay: null`; its evidence rebound the resulting scenario SHA-256 and followed required canonical-result schema replacements with empty values for mechanisms that scenario does not exercise.
 
 ## Preserved A12 evidence
 

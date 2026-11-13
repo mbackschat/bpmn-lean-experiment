@@ -107,7 +107,7 @@ No state shape changes otherwise: the effect item reuses `EffectDetail`, and the
 | `work.script.resource` | a script referenced by `camunda:resource` |
 | `activity.inputMappings`, `activity.outputMappings` | mappings on a Script Task (unchanged) |
 | dynamic: `script-result-unrepresentable`, `script-value-unrepresentable`, `script-host-object` | item 6 |
-| dynamic: `effect-technical-failure` | a thrown value or the deadline without the incident profile (unchanged) |
+| dynamic: `effect-technical-failure` | a thrown value or the deadline while `technicalFailure = hostFailure` (unchanged) |
 
 ## Witness plan
 

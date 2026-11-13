@@ -97,7 +97,7 @@ type UserTaskMetadata =
   | Readonly<{ assignment: UserTaskAssignment; form: ExistingM3FormMetadata }>;
 ```
 
-Profile admission selects the exact arm. Existing M3 profiles still require assignment plus form, while M6 requires assignment only. An empty metadata object, form-only object, extra key, missing candidate, or multiple candidate remains invalid.
+Before the 2026-11-09 profile consolidation, profile admission selected the exact arm: the M3 form-metadata profiles required assignment plus form and M6 required assignment only. The M3 sources now declare `cibseven-2.2.0`, the M6 sources declare `bpmn-2.0.2`, and the kernel reader carries the whole user-task record under either ([`work.ts`](../packages/bpmn-source/src/kernel-reader/work.ts)). An empty metadata object, form-only object, extra key, missing candidate, or multiple candidate remains invalid.
 
 ### Structured form definition
 
@@ -192,7 +192,7 @@ BPMN 2.0.2 Clause 10.3.4.1 and Table 10.13 define a User Task as human work mana
 
 BPMN's Activity data account separately defines InputOutputSpecification, InputSet, OutputSet, DataInput, DataOutput, and Data Associations, and states that User Tasks have access to those data-aware elements. The form does not define those elements: a structured User Task declares them in standard BPMN, one Data Output whose id is each field key and one whose id is `resolutionVariable`, all in its one OutputSet, because under `bpmn-2.0.2` a completion submits exactly the OutputSet and names each Data Output by id ([data semantics](kernel/semantics/DATA-SEMANTICS-SPEC.md)). The form is a Product 2 view onto that declared output contract. [The BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements) therefore keeps the standard Potential Owner and full data mechanisms unsupported. M6 targets the structural `BPMN-UTASK-RENDERING-01` requirement by admitting the Rendering hook while keeping its project-defined contents outside execution semantics.
 
-CIB Seven forms are research input only. M6 neither widens `CIB-EXT-0012`, adds a new CIB form relationship, nor admits CIB `formData`, form-field validators, form references, buttons, or `camunda:priority` into the selected semantic profile. The new profile selects the independently classified `CIB-EXT-0011` literal candidate-group attribute only. The neutral passive `UserTaskMetadata` wire therefore becomes a closed union of the existing assignment-plus-form shape and a new assignment-only shape, without changing any existing artifact bytes. The old M3 CIB form-metadata profiles and their passive observations remain unchanged.
+CIB Seven forms are research input only. M6 neither widens `CIB-EXT-0012`, adds a new CIB form relationship, nor admits CIB `formData`, form-field validators, form references, buttons, or `camunda:priority` into the selected semantic profile. The `bpmn-2.0.2` profile lists the independently classified `CIB-EXT-0011` literal candidate-group attribute and no form relationship. The neutral passive `UserTaskMetadata` wire therefore becomes a closed union of the existing assignment-plus-form shape and a new assignment-only shape, without changing any existing artifact bytes. The M3 CIB form-metadata sources, now declared under `cibseven-2.2.0`, and their passive observations remain unchanged.
 
 ## Selected rules
 
@@ -200,7 +200,7 @@ CIB Seven forms are research input only. M6 neither widens `CIB-EXT-0012`, adds 
 
 - `SHW-BPMN-01`: User Task activation, exact-occurrence completion, and outgoing control retain the existing BPMN lifecycle account; a rendering or Product 2 validation result never becomes a semantic transition.
 - `SHW-RENDER-01`: zero or more BPMN Rendering hooks remain legal semantic source; one exact project rendering kind may produce a catalog, while absent, unknown, or unsupported renderings do not change the executable checked graph or program.
-- `SHW-ASSIGN-01`: the M6 profile admits exactly one nonempty literal candidate group through existing `CIB-EXT-0011`, publishes the neutral assignment-only metadata shape, and admits no CIB form metadata; authorization and claiming remain Product 2 policy.
+- `SHW-ASSIGN-01`: an M6 source, declared under `bpmn-2.0.2`, admits exactly one nonempty literal candidate group through existing `CIB-EXT-0011`, publishes the neutral assignment-only metadata shape, and admits no CIB form metadata; authorization and claiming remain Product 2 policy.
 - `SHW-CATALOG-01`: an accepted M6 Product 2 definition, one whose source carries the project rendering, produces exactly one canonical catalog bound to its source digest, semantic profile, Process ID, and distinct User Task element IDs. Since the profile became the `bpmn-2.0.2` standards profile, a source without that rendering deploys under it with no catalog, and an invalid rendering is still refused.
 - `SHW-CATALOG-02`: Product 2 renders or validates only a catalog whose complete definition identity equals the selected deployed version; absence or mismatch fails closed without engine work.
 - `SHW-CATALOG-03`: a structured form's submitted names, its field keys and `resolutionVariable`, equal the Data Output ids of its User Task's one OutputSet; otherwise catalog projection refuses the deployment with `outputContract`, since no completion the form computes could be admitted.
@@ -224,7 +224,7 @@ An `integer` decoder requires `Number.isSafeInteger(value)`, `value >= 0`, and r
 
 - `SHW-DATA-01`: a safe integer is an ordinary immutable Process-variable value in the inclusive range `0` through `9007199254740991`; no coercion, decimal, infinity, NaN, negative value, or negative-zero representation is admitted.
 - `SHW-DATA-02`: a string list is an ordinary immutable Process-variable value containing source-significant ordered, well-formed strings; generic semantic equality preserves order and multiplicity, including repeated members.
-- `SHW-DATA-03`: the M6 profile admits safe integers and string lists only in User Task completion patches. Existing profiles, Process Start, effect results, mapping expressions, and condition evaluation remain closed to the new kinds.
+- `SHW-DATA-03`: before the 2026-11-09 consolidation the M6 profile admitted safe integers and string lists only in User Task completion patches, while the existing profiles, Process Start, effect results, mapping expressions, and condition evaluation stayed closed to the new kinds; the consolidated profiles allow the whole portable domain at every surface ([admission](kernel/semantics/ADMISSION-SEMANTICS-SPEC.md#interpretation)).
 - `SHW-DATA-04`: accepted bindings use the existing atomic create-or-replace merge and unrelated-binding preservation rules. Rejected wire, profile, or occurrence admission preserves the complete stable state.
 
 Product 2's multiple-choice canonicalization is deliberately separate from `SHW-DATA-02`: semantic string lists are ordered multisets, `["a", "b"]` differs from `["b", "a"]`, and `["a", "a"]` preserves two members. Only a form definition can reject duplicate selections, treat a valid selection as a set, and select catalog order.
