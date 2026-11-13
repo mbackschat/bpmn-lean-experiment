@@ -4401,6 +4401,398 @@
         "kind": "notCatalogReady",
         "reason": "The exact Betsy model is rejected at admission and remains in its registered external checkout."
       }
+    },
+    {
+      "id": "order-signal-broadcast",
+      "title": "Broadcast order milestones as Signals",
+      "businessPurpose": "Broadcast that an order shipped or closed so that the waiting customer notification and refund paths of the same order react to it.",
+      "cloneFamily": "signal-throw-and-catch",
+      "constructs": [
+        "endEvent",
+        "intermediateCatchEvent",
+        "intermediateThrowEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "signal",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "signalEvent",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/open-rows/signal-throw-literal/order-signals.bpmn",
+        "sha256": "059268ad2bc6432e043f62aefb6782a5a38dc8e44144bbce9075a9ffdf4a325a",
+        "scenarioRelativePath": "scenarios/open-rows/signal-throw-literal/intermediate-throw.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "signal-throw-literal-intermediate-throw",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "case-signal-subscriptions",
+      "title": "Handle a case with Signal subscriptions",
+      "businessPurpose": "Let a broadcast cancellation or note interrupt or accompany the review of a case, and stop a regional decision by a thrown Signal.",
+      "cloneFamily": "signal-boundary-subscriptions",
+      "constructs": [
+        "boundaryEvent",
+        "callActivity",
+        "endEvent",
+        "intermediateCatchEvent",
+        "intermediateThrowEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "signal",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "signalEvent",
+        "embeddedSubProcess",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/open-rows/signal-subscriptions/signal-subscriptions.bpmn",
+        "sha256": "fe8adc6121ce6041e23d4f8cddf4ba2c6f563ee90a150cbfeea7377f27914263",
+        "scenarioRelativePath": "scenarios/open-rows/signal-subscriptions/bodies-ping-isolation.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "signal-subscriptions-bodies-ping-isolation",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "shift-handover-signal-start",
+      "title": "Hand a shift over by Signal",
+      "businessPurpose": "Start a shift handover when its Signal is broadcast and confirm it once the next shift accepts.",
+      "cloneFamily": "signal-start-handover",
+      "constructs": [
+        "endEvent",
+        "intermediateCatchEvent",
+        "process",
+        "sequenceFlow",
+        "signal",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "signalEvent",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/open-rows/signal-start-compositions/handover-relay.bpmn",
+        "sha256": "537f483f0763d332196fa9116913e8ef6c51eb083d898951a955ac19e970990a",
+        "scenarioRelativePath": "scenarios/open-rows/signal-start-compositions/handover-catch-other-signal.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "signal-start-compositions-handover-catch-other-signal",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "expedited-order-conditional-start",
+      "title": "Ship an order as soon as it is flagged",
+      "businessPurpose": "Start fast shipping of an order when the submitted order data satisfies the expedite condition.",
+      "cloneFamily": "conditional-start-order",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/open-rows/conditional-start-compositions/expedited-order.bpmn",
+        "sha256": "60bdc2243409f9a3f6ea54ca592e4b76da164420c79512375a4a58f9f9623ec7",
+        "scenarioRelativePath": "scenarios/open-rows/conditional-start-compositions/expedited-order-absent.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "conditional-start-compositions-expedited-order-absent",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "answer-conditional-contests",
+      "title": "Route answers by Conditional events",
+      "businessPurpose": "Route recorded answers to the handlers whose conditions they satisfy, where the first write withdraws competing waits.",
+      "cloneFamily": "conditional-catch-and-boundary",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "eventBasedGateway",
+        "intermediateCatchEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "eventRace",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/open-rows/conditional-contests/pending-withdraws.bpmn",
+        "sha256": "eb32fc7e9ae8d9c8e9d704a65beaad688eca17e48931180bf9f0402d2462546d",
+        "scenarioRelativePath": "scenarios/open-rows/conditional-contests/pending-arms-no-choice.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "conditional-contests-pending-arms-no-choice",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "support-case-escalation",
+      "title": "Escalate a support case review",
+      "businessPurpose": "Escalate a support case from its review or audit to the approver or auditor who handles that escalation code.",
+      "cloneFamily": "escalation-propagation",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "intermediateThrowEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/open-rows/escalation-throw-propagation/support-case.bpmn",
+        "sha256": "93ae96edb35ca4f8cd716921230ff84798227f7f43ca042733a9f083f662505d",
+        "scenarioRelativePath": "scenarios/open-rows/escalation-throw-propagation/catch-all.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "escalation-throw-propagation-catch-all",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "customer-notification-message-throw",
+      "title": "Notify a customer by thrown Messages",
+      "businessPurpose": "Send a shipment notice and a closure notice to the customer through the configured handler, and handle a refused send.",
+      "cloneFamily": "message-throw-notification",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "intermediateThrowEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "externalEffect",
+        "embeddedSubProcess",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/open-rows/message-throw-bound/notify-customer.bpmn",
+        "sha256": "8b25a6a1eea4d008c0813e243b4f755262c0a642b1111ce0c9048179028ab300",
+        "scenarioRelativePath": "scenarios/open-rows/message-throw-bound/both-sends-succeed.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "message-throw-bound-both-sends-succeed",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "order-targeted-compensation",
+      "title": "Undo order steps by targeted compensation",
+      "businessPurpose": "Undo a reservation, a shipment and a bill in reverse dependency order when a checkpoint compensates them.",
+      "cloneFamily": "compensation-targeted-throws",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "exclusiveGateway",
+        "intermediateThrowEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/open-rows/compensation-targeting/linear-throws.bpmn",
+        "sha256": "4b1ca58163bd334a712fec7b82e57735783c9d3308ab9349c6c1225d40801595",
+        "scenarioRelativePath": "scenarios/open-rows/compensation-targeting/chain-handlers-forward.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "compensation-targeting-chain-handlers-forward",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "order-script-probes",
+      "title": "Compute order values with JavaScript Script Tasks",
+      "businessPurpose": "Compute an order total or compose a shipping label with one JavaScript Script Task per selected probe.",
+      "cloneFamily": "javascript-script-task",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "scriptTask",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "scriptTaskExecution",
+        "conditionalRouting"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/open-rows/script-task-javascript/script-probes.bpmn",
+        "sha256": "434e95142566bfe01ba409c39b22d81101631dd3ef9438f3bec9fd96649d84ad",
+        "scenarioRelativePath": "scenarios/open-rows/script-task-javascript/probe-arithmetic-total.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "script-task-javascript-probe-arithmetic-total",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "applicant-decision-routing",
+      "title": "Route an applicant by a decision",
+      "businessPurpose": "Assess an applicant with a DMN decision of two outputs and route to manual review, an approval notice or a hold.",
+      "cloneFamily": "business-rule-routing",
+      "constructs": [
+        "businessRuleTask",
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sendTask",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "businessDecision",
+        "conditionalRouting",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/open-rows/business-rule-routing/rule-routing.bpmn",
+        "sha256": "1c0189eb6ec4f84dca6120ad8eb693083f5a60692951e542c29dfd44903899af",
+        "scenarioRelativePath": "scenarios/open-rows/business-rule-routing/high-grade-review.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "business-rule-routing-high-grade-review",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
     }
   ]
 }

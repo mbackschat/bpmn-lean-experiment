@@ -11,6 +11,7 @@ import { test } from "node:test";
 import { isOpenRowWitness, readOpenRowOwners } from "../../scripts/contract-artifact-cases.ts";
 import { requireExecutableModelCorpusManifest } from "../../scripts/executable-model-corpus.ts";
 import type { CorpusScenario } from "../../scripts/executable-model-corpus.ts";
+import type { MvpBpmnCapabilityId } from "../mvp-capabilities.ts";
 import { admitSource, discovered, inspect, loadManifest, renderCorpusFiles, scenarios } from "./corpus-inspection.ts";
 
 test("the kernel admits every model exactly as the corpus records it", async () => {
@@ -58,11 +59,24 @@ test("rejects a supported element variant without a retained MVP model", async (
   await assert.rejects(inspect(manifest), /retained MVP models do not cover timerStartEvent/u);
 });
 
+/** The claiming scenarios one of whose admitted sources exercises `capability`. */
+async function exercising(capability: MvpBpmnCapabilityId): Promise<ReadonlyArray<CorpusScenario>> {
+  const exercisers: CorpusScenario[] = [];
+  for (const scenario of scenarios.filter(({ relativePath }) => !isOpenRowWitness(relativePath))) {
+    for (const source of scenario.sources) {
+      const admission = await admitSource(scenario, source);
+      if (admission.status === "accepted" && admission.capabilities().includes(capability)) { exercisers.push(scenario); break; }
+    }
+  }
+  return exercisers;
+}
+
 test("rejects a catalog variant no discovered scenario exercises", async () => {
   const manifest = requireExecutableModelCorpusManifest(await loadManifest());
-  const withoutTimerStart = scenarios.filter(({ sources }) =>
-    !sources.some(({ relativePath }) => relativePath.startsWith("scenarios/timer-start-event/")));
-  await assert.rejects(inspect(manifest, withoutTimerStart), /MVP capability catalog differs from the discovered scenarios/u);
+  const exercisers = await exercising("timerStartEvent");
+  assert.ok(exercisers.length > 0, "timerStartEvent has an exerciser");
+  await assert.rejects(inspect(manifest, scenarios.filter((scenario) => !exercisers.includes(scenario))),
+    /MVP capability catalog differs from the discovered scenarios: .*timerStartEvent/u);
 });
 
 /** A copy of the first single-instance scenario whose first stimulus has a `variables` member, with `variable` added. */
@@ -139,9 +153,9 @@ test("a refused claiming source needs the restriction row its refusal code names
 
 test("a source the kernel refuses claims no capability, so a refused exerciser leaves its catalog row unexercised", async () => {
   const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const exercisers = await exercising("timerStartEvent");
   await assert.rejects(
-    inspect(manifest, scenarios, async (scenario, source) => scenario.sources.some(({ relativePath }) =>
-      relativePath.startsWith("scenarios/timer-start-event/"))
+    inspect(manifest, scenarios, async (scenario, source) => exercisers.includes(scenario)
       ? { status: "rejected", refusal: "scope.withoutStart" }
       : admitSource(scenario, source)),
     /MVP capability catalog differs from the discovered scenarios: .*timerStartEvent/u,

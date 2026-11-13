@@ -124,9 +124,9 @@ function activityVariant(
     case WorkTag.Send:
       return "sendTask";
     case WorkTag.Script:
+      return "scriptTask";
     case WorkTag.Rule:
-      claims.unclassified(`${work.tag} work on ${head.sourceType}`);
-      return null;
+      return "businessRuleTask";
     case WorkTag.Call: {
       const mappings = [...work.payload.inputs, ...work.payload.outputs];
       if (mappings.some(isDataAssociation)) return "callActivityScalarData";
@@ -139,11 +139,15 @@ function activityVariant(
   return assertNever(work);
 }
 
-/** The catalog's Service work variants by the BPMN element the reader read them from. */
+/**
+ * The catalog's Service work variants by the BPMN element the reader read them from; a Business Rule Task without a
+ * decisionRef runs its declared implementation as Service work.
+ */
 const serviceSources: Readonly<Record<string, MvpBpmnCapabilityId>> = {
   serviceTask: "serviceTask",
   task: "configuredTask",
   sendTask: "sendTask",
+  businessRuleTask: "businessRuleTask",
 };
 
 /** A Service Task that is a compensation handler, by its `isForCompensation` mark or as the body of a Compensation Event Sub-Process. */
@@ -252,13 +256,16 @@ function throwClaims(thrown: Throw, end: boolean, claims: Claims): void {
       else claims.unclassified(`cancel ${site} throw`);
       return;
     case ThrowTag.Compensation:
-      if (end) claims.unclassified(`compensation ${site} throw`);
-      else claims.add("compensationIntermediateThrowEvent");
+      claims.add(end ? "compensationEndEvent" : "compensationIntermediateThrowEvent");
       return;
     case ThrowTag.Message:
+      claims.add(end ? "messageEndEvent" : "messageIntermediateThrowEvent");
+      return;
     case ThrowTag.Signal:
+      claims.add(end ? "signalEndEvent" : "signalIntermediateThrowEvent");
+      return;
     case ThrowTag.Escalation:
-      claims.unclassified(`${thrown.tag} ${site} throw`);
+      claims.add(end ? "escalationEndEvent" : "escalationIntermediateThrowEvent");
       return;
   }
   assertNever(thrown);
@@ -317,9 +324,18 @@ function subscriptionClaims(subscription: Subscription, site: Site, claims: Clai
       else claims.unclassified(`compensation ${siteName(site)}`);
       return site.at === "eventSubProcess";
     case TriggerTag.Signal:
+      if (site.at === "start") claims.add("signalStartEvent");
+      else if (site.at === "catch") claims.add("intermediateCatchSignalEvent");
+      else if (site.at === "boundary") claims.add("signalBoundaryEvent");
+      return false;
     case TriggerTag.Condition:
+      if (site.at === "start") claims.add("conditionalStartEvent");
+      else if (site.at === "catch") claims.add("intermediateCatchConditionalEvent");
+      else if (site.at === "boundary") claims.add("conditionalBoundaryEvent");
+      return false;
     case TriggerTag.Escalation:
-      if (site.at !== "eventSubProcess") claims.unclassified(`${trigger.tag} ${siteName(site)}`);
+      if (site.at === "boundary") claims.add("escalationBoundaryEvent");
+      else if (site.at !== "eventSubProcess") claims.unclassified(`escalation ${siteName(site)}`);
       return false;
   }
   return assertNever(trigger);

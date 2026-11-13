@@ -22,12 +22,13 @@ import {
 } from "./contract-artifact-test-fixtures.ts";
 import {
   artifactCases,
+  isOpenRowWitnessOf,
   normativeArtifactCases,
   openRowOwnersRelativePath,
   openRowScenarioRoot,
   readOpenRowOwners,
 } from "./contract-artifact-cases.ts";
-import { parseCoverageRowStates, readCoverageRowStates } from "./coverage-row-states.ts";
+import { type CoverageRowState, parseCoverageRowStates, readCoverageRowStates } from "./coverage-row-states.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -309,6 +310,23 @@ test("targets every CIB-referencing scenario at an oracle revision of the profil
     }
   }
   assert.deepEqual(stale, []);
+});
+
+test("exempts a witness from the claim guards only while every owning row is open or held", () => {
+  const owners = new Map([["both", ["PC-A-01", "PC-B-02"]], ["only", ["PC-A-01"]]]);
+  const states = (a: CoverageRowState, b: CoverageRowState) => new Map<string, CoverageRowState>([["PC-A-01", a], ["PC-B-02", b]]);
+  const witness = (directory: string, ...args: [CoverageRowState, CoverageRowState]) =>
+    isOpenRowWitnessOf(`${openRowScenarioRoot}${directory}/x.scenario.json`, owners, states(...args));
+  assert.equal(witness("both", "open", "held"), true);
+  assert.equal(witness("both", "open", "done"), false, "one done owner graduates the whole directory");
+  assert.equal(witness("only", "held", "done"), true, "a row the directory does not own does not count");
+  assert.equal(witness("only", "done", "open"), false);
+  assert.equal(isOpenRowWitnessOf("scenarios/portable-business-values-handoff/x.scenario.json", owners, states("open", "open")), false);
+  assert.throws(() => witness("unmapped", "open", "open"), /names no owning row for unmapped/u);
+  assert.throws(
+    () => isOpenRowWitnessOf(`${openRowScenarioRoot}only/x.scenario.json`, new Map([["only", ["PC-Z-09"]]]), states("open", "open")),
+    /owning row PC-Z-09 is not in the coverage target/u,
+  );
 });
 
 test("reads a row's state from the last cell of the delivery task list and refuses a state it cannot read", () => {

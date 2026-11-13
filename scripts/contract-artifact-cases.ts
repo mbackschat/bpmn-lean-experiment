@@ -12,6 +12,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { type CoverageRowState, readCoverageRowStates } from "./coverage-row-states.ts";
 import { compareCanonicalStrings, parseStrictJson } from "./strict-json.ts";
 
 export type ArtifactCase = Readonly<{
@@ -28,21 +29,47 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 /**
  * Witnesses of open coverage rows: answer-free scenarios whose CIB answer is fixed before the row's code (PLAN order
  * gate). They claim no capability, so the claim guards (the kernel codec's reading of their values, the executable
- * capability catalog, corpus claiming) skip them while every mechanical guard still applies; a row's track moves its
- * witnesses into `scenarios/` when the row closes.
+ * capability catalog, corpus claiming) skip them while every mechanical guard still applies.
+ *
+ * The exemption lasts while every owning row of the witness's directory, as `owners.json` maps it, is `open` or `held`
+ * in the coverage target; once an owner is `done` the witness is an ordinary scenario that claims its capabilities,
+ * and no file moves.
  */
 export const openRowScenarioRoot = "scenarios/open-rows/";
 export const openRowOwnersRelativePath = `${openRowScenarioRoot}owners.json`;
 
-/** The coverage rows each directory under `scenarios/open-rows/` witnesses, from the machine-owned `owners.json`. */
+/** The coverage rows each directory under `scenarios/open-rows/` witnesses. */
 export function readOpenRowOwners(root: string = projectRoot): ReadonlyMap<string, ReadonlyArray<string>> {
   const owners = parseStrictJson<Record<string, ReadonlyArray<string>>>(
     readFileSync(path.join(root, openRowOwnersRelativePath), "utf8"), openRowOwnersRelativePath);
   return new Map(Object.entries(owners));
 }
 
-export const isOpenRowWitness = (scenarioRelativePath: string): boolean =>
-  scenarioRelativePath.startsWith(openRowScenarioRoot);
+/** The decision of `isOpenRowWitness`, over explicit data. */
+export function isOpenRowWitnessOf(
+  scenarioRelativePath: string,
+  owners: ReadonlyMap<string, ReadonlyArray<string>>,
+  states: ReadonlyMap<string, CoverageRowState>,
+): boolean {
+  if (!scenarioRelativePath.startsWith(openRowScenarioRoot)) return false;
+  const directory = scenarioRelativePath.slice(openRowScenarioRoot.length).split("/")[0]!;
+  const rows = owners.get(directory);
+  if (rows === undefined || rows.length === 0) {
+    throw new Error(`${scenarioRelativePath}: ${openRowOwnersRelativePath} names no owning row for ${directory}`);
+  }
+  return rows.every((row) => {
+    const state = states.get(row);
+    if (state === undefined) throw new Error(`${scenarioRelativePath}: owning row ${row} is not in the coverage target`);
+    return state !== "done";
+  });
+}
+
+let openRowData: { owners: ReadonlyMap<string, ReadonlyArray<string>>; states: ReadonlyMap<string, CoverageRowState> } | undefined;
+
+export function isOpenRowWitness(scenarioRelativePath: string): boolean {
+  openRowData ??= { owners: readOpenRowOwners(), states: readCoverageRowStates(projectRoot) };
+  return isOpenRowWitnessOf(scenarioRelativePath, openRowData.owners, openRowData.states);
+}
 
 /** The evidence path a scenario path pairs with, whether or not that file exists. */
 export function evidenceRelativePathFor(scenarioRelativePath: string): string {

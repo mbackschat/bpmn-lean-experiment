@@ -8,6 +8,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 
+import { ElementTag, EventRoleTag, ThrowTag, type Program } from "@bpmn-lean/kernel";
+
 import { UnclassifiedProgramError, programCapabilities } from "./kernel-capabilities.ts";
 import { kernelAdmittedProgram, readCaseSource } from "./kernel-program.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
@@ -24,12 +26,16 @@ const definitions = (body: string): string => `<?xml version="1.0" encoding="UTF
   <bpmn:sequenceFlow id="f2" sourceRef="W" targetRef="E"/><bpmn:endEvent id="E"/>
 </bpmn:process></bpmn:definitions>`;
 
-async function claimsOf(xml: string): Promise<ReadonlyArray<string>> {
+async function admittedProgram(xml: string): Promise<Program> {
   const bytes = new TextEncoder().encode(xml);
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   const admitted = kernelAdmittedProgram(await readCaseSource({ relativePath: "inline.bpmn", bytes, sha256, overlay: null }, profile));
   assert.ok(admitted.status === "accepted", admitted.status === "rejected" ? admitted.refusal : "");
-  return programCapabilities(admitted.program);
+  return admitted.program;
+}
+
+async function claimsOf(xml: string): Promise<ReadonlyArray<string>> {
+  return programCapabilities(await admittedProgram(xml));
 }
 
 const retained = (relativePath: string): string => readFileSync(path.join(projectRoot, relativePath), "utf8");
@@ -80,11 +86,30 @@ test("every Compensation intermediate throw claims the Compensation throw varian
   assert.ok(claims.includes("compensationIntermediateThrowEvent"), claims.join(", "));
 });
 
-test("an admitted construct without a catalog variant fails the program, naming every such construct", async () => {
-  const xml = definitions(`<bpmn:intermediateThrowEvent id="W"><bpmn:signalEventDefinition signalRef="Signal_Go"/>
-    </bpmn:intermediateThrowEvent><bpmn:sequenceFlow id="f3" sourceRef="W" targetRef="T"/>
-    <bpmn:intermediateCatchEvent id="T"><bpmn:signalEventDefinition signalRef="Signal_Go"/></bpmn:intermediateCatchEvent>
-    <bpmn:sequenceFlow id="f4" sourceRef="T" targetRef="E"/>`);
-  await assert.rejects(claimsOf(xml), (error: Error) => error instanceof UnclassifiedProgramError &&
-    error.message.includes("signal catch") && error.message.includes("signal intermediate throw"));
+const signalPair = definitions(`<bpmn:intermediateThrowEvent id="W"><bpmn:signalEventDefinition signalRef="Signal_Go"/>
+  </bpmn:intermediateThrowEvent><bpmn:sequenceFlow id="f3" sourceRef="W" targetRef="T"/>
+  <bpmn:intermediateCatchEvent id="T"><bpmn:signalEventDefinition signalRef="Signal_Go"/></bpmn:intermediateCatchEvent>
+  <bpmn:sequenceFlow id="f4" sourceRef="T" targetRef="E"/>`);
+
+test("a Signal throw and catch claim their Signal variants", async () => {
+  const claims = await claimsOf(signalPair);
+  assert.ok(claims.includes("signalIntermediateThrowEvent") && claims.includes("intermediateCatchSignalEvent"), claims.join(", "));
+});
+
+// No admitted source carries an intermediate Error or Cancel throw (the reader and admission refuse both), so the program
+// is the admitted Signal pair with its throw replaced, which only the claim table reads.
+test("a construct without a catalog variant fails the program, naming every such construct", async () => {
+  const program = await admittedProgram(signalPair);
+  const thrown = (record: Extract<Program["elements"][number], { tag: ElementTag.Event }>["payload"]["role"]) => ({
+    ...program, elements: program.elements.map((element) => element.tag === ElementTag.Event && element.header.id === "W"
+      ? { ...element, payload: { ...element.payload, role: record } } : element),
+  });
+  const error = { tag: EventRoleTag.Throw, record: { tag: ThrowTag.Error, payload: { code: "E", message: null } } } as const;
+  const cancel = { tag: EventRoleTag.Throw, record: { tag: ThrowTag.Cancel } } as const;
+  assert.throws(() => programCapabilities(thrown(error)), (raised: Error) =>
+    raised instanceof UnclassifiedProgramError && raised.message.includes("error intermediate throw"));
+  assert.throws(() => programCapabilities({ ...thrown(cancel), elements: [...thrown(cancel).elements, ...thrown(error).elements
+    .filter((element) => element.header.id === "W").map((element) => ({ ...element, header: { ...element.header, id: "W2" } }))] }),
+  (raised: Error) => raised instanceof UnclassifiedProgramError &&
+    raised.message.includes("cancel intermediate throw; error intermediate throw"));
 });

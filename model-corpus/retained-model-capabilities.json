@@ -101,5 +101,15 @@
   "invoice-validation-classification": ["noneEndEvent","noneStartEvent","process","sequenceFlow","serviceTask","userTask"],
   "invoice-validation-rework": ["exclusiveGateway","noneEndEvent","noneStartEvent","process","sequenceFlow","serviceTask","userTask"],
   "invoice-business-error-recovery": ["errorBoundaryEvent","exclusiveGateway","noneEndEvent","noneStartEvent","process","sequenceFlow","serviceTask","serviceTaskBoundaryErrorEvent","userTask"],
-  "alarm-debounce-acknowledgement": ["intermediateCatchTimerEvent","noneEndEvent","noneStartEvent","process","sequenceFlow","userTask"]
+  "alarm-debounce-acknowledgement": ["intermediateCatchTimerEvent","noneEndEvent","noneStartEvent","process","sequenceFlow","userTask"],
+  "order-signal-broadcast": ["intermediateCatchSignalEvent","noneEndEvent","noneStartEvent","parallelGateway","process","sequenceFlow","signalEndEvent","signalIntermediateThrowEvent","userTask"],
+  "case-signal-subscriptions": ["callActivity","embeddedSubProcess","eventSubProcess","intermediateCatchSignalEvent","multiInstanceActivity","noneEndEvent","noneStartEvent","parallelGateway","process","sequenceFlow","signalBoundaryEvent","signalIntermediateThrowEvent","userTask"],
+  "shift-handover-signal-start": ["intermediateCatchSignalEvent","noneEndEvent","process","sequenceFlow","signalStartEvent","userTask"],
+  "expedited-order-conditional-start": ["conditionalStartEvent","noneEndEvent","process","sequenceFlow","userTask"],
+  "answer-conditional-contests": ["conditionalBoundaryEvent","eventBasedGateway","intermediateCatchConditionalEvent","noneEndEvent","noneStartEvent","parallelGateway","process","sequenceFlow","userTask"],
+  "support-case-escalation": ["embeddedSubProcess","escalationBoundaryEvent","escalationEndEvent","escalationIntermediateThrowEvent","noneEndEvent","noneStartEvent","parallelGateway","process","sequenceFlow","userTask"],
+  "customer-notification-message-throw": ["embeddedSubProcess","errorBoundaryEvent","messageEndEvent","messageIntermediateThrowEvent","noneEndEvent","noneStartEvent","process","sequenceFlow","subProcessBoundaryErrorEvent","userTask"],
+  "order-targeted-compensation": ["compensationBoundaryEvent","compensationEndEvent","compensationIntermediateThrowEvent","exclusiveGateway","noneStartEvent","process","sequenceFlow","userTask"],
+  "order-script-probes": ["exclusiveGateway","noneEndEvent","noneStartEvent","process","scriptTask","sequenceFlow","userTask"],
+  "applicant-decision-routing": ["businessRuleTask","exclusiveGateway","noneEndEvent","noneStartEvent","process","sendTask","sequenceFlow","userTask"]
 }
