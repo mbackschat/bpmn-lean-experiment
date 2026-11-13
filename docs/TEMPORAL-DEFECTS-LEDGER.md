@@ -21,6 +21,23 @@ Retain each ID when its disposition changes or it closes. Record a correction's 
 
 On 2026-10-10 the owner explicitly stopped SDK-fix investigation and prohibited private rebuilds: record the defects and continue project implementation. TD-001/TD-002 and affected qualification remain unresolved; no SDK replacement, workaround or weakened gate is authorized. The previously tested private native binary is missing, while the patch/evidence archives remain. No replacement build was started. The Node 26 complete-gate failure below remains the current installed-runtime evidence.
 
+## SDK upgrade check
+
+The owner pre-approved (2026-11-13, [#123](https://github.com/mbackschat/bpmn-lean-experiment/issues/123)) moving to a Temporal TypeScript SDK release that bundles a TD-001 or TD-002 Core correction once that release and its transitive dependencies are at least 14 days old; the owner starts the upgrade. On 2026-11-13 no release qualified: the newest, `v1.25.0` (2026-10-27), bundles sdk-core `c8d91918`, which lacks the TD-001 correction, and TD-002's upstream issue is open. Each upgrade runs these checks in order and stops at the first that fails.
+
+| Step | Check | Passes when |
+|---|---|---|
+| 1. Release and age | The target release `v<X>` of `@temporalio/*` and every transitive dependency it brings | All are at least 14 days old; pnpm's `minimumReleaseAge: 20160` with `minimumReleaseAgeStrict` enforces it and is never lowered |
+| 2. Bundled Core | `gh api repos/temporalio/sdk-typescript/contents/packages/core-bridge/sdk-core?ref=v<X> -q .sha` | Gives the release's Core commit `<core>` |
+| 3. TD-001 correction | `gh api repos/temporalio/sdk-rust/compare/b16e8088f3fecad55aec0e35c13e7ee6e23c56c4...<core> -q .status` ([sdk-rust PR 1693](https://github.com/temporalio/sdk-rust/pull/1693), closing [Core issue 1621](https://github.com/temporalio/sdk-rust/issues/1621)) | `ahead` or `identical`; `diverged` or `behind` means the release lacks it |
+| 4. TD-002 correction | [Core issue 1623](https://github.com/temporalio/sdk-rust/issues/1623) closed by a merged pull request; its merge commit compared with `<core>` as in step 3 | `ahead` or `identical`; otherwise TD-002 stays under its exception while a TD-001 release is still adopted |
+| 5. Release notes | Every release note from `v1.21.0` to `v<X>`, of the SDK and of its bundled Core | No breaking change in what the host uses (Query, Update, Continue-As-New, Worker options and Workflow bundling, the `vm` sandbox, the supported Node range including Node 26.10.0); any Query, eviction or Local Activity change read against TD-001, TD-002 and the open [Core issue 1759](https://github.com/temporalio/sdk-rust/issues/1759) |
+| 6. Lockstep pins | `@temporalio/activity`, `client`, `testing`, `worker` and `workflow` in `packages/temporal-host/package.json` and `@temporalio/worker` in `showcase/mue-preview-alpha/package.json`, one exact version; `@temporalio/core-bridge` follows in `pnpm-lock.yaml` | One version everywhere, lockfile installed frozen, any install script (core-bridge ships native binaries) reviewed before it is allowed; version, role, license, provenance and removal cost recorded as CLAUDE.md's dependency rule requires |
+| 7. Server compatibility | The release's supported server range against the hosted Temporal CLI `v1.8.1` (`scripts/doctor.sh`) and `temporal server start-dev` in `compose.yaml` | Supported; a CLI or server change is a separate dependency decision |
+| 8. Qualification | Every hosted lane at one SHA: `verify-complete` (with `verify Temporal` and the engine-API hosted lane), the integration pipeline, Product 2 PostgreSQL and platform quality, `ui-quality` release acceptance and the evaluation-distribution dispatch | All green with no reread masks and no rerun |
+| 9. Correction evidence | The hosted Temporal logs of step 8 | For TD-001, Core's warning `There were leftover buffered tasks when evicting run` never appears and no read stays `unavailable`; for TD-002, no Transaction publication read is rejected; any recurrence is recorded under its entry with the run ID and keeps it open |
+| 10. Closure | The entry's **Closure** line | The entry records the adopted version, the Core commit and the step-8 run IDs, its qualification exception is withdrawn from About and the README, and #123 closes once both entries close |
+
 ## TD-001: Query loss during Run eviction
 
 - **Impact:** Concurrent reads of a completed Run can lose queued requests and reach their RPC deadlines, making an otherwise retained publication unavailable to callers.
