@@ -1,0 +1,160 @@
+{
+  "kind": "scenario",
+  "id": "invoice-rework-superseded-review",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "reviewed-invoice",
+    "sha256": "9f3aa0845c7faf28267c3f82bd5d4b9d413895e3e87fb3475505b98593d3b0a4",
+    "sourceOverlay": {
+      "id": "invoice-handlers",
+      "sha256": "466302458623119c5d1cd2d17a78ab2f7bce692e3ad4467f8a2870277b64ec3c"
+    },
+    "relativePath": "packages/bpmn-source/test/fixtures/mixed-task-invoice-rework.bpmn"
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "invoice",
+      "variables": [
+        {
+          "name": "request",
+          "value": {
+            "kind": "string",
+            "value": "initial"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "review-1",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:6a6a59099e472c37b1f6c0581b3ed81ac9d0db2c82474839da67af29164a8855",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "review-1-superseded",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "stale-draft"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "review-2",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "finalize",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Finalize",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 13.3.2",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "2.2.0",
+    "cibRefs": [
+      "CIB-EXT-0015"
+    ]
+  }
+}

@@ -1,0 +1,315 @@
+{
+  "kind": "scenario",
+  "id": "invoice-business-error-technical-failure",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "invoice-business-error",
+    "sha256": "a4d3ea3e5fd588ef5abaf85560ab7a5fa28d8155767e549c21df0b0e5fbe8068",
+    "sourceOverlay": {
+      "id": "invoice-handlers",
+      "sha256": "a4cdddb70514053358a10ae15fd439a0c3ed115b3d2b7bba2eac6f7c732c695a"
+    },
+    "relativePath": "packages/bpmn-source/test/fixtures/mixed-task-invoice-business-error.bpmn"
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "invoice",
+      "variables": [
+        {
+          "name": "request",
+          "value": {
+            "kind": "string",
+            "value": "initial"
+          }
+        },
+        {
+          "name": "result",
+          "value": {
+            "kind": "string",
+            "value": "parent-result"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "review-1",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "missing-reference"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "report-validate-technical-failure",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "technicalFailure"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "correct-data-without-error",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "CorrectData",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "policy-review"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "retry-validate-incident",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 1
+      },
+      "action": {
+        "kind": "retryIncident",
+        "generation": 1
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:0e5077a72746f8c686f1ed8f0510517c57f00fffe54e9292d5126b8dd0286949",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "REVIEW_REQUIRED",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "correct"
+            }
+          }
+        ],
+        "message": "Invoice requires correction"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "correct-data",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "CorrectData",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "policy-review"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "review-2",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:a7404b44ff76b67a6712f81b2e3b66fa9c2d8b6ffaec6d67accabf56714ae72b",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Authorize",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "REVIEW_REQUIRED",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "correct"
+            }
+          }
+        ],
+        "message": "Invoice requires correction"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "correct-policy",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "ReviewPolicy",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "review-3",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 3
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:89ee5d353237830a7b3c8aecfe7a7845ad19083f4b44471529114487a8e3137b",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 3
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:2f95a9cebed27bae681ee902ab1e1fa96cf0c76d1980716a7a26f8bcf5b4cc1b",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Authorize",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "finalize",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Finalize",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "options": {
+    "incidents": {
+      "cancellable": true
+    }
+  },
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.3.1",
+      "BPMN 2.0.2 Clause 10.6.3",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Table 10.8"
+    ],
+    "cibRevision": "2.2.0",
+    "cibRefs": [
+      "CIB-AGR-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-OP-0009"
+    ]
+  }
+}
