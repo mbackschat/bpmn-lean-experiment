@@ -6,6 +6,8 @@ Implemented and evidence-closed. Owner-approved proposal correction `8ae9b66`, s
 
 The per-variant engine profiles this specification names were consolidated into `bpmn-2.0.2`, `cibseven-2.2.0` and `cibseven-2.2.0-scope-chain` on 2026-11-09 (`3a10a909a`, [profiles](../profiles/README.md)); the frozen legacy A12 profiles survive only under `adoption/a12/legacy/source-tree/profiles`, and no profile under `profiles/` carries an A12 identity.
 
+The product boundary, ownership, invariant matrix and claim boundary below hold today; [`a12-boundary.test.ts`](../scripts/a12-boundary.test.ts) and [`a12-preservation.test.ts`](../scripts/a12-preservation.test.ts) guard them. The compilation pipeline this specification closed on, with its checked graph, Semantic Process program, built-in compilation registry, engine-owned profile readers, profile-owned effect bindings and Temporal adapter, is the retired registry that the 2026-11-09 rewrite (`f0ba57716`) deleted. Every sentence below that names one of those describes that retired registry, not the current engine; the [identity and compilation contract](#identity-and-compilation-contract) states the current overlay path.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -39,6 +41,8 @@ product-neutral source overlay boundary
                     v
 MIT engine profiles -> checked graph -> Semantic Process -> semantic core -> Temporal
 ```
+
+The last line is the retired registry's pipeline; today it reads: profile relations -> kernel reader and admission -> kernel program -> kernel -> generic Temporal host.
 
 ## Product ownership
 
@@ -84,9 +88,9 @@ type SourceOverlayIdentity = DeepReadonly<{
 }>;
 ```
 
-The engine accepts an overlay only when the compile request names it by exact ID and SHA-256 and supplies the exact matching bytes. It rejects an ID, digest, or `semanticProfile` mismatch before structural projection. It enforces a 65,536-byte limit before hashing and decoding.
+The retired registry accepted an overlay only when the compile request named it by exact ID and SHA-256 and supplied the exact matching bytes, rejected an ID, digest, or `semanticProfile` mismatch before structural projection, and enforced a 65,536-byte limit before hashing and decoding. The current kernel reader checks the digest, strict UTF-8 JSON, `kind`, the effect-binding shape and the `inertAttributes` list, and reads neither `id` nor `semanticProfile` (`readOverlay` in [`source.ts`](../packages/bpmn-source/src/kernel-reader/source.ts)).
 
-Engine semantic-profile artifacts retain `effectBindings`. Each profile owns its built-in source bindings and the exact closed set of allowed neutral effect descriptors. An overlay may supply alternate source bindings only, and every descriptor must exactly match one already present in the selected profile. A descriptor allowed only by another profile rejects.
+In the retired registry, engine semantic-profile artifacts retained `effectBindings`: each profile owned its built-in source bindings and the exact closed set of allowed neutral effect descriptors, an overlay could supply alternate source bindings only, every descriptor had to match one already present in the selected profile, and a descriptor allowed only by another profile was rejected. The current [profile artifacts](../profiles/README.md) carry only relation identifiers, and no current code compares an overlay's descriptors with a profile's.
 
 `inertAttributes` is a closed expanded-name policy. Both overlay fields are source-admission facts, not semantic behavior. An overlay cannot select a checked-node kind, Semantic Process operation, transition, result shape, host behavior, or descriptor outside the selected profile.
 
@@ -96,15 +100,15 @@ Canonical order uses the exact unnormalized Unicode-scalar sequence. Effect bind
 
 ## Identity and compilation contract
 
-Compilation selects exactly one engine-owned `semanticProfile` and zero or one registered `sourceOverlay`. `sourceOverlay.semanticProfile` must exactly equal the selected profile. Exact BPMN bytes, semantic-profile identity, overlay identity and digest, and compiler identity jointly determine the admitted definition.
+Compilation selects exactly one semantic profile, as its relation identifiers, and zero or one source overlay ([`common.ts`](../packages/engine-api/src/common.ts), `EngineProfile` and `EngineSourceOverlaySelection`). Exact BPMN bytes, profile identity and overlay identity jointly determine the admitted definition (`EngineDefinitionIdentity`). The retired registry also required `sourceOverlay.semanticProfile` to equal the selected profile; the overlay schema still declares that field, and no current compile path compares it ([`source.ts`](../packages/bpmn-source/src/kernel-reader/source.ts), `readOverlay`).
 
 The [public engine API](../packages/engine-api/README.md) accepts the same exact overlay selection for compilation and exact-definition start preparation; omission means `null`. It snapshots the selection and bytes before asynchronous work. Accepted compilation exposes the validated nullable overlay identity, and start preparation compares that identity with the selected overlay. The complete compiled Program remains part of the existing start-intent digest, so a changed overlay cannot recover or retry a different retained intent. Overlay transport grants no additional profile or host admission.
 
-Checked graphs, Semantic Process programs, scenario BPMN identities, canonical result provenance, completed-process receipts, and effect-transport identity retain `sourceOverlay: SourceOverlayIdentity | null`. Lean, the semantic core, and Temporal compare and preserve this identity but never branch on the overlay ID.
+In the retired registry, checked graphs, Semantic Process programs, scenario BPMN identities, canonical result provenance, completed-process receipts, and effect-transport identity retained `sourceOverlay: SourceOverlayIdentity | null`. Today the engine API's definition identity and the start memo the host retains carry it ([`start-dispatch.ts`](../packages/engine-api/src/start-dispatch.ts)); the kernel program and the kernel never see the overlay ID.
 
-The generic compiler reads supported Camunda/CIB extension structures, validates the bounded mapping and boundary-Error forms against the selected engine profile, and lowers them to existing neutral descriptors and mapping data. The overlay supplies only exact source bindings and inert-attribute declarations.
+The kernel reader reads supported Camunda/CIB extension structures into the kernel IL, and kernel admission refuses forms outside the selected profile's options. The overlay supplies only exact source bindings, which map a delegate expression to a neutral effect descriptor, and inert-attribute declarations, which the reader skips ([`source.ts`](../packages/bpmn-source/src/kernel-reader/source.ts), [`model.ts`](../packages/bpmn-source/src/kernel-reader/model.ts), `requireCarried`).
 
-The built-in compilation registry contains only engine-owned profile readers and the generic fallback. Overlay lookup occurs within the mandatory admission policy, so an overlay cannot bypass reference validation, foreign-attribute classification, per-element diagnostics, checked-graph validation, or lowering validation.
+The retired built-in compilation registry contained only engine-owned profile readers and the generic fallback, and its overlay lookup ran within the mandatory admission policy. The kernel reader has no registry: one reader serves every profile, and an overlay passes through the same parser-warning, reference, schema and foreign-attribute refusals as a source without one ([`source.ts`](../packages/bpmn-source/src/kernel-reader/source.ts), `parseKernelSource`).
 
 ## Product-neutral fixtures
 
@@ -175,9 +179,9 @@ Excluded:
 
 No semantic transition family changes. The mapped success and typed BPMN Error results, Activity-local patch validation, output mapping, Error matching, cancellation, command identity, and canonical observations remain core-owned.
 
-The Temporal adapter receives only a neutral committed effect descriptor and arguments. A configured Worker may implement that effect. Overlay bytes never become executable Workflow policy. Attempts, retries, Worker replacement, cancellation, and replay remain host steps around the unchanged semantic wait.
+The generic host receives only a neutral effect descriptor and arguments from the kernel's host view (`EffectRequest` in [`host-machine.ts`](../packages/temporal-host/src/host-machine.ts)), and a configured Worker may implement that effect. Overlay bytes never become executable Workflow policy. Attempts, retries, Worker replacement, cancellation, and replay remain host steps around the unchanged kernel wait.
 
-Overlay identity participates in immutable program, receipt, and effect-transport material. Live Temporal evidence proves that different overlay identity changes the transport key while identical overlay bytes execute and replay exactly with the same canonical semantic result.
+In the retired registry, overlay identity participated in immutable program, receipt, and effect-transport material, and live Temporal evidence against the deleted adapter proved that a different overlay identity changed the transport key while identical overlay bytes executed and replayed exactly. The generic host's effect key is the occurrence identity and failure count alone, so no current witness separates overlay identity at the host.
 
 ## Closure evidence
 

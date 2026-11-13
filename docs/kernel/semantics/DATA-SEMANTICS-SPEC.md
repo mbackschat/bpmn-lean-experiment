@@ -87,7 +87,7 @@ The deleted implementation admitted data only in exact shapes: one Property, one
 
 | Register entry | Role in the kernel |
 |---|---|
-| [CIB-EXT-0002](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0002--exact-a12-createdocument-delegate-and-inputoutput-mapping) | extension: A12 `CreateDocument` delegate and mapping (CIB 2.0.0) |
+| [CIB-EXT-0002](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0002--exact-a12-createdocument-delegate-and-inputoutput-mapping) | retired: the A12 `CreateDocument` delegate and mapping (CIB 2.0.0) left with its per-variant profile at the 2026-11-09 consolidation; no current profile selects it, and the kernel has no option for it |
 | [CIB-EXT-0004](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0004--caught-error-output-mapping-before-activity-cleanup) | `ErrorPathOutputs.mapped` |
 | [CIB-EXT-0005](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables) | `SubmissionRule.installsVariables`, `UndeclaredWrite.atInstanceRoot` |
 | [CIB-EXT-0006](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0006--public-process-start-installs-initial-process-variables) | extension: Start installs initial Process variables |
@@ -106,7 +106,7 @@ The deleted implementation admitted data only in exact shapes: one Property, one
 | [CIB-OP-0002](../../CIB-BPMN-RELATION-REGISTER.md#cib-op-0002--synchronous-cib-delegate-transaction-mapped-to-a-durable-effect-boundary) | operational mapping: CIB delegate transaction to the effect boundary |
 | [CIB-OP-0004](../../CIB-BPMN-RELATION-REGISTER.md#cib-op-0004--synchronous-juel-command-rollback-mapped-to-speculative-semantic-commitment) | `ContinuationFailure.rolledBack`: an evaluation failure rolls the command back |
 | [CIB-OP-0006](../../CIB-BPMN-RELATION-REGISTER.md#cib-op-0006---synchronous-mapped-success-transaction-mapped-to-a-durable-effect-boundary) | operational mapping: mapped-success transaction to the effect boundary |
-| [CIB-CFG-0003](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0003--pinned-a12-cib-seven-200-oracle-environment) | oracle environment for the A12 `CreateDocument` mapping |
+| [CIB-CFG-0003](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0003--pinned-a12-cib-seven-200-oracle-environment) | retired: the oracle environment of the retired A12 `CreateDocument` mapping; no current profile selects it |
 | [CIB-CFG-0005](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0005--pinned-read-only-juel-condition-environment) | oracle environment for read-only JUEL evaluation (PC-DATA-07) |
 | [CIB-CFG-0006](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0006---pinned-mapped-success-cib-seven-200-environment) | oracle environment for mapped-success Service Task mappings |
 | [CIB-CFG-0009](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0009--default-java-serialization-of-structured-business-values) | oracle environment for structured values |
