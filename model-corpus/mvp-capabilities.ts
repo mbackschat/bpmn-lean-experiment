@@ -117,7 +117,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "End Events",
     element: "Cancel End Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One direct Transaction child Cancel End on one of two parallel one-or-two-User-Task branches. Cancels unfinished child work and compensates zero or one completed eligible Task; no root or ordinary Sub-Process Cancel End.",
+    restriction: "A Cancel End directly inside a Transaction with a Cancel boundary raises Cancel from its scope occurrence: the Transaction's interior is cleared, its completed eligible work compensated, and its normal outflow never fires. A Cancel throw whose direct parent is not a Transaction, or whose Transaction has no Cancel boundary, is refused (throw.cancel.outsideTransaction, throw.cancel.uncaught).",
     cibEvidence: notSelected,
   },
   {
@@ -157,7 +157,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Sequential Multi-Instance User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One ordered String-list snapshot, one active generated task at a time, at most sixteen items, and atomic index-ordered String-list output.",
+    restriction: "One generated User Task at a time in item order, over a collection read once on entry or a cardinality; each instance holds its item and submits exactly its output data item. The output collection, in item order and in the input's form, is written atomically only when every slot is filled, and an early completion or an interrupting boundary writes none. No count or byte bound: the Multi-Instance refusal codes are the restrictions, among them a User Task loop without its output data item and an output mapping on the Activity.",
     cibEvidence: notSelected,
   },
   {
@@ -165,7 +165,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Parallel Multi-Instance User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One ordered String-list snapshot, at most sixteen concurrent generated tasks, exact all-or-first completion policy, atomic index-ordered output only when every slot is filled, and no partial output on early closure.",
+    restriction: "Every generated User Task begins on entry, over a collection read once on entry or a cardinality; each instance holds its item and submits exactly its output data item in any completion order, and the completion condition is evaluated after each completion. The output collection, in item order and in the input's form, is written only when every slot is filled; an early completion or an interrupting boundary ends the remaining instances and writes none. No count or byte bound: the Multi-Instance refusal codes are the restrictions.",
     cibEvidence: notSelected,
   },
   // Owned by PC-MI-01–12, PC-TX-03 and PC-AUTO-06; the kernel's admission decides every loop form it describes.
@@ -254,7 +254,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Embedded Sub-Process",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Exact completion, Error, boundary Timer, Terminate and Compensation shapes at one level; no general Event Sub-Process. The embedded completion profile also admits ordinary Sub-Processes nested to depth three whose bodies hold only User Tasks, data-free overlay-bound Service Tasks, paired Parallel fork/join blocks and further Sub-Processes, plus terminal unjoined forks to separate None Ends in a child body; a Sub-Process completes exactly when it owns no token, User Task, open effect or child scope and then continues once at its own parent without touching concurrent work outside it. In a depth-one or depth-two body, the task branches of one Parallel fork may instead meet at an identity-only converging Exclusive Gateway that feeds a Sub-Process with a serial task body, followed by optional tasks and a None End; every arriving branch starts its own concurrent activation of that Sub-Process, which completes alone and continues once. A definition holds at most 128 User and Service Tasks, at most 32 of them Service Tasks, counting such a target and its successors once per branch, a Start or completion closure of more than eight steps or a hosting instance identity above 256 UTF-8 bytes is refused before Workflow start, and CIB agreement is retained only for the one-level fixture. In a Program with scope data or a mapped Service Task, every Sub-Process occurrence there, including concurrent occurrences of one definition, owns the locals its input parameters declare (a String literal of at most 1,024 UTF-8 bytes or an exact ${name} reference) and publishes them through output parameters; every read, write, input and output resolves along the performing occurrence's own parent chain, values are Strings of at most 1,024 UTF-8 bytes or present nulls, Calls are refused beside data, and a run whose data outgrows a hosted budget ends with a typed capacity failure instead of a Start refusal. Other Exclusive, Inclusive and Event-Based Gateways, Service Tasks with Error routes, structured data, Events, Multi-Instance and other repeated activation are excluded there. The nested scope-data profile instead admits ordinary Sub-Processes nested to depth three in one serial path of User Tasks, mapped Service Tasks and further Sub-Processes, each declaring up to eight locals through input parameters (a String literal of at most 1,024 UTF-8 bytes or an exact ${name} reference) and publishing them through output parameters that name a declared local; a read resolves to the nearest enclosing declaring frame, otherwise the Process, a write updates that owner and never creates a local, and every local retires with its Sub-Process. A User Task completion may name only declared locals, within 16,384 canonical bytes. A Sub-Process body or the Process root body there may also fork into paired Parallel branches, or into branches ending at their own None Ends, whose Sub-Processes each copy structured values into their own locals; an effect's arguments are fixed when it is armed, so a sibling's later write never reaches an open effect, and each branch publishes its outputs when its Sub-Process completes. In the Process root body, Exclusive Gateways with one or more Simple Boolean v1 conditions, tested in declaration order, and a default may route back through a cycle to an earlier Sub-Process or Call, provided a User or Service Task outside the called Process separates every cycle; each re-entry is a fresh activation whose locals initialize afresh from the enclosing values, whose tasks and effects take the next activation ordinal and whose outputs publish once at its own end, values it published before stay at the Process, and a completion addressed to an earlier activation is rejected unchanged. A model with root-body Exclusive Gateways whose automatic burst from Start or any resumption exceeds eight steps is refused at admission; a serial model of the profile has no such rule, so one whose completion closure exceeds eight steps is admitted and that completion rolls back on every attempt. Event-Based Gateways, Inclusive Gateways outside paired root regions, Exclusive Gateways inside a Sub-Process body or the called Process, forks in a model that also chooses, Calls in a forking Process root body, Parallel merge regions, Call Activities other than up to two mapped Calls of one Process on the root path or in a Sub-Process body at depth one or two, Events, Multi-Instance, other repeated activation and JUEL beyond ${name} are excluded; without Parallel branches or root-body Exclusive Gateways a hosted Start whose structured values cannot fit the capacity envelope is refused, and a run with Parallel branches or root-body Exclusive Gateways whose data outgrows a hosted budget ends with a typed capacity failure instead, iterations being bounded only by the hosted continuation and Run bounds, and only the retained models are measured clear of the untyped retained Run trace path. There a Sub-Process outside every fork region whose body None Start leaves on two or more unconditioned flows opens all of them when it is entered, and one that itself leaves on two or more unconditioned flows, with no default, opens all of them when it completes.",
+    restriction: "Embedded Sub-Processes in a Process, a called Process or another Sub-Process, at any depth and with any content the kernel admits. Each arrival creates a fresh scope occurrence and re-entry through a cycle a fresh activation whose locals initialize from its inputs; a Sub-Process completes exactly when it owns no token, wait, begun occurrence or child scope, and then continues its parent once; a command addressed to an earlier activation is rejected. A declared local needs an input mapping (scope.localVariableWithoutInput); under scopeStart = required, the cibseven profiles' reading, a Sub-Process without a start Event is refused (scope.withoutStart), and under the standards reading the children it begins implicitly must be Activities or Scopes (scope.implicitStart). Looping and boundary forms are the Multi-Instance and boundary rows'.",
     cibEvidence: exactCib("embedded-subprocess-completion-a-then-b"),
   },
   {
@@ -262,7 +262,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Transaction Sub-Process",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One depth-one, single-activation cancellation Transaction; method omitted or exactly ##Compensate. Two parallel branches of one or two ordinary User Tasks, one eligible Task on the non-Cancel branch, empty data and handler arguments. One retained record/4096 bytes and one trigger/handler/20480 bytes; no metadata, loops, nested scopes, protocol success, hazard handling, Store/Image methods or generalized Transactions.",
+    restriction: "A Sub-Process whose caught Cancel clears its running work and compensates its completed eligible work before its Cancel boundary takes control, at any depth and looping too, a looping body's Cancel compensating its own instance. Its method is omitted or ##Compensate, and under the cibseven profiles ##Store and ##Image run as ##Compensate; a protocol URI is refused (scope.transaction.method).",
     cibEvidence: notSelected,
   },
   // Owned by the Event Sub-Process rows PC-ERROR-02, PC-ESCALATION-03, PC-MESSAGE-06/07, PC-SIGNAL-03, PC-TIMER-07,
@@ -280,7 +280,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Interrupting Transaction Cancel Boundary Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One interrupting boundary attached to the exact Transaction in its direct parent. Emits one parent continuation after empty cancellation or successful single-handler compensation, followed by one acknowledgement User Task and its distinct None End. Typed handler failure emits no continuation; no non-interrupting Cancel catch or external Cancel command.",
+    restriction: "One interrupting Cancel boundary per Transaction, which takes control only after every compensation handler of the cancellation has completed; a handler failure fails the instance and neither the boundary nor the normal flow continues. A second Cancel boundary, one on anything but a Transaction and a non-interrupting one are refused (boundary.cancel.duplicate, boundary.cancel.host, boundary.cancel.nonInterrupting).",
     cibEvidence: notSelected,
   },
   {
@@ -288,7 +288,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Compensation",
     element: "Compensation Boundary Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "The travel-cancellation profile selects two ordinary root User Task subjects; the bounded Transaction cancellation profile selects one ordinary Task on its non-Cancel branch. Boundary, Task, association and handler share that exact owner. Only completed eligible work is retained; no arbitrary nested Compensation context.",
+    restriction: "A Compensation boundary on an Activity or Sub-Process, associated with one handler marked isForCompensation and without Sequence Flow. Only successfully completed work is retained, in the scope occurrence it completed in, and the handler restores no context. A second handler of one subject, a handler not marked isForCompensation and a handler with Sequence Flow are refused (compensation.handlerCount, compensation.handlerNotForCompensation, compensation.handlerFlow).",
     cibEvidence: notSelected,
   },
   {
@@ -304,15 +304,15 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Compensation",
     element: "Compensation Event Sub-Process",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One dormant handler nested in the completed ground-travel Sub-Process restores its frozen completion-time Process binding through one direct Data Input Association; no general Event Sub-Process admission.",
+    restriction: "A Compensation Event Sub-Process inside a Sub-Process, run when that completed Sub-Process is compensated, with any handler body the kernel admits; it restores its parent's variables as they were when the parent completed. One at Process level and a second handler of one subject are refused (compensation.processEventSubProcess, CIB-LIM-0044; compensation.handlerCount).",
     cibEvidence: notSelected,
   },
   {
     id: "compensationHandlerServiceTask",
     family: "Compensation",
-    element: "Single-effect Compensation handler Service Task",
+    element: "Compensation handler Service Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One closed Compensation Activity effect protocol with empty result patches in the selected root account or the bounded Transaction's single child-owned handler with empty arguments. Handler failure commits typed Process failure and cancels active and pending siblings. No general handler graphs, output mappings, incidents or recovery.",
+    restriction: "A Service Task that is a compensation handler, marked isForCompensation or in a Compensation Event Sub-Process body. It begins in a context scope occurrence of its own, its effect stays asynchronous where CIB runs it inside the triggering command (CIB-LIM-0042), and an Error it leaves uncaught fails the instance or, under the cibseven profiles, propagates from the scope the trigger ran in.",
     cibEvidence: notSelected,
   },
   {
@@ -416,7 +416,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Interrupting Timer Boundary Event on sequential Multi-Instance User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One exact PT5S outer-lifetime deadline preserved through task turnover; interruption withdraws the active task and publishes no partial output.",
+    restriction: "An interrupting Timer on the whole sequential Multi-Instance User Task, in any Timer form the kernel admits: one deadline for the Activity, kept through task turnover rather than one per instance. Firing cancels the active instance, generates no further item, writes no output collection and follows only the boundary flow.",
     cibEvidence: notSelected,
   },
   {
@@ -424,7 +424,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Interrupting Timer Boundary Event on parallel Multi-Instance User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One exact PT5S outer-lifetime deadline preserved across concurrent progress; interruption terminates every remaining task and publishes no partial output.",
+    restriction: "An interrupting Timer on the whole parallel Multi-Instance User Task, in any Timer form the kernel admits: one deadline for the Activity, kept across concurrent progress rather than one per instance. Firing cancels every remaining instance, writes no output collection and follows only the boundary flow.",
     cibEvidence: notSelected,
   },
   {
