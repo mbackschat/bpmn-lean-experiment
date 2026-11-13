@@ -261,13 +261,14 @@ const handoffDocument = (body: string, messages = "") => new TextEncoder().encod
   <signal id="Signal_Go" name="go" />${messages}${body}
 </definitions>`);
 
-/** The hand-off witness's programs; `watcher`, `ticker` and `thrower` are emitter variants. */
+/** The hand-off witness's programs; `watcher`, `ticker` and `thrower` are emitter variants, `collector` a receiver variant. */
 export interface HandoffPrograms {
   readonly emitter: JsonValue;
   readonly watcher: JsonValue;
   readonly ticker: JsonValue;
   readonly thrower: JsonValue;
   readonly receiver: JsonValue;
+  readonly collector: JsonValue;
   readonly filler: JsonValue;
 }
 
@@ -275,7 +276,8 @@ export interface HandoffPrograms {
  * The hand-off witness's programs (#138): *Emitter* throws the Signal *go* each time its User Task *Task* completes and
  * loops back to it; *Watcher* throws *go* once *Task* completes while a parallel branch waits for the Message *watch* at
  * *Watch*; *Ticker* throws *go* each time its Timer *Tick* fires and loops back to it; *Thrower* throws *go* as it starts
- * and then holds its User Task *Held*; *Receiver* waits for *go*; *Filler* is the intermediate Message catch scenario, whose open Message wait holds
+ * and then holds its User Task *Held*; *Receiver* waits for *go*; *Collector* waits for *go* again each time it catches it,
+ * so its *Catch* activation counts the Signals it received; *Filler* is the intermediate Message catch scenario, whose open Message wait holds
  * room at the ingress until a direct delivery closes it.
  */
 export function handoffPrograms(): Promise<HandoffPrograms> {
@@ -321,6 +323,11 @@ async function readHandoffPrograms(): Promise<HandoffPrograms> {
     <userTask id="Hold" />
     <sequenceFlow id="f1" sourceRef="Start" targetRef="Catch" /><sequenceFlow id="f2" sourceRef="Catch" targetRef="Hold" />
   </process>`)),
+    collector: await cibProgram(handoffDocument(`<process id="Collector" isExecutable="true">
+    <startEvent id="Start" /><exclusiveGateway id="Merge" /><intermediateCatchEvent id="Catch"><signalEventDefinition signalRef="Signal_Go" /></intermediateCatchEvent>
+    <sequenceFlow id="f1" sourceRef="Start" targetRef="Merge" /><sequenceFlow id="f2" sourceRef="Merge" targetRef="Catch" />
+    <sequenceFlow id="f3" sourceRef="Catch" targetRef="Merge" />
+  </process>`)),
     filler: await scenarioProgram("scenarios/intermediate-catch-message/process.bpmn"),
   };
 }
@@ -344,15 +351,16 @@ export const fillerDelivery: JsonValue = {
 };
 
 /**
- * Deploys the hand-off witness's programs to `population`, starts the receiver, the filler and the emitter (`instanceId`,
- * from program `emitter`) there, and registers one more deployment whose digest of `digest` characters fills the
- * ingress. Answers that filling deployment's answer.
+ * Deploys the hand-off witness's programs to `population`, starts the receiver (from program `receiver`), the filler and
+ * the emitter (`instanceId`, from program `emitter`) there, and registers one more deployment whose digest of `digest`
+ * characters fills the ingress. Answers that filling deployment's answer.
  */
 export async function handoffPopulation(host: ProcessHost, population: PopulationHost, config: HostConfig, chains: HandoffChains,
-  digest: number, emitter: keyof Omit<HandoffPrograms, "receiver" | "filler"> = "emitter"): Promise<DeploymentAnswer> {
+  digest: number, emitter: keyof Omit<HandoffPrograms, "receiver" | "collector" | "filler"> = "emitter",
+  receiver: "receiver" | "collector" = "receiver"): Promise<DeploymentAnswer> {
   const programs = await handoffPrograms();
   const deployments: number[] = [];
-  for (const [request, program] of [["emitter", programs[emitter]], ["receiver", programs.receiver], ["filler", programs.filler]] as const) {
+  for (const [request, program] of [["emitter", programs[emitter]], ["receiver", programs[receiver]], ["filler", programs.filler]] as const) {
     const answer = await population.registerDeployment({ deploymentRequestId: request, digest: request, program });
     assert.ok("deploymentId" in answer, `${request}: ${JSON.stringify(answer)}`);
     deployments.push(answer.deploymentId);
@@ -363,7 +371,7 @@ export async function handoffPopulation(host: ProcessHost, population: Populatio
     assert.equal(started.outcome, "committed", `${workflowId}: ${JSON.stringify(started)}`);
     assert.equal((await host.hostView(workflowId)).halt, null, `${workflowId} registered`);
   };
-  await start(chains.receiver, programs.receiver, deployments[1]!, "Receiver_1");
+  await start(chains.receiver, programs[receiver], deployments[1]!, "Receiver_1");
   await start(chains.filler, programs.filler, deployments[2]!, fillerInstanceId);
   await start(chains.emitter, programs[emitter], deployments[0]!, instanceId);
   return population.registerDeployment({ deploymentRequestId: "fill", digest: "d".repeat(digest), program: programs.filler });

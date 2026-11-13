@@ -7,7 +7,9 @@
  * realistic sixteen-body parallel Multi-Instance journey on durable scheduling with its sixteen effects as concurrent
  * Activities, forced across Runs mid-Multi-Instance; an emitted hand-off the full population ingress defers, delivered
  * once room appears; a Run draining while a hand-off is deferred, which still registers a commit made during the
- * drain and continues as new; and a start whose Signal is deferred, whose caller's next population command waits behind it. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since it judges candidates
+ * drain and continues as new; a start whose Signal is deferred, whose caller's next population command waits behind it;
+ * and an ingress continuing as new while a hand-off is deferred, which hands it back for its successor Run to deliver
+ * exactly once. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since it judges candidates
  * with the Workflow's own measure.
  */
 import assert from "node:assert/strict";
@@ -19,7 +21,9 @@ import { defaultPayloadConverter } from "@temporalio/client";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import type { Worker } from "@temporalio/worker";
 
-import { PopulationClient, PopulationRefused, ProcessClient, ResultKind, Scheduling, type HostConfig, type JsonValue } from "@bpmn-lean/temporal-host/client";
+import {
+  PopulationClient, PopulationRefused, ProcessClient, ResultKind, Scheduling, type HostConfig, type HostSnapshot, type JsonValue,
+} from "@bpmn-lean/temporal-host/client";
 import { canonicalBytes, chainCapacity } from "@bpmn-lean/temporal-host/host";
 import { createMemoryProcessHost } from "@bpmn-lean/temporal-host/memory-host";
 import {
@@ -27,7 +31,11 @@ import {
 } from "@bpmn-lean/temporal-host/testing";
 import { EffectResultKind, createHostWorker, type EffectResult } from "@bpmn-lean/temporal-host/worker";
 
+import type { PopulationActivities } from "../src/population-contract.ts";
 import * as fx from "./fixtures/capacity-journey.ts";
+
+const { populationIngressWorkflowId } = await import(new URL("../dist/population-address.js", import.meta.url).href) as
+  typeof import("../src/population-address.ts");
 
 const projectRoot = new URL("../../../", import.meta.url);
 const taskQueue = "bpmn-lean-temporal-host-capacity-test";
@@ -332,4 +340,64 @@ test("start barrier: a start whose Signal the full ingress defers answers after 
     (error: unknown) => error instanceof PopulationRefused && error.code === "host.capacity.continuation", "the caller's next command waits behind the start's Signal");
   assert.equal((await client.deliver(chains.filler, fx.fillerDelivery)).outcome, "committed");
   await until("the start's hand-off settled", () => ingress.backlog(), (backlog) => backlog === 0);
+});
+
+/**
+ * The request of every Activity named `name` that the Runs scheduled, oldest Run first: one per ingress action, however
+ * many attempts its transport took.
+ */
+function scheduled<N extends keyof PopulationActivities>(runs: readonly RunHistory[], name: N): Parameters<PopulationActivities[N]>[0][] {
+  return [...runs].reverse().flatMap((history) => history.events).flatMap((event) => {
+    const attributes = event.activityTaskScheduledEventAttributes;
+    const payload = attributes?.input?.payloads?.[0];
+    return attributes?.activityType?.name === name && payload != null
+      ? [defaultPayloadConverter.fromPayload<Parameters<PopulationActivities[N]>[0]>(payload)] : [];
+  });
+}
+
+// A lost hand-back is a lost Signal and a repeated one a repeated Signal, and only a real Continue-As-New of the ingress
+// hands a deferred emit back (`handBack` in `population-ingress.ts`); `emit-offers.test.ts` covers the chain's side only.
+test("hand-back: an ingress continuing as new while a hand-off is deferred hands it back, and its successor Runs deliver it exactly once", async () => {
+  const population = `capacity-hand-back-${randomUUID()}`;
+  const config = external(null);
+  const chains = { emitter: workflowId("hand-back-emitter"), receiver: workflowId("hand-back-collector"), filler: workflowId("hand-back-filler") };
+  const line = await fx.handoffLine(async (digest) => {
+    const memory = createMemoryProcessHost({ taskQueue: "measure", now: Date.now });
+    return fx.handoffPopulation(memory, memory.population(population, config), config, chains, digest, "emitter", "collector");
+  });
+  // A rollover override of one Event makes every Run of the ingress continue as new right after its first action, and
+  // never before it: the setup and both deferrals take no action, so the first Run rolls over after the first hand-off's
+  // first action, while the second still waits.
+  const ingress = new PopulationClient(environment.client, taskQueue, population, config, 1);
+  assert.ok("deploymentId" in await fx.handoffPopulation(client, ingress, config, chains, line - 15_000, "emitter", "collector"));
+  const completions = [fx.emitterCompletion(1, 20_000), fx.emitterCompletion(2, 20_000)];
+  for (const completion of completions) {
+    assert.equal((await within("a completion", client.command(chains.emitter, completion))).outcome, "committed");
+  }
+  assert.equal(await ingress.backlog(), 2, "the full ingress deferred both hand-offs");
+  // Closing the filler's wait frees room for one 20 KB hand-off, not two: the second waits until the first settles.
+  assert.equal((await client.deliver(chains.filler, fx.fillerDelivery)).outcome, "committed");
+  const caught = (snapshot: HostSnapshot) => snapshot.view?.openWaits.map((wait) => [wait.id.elementId, wait.id.activation]);
+  await until("both Signals at the collector", () => client.hostView(chains.receiver),
+    (snapshot) => caught(snapshot)?.some(([elementId, activation]) => elementId === "Catch" && activation === 3) ?? false);
+  // A delivered hand-off stays in the backlog until it settles, so an empty backlog follows both settlements.
+  await until("the ingress drained", () => ingress.backlog(), (backlog) => backlog === 0);
+  assert.deepEqual(caught(await client.hostView(chains.receiver)), [["Catch", 3]], "the collector caught exactly two Signals");
+  const [first, second] = completions.map((completion) => (completion as { readonly commandId: string }).commandId);
+  const runs = await chainHistories(environment.client, populationIngressWorkflowId(population));
+  assert.ok(runs.length >= 2, `the ingress continued as new (${String(runs.length)} Runs)`);
+  assert.deepEqual(scheduled(runs, "deliverPopulation").map((request) => request.workflowId), [chains.receiver, chains.receiver],
+    "each hand-off reached the collector once");
+  assert.deepEqual(scheduled(runs, "settlePopulationEmit").map((request) => request.commandId), [first, second],
+    "each hand-off settled once, in arrival order");
+  // Each Run's start names the Run it continued, so these are the closed Runs, newest first. The second hand-off left the
+  // ingress with its hand-back, so only the emitter's offer to a later Run brought it to the collector.
+  const closed = runs.slice(0, -1).map((history) => history.events[0]?.workflowExecutionStartedEventAttributes?.continuedExecutionRunId);
+  const handBacks = scheduled(runs, "wakePopulationEmit");
+  assert.equal(handBacks[0]?.wake.run, closed.at(-1), "the first Run, which deferred both, handed one back as it continued as new");
+  assert.deepEqual(handBacks.map(({ workflowId, wake }) => [workflowId, wake.commandIds]), handBacks.map(() => [chains.emitter, [second]]),
+    "only the hand-off still deferred was handed back, to its emitter");
+  assert.ok(handBacks.every(({ wake }) => closed.includes(wake.run)), "only a Run that continued as new hands back");
+  assert.equal(new Set(handBacks.map(({ wake }) => wake.run)).size, handBacks.length, "no Run hands one back twice");
+  await replayClosedRuns(populationIngressWorkflowId(population), runs.slice(1));
 });
