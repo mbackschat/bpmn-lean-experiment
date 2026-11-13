@@ -1501,6 +1501,13 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/message-name-addressing/expression-name-null.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
+    "owners": [
+      "CIB-INT-0024"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/message-name-addressing/expression-names-resolve-equal.cibseven-evidence.json",
     "firstDifference": "trace[3].outcome",
     "owners": [
