@@ -12,7 +12,8 @@ import { isOpenRowWitness, readOpenRowOwners } from "../../scripts/contract-arti
 import { requireExecutableModelCorpusManifest } from "../../scripts/executable-model-corpus.ts";
 import type { CorpusScenario } from "../../scripts/executable-model-corpus.ts";
 import type { MvpBpmnCapabilityId } from "../mvp-capabilities.ts";
-import { admitSource, discovered, inspect, loadManifest, renderCorpusFiles, scenarios } from "./corpus-inspection.ts";
+import { acceptedWithoutScenario } from "./coverage-rows.ts";
+import { admitSource, discovered, inspect, loadManifest, readCoverageRows, renderCorpusFiles, scenarios } from "./corpus-inspection.ts";
 
 test("the kernel admits every model exactly as the corpus records it", async () => {
   const report = await inspect(requireExecutableModelCorpusManifest(await loadManifest()));
@@ -27,6 +28,22 @@ test("the kernel admits every model exactly as the corpus records it", async () 
 
 test("keeps the generated corpus map and retained-model capability list exact", async () => {
   for (const [file, rendered] of await renderCorpusFiles()) assert.equal(await readFile(file, "utf8"), rendered, file);
+  const { rows, targetStates } = await readCoverageRows();
+  assert.deepEqual(acceptedWithoutScenario(rows, targetStates), [], "a done row the status map accepts links no scenario");
+});
+
+// The orphan-variant check, a capability of the catalog no retained model claims, is "rejects a supported element
+// variant without a retained MVP model" below and `uncoveredMvpCapabilities`; it is not repeated here.
+test("a done row the status map accepts without any linked scenario is named", async () => {
+  const { rows, targetStates } = await readCoverageRows();
+  const [row, status] = [...rows].find(([id, { kernel, links }]) =>
+    kernel === "accepted" && links.length > 0 && (targetStates.get(id) ?? "").startsWith("done")) ?? [];
+  assert.ok(row !== undefined && status !== undefined);
+  const unlinked = new Map(rows).set(row, { ...status, links: [] });
+  assert.deepEqual(acceptedWithoutScenario(unlinked, targetStates), [row]);
+  const open = new Map(targetStates).set(row, "open");
+  assert.deepEqual(acceptedWithoutScenario(unlinked, open), [], "an open row may be accepted by the map before it closes");
+  assert.deepEqual(acceptedWithoutScenario(new Map(rows).set(row, { ...status, kernel: "slice", links: [] }), targetStates), []);
 });
 
 test("every retained model binds a discovered scenario of its own identity", async () => {

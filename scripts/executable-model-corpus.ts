@@ -126,6 +126,16 @@ export type CorpusModelReport = Readonly<{
   blockers: ReadonlyArray<string>;
 }>;
 
+/** One coverage row of the kernel status map, reconciled with the scenarios it links and what they witness. */
+export type CoverageRowView = Readonly<{
+  row: string;
+  kernel: string;
+  scenarios: number;
+  models: ReadonlyArray<string>;
+  capabilities: ReadonlyArray<string>;
+  restrictions: ReadonlyArray<string>;
+}>;
+
 export type MvpCapabilityReport = MvpBpmnCapability & Readonly<{
   retainedModelIds: ReadonlyArray<string>;
 }>;
@@ -443,6 +453,7 @@ function tableCell(value: string): string {
 export function renderExecutableModelCorpusMap(
   report: ExecutableModelCorpusReport,
   rowsByModel: ReadonlyMap<string, ReadonlyArray<string>>,
+  coverageRows: ReadonlyArray<CoverageRowView>,
 ): string {
   const rowsOf = (id: string): ReadonlyArray<string> => rowsByModel.get(id) ?? [];
   const boundModels = report.models.filter(({ id }) => rowsOf(id).length > 0).length;
@@ -457,6 +468,17 @@ export function renderExecutableModelCorpusMap(
     `The retained MVP suite covers all ${report.mvpCapabilities.length} registered executable BPMN element or semantic variants.`,
     `Browser eligibility separates ${report.models.filter((model) => model.product2 === "journeyBacked").length} human-work journeys from ${report.models.filter((model) => model.product2 === "guidedJourneyBacked").length} guided simulations with explicit host participants.`,
     `${boundModels} of the ${report.models.length} models bind at least one coverage row through the kernel status map's scenario links, and ${report.models.length - boundModels} bind none.`,
+    `${coverageRows.filter(({ models }) => models.length > 0).length} of the ${coverageRows.length} coverage rows bind at least one retained model, ${coverageRows.filter(({ models, scenarios }) => models.length === 0 && scenarios > 0).length} link scenarios but bind no model, and ${coverageRows.filter(({ scenarios }) => scenarios === 0).length} link no scenario.`,
+    "",
+    "## Coverage rows",
+    "",
+    "Each row of the kernel status map's Row status table, in its order, with its kernel state; the number of scenarios it links (a scenario README link counts the discovered scenario files of its directory, any other link counts one); the retained models whose scenario it links; the capabilities those models claim; and the restriction rows (refusal codes) that its linked scenarios exhibit.",
+    "",
+    "| Row | Kernel | Scenarios | Models | Capabilities | Restrictions |",
+    "|---|---|---|---|---|---|",
+    ...coverageRows.map(({ row, kernel, scenarios, models, capabilities, restrictions }) =>
+      `| ${row} | ${tableCell(kernel)} | ${scenarios} | ${models.join(", ") || "—"} | ${capabilities.join(", ") || "—"} | ${restrictions.join(", ") || "—"} |`
+    ),
     "",
     "## Models",
     "",

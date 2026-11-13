@@ -33,6 +33,8 @@ import type {
   CorpusSourceAdmitter,
   ExecutableModelCorpusManifest,
 } from "../../scripts/executable-model-corpus.ts";
+import { mvpBpmnRestrictions } from "../mvp-capabilities.ts";
+import { bindModelRows, coverageRowView, parseStatusMapRows, parseTargetStates, rowLinks } from "./coverage-rows.ts";
 import { externalRoot } from "../../scripts/external-root.ts";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
@@ -45,50 +47,7 @@ export async function loadManifest(): Promise<unknown> {
 }
 
 const statusMapPath = path.join(projectRoot, "docs/kernel/KERNEL-STATUS-MAP.md");
-const statusMapRowForm = /^\| (PC-[A-Z]+-\d{2}) \| [^|]+ \| ([^|]+) \| [^|]+ \|$/;
-const statusMapLinkForm = /\]\((\.\.\/\.\.\/[^)\s]+)\)/g;
-
-/**
- * What each coverage row's "Kernel scenario evidence" cell links, by row ID, as repository-relative paths: a scenario
- * `README.md` stands for its directory (a trailing `/`), any other link, such as a differential fixture, for that file
- * alone. Rows are the lines under the "Row status" table header up to its first blank line; any such line that is not
- * in the table's form fails.
- */
-export function parseStatusMapRowLinks(markdown: string): ReadonlyMap<string, ReadonlyArray<string>> {
-  const lines = markdown.split("\n");
-  const section = lines.findIndex((line) => line === "## Row status");
-  const header = lines.findIndex((line, index) => index > section && line === "| Row | Kernel | Kernel scenario evidence | Open proof lanes |");
-  if (section < 0 || header < 0) throw new Error("KERNEL-STATUS-MAP.md has no Row status table with the expected header");
-  const rows = new Map<string, ReadonlyArray<string>>();
-  for (const line of lines.slice(header + 2)) {
-    if (line === "") break;
-    const match = statusMapRowForm.exec(line);
-    if (match === null) throw new Error(`Row status line does not match the table's form: ${line}`);
-    const row = match[1]!;
-    const evidence = match[2]!;
-    if (rows.has(row)) throw new Error(`Row status lists ${row} twice`);
-    rows.set(row, [...evidence.matchAll(statusMapLinkForm)].map((link) => {
-      const target = path.posix.join("docs/kernel", link[1]!);
-      return path.posix.basename(target) === "README.md" ? `${path.posix.dirname(target)}/` : target;
-    }));
-  }
-  if (rows.size === 0) throw new Error("KERNEL-STATUS-MAP.md Row status table has no rows");
-  return rows;
-}
-
-/** The row IDs each retained model witnesses, in ascending order: its scenario lies inside a directory the row links. */
-export function bindModelRows(
-  manifest: ExecutableModelCorpusManifest,
-  rowLinks: ReadonlyMap<string, ReadonlyArray<string>>,
-): ReadonlyMap<string, ReadonlyArray<string>> {
-  return new Map(manifest.models.map((model) => {
-    const modelPath = model.source.kind === "retainedScenario" ? model.source.scenarioRelativePath : null;
-    const rows = modelPath === null ? [] : [...rowLinks]
-      .filter(([, links]) => links.some((link) => link.endsWith("/") ? modelPath.startsWith(link) : modelPath === link))
-      .map(([row]) => row).sort();
-    return [model.id, rows];
-  }));
-}
+const coverageTargetPath = path.join(projectRoot, "docs/PRACTICAL-CIB7-COVERAGE-TARGET.md");
 
 export const discovered = await discoverScenarios();
 
@@ -173,6 +132,27 @@ export const inspect = (
   projectRoot, externalRoot, scenarios: selected, admitModel, admitSource: admit, decodeStimulus: kernelStimulusDecoding,
 });
 
+/** The status map's coverage rows and the coverage target's task states, as committed. */
+export async function readCoverageRows() {
+  return {
+    rows: parseStatusMapRows(await readFile(statusMapPath, "utf8")),
+    targetStates: parseTargetStates(await readFile(coverageTargetPath, "utf8")),
+  };
+}
+
+/** The restriction refusal codes the sources of one discovered scenario are refused with, as `inspect` reads them. */
+async function restrictionsExhibitedBy(scenarioPath: string): Promise<ReadonlyArray<string>> {
+  const scenario = scenarios.find(({ relativePath }) => relativePath === scenarioPath);
+  if (scenario === undefined) return [];
+  const restricted = new Set(mvpBpmnRestrictions.map(({ refusalCode }) => refusalCode));
+  const codes: string[] = [];
+  for (const source of scenario.sources) {
+    const admission = await admitSource(scenario, source);
+    if (admission.status === "rejected" && restricted.has(admission.refusal)) codes.push(admission.refusal);
+  }
+  return codes;
+}
+
 /**
  * The generated files the manifest and the discovered scenarios imply, by path: the corpus map and the retained-model
  * capability list. The guard compares each with the committed file and the renderer writes it.
@@ -180,6 +160,11 @@ export const inspect = (
 export async function renderCorpusFiles(): Promise<ReadonlyArray<readonly [string, string]>> {
   const manifest = requireExecutableModelCorpusManifest(await loadManifest());
   const report = await inspect(manifest);
-  const rowsByModel = bindModelRows(manifest, parseStatusMapRowLinks(await readFile(statusMapPath, "utf8")));
-  return [[corpusMapPath, renderExecutableModelCorpusMap(report, rowsByModel)], [capabilityListPath, renderRetainedModelCapabilities(report)]];
+  const { rows } = await readCoverageRows();
+  const rowsByModel = bindModelRows(manifest, rowLinks(rows));
+  const view = await coverageRowView(rows, rowsByModel, report, scenarios.map(({ relativePath }) => relativePath), restrictionsExhibitedBy);
+  return [
+    [corpusMapPath, renderExecutableModelCorpusMap(report, rowsByModel, view)],
+    [capabilityListPath, renderRetainedModelCapabilities(report)],
+  ];
 }
