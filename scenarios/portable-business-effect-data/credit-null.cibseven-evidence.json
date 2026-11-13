@@ -1,0 +1,312 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "effect-data-credit-null",
+    "sha256": "ada97f833881cb50a687120f1876bbb866276a3d4f90b25d0783b576cdf12a2d"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicantRef",
+            "value": {
+              "kind": "string",
+              "value": "A-18"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:e4d76a47a838efc88b7a91d71164ca9c098c269178e1bcc080732cb8f90332b1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicantRef",
+            "value": {
+              "kind": "string",
+              "value": "A-18"
+            }
+          },
+          {
+            "name": "assessment",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:3046e394514b67714b270326cc6e1cca91a152cb94bfb5ca5deda823148d555c",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicantRef",
+            "value": {
+              "kind": "string",
+              "value": "A-18"
+            }
+          },
+          {
+            "name": "assessment",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": []
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:e4d76a47a838efc88b7a91d71164ca9c098c269178e1bcc080732cb8f90332b1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:3046e394514b67714b270326cc6e1cca91a152cb94bfb5ca5deda823148d555c",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:e4d76a47a838efc88b7a91d71164ca9c098c269178e1bcc080732cb8f90332b1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:3046e394514b67714b270326cc6e1cca91a152cb94bfb5ca5deda823148d555c",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": [
+          {
+            "elementId": "AssessCredit",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "assessCredit",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:e4d76a47a838efc88b7a91d71164ca9c098c269178e1bcc080732cb8f90332b1",
+        "jobs": [
+          {
+            "elementId": "NotifyApplicant",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "notifyApplicant",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:3046e394514b67714b270326cc6e1cca91a152cb94bfb5ca5deda823148d555c",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:e4d76a47a838efc88b7a91d71164ca9c098c269178e1bcc080732cb8f90332b1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:3046e394514b67714b270326cc6e1cca91a152cb94bfb5ca5deda823148d555c",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "complete-effect-sha256:e4d76a47a838efc88b7a91d71164ca9c098c269178e1bcc080732cb8f90332b1",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:3046e394514b67714b270326cc6e1cca91a152cb94bfb5ca5deda823148d555c",
+        "schedule": "plainSuccess",
+        "invocations": 2,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Credit_null",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicantRef",
+            "value": {
+              "kind": "string",
+              "value": "A-18"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Credit_null",
+              "elementId": "AssessCredit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "assessCredit",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:e4d76a47a838efc88b7a91d71164ca9c098c269178e1bcc080732cb8f90332b1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Credit_null",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicantRef",
+            "value": {
+              "kind": "string",
+              "value": "A-18"
+            }
+          },
+          {
+            "name": "assessment",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Credit_null",
+              "elementId": "NotifyApplicant",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "notifyApplicant",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:3046e394514b67714b270326cc6e1cca91a152cb94bfb5ca5deda823148d555c",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Credit_null",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicantRef",
+            "value": {
+              "kind": "string",
+              "value": "A-18"
+            }
+          },
+          {
+            "name": "assessment",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": []
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

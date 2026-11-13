@@ -1,0 +1,46 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "journey-scheduled-case-wrong-time-start-before-case-date",
+    "sha256": "c8111ba97513704d112d5b5c9a099b839ce68f47aae38e350956add3d8e5aa1b"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [],
+    "taskQueries": [],
+    "timerJobs": [],
+    "historicProcessStates": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start-before-case-date",
+        "outcome": "rejected"
+      }
+    ]
+  }
+}

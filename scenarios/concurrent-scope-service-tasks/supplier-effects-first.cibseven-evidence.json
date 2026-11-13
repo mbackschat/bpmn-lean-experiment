@@ -1,0 +1,503 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "concurrent-scope-effects-supplier-effects-first",
+    "sha256": "fa6d5e90b40092072a756cde21664a4403c629a28027933b2626d3e40e937cea"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:18427cb49308db9090b95f7f1fb5dcbbb1c43db726ab1019f6c8d58993a20349",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:bf2063327f837e2bbf9b78f2698d9071c8d717f923eb94dd61cf7412d672d957",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-review-contract",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-approve-supplier",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:15a53d7c0ebf49527433fc9cc01191da51c7741fd2d746621ea38029f06b46fd",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "UserTask_ReviewContract",
+            "name": "Review supplier contract"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:18427cb49308db9090b95f7f1fb5dcbbb1c43db726ab1019f6c8d58993a20349",
+        "tasks": [
+          {
+            "elementId": "UserTask_ReviewContract",
+            "name": "Review supplier contract"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:bf2063327f837e2bbf9b78f2698d9071c8d717f923eb94dd61cf7412d672d957",
+        "tasks": [
+          {
+            "elementId": "UserTask_ReviewContract",
+            "name": "Review supplier contract"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-review-contract",
+        "tasks": [
+          {
+            "elementId": "UserTask_ApproveSupplier",
+            "name": "Approve supplier"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-approve-supplier",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:15a53d7c0ebf49527433fc9cc01191da51c7741fd2d746621ea38029f06b46fd",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:18427cb49308db9090b95f7f1fb5dcbbb1c43db726ab1019f6c8d58993a20349",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:bf2063327f837e2bbf9b78f2698d9071c8d717f923eb94dd61cf7412d672d957",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-review-contract",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-approve-supplier",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:15a53d7c0ebf49527433fc9cc01191da51c7741fd2d746621ea38029f06b46fd",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_ScreenSanctions",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "sanctionsScreening",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "ServiceTask_VerifyBankAccount",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "bankAccountVerification",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:18427cb49308db9090b95f7f1fb5dcbbb1c43db726ab1019f6c8d58993a20349",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_ScreenSanctions",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "sanctionsScreening",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:bf2063327f837e2bbf9b78f2698d9071c8d717f923eb94dd61cf7412d672d957",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-review-contract",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-approve-supplier",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_ActivateSupplier",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "supplierActivation",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:15a53d7c0ebf49527433fc9cc01191da51c7741fd2d746621ea38029f06b46fd",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:18427cb49308db9090b95f7f1fb5dcbbb1c43db726ab1019f6c8d58993a20349",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:bf2063327f837e2bbf9b78f2698d9071c8d717f923eb94dd61cf7412d672d957",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-review-contract",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-approve-supplier",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:15a53d7c0ebf49527433fc9cc01191da51c7741fd2d746621ea38029f06b46fd",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "complete-effect-sha256:18427cb49308db9090b95f7f1fb5dcbbb1c43db726ab1019f6c8d58993a20349",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:bf2063327f837e2bbf9b78f2698d9071c8d717f923eb94dd61cf7412d672d957",
+        "schedule": "plainSuccess",
+        "invocations": 2,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:15a53d7c0ebf49527433fc9cc01191da51c7741fd2d746621ea38029f06b46fd",
+        "schedule": "plainSuccess",
+        "invocations": 3,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_ScreenSanctions",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "sanctionsScreening",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_VerifyBankAccount",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "bankAccountVerification",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ReviewContract",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review supplier contract",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:18427cb49308db9090b95f7f1fb5dcbbb1c43db726ab1019f6c8d58993a20349",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_ScreenSanctions",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "sanctionsScreening",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ReviewContract",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review supplier contract",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:bf2063327f837e2bbf9b78f2698d9071c8d717f923eb94dd61cf7412d672d957",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ReviewContract",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review supplier contract",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-review-contract",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ApproveSupplier",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve supplier",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-approve-supplier",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_ActivateSupplier",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "supplierActivation",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:15a53d7c0ebf49527433fc9cc01191da51c7741fd2d746621ea38029f06b46fd",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

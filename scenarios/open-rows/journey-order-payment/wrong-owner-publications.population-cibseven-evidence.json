@@ -1,0 +1,177 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "journey-order-payment-wrong-owner-publications",
+    "sha256": "5b5b82bab3c5a86a9ce85124e77dbd22a71678d308c4133d54156a368bd6a4c1"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "order-payment",
+        "versions": [
+          {
+            "key": "Process_OrderPayment",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s03-pay-without-criteria",
+        "ordinal": 1,
+        "at": 1000,
+        "outcome": "rolledBack",
+        "resolution": {
+          "kind": "ambiguous"
+        }
+      },
+      {
+        "commandId": "s04-pay-for-unknown-order",
+        "ordinal": 2,
+        "at": 2000,
+        "outcome": "rolledBack",
+        "resolution": {
+          "kind": "noMatch"
+        }
+      },
+      {
+        "commandId": "s05-pay-by-local-order-id",
+        "ordinal": 3,
+        "at": 3000,
+        "outcome": "rolledBack",
+        "resolution": {
+          "kind": "noMatch"
+        }
+      },
+      {
+        "commandId": "s06-pay-by-business-key",
+        "ordinal": 4,
+        "at": 4000,
+        "outcome": "rolledBack",
+        "resolution": {
+          "kind": "noMatch"
+        }
+      },
+      {
+        "commandId": "s07-pay-for-another-message",
+        "ordinal": 5,
+        "at": 5000,
+        "outcome": "rolledBack",
+        "resolution": {
+          "kind": "noMatch"
+        }
+      },
+      {
+        "commandId": "s08-pay-order_2",
+        "ordinal": 6,
+        "at": 6000,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "committed",
+          "target": {
+            "processInstanceId": "Order_2",
+            "elementId": "AwaitPayment",
+            "activation": 1
+          }
+        }
+      },
+      {
+        "commandId": "s11-pay-order_1",
+        "ordinal": 7,
+        "at": 9000,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "committed",
+          "target": {
+            "processInstanceId": "Order_1",
+            "elementId": "AwaitPayment",
+            "activation": 1
+          }
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "completed",
+        "logicalTimeMs": 11000,
+        "variables": [
+          {
+            "name": "amountCents",
+            "value": {
+              "kind": "integer",
+              "value": 45900
+            }
+          },
+          {
+            "name": "customer",
+            "value": {
+              "kind": "string",
+              "value": "Nordlicht GmbH"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ],
+        "openWaits": []
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_2",
+        "status": "completed",
+        "logicalTimeMs": 11000,
+        "variables": [
+          {
+            "name": "amountCents",
+            "value": {
+              "kind": "integer",
+              "value": 12800
+            }
+          },
+          {
+            "name": "customer",
+            "value": {
+              "kind": "string",
+              "value": "Atelier Moreau"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "B-2"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

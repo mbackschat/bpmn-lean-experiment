@@ -1,0 +1,1961 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "journey-order-invoice-automatic-success",
+    "sha256": "132b72a4521520e441a0908fbed9426b4960117250de1581b5a18569da13b7be"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "invoice",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amountCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 9000
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "number",
+                  "value": {
+                    "kind": "string",
+                    "value": "INV-2026-0418"
+                  }
+                },
+                {
+                  "name": "supplier",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "contactEmail",
+                        "value": {
+                          "kind": "string",
+                          "value": "buchhaltung@nordlicht-papier.example"
+                        }
+                      },
+                      {
+                        "name": "country",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE"
+                        }
+                      },
+                      {
+                        "name": "iban",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE89370400440532013000"
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Nordlicht Papier GmbH"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "vatRate",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "19",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-enter-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "approver",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "clerk",
+            "value": {
+              "kind": "string",
+              "value": "mara"
+            }
+          },
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "A"
+            }
+          },
+          {
+            "name": "invoice",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amountCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 9000
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "number",
+                  "value": {
+                    "kind": "string",
+                    "value": "INV-2026-0418"
+                  }
+                },
+                {
+                  "name": "supplier",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "contactEmail",
+                        "value": {
+                          "kind": "string",
+                          "value": "buchhaltung@nordlicht-papier.example"
+                        }
+                      },
+                      {
+                        "name": "country",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE"
+                        }
+                      },
+                      {
+                        "name": "iban",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE89370400440532013000"
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Nordlicht Papier GmbH"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "vatRate",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "19",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-post-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "approver",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "clerk",
+            "value": {
+              "kind": "string",
+              "value": "mara"
+            }
+          },
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "A"
+            }
+          },
+          {
+            "name": "invoice",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amountCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 9000
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "number",
+                  "value": {
+                    "kind": "string",
+                    "value": "INV-2026-0418"
+                  }
+                },
+                {
+                  "name": "supplier",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "contactEmail",
+                        "value": {
+                          "kind": "string",
+                          "value": "buchhaltung@nordlicht-papier.example"
+                        }
+                      },
+                      {
+                        "name": "country",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE"
+                        }
+                      },
+                      {
+                        "name": "iban",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE89370400440532013000"
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Nordlicht Papier GmbH"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "vatRate",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "19",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "ledgerEntry",
+                  "value": {
+                    "kind": "string",
+                    "value": "LE-2026-0418-1"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "account",
+                            "value": {
+                              "kind": "string",
+                              "value": "4400"
+                            }
+                          },
+                          {
+                            "name": "cents",
+                            "value": {
+                              "kind": "integer",
+                              "value": 4500
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "account",
+                            "value": {
+                              "kind": "string",
+                              "value": "4400"
+                            }
+                          },
+                          {
+                            "name": "cents",
+                            "value": {
+                              "kind": "integer",
+                              "value": 4500
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "postedTotal",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "90",
+                    "scale": 0
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "posted"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-notice-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "approver",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "clerk",
+            "value": {
+              "kind": "string",
+              "value": "mara"
+            }
+          },
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "A"
+            }
+          },
+          {
+            "name": "invoice",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amountCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 9000
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "number",
+                  "value": {
+                    "kind": "string",
+                    "value": "INV-2026-0418"
+                  }
+                },
+                {
+                  "name": "supplier",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "contactEmail",
+                        "value": {
+                          "kind": "string",
+                          "value": "buchhaltung@nordlicht-papier.example"
+                        }
+                      },
+                      {
+                        "name": "country",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE"
+                        }
+                      },
+                      {
+                        "name": "iban",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE89370400440532013000"
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Nordlicht Papier GmbH"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "vatRate",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "19",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "ledgerEntry",
+                  "value": {
+                    "kind": "string",
+                    "value": "LE-2026-0418-1"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "account",
+                            "value": {
+                              "kind": "string",
+                              "value": "4400"
+                            }
+                          },
+                          {
+                            "name": "cents",
+                            "value": {
+                              "kind": "integer",
+                              "value": 4500
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "account",
+                            "value": {
+                              "kind": "string",
+                              "value": "4400"
+                            }
+                          },
+                          {
+                            "name": "cents",
+                            "value": {
+                              "kind": "integer",
+                              "value": 4500
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "postedTotal",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "90",
+                    "scale": 0
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "posted"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "EnterInvoice",
+            "name": "Enter the invoice",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "clerks"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "enteredBy",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-enter-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s03-post-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s04-notice-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-enter-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-post-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-notice-1",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-enter-1",
+        "jobs": [
+          {
+            "elementId": "PostInvoice",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "postInvoice",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-post-1",
+        "jobs": [
+          {
+            "elementId": "SendNotice",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "sendPostingNotice",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-notice-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-enter-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-post-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-notice-1",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "s03-post-1",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "s04-notice-1",
+        "schedule": "plainSuccess",
+        "invocations": 2,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Invoice_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "invoice",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amountCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 9000
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "number",
+                  "value": {
+                    "kind": "string",
+                    "value": "INV-2026-0418"
+                  }
+                },
+                {
+                  "name": "supplier",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "contactEmail",
+                        "value": {
+                          "kind": "string",
+                          "value": "buchhaltung@nordlicht-papier.example"
+                        }
+                      },
+                      {
+                        "name": "country",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE"
+                        }
+                      },
+                      {
+                        "name": "iban",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE89370400440532013000"
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Nordlicht Papier GmbH"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "vatRate",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "19",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Invoice_1",
+              "elementId": "EnterInvoice",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Enter the invoice",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "clerks"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "enteredBy",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "draft",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "amountCents",
+                        "value": {
+                          "kind": "integer",
+                          "value": 9000
+                        }
+                      },
+                      {
+                        "name": "lines",
+                        "value": {
+                          "kind": "list",
+                          "value": [
+                            {
+                              "kind": "map",
+                              "value": [
+                                {
+                                  "name": "description",
+                                  "value": {
+                                    "kind": "string",
+                                    "value": "Paper A4"
+                                  }
+                                },
+                                {
+                                  "name": "quantity",
+                                  "value": {
+                                    "kind": "integer",
+                                    "value": 10
+                                  }
+                                },
+                                {
+                                  "name": "unitPrice",
+                                  "value": {
+                                    "kind": "decimal",
+                                    "coefficient": "45",
+                                    "scale": 1
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "kind": "map",
+                              "value": [
+                                {
+                                  "name": "description",
+                                  "value": {
+                                    "kind": "string",
+                                    "value": "Paper A4"
+                                  }
+                                },
+                                {
+                                  "name": "quantity",
+                                  "value": {
+                                    "kind": "integer",
+                                    "value": 10
+                                  }
+                                },
+                                {
+                                  "name": "unitPrice",
+                                  "value": {
+                                    "kind": "decimal",
+                                    "coefficient": "45",
+                                    "scale": 1
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "note",
+                        "value": {
+                          "kind": "null"
+                        }
+                      },
+                      {
+                        "name": "number",
+                        "value": {
+                          "kind": "string",
+                          "value": "INV-2026-0418"
+                        }
+                      },
+                      {
+                        "name": "supplier",
+                        "value": {
+                          "kind": "map",
+                          "value": [
+                            {
+                              "name": "contactEmail",
+                              "value": {
+                                "kind": "string",
+                                "value": "buchhaltung@nordlicht-papier.example"
+                              }
+                            },
+                            {
+                              "name": "country",
+                              "value": {
+                                "kind": "string",
+                                "value": "DE"
+                              }
+                            },
+                            {
+                              "name": "iban",
+                              "value": {
+                                "kind": "string",
+                                "value": "DE89370400440532013000"
+                              }
+                            },
+                            {
+                              "name": "name",
+                              "value": {
+                                "kind": "string",
+                                "value": "Nordlicht Papier GmbH"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "vatRate",
+                        "value": {
+                          "kind": "decimal",
+                          "coefficient": "19",
+                          "scale": 2
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "enteredBy",
+                  "value": {
+                    "kind": "string",
+                    "value": "unknown"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-enter-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Invoice_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "approver",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "clerk",
+            "value": {
+              "kind": "string",
+              "value": "mara"
+            }
+          },
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "A"
+            }
+          },
+          {
+            "name": "invoice",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amountCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 9000
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "number",
+                  "value": {
+                    "kind": "string",
+                    "value": "INV-2026-0418"
+                  }
+                },
+                {
+                  "name": "supplier",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "contactEmail",
+                        "value": {
+                          "kind": "string",
+                          "value": "buchhaltung@nordlicht-papier.example"
+                        }
+                      },
+                      {
+                        "name": "country",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE"
+                        }
+                      },
+                      {
+                        "name": "iban",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE89370400440532013000"
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Nordlicht Papier GmbH"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "vatRate",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "19",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Invoice_1",
+              "elementId": "PostInvoice",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "postInvoice",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-post-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Invoice_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "approver",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "clerk",
+            "value": {
+              "kind": "string",
+              "value": "mara"
+            }
+          },
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "A"
+            }
+          },
+          {
+            "name": "invoice",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amountCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 9000
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "number",
+                  "value": {
+                    "kind": "string",
+                    "value": "INV-2026-0418"
+                  }
+                },
+                {
+                  "name": "supplier",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "contactEmail",
+                        "value": {
+                          "kind": "string",
+                          "value": "buchhaltung@nordlicht-papier.example"
+                        }
+                      },
+                      {
+                        "name": "country",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE"
+                        }
+                      },
+                      {
+                        "name": "iban",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE89370400440532013000"
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Nordlicht Papier GmbH"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "vatRate",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "19",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "ledgerEntry",
+                  "value": {
+                    "kind": "string",
+                    "value": "LE-2026-0418-1"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "account",
+                            "value": {
+                              "kind": "string",
+                              "value": "4400"
+                            }
+                          },
+                          {
+                            "name": "cents",
+                            "value": {
+                              "kind": "integer",
+                              "value": 4500
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "account",
+                            "value": {
+                              "kind": "string",
+                              "value": "4400"
+                            }
+                          },
+                          {
+                            "name": "cents",
+                            "value": {
+                              "kind": "integer",
+                              "value": 4500
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "postedTotal",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "90",
+                    "scale": 0
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "posted"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Invoice_1",
+              "elementId": "SendNotice",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "sendPostingNotice",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-notice-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Invoice_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "approver",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "clerk",
+            "value": {
+              "kind": "string",
+              "value": "mara"
+            }
+          },
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "A"
+            }
+          },
+          {
+            "name": "invoice",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amountCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 9000
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "number",
+                  "value": {
+                    "kind": "string",
+                    "value": "INV-2026-0418"
+                  }
+                },
+                {
+                  "name": "supplier",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "contactEmail",
+                        "value": {
+                          "kind": "string",
+                          "value": "buchhaltung@nordlicht-papier.example"
+                        }
+                      },
+                      {
+                        "name": "country",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE"
+                        }
+                      },
+                      {
+                        "name": "iban",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE89370400440532013000"
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Nordlicht Papier GmbH"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "vatRate",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "19",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "ledgerEntry",
+                  "value": {
+                    "kind": "string",
+                    "value": "LE-2026-0418-1"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "account",
+                            "value": {
+                              "kind": "string",
+                              "value": "4400"
+                            }
+                          },
+                          {
+                            "name": "cents",
+                            "value": {
+                              "kind": "integer",
+                              "value": 4500
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "account",
+                            "value": {
+                              "kind": "string",
+                              "value": "4400"
+                            }
+                          },
+                          {
+                            "name": "cents",
+                            "value": {
+                              "kind": "integer",
+                              "value": 4500
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "postedTotal",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "90",
+                    "scale": 0
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "posted"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

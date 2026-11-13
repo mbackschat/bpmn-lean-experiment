@@ -1,0 +1,1657 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "journey-sequential-applicants-window-closes-during-first-interview",
+    "sha256": "e9b7850bbdf1722654e8c4e9fd0f00c534ab4ee17e8b54f2222f9d3940d2a370"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-window",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 259200000,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-interview-1-after-the-window-closed",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 259200000,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-credit-1-after-the-window-closed",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 259200000,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-close-expired-case",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 259200000,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseClosure",
+            "value": {
+              "kind": "string",
+              "value": "nobody screened"
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "InterviewApplicant",
+            "name": "Interview the applicant",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "screeners"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              },
+              {
+                "id": "interviewNote",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-window",
+        "tasks": [
+          {
+            "elementId": "CloseExpiredCase",
+            "name": "Close the expired case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "underwriters"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "closure",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-interview-1-after-the-window-closed",
+        "tasks": [
+          {
+            "elementId": "CloseExpiredCase",
+            "name": "Close the expired case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "underwriters"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "closure",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-credit-1-after-the-window-closed",
+        "tasks": [
+          {
+            "elementId": "CloseExpiredCase",
+            "name": "Close the expired case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "underwriters"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "closure",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-close-expired-case",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "ScreeningWindow",
+            "dueDateDeltaMs": 259200000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-window",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-interview-1-after-the-window-closed",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-credit-1-after-the-window-closed",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-close-expired-case",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-fire-window",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-interview-1-after-the-window-closed",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-credit-1-after-the-window-closed",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-close-expired-case",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "InterviewApplicant",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Interview the applicant",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "screeners"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                },
+                {
+                  "key": "interviewNote",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "applicantName",
+                  "value": {
+                    "kind": "string",
+                    "value": "Mara Berger"
+                  }
+                },
+                {
+                  "name": "declaredIncomeCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 420000
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "ScreeningWindow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 259200000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-fire-window",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 259200000,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "CloseExpiredCase",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Close the expired case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "underwriters"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "closure",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "closure",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                },
+                {
+                  "name": "declines",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "lastBand",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastScreened",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastVerdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "scoreSum",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "screened",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-interview-1-after-the-window-closed",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 259200000,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "CloseExpiredCase",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Close the expired case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "underwriters"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "closure",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "closure",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                },
+                {
+                  "name": "declines",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "lastBand",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastScreened",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastVerdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "scoreSum",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "screened",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-credit-1-after-the-window-closed",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 259200000,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "CloseExpiredCase",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Close the expired case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "underwriters"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "closure",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "closure",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                },
+                {
+                  "name": "declines",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "lastBand",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastScreened",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastVerdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "scoreSum",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "screened",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-close-expired-case",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "completed",
+        "logicalTimeMs": 259200000,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 420000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Mara Berger"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "incomeCents",
+                      "value": {
+                        "kind": "integer",
+                        "value": 310000
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Tomas Okafor"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "caseClosure",
+            "value": {
+              "kind": "string",
+              "value": "nobody screened"
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

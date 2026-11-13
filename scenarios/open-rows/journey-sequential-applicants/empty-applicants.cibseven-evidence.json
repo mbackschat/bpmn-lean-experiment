@@ -1,0 +1,1274 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "journey-sequential-applicants-empty-applicants",
+    "sha256": "bd9e79b270663578aeb8a52b94bb28bcaa7e6d909b427c8533b1dbc5dcbf7d1b"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-window-never-armed",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-interview-of-no-applicant",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-credit-of-no-applicant",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-decide-case",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "caseDecision",
+            "value": {
+              "kind": "string",
+              "value": "refer to a manager"
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "DecideCase",
+            "name": "Decide the case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "underwriters"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "decision",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-window-never-armed",
+        "tasks": [
+          {
+            "elementId": "DecideCase",
+            "name": "Decide the case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "underwriters"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "decision",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-interview-of-no-applicant",
+        "tasks": [
+          {
+            "elementId": "DecideCase",
+            "name": "Decide the case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "underwriters"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "decision",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-credit-of-no-applicant",
+        "tasks": [
+          {
+            "elementId": "DecideCase",
+            "name": "Decide the case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "underwriters"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "decision",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-decide-case",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-fire-window-never-armed",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-interview-of-no-applicant",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-credit-of-no-applicant",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-decide-case",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-fire-window-never-armed",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-interview-of-no-applicant",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-credit-of-no-applicant",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-decide-case",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "DecideCase",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "underwriters"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "decision",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "decision",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                },
+                {
+                  "name": "declines",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "lastBand",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastScreened",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastVerdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "scoreSum",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "screened",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-fire-window-never-armed",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "DecideCase",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "underwriters"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "decision",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "decision",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                },
+                {
+                  "name": "declines",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "lastBand",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastScreened",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastVerdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "scoreSum",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "screened",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-interview-of-no-applicant",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "DecideCase",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "underwriters"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "decision",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "decision",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                },
+                {
+                  "name": "declines",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "lastBand",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastScreened",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastVerdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "scoreSum",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "screened",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-credit-of-no-applicant",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "DecideCase",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "underwriters"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "decision",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "decision",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                },
+                {
+                  "name": "declines",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "lastBand",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastScreened",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "lastVerdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                },
+                {
+                  "name": "scoreSum",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "screened",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-decide-case",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicants",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "caseDecision",
+            "value": {
+              "kind": "string",
+              "value": "refer to a manager"
+            }
+          },
+          {
+            "name": "caseId",
+            "value": {
+              "kind": "string",
+              "value": "CASE-2026-0412"
+            }
+          },
+          {
+            "name": "declines",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "lastBand",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastNote",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastScreened",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "lastVerdict",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scoreSum",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "screened",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

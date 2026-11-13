@@ -1,0 +1,248 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "journey-fulfillment-calls-out-of-stock-on-second-parcel",
+    "sha256": "9c98d5682cf3a19293b7c97218db65040bfcf78a4f9d24f4239d4a6a2ea7bbfc"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "fulfillment",
+        "versions": [
+          {
+            "key": "Process_AddressCheck",
+            "version": 1
+          },
+          {
+            "key": "Process_Fulfil",
+            "version": 1
+          },
+          {
+            "key": "Process_Order",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "completed",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "address",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "city",
+                  "value": {
+                    "kind": "string",
+                    "value": "Berlin"
+                  }
+                },
+                {
+                  "name": "country",
+                  "value": {
+                    "kind": "string",
+                    "value": "DE"
+                  }
+                },
+                {
+                  "name": "street",
+                  "value": {
+                    "kind": "string",
+                    "value": "Invalidenstrasse 3"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "PAPER-A4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "TONER-BK"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "moreParcels",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          },
+          {
+            "name": "resolution",
+            "value": {
+              "kind": "string",
+              "value": "Backorder offered"
+            }
+          },
+          {
+            "name": "trackingId",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": []
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_2",
+        "status": "completed",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "address",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "city",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lyon"
+                  }
+                },
+                {
+                  "name": "country",
+                  "value": {
+                    "kind": "string",
+                    "value": "FR"
+                  }
+                },
+                {
+                  "name": "street",
+                  "value": {
+                    "kind": "string",
+                    "value": "Rue Merciere 12"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 5
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "PAPER-A3"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "moreParcels",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "B-2"
+            }
+          },
+          {
+            "name": "trackingId",
+            "value": {
+              "kind": "string",
+              "value": "TRK-B1"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}
