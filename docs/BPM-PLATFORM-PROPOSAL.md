@@ -47,7 +47,7 @@ What follows for this proposal: every surface below is built from those four ope
 
 The original E2 finding prevented Product 2 from inventing assignment or form facts. Its implemented successor publishes only profile-admitted passive metadata, and the platform still treats assignment as authorization policy rather than an engine completion precondition.
 
-The consumption surface is already exercised: [the engine runner](RUNNABLE-TEMPORAL-MVP-SPEC.md#interaction-driver) uses only those four kinds today, which is why this proposal treats them as sufficient for interaction and insufficient for history.
+The consumption surface is exercised today: the [engine API](../packages/engine-api/src/index.ts) offers Product 2 compilation, starts (direct, Message and Timer-start Schedules), observation of committed state and publication, and commands (human work, incident operations and Message publication), and the showcase [interaction driver](../showcase/mue-preview-alpha/src/host-interactions.ts) answers published waits with ordinary command and delivery Updates. That is why this proposal treats the four kinds as sufficient for interaction; the history they first lacked is the committed publication of E1. The deleted engine runner's driver, which used the same four kinds, is kept as a [historical record](RUNNABLE-TEMPORAL-MVP-SPEC.md#interaction-driver).
 
 ## API-first architecture
 
