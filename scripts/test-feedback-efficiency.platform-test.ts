@@ -139,7 +139,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
     assert.match(root[name] ?? "", /^pnpm build:release-product2 && pnpm test:showcase:[^ ]+:built$/u);
     assert.equal(matches(root[name] ?? "", /\bbuild:/gu), 1, `${name} must prepare the union Product 2 graph once`);
   }
-  assert.equal(root["test:release:product2"], "pnpm build:release-product2 && pnpm test:showcase:m1:built && pnpm test:showcase:m2:built && pnpm test:showcase:m3-human-work:built && pnpm test:showcase:m4-incident-operations:built && pnpm test:showcase:mue-preview-alpha:built && pnpm test:showcase:mue-rc:built && pnpm test:ui-quality:built");
+  assert.equal(root["test:release:product2"], "pnpm build:release-product2 && pnpm test:showcase:m1:built && pnpm test:showcase:m2:built && pnpm test:showcase:m3-human-work:built && pnpm test:showcase:m4-incident-operations:built && pnpm test:showcase:mue-preview-alpha:built && pnpm test:ui-quality:built");
   assert.equal(matches(root["test:release:product2"] ?? "", /\bbuild:/gu), 1);
   const prebuiltShowcaseCommands = new Map([
     ["test:showcase:m1:built", 1],

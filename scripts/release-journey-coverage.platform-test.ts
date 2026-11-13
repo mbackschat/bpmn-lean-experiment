@@ -56,13 +56,32 @@ async function runs(leaf: Leaf, spec: string): Promise<boolean> {
   return ignore === undefined || !new RegExp(`^${ignore.replace(/[.]/gu, "\\.").replace(/\*/gu, ".*")}$`, "u").test(spec);
 }
 
+/**
+ * The root scripts the UI quality workflow runs for release acceptance: every `./scripts/pnpm.sh run` of a job gated on
+ * `inputs.release_acceptance == true`, or of a step so gated.
+ */
+async function releaseScripts(): Promise<string[]> {
+  const workflow = await readFile(path.join(projectRoot, ".github/workflows/ui-quality.yml"), "utf8");
+  const gate = "inputs.release_acceptance == true";
+  const scripts: string[] = [];
+  for (const job of workflow.split(/^jobs:$/mu)[1]!.split(/^ {2}(?=[\w-]+:$)/mu).slice(1)) {
+    const [header = "", steps = ""] = job.split(/^ {4}steps:$/mu);
+    const gated = header.includes(gate) ? [steps] : steps.split(/^ {6}- name:/mu).filter((step) => step.includes(gate));
+    for (const step of gated) scripts.push(...[...step.matchAll(/run: \.\/scripts\/pnpm\.sh run (\S+)/gu)].map((match) => match[1]!));
+  }
+  return scripts;
+}
+
 // A catalog journey the release lane never runs would let the corpus borrow a result no lane produces (PC-QUALIFY-01,
 // PC-QUALIFY-05); the RC journeys went unrun until 2026-11-13.
 test("release acceptance runs every browser journey the model corpus binds", async () => {
   const manifest = await readFile(path.join(projectRoot, "model-corpus/manifest.json"), "utf8");
   const specs = [...new Set([...manifest.matchAll(/"journeyTestRelativePath": "(showcase\/[^"]+)"/gu)].map((match) => match[1]!))];
   assert.ok(specs.length > 0, "the manifest binds browser journeys");
-  const release = await leaves("", "test:release:product2", await packageDirs());
+  const scripts = await releaseScripts();
+  assert.ok(scripts.includes("test:release:product2"), "release acceptance runs the Product 2 release lane");
+  const dirs = await packageDirs();
+  const release = (await Promise.all(scripts.map((script) => leaves("", script, dirs)))).flat();
   const unrun: string[] = [];
   for (const spec of specs) {
     const [, packageName, , file] = spec.split("/");
