@@ -448,8 +448,9 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     });
   }
 
-  const activityOptions = (activityId: string): ActivityOptions =>
-    ({ activityId, startToCloseTimeout: config.effectStartToCloseMs, retry: transportRetry });
+  // The Activity ID is the SDK's own: an effect's key embeds its instance identity, which a caller's start may make longer
+  // than Temporal's identifier limit; the handler receives the key itself as its idempotency key (`activities.ts`).
+  const activityOptions: ActivityOptions = { startToCloseTimeout: config.effectStartToCloseMs, retry: transportRetry };
 
   const populationActivities = (): Pick<PopulationActivities, "registerPopulation" | "emitPopulation"> => ({
     registerPopulation: (request) => scheduleActivity<string | null>("registerPopulation" satisfies keyof HostActivities, [request],
@@ -528,12 +529,12 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     }
     for (const request of plan.startEffects) {
       own(effects, request.key, () => scheduleActivity<EffectResult>("executeEffect" satisfies keyof HostActivities,
-        [request], activityOptions(request.key)),
+        [request], activityOptions),
         (result) => ({ kind: ArrivalKind.Effect, key: request.key, effect: request.occurrence, result }));
     }
     for (const request of plan.evaluateScripts) {
       own(effects, request.key, () => scheduleActivity<EffectResult>("evaluateScript" satisfies keyof HostActivities,
-        [request], activityOptions(request.key)),
+        [request], activityOptions),
         (result) => ({ kind: ArrivalKind.Effect, key: request.key, effect: request.occurrence, result }));
     }
   };

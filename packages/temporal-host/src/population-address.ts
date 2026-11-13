@@ -1,8 +1,10 @@
 /**
  * The Temporal addresses of a population ([population ingress](../../../docs/kernel/ARCHITECTURE-SPEC.md#population-ingress)):
  * the ingress, each deployment and each instance a population start makes are named by digests, so no population name,
- * deployment or instance identity shapes a host address, and a command's Update ID carries its content's digest. It
- * hashes with Node's crypto, so only clients and Activities import it, never Workflow code.
+ * deployment or instance identity shapes a host address, and every Update ID the population derives is a digest of its
+ * identity too. Temporal refuses an identifier longer than `limit.maxIDLength` (default 1,000) as INVALID_ARGUMENT, and a
+ * caller's identifier may reach the stimulus bound, so no derived address embeds one. It hashes with Node's crypto, so
+ * only clients and Activities import it, never Workflow code.
  */
 import { createHash } from "node:crypto";
 
@@ -48,7 +50,15 @@ export function populationCommandDigest(kind: string, command: JsonValue): strin
  * the ID carries the content digest: a repeat with other content is a separate Update, answered by the ledger.
  */
 export function populationCommandUpdateId(request: PopulationCommandRequest): string {
-  return `population:${request.commandId}:${request.digest}`;
+  return `population-sha256:${sha256(canonicalJson([request.commandId, request.digest]))}`;
+}
+
+/**
+ * A receiver delivery's Update ID, of its `deliveryId`: the chain's delivery ledger keys the delivery by that identifier
+ * itself, so a delivery retried after the chain rolled over applies once.
+ */
+export function deliveryUpdateId(deliveryId: string): string {
+  return `delivery-sha256:${sha256(deliveryId)}`;
 }
 
 /**

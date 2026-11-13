@@ -2,7 +2,8 @@
  * Hosted witnesses of the capacity table (PC-QUALIFY-10), run in hosted CI only: a real Continue-As-New carrying exactly
  * the continuation bound and the candidate one byte past it refused before Event History; the rollover at the server's
  * history-size suggestion; the 128th Run and the refused 129th; one byte pair through an Update validator; one byte
- * pair of effect results returned by a real Activity, whose refusal halts the chain; the
+ * pair of effect results returned by a real Activity, whose refusal halts the chain; an effect Activity of an instance
+ * whose identity exceeds Temporal's identifier limit; the
  * realistic sixteen-body parallel Multi-Instance journey on durable scheduling with its sixteen effects as concurrent
  * Activities, forced across Runs mid-Multi-Instance; and an emitted hand-off the full population ingress defers, delivered
  * once room appears. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since it judges candidates
@@ -182,6 +183,19 @@ test("effect result on durable scheduling: an Activity's result of exactly 64 Ki
   assert.deepEqual(result.kind === ResultKind.Halted ? [result.halt.outcome, result.halt.code] : result,
     ["unsupported", "host.capacity.effectResult"]);
   assert.ok((await client.hostView(over)).view?.openWaits.every((wait) => wait.id.elementId !== "Final"), "the result was never applied");
+});
+
+test("an effect of an instance whose identity exceeds Temporal's identifier limit runs as its Activity and commits its result", async () => {
+  const program = await fx.cibProgram(fx.sizingModel(1, ["extra"], 0));
+  const id = workflowId("effect-long-identity");
+  // 2,000 characters: the effect's key embeds them, past the server's default `limit.maxIDLength` of 1,000.
+  const instanceId = `I${"i".repeat(1_999)}`;
+  await client.start({ workflowId: id, program, config: durable(null),
+    start: { kind: "start", commandId: "s", instanceId, variables: [{ name: "extra", value: fx.int(0) }] } });
+  await committed(id, [{ kind: "command", commandId: "fill-1", occurrence: { processInstanceId: instanceId, elementId: "Fill1", activation: 1 },
+    action: { kind: "completeUserTask", values: [] } }]);
+  await until("the effect's commit", () => client.hostView(id),
+    (snapshot) => snapshot.view?.openWaits.some((wait) => wait.id.elementId === "Final") === true);
 });
 
 test("one byte pair through the Update validator: a state of exactly 256 KiB commits, one byte more never enters history", async () => {

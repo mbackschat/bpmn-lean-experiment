@@ -1,7 +1,7 @@
 /**
  * The population Activities: each transports one ingress action to the chains or deployments it names, or one chain's
  * registration or emit to the ingress, and retries transport failures only. A chain or Workflow that no longer exists
- * is an answer (`gone`, `null`), never a retry.
+ * is an answer (`gone`, `null`), never a retry, and a request the service refuses as invalid fails for good.
  */
 import { ApplicationFailure, Context } from "@temporalio/activity";
 import {
@@ -9,11 +9,13 @@ import {
   WorkflowExecutionAlreadyStartedError,
   WorkflowNotFoundError,
   WorkflowUpdateFailedError,
+  isGrpcServiceError,
   type Client,
 } from "@temporalio/client";
 
 import { RunKind, rejectionType, workflowType, type ProcessResult, type RunProcessArgs } from "./host-contract.js";
 import {
+  deliveryUpdateId,
   deploymentWorkflowId,
   emitUpdateId,
   populationIngressWorkflowId,
@@ -122,6 +124,24 @@ async function scan(client: Client, population: string, action: ScanAction): Pro
   }
 }
 
+/** The gRPC status of a request the service will never take ([status codes](https://grpc.github.io/grpc/core/md_doc_statuscodes.html)). */
+const grpcInvalidArgument = 3;
+
+/**
+ * A service failure that no retry cures, as a non-retryable failure; any other failure unchanged, for the transport
+ * retry. Temporal answers INVALID_ARGUMENT for a request beyond its limits, such as an identifier longer than
+ * `limit.maxIDLength`, and the retry would repeat it without end (Verify 43494317413). The client wraps the native
+ * connection's failure as the cause of its own, so the whole cause chain is read.
+ */
+function failingForGood(error: unknown): never {
+  for (let cause: unknown = error; cause instanceof Error; cause = cause.cause) {
+    if (isGrpcServiceError(cause) && cause.code === grpcInvalidArgument) {
+      throw ApplicationFailure.create({ message: cause.details || cause.message, type: "TemporalInvalidArgument", nonRetryable: true, cause });
+    }
+  }
+  throw error;
+}
+
 /**
  * A population Activity's Update or Query waits for a Workflow task of its own Task Queue, which only a polling Worker
  * takes and a draining Worker no longer polls. Every population Activity therefore settles as cancelled once its
@@ -132,7 +152,7 @@ async function scan(client: Client, population: string, action: ScanAction): Pro
  */
 function settlingOnCancellation(activities: PopulationActivities): PopulationActivities {
   const settling = <Request, Result>(activity: (request: Request) => Promise<Result>) =>
-    (request: Request): Promise<Result> => Promise.race([activity(request), Context.current().cancelled]);
+    (request: Request): Promise<Result> => Promise.race([activity(request).catch(failingForGood), Context.current().cancelled]);
   return {
     scanPopulation: settling(activities.scanPopulation),
     deliverPopulation: settling(activities.deliverPopulation),
@@ -154,7 +174,7 @@ export function createPopulationActivities(): PopulationActivities {
       const { client } = Context.current();
       const delivery = { deliveryId: request.deliveryId, delivery: request.delivery };
       const outcome = await unlessGone(() => client.workflow.getHandle(request.workflowId)
-        .executeUpdate(populationDeliverUpdate, { args: [delivery], updateId: request.deliveryId }));
+        .executeUpdate(populationDeliverUpdate, { args: [delivery], updateId: deliveryUpdateId(request.deliveryId) }));
       return outcome ?? { kind: "gone" };
     },
     startPopulation: async (request) => {
