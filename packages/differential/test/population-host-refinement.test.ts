@@ -31,8 +31,9 @@ import {
   type Program,
   type State,
 } from "@bpmn-lean/kernel";
-import type { HostView, JsonValue } from "@bpmn-lean/temporal-host/host";
-import { MemoryPopulation, populationPort, type PopulationChain } from "@bpmn-lean/temporal-host/memory-host";
+import { firstValueDisagreement } from "@bpmn-lean/differential";
+import { Scheduling, canonicalBytes, chainCapacity, type HostView, type JsonValue } from "@bpmn-lean/temporal-host/host";
+import { MemoryPopulation, heldChains, populationPort, type PopulationChain } from "@bpmn-lean/temporal-host/memory-host";
 
 import { populationStepDigests } from "./population-digest.ts";
 import { populationPrograms } from "./population-programs.ts";
@@ -41,8 +42,24 @@ import { DiscoveredKind, discoverScenarios, type PopulationScenarioDocument } fr
 type Json = Readonly<Record<string, unknown>>;
 const commandKinds = new Set(["publish", "broadcast", "evaluateConditions", "timerStart"]);
 
+/**
+ * The ingress argument beside its state, without a continuation or answer bound: the kernel's population has no
+ * carried-size bound, and a cascade at its bound settles an answer of 100,001 entries. This follows the receivers, where
+ * `cascadeBound` replaces the host's cap. The host's own bounds are witnessed separately: the ingress's continuation
+ * bound in `temporal-host/test/capacity.test.ts`, and the chain bounds' refusals of kernel witnesses in
+ * `host-capacity-restrictions.ts`.
+ */
+const refinementFrame = {
+  population: "refinement",
+  config: { scheduling: Scheduling.External, effectStartToCloseMs: 60_000, historyEventBudget: null },
+  rolloverEvents: null,
+  continuationBytes: Number.POSITIVE_INFINITY,
+  queryBytes: Number.POSITIVE_INFINITY,
+};
+
 /** The kernel runner's result document for `document`, recomputed through the hosted driver. */
-function hosted(sources: readonly unknown[], document: PopulationScenarioDocument, digests: readonly string[]): JsonValue {
+function hosted(sources: readonly unknown[], document: PopulationScenarioDocument, digests: readonly string[],
+  frame: typeof refinementFrame = refinementFrame): JsonValue {
   const scenario = document as unknown as Json;
   const profile = scenario["profile"] as string;
   const declared = (scenario["definitions"] as readonly Json[]).map((resource) =>
@@ -53,7 +70,7 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
   const commandSteps = steps.filter((json) => commandKinds.has(json["kind"] as string));
   const chains = new Map<string, PopulationChain<Program, State>>();
   const population = new MemoryPopulation<Program, State, FanOutMachine>(populationPort,
-    (program, state) => hostViewJson(hostView(program, state)) as unknown as HostView, cascadeBound, chains);
+    (program, state) => hostViewJson(hostView(program, state)) as unknown as HostView, cascadeBound, heldChains(chains), frame);
   const registry: Deployment[] = [];
   const refused: number[] = [];
   const deployments: JsonValue[] = [];
@@ -115,8 +132,9 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
         commandIndex += 1;
         assert.ok(json !== undefined);
         const { at: _at, ...command } = json;
-        const answer = population.command(json["commandId"] as string, json["kind"] as string, command as JsonValue, stimulus.digest, stimulus.atMs);
-        assert.ok(answer !== null, "the queue never fills in a scenario");
+        const answered = population.command(json["commandId"] as string, json["kind"] as string, command as JsonValue, stimulus.digest, stimulus.atMs);
+        assert.ok("answer" in answered, "the ingress refuses no command in a scenario");
+        const answer = answered.answer;
         const { atMs, chain, ...rest } = answer as Json;
         // A Message delivery names its chain, which holds the target's instance; nothing else names one.
         const target = (rest["resolution"] as Json)["target"] as Json | undefined;
@@ -149,9 +167,37 @@ test("every population scenario answers through the hosted ingress driver exactl
     const digests = populationStepDigests(document.steps);
     const expected = JSON.parse(JSON.stringify(runPopulation(sources, document, digests))) as JsonValue;
     const actual = JSON.parse(JSON.stringify(hosted(sources, document, digests))) as JsonValue;
-    assert.deepEqual(actual, expected, scenario.relativePath);
+    // The first disagreement only: a whole-result diff of a cascade at the kernel's bound would render megabytes.
+    assert.equal(firstValueDisagreement(expected, actual, "result"), null, scenario.relativePath);
     compared += 1;
   }
   assert.ok(compared > 0, "population scenarios were found");
   t.diagnostic(`${String(compared)} population scenarios compared`);
+});
+
+// Under the host's own continuation and answer bounds the driver still answers as the kernel does wherever the kernel's
+// answers fit the Query bound: the bytes stop only an answer that would not. The margin keeps room for the stop entry
+// the fan-out reserves at each receiver (`roomFor` in `temporal-host` `population.ts`).
+test("under the host's answer and continuation bounds the driver answers as the kernel wherever the kernel's answers fit", async (t) => {
+  const bounded = { ...refinementFrame, continuationBytes: chainCapacity.continuationBytes, queryBytes: chainCapacity.queryBytes };
+  const margin = 4_096;
+  let compared = 0;
+  let beyond = 0;
+  for (const scenario of await discoverScenarios()) {
+    if (scenario.kind !== DiscoveredKind.PopulationScenario) continue;
+    const document = scenario.document;
+    const sources = await populationPrograms(scenario.relativePath, document);
+    const digests = populationStepDigests(document.steps);
+    const expected = JSON.parse(JSON.stringify(runPopulation(sources, document, digests))) as Json;
+    const answers = [...(expected["steps"] as readonly JsonValue[]), ...((expected["inputCascades"] ?? []) as readonly JsonValue[])];
+    if (answers.some((answer) => canonicalBytes({ kind: "settled", answer }) > chainCapacity.queryBytes - margin)) {
+      beyond += 1;
+      continue;
+    }
+    const actual = JSON.parse(JSON.stringify(hosted(sources, document, digests, bounded))) as JsonValue;
+    assert.equal(firstValueDisagreement(expected as JsonValue, actual, "result"), null, scenario.relativePath);
+    compared += 1;
+  }
+  assert.ok(compared > 0 && beyond > 0, "scenarios on both sides of the bound were found");
+  t.diagnostic(`${String(compared)} population scenarios compared under the host's bounds, ${String(beyond)} beyond them`);
 });

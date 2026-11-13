@@ -14,10 +14,16 @@
  * time is refused (`hostOwnsLogicalTime`) rather than overridden. Under external scheduling the caller's stimuli keep
  * the logical times they state, since a scenario's times are its explicit inputs.
  *
- * The Run continues as new once its history reaches the budget derived from the program's requirements: it stops
- * starting Activities, waits until none is in flight, no arrival is queued and every Update handler has finished,
- * and carries `{program, state, publication cursor}`. Durable timers do not cross Runs; the next Run re-arms them
- * from the carried state at their remaining logical delay.
+ * The Run continues as new once a rollover trigger fires (`capacity.ts`, `rolloverDue`: Event History against the budget
+ * derived from the program's requirements and the table's trigger, history bytes, accepted Updates, retained
+ * publication): it stops starting Activities, waits until none is in flight, no arrival is queued and every Update
+ * handler has finished, and carries `{program, state, publication cursor, run ordinal}`. Durable timers do not cross
+ * Runs; the next Run re-arms them from the carried state at their remaining logical delay. A chain needing a Run beyond
+ * the table's count, or a carried argument beyond its bound, halts instead.
+ *
+ * Every committed candidate is first judged against the chain's capacity bounds (`chain-candidate.ts`), so an overflow
+ * commits, publishes and starts nothing: a caller's Update is refused in its validator, a population delivery or start
+ * fails with the bound's code, and a host arrival halts the chain as an unsupported arrival does.
  *
  * Under a population scope the instance registers its open Message and Signal waits' addresses with the population
  * ingress whenever they change, one Activity at a time from the main loop, and clears them when it ends or halts. That
@@ -50,11 +56,29 @@ import {
   nextArrival,
   planHost,
   timerDelayMs,
-  type Applied,
   type Arrival,
 } from "./host-machine.js";
 import { canonicalJson } from "./canonical-json.js";
-import type { PopulationActivities, PopulationCarry, PopulationScope, UnsettledEmit } from "./population-contract.js";
+import {
+  CapacityBound,
+  canonicalBytes,
+  capacityCode,
+  chainCapacity,
+  eventBudget,
+  failureProjection,
+  rolloverDue as runRolloverDue,
+  successorRun,
+  textPage,
+  updateFence,
+} from "./capacity.js";
+import { continuationBytes, judgeCommitted, type ChainFrame, type Judged } from "./chain-candidate.js";
+import type {
+  PopulationActivities,
+  PopulationCarry,
+  PopulationDelivery,
+  PopulationScope,
+  UnsettledEmit,
+} from "./population-contract.js";
 import {
   Route,
   type DecodedStimulus,
@@ -95,7 +119,7 @@ import {
   type ProcessResult,
   type RunProcessArgs,
 } from "./protocol.js";
-import { appendJournal, initialCursor, openLog, readPage } from "./publication.js";
+import { initialCursor, openLog, readPage } from "./publication.js";
 
 /** The kernel's status name for an instance that has not ended (`Kernel.Publish.statusName`). */
 const running = "running";
@@ -125,7 +149,7 @@ function hostScheduled(route: Route, scheduling: Scheduling): boolean {
   return assertNever(route);
 }
 
-function commandResult(applied: Applied<unknown>, revision: number): CommandResult {
+function commandResult(applied: Judged<unknown>, revision: number): CommandResult {
   return applied.committed
     ? { outcome: "committed", code: null, revision }
     : { outcome: applied.outcome, code: applied.code, revision };
@@ -149,7 +173,11 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   const program = port.decodeProgram(args.program);
   const refusal = port.admit(program);
   if (refusal !== null) return { kind: ResultKind.Refused, code: refusal };
-  const budget = historyBudget(port.requirements(program), config.historyEventBudget);
+  const budget = eventBudget(historyBudget(port.requirements(program)), config.historyEventBudget);
+  const frame: ChainFrame<P, S, I> = {
+    port, program, programBytes: canonicalBytes(args.program), config, population: args.population,
+    run: args.kind === RunKind.Continue ? args.run : 1,
+  };
   const durable = config.scheduling === Scheduling.Durable;
   /** The stimulus as the kernel receives it, `null` when it states a time the host owns. */
   const timed = (stimulus: JsonValue): JsonValue | null => durable ? clockStimulus(stimulus, Date.now()) : stimulus;
@@ -182,13 +210,13 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     if (emits.some((emit) => !emit.accepted)) await condition(() => emits.every((emit) => emit.accepted));
   };
 
-  setHandler(observationQuery, () =>
-    instance === null ? null : port.observation(program, instance.state));
-  setHandler(stateQuery, () => instance === null ? null : port.encodeState(instance.state));
-  setHandler(hostViewQuery, () => ({
+  setHandler(observationQuery, (from) =>
+    textPage(instance === null ? null : port.observation(program, instance.state), from));
+  setHandler(stateQuery, (from) => textPage(instance === null ? null : port.encodeState(instance.state), from));
+  setHandler(hostViewQuery, (from) => textPage({
     revision: log.cursor.revision, view: instance === null ? null : snapshotView(instance.view), halt,
     registering: populationOwed(),
-  }));
+  }, from));
   setHandler(populationSignalQuery, (question) => instance === null || halt !== null
     ? { instanceId: null, receivers: [], refusesVariables: false }
     : {
@@ -198,74 +226,120 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
       });
   setHandler(populationMessageQuery, (publication) => instance === null || halt !== null ? { kind: "receivers", receivers: [] } as const
     : populationPort.messageReceivers(program, instance.state, publication));
-  setHandler(pendingIntentsQuery, (commandId) => emits.find((emit) => emit.commandId === commandId)?.held ?? null);
-  setHandler(populationStartOutcomeQuery, () => startOutcome);
-  setHandler(emitSettledUpdate, (commandId) => {
+  setHandler(pendingIntentsQuery, (commandId, from) =>
+    textPage(emits.find((emit) => emit.commandId === commandId)?.held ?? null, from));
+  setHandler(populationStartOutcomeQuery, (from) => textPage(startOutcome, from));
+  /** Every Update this Run accepted, which the table bounds per Run, and the caller inputs running now. */
+  let accepted = 0;
+  let inFlight = 0;
+  const counted = <A extends unknown[], R>(handler: (...args: A) => Promise<R> | R) => async (...given: A): Promise<R> => {
+    accepted += 1;
+    return handler(...given);
+  };
+  setHandler(emitSettledUpdate, counted((commandId: string) => {
     emits = emits.filter((emit) => emit.commandId !== commandId);
-  });
+  }));
   setHandler(publicationQuery, (afterRevision, limit) => readPage(log, afterRevision, limit));
-  setHandler(settleUpdate, async () => {
+  setHandler(settleUpdate, counted(async () => {
     await settled();
     await emitted();
     return log.cursor.revision;
-  });
+  }));
 
-  const commitState = (commandId: string, state: S): HostView => {
-    const view = port.hostView(program, state);
-    instance = { state, view };
-    log = appendJournal(log, commandId, view.journal);
+  /** What the chain carries beside its state once a candidate with `view` commits, with its ledger and emit entries. */
+  const carryOf = (view: HostView, delivery: readonly [string, ReachOutcome] | null, emit: UnsettledEmit | null): PopulationCarry => ({
+    registeredAddresses: scope === null || view.status !== running ? [] : (view.addresses ?? []) as unknown as JsonValue,
+    deliveries: delivery === null ? deliveries : [...deliveries, delivery].slice(-deliveryLedgerCapacity),
+    emits: emit === null ? emits : [...emits, emit],
+    startOutcome,
+  });
+  /** The emit a committed non-population input leaves, `null` when it threw no Signal or the chain has no population. */
+  const emitOf = (commandId: string, state: S): UnsettledEmit | null => {
+    const intents = populationPort.intentsOf(program, state);
+    return scope === null || intents.length === 0 ? null
+      : { commandId, held: { instanceId: populationPort.instanceIdOf(state), intents }, accepted: false };
+  };
+  /** One input through the kernel, judged against the chain's bounds; nothing is committed. */
+  const judge = (commandId: string, input: I): Judged<S> => {
+    const applied = applyInput(port, program, instance?.state ?? null, input);
+    if (!applied.committed) return { ...applied, capacity: false };
+    const emit = emitOf(commandId, applied.state);
+    return judgeCommitted(frame, log, commandId, applied.state, (view) => carryOf(view, null, emit));
+  };
+  const commitJudged = (judged: Extract<Judged<S>, { committed: true }>): void => {
+    instance = { state: judged.state, view: judged.view };
+    log = judged.log;
     commits += 1;
-    return view;
   };
   /**
    * One input through the kernel. The Signals a committed input throws go to the population ingress (`emit`); a
    * population input's go back to the fan-out that made it, in its answer, and are never emitted.
    */
-  const commit = (commandId: string, input: I): Applied<S> => {
-    const applied = applyInput(port, program, instance?.state ?? null, input);
-    if (applied.committed) {
-      commitState(commandId, applied.state);
-      const intents = populationPort.intentsOf(program, applied.state);
-      if (scope !== null && intents.length > 0) {
-        emits = [...emits, { commandId, held: { instanceId: populationPort.instanceIdOf(applied.state), intents }, accepted: false }];
-      }
+  const commit = (commandId: string, input: I): Judged<S> => {
+    const judged = judge(commandId, input);
+    if (judged.committed) {
+      commitJudged(judged);
+      const emit = emitOf(commandId, judged.state);
+      if (emit !== null) emits = [...emits, emit];
     }
-    return applied;
+    return judged;
   };
-  /** A population step's committed state, its intents returned to the fan-out. */
-  const reached = (commandId: string, step: ReturnType<PopulationPort<P, S, M>["populationStart"]>): ReachOutcome => {
+  /**
+   * A population step's committed state, its intents returned to the fan-out; a candidate over a bound fails with the
+   * bound's code and commits nothing. `entry` makes the outcome the delivery ledger's entry under that identifier.
+   */
+  const reached = (commandId: string, step: ReturnType<PopulationPort<P, S, M>["populationStart"]>, entry: string | null): ReachOutcome => {
     if (step.kind !== "committed") return step;
-    commitState(commandId, step.state);
-    return { kind: "committed", instanceId: populationPort.instanceIdOf(step.state), intents: populationPort.intentsOf(program, step.state) };
+    const intents = populationPort.intentsOf(program, step.state);
+    const outcome: ReachOutcome = { kind: "committed", instanceId: populationPort.instanceIdOf(step.state), intents };
+    const judged = judgeCommitted(frame, log, commandId, step.state,
+      (view) => carryOf(view, entry === null ? null : [entry, outcome], null));
+    if (!judged.committed) return { kind: "failed", failure: populationPort.capacityFailure(judged.code) };
+    commitJudged(judged);
+    return outcome;
   };
-  setHandler(populationDeliverUpdate, async ({ deliveryId, delivery }) => {
+  /** A stimulus the population derived, refused whole when it exceeds the bound a caller's input has. */
+  const derivedRefusal = (bound: CapacityBound, stimulus: JsonValue, limit: number): ReachOutcome | null =>
+    canonicalBytes(stimulus) > limit ? { kind: "failed", failure: populationPort.capacityFailure(capacityCode(bound)) } : null;
+  setHandler(populationDeliverUpdate, counted(async ({ deliveryId, delivery }: PopulationDelivery) => {
     const known = deliveries.find(([held]) => held === deliveryId)?.[1];
     if (known !== undefined) return known;
-    if (instance === null || halt !== null) return { kind: "skipped" };
-    const step = populationPort.populationReach(program, instance.state, delivery, Date.now());
-    const outcome = step.kind === "skipped" ? step : reached(deliveryId, step);
+    if (instance === null || halt !== null) return { kind: "skipped" } as const;
+    const outcome = derivedRefusal(CapacityBound.Stimulus, delivery, chainCapacity.stimulusBytes) ?? (() => {
+      const step = populationPort.populationReach(program, instance.state, delivery, Date.now());
+      return step.kind === "skipped" ? step : reached(deliveryId, step, deliveryId);
+    })();
     deliveries = [...deliveries, [deliveryId, outcome] as const].slice(-deliveryLedgerCapacity);
     await settled();
     return outcome;
-  });
-  setHandler(populationStartedUpdate, async () => {
+  }));
+  setHandler(populationStartedUpdate, counted(async () => {
     // A directly started chain holds the identity: it never gets a start outcome, so the start is refused, not waited on.
     if (startOutcome === null && args.kind !== RunKind.PopulationStart) return { kind: "identityInUse" } as const;
     await condition(() => startOutcome !== null);
     await settled();
     if (startOutcome === null) throw new TypeError("population start without an outcome");
     return startOutcome;
-  });
+  }));
+
+  /** The program's and the start stimulus's own bounds, measured again at their Workflow consumer. */
+  const startRefusal = (start: JsonValue): CapacityBound | null =>
+    frame.programBytes > chainCapacity.programBytes ? CapacityBound.Program
+      : canonicalBytes(start) > chainCapacity.startBytes ? CapacityBound.Start : null;
 
   if (args.kind === RunKind.PopulationStart) {
-    startOutcome = reached(`population:${workflowInfo().workflowId}`,
-      populationPort.populationStart(program, args.request, Date.now()));
+    const refused = startRefusal(args.request);
+    startOutcome = refused !== null
+      ? { kind: "failed", failure: populationPort.capacityFailure(capacityCode(refused)) }
+      : reached(`population:${workflowInfo().workflowId}`, populationPort.populationStart(program, args.request, Date.now()), null);
     if (startOutcome.kind !== "committed") {
       await condition(allHandlersFinished);
       const code = startOutcome.kind === "failed" ? populationPort.failureCode(startOutcome.failure) : conditionNotHeldCode;
       return { kind: ResultKind.NotStarted, outcome: startOutcome.kind, code };
     }
   } else if (args.kind === RunKind.Start) {
+    const refused = startRefusal(args.start);
+    if (refused !== null) return { kind: ResultKind.NotStarted, outcome: "rejected", code: capacityCode(refused) };
     const start = timed(args.start);
     if (start === null) return { kind: ResultKind.NotStarted, outcome: "rejected", code: hostOwnsLogicalTime };
     const decoded = port.decodeStimulus(start);
@@ -273,7 +347,9 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
       throw ApplicationFailure.create({ message: "the start argument is not a start stimulus", nonRetryable: true });
     }
     const started = commit(decoded.commandId, decoded.input);
-    if (!started.committed) return { kind: ResultKind.NotStarted, outcome: started.outcome, code: started.code };
+    if (!started.committed) {
+      return { kind: ResultKind.NotStarted, outcome: started.capacity ? "rejected" : started.outcome, code: started.code };
+    }
   } else {
     const state = port.decodeState(args.state);
     instance = { state, view: port.hostView(program, state) };
@@ -283,6 +359,7 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   const admitted = (route: Route, stimulus: JsonValue): DecodedStimulus<I> => {
     if (halt !== null) throw rejection("host-halted");
     if (hostScheduled(route, config.scheduling)) throw rejection("host-scheduled-input");
+    if (canonicalBytes(stimulus) > chainCapacity.stimulusBytes) throw rejection(capacityCode(CapacityBound.Stimulus));
     const clocked = timed(stimulus);
     if (clocked === null) throw rejection(hostOwnsLogicalTime);
     let decoded: DecodedStimulus<I>;
@@ -302,16 +379,24 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     [effectResultUpdate, Route.EffectResult],
   ] as const;
   for (const [update, route] of updates) {
-    setHandler(update, async (stimulus) => {
-      const { commandId, input } = admitted(route, stimulus);
-      const result = commandResult(commit(commandId, input), log.cursor.revision);
-      await settled();
-      await emitted();
-      return result;
-    }, {
+    setHandler(update, counted(async (stimulus: JsonValue) => {
+      inFlight += 1;
+      try {
+        const { commandId, input } = admitted(route, stimulus);
+        const result = commandResult(commit(commandId, input), log.cursor.revision);
+        await settled();
+        await emitted();
+        return result;
+      } finally {
+        inFlight -= 1;
+      }
+    }), {
       validator: (stimulus) => {
-        const verdict = port.step(program, instance?.state ?? null, admitted(route, stimulus).input);
-        if (!verdict.committed && verdict.rejected) throw rejection(verdict.code);
+        const fenced = updateFence(accepted, inFlight);
+        if (fenced !== null) throw rejection(capacityCode(fenced));
+        const { commandId, input } = admitted(route, stimulus);
+        const verdict = judge(commandId, input);
+        if (!verdict.committed && (verdict.rejected || verdict.capacity)) throw rejection(verdict.code);
       },
     });
   }
@@ -371,7 +456,7 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
         if (owned.get(key) !== scope || isCancellation(error)) return;
         // Only a non-retryable Activity failure gets here (a host refusal, such as a Script language admission
         // should have refused): no input exists for it, so the schedule halts.
-        halt ??= { commandId: `host:${key}`, outcome: "hostFailure", code: error instanceof Error ? error.message : String(error) };
+        halt ??= { commandId: `host:${key}`, outcome: "hostFailure", code: failureProjection(error instanceof Error ? error.message : String(error)) };
       },
     );
   };
@@ -408,8 +493,26 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
 
   // A Run rolls over only after committing an input, so a budget below a fresh Run's own history cannot chain Runs
   // that make no progress.
-  const rolloverDue = (): boolean =>
-    commits > 0 && (workflowInfo().historyLength >= budget || workflowInfo().continueAsNewSuggested);
+  const rolloverDue = (): boolean => commits > 0 && runRolloverDue({
+    historyEvents: workflowInfo().historyLength,
+    historyBytes: workflowInfo().historySize,
+    continueAsNewSuggested: workflowInfo().continueAsNewSuggested,
+    updates: accepted,
+    retainedPublicationBytes: log.retainedBytes,
+  }, budget);
+  /** The successor's argument, or the halt of a chain that needs a Run or a carried argument beyond its bound. */
+  const successor = (current: { readonly state: S }): RunProcessArgs | Halt => {
+    const run = successorRun(frame.run);
+    if (run === null) return { commandId: "host:continue", outcome: "unsupported", code: capacityCode(CapacityBound.Runs) };
+    const carry: PopulationCarry = {
+      registeredAddresses: JSON.parse(populationRegistered ?? "[]") as JsonValue, deliveries, emits, startOutcome,
+    };
+    const state = port.encodeState(current.state);
+    if (continuationBytes(frame, canonicalBytes(state), log.cursor, carry) > chainCapacity.continuationBytes) {
+      return { commandId: "host:continue", outcome: "unsupported", code: capacityCode(CapacityBound.Continuation) };
+    }
+    return { kind: RunKind.Continue, program: args.program, config, population: scope, state, cursor: log.cursor, carry, run };
+  };
   let reconciled = -1;
   for (;;) {
     if (ended() || halt !== null) break;
@@ -423,15 +526,10 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     if (draining && effects.size === 0 && arrivals.length === 0) {
       await condition(allHandlersFinished);
       if (arrivals.length === 0 && halt === null && instance !== null && !ended()) {
-        return continueAsNew<(next: RunProcessArgs) => Promise<ProcessResult>>({
-          kind: RunKind.Continue,
-          program: args.program,
-          config,
-          population: scope,
-          state: port.encodeState(instance.state),
-          cursor: log.cursor,
-          carry: { registeredAddresses: JSON.parse(populationRegistered ?? "[]") as JsonValue, deliveries, emits, startOutcome },
-        });
+        const next = successor(instance);
+        if ("kind" in next) return continueAsNew<(next: RunProcessArgs) => Promise<ProcessResult>>(next);
+        halt = next;
+        continue;
       }
     }
     await condition(() => arrivals.length > 0 || commits !== reconciled || halt !== null ||
@@ -441,6 +539,10 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
       if (arrival === undefined) break;
       ownerOf(arrival).delete(arrival.key);
       const commandId = arrivalCommandId(arrival);
+      if (arrival.kind === ArrivalKind.Effect && canonicalBytes(arrival.result) > chainCapacity.effectResultBytes) {
+        halt = { commandId, outcome: "unsupported", code: capacityCode(CapacityBound.EffectResult) };
+        break;
+      }
       const applied = commit(commandId, arrivalInput(port, arrival, Date.now()));
       if (!applied.committed && !applied.rejected) halt = { commandId, outcome: applied.outcome, code: applied.code };
     }

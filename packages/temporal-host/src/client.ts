@@ -14,6 +14,7 @@ import {
   type WorkflowHandle,
 } from "@temporalio/client";
 
+import { readPages } from "./capacity.js";
 import type { PublicationPage } from "./publication.js";
 import type { JsonValue } from "./port.js";
 import type { ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";
@@ -113,7 +114,7 @@ export class ProcessClient implements ProcessHost {
       }
       throw error;
     }
-    const snapshot = await handle.query(hostViewQuery);
+    const snapshot = await this.hostView(request.workflowId);
     if (snapshot.view !== null && !snapshot.registering) return { outcome: "committed", code: null, revision: snapshot.revision };
     if (snapshot.view !== null) return { outcome: "committed", code: null, revision: await handle.executeUpdate(settleUpdate) };
     const result = await handle.result();
@@ -145,17 +146,20 @@ export class ProcessClient implements ProcessHost {
     return this.submit(workflowId, effectResultUpdate, stimulus);
   }
 
-  observation(workflowId: string): Promise<JsonValue> {
-    return this.handle(workflowId).query(observationQuery);
+  async observation(workflowId: string): Promise<JsonValue> {
+    const handle = this.handle(workflowId);
+    return await readPages((from) => handle.query(observationQuery, from)) as JsonValue;
   }
 
   /** The chain's encoded kernel state (`stateQuery`); a closed Workflow still answers it. */
-  state(workflowId: string): Promise<JsonValue> {
-    return this.handle(workflowId).query(stateQuery);
+  async state(workflowId: string): Promise<JsonValue> {
+    const handle = this.handle(workflowId);
+    return await readPages((from) => handle.query(stateQuery, from)) as JsonValue;
   }
 
-  hostView(workflowId: string): Promise<HostSnapshot> {
-    return this.handle(workflowId).query(hostViewQuery);
+  async hostView(workflowId: string): Promise<HostSnapshot> {
+    const handle = this.handle(workflowId);
+    return await readPages((from) => handle.query(hostViewQuery, from)) as HostSnapshot;
   }
 
   publication(workflowId: string, afterRevision: number, limit = 100): Promise<PublicationPage> {

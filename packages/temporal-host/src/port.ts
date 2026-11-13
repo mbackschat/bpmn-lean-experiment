@@ -279,6 +279,8 @@ export interface PopulationPort<P, S, M> {
   readonly decodeCommand: (kind: string, json: JsonValue) => { readonly view: CommandView; readonly command: Wire };
   // The ingress, over deployment summaries.
   readonly deploymentSummary: (program: P) => Wire;
+  /** The canonical bytes of the program's longest element identifier, which bounds any element or start event it names. */
+  readonly identifierBytes: (program: P) => number;
   /** The registered summary and its versions, or the kernel's refusal (`deployment.messageStartName`). */
   readonly registerSummary: (registry: readonly Wire[], deploymentId: number, candidate: Wire, atMs: number) =>
     { readonly summary: Wire; readonly key: string; readonly versions: readonly (readonly [string, number])[] } | { readonly refused: string };
@@ -317,6 +319,13 @@ export interface PopulationPort<P, S, M> {
   /** A machine's wire form, flat whatever its length, which `machineOf` inverts. */
   readonly machineWire: (machine: M) => Wire;
   readonly machineOf: (wire: Wire) => M;
+  /** The machine with no receiver left to spend, so its next step stops at its next receiver as at its bound. */
+  readonly fanOutSpent: (machine: M) => M;
+  /**
+   * The canonical bytes of the largest stop entry (`failed`, `unsupported`, `host.population.fanOutCapacity`) a receiver
+   * renders to whose instance identifier and element or start event identifier take at most these canonical bytes.
+   */
+  readonly stopEntryBytes: (instanceIdBytes: number, identifierBytes: number) => number;
   readonly startReceiver: (deploymentId: number, startEvent: string) => Wire;
   readonly occurrenceReceiver: (target: Wire) => Wire;
   /** An occurrence receiver's target; `TypeError` for a start. */
@@ -348,6 +357,8 @@ export interface PopulationPort<P, S, M> {
   readonly populationStart: (program: P, request: Wire, atMs: number) => PopulationStartStep<S>;
   /** A host refusal as a kernel failure: a delivery to a chain that no longer exists, a start refused by the host. */
   readonly hostRefusal: (code: string) => Wire;
+  /** A host capacity's refusal (`host.capacity.*`) as a kernel failure: `unsupported`, as the fan-out records its own bound. */
+  readonly capacityFailure: (code: string) => Wire;
   readonly intentsOf: (program: P, state: S) => readonly Wire[];
   readonly instanceIdOf: (state: S) => string;
   readonly failureCode: (failure: Wire) => string;

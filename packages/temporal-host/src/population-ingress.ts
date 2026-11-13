@@ -10,7 +10,10 @@
  *
  * When its history suggests Continue-As-New the ingress releases every waiting command handler with `pending` (the
  * caller reads the answer from `populationResult`), waits for the handlers to finish and carries its state, the item in
- * flight included: it may continue between two receivers of one fan-out.
+ * flight included: it may continue between two receivers of one fan-out. Its argument stays within the continuation
+ * bound: a deployment, registration, command or Timer start that would carry it past is refused with
+ * `host.capacity.continuation`, the ledger yields its oldest answers first, and an item in flight beyond the bound
+ * defers the rollover until it settles.
  *
  * The deployment Workflow holds one registered deployment's program, never steps, and answers Queries over it.
  */
@@ -36,7 +39,7 @@ import type {
 import {
   advance,
   answer,
-  carriedState,
+  commandRefusal,
   configurationConflict,
   deploymentOf,
   emptyIngress,
@@ -44,15 +47,22 @@ import {
   enqueueEmit,
   populationCapacity,
   populationResult,
-  queueFullCode,
   register,
   registerDeployment,
   registeredDeploymentIds,
-  releaseHandlers,
-  resumedState,
   takeAnswer,
   type Action,
+  type Queued,
 } from "./population.js";
+import {
+  IngressCapacityExceeded,
+  carriedState,
+  fittedIngress,
+  ingressContinuationCode,
+  releaseHandlers,
+  resumedState,
+} from "./population-carry.js";
+import { CapacityBound, canonicalBytes, capacityCode, chainCapacity } from "./capacity.js";
 import type { JsonValue, KernelPort, PopulationPort } from "./port.js";
 import {
   deploymentConditionalStartsQuery,
@@ -116,6 +126,10 @@ export function createRunPopulationIngress<P, S, I, M>(
 
 async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: PopulationPort<P, S, M>, args: PopulationIngressArgs): Promise<void> {
   let state: IngressState<M> = args.carried === null ? emptyIngress : resumedState(port, args.carried);
+  const frame = {
+    population: args.population, config: args.config, rolloverEvents: args.rolloverEvents,
+    continuationBytes: chainCapacity.continuationBytes, queryBytes: chainCapacity.queryBytes,
+  };
   let rolling = false;
   /** Serializes registrations: each takes its ordinal and starts its Workflow before the next is considered. */
   let registering: Promise<unknown> = Promise.resolve();
@@ -129,17 +143,18 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
     const turn = registering.then(async (): Promise<DeploymentAnswer> => {
       const program = kernel.decodeProgram(request.program);
       const refusal = kernel.admit(program);
-      const candidate = refusal === null ? { summary: port.deploymentSummary(program) } : { refused: refusal };
+      const candidate = refusal === null
+        ? { summary: port.deploymentSummary(program), identifierBytes: port.identifierBytes(program) } : { refused: refusal };
       // One instant for both evaluations: Workflow time advances across the Activity's await, and the answer's
       // `deployedAtMs` must be the one the registry records and `deployment` reports.
       const atMs = Date.now();
-      const [next, deployed] = registerDeployment(port, state, request.deploymentRequestId, request.digest, candidate, atMs);
+      const [next, deployed] = registerDeployment(port, frame, state, request.deploymentRequestId, request.digest, candidate, atMs);
       if (next === state) return deployed;
       if ("deploymentId" in deployed) {
         await activities.startDeployment({ population: args.population, deploymentId: deployed.deploymentId, program: request.program });
       }
       // Only registrations change the deployment ordinal, and they are serialized here, so the ordinal is still free.
-      const [registered] = registerDeployment(port, state, request.deploymentRequestId, request.digest, candidate, atMs);
+      const [registered] = registerDeployment(port, frame, state, request.deploymentRequestId, request.digest, candidate, atMs);
       state = registered;
       return deployed;
     });
@@ -149,6 +164,7 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
     validator: (request) => {
       const conflict = configurationConflict(args.config, request.config);
       if (conflict !== null) throw rejection(conflict);
+      if (canonicalBytes(request.program) > chainCapacity.programBytes) throw rejection(capacityCode(CapacityBound.Program));
       try {
         kernel.decodeProgram(request.program);
       } catch (error) {
@@ -158,7 +174,7 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
   });
 
   setHandler(populationRegisterUpdate, (registration) => {
-    const [next, refused] = register(state, registration);
+    const [next, refused] = register(frame, state, registration);
     state = next;
     return refused;
   });
@@ -168,9 +184,10 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
   });
 
   setHandler(populationCommandUpdate, async (request) => {
-    const [next, ticket] = enqueueCommand(state, request.commandId, request.kind, request.command, request.digest);
-    if (ticket === null) throw rejection(queueFullCode);
-    state = next;
+    const enqueued = enqueueCommand(frame, state, request.commandId, request.kind, request.command, request.digest);
+    if ("refused" in enqueued) throw rejection(enqueued.refused);
+    const { ticket } = enqueued;
+    state = enqueued.state;
     await condition(() => rolling || state.answers.some(([held]) => held === ticket));
     const taken = takeAnswer(state, ticket);
     if (taken === null) return { kind: "pending" };
@@ -185,7 +202,8 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
       } catch (error) {
         throw rejection(`malformed-command: ${error instanceof Error ? error.message : String(error)}`);
       }
-      if (state.queue.filter((item) => item.kind === "command").length >= populationCapacity.queue) throw rejection(queueFullCode);
+      const refused = commandRefusal(state, request.command);
+      if (refused !== null) throw rejection(refused);
     },
   });
 
@@ -193,22 +211,44 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
   let acted = false;
   const rolloverDue = (): boolean => workflowInfo().continueAsNewSuggested ||
     (acted && args.rolloverEvents !== null && workflowInfo().historyLength >= args.rolloverEvents);
+  /** The item in flight the ingress could not carry, measured once: its fan-out only grows until it settles. */
+  let unfit: Queued | null = null;
+  const carriable = (): boolean => {
+    if (state.current === null) return true;
+    if (state.current.item === unfit) return false;
+    if (fittedIngress(port, frame, state) !== null) return true;
+    unfit = state.current.item;
+    return false;
+  };
+  /** A driver step, whose settled item the ingress could not carry even with an empty ledger, fails the ingress closed. */
+  const closed = <T>(step: () => T): T => {
+    try {
+      return step();
+    } catch (error) {
+      if (error instanceof IngressCapacityExceeded) throw ApplicationFailure.create({ message: ingressContinuationCode, nonRetryable: true });
+      throw error;
+    }
+  };
   for (;;) {
-    if (rolloverDue()) {
+    // An item in flight that the ingress could not carry holds the rollover until it settles; with none, nothing left
+    // could shrink the state, which admission should have made impossible, so the ingress fails closed.
+    if (rolloverDue() && carriable()) {
       rolling = true;
       await registering;
       await condition(allHandlersFinished);
+      const fitted = fittedIngress(port, frame, releaseHandlers(state));
+      if (fitted === null) throw ApplicationFailure.create({ message: ingressContinuationCode, nonRetryable: true });
       // The released handlers' commands answer through the ledger, which `populationResult` reads.
-      return continueAsNew<(next: PopulationIngressArgs) => Promise<void>>({ ...args, carried: carriedState(port, releaseHandlers(state)) });
+      return continueAsNew<(next: PopulationIngressArgs) => Promise<void>>({ ...args, carried: carriedState(port, fitted) });
     }
-    const [next, action] = advance(port, state, Date.now());
+    const [next, action] = closed(() => advance(port, frame, state, Date.now()));
     state = next;
     if (action === null) {
       await condition(() => state.queue.length > 0 || rolloverDue());
       continue;
     }
     const answered = await perform(args, action);
-    state = answer(port, state, answered, populationCapacity.receivers);
+    state = closed(() => answer(port, frame, state, answered, populationCapacity.receivers));
     acted = true;
   }
 }

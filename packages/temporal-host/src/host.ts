@@ -16,6 +16,7 @@ export {
   type RunProcessArgs,
 } from "./host-contract.js";
 export { canonicalJson } from "./canonical-json.js";
+export { CapacityBound, canonicalBytes, capacityCode, chainCapacity } from "./capacity.js";
 export {
   PopulationRefused,
   timerFiringWorkflowType,

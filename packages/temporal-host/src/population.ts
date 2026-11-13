@@ -14,7 +14,10 @@
 import { leastRefusal } from "@bpmn-lean/kernel";
 
 import { canonicalJson } from "./canonical-json.js";
+import { CapacityBound, canonicalBytes, capacityCode, chainCapacity } from "./capacity.js";
 import type { HostConfig } from "./host-contract.js";
+import { IngressCapacityExceeded, admittedAtRest, answerReserve, fittedAtRest, ingressContinuationCode, type IngressFrame } from "./population-carry.js";
+import { entryBytes, fanningOut, recorded, roomFor, spent, stoppable, type AnswerBytes } from "./population-answer.js";
 import type {
   CommandView, JsonValue, MessageScan, OccurrenceId, PopulationPort, WaitAddressView, ReachOutcome, ResolutionParts,
   SelectorView, Wire,
@@ -55,7 +58,12 @@ export interface RegistryEntry {
   readonly answer: DeploymentAnswer;
   readonly key: string | null;
   readonly summary: Wire | null;
+  /** The canonical bytes of its program's longest element identifier (`PopulationPort.identifierBytes`), 0 if refused. */
+  readonly identifierBytes: number;
 }
+
+/** A deployment to register: its summary and the bytes of its longest identifier, or the refusal of its admission. */
+export type DeploymentCandidate = { readonly summary: Wire; readonly identifierBytes: number } | { readonly refused: string };
 
 /** A registered deployment's ordinal, each key's version and its deploy time, the origin of its Timer starts. */
 export type DeploymentAnswer =
@@ -111,12 +119,12 @@ export interface ConsumedTimer {
 }
 
 /** How a finished fan-out answers: a delivery's cascade, a fan-out after its `prefix`, or an emitted hand-off. */
-type Finish =
+export type Finish =
   | { readonly kind: "committed"; readonly target: Wire; readonly chain: string }
   | { readonly kind: "fanOut"; readonly prefix: readonly Wire[] }
   | { readonly kind: "emit" };
 
-type Phase<M> =
+export type Phase<M> =
   | { readonly kind: "intents" }
   | { readonly kind: "settleEmit"; readonly entries: JsonValue }
   | { readonly kind: "messageScan" }
@@ -126,10 +134,13 @@ type Phase<M> =
   | { readonly kind: "conditionsScan"; readonly deployments: readonly number[] }
   | { readonly kind: "rootStart"; readonly deploymentId: number; readonly startEvent: string; readonly instanceId: string;
       readonly request: Wire; readonly consumes: ConsumedTimer | null }
-  | { readonly kind: "fanOut"; readonly machine: M; readonly budget: number; readonly finish: Finish };
+  | { readonly kind: "fanOut"; readonly machine: M; readonly budget: number; readonly finish: Finish; readonly answer: AnswerBytes;
+      /** Spent by its answer's bytes: its stop is the host's (`fanOutCapacityCode`) whatever `budget` is. */
+      readonly spent: boolean };
+
 
 /** The item being run: its command decoded, its ordinal, the receivers' chains learned so far and its reach count. */
-interface InFlight<M> {
+export interface InFlight<M> {
   readonly item: Queued;
   readonly ordinal: number;
   readonly atMs: number;
@@ -168,20 +179,6 @@ export interface IngressState<M> {
 export const emptyIngress: IngressState<never> = {
   ordinal: 0, deployments: 0, registry: [], registrations: [], ledger: [], queue: [], timers: [], tickets: 0, answers: [], current: null,
 };
-
-/** `state` with its in-flight fan-out machine in wire form, as the ingress carries it across Continue-As-New. */
-export function carriedState<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>): IngressState<Wire> {
-  return { ...state, current: state.current === null ? null : { ...state.current, phase: machinePhase(state.current.phase, port.machineWire) } };
-}
-
-/** A carried state with its in-flight fan-out machine as the binding's value again. */
-export function resumedState<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<Wire>): IngressState<M> {
-  return { ...state, current: state.current === null ? null : { ...state.current, phase: machinePhase(state.current.phase, port.machineOf) } };
-}
-
-function machinePhase<A, B>(phase: Phase<A>, convert: (machine: A) => B): Phase<B> {
-  return phase.kind === "fanOut" ? { ...phase, machine: convert(phase.machine) } : phase;
-}
 
 /** What the driver needs answered: a read from or an input to one chain, a scan, or a start. */
 export type Action =
@@ -231,7 +228,7 @@ function summaries<M>(state: IngressState<M>): Wire[] {
   return state.registry.flatMap((entry) => entry.summary === null ? [] : [entry.summary]);
 }
 
-function registered<M>(state: IngressState<M>, deploymentId: number): RegistryEntry | undefined {
+function registeredEntry<M>(state: IngressState<M>, deploymentId: number): RegistryEntry | undefined {
   return state.registry.find((entry) => entry.deploymentId === deploymentId && entry.summary !== null);
 }
 
@@ -242,49 +239,77 @@ function registered<M>(state: IngressState<M>, deploymentId: number): RegistryEn
  * as before. A registered deployment supersedes its key's earlier deployments, so their consumed Timer start
  * occurrences can never decide a verdict again and leave the ledger.
  */
-export function registerDeployment<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>, deploymentRequestId: string,
-  digest: string, candidate: { readonly summary: Wire } | { readonly refused: string }, atMs: number): readonly [IngressState<M>, DeploymentAnswer] {
+export function registerDeployment<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, state: IngressState<M>,
+  deploymentRequestId: string, digest: string, candidate: DeploymentCandidate,
+  atMs: number): readonly [IngressState<M>, DeploymentAnswer] {
   const known = state.registry.find((entry) => entry.deploymentRequestId === deploymentRequestId);
   if (known !== undefined) return [state, known.digest === digest ? known.answer : { refused: deploymentRequestConflictCode }];
   if (state.registry.length >= populationCapacity.deployments) return [state, { refused: deploymentCapacityCode }];
+  const [next, answer] = withDeployment(port, state, deploymentRequestId, digest, candidate, atMs);
+  const fitted = admittedAtRest(frame, next);
+  return fitted === null ? [state, { refused: ingressContinuationCode }] : [fitted, answer];
+}
+
+function withDeployment<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>, deploymentRequestId: string, digest: string,
+  candidate: DeploymentCandidate, atMs: number): readonly [IngressState<M>, DeploymentAnswer] {
   const deploymentId = state.deployments + 1;
   const outcome = "refused" in candidate ? candidate : port.registerSummary(summaries(state), deploymentId, candidate.summary, atMs);
   const base = { deploymentRequestId, digest, deploymentId };
   if ("refused" in outcome) {
     const answer = { refused: outcome.refused };
-    return [{ ...state, deployments: deploymentId, registry: [...state.registry, { ...base, answer, key: null, summary: null }] }, answer];
+    return [{ ...state, deployments: deploymentId, registry: [...state.registry, { ...base, answer, key: null, summary: null, identifierBytes: 0 }] }, answer];
   }
   const answer = { deploymentId, versions: outcome.versions, deployedAtMs: atMs };
   const superseded = new Set(state.registry.filter((entry) => entry.key === outcome.key).map((entry) => entry.deploymentId));
   return [{
     ...state,
     deployments: deploymentId,
-    registry: [...state.registry, { ...base, answer, key: outcome.key, summary: outcome.summary }],
+    registry: [...state.registry, { ...base, answer, key: outcome.key, summary: outcome.summary, identifierBytes: "refused" in candidate ? 0 : candidate.identifierBytes }],
     timers: state.timers.filter((timer) => !superseded.has(timer.deploymentId)),
   }, answer];
 }
 
 /**
  * `state` with a chain's registration: a later or equal revision replaces the chain's, no addresses removes it, and a
- * chain beyond the capacity is refused with `registrationCapacity`.
+ * chain beyond the capacity is refused with `registrationCapacity`, one the ingress could no longer carry with
+ * `host.capacity.continuation`.
  */
-export function register<M>(state: IngressState<M>, registration: ChainRegistration): readonly [IngressState<M>, string | null] {
+export function register<M>(frame: IngressFrame, state: IngressState<M>, registration: ChainRegistration): readonly [IngressState<M>, string | null] {
   const held = state.registrations.find((entry) => entry.workflowId === registration.workflowId);
   if (held !== undefined && held.revision > registration.revision) return [state, null];
   const others = state.registrations.filter((entry) => entry.workflowId !== registration.workflowId);
   if (registration.addresses.length === 0) return [{ ...state, registrations: others }, null];
   if (held === undefined && others.length >= populationCapacity.registrations) return [state, registrationCapacityCode];
-  return [{ ...state, registrations: [...others, registration] }, null];
+  const next = { ...state, registrations: [...others, registration] };
+  // A chain re-registers at every commit; one that does not grow cannot take the ingress past the bound.
+  if (held !== undefined && canonicalBytes(registration) <= canonicalBytes(held)) return [next, null];
+  const fitted = admittedAtRest(frame, next);
+  return fitted === null ? [state, ingressContinuationCode] : [fitted, null];
 }
 
 // Queue and ledger.
 
-/** Accept a command for the queue, or refuse it before acceptance when the queue is full. */
-export function enqueueCommand<M>(state: IngressState<M>, commandId: string, commandKind: string, command: JsonValue, digest: string):
-  readonly [IngressState<M>, number | null] {
-  if (state.queue.filter((item) => item.kind === "command").length >= populationCapacity.queue) return [state, null];
+/** An accepted command's state and the ticket its answer is kept under, or the code it was refused with. */
+export type Enqueued<M> = { readonly state: IngressState<M>; readonly ticket: number } | { readonly refused: string };
+
+/**
+ * Accept a command for the queue, or refuse it before acceptance: a command beyond the stimulus bound, a full queue,
+ * or one the ingress could no longer carry across Continue-As-New.
+ */
+export function enqueueCommand<M>(frame: IngressFrame, state: IngressState<M>, commandId: string, commandKind: string, command: JsonValue, digest: string): Enqueued<M> {
+  const refusal = commandRefusal(state, command);
+  if (refusal !== null) return { refused: refusal };
   const ticket = state.tickets + 1;
-  return [{ ...state, tickets: ticket, queue: [...state.queue, { kind: "command", ticket, commandId, commandKind, command, digest }] }, ticket];
+  const fitted = admittedAtRest(frame,
+    { ...state, tickets: ticket, queue: [...state.queue, { kind: "command", ticket, commandId, commandKind, command, digest }] });
+  return fitted === null ? { refused: ingressContinuationCode } : { state: fitted, ticket };
+}
+
+/** The refusal a command meets before the ingress measures what it would carry: its own size, or a full queue. */
+export function commandRefusal<M>(state: IngressState<M>, command: JsonValue): string | null {
+  if (canonicalBytes(command) > chainCapacity.stimulusBytes) return capacityCode(CapacityBound.Stimulus);
+  if (state.queue.filter((item) => item.kind === "command").length >= populationCapacity.queue) return queueFullCode;
+  return null;
 }
 
 /** Accept an emit; one already queued, in flight or settled is accepted again without a second hand-off. */
@@ -298,20 +323,6 @@ export function enqueueEmit<M>(state: IngressState<M>, reference: EmitReference)
   }
   const ticket = state.tickets + 1;
   return { ...state, tickets: ticket, queue: [...state.queue, { kind: "emit", ticket: null, reference }] };
-}
-
-/**
- * `state` once no Update waits for its items any more, when the ingress continues as new: their answers stay readable
- * in the ledger only.
- */
-export function releaseHandlers<M>(state: IngressState<M>): IngressState<M> {
-  const released = (item: Queued): Queued => item.kind === "command" ? { ...item, ticket: null } : item;
-  return {
-    ...state,
-    answers: [],
-    queue: state.queue.map(released),
-    current: state.current === null ? null : { ...state.current, item: released(state.current.item) },
-  };
 }
 
 /** The answer a registered or refused deployment request received, `null` for a request never registered. */
@@ -397,13 +408,13 @@ function rejected<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>
 function scope<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>, selector: SelectorView | null): readonly number[] | null {
   const current = port.currentDeployments(summaries(state));
   if (selector === null) return current;
-  if ("deploymentId" in selector) return registered(state, selector.deploymentId) === undefined ? null : [selector.deploymentId];
-  const named = current.filter((deploymentId) => registered(state, deploymentId)?.key === selector.processKey);
+  if ("deploymentId" in selector) return registeredEntry(state, selector.deploymentId) === undefined ? null : [selector.deploymentId];
+  const named = current.filter((deploymentId) => registeredEntry(state, deploymentId)?.key === selector.processKey);
   return named.length === 0 ? null : named;
 }
 
 /** Take the next queued item at `atMs`: a command takes the next ordinal, and a repeated one answers from the ledger. */
-function take<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>, atMs: number): IngressState<M> {
+function take<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, state: IngressState<M>, atMs: number): IngressState<M> {
   const [item, ...queue] = state.queue;
   if (item === undefined) return state;
   const base = { ...state, queue };
@@ -440,11 +451,15 @@ function take<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>, at
       const refusal = port.timerStartCheck(summaries(state), view.deploymentId, view.startEvent, view.dueMs, atMs, consumed);
       if (refusal !== null) return rejected(port, started, refusal);
       if (state.timers.length >= populationCapacity.timerOccurrences) return rejected(port, started, timerLedgerCapacityCode);
+      const consumes = { deploymentId: view.deploymentId, startEvent: view.startEvent, dueMs: view.dueMs };
+      if (admittedAtRest(frame, { ...started, timers: [...state.timers, consumes] }) === null) {
+        return rejected(port, started, ingressContinuationCode);
+      }
       const instanceId = port.timerInstanceId(view.deploymentId, view.startEvent, view.dueMs);
       return withPhase(started, {
         kind: "rootStart", deploymentId: view.deploymentId, startEvent: view.startEvent, instanceId,
         request: port.timerStartRequest(instanceId, view.startEvent),
-        consumes: { deploymentId: view.deploymentId, startEvent: view.startEvent, dueMs: view.dueMs },
+        consumes,
       });
     }
   }
@@ -474,15 +489,15 @@ function commandIdOfFlight<M>(current: InFlight<M>): string {
   return current.item.kind === "emit" ? current.item.reference.commandId : current.view?.commandId ?? "";
 }
 
-/** The action a fan-out needs next, or the finished item. */
-function fanOutAction<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>): readonly [IngressState<M>, Action | null] {
+/** The action a fan-out needs next, or the finished item; `limit` is the most its answer may grow the ingress. */
+function fanOutAction<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>, limit: number): readonly [IngressState<M>, Action | null] {
   const current = inFlight(state);
   const phase = current.phase;
   if (phase.kind !== "fanOut") throw new TypeError("not fanning out");
   const next = port.fanOutNext(phase.machine);
   switch (next.kind) {
     case "done": {
-      const entries = port.hostCapacityEntries(next.entries, next.stopped, phase.budget);
+      const entries = port.hostCapacityEntries(next.entries, next.stopped, phase.spent ? 0 : phase.budget);
       const finish = phase.finish;
       switch (finish.kind) {
         case "committed": return [resolve(port, state, { kind: "committed", target: finish.target, cascade: entries }, finish.chain), null];
@@ -505,30 +520,67 @@ function fanOutAction<P, S, M>(port: PopulationPort<P, S, M>, state: IngressStat
         const workflowId = current.routes.find(([key]) => key === occurrenceKey(view.occurrence))?.[1];
         if (workflowId === undefined) {
           const target = port.skippedEntry(port.receiverTarget(next.receiver));
-          return [withPhase(state, { ...phase, machine: port.fanOutRecord(phase.machine, target, [], "") }), null];
+          if (!roomFor(port, state, phase, entryBytes(port, target), 0, limit)) return [withPhase(state, spent(port, phase)), null];
+          return [withPhase(state, recorded(port, phase, target, [], "")), null];
         }
         if (next.emission === null) throw new TypeError("an occurrence is reached only by a Signal");
+        // Reached only with room for the entry it commits with; one that fails commits nothing (`answered`).
+        const delivered = port.deliveredEntry(port.receiverTarget(next.receiver));
+        if (!roomFor(port, state, phase, entryBytes(port, delivered), 0, limit)) return [withPhase(state, spent(port, phase)), null];
         return [state, { kind: "deliver", workflowId, deliveryId: deliveryId(current),
           delivery: port.signalDelivery(next.emission, port.receiverTarget(next.receiver)) }];
       }
+      const instanceId = next.emission === null
+        ? port.startedInstanceId(commandIdOfFlight(current), view.deploymentId, view.startEvent)
+        : port.emissionStartedId(next.emission, commandIdOfFlight(current), view.deploymentId, view.startEvent);
+      const summary = registeredEntry(state, view.deploymentId)?.summary;
+      if (summary === undefined || summary === null) throw new TypeError(`deployment ${String(view.deploymentId)} is not registered`);
+      const started = port.startedEntry(summary, instanceId, view.startEvent);
+      if (!roomFor(port, state, phase, entryBytes(port, started), canonicalBytes(instanceId), limit)) {
+        return [withPhase(state, spent(port, phase)), null];
+      }
       if (next.emission === null) {
         if (current.command === null) throw new TypeError("a start the command names needs its command");
-        const instanceId = port.startedInstanceId(commandIdOfFlight(current), view.deploymentId, view.startEvent);
         return [state, { kind: "start", deploymentId: view.deploymentId, instanceId, request: port.conditionStart(current.command, instanceId, view.startEvent) }];
       }
-      const instanceId = port.emissionStartedId(next.emission, commandIdOfFlight(current), view.deploymentId, view.startEvent);
       return [state, { kind: "start", deploymentId: view.deploymentId, instanceId, request: port.signalStart(next.emission, instanceId, view.startEvent) }];
     }
   }
 }
 
-/** Run every step that needs no answer, taking queued items at `atMs`; the action the item in flight needs next, if any. */
-export function advance<P, S, M>(port: PopulationPort<P, S, M>, initial: IngressState<M>, atMs: number): readonly [IngressState<M>, Action | null] {
+/**
+ * Run every step that needs no answer, taking queued items at `atMs`; the action the item in flight needs next, if any.
+ * Throws `IngressCapacityExceeded` when an item settled that the ingress cannot carry (`settledFit`).
+ */
+export function advance<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, initial: IngressState<M>,
+  atMs: number): readonly [IngressState<M>, Action | null] {
+  const [state, action] = advanced(port, frame, initial, atMs);
+  return [settledFit(frame, initial, state), action];
+}
+
+/**
+ * `after` once the items settled since `before` grew the ledger, which then yields its oldest entries to the
+ * continuation bound; measured once an item, so a driver step measures nothing else. Admission keeps room for a settling
+ * answer (`admittedAtRest`) and the fan-out stops within it, so this fails only past what admission could see: emitted
+ * hand-offs, which the ingress accepts unmeasured (an emit of a committed input is never refused,
+ * [population ingress](../../../docs/kernel/ARCHITECTURE-SPEC.md#population-ingress)). It stays the last line: an ingress
+ * still beyond the bound with only the new answers left fails closed rather than run on.
+ */
+function settledFit<M>(frame: IngressFrame, before: IngressState<M>, after: IngressState<M>): IngressState<M> {
+  if (after.ledger === before.ledger) return after;
+  const earlier = new Set(before.ledger);
+  const fitted = fittedAtRest(frame, after, after.ledger.filter((entry) => !earlier.has(entry)).length);
+  if (fitted === null) throw new IngressCapacityExceeded();
+  return fitted;
+}
+
+function advanced<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, initial: IngressState<M>,
+  atMs: number): readonly [IngressState<M>, Action | null] {
   let state = initial;
   for (;;) {
     if (state.current === null) {
       if (state.queue.length === 0) return [state, null];
-      state = take(port, state, atMs);
+      state = take(port, frame, state, atMs);
       continue;
     }
     const current = state.current;
@@ -566,7 +618,7 @@ export function advance<P, S, M>(port: PopulationPort<P, S, M>, initial: Ingress
       case "rootStart":
         return [state, { kind: "start", deploymentId: phase.deploymentId, instanceId: phase.instanceId, request: phase.request }];
       case "fanOut": {
-        const [next, action] = fanOutAction(port, state);
+        const [next, action] = fanOutAction(port, state, answerReserve(frame));
         if (action !== null) return [next, action];
         state = next;
         continue;
@@ -595,9 +647,15 @@ function signalSnapshot<P, S, M>(port: PopulationPort<P, S, M>, current: InFligh
 
 /**
  * Record `answer` to the action the item in flight needed; `receivers` is the most receivers one command may reach, the
- * host's capacity (`populationCapacity.receivers`) on Temporal.
+ * host's capacity (`populationCapacity.receivers`) on Temporal. Throws `IngressCapacityExceeded` as `advance` does.
  */
-export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>, given: Answer, receivers: number): IngressState<M> {
+export function answer<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, state: IngressState<M>, given: Answer,
+  receivers: number): IngressState<M> {
+  return settledFit(frame, state, answered(port, state, given, receivers, answerReserve(frame)));
+}
+
+function answered<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>, given: Answer, receivers: number,
+  limit: number): IngressState<M> {
   const current = inFlight(state);
   const phase = current.phase;
   const view = current.view;
@@ -606,7 +664,7 @@ export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressSta
     case "intents": {
       if (given.kind !== "intents" || current.item.kind !== "emit") break;
       const machine = port.cascadeBegin(current.item.reference.commandId, given.instanceId ?? "", given.instanceId === null ? [] : given.intents, capacity);
-      return withPhase(state, { kind: "fanOut", machine, budget: capacity, finish: { kind: "emit" } });
+      return withPhase(state, fanningOut(port, current, machine, capacity, { kind: "emit" }));
     }
     case "settleEmit": {
       if (given.kind !== "settled" || current.item.kind !== "emit") break;
@@ -632,7 +690,7 @@ export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressSta
       if (candidates.length > 1) return resolve(port, state, { kind: "ambiguous" });
       const [only] = candidates;
       if (only === undefined) return resolve(port, state, { kind: "noMatch" });
-      const summary = registered(state, only.deploymentId)?.summary;
+      const summary = registeredEntry(state, only.deploymentId)?.summary;
       if (summary === undefined || summary === null) throw new TypeError(`deployment ${String(only.deploymentId)} is not registered`);
       const refusal = port.startRefusal(summary, current.command);
       if (refusal !== null) return resolve(port, state, refusal);
@@ -646,8 +704,8 @@ export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressSta
       const reached = current.reached + 1;
       switch (outcome.kind) {
         case "committed":
-          return withPhase(state, { kind: "fanOut", machine: port.cascadeBegin(commandIdOfFlight(current), outcome.instanceId, outcome.intents, capacity),
-            budget: capacity, finish: { kind: "committed", target: phase.target, chain: phase.workflowId } }, { reached });
+          return withPhase(state, fanningOut(port, current, port.cascadeBegin(commandIdOfFlight(current), outcome.instanceId, outcome.intents, capacity),
+            capacity, { kind: "committed", target: phase.target, chain: phase.workflowId }), { reached });
         case "failed":
           return resolve(port, state, { kind: "failed", target: phase.target, failure: outcome.failure }, phase.workflowId);
         case "skipped":
@@ -668,7 +726,9 @@ export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressSta
       const machine = port.broadcastBegin(current.command, snapshot, capacity);
       if (machine === null) return rejected(port, state, "discovery-order-mismatch");
       if (snapshot.length > capacity) return rejected(port, state, fanOutCapacityCode);
-      return withPhase(state, { kind: "fanOut", machine, budget: capacity, finish: { kind: "fanOut", prefix: [] } }, { routes });
+      const fanning = fanningOut(port, current, machine, capacity, { kind: "fanOut", prefix: [] });
+      if (!stoppable(port, state, fanning, limit)) return rejected(port, state, fanOutCapacityCode);
+      return withPhase(state, fanning, { routes });
     }
     case "conditionsScan": {
       if (given.kind !== "conditionalStarts" || current.command === null) break;
@@ -678,11 +738,13 @@ export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressSta
       const machine = port.conditionsBegin(current.command, starts, capacity);
       if (machine === null) return rejected(port, state, "discovery-order-mismatch");
       if (starts.length > capacity) return rejected(port, state, fanOutCapacityCode);
-      return withPhase(state, { kind: "fanOut", machine, budget: capacity, finish: { kind: "fanOut", prefix: [] } });
+      const fanning = fanningOut(port, current, machine, capacity, { kind: "fanOut", prefix: [] });
+      if (!stoppable(port, state, fanning, limit)) return rejected(port, state, fanOutCapacityCode);
+      return withPhase(state, fanning);
     }
     case "rootStart": {
       if (given.kind !== "reached") break;
-      const summary = registered(state, phase.deploymentId)?.summary;
+      const summary = registeredEntry(state, phase.deploymentId)?.summary;
       if (summary === undefined || summary === null) throw new TypeError(`deployment ${String(phase.deploymentId)} is not registered`);
       const receiver = port.startReceiver(phase.deploymentId, phase.startEvent);
       const outcome = given.outcome;
@@ -695,8 +757,8 @@ export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressSta
       const timers = phase.consumes === null ? state.timers : [...state.timers, phase.consumes];
       // The started entry is a receiver the bound counts (`Kernel.Population.Signals.cascadeCommitted`).
       const budget = capacity - 1;
-      return withPhase({ ...state, timers }, { kind: "fanOut", machine: port.cascadeBegin(commandIdOfFlight(current), outcome.instanceId,
-        outcome.intents, budget), budget, finish: { kind: "fanOut", prefix: [entry] } }, { reached: current.reached + 1 });
+      return withPhase({ ...state, timers }, fanningOut(port, current, port.cascadeBegin(commandIdOfFlight(current), outcome.instanceId,
+        outcome.intents, budget), budget, { kind: "fanOut", prefix: [entry] }, canonicalBytes(phase.instanceId)), { reached: current.reached + 1 });
     }
     case "fanOut": {
       const next = port.fanOutNext(phase.machine);
@@ -707,33 +769,40 @@ export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressSta
       if (next.kind !== "reach" || given.kind !== "reached") break;
       const outcome = given.outcome;
       const reached = current.reached + 1;
-      const record = (entry: Wire, intents: readonly Wire[], emitter: string): IngressState<M> =>
-        withPhase(state, { ...phase, machine: port.fanOutRecord(phase.machine, entry, intents, emitter) }, { reached });
+      // A receiver that committed was reached only with room for its entry (`fanOutAction`); one that did not commits
+      // nothing, so when its entry leaves no room the fan-out stops at it instead.
+      const unless = (entry: Wire, instanceIdBytes: number): Phase<M> | null =>
+        roomFor(port, state, phase, entryBytes(port, entry), instanceIdBytes, limit) ? null : spent(port, phase);
+      const record = (entry: Wire, intents: readonly Wire[], emitter: string, instanceIdBytes = 0): IngressState<M> =>
+        withPhase(state, recorded(port, phase, entry, intents, emitter, instanceIdBytes), { reached });
+      const uncommitted = (entry: Wire, extra: Partial<Pick<InFlight<M>, "routes">> = {}): IngressState<M> =>
+        withPhase(state, unless(entry, 0) ?? recorded(port, phase, entry, [], ""), { reached, ...extra });
       if (next.view.kind === "occurrence") {
         const target = port.receiverTarget(next.receiver);
         const key = occurrenceKey(next.view.occurrence);
         const at = current.routes.findIndex(([held]) => held === key);
         const routes = at < 0 ? current.routes : [...current.routes.slice(0, at), ...current.routes.slice(at + 1)];
-        const reachedOccurrence = (entry: Wire, intents: readonly Wire[], emitter: string): IngressState<M> =>
-          withPhase(state, { ...phase, machine: port.fanOutRecord(phase.machine, entry, intents, emitter) }, { reached, routes });
         switch (outcome.kind) {
-          case "committed": return reachedOccurrence(port.deliveredEntry(target), outcome.intents, outcome.instanceId);
-          case "failed": return reachedOccurrence(port.failedEntry(next.receiver, outcome.failure), [], "");
+          case "committed":
+            return withPhase(state, recorded(port, phase, port.deliveredEntry(target), outcome.intents, outcome.instanceId), { reached, routes });
+          case "failed": return uncommitted(port.failedEntry(next.receiver, outcome.failure), { routes });
           case "skipped":
-          case "gone": return reachedOccurrence(port.skippedEntry(target), [], "");
+          case "gone": return uncommitted(port.skippedEntry(target), { routes });
           case "passed":
           case "identityInUse": break;
         }
         break;
       }
       if (outcome.kind === "passed") return withPhase(state, { ...phase, machine: port.fanOutPass(phase.machine) }, { reached });
-      const summary = registered(state, next.view.deploymentId)?.summary;
+      const summary = registeredEntry(state, next.view.deploymentId)?.summary;
       if (summary === undefined || summary === null) throw new TypeError(`deployment ${String(next.view.deploymentId)} is not registered`);
       const instanceId = next.emission === null
         ? port.startedInstanceId(commandIdOfFlight(current), next.view.deploymentId, next.view.startEvent)
         : port.emissionStartedId(next.emission, commandIdOfFlight(current), next.view.deploymentId, next.view.startEvent);
-      if (outcome.kind === "committed") return record(port.startedEntry(summary, instanceId, next.view.startEvent), outcome.intents, outcome.instanceId);
-      return record(port.failedEntry(next.receiver, startFailure(port, outcome)), [], "");
+      if (outcome.kind === "committed") {
+        return record(port.startedEntry(summary, instanceId, next.view.startEvent), outcome.intents, outcome.instanceId, canonicalBytes(instanceId));
+      }
+      return uncommitted(port.failedEntry(next.receiver, startFailure(port, outcome)));
     }
   }
   throw new TypeError(`answer ${given.kind} does not fit the ${phase.kind} step`);

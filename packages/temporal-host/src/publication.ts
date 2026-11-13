@@ -9,6 +9,7 @@
  * retains the batches it published; the cursor alone crosses Continue-As-New, so a reader asking for a revision before
  * the Run's first is told it is a gap.
  */
+import { canonicalBytes, chainCapacity } from "./capacity.js";
 import type { CauseView, EndedView, StartedView, TransitionView } from "./port.js";
 
 /**
@@ -49,10 +50,19 @@ export interface PublicationLog {
   readonly cursor: PublicationCursor;
   readonly execution: readonly Batch<ExecutionTransition>[];
   readonly occurrences: readonly Batch<OccurrenceTransition>[];
+  /** The canonical bytes of each input's two batches together, in step with `execution`. */
+  readonly batchBytes: readonly number[];
+  /** Their sum: what the Run retains, which its rollover trigger bounds. */
+  readonly retainedBytes: number;
 }
 
 export function openLog(cursor: PublicationCursor): PublicationLog {
-  return { base: cursor.revision, cursor, execution: [], occurrences: [] };
+  return { base: cursor.revision, cursor, execution: [], occurrences: [], batchBytes: [], retainedBytes: 0 };
+}
+
+/** The bytes the last input's batches took, 0 when its journal was empty and it appended none. */
+export function lastBatchBytes(before: PublicationLog, after: PublicationLog): number {
+  return after.batchBytes.length > before.batchBytes.length ? after.batchBytes.at(-1) ?? 0 : 0;
 }
 
 export function appendJournal(log: PublicationLog, commandId: string, journal: readonly TransitionView[]): PublicationLog {
@@ -77,11 +87,15 @@ export function appendJournal(log: PublicationLog, commandId: string, journal: r
   });
   const throughRevision = fromRevision + journal.length;
   const batch = <T>(transitions: readonly T[]): Batch<T> => ({ commandId, fromRevision, throughRevision, transitions });
+  const appended = [batch(execution), batch(occurrences)] as const;
+  const bytes = canonicalBytes(appended[0]) + canonicalBytes(appended[1]);
   return {
     base: log.base,
     cursor: { revision: throughRevision, sourceTypes: [...sourceTypes] },
-    execution: [...log.execution, batch(execution)],
-    occurrences: [...log.occurrences, batch(occurrences)],
+    execution: [...log.execution, appended[0]],
+    occurrences: [...log.occurrences, appended[1]],
+    batchBytes: [...log.batchBytes, bytes],
+    retainedBytes: log.retainedBytes + bytes,
   };
 }
 
@@ -99,14 +113,24 @@ export type PublicationPage =
     }
   | { readonly kind: PageKind.Gap; readonly retainedAfterRevision: number };
 
-/** The first `limit` input batches with revisions after `afterRevision`; a batch is never split. */
+/**
+ * The first `limit` inputs' batches with revisions after `afterRevision`, cut to the largest complete prefix whose page
+ * stays within the Query bound; a batch is never split. The batch bound keeps one input's batches far below the Query
+ * bound, so a page always holds at least one.
+ */
 export function readPage(log: PublicationLog, afterRevision: number, limit: number): PublicationPage {
   if (afterRevision < log.base) return { kind: PageKind.Gap, retainedAfterRevision: log.base };
-  const after = (batch: Batch<unknown>) => batch.throughRevision > afterRevision;
-  return {
-    kind: PageKind.Available,
-    headRevision: log.cursor.revision,
-    execution: log.execution.filter(after).slice(0, limit),
-    occurrences: log.occurrences.filter(after).slice(0, limit),
-  };
+  const first = log.execution.findIndex((batch) => batch.throughRevision > afterRevision);
+  const empty = { kind: PageKind.Available, headRevision: log.cursor.revision, execution: [], occurrences: [] } as const;
+  if (first < 0) return empty;
+  let bytes = canonicalBytes(empty);
+  let end = first;
+  while (end < log.execution.length && end - first < limit) {
+    // Each further input adds its two batches and, past the first, a comma in each list.
+    const added = (log.batchBytes[end] ?? 0) + (end > first ? 2 : 0);
+    if (end > first && bytes + added > chainCapacity.queryBytes) break;
+    bytes += added;
+    end += 1;
+  }
+  return { ...empty, execution: log.execution.slice(first, end), occurrences: log.occurrences.slice(first, end) };
 }

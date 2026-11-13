@@ -25,10 +25,12 @@ import {
   deploymentWorkflowType,
   type Answer,
   type DeploymentArgs,
+  type HeldIntents,
   type PopulationActivities,
   type PopulationIngressArgs,
   type ScanRequest,
 } from "./population-contract.js";
+import { readPages } from "./capacity.js";
 import { queueFullCode } from "./population.js";
 import type { JsonValue, ReachOutcome } from "./port.js";
 import {
@@ -174,14 +176,16 @@ export function createPopulationActivities(): PopulationActivities {
         // The instance identity started once and its chain has closed: its recorded start answers again, and a closed
         // chain no population start made holds the identity as a running one does.
         if (!(error instanceof WorkflowExecutionAlreadyStartedError)) throw error;
-        const recorded: ReachOutcome | null = await client.workflow.getHandle(workflowId)
-          .query(populationStartOutcomeQuery);
+        const handle = client.workflow.getHandle(workflowId);
+        const recorded = await readPages((from) => handle.query(populationStartOutcomeQuery, from)) as ReachOutcome | null;
         return recorded ?? { kind: "identityInUse" };
       }
     },
     readPopulationIntents: async (request) => {
       const { client } = Context.current();
-      return unlessGone(() => client.workflow.getHandle(request.workflowId).query(pendingIntentsQuery, request.commandId));
+      const handle = client.workflow.getHandle(request.workflowId);
+      return unlessGone(async () =>
+        await readPages((from) => handle.query(pendingIntentsQuery, request.commandId, from)) as HeldIntents | null);
     },
     settlePopulationEmit: async (request) => {
       const { client } = Context.current();

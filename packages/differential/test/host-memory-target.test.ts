@@ -19,6 +19,7 @@ import type { JsonValue } from "@bpmn-lean/temporal-host/host";
 import { createMemoryProcessHost } from "@bpmn-lean/temporal-host/memory-host";
 import { runScenario, withScriptResults } from "@bpmn-lean/temporal-host/testing";
 
+import { firstUncommitted, hostCapacityRestrictions } from "./host-capacity-restrictions.ts";
 import { projectRoot, scriptTimeoutMs } from "./pipeline-target-support.ts";
 import { DiscoveredKind, discoverScenarios, scenarioKernelInput } from "./scenario-discovery.ts";
 
@@ -37,6 +38,7 @@ test("the memory host returns the kernel's result on every discovered single-ins
   };
   const disagreements: Array<Readonly<{ scenario: string } & ValueDisagreement>> = [];
   let compared = 0;
+  let restricted = 0;
   for (const scenario of await discoverScenarios()) {
     if (scenario.kind !== DiscoveredKind.Scenario) continue;
     const input = await scenarioKernelInput(scenario.relativePath, scenario.document.bpmn, scenario.document.profile);
@@ -45,10 +47,17 @@ test("the memory host returns the kernel's result on every discovered single-ins
     const document = withScriptResults(program, wire(JSON.parse(await readFile(path.join(projectRoot, scenario.relativePath), "utf8"))),
       { timeoutMs: scriptTimeoutMs });
     const hosted = await runScenario(program, document, { client, workflowIdPrefix: `memory-${randomUUID()}` });
+    const restriction = hostCapacityRestrictions.get(scenario.relativePath);
+    if (restriction !== undefined) {
+      assert.deepEqual(firstUncommitted(hosted), { ...restriction, outcome: "rejected" }, scenario.relativePath);
+      restricted += 1;
+      continue;
+    }
     const difference = firstValueDisagreement(wire(runKernelScenario(program, document)), wire(hosted), "result");
     if (difference !== null) disagreements.push({ scenario: scenario.relativePath, ...difference });
     compared += 1;
   }
   assert.ok(compared > 0, "discovery found no single-instance scenario");
+  assert.equal(restricted, hostCapacityRestrictions.size, "every declared restriction names a discovered scenario");
   assert.deepEqual(disagreements, []);
 });

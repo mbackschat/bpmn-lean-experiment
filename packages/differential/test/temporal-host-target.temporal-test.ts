@@ -26,6 +26,7 @@ import { EffectResultKind, createHostWorker } from "@bpmn-lean/temporal-host/wor
 import type { EffectRequest } from "@bpmn-lean/temporal-host/worker";
 
 import { projectRoot } from "./pipeline-target-support.ts";
+import { firstUncommitted, hostCapacityRestrictions } from "./host-capacity-restrictions.ts";
 import { DiscoveredKind, discoverScenarios, scenarioKernelInput } from "./scenario-discovery.ts";
 
 const taskQueue = "bpmn-lean-differential-temporal-host";
@@ -66,6 +67,7 @@ after(async () => {
 test("the Temporal host returns the kernel's result on every discovered single-instance scenario", async (t) => {
   const disagreements: Array<Readonly<{ scenario: string } & ValueDisagreement>> = [];
   let compared = 0;
+  let restricted = 0;
   for (const scenario of await discoverScenarios()) {
     if (scenario.kind !== DiscoveredKind.Scenario) continue;
     const input = await scenarioKernelInput(scenario.relativePath, scenario.document.bpmn, scenario.document.profile);
@@ -77,12 +79,19 @@ test("the Temporal host returns the kernel's result on every discovered single-i
       client,
       workflowIdPrefix: `differential-${scenario.document.id}-${randomUUID()}`,
     });
+    const restriction = hostCapacityRestrictions.get(scenario.relativePath);
+    if (restriction !== undefined) {
+      assert.deepEqual(firstUncommitted(hosted), { ...restriction, outcome: "rejected" }, scenario.relativePath);
+      restricted += 1;
+      continue;
+    }
     const difference = firstValueDisagreement(wire(runKernelScenario(program, document)), wire(hosted), "result");
     if (difference !== null) disagreements.push({ scenario: `${scenario.document.id} (${scenario.relativePath})`, ...difference });
     compared += 1;
   }
   t.diagnostic(`scenarios ${String(compared)}, disagreements ${String(disagreements.length)}, effect Activities ${String(effectRequests.length)}`);
   assert.ok(compared > 0, "discovery found no single-instance scenario");
+  assert.equal(restricted, hostCapacityRestrictions.size, "every declared restriction names a discovered scenario");
   assert.deepEqual(
     { disagreements, effectRequests: effectRequests.map(({ key }) => key) },
     { disagreements: [], effectRequests: [] },

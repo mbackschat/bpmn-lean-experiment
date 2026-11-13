@@ -21,6 +21,7 @@ import {
   type DeploymentAnswer,
   type IngressState,
 } from "./population.js";
+import type { IngressFrame } from "./population-carry.js";
 import type { HostView, JsonValue, PopulationPort, ReachOutcome, Wire } from "./port.js";
 
 /** A process chain as the population reads it: the deployment it runs, its program and its committed state. */
@@ -33,10 +34,25 @@ export interface PopulationChain<P, S> {
 /**
  * Where the chains live. `set` is called only for a population input, a delivery or a start, which committed `state`
  * under the chain's input identifier `commandId`; a chain's own inputs are its holder's, reported through `committed`.
+ * It answers the host's capacity refusal of the candidate, which leaves the chain as it was, or `null` once stored.
  */
 export interface PopulationChains<P, S> {
   get(workflowId: string): PopulationChain<P, S> | undefined;
-  set(workflowId: string, chain: PopulationChain<P, S>, commandId: string): void;
+  set(workflowId: string, chain: PopulationChain<P, S>, commandId: string): string | null;
+}
+
+/**
+ * Chains held in `chains` that no host bound refuses: the kernel's own population runs on them, so a refinement
+ * against it, or a test of the driver alone, sees the kernel's verdicts only.
+ */
+export function heldChains<P, S>(chains: Map<string, PopulationChain<P, S>>): PopulationChains<P, S> {
+  return {
+    get: (workflowId) => chains.get(workflowId),
+    set: (workflowId, chain) => {
+      chains.set(workflowId, chain);
+      return null;
+    },
+  };
 }
 
 /** The kernel status name of a running instance (`Kernel.Publish.statusName`). */
@@ -51,6 +67,8 @@ export class MemoryPopulation<P, S, M> {
   private readonly starts = new Map<string, ReachOutcome>();
   /** The intents a committed chain input left, until the ingress settles their emit. */
   private readonly unsettled = new Map<string, Readonly<{ instanceId: string; intents: readonly Wire[] }>>();
+  /** The chains whose registration the ingress refused, with its code: as on Temporal, they halt after that commit. */
+  readonly halts = new Map<string, string>();
 
   constructor(
     private readonly port: PopulationPort<P, S, M>,
@@ -58,6 +76,8 @@ export class MemoryPopulation<P, S, M> {
     /** The most receivers one command may reach: the host's capacity, or the kernel's bound to refine the kernel's run. */
     private readonly receivers: number,
     readonly chains: PopulationChains<P, S>,
+    /** The ingress's Continue-As-New argument beside its state, which the continuation bound measures with it. */
+    private readonly frame: IngressFrame,
     /** The Workflow ID of the chain a population start makes for an instance identity. */
     private readonly startedWorkflowId: (instanceId: string) => string = (instanceId) => instanceId,
   ) {}
@@ -65,8 +85,8 @@ export class MemoryPopulation<P, S, M> {
   /** Register a deployment of `program`, or one admission refused with `refused`. */
   deploy(deploymentRequestId: string, digest: string, program: P | { readonly refused: string }, atMs: number): DeploymentAnswer {
     const candidate = typeof program === "object" && program !== null && "refused" in program
-      ? program : { summary: this.port.deploymentSummary(program as P) };
-    const [ingress, deployed] = registerDeployment(this.port, this.ingress, deploymentRequestId, digest, candidate, atMs);
+      ? program : { summary: this.port.deploymentSummary(program as P), identifierBytes: this.port.identifierBytes(program as P) };
+    const [ingress, deployed] = registerDeployment(this.port, this.frame, this.ingress, deploymentRequestId, digest, candidate, atMs);
     this.ingress = ingress;
     if ("deploymentId" in deployed && !("refused" in candidate)) this.programs.set(deployed.deploymentId, program as P);
     return deployed;
@@ -84,27 +104,28 @@ export class MemoryPopulation<P, S, M> {
     this.ingress = enqueueEmit(this.ingress, { workflowId, commandId, count: intents.length, digest: "" });
   }
 
-  /** Submit a population command; its answer once the driver ran it at `atMs`, `null` when the queue refused it. */
-  command(commandId: string, kind: string, json: JsonValue, digest: string, atMs: number): JsonValue | null {
-    const [ingress, ticket] = enqueueCommand(this.ingress, commandId, kind, json, digest);
-    this.ingress = ingress;
-    if (ticket === null) return null;
+  /** Submit a population command; its answer once the driver ran it at `atMs`, or the code the ingress refused it with. */
+  command(commandId: string, kind: string, json: JsonValue, digest: string, atMs: number):
+    { readonly answer: JsonValue } | { readonly refused: string } {
+    const enqueued = enqueueCommand(this.frame, this.ingress, commandId, kind, json, digest);
+    if ("refused" in enqueued) return { refused: enqueued.refused };
+    this.ingress = enqueued.state;
     this.run(atMs);
-    const taken = takeAnswer(this.ingress, ticket);
+    const taken = takeAnswer(this.ingress, enqueued.ticket);
     if (taken === null) throw new TypeError(`command ${commandId} did not settle`);
     this.ingress = taken[0];
-    return taken[1];
+    return { answer: taken[1] };
   }
 
   /** Run the driver at `atMs` until nothing is queued or in flight. */
   run(atMs: number): void {
     for (;;) {
-      const [state, action] = advance(this.port, this.ingress, atMs);
+      const [state, action] = advance(this.port, this.frame, this.ingress, atMs);
       this.ingress = state;
       if (action === null) break;
       // `perform` may re-register a chain it steps, which writes `this.ingress`, so the answer reads the ingress after it.
       const answered = this.perform(action, atMs);
-      this.ingress = answer(this.port, this.ingress, answered, this.receivers);
+      this.ingress = answer(this.port, this.frame, this.ingress, answered, this.receivers);
     }
   }
 
@@ -113,11 +134,10 @@ export class MemoryPopulation<P, S, M> {
     this.revisions.set(workflowId, revision);
     const view = this.hostView(program, state);
     const addresses = view.status === running ? view.addresses ?? [] : [];
-    const [ingress, refused] = register(this.ingress, {
-      workflowId, processInstanceId: this.port.instanceIdOf(state), deploymentId, revision, addresses,
-    });
-    if (refused !== null) throw new TypeError(`registration of ${workflowId} refused: ${refused}`);
-    this.ingress = ingress;
+    const registration = { workflowId, processInstanceId: this.port.instanceIdOf(state), deploymentId, revision, addresses };
+    const [ingress, refused] = register(this.frame, this.ingress, registration);
+    this.ingress = refused === null ? ingress : register(this.frame, this.ingress, { ...registration, addresses: [] })[0];
+    if (refused !== null) this.halts.set(workflowId, refused);
   }
 
   private deployment(deploymentId: number): P {
@@ -132,10 +152,12 @@ export class MemoryPopulation<P, S, M> {
       case "passed":
       case "failed":
         return outcome;
-      case "committed":
-        this.chains.set(workflowId, { deploymentId, program, state: outcome.state }, commandId);
+      case "committed": {
+        const refused = this.chains.set(workflowId, { deploymentId, program, state: outcome.state }, commandId);
+        if (refused !== null) return { kind: "failed", failure: this.port.capacityFailure(refused) };
         this.settle(workflowId, deploymentId, program, outcome.state);
         return { kind: "committed", instanceId: this.port.instanceIdOf(outcome.state), intents: this.port.intentsOf(program, outcome.state) };
+      }
     }
   }
 

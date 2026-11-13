@@ -7,7 +7,15 @@
  */
 import { assembleProgram, type KernelJson } from "@bpmn-lean/bpmn-source";
 import { admit, decodeProgram } from "@bpmn-lean/kernel";
-import { canonicalJson, type DeploymentAnswer, type PopulationScope } from "@bpmn-lean/temporal-host/host";
+import {
+  CapacityBound,
+  canonicalBytes,
+  canonicalJson,
+  capacityCode,
+  chainCapacity,
+  type DeploymentAnswer,
+  type PopulationScope,
+} from "@bpmn-lean/temporal-host/host";
 
 import {
   requireWireString,
@@ -86,6 +94,10 @@ export type EngineDeploymentResult =
 export async function registerEngineDeployment(request: EngineDeploymentRequest): Promise<EngineDeploymentResult> {
   const compiled = await compileStored(request);
   if ("status" in compiled) return compiled;
+  if (canonicalBytes(compiled.program) > chainCapacity.programBytes) {
+    const code = capacityCode(CapacityBound.Program);
+    return { status: EngineDeploymentStatus.Refused, failure: { code, evidence: `The program exceeds the host's byte bound (${code}).` } };
+  }
   const answer = await request.host.population.registerDeployment({
     deploymentRequestId: engineDeploymentRequestId(compiled.compilation.definition),
     digest: sha256Hex(canonicalJson(compiled.program)),

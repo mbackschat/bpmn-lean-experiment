@@ -4,7 +4,7 @@
  * lost response is recognized by the intent the chain retains in its memo.
  */
 import { stimulusFromJson } from "@bpmn-lean/kernel";
-import { canonicalJson, workflowType } from "@bpmn-lean/temporal-host/host";
+import { CapacityBound, canonicalBytes, canonicalJson, capacityCode, chainCapacity, workflowType } from "@bpmn-lean/temporal-host/host";
 
 import {
   member,
@@ -36,8 +36,24 @@ export type EngineStartMemo = Readonly<{
 }>;
 
 /**
- * The prepared start, or why it cannot be dispatched: the deployment does not serve what the program needs, or the
- * stimulus is not one the kernel's codec reads.
+ * The refusal of a program or start stimulus past its byte bound (`host.capacity.program`, `host.capacity.start`),
+ * refused here before any Workflow starts; the Workflow measures both again at its start.
+ */
+export function startCapacityRefusal(program: JsonValue, stimulus: JsonValue): EngineFailure | null {
+  if (canonicalBytes(program) > chainCapacity.programBytes) {
+    const code = capacityCode(CapacityBound.Program);
+    return { code, evidence: `The program exceeds the host's ${String(chainCapacity.programBytes)}-byte bound (${code}).` };
+  }
+  if (canonicalBytes(stimulus) > chainCapacity.startBytes) {
+    const code = capacityCode(CapacityBound.Start);
+    return { code, evidence: `The start exceeds the host's ${String(chainCapacity.startBytes)}-byte bound (${code}).` };
+  }
+  return null;
+}
+
+/**
+ * The prepared start, or why it cannot be dispatched: the deployment does not serve what the program needs, the program
+ * or the start exceeds its byte bound, or the stimulus is not one the kernel's codec reads.
  */
 export function prepareStart(
   host: EngineHost,
@@ -51,6 +67,8 @@ export function prepareStart(
   if (refusal !== null) {
     return { code: refusal, evidence: `The deployment does not serve what the definition requires (${refusal}).` };
   }
+  const oversized = startCapacityRefusal(compiled.program, stimulus);
+  if (oversized !== null) return oversized;
   const decoded = stimulusFromJson(stimulus);
   if (!decoded.ok) return { code: "stimulus.malformed", evidence: decoded.refusal };
   const content = {

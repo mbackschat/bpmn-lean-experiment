@@ -193,8 +193,7 @@ const unboundedWaitAllowance = 256;
  * events of the mechanisms the program's requirements name, and an Update besides, since a Signal or Conditional wait,
  * which no flag names, ends on one.
  */
-export function historyBudget(requirements: Requirements, override: number | null): number {
-  if (override !== null) return override;
+export function historyBudget(requirements: Requirements): number {
   const perWait = workflowTaskEvents + updateEvents +
     (requirements.timers ? timerEvents : 0) +
     (requirements.effects ? activityEvents : 0);

@@ -19,6 +19,8 @@ import {
   type EngineDefinitionStartRequest,
 } from "@bpmn-lean/engine-api";
 
+import { canonicalBytes, chainCapacity } from "@bpmn-lean/temporal-host/host";
+
 import { deployed, limits, scenarioBytes, servesEverything, sha256, standardProfile, testHost, testPopulation, type TestHost } from "./support.ts";
 
 async function request(host: TestHost, processInstanceId = "instance-1"): Promise<EngineDefinitionStartRequest> {
@@ -120,4 +122,25 @@ test("a value outside the scenario contract is refused before dispatch", async (
   });
   assert.equal(malformed.status, EngineDefinitionStartStatus.Rejected);
   if (malformed.status === EngineDefinitionStartStatus.Rejected) assert.equal(malformed.failure.code, "stimulus.malformed");
+});
+
+test("a start at the host's start bound is admitted, one byte more is refused before any Workflow starts", async () => {
+  const host = testHost();
+  const pad = (characters: number) => ["a", "b", "c", "d", "e"].map((name, index) => ({
+    name,
+    value: { kind: "list", value: Array.from({ length: 16 }, (_, item) => ({ kind: "string",
+      value: "x".repeat(Math.floor(characters / 80) + (index * 16 + item < characters % 80 ? 1 : 0)) })) },
+  }));
+  // The start stimulus preparation binds, which the host measures (`definition-start.ts`, `prepare`).
+  const stimulus = (characters: number) => ({ kind: "start", commandId: "start:instance-1", instanceId: "instance-1", variables: pad(characters) });
+  let characters = 60_000;
+  characters += chainCapacity.startBytes - canonicalBytes(stimulus(characters));
+  assert.equal(canonicalBytes(stimulus(characters)), chainCapacity.startBytes);
+  const prepared = (initialVariables: ReturnType<typeof pad>) =>
+    request(host).then((base) => prepareBpmnDefinitionVersionStart({ ...base, initialVariables: initialVariables as never }));
+  assert.equal((await prepared(pad(characters))).status, EngineDefinitionStartStatus.Admitted);
+  const refused = await prepared(pad(characters + 1));
+  assert.equal(refused.status, EngineDefinitionStartStatus.Rejected);
+  if (refused.status === EngineDefinitionStartStatus.Rejected) assert.equal(refused.failure.code, "host.capacity.start");
+  assert.equal(await host.processes.describe("anything"), null);
 });

@@ -154,7 +154,10 @@ export const kernelPort: KernelPort<Program, State, HostInput> = {
   // The rendering is `Kernel.Run.hostViewJson`'s, which `HostView` types field by field.
   hostView: (program, state) => hostViewJson(hostView(program, state)) as unknown as HostView,
   observation: (program, state) => observationJson(program, state) as JsonValue,
-  encodeState: toWire,
+  // Without the last input's journal and outbox: the host published them when it committed the input, and `step` empties
+  // both before every input (`onRunning`, `initial`), so no later input reads them; carried, they would charge the state
+  // and continuation bounds with a second copy of the publication (2,066,022 of long-burst's 2,067,466 bytes, 2026-11-13).
+  encodeState: (state) => toWire({ ...state, journal: [], outbox: [] }),
   // The host decodes only what `encodeState` produced for this program.
   decodeState: (json) => fromWire(json) as State,
   scriptOf,

@@ -128,19 +128,18 @@ test("queued host arrivals reach the kernel in arrival order, timers among thems
   assert.equal(machine.nextArrival([timer(200), timer(200)]), 0);
 });
 
-test("the history budget leaves room for the waits a program can have open, and an override wins", () => {
+test("the history budget leaves room for the waits a program can have open", () => {
   const none = { timers: false, messages: false, effects: false, userTasks: false, calls: false, maxConcurrentWaits: 0 };
   const everything = { timers: true, messages: true, effects: true, userTasks: true, calls: true, maxConcurrentWaits: null };
   const humanOnly = { ...none, userTasks: true, maxConcurrentWaits: null };
-  assert.ok(machine.historyBudget(everything, null) < machine.historyBudget(humanOnly, null));
-  assert.ok(machine.historyBudget(humanOnly, null) < machine.historyBudget(none, null));
-  assert.ok(machine.historyBudget(everything, null) > 0);
-  assert.equal(machine.historyBudget(everything, 40), 40);
+  assert.ok(machine.historyBudget(everything) < machine.historyBudget(humanOnly));
+  assert.ok(machine.historyBudget(humanOnly) < machine.historyBudget(none));
+  assert.ok(machine.historyBudget(everything) > 0);
 });
 
 test("a wait no requirement flag names, a Signal or Conditional one, is charged the Update that ends it", () => {
   const unnamed = { timers: false, messages: false, effects: false, userTasks: false, calls: false, maxConcurrentWaits: null };
-  assert.equal(machine.historyBudget(unnamed, null), machine.historyBudget({ ...unnamed, messages: true }, null));
+  assert.equal(machine.historyBudget(unnamed), machine.historyBudget({ ...unnamed, messages: true }));
 });
 
 type FakeState = Readonly<{ view: HostView }>;

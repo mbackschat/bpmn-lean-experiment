@@ -28,6 +28,9 @@ import {
   currentSummary,
   definitionCapabilities,
   deploymentSummary,
+  elementActivity,
+  elementHeader,
+  elementScope,
   emissionStartedId,
   fanOutBegin,
   fanOutEntryJson,
@@ -79,12 +82,40 @@ import {
   type Value,
 } from "@bpmn-lean/kernel";
 
+import { canonicalBytes } from "./capacity.js";
 import { assertNever } from "./host-machine.js";
 import { fanOutCapacityCode } from "./population.js";
 import type {
   CommandView, FanOutStep, JsonValue, PopulationPort, PopulationStep, ReceiverView, RefusalParts, ResolutionParts, SelectorView, Wire,
 } from "./port.js";
 import { fromWire, toWire } from "./wire-codec.js";
+
+/**
+ * The canonical bytes of the program's longest element identifier: every element's own and authored identifier and
+ * every boundary's, which are all an occurrence or a start can name.
+ */
+function identifierBytes(program: Program): number {
+  let longest = 0;
+  for (const element of program.elements) {
+    const header = elementHeader(element);
+    const envelope = elementActivity(element)?.[1].envelope ?? elementScope(element)?.[1].envelope ?? null;
+    const identifiers = [header.id, header.origin.sourceId, ...(envelope?.boundaries ?? []).flatMap((boundary) => [boundary.id, boundary.sourceId])];
+    for (const identifier of identifiers) longest = Math.max(longest, canonicalBytes(identifier));
+  }
+  return longest;
+}
+
+/** The stop entry of an occurrence and of a start receiver, their identifiers `x`s of the given canonical bytes. */
+function stopEntryBytes(instanceIdBytes: number, identifierBytes: number): number {
+  const text = (bytes: number): string => "x".repeat(Math.max(0, bytes - canonicalBytes("")));
+  const failure: Failure = { tag: FailureTag.Unsupported, code: fanOutCapacityCode };
+  const largest = Number.MAX_SAFE_INTEGER;
+  const receivers: Receiver[] = [
+    { tag: ReceiverTag.Occurrence, ref: { processInstanceId: text(instanceIdBytes), element: text(identifierBytes), activation: largest } },
+    { tag: ReceiverTag.Start, deploymentId: largest, startEvent: text(identifierBytes) },
+  ];
+  return Math.max(...receivers.map((target) => canonicalBytes(fanOutEntryJson({ tag: FanOutEntryTag.Failed, target, failure }))));
+}
 
 /** The kernel's own stop code of a fan-out past its cascade bound (`Kernel.Population.Signals.machineStop`). */
 const kernelStopCode = "population-cascade-bound";
@@ -289,6 +320,7 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
     return { view: commandView(command), command: toWire(command) };
   },
   deploymentSummary: (program) => toWire(deploymentSummary(program)),
+  identifierBytes,
   registerSummary: (registry, deploymentId, candidate, atMs) => {
     const summaries = registry.map((wire) => decode<DeploymentSummary>(wire));
     const summary = decode<DeploymentSummary>(candidate);
@@ -354,6 +386,8 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
     intents.map((intent) => decode<BroadcastIntent>(intent)), emitter),
   machineWire: machineToWire,
   machineOf: machineFromWire,
+  fanOutSpent: (machine) => ({ ...machine, budget: 0 }),
+  stopEntryBytes,
   occurrenceReceiver: (target) => toWire({ tag: ReceiverTag.Occurrence, ref: decode<OccurrenceRef>(target) } satisfies Receiver),
   receiverTarget: (receiver) => {
     const decoded = decode<Receiver>(receiver);
@@ -458,6 +492,7 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
     return populationStep(step(hooks, program, null, { tag: InputTag.Start, payload: input }));
   },
   hostRefusal: (code) => toWire({ tag: FailureTag.Rejected, code } satisfies Failure),
+  capacityFailure: (code) => toWire({ tag: FailureTag.Unsupported, code } satisfies Failure),
   intentsOf: (program, state) => hostView(program, state).broadcasts.map(toWire),
   instanceIdOf: (state) => state.instanceId,
   failureCode: (failure) => decode<Failure>(failure).code,

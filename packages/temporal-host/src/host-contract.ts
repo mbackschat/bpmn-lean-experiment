@@ -63,6 +63,8 @@ export type RunProcessArgs =
       readonly state: JsonValue;
       readonly cursor: PublicationCursor;
       readonly carry: PopulationCarry;
+      /** The ordinal of this Run in its chain; the first Run is 1. */
+      readonly run: number;
     };
 
 /** The kernel's verdict on one input as a client sees it. A rejection reaches the client as a refused Update. */
@@ -94,10 +96,7 @@ export type ProcessResult =
   /** The program is not admitted: the admission registry's code. */
   | { readonly kind: ResultKind.Refused; readonly code: string };
 
-/**
- * A host view without its journal. One input's journal grows with its closure (2.2 MB for a 2,000-step automatic loop,
- * 2026-11-10), past Temporal's 2 MB query limit; the publication pages carry those facts in bounded pages.
- */
+/** A host view without its journal, which the publication pages carry. */
 export type SnapshotView = Omit<HostView, "journal">;
 
 export function snapshotView(view: HostView): SnapshotView {
