@@ -102,6 +102,7 @@
     "test:infrastructure:runtime": "node --test --test-concurrency=2 scripts/*.test.ts",
     "test:evaluation-distribution:structure": "node --test scripts/evaluation-distribution.platform-test.ts showcase/platform-browser-walkthrough/test/screenshot-catalog.test.ts",
     "test:miwg": "pnpm build:bpmn-source && node packages/bpmn-source/calibration/miwg-observation.ts",
+    "render:corpus-map": "node model-corpus/test/render-corpus-map.ts",
     "test:model-corpus": "node scripts/test-pipeline.ts --model-corpus",
     "test:model-corpus:built": "env BPMN_PIPELINE_PREBUILT=1 node scripts/test-pipeline.ts --model-corpus",
     "test:pipeline": "node scripts/test-pipeline.ts",
