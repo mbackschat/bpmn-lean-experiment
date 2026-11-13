@@ -115,15 +115,20 @@ export function workflowStartArguments(history: TemporalHistory): Record<string,
 }
 
 /**
- * One Run, one Update, and none of the cross-Workflow, timer or Activity events: the Message-started User Task Process
- * commits its start and its one completion and ends. The old adapter's exact event total (14, with its markers and
+ * One Run, two Updates, and none of the cross-Workflow, timer or Activity events: the Message-started User Task Process
+ * commits its start, answered by the `settle` Update the client sends with it, and its one completion, the `command`
+ * Update, and ends. The old adapter's exact event total (14, with its markers and
  * search-attribute upserts) was the shape of that Workflow; the host's own total is not pinned here.
  */
 export function assertCompletedMessageStartHistory(history: TemporalHistory): void {
   assert.equal(historyEvents(history, "workflowExecutionStartedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionCompletedEventAttributes").length, 1);
-  assert.equal(historyEvents(history, "workflowExecutionUpdateAcceptedEventAttributes").length, 1);
-  assert.equal(historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes").length, 1);
+  assert.deepEqual(
+    historyEvents(history, "workflowExecutionUpdateAcceptedEventAttributes")
+      .map((event) => event.workflowExecutionUpdateAcceptedEventAttributes?.acceptedRequest?.input?.name),
+    ["settle", "command"],
+  );
+  assert.equal(historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes").length, 2);
   for (const attributes of [
     "workflowExecutionContinuedAsNewEventAttributes",
     "workflowExecutionSignaledEventAttributes",

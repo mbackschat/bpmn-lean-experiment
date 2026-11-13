@@ -122,11 +122,11 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   await expect(processDetail).toContainText("completed");
   await processDetail.getByRole("tab", { name: "History", exact: true }).click();
   const history = processDetail.getByRole("region", { name: "History" });
-  await expect(history).toContainText("completeUserTaskInstance");
-  await expect(history).toContainText("ReviewException");
-  const completionRecord = history.locator("li").filter({
-    hasText: "completeUserTaskInstance",
-  });
+  // The kernel history names the committed input kind and the element it acted on, not the platform's stimulus kind:
+  // the task completion is the one Command record on the User Task.
+  const completionRecord = history.locator("li")
+    .filter({ has: page.getByText("Command", { exact: true }) })
+    .filter({ has: page.getByText("ReviewException", { exact: true }) });
   await expect(completionRecord).toHaveCount(1);
   await capture(page, "12-completed-process-history.png", completionRecord, captured);
 
