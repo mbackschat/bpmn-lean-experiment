@@ -25,7 +25,7 @@ Answer-free schedules for [PC-MESSAGE-06](../../../docs/PRACTICAL-CIB7-COVERAGE-
 
 - Every schedule addresses an Event Sub-Process start, which the CIB runner numbers through a host that has no activity instance before the start fires.
 - A schedule that delivers a payload uses a `deliver` payload, which the CIB runner does not send because CIB's Message carries only variables; the retained CIB evidence is the answer.
-- The `boundaries-under-interruption` schedules separate whether the interrupting `ESP_RegionAbort` leaves `Region`'s own boundaries armed ([#100](https://github.com/mbackschat/bpmn-lean-experiment/issues/100)); their evidence run is pending.
+- The `boundaries-under-interruption` schedules separate whether the interrupting `ESP_RegionAbort` leaves `Region`'s own boundaries armed ([#100](https://github.com/mbackschat/bpmn-lean-experiment/issues/100)); their retained CIB evidence (Verify run 43370273960) withdraws both boundaries, as CIB-INT-0044 reads the source, and the kernel keeps them armed.
 - `orderRef` is the String Process variable the start supplies; the handler's input mapping publishes it as `orderSeen`.
 
 The schedules carry no expected route, open wait, variable or Process state; the retained CIB evidence is the answer.

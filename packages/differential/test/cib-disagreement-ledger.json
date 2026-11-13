@@ -641,6 +641,18 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/cycle-compositions/automatic-loop-tail-beyond-closure-bound.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0016"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/cycle-compositions/automatic-loop-waiting-branch-beyond-work-bound.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0016"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/error-called-child/finance-unlisted-code.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0006"
@@ -878,6 +890,42 @@
     "evidence": "scenarios/open-rows/interchange-reference-forms/instantiating-receive-task-none-start-then-deliver.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0008"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/journey-booking-recovery/cancel-leaves-unfinished-work-uncompensated.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0042"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/journey-booking-recovery/card-declined-reaches-the-transaction-boundary.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0057"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/journey-order-payment/status-updates-repeat-with-payload.population-cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0013"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/journey-order-payment/withdrawal-after-payment-and-beside-a-handler.population-cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0013"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/journey-scheduled-case/duplicate-reminder.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0006"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/journey-scheduled-case/late-firing-keeps-cadence.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0006"
     ]
   },
   {
@@ -1226,6 +1274,18 @@
     "evidence": "scenarios/open-rows/message-esp-interrupting/process-cancel-without-payload.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0013"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-esp-interrupting/region-abort-then-deadline.cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0044"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-esp-interrupting/region-abort-then-hold.cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0044"
     ]
   },
   {
