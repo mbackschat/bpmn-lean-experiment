@@ -12,6 +12,18 @@ import { CommandTimeoutError } from "./run-command.ts";
  * was how a contended host produced an unoverridable failure.
  */
 export const cibSevenMavenSoftTargetMs = 30_000;
+
+/**
+ * The most retained evidence files one Maven call replays (#70). The replay grows with the evidence at about 0.05 s a
+ * file (53 s for 1,000 files on 2026-11-10, 80 s for about 1,600 on 2026-11-13), so one call over the whole corpus
+ * reaches any fixed deadline; a batch keeps the deadline a bound on one call.
+ */
+export const retainedEvidenceBatchFiles = 500;
+
+/** How many Maven calls replay `count` retained evidence files, each with at most `retainedEvidenceBatchFiles`. */
+export function retainedEvidenceBatches(count: number): number {
+  return Math.max(1, Math.ceil(count / retainedEvidenceBatchFiles));
+}
 export const defaultCibSevenMavenTimeoutMs = 120_000;
 
 export function resolveCibSevenMavenTimeoutMs(

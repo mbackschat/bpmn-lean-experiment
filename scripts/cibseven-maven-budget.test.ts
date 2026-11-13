@@ -6,6 +6,8 @@ import {
   defaultCibSevenMavenTimeoutMs,
   reportCibSevenMavenElapsed,
   resolveCibSevenMavenTimeoutMs,
+  retainedEvidenceBatchFiles,
+  retainedEvidenceBatches,
   wrapCibSevenMavenFailure,
 } from "./cibseven-maven-budget.ts";
 import { CommandTimeoutError } from "./run-command.ts";
@@ -60,4 +62,12 @@ test("reports only a successful invocation past the workstation soft target", ()
   reportCibSevenMavenElapsed("2.2.0", cibSevenMavenSoftTargetMs, (line) => lines.push(line));
   assert.equal(lines.length, 1);
   assert.match(lines[0] ?? "", /CIB_MAVEN_SOFT_TARGET exceeded release=2\.2\.0/u);
+});
+
+// #70: the replay grows with the evidence, so the deadline bounds a batch of it, never the whole corpus.
+test("splits the retained-evidence replay into batches of at most the fixed batch size", () => {
+  assert.deepEqual([0, 1, retainedEvidenceBatchFiles, retainedEvidenceBatchFiles + 1, 1_610].map(retainedEvidenceBatches), [1, 1, 1, 2, 4]);
+  for (const count of [1, 499, 500, 501, 1_610, 10_000]) {
+    assert.ok(Math.ceil(count / retainedEvidenceBatches(count)) <= retainedEvidenceBatchFiles, String(count));
+  }
 });

@@ -1,7 +1,9 @@
+import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import {
   resolveCibSevenMavenTimeoutMs,
+  retainedEvidenceBatches,
   wrapCibSevenMavenFailure,
 } from "./cibseven-maven-budget.ts";
 import { cibSevenReleaseBuildDirectory } from "./cibseven-maven-build.ts";
@@ -61,8 +63,16 @@ async function runTests(
 }
 
 await runTests("2.2.0", [
-  "-Dtest=*Test,!CibSevenMappedSuccessScenarioRunnerTest,!CibSevenMappedBoundaryErrorScenarioRunnerTest",
+  "-Dtest=*Test,!CibSevenMappedSuccessScenarioRunnerTest,!CibSevenMappedBoundaryErrorScenarioRunnerTest,!CibSevenRetainedEvidenceTest",
 ]);
+// The retained-evidence replay runs in batches, each its own call under the deadline (#70); the test partitions its own
+// discovery, so this count only sizes the batches and a miscount cannot leave a file out.
+const evidenceFiles = (await readdir(fileURLToPath(new URL("../scenarios/", import.meta.url)), { recursive: true }))
+  .filter((file) => file.endsWith("cibseven-evidence.json")).length;
+const batches = retainedEvidenceBatches(evidenceFiles);
+for (let batch = 1; batch <= batches; batch += 1) {
+  await runTests("2.2.0", ["-Dtest=CibSevenRetainedEvidenceTest", `-Dbpmnlean.retainedEvidenceBatch=${String(batch)}/${String(batches)}`]);
+}
 await runTests("2.0.0", [
   "-Dcibseven.version=2.0.0",
   "-Dtest=CibSevenMappedSuccessScenarioRunnerTest,CibSevenMappedBoundaryErrorScenarioRunnerTest,CibSevenExclusiveGatewayJuelProbeTest,CibSevenIsolatedJuelRuntimeProbeTest",

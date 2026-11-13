@@ -21,20 +21,28 @@ import org.junit.Test;
  * `*cibseven-evidence.json` under `scenarios/`, discovered by name, runs through one runner and its canonical result,
  * or a population's deployments, steps, input failures and states, equal the retained ones. Open waits compare in the
  * canonical order of `canonical-result.schema.json`.
+ *
+ * <p>The system property {@value #BATCH_PROPERTY}, {@code i/n}, replays only the i-th of n contiguous slices of the sorted
+ * evidence list, so each Maven call stays within its deadline as the evidence grows (#70); without it every file runs.
+ * The slices partition this test's own discovery, so together they cover every file whatever n is.
  */
 public class CibSevenRetainedEvidenceTest {
 
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String POPULATION_EVIDENCE_KIND = "cibSevenPopulationEvidence";
+  private static final String BATCH_PROPERTY = "bpmnlean.retainedEvidenceBatch";
 
   @Test
   public void reproducesEveryRetainedEvidenceResultOfThePackagedRelease() throws Exception {
     var version = CibSevenRelease.current().version();
     var compared = 0;
-    try (var runner = CibSevenScenarioRunner.create(); var files = Files.walk(PROJECT_ROOT.resolve("scenarios"))) {
-      for (var evidencePath : files.filter(path -> path.getFileName().toString().endsWith("cibseven-evidence.json"))
-          .sorted().toList()) {
+    List<Path> discovered;
+    try (var files = Files.walk(PROJECT_ROOT.resolve("scenarios"))) {
+      discovered = files.filter(path -> path.getFileName().toString().endsWith("cibseven-evidence.json")).sorted().toList();
+    }
+    try (var runner = CibSevenScenarioRunner.create()) {
+      for (var evidencePath : batch(discovered, System.getProperty(BATCH_PROPERTY))) {
         var evidence = MAPPER.readTree(evidencePath.toFile());
         if (!version.equals(evidence.at("/producer/engineVersion").asText())) {
           continue;
@@ -64,6 +72,24 @@ public class CibSevenRetainedEvidenceTest {
       }
     }
     assertFalse("no retained evidence of CIB Seven " + version, compared == 0);
+  }
+
+  /** The {@code i/n} slice of `files`: indices from floor((i-1)N/n) to floor(iN/n), all of them when `selector` is null. */
+  private static List<Path> batch(List<Path> files, String selector) {
+    if (selector == null) {
+      return files;
+    }
+    var parts = selector.split("/", -1);
+    if (parts.length != 2) {
+      throw new IllegalArgumentException(BATCH_PROPERTY + " must be i/n, received " + selector);
+    }
+    var index = Integer.parseInt(parts[0]);
+    var count = Integer.parseInt(parts[1]);
+    if (count < 1 || index < 1 || index > count) {
+      throw new IllegalArgumentException(BATCH_PROPERTY + " must be i/n with 1 <= i <= n, received " + selector);
+    }
+    var size = (long) files.size();
+    return files.subList((int) ((index - 1) * size / count), (int) (index * size / count));
   }
 
   /**
