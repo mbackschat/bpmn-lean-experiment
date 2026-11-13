@@ -179,7 +179,7 @@ Reconsider the selected account only if:
 
 ## Deleted temporal-adapter record (2026-11-09)
 
-The per-capsule `@bpmn-lean/temporal-adapter` ran each admitted semantic capsule in its own Workflow until the generic host replaced it on 2026-11-09 (commit `f0ba57716`). Nothing in this section applies to the current host; it records what the adapter did, and the [last adapter-era revision of this specification](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) keeps its full text.
+The `@bpmn-lean/temporal-adapter` hosted the admitted semantic capsules, each Process instance in one Workflow, until the generic host replaced it on 2026-11-09 (commit `f0ba57716`). Nothing in this section applies to the current host; it records what the adapter did, and the [last adapter-era revision of this specification](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) keeps its full text.
 
 - Results: the adapter returned a typed `BpmnProcessStartResult` (`started` or `rejected`) and a `ProcessCommandResult` of `semantic`, `processClosed` with a validated `CompletedProcessReceipt` (`bpmn-lean.process-terminal-receipt.v1`), or `processUnknown` for an address Temporal no longer retained. Its raw Workflow result was a private `bpmn-lean.workflow-terminal-result.v1` envelope with bounded recovery entries, and one decoder also read the pre-v1 five-field receipt.
 - Admission: besides semantic admission, a separate Temporal host-capability predicate accepted only listed wait-set shapes and rejected other token splits combined with Timer or effect waits as `concurrentHostDrivenWaits`.

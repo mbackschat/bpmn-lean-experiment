@@ -239,7 +239,7 @@ The implementation remains inside existing architectural boundaries and uses coh
 | Definition capability schema replacement and schedule persistence | Existing `sqlite-definition-repository.ts` plus new `sqlite-definition-schedule-repository.ts` under the definitions module |
 | Product-facing compile/schedule gateway | New schedule collaborator under `platform/foundation/engine-gateway/src/` |
 | Exact-version Schedule preparation | New cohesive owner under `packages/engine-api/src/` |
-| Handle-free Schedule create/describe/pause/delete | New cohesive owner under `packages/temporal-adapter/client/src/` |
+| Handle-free Schedule create/describe/pause/delete | New cohesive owner under the deleted `packages/temporal-adapter/client/src/`; today [`schedule-client.ts`](../packages/temporal-host/src/schedule-client.ts) |
 | Server assembly | Existing composition root only |
 | HTTP-only schedule UI | New panel and API collaborator under `platform/apps/web/src/` |
 | Runnable M2 acceptance | New `showcase/m2-definition-scheduling/` package |

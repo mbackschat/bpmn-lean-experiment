@@ -20,7 +20,7 @@ Public APIs and black-box traces are the preferred compatibility evidence, but s
 - create deterministic fault points or schedule controls for experiments;
 - batch probes and reuse heavyweight infrastructure;
 - test a semantic hypothesis near its actual decision point;
-- produce an execution profile that explains why a supposedly small capsule is slow or nondeterministic.
+- produce an execution profile that explains why a supposedly small scenario is slow or nondeterministic.
 
 This is diagnostic leverage, not permission to derive the independent Lean model or TypeScript semantic core by transplanting engine algorithms.
 

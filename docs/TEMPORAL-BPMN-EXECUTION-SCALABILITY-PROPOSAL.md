@@ -49,6 +49,8 @@ Temporal Worker concurrency is governed by task slots and may use fixed or resou
 
 ## Current architecture assessment
 
+This section records the source as assessed at the proposal's approval, when the deleted per-capsule Temporal adapter hosted Product 1. Its Product 1 subsections no longer describe the engine: since 2026-11-09 the generic host bounds every Workflow chain by the [capacity table](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-capacity) and continues as new from a stable checkpoint ([Workflow-chain production contract](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract)).
+
 ### Product 1 preserves horizontal independence
 
 The production adapter hosts one admitted Semantic Process instance in one Temporal Workflow Execution. Its deterministic loop serializes accepted inputs for that Process instance only. This is the required consistency boundary, not a global engine lock.

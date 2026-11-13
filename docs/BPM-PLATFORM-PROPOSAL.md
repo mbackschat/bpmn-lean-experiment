@@ -89,7 +89,7 @@ The closure-reviewed M3 floor renders one engine-published String-or-Boolean fie
 
 Instance list with status and filters. Instance detail showing token position on the diagram, Process variables, open waits, and the instance's own history. Incident list with retry. Instance cancellation.
 
-Instance cancellation and incidents are **engine capsules, not platform features**. The platform exposes them; it cannot implement them, because both are semantic transitions.
+Instance cancellation and incidents are **engine features, not platform features**; today the [engine API](../packages/engine-api/src/process-operations.ts) publishes incidents with the kernel's `retryIncident` and incident-scoped `cancelIncidentProcess` commands, and no general instance cancellation. The platform exposes them; it cannot implement them, because both are semantic transitions.
 
 Host-level detail is deliberately not reimplemented: the console links out to Temporal's own UI for Event History, Workflow retries, and Activity attempts. BPMN facts come from our surfaces, host facts from Temporal's.
 
@@ -205,7 +205,7 @@ A surface is accepted when it has a runnable demonstration under `showcase/`, re
 - multi-tenancy, clustering, horizontal scaling, high-availability claims, and production release packaging;
 - conformance checking, variant analysis, and predictive process mining beyond frequency and duration overlays;
 - reimplementation of Temporal's own operator surfaces, which are linked out to;
-- any semantic capability the engine does not publish, including cancellation and incidents until their engine capsules close;
+- any semantic capability the engine does not publish;
 - migration of running instances between definition versions;
 - a second Process-state representation, a semantic assertion language, and any platform-side interpretation of BPMN meaning.
 
