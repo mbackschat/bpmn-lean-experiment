@@ -4,10 +4,13 @@
  * own `bpmn-worker` environment is the oracle for the shipped configuration.
  */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { test } from "node:test";
 
-const { ConfiguredResultKind, configuredEffectHandler, loadEvaluationWorkerConfig, parseConfiguredEffects } = await import(
+const { ConfiguredResultKind, configuredEffectHandler, decodeConfiguredEffects, parseConfiguredEffects } = await import(
+  new URL("../dist/configured-effects.js", import.meta.url).href
+) as typeof import("../src/configured-effects.ts");
+const { loadEvaluationWorkerConfig } = await import(
   new URL("../dist/evaluation-worker-config.js", import.meta.url).href
 ) as typeof import("../src/evaluation-worker-config.ts");
 const { evaluationHealthStatus, runEvaluationWorkerCommand } = await import(
@@ -138,6 +141,18 @@ test("technicalFailures reports that many incidents per occurrence and then the 
   ]);
   // Asking again for an earlier count gives the same answer: a transport retry or a restarted Worker changes nothing.
   assert.equal((await handler(request(probe, 0), context)).kind, EffectResultKind.TechnicalFailure);
+});
+
+test("every neutral configuration's effectHandlers is a declaration this module accepts, so the showcases and the distribution share one wire form", async () => {
+  const directory = new URL("../../../examples/temporal-mvp/", import.meta.url);
+  let declaring = 0;
+  for (const name of (await readdir(directory)).filter((entry) => entry.endsWith(".json")).sort()) {
+    const configuration = JSON.parse(await readFile(new URL(name, directory), "utf8")) as { effectHandlers?: unknown };
+    if (configuration.effectHandlers === undefined) continue;
+    declaring += 1;
+    decodeConfiguredEffects(configuration.effectHandlers, name);
+  }
+  assert.ok(declaring >= 10, "the directory must be read");
 });
 
 test("the Compose file's bpmn-worker environment is a complete configuration whose handlers include the incident walkthrough", async () => {

@@ -58,6 +58,14 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:3000/api/v1/definitions >/dev/null
 
+      - name: Set up Node for the restart proofs
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+
+      - name: Prove that a no-build, no-pull restart preserves open work
+        run: node scripts/evaluation-distribution-restart.ts source
+
       - name: Show service state after failure
         if: failure()
         run: docker compose ps && docker compose logs --no-color
@@ -202,6 +210,10 @@ jobs:
           .artifacts/mue-evaluation-demo/deploy/evaluation/demo prepare
           curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:3000/api/v1/definitions >/dev/null
+
+      - name: Prove that a no-build, no-pull restart of the published bundle preserves open work
+        if: github.event_name == 'push' || inputs.publish_images == true
+        run: node scripts/evaluation-distribution-restart.ts published .artifacts/mue-evaluation-demo/deploy/evaluation/demo
 
       - name: Show published service state after failure
         if: failure() && (github.event_name == 'push' || inputs.publish_images == true)

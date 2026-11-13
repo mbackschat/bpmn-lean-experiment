@@ -7,7 +7,7 @@ import {
   readPlatformServerConfig,
 } from "@bpmn-lean/platform-server";
 import type { PlatformServerRuntime } from "@bpmn-lean/platform-server";
-import { EffectResultKind } from "@bpmn-lean/temporal-host/worker";
+import { configuredEffectHandler } from "@bpmn-lean/temporal-host/worker";
 
 import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import {
@@ -20,7 +20,6 @@ import {
   environmentNamespace,
   withDeadline,
 } from "./host-worker.ts";
-import type { EffectHandler } from "./host-worker.ts";
 
 const operationDeadlineMs = 10_000;
 const environmentStartupDeadlineMs = 40_000;
@@ -36,7 +35,6 @@ type VerificationRequest = Readonly<{
 export class IncidentOperationsShowcaseRuntime {
   readonly #dataDirectory: string;
   readonly #temporalCacheDirectory: string;
-  readonly #effects = new IncidentEffects();
   #environment: Environment | undefined;
   #worker: ShowcaseWorker | undefined;
   #platform: PlatformServerRuntime | undefined;
@@ -82,7 +80,7 @@ export class IncidentOperationsShowcaseRuntime {
       ShowcaseWorker.start(environment, {
         taskQueue: engineTaskQueue(),
         identity: `bpmn-m4-incident-operations-worker-${process.pid}`,
-        effects: this.#effects.handler,
+        effects: incidentEffects,
       }),
       operationDeadlineMs,
       "M4 incident operations Worker startup",
@@ -199,27 +197,16 @@ export class IncidentOperationsShowcaseRuntime {
 }
 
 /**
- * Fails each effect occurrence's first execution technically, opening an incident, and succeeds on every later one.
- * Executions are counted per occurrence rather than per idempotency key: the host's key also names the failure count
- * (`effectKey` in `packages/temporal-host/src/host-machine.ts`), so an operator's retry arrives under a new key for the
- * same occurrence.
+ * The probe operation of `scenarios/service-task-effect`, the Process this showcase starts: each occurrence's first
+ * execution fails technically, opening an incident, and every later one succeeds. The host's failure count in the
+ * request decides it, so an operator's Retry, a replaced Worker and a transport retry all see the same answer.
  */
-class IncidentEffects {
-  readonly #invocations = new Map<string, number>();
-
-  readonly handler: EffectHandler = async (request) => {
-    const occurrence = JSON.stringify([
-      request.occurrence.processInstanceId,
-      request.occurrence.elementId,
-      request.occurrence.activation,
-    ]);
-    const prior = this.#invocations.get(occurrence) ?? 0;
-    this.#invocations.set(occurrence, prior + 1);
-    return prior === 0
-      ? { kind: EffectResultKind.TechnicalFailure }
-      : { kind: EffectResultKind.Success, outputs: [] };
-  };
-}
+const incidentEffects = configuredEffectHandler([{
+  protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+  operation: "urn:bpmn-lean:effect-operation:probe-v1",
+  technicalFailures: 1,
+  result: { kind: "success", localPatch: [] },
+}]);
 
 /** The platform's configured Task Queue, which its Worker serves and which names its engine population. */
 function engineTaskQueue(): string {

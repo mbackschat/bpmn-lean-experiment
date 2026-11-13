@@ -21,10 +21,6 @@ import { isDeepStrictEqual } from "node:util";
 
 import type { EngineBinding, EngineOpenWait, EngineStateObservation } from "@bpmn-lean/engine-api";
 import type { CommandResult } from "@bpmn-lean/temporal-host/client";
-import { EffectResultKind } from "@bpmn-lean/temporal-host/worker";
-import type { EffectResult } from "@bpmn-lean/temporal-host/worker";
-
-import type { EffectHandler } from "./host-worker.ts";
 
 /** The plan vocabulary of `examples/temporal-mvp/*.json`; its kinds are the old canonical stimulus kinds. */
 export const InteractionResponseKind = {
@@ -51,17 +47,6 @@ export type InteractionResponse = Readonly<
   | { kind: typeof InteractionResponseKind.DeliverMessage; channel: MessageChannel; delayMs: number }
   | { kind: typeof InteractionResponseKind.DeliverPayloadMessage; channel: MessageChannel; payload: TypedValue; delayMs: number }
 >;
-
-/** A configured stand-in for one neutral effect descriptor; it is not a real integration. */
-export type ConfiguredEffect = Readonly<{
-  protocol: string;
-  operation: string;
-  result: Readonly<
-    | { kind: "success"; localPatch: readonly EngineBinding[] }
-    | { kind: "bpmnError"; code: string; message: string | null; localPatch: readonly EngineBinding[] }
-    | { kind: "technicalFailure" }
-  >;
-}>;
 
 export type InteractionPort = Readonly<{
   readState: () => Promise<EngineStateObservation>;
@@ -306,43 +291,6 @@ async function waitForHostDelay(delayMs: number): Promise<void> {
   await hostDelay(delayMs, undefined, { ref: false });
 }
 
-/** The host effect handler answering each configured descriptor with its fixed result. */
-export function configuredEffectHandler(effects: readonly ConfiguredEffect[]): EffectHandler {
-  const declared = new Map(effects.map((effect) => [descriptorKey(effect.protocol, effect.operation), effect.result]));
-  return async (request) => {
-    const result = declared.get(descriptorKey(request.protocol, request.operation));
-    if (result === undefined) {
-      throw new Error(`no configured effect handler for ${request.protocol}/${request.operation}`);
-    }
-    return effectResult(result);
-  };
-}
-
-function effectResult(result: ConfiguredEffect["result"]): EffectResult {
-  switch (result.kind) {
-    case "success":
-      return { kind: EffectResultKind.Success, outputs: result.localPatch as EffectOutputs };
-    case "bpmnError":
-      return {
-        kind: EffectResultKind.BusinessFailure,
-        code: result.code,
-        message: result.message,
-        outputs: result.localPatch as EffectOutputs,
-      };
-    case "technicalFailure":
-      return { kind: EffectResultKind.TechnicalFailure };
-    default:
-      return assertNever(result);
-  }
-}
-
-type EffectOutputs = Extract<EffectResult, { kind: EffectResultKind.Success }>["outputs"];
-
-/** Protocol and operation may contain any delimiter, so the key is the JSON encoding of the exact pair. */
-function descriptorKey(protocol: string, operation: string): string {
-  return JSON.stringify([protocol, operation]);
-}
-
 export function validateInteractionPlan(value: unknown): asserts value is readonly InteractionResponse[] {
   if (!Array.isArray(value)) throw new TypeError("Interaction plan must be an array");
   for (const response of value) {
@@ -367,40 +315,6 @@ export function validateInteractionPlan(value: unknown): asserts value is readon
       default:
         throw new TypeError(`Interaction response kind is not answered by this showcase driver: ${String(record.kind)}`);
     }
-  }
-}
-
-export function validateConfiguredEffects(value: unknown): asserts value is readonly ConfiguredEffect[] {
-  if (!Array.isArray(value)) throw new TypeError("Effect handler list must be an array");
-  const descriptors = new Set<string>();
-  for (const effect of value) {
-    const record = requireRecord(effect, "Effect handler");
-    requireExactKeys(record, ["protocol", "operation", "result"], "Effect handler");
-    requireName(record.protocol, "Effect handler protocol");
-    requireName(record.operation, "Effect handler operation");
-    const result = requireRecord(record.result, "Effect handler result");
-    switch (result.kind) {
-      case "success":
-        requireExactKeys(result, ["kind", "localPatch"], "Effect success");
-        requireBindings(result.localPatch, "Effect success localPatch");
-        break;
-      case "bpmnError":
-        requireExactKeys(result, ["kind", "code", "message", "localPatch"], "Effect BPMN Error");
-        requireName(result.code, "Effect BPMN Error code");
-        if (result.message !== null && typeof result.message !== "string") {
-          throw new TypeError("Effect BPMN Error message must be a string or null");
-        }
-        requireBindings(result.localPatch, "Effect BPMN Error localPatch");
-        break;
-      case "technicalFailure":
-        requireExactKeys(result, ["kind"], "Effect technical failure");
-        break;
-      default:
-        throw new TypeError(`Effect handler result kind is unknown: ${String(result.kind)}`);
-    }
-    const descriptor = descriptorKey(record.protocol as string, record.operation as string);
-    if (descriptors.has(descriptor)) throw new TypeError(`Effect handlers repeat ${descriptor}`);
-    descriptors.add(descriptor);
   }
 }
 

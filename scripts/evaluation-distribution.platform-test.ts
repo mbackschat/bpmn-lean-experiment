@@ -7,6 +7,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
 import { showcaseEngineDeployment } from "../showcase/engine-deployment.ts";
+import { rcShowcases } from "../model-corpus/rc-showcases.ts";
 import { buildProcessShowcaseCatalog } from "./rc-showcase-catalog.ts";
 import { writeEvaluationShowcases } from "./write-evaluation-showcases.ts";
 
@@ -274,6 +275,121 @@ test("evaluation readiness and fresh setup share one explicitly selected Namespa
   assert.doesNotMatch(start, /initialize-fresh-namespace/u);
   assert.match(workflow, /BPMN_EVALUATION_NAMESPACE: bpmn-evaluation/u);
   assert.match(workflow, /docker compose run --rm --no-deps bpmn-worker initialize-fresh-namespace --retention-seconds 86400/u);
+});
+
+const walkthroughPath = new URL("../docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md", import.meta.url);
+
+/** The reader the platform admits definitions with; its declarations come from `build:temporal-host`. */
+async function sourceReader(): Promise<typeof import("../packages/bpmn-source/src/index.ts")> {
+  return await import(new URL("../packages/bpmn-source/dist/index.js", import.meta.url).href).catch((cause: unknown) => {
+    throw new Error("build @bpmn-lean/bpmn-source first (./scripts/pnpm.sh run build:temporal-host)", { cause });
+  }) as typeof import("../packages/bpmn-source/src/index.ts");
+}
+
+type Descriptor = Readonly<{ protocol: string; operation: string }>;
+
+const descriptorText = (descriptor: Descriptor): string => JSON.stringify([descriptor.protocol, descriptor.operation]);
+
+/** The effect descriptors a program binds: the IL names an effect only by its binding's protocol and operation. */
+function boundDescriptors(program: unknown): readonly Descriptor[] {
+  const found = new Map<string, Descriptor>();
+  JSON.stringify(program, (_key, value: unknown) => {
+    if (typeof value === "object" && value !== null && "protocol" in value && "operation" in value) {
+      const { protocol, operation } = value as { protocol: unknown; operation: unknown };
+      if (typeof protocol === "string" && typeof operation === "string") found.set(descriptorText({ protocol, operation }), { protocol, operation });
+    }
+    return value;
+  });
+  return [...found.values()];
+}
+
+test("every effect descriptor an advertised model binds has a declared handler with its configured result", async () => {
+  const projectRoot = fileURLToPath(new URL("..", import.meta.url));
+  const [compose, workflow, walkthrough, catalog, reader] = await Promise.all([
+    readFile(composePath, "utf8"), readFile(workflowPath, "utf8"), readFile(walkthroughPath, "utf8"),
+    buildProcessShowcaseCatalog(projectRoot), sourceReader(),
+  ]);
+  const declaredText = /^ {6}BPMN_WORKER_EFFECTS_JSON: '(?<json>[^'\n]+)'$/mu.exec(serviceBlock(compose, "bpmn-worker"))?.groups?.["json"];
+  assert.ok(declaredText !== undefined, "the bpmn-worker must declare its handlers in BPMN_WORKER_EFFECTS_JSON");
+  const declared = new Map((JSON.parse(declaredText) as Array<Descriptor & { result: unknown }>)
+    .map((effect) => [descriptorText(effect), effect]));
+
+  // What the distribution advertises: every catalog showcase its web bundle lists (guided ones included, though this
+  // host disables their preparation), the scenarios its published bundle ships, and those its walkthrough names.
+  const bundled = [...(/cp -R (?<directories>(?:scenarios\/[a-z0-9-]+ )+)"\$bundle_root\/scenarios\/"/u.exec(workflow)?.groups?.["directories"] ?? "")
+    .matchAll(/scenarios\/(?<name>[a-z0-9-]+)/gu)].map((match) => `scenarios/${match.groups!["name"]!}/process.bpmn`);
+  const walked = [...walkthrough.matchAll(/scenarios\/(?<name>[a-z0-9-]+)\/process\.bpmn/gu)].map((match) => `scenarios/${match.groups!["name"]!}/process.bpmn`);
+  const advertised = new Map<string, string>([
+    ...catalog.filter((entry) => entry.showcase !== null).map((entry): [string, string] => [entry.sourcePath, entry.profile]),
+    ...[...bundled, ...walked].map((source): [string, string] => [source, "bpmn-2.0.2"]),
+  ]);
+  assert.ok(bundled.length >= 3 && walked.length >= 2 && advertised.size >= 12, "the advertised model set must not be vacuous");
+
+  const bound = new Map<string, string[]>();
+  for (const [source, profile] of advertised) {
+    const read = await reader.readKernelProgram({
+      bytes: new Uint8Array(await readFile(path.join(projectRoot, source))), overlay: null, profile,
+      limits: { maxBytes: 1 << 20, parserDeadlineMs: 10_000 },
+    });
+    assert.equal(read.kind, "read", `${source} must be readable by the reader the platform uses`);
+    if (read.kind !== "read") continue;
+    for (const descriptor of boundDescriptors(read.program)) {
+      bound.set(descriptorText(descriptor), [...bound.get(descriptorText(descriptor)) ?? [], source]);
+    }
+  }
+  assert.ok(bound.size >= 3, "the advertised models must bind effects, or this guard sees nothing");
+  for (const [descriptor, sources] of bound) {
+    assert.ok(declared.has(descriptor), `${descriptor} is bound by ${sources.join(", ")} but BPMN_WORKER_EFFECTS_JSON declares no handler for it`);
+  }
+
+  // Each catalog showcase's neutral configuration states the result its descriptors answer with; the distribution
+  // serves the same, so the showcase behaves as its description says.
+  const examples = new Set(catalog.filter((entry) => entry.showcase !== null).map((entry) => entry.id));
+  for (const selection of rcShowcases.filter(({ modelId }) => examples.has(modelId))) {
+    const configuration = JSON.parse(await readFile(path.join(projectRoot, "examples/temporal-mvp", selection.configuration), "utf8")) as
+      { effectHandlers?: Array<Descriptor & { result: unknown }> };
+    for (const effect of configuration.effectHandlers ?? []) {
+      assert.deepEqual(declared.get(descriptorText(effect))?.result, effect.result, `${selection.modelId}: ${effect.operation} answers differently from its configuration`);
+    }
+  }
+});
+
+test("the BPMN Worker's health check allows for the Workflow bundle it builds first", async () => {
+  const healthcheck = /healthcheck:\n(?<body>(?: {6}.*\n)+)/u.exec(serviceBlock(await readFile(composePath, "utf8"), "bpmn-worker"))?.groups?.["body"];
+  assert.ok(healthcheck !== undefined);
+  assert.match(healthcheck, /^ {6}start_period: (?:[3-9][0-9]|[1-9][0-9]{2,})s$/mu, "start_period must cover the measured bundle build with a margin");
+});
+
+test("the dispatch restarts every stack it brings up and requires its open work to survive", async () => {
+  const workflow = await readFile(workflowPath, "utf8");
+  const step = (name: string): string => {
+    const block = workflow.split(`      - name: ${name}\n`)[1]?.split("\n      - name:")[0];
+    assert.ok(block !== undefined, `missing workflow step ${name}`);
+    return block;
+  };
+  const order = (names: readonly string[]): void => {
+    const positions = names.map((name) => workflow.indexOf(`      - name: ${name}\n`));
+    assert.ok(positions.every((position, index) => position >= 0 && (index === 0 || positions[index - 1]! < position)), `steps out of order: ${names.join(" < ")}`);
+  };
+  order([
+    "Verify the public application origin", "Set up Node for the restart proofs",
+    "Prove that a no-build, no-pull restart preserves open work", "Show service state after failure", "Stop the evaluation distribution",
+  ]);
+  assert.match(step("Set up Node for the restart proofs"), /node-version-file: \.node-version/u);
+  assert.match(step("Prove that a no-build, no-pull restart preserves open work"), /^ {8}run: node scripts\/evaluation-distribution-restart\.ts source$/mu);
+  assert.doesNotMatch(step("Prove that a no-build, no-pull restart preserves open work"), /^ {8}if:/mu, "the source stack is proven on every dispatch");
+  order([
+    "Prove anonymous zero-build startup from exact published digests",
+    "Prove that a no-build, no-pull restart of the published bundle preserves open work",
+    "Show published service state after failure", "Stop the published evaluation distribution",
+  ]);
+  const published = step("Prove that a no-build, no-pull restart of the published bundle preserves open work");
+  assert.match(published, /^ {8}run: node scripts\/evaluation-distribution-restart\.ts published \.artifacts\/mue-evaluation-demo\/deploy\/evaluation\/demo$/mu);
+  assert.equal(
+    /^ {8}if: (.+)$/mu.exec(published)?.[1],
+    /^ {8}if: (.+)$/mu.exec(step("Prove anonymous zero-build startup from exact published digests"))?.[1],
+    "the published bundle is restarted exactly when it is started",
+  );
 });
 
 test("project images carry fail-closed demo source provenance", async () => {

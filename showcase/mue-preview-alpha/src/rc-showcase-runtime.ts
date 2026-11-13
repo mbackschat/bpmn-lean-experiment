@@ -11,6 +11,7 @@ import { createPlatformServer, readPlatformServerConfig } from "@bpmn-lean/platf
 import type { PlatformServerRuntime } from "@bpmn-lean/platform-server";
 import { ProcessClient } from "@bpmn-lean/temporal-host/client";
 import type { JsonValue } from "@bpmn-lean/temporal-host/client";
+import { configuredEffectHandler } from "@bpmn-lean/temporal-host/worker";
 
 import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import { allocatePlaywrightLoopbackPort } from "../../../scripts/playwright-loopback-ports.ts";
@@ -20,7 +21,6 @@ import {
   RcShowcaseActors, driveRcShowcaseActor, loadRcShowcaseBindings, mergeRcEffectHandlers,
 } from "./rc-showcase-actor.ts";
 import type { RcShowcaseBinding } from "./rc-showcase-actor.ts";
-import { configuredEffectHandler } from "./host-interactions.ts";
 import type { InteractionPort } from "./host-interactions.ts";
 import { ShowcaseWorker, createCachedLocalEnvironment, environmentNamespace, withDeadline } from "./host-worker.ts";
 import type { TemporalEnvironment } from "./host-worker.ts";

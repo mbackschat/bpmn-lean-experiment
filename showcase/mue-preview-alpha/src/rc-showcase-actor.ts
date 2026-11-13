@@ -6,12 +6,13 @@ import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
 import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
+import { decodeConfiguredEffects, type ConfiguredEffect } from "@bpmn-lean/temporal-host/worker";
 
 import { rcShowcases } from "../../../model-corpus/rc-showcases.ts";
 import {
-  InteractionResultKind, driveInteractions, validateConfiguredEffects, validateInteractionPlan,
+  InteractionResultKind, driveInteractions, validateInteractionPlan,
 } from "./host-interactions.ts";
-import type { ConfiguredEffect, InteractionPort, InteractionResponse } from "./host-interactions.ts";
+import type { InteractionPort, InteractionResponse } from "./host-interactions.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -46,9 +47,9 @@ export async function loadRcShowcaseBindings(): Promise<readonly RcShowcaseBindi
       || typeof value.bpmn.file !== "string" || typeof value.bpmn.semanticProfile !== "string") {
       throw new TypeError(`RC showcase ${selection.modelId} requires a neutral runnable-MVP config`);
     }
-    const { interactions, effectHandlers } = value;
+    const { interactions } = value;
     validateInteractionPlan(interactions);
-    validateConfiguredEffects(effectHandlers);
+    const effectHandlers = decodeConfiguredEffects(value.effectHandlers, `RC showcase ${selection.modelId} effectHandlers`);
     const sourceFile = resolve(configDirectory, value.bpmn.file);
     const digest = createHash("sha256").update(await readFile(sourceFile)).digest("hex");
     if (sourceFile !== resolve(repositoryRoot, model.source.bpmnRelativePath)

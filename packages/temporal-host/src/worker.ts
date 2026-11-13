@@ -16,6 +16,14 @@ import { createHostActivities, type EffectHandler } from "./activities.js";
 export { createHostActivities, type EffectContext, type EffectHandler, type HostActivityOptions } from "./activities.js";
 export type { EffectRequest, ScriptRequest } from "./host-machine.js";
 export { EffectResultKind, type Binding, type EffectResult } from "./port.js";
+export {
+  ConfiguredResultKind,
+  configuredEffectHandler,
+  decodeConfiguredEffects,
+  parseConfiguredEffects,
+  type ConfiguredEffect,
+  type ConfiguredResult,
+} from "./configured-effects.js";
 
 const workflowsPath = fileURLToPath(new URL("./workflows.js", import.meta.url));
 

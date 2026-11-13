@@ -65,10 +65,13 @@ services:
       BPMN_TEMPORAL_ADDRESS: temporal:7233
       BPMN_TEMPORAL_NAMESPACE: ${BPMN_EVALUATION_NAMESPACE:-default}
       BPMN_TEMPORAL_TASK_QUEUE: bpmn-semantic
-      # The Service Task of `scenarios/service-task-effect` binds the probe operation; its first run reports one
-      # incident, and an operator's Retry then succeeds, as the browser walkthrough's incident section needs. Any
-      # other effect descriptor is refused, and a Process waiting on it stays open.
-      BPMN_WORKER_EFFECTS_JSON: '[{"protocol":"urn:bpmn-lean:effect-protocol:activity-v1","operation":"urn:bpmn-lean:effect-operation:probe-v1","technicalFailures":1,"result":{"kind":"success","localPatch":[]}}]'
+      # One handler per effect descriptor that a model this distribution advertises binds; the platform test derives
+      # that set from the showcase catalog, the published bundle and the walkthrough, and holds each result to its
+      # neutral configuration in `examples/temporal-mvp`. The probe of `scenarios/service-task-effect` reports one
+      # incident and succeeds once an operator retries it, as the walkthrough's incident section needs. The mapped and
+      # compensation operations serve catalog models whose guided preparation this host disables. A model uploaded
+      # with any other descriptor is refused here, and its Process stays open at that effect.
+      BPMN_WORKER_EFFECTS_JSON: '[{"protocol":"urn:bpmn-lean:effect-protocol:activity-v1","operation":"urn:bpmn-lean:effect-operation:probe-v1","technicalFailures":1,"result":{"kind":"success","localPatch":[]}},{"protocol":"urn:bpmn-lean:effect-protocol:activity-v1","operation":"urn:bpmn-lean:effect-operation:mapped-success-v1","result":{"kind":"success","localPatch":[{"name":"result","value":{"kind":"string","value":"example-result"}}]}},{"protocol":"urn:bpmn-lean:effect-protocol:activity-v1","operation":"urn:bpmn-lean:effect-operation:compensation-single-effect-v1","result":{"kind":"success","localPatch":[]}}]'
       BPMN_WORKER_HEALTH_PORT: "8080"
       BPMN_WORKER_IDENTITY: evaluation-bpmn-worker
       BPMN_WORKER_SCRIPT_TIMEOUT_MS: "5000"
@@ -80,6 +83,10 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+      # The Worker builds its Workflow bundle before it serves health. Three cold builds on 2026-11-13 (Apple M1, 8
+      # cores, Node 26.10.0) took 1.5 to 1.7 s, 1.8 to 2.2 s with the module import, at a peak of 365 MiB resident.
+      # 30 s is about 13 times the slowest, for a 4-vCPU hosted runner, and failures inside it do not count as retries.
+      start_period: 30s
     restart: unless-stopped
 
   platform-api:

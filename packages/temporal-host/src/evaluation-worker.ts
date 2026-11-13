@@ -11,7 +11,8 @@ import { createServer, type Server } from "node:http";
 import { isGrpcServiceError } from "@temporalio/client";
 import { NativeConnection } from "@temporalio/worker";
 
-import { configuredEffectHandler, loadEvaluationWorkerConfig, type EvaluationWorkerConfig } from "./evaluation-worker-config.js";
+import { configuredEffectHandler } from "./configured-effects.js";
+import { loadEvaluationWorkerConfig, type EvaluationWorkerConfig } from "./evaluation-worker-config.js";
 import { createHostWorker } from "./worker.js";
 
 /** gRPC status codes of the Temporal frontend's answers (https://grpc.github.io/grpc/core/md_doc_statuscodes.html). */
