@@ -140,6 +140,16 @@ export function rolloverDue(usage: RunUsage, eventBudget: number): boolean {
     usage.retainedPublicationBytes + chainCapacity.publicationBatchBytes > chainCapacity.retainedPublicationBytes;
 }
 
+/**
+ * Whether a chain's Run continues as new: a trigger fired (`rolloverDue`) after the Run committed an input, so a budget
+ * below a fresh Run's own history cannot chain Runs that make no progress; or it accepted `updatesPerRun` Updates, which
+ * a fresh Run never has, so the settlements and wakes a Run receives without committing never take it to Temporal's
+ * per-execution Update limit.
+ */
+export function chainRolloverDue(commits: number, usage: RunUsage, eventBudget: number): boolean {
+  return (commits > 0 || usage.updates >= chainCapacity.updatesPerRun) && rolloverDue(usage, eventBudget);
+}
+
 /** The event budget of a program whose own budget is `derived`: the table's trigger caps it unless a test overrides it. */
 export function eventBudget(derived: number, override: number | null): number {
   return override ?? Math.min(derived, chainCapacity.historyEvents);
@@ -147,7 +157,7 @@ export function eventBudget(derived: number, override: number | null): number {
 
 /**
  * The refusal of a caller's Update before Temporal accepts it: a Run that accepted `updatesPerRun` Updates takes no more
- * until it rolls over, and at most `updatesInFlight` caller Updates run at once.
+ * until it rolls over, and at most `updatesInFlight` caller Updates, a `settle` included, run at once.
  */
 export function updateFence(accepted: number, inFlight: number): CapacityBound | null {
   if (accepted >= chainCapacity.updatesPerRun) return CapacityBound.Updates;

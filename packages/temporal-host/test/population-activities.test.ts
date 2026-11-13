@@ -38,7 +38,7 @@ const requests: { readonly [Name in keyof PopulationActivities]: Parameters<Popu
   settlePopulationEmit: { workflowId: "chain", commandId: "command" },
   registerPopulation: { population: "p", registration: {} } as never,
   emitPopulation: { population: "p", reference: {}, handedBack: null } as never,
-  wakePopulationEmit: { workflowId: "chain", wake: { kind: "reoffer", run: "run" } },
+  wakePopulationEmit: { workflowId: "chain", wake: { run: "run", commandIds: ["command"] } },
   startDeployment: { population: "p", deploymentId: 1, program: {} },
   fireTimerStart: { population: "p", config: {}, deploymentId: 1, startEvent: "Start", dueMs: 0, commandId: "firing" } as never,
 };

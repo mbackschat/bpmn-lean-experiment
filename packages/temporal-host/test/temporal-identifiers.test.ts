@@ -72,7 +72,7 @@ const requests: { readonly [Name in keyof PopulationActivities]: Parameters<Popu
   settlePopulationEmit: { workflowId: "chain", commandId: longest },
   registerPopulation: { population: longest, registration: {} } as never,
   emitPopulation: { population: longest, reference: { workflowId: "chain", commandId: longest, count: 1, digest: "" }, handedBack: null } as never,
-  wakePopulationEmit: { workflowId: "chain", wake: { kind: "reoffer", run: "run" } },
+  wakePopulationEmit: { workflowId: "chain", wake: { run: "run", commandIds: ["command"] } },
   startDeployment: { population: longest, deploymentId: 1, program: {} },
   fireTimerStart: { population: longest, config: {}, deploymentId: 1, startEvent: longest, dueMs: 0, commandId: longest } as never,
 };

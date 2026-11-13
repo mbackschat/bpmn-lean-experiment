@@ -97,7 +97,7 @@ export const populationMessageQuery = defineQuery<MessageScan, [publication: Wir
 export const pendingIntentsQuery = defineQuery<TextPage, [commandId: string, from: number]>("pendingIntents");
 export const populationDeliverUpdate = defineUpdate<ReachOutcome, [PopulationDelivery]>("populationDeliver");
 export const emitSettledUpdate = defineUpdate<void, [commandId: string]>("emitSettled");
-/** The ingress's wake of a chain whose emit it deferred. */
+/** The ingress Run's hand-back of a chain's deferred emits as it continues as new. */
 export const emitWakeUpdate = defineUpdate<void, [EmitWake]>("emitWake");
 /**
  * The outcome of the chain's population start; sent with the start (Update-with-Start). A chain no population start

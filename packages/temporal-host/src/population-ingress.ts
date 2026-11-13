@@ -9,11 +9,12 @@
  * takes the next ordinal, starts the deployment's Workflow and only then becomes visible to commands.
  *
  * An emit the ingress cannot hold is deferred, not refused: its reference waits in this Run's memory, in arrival order,
- * and the Run accepts it as soon as a settled item or a shrunk registration leaves room, then wakes its chain (`emitWake`
- * through `wakePopulationEmit`). The waiting references are never carried, since nothing bounds how many chains defer:
- * a Run that continues as new first hands them back (a `reoffer` wake), and while it does so its validators reject every
- * emit and registration, so a chain's Activity fails as transport does and its retry reaches the next Run. The capacity
- * wait itself is never a retry: a deferred chain waits for its wake.
+ * and the Run accepts it as soon as a settled item or a shrunk registration leaves room; its chain, which already has its
+ * answer, learns of it when the emit settles. The waiting references are never carried, since nothing bounds how many
+ * chains defer: a Run that continues as new first hands them back, one `emitWake` per chain through `wakePopulationEmit`
+ * naming its emits, and while it does so its validators reject every emit and registration, so a chain's Activity fails
+ * as transport does and its retry reaches the next Run. The capacity wait itself is never a retry and holds no Update: a
+ * deferred emit waits at the ingress, or in its chain until the hand-back's wake.
  *
  * When its history suggests Continue-As-New the ingress releases every waiting command handler with `pending` (the
  * caller reads the answer from `populationResult`), waits for the handlers to finish and carries its state, the item in
@@ -45,7 +46,6 @@ import type {
   IngressState,
   PopulationActivities,
   PopulationIngressArgs,
-  WakeRequest,
 } from "./population-contract.js";
 import {
   admitWaiting,
@@ -158,22 +158,23 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
   let registering: Promise<unknown> = Promise.resolve();
   /** This Run's deferred hand-offs, in arrival order; never carried (see the module comment). */
   let waiting: readonly EmitReference[] = [];
-  /** The wakes owed to chains, which the main loop sends before its next action. */
-  let wakes: readonly WakeRequest[] = [];
-  /** Accepts the waiting hand-offs that now fit, in order, and owes each chain its wake. */
+  /** Accepts the waiting hand-offs that now fit, in order; their chains learn of it when each settles. */
   const admitNow = (): void => {
     if (waiting.length === 0) return;
     const admitted = admitWaiting(frame, state, waiting);
     state = admitted.state;
     waiting = admitted.waiting;
-    wakes = [...wakes, ...admitted.taken.map((reference): WakeRequest =>
-      ({ workflowId: reference.workflowId, wake: { kind: "accepted", commandId: reference.commandId } }))];
   };
-  /** Sends every wake owed; each wake handler only marks the chain's emit, so this waits on no chain's main loop. */
-  const sendWakes = async (): Promise<void> => {
-    const sending = wakes;
-    wakes = [];
-    await Promise.all(sending.map((request) => activities.wakePopulationEmit(request)));
+  /**
+   * Hands every waiting emit back to its chain, one wake per chain naming its emits. A wake's handler only marks the
+   * chain's state, and no chain handler waits on this Run's room, so the wakes wait on no chain's main loop.
+   */
+  const handBack = async (): Promise<void> => {
+    const chains = new Map<string, string[]>();
+    for (const reference of waiting) chains.set(reference.workflowId, [...chains.get(reference.workflowId) ?? [], reference.commandId]);
+    waiting = [];
+    await Promise.all([...chains].map(([workflowId, commandIds]) =>
+      activities.wakePopulationEmit({ workflowId, wake: { run: workflowInfo().runId, commandIds } })));
   };
 
   setHandler(populationResultQuery, (commandId) => populationResult(state, commandId));
@@ -306,10 +307,7 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
     if (rolloverDue() && carriable()) {
       rolling = true;
       // Hands the waiting emits back before the Run ends; no emit is deferred again while it rolls (the validator).
-      wakes = [...wakes, ...waiting.map((reference): WakeRequest =>
-        ({ workflowId: reference.workflowId, wake: { kind: "reoffer", run: workflowInfo().runId } }))];
-      waiting = [];
-      await sendWakes();
+      await handBack();
       await registering;
       await condition(allHandlersFinished);
       const fitted = fittedIngress(port, frame, releaseHandlers(state));
@@ -317,12 +315,11 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
       // The released handlers' commands answer through the ledger, which `populationResult` reads.
       return continueAsNew<(next: PopulationIngressArgs) => Promise<void>>({ ...args, carried: carriedState(port, fitted) });
     }
-    await sendWakes();
     const [next, action] = closed(() => advance(port, frame, state, Date.now()));
     state = next;
     admitNow();
     if (action === null) {
-      await condition(() => state.queue.length > 0 || wakes.length > 0 || rolloverDue());
+      await condition(() => state.queue.length > 0 || rolloverDue());
       continue;
     }
     const answered = await perform(args, action);

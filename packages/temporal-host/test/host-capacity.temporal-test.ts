@@ -256,21 +256,11 @@ test("hand-off: an emit the full population ingress defers waits outside its que
   });
   const ingress = new PopulationClient(environment.client, taskQueue, population, config);
   assert.ok("deploymentId" in await fx.handoffPopulation(client, ingress, config, chains, line - 15_000));
-  let answered = false;
-  const completing = client.command(chains.emitter, fx.emitterCompletion(1, 20_000)).then((result) => {
-    answered = true;
-    return result;
-  });
-  // The completion commits and publishes at once; its Update answers only once the ingress accepted the hand-off.
-  await until("the completion's commit", () => client.hostView(chains.emitter),
-    (snapshot) => snapshot.view?.openWaits.some((wait) => wait.id.activation === 2) ?? false);
-  // An observation window for the negative claims: an accepted hand-off answers the Update within milliseconds.
-  await new Promise((resolve) => setTimeout(resolve, 2_000));
-  assert.equal(answered, false, "the Update waits while its hand-off is deferred");
+  // The completion's Update answers once the ingress answered its hand-off, deferred: no Update waits for room.
+  assert.equal((await within("the completion", client.command(chains.emitter, fx.emitterCompletion(1, 20_000)))).outcome, "committed");
   assert.equal(await ingress.backlog(), 1, "the deferred hand-off waits, counted in the backlog");
   assert.ok((await client.hostView(chains.receiver)).view?.openWaits.some((wait) => wait.id.elementId === "Catch"));
   assert.equal((await client.deliver(chains.filler, fx.fillerDelivery)).outcome, "committed");
-  assert.equal((await completing).outcome, "committed");
   await until("the receiver's Signal", () => client.hostView(chains.receiver),
     (snapshot) => snapshot.view?.openWaits.some((wait) => wait.id.elementId === "Hold") ?? false);
 });

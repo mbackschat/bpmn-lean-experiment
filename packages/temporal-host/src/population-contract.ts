@@ -163,10 +163,14 @@ export interface EmitRequest {
 export type EmitVerdict = { readonly kind: "accepted" } | { readonly kind: "deferred"; readonly run: string };
 
 /**
- * What the ingress tells a chain whose emit it deferred: it accepted that emit, or Run `run` is handing its deferred
- * emits back as it continues as new, so the chain offers them to the next Run.
+ * What the ingress tells a chain whose emits it deferred: Run `run` is handing back the deferred emits `commandIds` as it
+ * continues as new, so the chain offers them to the next Run. A deferred emit the ingress accepts needs no word: the
+ * chain learns of it when the emit settles.
  */
-export type EmitWake = { readonly kind: "accepted"; readonly commandId: string } | { readonly kind: "reoffer"; readonly run: string };
+export interface EmitWake {
+  readonly run: string;
+  readonly commandIds: readonly string[];
+}
 
 export interface WakeRequest {
   readonly workflowId: string;
@@ -211,7 +215,7 @@ export interface PopulationActivities {
   /** Returns the ingress's refusal code, `null` when registered. */
   readonly registerPopulation: (request: RegistrationRequest) => Promise<string | null>;
   readonly emitPopulation: (request: EmitRequest) => Promise<EmitVerdict>;
-  /** Wakes a chain whose emit the ingress deferred; a chain that no longer exists needs no wake. */
+  /** Hands a chain's deferred emits back; a chain that no longer exists needs no wake. */
   readonly wakePopulationEmit: (request: WakeRequest) => Promise<void>;
   readonly startDeployment: (request: StartDeploymentRequest) => Promise<void>;
   /** Submits a firing's `timerStart` and returns the population's answer to it. */

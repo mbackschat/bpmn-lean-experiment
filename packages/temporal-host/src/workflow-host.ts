@@ -31,14 +31,20 @@
  * start's caller waits on the `settle` Update, so a population command sent after the caller saw the commit finds them.
  *
  * The Signals a committed input throws are handed to the ingress after the registration, one emit at a time in commit
- * order. An emit the ingress cannot hold is deferred: the chain keeps it in its carry, unaccepted, offers nothing after
- * it, and offers it again only when the ingress wakes it (`emitWake`). Every held emit counts in the continuation bound
- * of each later candidate (`judge`), so a further Signal throw the chain could not carry is refused before it commits.
- * No deadlock: an offer is one Activity whose ingress handler answers at once, accepted or deferred, so a deferral never
- * holds the main loop and registration is never delayed behind a capacity wait; the wake's handler only marks the chain's
- * state. A Run draining for Continue-As-New still registers and offers whatever a handler waits on, a commit made during
+ * order. An emit the ingress cannot hold is deferred: the ingress keeps it in arrival order and accepts it once room
+ * frees, and the chain keeps it in its carry until it settles. The input's Update waits for the ingress's answer,
+ * accepted or deferred, never for room (`emit-offers.ts`): behind a deferral the ingress refuses every later command and
+ * defers every later emit, so no input overtakes it. Every held emit counts in the continuation bound of each later
+ * candidate (`judge`), so a commit the chain could not carry beside them is refused before it commits. An ingress Run
+ * that continues as new hands its deferred emits back (`emitWake`), and the chain offers exactly those to the next Run.
+ *
+ * No deadlock: an offer is one Activity whose ingress handler answers at once, and no handler of the chain waits for
+ * room. A Run draining for Continue-As-New still registers and offers whatever a handler waits on, a commit made during
  * the drain included, before it ends. So the ingress fan-out's wait on a chain's `populationDeliver`, which waits on
- * registration, never waits on room the fan-out itself must free.
+ * registration, never waits on room the fan-out itself must free. Temporal's per-execution Update limits hold too: at
+ * most `updatesInFlight` caller Updates and `settle`s run at once and the ingress sends one Update at a time, so a
+ * hand-back's wake finds one of the ten in-flight slots; and a Run continues as new by its Update count whether or not it
+ * committed (`chainRolloverDue`), an ended chain waiting on its emits included.
  */
 import {
   ActivityFailure,
@@ -77,12 +83,13 @@ import {
   chainCapacity,
   eventBudget,
   failureProjection,
-  rolloverDue as runRolloverDue,
+  chainRolloverDue,
   successorRun,
   textPage,
   updateFence,
 } from "./capacity.js";
 import { continuationBytes, judgeCommitted, type ChainFrame, type Judged } from "./chain-candidate.js";
+import { allAnswered, dueOffers, handedBack, noOffers, offered } from "./emit-offers.js";
 import type {
   EmitVerdict,
   EmitWake,
@@ -222,7 +229,7 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   /** The canonical addresses the population ingress holds for this chain, `null` before the first registration. */
   let populationRegistered: string | null = carried === null ? null : canonicalJson(carried.registeredAddresses);
   let deliveries: (readonly [string, ReachOutcome])[] = [...(carried?.deliveries ?? [])];
-  let emits: UnsettledEmit[] = [...(carried?.emits ?? [])];
+  let emits: readonly UnsettledEmit[] = carried?.emits ?? [];
   let startOutcome: ReachOutcome | null = carried?.startOutcome ?? null;
   const ended = (): boolean => instance === null || instance.view.status !== running;
   /** The open waits' addresses the population ingress should hold: none once the instance ended or halted. */
@@ -235,16 +242,17 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   const settled = async (): Promise<void> => {
     if (populationOwed()) await condition(() => !populationOwed() || halt !== null || ended());
   };
-  /** The emit barrier: resolves once the ingress accepted every hand-off committed so far; it never refuses one, it defers it. */
+  /** What the ingress answered this Run's offers (`emit-offers.ts`). */
+  let offers = noOffers;
+  /**
+   * The emit barrier: resolves once the ingress answered every hand-off committed so far, accepted or deferred; it never
+   * refuses one, and a deferral holds no Update, since every later command waits behind it at the ingress.
+   */
   const emitted = async (): Promise<void> => {
-    if (emits.some((emit) => !emit.accepted)) await condition(() => emits.every((emit) => emit.accepted));
+    if (!allAnswered(emits, offers)) await condition(() => allAnswered(emits, offers));
   };
-  /** The emit the ingress deferred, offered again only once woken; only the first unaccepted emit is ever offered. */
-  let deferredEmit: string | null = null;
-  /** The ingress Run that last handed its deferred emits back: a deferral it answered is void even if it arrives later. */
-  let handedBack: string | null = null;
-  /** Whether an emit waits to be offered: some is unaccepted and the ingress deferred none of them. */
-  const offerDue = (): boolean => scope !== null && deferredEmit === null && emits.some((emit) => !emit.accepted);
+  /** Whether an emit waits to be offered. */
+  const offerDue = (): boolean => scope !== null && dueOffers(emits, offers).length > 0;
 
   setHandler(observationQuery, (from) =>
     textPage(instance === null ? null : port.observation(program, instance.state), from));
@@ -265,34 +273,40 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   setHandler(pendingIntentsQuery, (commandId, from) =>
     textPage(emits.find((emit) => emit.commandId === commandId)?.held ?? null, from));
   setHandler(populationStartOutcomeQuery, (from) => textPage(startOutcome, from));
-  /** Every Update this Run accepted, which the table bounds per Run, and the caller inputs running now. */
+  /** Every Update this Run accepted, which the table bounds per Run, and the caller inputs running now, `settle` included. */
   let accepted = 0;
   let inFlight = 0;
   const counted = <A extends unknown[], R>(handler: (...args: A) => Promise<R> | R) => async (...given: A): Promise<R> => {
     accepted += 1;
     return handler(...given);
   };
+  /** `handler` as one of the caller Updates the in-flight fence bounds. */
+  const fenced = <A extends unknown[], R>(handler: (...args: A) => Promise<R>) => counted(async (...given: A): Promise<R> => {
+    inFlight += 1;
+    try {
+      return await handler(...given);
+    } finally {
+      inFlight -= 1;
+    }
+  });
+  const fence = (): void => {
+    const refused = updateFence(accepted, inFlight);
+    if (refused !== null) throw rejection(capacityCode(refused));
+  };
   setHandler(emitSettledUpdate, counted((commandId: string) => {
     emits = emits.filter((emit) => emit.commandId !== commandId);
   }));
   setHandler(emitWakeUpdate, counted((wake: EmitWake) => {
-    switch (wake.kind) {
-      case "accepted":
-        emits = emits.map((emit) => emit.commandId === wake.commandId ? { ...emit, accepted: true } : emit);
-        if (deferredEmit === wake.commandId) deferredEmit = null;
-        return;
-      case "reoffer":
-        handedBack = wake.run;
-        deferredEmit = null;
-        return;
-    }
+    offers = handedBack(offers, wake);
   }));
   setHandler(publicationQuery, (afterRevision, limit) => readPage(log, afterRevision, limit));
-  setHandler(settleUpdate, counted(async () => {
+  // A `settle` waits on the same barriers as a caller's input, so the fence bounds it too: with at most one population
+  // Update from the ingress at a time, a hand-back's wake always finds a free in-flight slot (Temporal allows ten).
+  setHandler(settleUpdate, fenced(async () => {
     await settled();
     await emitted();
     return log.cursor.revision;
-  }));
+  }), { validator: fence });
 
   /** What the chain carries beside its state once a candidate with `view` commits, with its ledger and emit entries. */
   const carryOf = (view: HostView, delivery: readonly [string, ReachOutcome] | null, emit: UnsettledEmit | null): PopulationCarry => ({
@@ -427,21 +441,15 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     [effectResultUpdate, Route.EffectResult],
   ] as const;
   for (const [update, route] of updates) {
-    setHandler(update, counted(async (stimulus: JsonValue) => {
-      inFlight += 1;
-      try {
-        const { commandId, input } = admitted(route, stimulus);
-        const result = commandResult(commit(commandId, input), log.cursor.revision);
-        await settled();
-        await emitted();
-        return result;
-      } finally {
-        inFlight -= 1;
-      }
+    setHandler(update, fenced(async (stimulus: JsonValue) => {
+      const { commandId, input } = admitted(route, stimulus);
+      const result = commandResult(commit(commandId, input), log.cursor.revision);
+      await settled();
+      await emitted();
+      return result;
     }), {
       validator: (stimulus) => {
-        const fenced = updateFence(accepted, inFlight);
-        if (fenced !== null) throw rejection(capacityCode(fenced));
+        fence();
         const { commandId, input } = admitted(route, stimulus);
         const verdict = judge(commandId, input);
         if (!verdict.committed && (verdict.rejected || verdict.capacity)) throw rejection(verdict.code);
@@ -461,8 +469,8 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   });
   /**
    * Registers the open waits' addresses with the population ingress at the current publication revision, then offers it
-   * every emit not yet accepted, one at a time, until one is deferred. A registration the ingress refuses halts the
-   * chain, never leaving a wait no command can reach.
+   * every emit it has not answered, one at a time in commit order. A registration the ingress refuses halts the chain,
+   * never leaving a wait no command can reach.
    */
   const reportPopulation = async (): Promise<void> => {
     if (scope === null || instance === null) return;
@@ -482,22 +490,13 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
       }
       populationRegistered = canonicalJson(addresses);
     }
-    for (const emit of emits) {
-      if (emit.accepted) continue;
-      if (deferredEmit !== null) return;
+    for (const emit of dueOffers(emits, offers)) {
       const verdict = await populationActivities().emitPopulation({
         population: scope.population,
         reference: { workflowId: workflowInfo().workflowId, commandId: emit.commandId, count: emit.held.intents.length, digest: "" },
-        handedBack,
+        handedBack: offers.handedBack,
       });
-      // A wake or the emit's settlement may have answered it while the offer was in flight.
-      if (!emits.some((held) => held.commandId === emit.commandId && !held.accepted)) continue;
-      if (verdict.kind === "deferred") {
-        // A Run that already handed its deferred emits back wakes no one: the next Run is offered it at once (`offerDue`).
-        if (verdict.run !== handedBack) deferredEmit = emit.commandId;
-        return;
-      }
-      emits = emits.map((held) => held.commandId === emit.commandId ? { ...held, accepted: true } : held);
+      ({ emits, offers } = offered(emits, offers, emit.commandId, verdict));
     }
   };
   const timers = new Map<string, CancellationScope>();
@@ -548,9 +547,7 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     return assertNever(arrival);
   };
 
-  // A Run rolls over only after committing an input, so a budget below a fresh Run's own history cannot chain Runs
-  // that make no progress.
-  const rolloverDue = (): boolean => commits > 0 && runRolloverDue({
+  const rolloverDue = (): boolean => chainRolloverDue(commits, {
     historyEvents: workflowInfo().historyLength,
     historyBytes: workflowInfo().historySize,
     continueAsNewSuggested: workflowInfo().continueAsNewSuggested,
@@ -611,9 +608,22 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
 
   for (const scope of [...timers.values(), ...effects.values()]) scope.cancel();
   await reportPopulation();
-  // An ended or halted chain still owes the Signals it committed: it stays until the ingress accepted every one.
+  // An ended or halted chain still owes the Signals it committed: it stays until the ingress accepted or settled every
+  // one, since a deferred one may be handed back. The settlements and wakes it receives meanwhile count against the
+  // Run's Updates, so an ended chain continues as new by that count; the next Run finds it ended and waits on.
+  // A halted chain cannot continue as new, since its halt is not carried.
+  const endRolloverDue = (): boolean => halt === null && accepted >= chainCapacity.updatesPerRun;
   while (scope !== null && emits.some((emit) => !emit.accepted)) {
-    await condition(() => offerDue() || emits.every((emit) => emit.accepted));
+    await condition(() => offerDue() || emits.every((emit) => emit.accepted) || endRolloverDue());
+    if (!offerDue() && endRolloverDue() && instance !== null) {
+      // As in the drain, a handler may wait on an offer only this loop makes.
+      await condition(() => allHandlersFinished() || offerDue());
+      if (!offerDue()) {
+        const next = successor(instance);
+        if ("kind" in next) return continueAsNew<(next: RunProcessArgs) => Promise<ProcessResult>>(next);
+        halt = next;
+      }
+    }
     await reportPopulation();
   }
   await condition(allHandlersFinished);
