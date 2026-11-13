@@ -57,6 +57,34 @@ test("current compatible values win, defaults fill absence, and every visible fi
   });
 });
 
+test("a field hidden for the chosen action submits null so the patch names the whole OutputSet", () => {
+  const task = definition([
+    { ...integerField("approvedAmount", 7), visibleForActions: ["approve"] },
+    { ...textField("resolutionReason", "default text"), visibleForActions: ["abort"] },
+  ]);
+  const current = currentFields(task, {
+    resolutionReason: { kind: "string", value: "current text" },
+  });
+  assert.deepEqual(computeStructuredFormCompletion(
+    task,
+    current,
+    request("approve", {}),
+  ), {
+    kind: "accepted",
+    resolutionActionId: "approve",
+    submittedValues: [{
+      key: "approvedAmount",
+      value: { kind: "integer", value: 7 },
+    }, {
+      key: "resolution",
+      value: { kind: "string", value: "approved" },
+    }, {
+      key: "resolutionReason",
+      value: { kind: "null" },
+    }],
+  });
+});
+
 test("orders action, unknown, hidden, and required issues without leaking values", () => {
   const task = definition([{
     ...textField("resolutionReason", null),

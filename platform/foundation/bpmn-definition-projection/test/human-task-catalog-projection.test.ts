@@ -152,6 +152,35 @@ test("does not accept misplaced forms, attributes, arbitrary descendants, or CIB
   assert.equal((await project(cibOnly)).kind, "absent");
 });
 
+test("refuses a structured form whose User Task lacks the Data Outputs it submits", async () => {
+  const sourceXml = await readFile(sourcePath, "utf8");
+  const withoutOutputs = sourceXml
+    .replace(/\s*<bpmn:ioSpecification[\s\S]*?<\/bpmn:ioSpecification>/u, "")
+    .replaceAll(/\s*<bpmn:dataOutputAssociation[\s\S]*?<\/bpmn:dataOutputAssociation>/gu, "");
+
+  assert.deepEqual(await project(withoutOutputs), { kind: "invalid", evidence: "outputContract" });
+});
+
+test("refuses a structured form whose submitted names differ from its OutputSet", async () => {
+  const sourceXml = await readFile(sourcePath, "utf8");
+  const renamedOutput = sourceXml
+    .replace('<bpmn:dataOutput id="resolutionReason"/>', '<bpmn:dataOutput id="reason"/>')
+    .replace("<bpmn:dataOutputRefs>resolutionReason</bpmn:dataOutputRefs>", "<bpmn:dataOutputRefs>reason</bpmn:dataOutputRefs>")
+    .replace("<bpmn:sourceRef>resolutionReason</bpmn:sourceRef>", "<bpmn:sourceRef>reason</bpmn:sourceRef>");
+  const extraOutput = sourceXml
+    .replace('<bpmn:dataOutput id="resolution"/>', '<bpmn:dataOutput id="resolution"/>\n        <bpmn:dataOutput id="auditNote"/>')
+    .replace(
+      "<bpmn:dataOutputRefs>resolution</bpmn:dataOutputRefs>",
+      "<bpmn:dataOutputRefs>resolution</bpmn:dataOutputRefs>\n          <bpmn:dataOutputRefs>auditNote</bpmn:dataOutputRefs>",
+    );
+  assert.notEqual(renamedOutput, sourceXml);
+  assert.notEqual(extraOutput, sourceXml);
+
+  for (const mutation of [renamedOutput, extraOutput]) {
+    assert.deepEqual(await project(mutation), { kind: "invalid", evidence: "outputContract" });
+  }
+});
+
 test("finds no catalog in a source whose Conversation names its Message Flows (BPMN 2.0.2 messageFlowRef)", async () => {
   const sourceXml = await readFile(new URL("../../../../scenarios/message-key-correlation/process.bpmn", import.meta.url), "utf8");
   const result = await projectHumanTaskCatalog(sourceXml, {

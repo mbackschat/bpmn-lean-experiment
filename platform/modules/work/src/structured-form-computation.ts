@@ -89,7 +89,12 @@ export function computeStructuredFormCompletion(
       ));
       continue;
     }
-    if (!isVisible(field, action.id)) continue;
+    // The completion must name the task's whole OutputSet (docs/kernel/semantics/DATA-SEMANTICS-SPEC.md), so a
+    // field hidden for this action is submitted as null rather than omitted.
+    if (!isVisible(field, action.id)) {
+      submittedValues.push({ key: field.key, value: { kind: "null" } });
+      continue;
+    }
     const supplied = Object.hasOwn(request.fields, field.key);
     if (!supplied && field.requiredForActions.includes(action.id)) {
       issues.push(issue(

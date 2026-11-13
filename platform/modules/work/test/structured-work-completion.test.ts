@@ -143,6 +143,9 @@ test("multiple-choice permutations share one canonical retained identity", async
       name: "resolution",
       value: { kind: "string", value: "approved" },
     }, {
+      name: "resolutionReason",
+      value: { kind: "null" },
+    }, {
       name: "riskFlags",
       value: { kind: "stringList", value: ["high", "low"] },
     }]);

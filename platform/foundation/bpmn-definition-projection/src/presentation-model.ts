@@ -30,6 +30,8 @@ export interface ModdleElement {
   readonly dataInputAssociations?: readonly ModdleElement[];
   readonly dataOutputAssociations?: readonly ModdleElement[];
   readonly ioSpecification?: ModdleElement;
+  readonly outputSets?: readonly ModdleElement[];
+  readonly dataOutputRefs?: readonly ModdleElement[];
   readonly sourceRef?: ModdleElement | readonly ModdleElement[];
   readonly targetRef?: ModdleElement;
   readonly dataObjectRef?: ModdleElement;
