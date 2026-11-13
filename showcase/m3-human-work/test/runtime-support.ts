@@ -3,6 +3,8 @@ import { createServer } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
+import { observationOf } from "@bpmn-lean/temporal-host/client";
+
 import {
   DefinitionScheduleStatus,
   MessageStartPublicationStatus,
@@ -45,7 +47,6 @@ type OpenUserTask = Readonly<{
 }>;
 
 /** The canonical state query of the host's process Workflow (`packages/temporal-host/src/protocol.ts`). */
-const observationQueryName = "observation";
 
 import {
   getDefinitionSchedule,
@@ -191,7 +192,7 @@ export async function waitForOneOpenTask(
   for (let attempt = 0; attempt < 200; attempt += 1) {
     try {
       latest = openUserTasks(await withDeadline(
-        handle.query<unknown>(observationQueryName),
+        observationOf(handle),
         1_000,
         `${expectedName} state observation Query`,
       ));

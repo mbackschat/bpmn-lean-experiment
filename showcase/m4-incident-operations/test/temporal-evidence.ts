@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 import { engineDefinitionMessageStartWorkflowId } from "@bpmn-lean/engine-api";
-import { ResultKind } from "@bpmn-lean/temporal-host/client";
+import { observationOf, ResultKind } from "@bpmn-lean/temporal-host/client";
 import { replayHistory } from "@bpmn-lean/temporal-host/worker";
 
 import { withDeadline } from "../src/host-worker.ts";
@@ -77,7 +77,7 @@ export async function verifyIncidentTerminalEvidence(
 /** The incident waits the final canonical state observation still holds. */
 async function openIncidents(handle: ProcessHandle): Promise<number> {
   const state = await withDeadline(
-    handle.query<Readonly<{ openWaits: readonly Readonly<{ detail: Readonly<{ kind: string }> }>[] }>>("observation"),
+    observationOf(handle) as Promise<Readonly<{ openWaits: readonly Readonly<{ detail: Readonly<{ kind: string }> }>[] }>>,
     operationDeadlineMs,
     "M4 final state observation",
   );

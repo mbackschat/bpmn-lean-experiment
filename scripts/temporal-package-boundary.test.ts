@@ -28,6 +28,27 @@ test("accepts the minimal valid host", async () => {
   assert.deepEqual(await assessTemporalPackageBoundary(await createValidHostFixture()), []);
 });
 
+test("rejects reading a paged host Query by name outside the host package", async () => {
+  const root = await createValidHostFixture();
+  await writeSource(root, "src/protocol.ts", 'export const observationQuery = defineQuery<TextPage, [from: number]>("observation");\n');
+  const reader = path.join(root, "showcase/demo/test/support.ts");
+  await mkdir(path.dirname(reader), { recursive: true });
+  await writeFile(reader, [
+    'import type { Client } from "@temporalio/client";',
+    'const observationQueryName = "observation";',
+    'export const read = (handle: ReturnType<Client["workflow"]["getHandle"]>) => handle.query<unknown>(observationQueryName);',
+  ].join("\n"));
+  assert.deepEqual(await assessTemporalPackageBoundary(root), [
+    "showcase/demo/test/support.ts: queries the paged host Query observation by name; read through @bpmn-lean/temporal-host/client",
+  ]);
+  await writeFile(reader, [
+    'import { observationOf } from "@bpmn-lean/temporal-host/client";',
+    'import type { Client } from "@temporalio/client";',
+    'export const read = (handle: ReturnType<Client["workflow"]["getHandle"]>) => observationOf(handle);',
+  ].join("\n"));
+  assert.deepEqual(await assessTemporalPackageBoundary(root), []);
+});
+
 test("rejects unreviewed SDK and workspace dependencies of the host", async () => {
   const root = await createValidHostFixture();
   await writeManifest(path.join(root, "packages/temporal-host/package.json"), {

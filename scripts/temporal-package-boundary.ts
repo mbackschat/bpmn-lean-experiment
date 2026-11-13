@@ -77,7 +77,34 @@ export async function assessTemporalPackageBoundary(
     await assessEnvironment(repositoryRoot, environment, findings);
   }
   await assessProduct2TemporalReach(repositoryRoot, findings);
+  await assessHostQueryReaders(repositoryRoot, findings);
   return findings.sort(compareCodeUnits);
+}
+
+/**
+ * Only the host package names its Queries: their answers travel as canonical-JSON pages (`textPage`), which its client
+ * joins, so a caller that queries a paged host Query by its name reads one page envelope instead of the answer
+ * (UI release acceptance run 43385867889, after the paging of 6571514d3).
+ */
+async function assessHostQueryReaders(repositoryRoot: string, findings: string[]): Promise<void> {
+  const hostSource = path.join(repositoryRoot, "packages/temporal-host/src") + path.sep;
+  const pagedNames = new Set<string>();
+  for (const sourcePath of await filesNamed(hostSource, (name) => name.endsWith(".ts"))) {
+    for (const [, name] of (await readFile(sourcePath, "utf8")).matchAll(/defineQuery<TextPage\b[^(]*\(\s*"([^"]+)"/gu)) {
+      pagedNames.add(name!);
+    }
+  }
+  for (const directory of ["showcase", "platform", "packages", "scripts"]) {
+    for (const sourcePath of await filesNamed(path.join(repositoryRoot, directory), (name) => /\.(?:cts|mts|tsx?)$/u.test(name))) {
+      if (sourcePath.startsWith(hostSource)) continue;
+      const source = await readFile(sourcePath, "utf8");
+      if (!typeScriptModuleSpecifiersFromSource(source).some(isTemporalSpecifier) || !/\.query\s*[<(]/u.test(source)) continue;
+      const named = [...source.matchAll(/["'`]([A-Za-z]+)["'`]/gu)].map(([, literal]) => literal!).filter((literal) => pagedNames.has(literal));
+      if (named.length > 0) {
+        findings.push(`${relative(repositoryRoot, sourcePath)}: queries the paged host Query ${[...new Set(named)].sort(compareCodeUnits).join(", ")} by name; read through ${hostPackageName}/client`);
+      }
+    }
+  }
 }
 
 async function assessHostManifest(repositoryRoot: string, findings: string[]): Promise<void> {

@@ -85,6 +85,14 @@ export async function submitUpdate(
   }
 }
 
+/**
+ * The canonical state observation of the chain behind `handle`. The Query answers in pages of canonical JSON
+ * (`textPage`), so a caller that queries `observationQuery` itself reads one page envelope, not the observation.
+ */
+export async function observationOf(handle: WorkflowHandle): Promise<JsonValue> {
+  return await readPages((from) => handle.query(observationQuery, from)) as JsonValue;
+}
+
 export class ProcessClient implements ProcessHost {
   constructor(private readonly client: Client, private readonly taskQueue: string) {}
 
@@ -147,8 +155,7 @@ export class ProcessClient implements ProcessHost {
   }
 
   async observation(workflowId: string): Promise<JsonValue> {
-    const handle = this.handle(workflowId);
-    return await readPages((from) => handle.query(observationQuery, from)) as JsonValue;
+    return await observationOf(this.handle(workflowId));
   }
 
   /** The chain's encoded kernel state (`stateQuery`); a closed Workflow still answers it. */

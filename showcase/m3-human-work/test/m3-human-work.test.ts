@@ -13,7 +13,7 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 import type { PlatformServerRuntime } from "@bpmn-lean/platform-server";
 import { engineDefinitionMessageStartWorkflowId } from "@bpmn-lean/engine-api";
-import { ResultKind } from "@bpmn-lean/temporal-host/client";
+import { observationOf, ResultKind } from "@bpmn-lean/temporal-host/client";
 
 import {
   ShowcaseWorker,
@@ -244,7 +244,7 @@ test("runs the complete durable Human Work slice", async () => {
     assert.equal(terminal.kind, ResultKind.Ended);
     assert.equal(terminal.kind === ResultKind.Ended ? terminal.status : null, "completed");
     const finalState = await withDeadline(
-      handle.query<Readonly<{ variables: readonly Readonly<{ name: string; value: unknown }>[] }>>("observation"),
+      observationOf(handle) as Promise<Readonly<{ variables: readonly Readonly<{ name: string; value: unknown }>[] }>>,
       operationDeadlineMs,
       "M3 Human Work completed Process observation",
     );

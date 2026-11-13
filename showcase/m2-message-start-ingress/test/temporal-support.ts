@@ -2,6 +2,8 @@
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
 
+import { observationOf } from "@bpmn-lean/temporal-host/client";
+
 import { withDeadline } from "../src/host-worker.ts";
 import type { TemporalEnvironment } from "../src/host-worker.ts";
 
@@ -13,7 +15,6 @@ export type TemporalHistory = Awaited<ReturnType<ProcessHandle["fetchHistory"]>>
 type HistoryEntry = NonNullable<TemporalHistory["events"]>[number];
 
 /** The canonical state query of the host's process Workflow (`packages/temporal-host/src/protocol.ts`). */
-const observationQueryName = "observation";
 
 export type TemporalWorkflowExecution = Readonly<{
   workflowId: string;
@@ -83,7 +84,7 @@ export async function waitForOpenUserTask(
   for (let attempt = 0; attempt < 160; attempt += 1) {
     try {
       latest = await withDeadline(
-        handle.query(observationQueryName),
+        observationOf(handle),
         1_000,
         "Message Start state observation Query",
       );
