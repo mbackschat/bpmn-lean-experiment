@@ -191,16 +191,14 @@ export class DefinitionStartService {
     );
   }
 
-  /** Supplies composition with the same artifact-validating, content-bound recovery host. */
+  /**
+   * Supplies composition with the same artifact-validating, content-bound recovery host. The retained intent travels to
+   * the engine unchanged: the engine owns the intent's protocol, refuses to dispatch an intent it does not compute and
+   * matches a description only against the intent its chain retains, so this module names no protocol of its own.
+   */
   directStartRecoveryHost(): DirectProcessInstanceHost {
     return {
       start: async (reservation) => {
-        if (reservation.intent.protocol !== "bpmn-direct-start-v1") {
-          return {
-            status: "integrityFailure",
-            evidence: "reserved direct start has an unsupported intent protocol",
-          };
-        }
         let initialVariables;
         try {
           initialVariables = decodeCanonicalDefinitionVersionStartCommand(
@@ -241,24 +239,15 @@ export class DefinitionStartService {
         } satisfies DefinitionVersionStartRequest;
         return this.#directHost(
           request,
-          {
-            protocol: "bpmn-direct-start-v1",
-            intentSha256: reservation.intent.intentSha256,
-          },
+          { ...reservation.intent },
           definition,
           reference,
         ).start(reservation);
       },
       describe: async (reservation) => {
-        if (reservation.intent.protocol !== "bpmn-direct-start-v1") {
-          return { status: "divergent" };
-        }
         const result = await this.#starter.describeDefinitionVersionStart({
           processInstanceId: reservation.instance.processInstanceId,
-          expectedIntent: {
-            protocol: "bpmn-direct-start-v1",
-            intentSha256: reservation.intent.intentSha256,
-          },
+          expectedIntent: { ...reservation.intent },
         });
         return { status: result.status };
       },
