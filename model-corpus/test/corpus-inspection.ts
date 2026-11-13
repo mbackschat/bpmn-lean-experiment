@@ -64,10 +64,11 @@ export function parseStatusMapRowLinks(markdown: string): ReadonlyMap<string, Re
     if (line === "") break;
     const match = statusMapRowForm.exec(line);
     if (match === null) throw new Error(`Row status line does not match the table's form: ${line}`);
-    const [, row, evidence] = match;
+    const row = match[1]!;
+    const evidence = match[2]!;
     if (rows.has(row)) throw new Error(`Row status lists ${row} twice`);
-    rows.set(row, [...evidence.matchAll(statusMapLinkForm)].map(([, link]) => {
-      const target = path.posix.join("docs/kernel", link);
+    rows.set(row, [...evidence.matchAll(statusMapLinkForm)].map((link) => {
+      const target = path.posix.join("docs/kernel", link[1]!);
       return path.posix.basename(target) === "README.md" ? `${path.posix.dirname(target)}/` : target;
     }));
   }
