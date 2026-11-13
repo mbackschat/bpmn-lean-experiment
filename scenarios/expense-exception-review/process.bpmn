@@ -8,6 +8,14 @@
   targetNamespace="https://bpmn-lean.local/scenarios/expense-exception-review"
   expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
   <bpmn:process id="Process_ExpenseExceptionReview" name="Expense exception review" isExecutable="true">
+    <bpmn:property id="Property_RequestReference"/>
+    <bpmn:property id="Property_ExpenseDate"/>
+    <bpmn:property id="Property_ApprovedAmount"/>
+    <bpmn:property id="Property_CostCenter"/>
+    <bpmn:property id="Property_RiskFlags"/>
+    <bpmn:property id="Property_NotifySubmitter"/>
+    <bpmn:property id="Property_ResolutionReason"/>
+    <bpmn:property id="Property_Resolution"/>
     <bpmn:startEvent id="Start_ExpenseException">
       <bpmn:outgoing>Flow_StartToReview</bpmn:outgoing>
     </bpmn:startEvent>
@@ -15,6 +23,59 @@
       <bpmn:documentation>Review the expense exception and choose a resolution.</bpmn:documentation>
       <bpmn:incoming>Flow_StartToReview</bpmn:incoming>
       <bpmn:outgoing>Flow_ReviewToResolution</bpmn:outgoing>
+      <bpmn:ioSpecification id="ReviewExceptionIoSpecification">
+        <bpmn:dataOutput id="requestReference"/>
+        <bpmn:dataOutput id="expenseDate"/>
+        <bpmn:dataOutput id="approvedAmount"/>
+        <bpmn:dataOutput id="costCenter"/>
+        <bpmn:dataOutput id="riskFlags"/>
+        <bpmn:dataOutput id="notifySubmitter"/>
+        <bpmn:dataOutput id="resolutionReason"/>
+        <bpmn:dataOutput id="resolution"/>
+        <bpmn:inputSet id="ReviewExceptionInputSet"/>
+        <bpmn:outputSet id="ReviewExceptionOutputSet">
+          <bpmn:dataOutputRefs>requestReference</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>expenseDate</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>approvedAmount</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>costCenter</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>riskFlags</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>notifySubmitter</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>resolutionReason</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>resolution</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_RequestReference">
+        <bpmn:sourceRef>requestReference</bpmn:sourceRef>
+        <bpmn:targetRef>Property_RequestReference</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_ExpenseDate">
+        <bpmn:sourceRef>expenseDate</bpmn:sourceRef>
+        <bpmn:targetRef>Property_ExpenseDate</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_ApprovedAmount">
+        <bpmn:sourceRef>approvedAmount</bpmn:sourceRef>
+        <bpmn:targetRef>Property_ApprovedAmount</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_CostCenter">
+        <bpmn:sourceRef>costCenter</bpmn:sourceRef>
+        <bpmn:targetRef>Property_CostCenter</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_RiskFlags">
+        <bpmn:sourceRef>riskFlags</bpmn:sourceRef>
+        <bpmn:targetRef>Property_RiskFlags</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_NotifySubmitter">
+        <bpmn:sourceRef>notifySubmitter</bpmn:sourceRef>
+        <bpmn:targetRef>Property_NotifySubmitter</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_ResolutionReason">
+        <bpmn:sourceRef>resolutionReason</bpmn:sourceRef>
+        <bpmn:targetRef>Property_ResolutionReason</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_Resolution">
+        <bpmn:sourceRef>resolution</bpmn:sourceRef>
+        <bpmn:targetRef>Property_Resolution</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
       <bpmn:rendering id="ReviewExceptionRendering">
         <bpmn:extensionElements>
           <bpmnLean:structuredForm>{"schemaVersion":"bpmn-lean-structured-human-work-source/v1","worklistPriority":80,"form":{"schemaVersion":"bpmn-lean-structured-form/v1","fields":[{"key":"requestReference","label":"Request reference","helpText":null,"defaultValue":null,"visibleForActions":"all","requiredForActions":["approve","request-changes","abort"],"kind":"text","multiline":false,"minLength":1,"maxLength":128},{"key":"expenseDate","label":"Expense date","helpText":null,"defaultValue":null,"visibleForActions":"all","requiredForActions":["approve","request-changes","abort"],"kind":"date"},{"key":"approvedAmount","label":"Approved amount","helpText":"Whole currency units","defaultValue":null,"visibleForActions":["approve"],"requiredForActions":[],"kind":"integer","minimum":0,"maximum":1000000},{"key":"costCenter","label":"Cost center","helpText":null,"defaultValue":null,"visibleForActions":"all","requiredForActions":["approve","request-changes"],"kind":"singleChoice","options":[{"value":"engineering","label":"Engineering"},{"value":"sales","label":"Sales"},{"value":"operations","label":"Operations"}]},{"key":"riskFlags","label":"Risk flags","helpText":null,"defaultValue":[],"visibleForActions":"all","requiredForActions":[],"kind":"multipleChoice","options":[{"value":"duplicate","label":"Possible duplicate"},{"value":"policy","label":"Policy exception"},{"value":"receipt","label":"Missing receipt"}],"maxItems":3},{"key":"notifySubmitter","label":"Notify submitter","helpText":null,"defaultValue":true,"visibleForActions":"all","requiredForActions":[],"kind":"boolean"},{"key":"resolutionReason","label":"Resolution reason","helpText":null,"defaultValue":null,"visibleForActions":["request-changes","abort"],"requiredForActions":["request-changes","abort"],"kind":"text","multiline":true,"minLength":1,"maxLength":2048}],"actions":[{"id":"approve","label":"Approve","intent":"primary","resolutionValue":"approved"},{"id":"request-changes","label":"Request changes","intent":"neutral","resolutionValue":"changes-requested"},{"id":"abort","label":"Abort","intent":"destructive","resolutionValue":"aborted"}],"resolutionVariable":"resolution"}}</bpmnLean:structuredForm>
@@ -39,10 +100,10 @@
     <bpmn:sequenceFlow id="Flow_StartToReview" sourceRef="Start_ExpenseException" targetRef="ReviewException"/>
     <bpmn:sequenceFlow id="Flow_ReviewToResolution" sourceRef="ReviewException" targetRef="Resolution"/>
     <bpmn:sequenceFlow id="Flow_Approved" sourceRef="Resolution" targetRef="End_Approved">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(resolution,"approved")</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(Property_Resolution,"approved")</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_ChangesRequested" sourceRef="Resolution" targetRef="End_ChangesRequested">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(resolution,"changes-requested")</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(Property_Resolution,"changes-requested")</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_Aborted" sourceRef="Resolution" targetRef="End_Aborted"/>
   </bpmn:process>

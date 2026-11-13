@@ -94,21 +94,21 @@
     "evidence": "scenarios/expense-exception-review/abort.cibseven-evidence.json",
     "firstDifference": "trace[3].outcome",
     "owners": [
-      "PC-JOURNEY-02"
+      "CIB-EXT-0030"
     ]
   },
   {
     "evidence": "scenarios/expense-exception-review/approve.cibseven-evidence.json",
     "firstDifference": "trace[3].outcome",
     "owners": [
-      "PC-JOURNEY-02"
+      "CIB-EXT-0030"
     ]
   },
   {
     "evidence": "scenarios/expense-exception-review/request-changes.cibseven-evidence.json",
     "firstDifference": "trace[3].outcome",
     "owners": [
-      "PC-JOURNEY-02"
+      "CIB-EXT-0030"
     ]
   },
   {
