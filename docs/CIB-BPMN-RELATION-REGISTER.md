@@ -1150,13 +1150,13 @@ Some admitted expressions reach, for particular data, a CIB result or Java behav
 
 ### CIB-LIM-0011: pinned CIB ignores the configured-task extension
 
-**Status:** Profile limitation; not a deviation
+**Status:** Profile limitation selected by the cibseven profiles (`ConfiguredTask.refused`)
 
-A Task carrying `bpmnLean:taskDefinition` is a standards-profile extension that names its work by configuration. CIB Seven `2.2.0` ignores the foreign extension element and runs the Task as an Abstract Task that passes its token on, so CIB is no oracle for it.
+A Task carrying `bpmnLean:taskDefinition` is a project extension that names its work by configuration (BPMN 2.0.2 §7.7, §8.3.3). CIB Seven `2.2.0` ignores the foreign extension element and runs the Task as an Abstract Task that passes its token on, so CIB is no oracle for it. Under the cibseven profiles the kernel refuses such a Task at admission (`work.configuredTask`) rather than open configured work where CIB passes the token on. Under `bpmn-2.0.2` it waits for the external work its handler type names and completes with its result.
 
-**Evidence:** The retained [configured-task](../scenarios/configured-task/README.md) answer, where CIB passes through what the kernel opens as configured work (CIB Seven `2.2.0`).
+**Evidence:** The retained [configured-task](../scenarios/configured-task/README.md) answer under `bpmn-2.0.2`, where CIB passes through what the kernel opens as configured work (CIB Seven `2.2.0`); the kernel test `packages/differential/test/configured-task-profiles.test.ts`.
 
-**Boundary:** The `bpmnLean:taskDefinition` extension only.
+**Boundary:** The `bpmnLean:taskDefinition` extension only. The reader reads it under every profile and marks the work it declares (`ServiceWork.taskDefinition`); the refusal is admission's.
 
 ### CIB-LIM-0012: an expression reading the `task` bean is refused at admission
 

@@ -26,6 +26,7 @@ The [profile artifact](profile.json) is the CIB Seven 2.2.0 compatibility profil
 | `evaluator` | `juel` | `CIB-CFG-0011`, `CIB-EXT-0030` |
 | `businessRuleTask` | `decisionTable` | `CIB-EXT-0032` |
 | `scriptTask` | `javascript` | `CIB-EXT-0048` |
+| `configuredTask` | `refused` | `CIB-LIM-0011` |
 | `inclusiveJoinReach` | `outgoingOnly` | `CIB-INT-0020` |
 | `branchSchedule` | `declarationDepthFirst` | `CIB-OP-0016` |
 | `conditionalRetrigger` | `eachWrite` | `CIB-EXT-0035` |

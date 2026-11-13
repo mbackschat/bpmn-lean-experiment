@@ -14,7 +14,7 @@ import { UnclassifiedProgramError, programCapabilities } from "./kernel-capabili
 import { kernelAdmittedProgram, readCaseSource } from "./kernel-program.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 
-const profile = "cibseven-2.2.0";
+const cibProfile = "cibseven-2.2.0";
 
 const definitions = (body: string): string => `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
@@ -26,7 +26,7 @@ const definitions = (body: string): string => `<?xml version="1.0" encoding="UTF
   <bpmn:sequenceFlow id="f2" sourceRef="W" targetRef="E"/><bpmn:endEvent id="E"/>
 </bpmn:process></bpmn:definitions>`;
 
-async function admittedProgram(xml: string): Promise<Program> {
+async function admittedProgram(xml: string, profile = cibProfile): Promise<Program> {
   const bytes = new TextEncoder().encode(xml);
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   const admitted = kernelAdmittedProgram(await readCaseSource({ relativePath: "inline.bpmn", bytes, sha256, overlay: null }, profile));
@@ -34,15 +34,16 @@ async function admittedProgram(xml: string): Promise<Program> {
   return admitted.program;
 }
 
-async function claimsOf(xml: string): Promise<ReadonlyArray<string>> {
-  return programCapabilities(await admittedProgram(xml));
+async function claimsOf(xml: string, profile = cibProfile): Promise<ReadonlyArray<string>> {
+  return programCapabilities(await admittedProgram(xml, profile));
 }
 
 const retained = (relativePath: string): string => readFileSync(path.join(projectRoot, relativePath), "utf8");
 
+// The cibseven profiles refuse the task definition (CIB-LIM-0011), so the configured variant is read under the standards one.
 test("a Task claims its configured variant only with a BPMN Lean task definition, not with any extension", async () => {
   assert.deepEqual(await claimsOf(definitions(`<bpmn:task id="W"><bpmn:extensionElements>
-    <bpmnLean:taskDefinition type="urn:bpmn-lean:task-handler:probe-v1"/></bpmn:extensionElements></bpmn:task>`)),
+    <bpmnLean:taskDefinition type="urn:bpmn-lean:task-handler:probe-v1"/></bpmn:extensionElements></bpmn:task>`), "bpmn-2.0.2"),
   ["configuredTask", "noneEndEvent", "noneStartEvent", "process", "sequenceFlow"]);
   assert.deepEqual(await claimsOf(definitions(`<bpmn:task id="W"><bpmn:extensionElements><camunda:inputOutput>
     <camunda:outputParameter name="n">one</camunda:outputParameter></camunda:inputOutput></bpmn:extensionElements></bpmn:task>`)),

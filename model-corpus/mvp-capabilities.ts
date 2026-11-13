@@ -254,7 +254,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Task with BPMN Lean task definition",
     support: BpmnCapabilitySupport.ProjectExtension,
-    restriction: "A bpmn:task carrying the project extension bpmnLean:taskDefinition is an extended Task type, neither an Abstract nor a Service Task: its handler type names a neutral effect operation, and it waits for that external work and completes with its result. CIB ignores the extension and is not its oracle.",
+    restriction: "A bpmn:task carrying the project extension bpmnLean:taskDefinition is an extended Task type, neither an Abstract nor a Service Task: its handler type names a neutral effect operation, and it waits for that external work and completes with its result. CIB ignores the extension and passes the Task through, so under configuredTask = refused, the cibseven profiles' reading, it is refused (work.configuredTask, CIB-LIM-0011).",
     cibEvidence: notApplicable,
   },
   {
