@@ -183,7 +183,7 @@ reason = "Gates, guards and lane runners; refinements name the setup, build, ora
 id = "build-wrappers"
 purpose = "production"
 match = [
-  "scripts/{lake,pnpm,pinned-toolchain,lean-memory-brake}.sh",
+  "scripts/{lake,pnpm,pinned-toolchain,memory-brake}.sh",
   "scripts/java-home.ts",
 ]
 kind = ["source"]

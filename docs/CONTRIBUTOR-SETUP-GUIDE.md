@@ -96,7 +96,7 @@ An explicitly invoked adoption or research lane must fail when its registered in
 
 ## Lean builds
 
-Ordinary Lean development runs through [`scripts/lake.sh`](../scripts/lake.sh), never `lake` or `lean` directly ([CLAUDE.md](../CLAUDE.md#verification)). Its fixed `LEAN_NUM_THREADS` pin bounds build parallelism, its fail-closed project lock is shared by every checkout of this repository, and it refuses a full-library build unless `LEAN_FULL_GATE=<gate>` names its gate. [lakefile.toml](../lakefile.toml) caps every Lean process at 2 GiB with `-M2048`, and the [memory brake](../scripts/lean-memory-brake.sh) stops a runaway process tree. Lean is absent from the engine and platform runtime dependency graphs.
+Ordinary Lean development runs through [`scripts/lake.sh`](../scripts/lake.sh), never `lake` or `lean` directly ([CLAUDE.md](../CLAUDE.md#verification)). Its fixed `LEAN_NUM_THREADS` pin bounds build parallelism, its fail-closed project lock is shared by every checkout of this repository, and it refuses a full-library build unless `LEAN_FULL_GATE=<gate>` names its gate. [lakefile.toml](../lakefile.toml) caps every Lean process at 2 GiB with `-M2048`, and the [memory brake](../scripts/memory-brake.sh) stops a runaway process tree. [`scripts/pnpm.sh`](../scripts/pnpm.sh) runs every pnpm command under the same brake at the manifest's `nodeMemoryBrakeMiB` limit, which `NODE_MEMORY_BRAKE_MIB` may only lower. Lean is absent from the engine and platform runtime dependency graphs.
 
 ## What setup guarantees
 

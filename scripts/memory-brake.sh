@@ -1,16 +1,21 @@
 #!/bin/sh
 
-# Memory brake for one `scripts/lake.sh` process tree: lean-memory-brake.sh <wrapper-pid> <limit-kib> <marker>
+# Memory brake for the process tree of one wrapper: memory-brake.sh <wrapper-pid> <limit-kib> <marker>
 #
-# Ordinary Lean builds run natively, and macOS has no hard process-tree memory ceiling, so on
-# 2026-10-14 a kernel-reduced conformance module reached a 13 GB footprint and filled the host's swap
-# (Finding 78 of the retired process assessment ledger). This is an emergency brake, not a measurement; the
-# Lean build rules in docs/kernel/ENGINEERING-POLICY.md#local-loop own the resource bounds.
+# `scripts/lake.sh` and `scripts/pnpm.sh` each start it on their own pid, so every local Lean and
+# every local Node process tree runs under it. macOS has no hard process-tree memory ceiling and
+# ignores `ulimit -v`, and a V8 heap cap misses Buffers, native memory and child processes. Two
+# incidents set the rule:
+# - 2026-10-14: a kernel-reduced conformance module reached a 13 GB footprint in a Lean build and
+#   filled the host's swap (Finding 78 of the retired process assessment ledger).
+# - 2026-11-13: a Node population test that never settled drove a 16 GB host to 145 GB.
+# This is an emergency brake, not a measurement; the resource bounds live in the wrappers' manifest
+# values (`package.json` `config`) and in docs/kernel/ENGINEERING-POLICY.md#local-loop.
 #
 # It sums the physical footprint of the wrapper's descendants every two seconds and, above the limit,
 # records the total in the marker and terminates them. macOS reads `phys_footprint`, which includes
 # compressed pages; resident size alone reported 0.8 GB for that 13 GB process. Linux reads resident
-# plus swapped pages. The loop ends with the wrapper, so it cannot outlive the build it guards.
+# plus swapped pages. The loop ends with the wrapper, so it cannot outlive the command it guards.
 
 set -u
 

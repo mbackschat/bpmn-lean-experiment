@@ -44,9 +44,19 @@ required_lean_ci_memory_brake_mib=$(
   sed -n 's/^[[:space:]]*"leanCiMemoryBrakeMiB"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest"
 )
 
+# The Node memory brake mirrors the Lean pair: scripts/pnpm.sh enforces it, only an environment value
+# below it may replace it, and a GitHub-hosted runner takes the CI value.
+required_node_memory_brake_mib=$(
+  sed -n 's/^[[:space:]]*"nodeMemoryBrakeMiB"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest"
+)
+required_node_ci_memory_brake_mib=$(
+  sed -n 's/^[[:space:]]*"nodeCiMemoryBrakeMiB"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest"
+)
+
 if test -z "$required_node_version" || test -z "$required_pnpm_version" ||
     test -z "$required_lean_build_threads" || test -z "$required_lean_memory_brake_mib" ||
-    test -z "$required_lean_ci_build_threads" || test -z "$required_lean_ci_memory_brake_mib"; then
+    test -z "$required_lean_ci_build_threads" || test -z "$required_lean_ci_memory_brake_mib" ||
+    test -z "$required_node_memory_brake_mib" || test -z "$required_node_ci_memory_brake_mib"; then
   echo "pinned-toolchain.sh read no Node or pnpm pin from $manifest" >&2
   exit 1
 fi
@@ -57,3 +67,5 @@ printf 'required_lean_build_threads=%s\n' "$required_lean_build_threads"
 printf 'required_lean_memory_brake_mib=%s\n' "$required_lean_memory_brake_mib"
 printf 'required_lean_ci_build_threads=%s\n' "$required_lean_ci_build_threads"
 printf 'required_lean_ci_memory_brake_mib=%s\n' "$required_lean_ci_memory_brake_mib"
+printf 'required_node_memory_brake_mib=%s\n' "$required_node_memory_brake_mib"
+printf 'required_node_ci_memory_brake_mib=%s\n' "$required_node_ci_memory_brake_mib"

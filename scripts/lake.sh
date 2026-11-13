@@ -137,8 +137,8 @@ trap 'exit 130' 1 2 15
 LEAN_NUM_THREADS="$required_lean_build_threads"
 export LEAN_NUM_THREADS
 
-# Every Lean process tree runs under the memory brake; see scripts/lean-memory-brake.sh.
-"$script_dir/lean-memory-brake.sh" "$$" "$((lean_memory_brake_mib * 1024))" "$lean_memory_brake_marker" &
+# Every Lean process tree runs under the memory brake; see scripts/memory-brake.sh.
+"$script_dir/memory-brake.sh" "$$" "$((lean_memory_brake_mib * 1024))" "$lean_memory_brake_marker" &
 lean_memory_brake_pid=$!
 
 if lake "$@"; then

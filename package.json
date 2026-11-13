@@ -9,7 +9,9 @@
     "leanBuildThreads": "2",
     "leanMemoryBrakeMiB": "4768",
     "leanCiBuildThreads": "3",
-    "leanCiMemoryBrakeMiB": "12288"
+    "leanCiMemoryBrakeMiB": "12288",
+    "nodeMemoryBrakeMiB": "2048",
+    "nodeCiMemoryBrakeMiB": "12288"
   },
   "engines": {
     "node": "26.10.0",
