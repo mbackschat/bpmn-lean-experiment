@@ -93,7 +93,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Start Events",
     element: "Signal Start Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "A root Signal Start Event, which a broadcast of its Signal's name starts in every eligible definition, in the population's discovery order. Two Signal subscriptions of one name in one CIB event scope are refused (signal.duplicateName).",
+    restriction: "A root Signal Start Event, which a broadcast of its Signal (by its name under the cibseven profiles, by its identity under the standards profile) starts in every eligible definition, in the population's discovery order. Under the cibseven profiles two Signal subscriptions of one name in one CIB event scope are refused (signal.duplicateName).",
     cibEvidence: exactCib("signal-start-compositions-handover-catch-other-signal"),
   },
   {
@@ -141,7 +141,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "End Events",
     element: "Signal End Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "A Signal End Event broadcasts its Signal's name with its payload mapping to the eligible receivers, as the Signal Intermediate Throw Event does, and ends its token.",
+    restriction: "A Signal End Event broadcasts its Signal (by its name under the cibseven profiles, by its identity under the standards profile) with its payload mapping to the eligible receivers, as the Signal Intermediate Throw Event does, and ends its token.",
     cibEvidence: exactCib("signal-throw-literal-intermediate-throw"),
   },
   {
@@ -440,7 +440,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Intermediate Catch Events",
     element: "Signal Intermediate Catch Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "A Signal Intermediate Catch Event, resumed by a broadcast of its Signal's name to every eligible waiting subscription. Two Signal subscriptions of one name in one CIB event scope are refused (signal.duplicateName).",
+    restriction: "A Signal Intermediate Catch Event, resumed by a broadcast of its Signal (by its name under the cibseven profiles, by its identity under the standards profile) to every eligible waiting subscription. Under the cibseven profiles two Signal subscriptions of one name in one CIB event scope are refused (signal.duplicateName).",
     cibEvidence: exactCib("signal-throw-literal-intermediate-throw"),
   },
   {
@@ -472,7 +472,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Intermediate Throw Events",
     element: "Signal Intermediate Throw Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "A Signal Intermediate Throw Event broadcasts its Signal's name with its payload mapping to the eligible receivers, Signal starts, catches, boundaries and Event Sub-Processes, in the population's discovery order, then continues.",
+    restriction: "A Signal Intermediate Throw Event broadcasts its Signal (by its name under the cibseven profiles, by its identity under the standards profile) with its payload mapping to the eligible receivers, Signal starts, catches, boundaries and Event Sub-Processes, in the population's discovery order, then continues.",
     cibEvidence: exactCib("signal-throw-literal-intermediate-throw"),
   },
   {
@@ -528,7 +528,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Signal Boundary Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "A Signal boundary on any Activity or Sub-Process host, interrupting or not, triggered by a broadcast of its Signal's name. Two Signal subscriptions of one name in one CIB event scope are refused (signal.duplicateName).",
+    restriction: "A Signal boundary on any Activity or Sub-Process host, interrupting or not, triggered by a broadcast of its Signal (by its name under the cibseven profiles, by its identity under the standards profile). Under the cibseven profiles two Signal subscriptions of one name in one CIB event scope are refused (signal.duplicateName).",
     cibEvidence: exactCib("signal-subscriptions-bodies-ping-isolation"),
   },
   {
