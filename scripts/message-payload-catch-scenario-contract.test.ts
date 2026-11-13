@@ -5,89 +5,9 @@ import { fileURLToPath } from "node:url";
 
 import { Ajv2020 } from "ajv/dist/2020.js";
 
-import {
-  verifyScenarioVariableValueContract,
-} from "./scenario-variable-value-contract.ts";
 import { isRecord } from "./schema-structure.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-
-// The consolidated standards profile names no family; the scenario's BPMN process selects the value surface.
-const scenarioIdentity = { profile: "bpmn-2.0.2", bpmn: { id: "message-payload-catch-process" } } as const;
-
-function payloadStimulus(payload: unknown, commandId = "deliver-payload") {
-  return {
-    kind: "deliver",
-    commandId,
-    occurrence: {
-      processInstanceId: "MessagePayloadCatchContract",
-      elementId: "MessageCatch_SettlementConfirmed",
-      activation: 1,
-    },
-    trigger: {
-      kind: "message",
-      channel: {
-        kind: "operationMessage",
-        interfaceId: "Interface_ClearingHouse",
-        interfaceOperationId: "Operation_ConfirmSettlement",
-        messageId: "Message_SettlementConfirmed",
-      },
-    },
-    payload,
-  } as const;
-}
-
-function verifyPayload(payload: unknown, identity: { profile: string; bpmn: { id: string } } = scenarioIdentity): void {
-  verifyScenarioVariableValueContract({
-    ...identity,
-    stimuli: [payloadStimulus(payload)],
-  });
-}
-
-test("admits the bounded scalar Message payload domain", () => {
-  const scalarPayloads = [
-    { kind: "boolean", value: true },
-    { kind: "integer", value: Number.MAX_SAFE_INTEGER },
-    { kind: "string", value: "settlement-reference-123" },
-    { kind: "null" },
-  ] as const;
-
-  for (const payload of scalarPayloads) {
-    assert.doesNotThrow(() => verifyPayload(payload), payload.kind);
-  }
-});
-
-test("refuses collection, wrong-profile, invalid-integer, and oversized payload stimuli", () => {
-  assert.throws(
-    () => verifyPayload({ kind: "stringList", value: ["one"] }),
-    /admits only Boolean, Integer, String, and Null payloads/u,
-  );
-  assert.throws(
-    () => verifyPayload(
-      { kind: "string", value: "settlement-reference-123" },
-      { profile: "bpmn-2.0.2", bpmn: { id: "intermediate-catch-message-process" } },
-    ),
-    /only admitted for the Message payload catch profile/u,
-  );
-  for (const value of [-1, -0, Number.MAX_SAFE_INTEGER + 1]) {
-    assert.throws(
-      () => verifyPayload({ kind: "integer", value }),
-      /non-negative safe integer/u,
-    );
-  }
-  assert.throws(
-    () => verifyPayload({ kind: "string", value: "x".repeat(16_385) }),
-    /tagged value exceeds 16384 UTF-8 bytes/u,
-  );
-  assert.throws(
-    () =>
-      verifyScenarioVariableValueContract({
-        ...scenarioIdentity,
-        stimuli: [payloadStimulus({ kind: "null" }, "x".repeat(65_537))],
-      }),
-    /stimulus exceeds 65536 UTF-8 bytes/u,
-  );
-});
 
 test("keeps the scenario MessageChannel schema a closed union", async () => {
   const values = [

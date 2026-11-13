@@ -45,4 +45,4 @@ Notes for the target runners:
 
 - The called occurrence is addressed by the derived called-instance identity (`call:<byte length>:<caller>:<byte length>:<Call element>:<activation>`, as in [call variable mapping](../../call-variable-mapping/README.md)).
 - Form-field types are declared only on the `verdict` and `notes` fields; no schedule depends on a type outside string.
-- Every submitted value is a String or a Boolean, and the Multi-Instance bodies are counted rather than collection-driven: the [scenario value contract](../../../scripts/scenario-variable-value-contract.ts) admits Integer and `stringList` start and completion values only for registered process ids.
+- Every submitted value is a String or a Boolean, and the Multi-Instance bodies are counted rather than collection-driven.

@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { kernelProfileOptions, readKernelProgram } from "@bpmn-lean/bpmn-source";
 import type { KernelJson, KernelProfileOptions, KernelRead, KernelSource } from "@bpmn-lean/bpmn-source";
-import { admit, decodeProgram, encodeProgram, type JsonValue } from "@bpmn-lean/kernel";
+import { admit, decodeProgram, encodeProgram, stimulusFromJson, type JsonValue } from "@bpmn-lean/kernel";
 
 import { parseWireJson } from "../../../scripts/strict-json.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
@@ -63,6 +63,12 @@ export function kernelAdmission(read: KernelRead): KernelAdmission {
   if (!decoded.ok) return { status: "rejected", refusal: decoded.refusal };
   const refusal = admit(decoded.value);
   return refusal === null ? { status: "accepted" } : { status: "rejected", refusal };
+}
+
+/** The kernel's own reading of one scenario stimulus, values and payloads included: accepted, or the codec's refusal. */
+export function kernelStimulusDecoding(stimulus: unknown): Readonly<{ ok: true } | { ok: false; refusal: string }> {
+  const decoded = stimulusFromJson(stimulus);
+  return decoded.ok ? { ok: true } : { ok: false, refusal: decoded.refusal };
 }
 
 /** The kernel codec's canonical encoding of a read program (guard 21's row fixtures), or its strict-decoding refusal. */

@@ -55,9 +55,14 @@ export type CorpusScenario = Readonly<{
   profile: string;
   /** Each bound BPMN source, in scenario order. */
   sources: ReadonlyArray<Readonly<{ relativePath: string; sha256: string }>>;
+  /** The scenario's stimuli as written, for a single-instance scenario; empty for a population scenario. */
+  stimuli: ReadonlyArray<unknown>;
   /** The CIB Seven release of the retained evidence beside the scenario, or `null` when none is retained. */
   retainedEvidenceVersion: string | null;
 }>;
+
+/** One JSON document read through the kernel's own codec: accepted, or its refusal. */
+export type CorpusDecoding = Readonly<{ ok: true } | { ok: false; refusal: string }>;
 
 export type CorpusAdmission = Readonly<{ status: "accepted" } | { status: "rejected"; refusal: string }>;
 
@@ -225,6 +230,8 @@ export async function inspectExecutableModelCorpus(
     externalRoot: string;
     scenarios: ReadonlyArray<CorpusScenario>;
     admitModel: CorpusAdmitter;
+    /** The kernel's own stimulus and value codec, supplied by the caller like `admitModel`. */
+    decodeStimulus: (stimulus: unknown) => CorpusDecoding;
   }>,
 ): Promise<ExecutableModelCorpusReport> {
   const externalById = new Map(
@@ -238,6 +245,15 @@ export async function inspectExecutableModelCorpus(
   // capability (`isOpenRowWitness`), so it widens no catalog.
   const exercised = new Set<MvpBpmnCapabilityId>();
   const claiming = options.scenarios.filter(({ relativePath }) => !isOpenRowWitness(relativePath));
+  // A claiming scenario's variable values and payloads are what the kernel's own codec reads; no table keyed by
+  // process names which kinds a scenario may carry.
+  const undecodable = claiming.flatMap(({ relativePath, stimuli }) => stimuli.flatMap((stimulus, index) => {
+    const decoded = options.decodeStimulus(stimulus);
+    return decoded.ok ? [] : [`${relativePath} stimulus ${index}: ${decoded.refusal}`];
+  }));
+  if (undecodable.length > 0) {
+    throw new Error(`the kernel codec refuses scenario stimuli:\n${undecodable.slice(0, 10).join("\n")}`);
+  }
   for (const relativePath of new Set(claiming.flatMap(({ sources }) => sources.map((source) => source.relativePath)))) {
     const xml = await readFile(path.join(options.projectRoot, relativePath), "utf8");
     for (const capability of detectExecutableBpmnCapabilities(xml)) exercised.add(capability);

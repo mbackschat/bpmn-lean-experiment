@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url";
 
 import {
   artifactCases,
-  isOpenRowWitness,
   normativeArtifactCases,
 } from "./contract-artifact-cases.ts";
 import type {
@@ -27,12 +26,6 @@ export type { CibSevenEvidence } from "./contract-cib-evidence.ts";
 import {
   parseWireJsonBytes,
 } from "./strict-json.ts";
-import {
-  verifyScenarioVariableValueContract,
-} from "./scenario-variable-value-contract.ts";
-export {
-  verifyScenarioVariableValueContract,
-} from "./scenario-variable-value-contract.ts";
 
 /**
  * A scenario as the artifact reader sees it: only the members this module and its tests read.
@@ -244,7 +237,6 @@ export function verifyArtifactSet(artifactSet: ArtifactSet): ArtifactSet {
     scenario,
     scenarioBytes,
     bpmnBytes,
-    artifactSet.scenarioRelativePath,
   );
   validateWith(validator, evidenceSchemaId, "evidence", evidence);
 
@@ -294,10 +286,8 @@ function verifyScenarioSourceBinding(
   scenario: ScenarioDocument,
   scenarioBytes: Buffer,
   bpmnBytes: Buffer,
-  scenarioRelativePath: string,
 ): void {
   validateWith(validator, scenarioSchemaId, "scenario", scenario);
-  if (!isOpenRowWitness(scenarioRelativePath)) verifyScenarioVariableValueContract(scenario);
   verifyCanonicalBindingOrder(scenario);
   if (
     !isDeepStrictEqual(
@@ -332,7 +322,6 @@ export function verifyNormativeArtifactSet(
     artifactSet.scenario,
     artifactSet.scenarioBytes,
     artifactSet.bpmnBytes,
-    artifactSet.scenarioRelativePath,
   );
   return artifactSet;
 }

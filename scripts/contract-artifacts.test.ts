@@ -311,19 +311,6 @@ test("targets every CIB-referencing scenario at an oracle revision of the profil
   assert.deepEqual(stale, []);
 });
 
-test("applies the value-surface claim guard to registered scenarios and never to open-row witnesses", async () => {
-  const artifactSet = artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario);
-  const withList = (scenarioRelativePath: string) => {
-    const mutated = cloneArtifactSet(artifactSet);
-    const start = (mutated.scenario.stimuli as Array<Record<string, unknown>>)[0]!;
-    start.variables = [{ name: "items", value: { kind: "stringList", value: ["a", "a"] } }];
-    bindScenarioBytes(mutated, `${JSON.stringify(mutated.scenario, null, 2)}\n`);
-    return { ...mutated, scenarioRelativePath };
-  };
-  assert.throws(() => verifyArtifactSet(withList(artifactSet.scenarioRelativePath)), /stringList is only admitted/u);
-  assert.doesNotThrow(() => verifyArtifactSet(withList(`${openRowScenarioRoot}user-task/scenario.json`)));
-});
-
 test("reads a row's state from the last cell of the delivery task list and refuses a state it cannot read", () => {
   const row = (id: string, state: string) => `| \`${id}\` | outcome, with \`code\` | PC-X-01; PC-Y-02. | ${state} |\n`;
   const table = row("PC-AA-01", "done; M9 track review, 2026-11-12") + row("PC-AA-02", "open ") + row("PC-AA-03", "held: re-qualified");

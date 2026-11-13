@@ -27,9 +27,9 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 /**
  * Witnesses of open coverage rows: answer-free scenarios whose CIB answer is fixed before the row's code (PLAN order
- * gate). They claim no capability, so the claim guards (value surfaces, citations inside the profile, the executable
- * capability catalog) skip them while every mechanical guard still applies; a row's track moves its witnesses into
- * `scenarios/` when the row closes.
+ * gate). They claim no capability, so the claim guards (the kernel codec's reading of their values, the executable
+ * capability catalog, corpus claiming) skip them while every mechanical guard still applies; a row's track moves its
+ * witnesses into `scenarios/` when the row closes.
  */
 export const openRowScenarioRoot = "scenarios/open-rows/";
 export const openRowOwnersRelativePath = `${openRowScenarioRoot}owners.json`;

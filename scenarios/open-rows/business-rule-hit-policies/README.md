@@ -12,7 +12,7 @@ Every scenario binds the DMN resource [decisions.dmn](decisions.dmn) by its exac
 - [forms.bpmn](forms.bpmn): one Business Rule Task per table of [forms.dmn](forms.dmn), selected by `policy` as in `hit-policies.bpmn`; the schedules on it bind `forms.dmn` instead of `decisions.dmn`.
 - [value-outputs.bpmn](value-outputs.bpmn): one Business Rule Task per table of [value-outputs.dmn](value-outputs.dmn), selected by `policy` as in `hit-policies.bpmn` and mapped `singleEntry` to `result`; the schedules on it bind `value-outputs.dmn` instead of `decisions.dmn`.
 
-The [scenario value contract](../../../scripts/scenario-variable-value-contract.ts) admits Integer start values only for registered process ids, so every number below is a numeric String that the decision's `integer` type reference converts.
+Every number below is a numeric String that the decision's `integer` type reference converts.
 
 ## Decision tables
 

@@ -21,4 +21,4 @@ The [named-message-and-signal schedule](parcel-named-message-and-signal.scenario
 Notes for the target runners:
 
 - The Signal delivery in the named-message schedule is a `deliver` with `trigger.kind: "signal"` aimed at a wait that holds no Signal subscription.
-- The Multi-Instance bodies are counted rather than collection-driven, because the [scenario value contract](../../../scripts/scenario-variable-value-contract.ts) admits `stringList` values only for registered process ids; the activation of a body's occurrence counts the bodies begun so far.
+- The Multi-Instance bodies are counted rather than collection-driven; the activation of a body's occurrence counts the bodies begun so far.

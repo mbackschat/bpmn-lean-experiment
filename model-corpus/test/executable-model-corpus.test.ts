@@ -10,13 +10,14 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { kernelAdmission, readCaseSource } from "../../packages/differential/test/kernel-program.ts";
+import { kernelAdmission, kernelStimulusDecoding, readCaseSource } from "../../packages/differential/test/kernel-program.ts";
 import {
   DiscoveredKind,
   discoverScenarios,
   readSourceFor,
 } from "../../packages/differential/test/scenario-discovery.ts";
 import type { DiscoveredScenario } from "../../packages/differential/test/scenario-discovery.ts";
+import { isOpenRowWitness, readOpenRowOwners } from "../../scripts/contract-artifact-cases.ts";
 import {
   inspectExecutableModelCorpus,
   renderExecutableModelCorpusMap,
@@ -48,6 +49,7 @@ function corpusScenario(scenario: DiscoveredScenario): CorpusScenario {
         kind: scenario.kind,
         profile: scenario.document.profile,
         sources: [scenario.document.bpmn],
+        stimuli: scenario.document.stimuli,
         retainedEvidenceVersion: scenario.evidence?.engineVersion ?? null,
       };
     case DiscoveredKind.PopulationScenario:
@@ -57,6 +59,7 @@ function corpusScenario(scenario: DiscoveredScenario): CorpusScenario {
         kind: scenario.kind,
         profile: scenario.document.profile,
         sources: scenario.document.definitions.map(({ bpmn }) => bpmn),
+        stimuli: [],
         retainedEvidenceVersion: null,
       };
   }
@@ -82,7 +85,9 @@ const admitModel: CorpusAdmitter = async (model, bytes, scenario) => {
 };
 
 const inspect = (manifest: ExecutableModelCorpusManifest, selected: ReadonlyArray<CorpusScenario> = scenarios) =>
-  inspectExecutableModelCorpus(manifest, { projectRoot, externalRoot, scenarios: selected, admitModel });
+  inspectExecutableModelCorpus(manifest, {
+    projectRoot, externalRoot, scenarios: selected, admitModel, decodeStimulus: kernelStimulusDecoding,
+  });
 
 test("the kernel admits every model exactly as the corpus records it", async () => {
   const report = await inspect(requireExecutableModelCorpusManifest(await loadManifest()));
@@ -135,6 +140,55 @@ test("rejects a catalog variant no discovered scenario exercises", async () => {
   const withoutTimerStart = scenarios.filter(({ sources }) =>
     !sources.some(({ relativePath }) => relativePath.startsWith("scenarios/timer-start-event/")));
   await assert.rejects(inspect(manifest, withoutTimerStart), /MVP capability catalog differs from the discovered scenarios/u);
+});
+
+/** A copy of the first single-instance scenario whose first stimulus has a `variables` member, with `variable` added. */
+function plantedScenario(relativePath: string, variable: unknown): CorpusScenario {
+  const base = scenarios.find(({ kind, stimuli }) =>
+    kind === "scenario" && typeof stimuli[0] === "object" && stimuli[0] !== null && "variables" in stimuli[0]);
+  assert.ok(base !== undefined);
+  const [first, ...rest] = base.stimuli as ReadonlyArray<Readonly<Record<string, unknown>>>;
+  assert.ok(first !== undefined);
+  return { ...base, id: `planted-${base.id}`, relativePath, stimuli: [{ ...first, variables: [variable], }, ...rest] };
+}
+
+test("a claiming scenario carrying a value the kernel codec refuses fails, whatever its process", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  for (const [value, refusal] of [
+    [{ kind: "integer", value: 1.5 }, /Integer expected/u],
+    [{ kind: "stringList", value: ["a", 1] }, /String expected/u],
+    [{ kind: "tensor", value: [] }, /unknown value kind tensor/u],
+    [{ kind: "null", value: "x" }, /./u],
+  ] as const) {
+    const planted = plantedScenario("scenarios/planted/refused-value.scenario.json", { name: "x", value });
+    await assert.rejects(inspect(manifest, [...scenarios, planted]), (error: Error) =>
+      error.message.includes("scenarios/planted/refused-value.scenario.json stimulus 0") && refusal.test(error.message),
+    JSON.stringify(value));
+  }
+});
+
+test("a claiming scenario carries every value kind the codec reads, under any process", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const everyKind = [
+    { kind: "null" }, { kind: "boolean", value: true }, { kind: "integer", value: 7 },
+    { kind: "decimal", coefficient: "-125", scale: 2 }, { kind: "string", value: "s" },
+    { kind: "stringList", value: ["a", "a"] }, { kind: "list", value: [{ kind: "integer", value: 1 }] },
+    { kind: "map", value: [{ name: "k", value: { kind: "null" } }] },
+  ];
+  const planted = plantedScenario("scenarios/planted/every-kind.scenario.json", { name: "x", value: everyKind[0] });
+  const [first] = planted.stimuli as ReadonlyArray<Readonly<Record<string, unknown>>>;
+  await assert.doesNotReject(inspect(manifest, [...scenarios, {
+    ...planted, stimuli: [{ ...first, variables: everyKind.map((value, index) => ({ name: `v${index}`, value })) }],
+  }]));
+});
+
+test("a witness of an open row claims nothing, so the codec reads none of its values", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const directory = [...readOpenRowOwners()].map(([name]) => name).find((name) =>
+    isOpenRowWitness(`scenarios/open-rows/${name}/planted.scenario.json`));
+  if (directory === undefined) return;
+  const planted = plantedScenario(`scenarios/open-rows/${directory}/planted.scenario.json`, { name: "x", value: { kind: "integer", value: 1.5 } });
+  await assert.doesNotReject(inspect(manifest, [...scenarios, planted]));
 });
 
 test("rejects source clones split across different clone families", async () => {

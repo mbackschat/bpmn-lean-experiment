@@ -1,6 +1,5 @@
 /**
- * Locks the scenario wire schema of the recursive portable value arms and the refusal that keeps every registered
- * scenario profile closed to them (`PBV-INGRESS-01`, `PBV-IDENTITY-01`).
+ * Locks the scenario wire schema of the recursive portable value arms (`PBV-INGRESS-01`, `PBV-IDENTITY-01`).
  *
  * The schema is a necessary filter only: it cannot express Map key order, signed 64-bit range, container depth, node
  * count or canonical bytes. The kernel's value codec (`packages/kernel/src/il/codec/value.ts`) stays the single owner of those
@@ -13,7 +12,6 @@ import { test } from "node:test";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import type { ValidateFunction } from "ajv/dist/2020.js";
 
-import { verifyScenarioVariableValueContract } from "./contract-artifacts.ts";
 import {
   declaredEnumValues,
   isRecord,
@@ -139,32 +137,4 @@ test("keeps the root String arm unbounded while nested Strings carry the portabl
   assert.equal(validate(text("a".repeat(5000))), true);
   assert.equal(validate(list(text("a".repeat(1024)))), true);
   assert.equal(validate(list(text("a".repeat(1025)))), false);
-});
-
-test("scenario verification refuses the recursive arms on every surface of every value family that does not select them", () => {
-  // The consolidated standards profile names no family; the scenario's BPMN process selects the value surface.
-  const processes = [
-    "expense-exception-review",
-    "sequential-multi-instance-review",
-    "parallel-multi-instance-risk-review",
-    "message-payload-catch-process",
-    "not-a-registered-process",
-  ];
-  for (const process of processes) {
-    for (const value of [order, decimal("1", 0), list(), map()]) {
-      const binding = { name: "candidate", value };
-      for (const stimulus of [
-        { kind: "start", variables: [binding] },
-        { kind: "command", action: { kind: "completeUserTask", values: [binding] } },
-        { kind: "effectResult", outcome: { kind: "success", outputs: [binding] } },
-        { kind: "deliver", payload: value },
-      ]) {
-        assert.throws(
-          () => verifyScenarioVariableValueContract({ profile: "bpmn-2.0.2", bpmn: { id: process }, stimuli: [stimulus] }),
-          TypeError,
-          `${process} ${stimulus.kind} ${value.kind}`,
-        );
-      }
-    }
-  }
 });

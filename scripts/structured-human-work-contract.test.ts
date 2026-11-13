@@ -5,13 +5,6 @@ import { test } from "node:test";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import type { SchemaObject } from "ajv/dist/2020.js";
 
-import {
-  verifyScenarioVariableValueContract,
-} from "./contract-artifacts.ts";
-// The consolidated standards profile names no family; the scenario's BPMN process selects the value surface.
-const structuredIdentity = { profile: "bpmn-2.0.2", bpmn: { id: "expense-exception-review" } } as const;
-const otherIdentity = { profile: "bpmn-2.0.2", bpmn: { id: "user-task-boolean-completion-process" } } as const;
-
 async function schemaDefinition(
   schemaName: string,
   definition: string,
@@ -29,23 +22,6 @@ async function schemaDefinition(
 
 function validateDefinition(definition: SchemaObject, value: unknown): boolean {
   return new Ajv2020({ strict: true }).compile(definition)(value);
-}
-
-function completionScenario(
-  submittedValues: ReadonlyArray<unknown>,
-  identity: { profile: string; bpmn: { id: string } } = structuredIdentity,
-): unknown {
-  return {
-    ...identity,
-    stimuli: [{
-      kind: "command",
-      action: { kind: "completeUserTask", values: submittedValues },
-    }],
-  };
-}
-
-function binding(name: string, value: unknown): unknown {
-  return { name, value };
 }
 
 test("adds exact integer and ordered string-list arms to the generic value schema", async () => {
@@ -69,96 +45,4 @@ test("adds exact integer and ordered string-list arms to the generic value schem
   ]) {
     assert.equal(validateDefinition(variableValue, value), false);
   }
-});
-
-test("semantic stimulus validation rejects negative zero and new values on every wrong surface or profile", () => {
-  assert.throws(
-    () => verifyScenarioVariableValueContract(completionScenario([
-      binding("amount", { kind: "integer", value: -0 }),
-    ]) as never),
-    /negative zero/u,
-  );
-  for (const value of [
-    { kind: "integer", value: 1 },
-    { kind: "stringList", value: ["policy"] },
-  ]) {
-    assert.throws(
-      () => verifyScenarioVariableValueContract(completionScenario([
-        binding("value", value),
-      ], otherIdentity) as never),
-      /only admitted for structured Human Work completion/u,
-    );
-    assert.throws(
-      () => verifyScenarioVariableValueContract({
-        ...structuredIdentity,
-        stimuli: [{
-          kind: "start",
-          variables: [binding("value", value)],
-        }],
-      } as never),
-      /only admitted for structured Human Work completion/u,
-    );
-    assert.throws(
-      () => verifyScenarioVariableValueContract({
-        ...structuredIdentity,
-        stimuli: [{
-          kind: "effectResult",
-          outcome: { kind: "success", outputs: [binding("value", value)] },
-        }],
-      } as never),
-      /only admitted for structured Human Work completion/u,
-    );
-  }
-});
-
-test("enforces every generic string-list, value, binding, and patch ceiling", () => {
-  const rejects = [
-    [binding("items", {
-      kind: "stringList",
-      value: Array.from({ length: 33 }, () => "x"),
-    })],
-    [binding("items", {
-      kind: "stringList",
-      value: ["é".repeat(513)],
-    })],
-    [binding("items", {
-      kind: "stringList",
-      value: Array.from({ length: 17 }, () => "x".repeat(1000)),
-    })],
-    [binding("n".repeat(6000), {
-      kind: "stringList",
-      value: Array.from({ length: 15 }, () => "x".repeat(1000)),
-    })],
-    Array.from({ length: 5 }, (_, index) => binding(`v${index}`, {
-      kind: "stringList",
-      value: Array.from({ length: 15 }, () => "x".repeat(1000)),
-    })),
-  ];
-  const messages = [
-    /at most 32 members/u,
-    /member exceeds 1024 UTF-8 bytes/u,
-    /tagged value exceeds 16384 UTF-8 bytes/u,
-    /binding exceeds 20480 UTF-8 bytes/u,
-    /patch exceeds 65536 UTF-8 bytes/u,
-  ];
-  rejects.forEach((submittedValues, index) => {
-    const message = messages[index];
-    assert.ok(message);
-    assert.throws(
-      () => verifyScenarioVariableValueContract(
-        completionScenario(submittedValues) as never,
-      ),
-      message,
-    );
-  });
-
-  assert.doesNotThrow(() => verifyScenarioVariableValueContract(
-    completionScenario([
-      binding("amount", { kind: "integer", value: 91 }),
-      binding("flags", {
-        kind: "stringList",
-        value: ["duplicate", "duplicate", "policy"],
-      }),
-    ]) as never,
-  ));
 });
