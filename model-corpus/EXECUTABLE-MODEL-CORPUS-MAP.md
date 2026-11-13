@@ -22,7 +22,7 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Assess, route and archive an invoice | retainedScenario | structured-invoice-handoff | accepted | structured-composition-invoice-approve | notSelected | notCatalogReady |
 | Hand a review decision to archive work | retainedScenario | structured-serial-handoff | accepted | structured-composition-serial-string | notSelected | notCatalogReady |
 | Hand a reviewed order to archive work | retainedScenario | portable-order-handoff | accepted | portable-handoff-order-nested | notSelected | notCatalogReady |
-| Decide a credit application | retainedScenario | credit-decision-structured-assessment | accepted | effect-data-credit-assessed | notSelected | notCatalogReady |
+| Decide a credit application | retainedScenario | credit-decision-structured-assessment | accepted | effect-data-credit-assessed | retainedEvidence | notCatalogReady |
 | Approve a purchase order | retainedScenario | purchase-order-nested-approval | accepted | nested-scope-data-order-approved | notSelected | notCatalogReady |
 | Review an expense claim | retainedScenario | expense-claim-patch-allowance | accepted | nested-scope-data-claim-limits | notSelected | notCatalogReady |
 | Sign off a bulk quote | retainedScenario | bulk-quote-capacity | accepted | nested-scope-data-quote-signed | notSelected | notCatalogReady |
@@ -33,10 +33,10 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Conduct an internal audit | retainedScenario | internal-audit-nested-fieldwork | accepted | nested-scope-control-audit-early-and-stale | notSelected | notCatalogReady |
 | Remediate audit findings | retainedScenario | audit-remediation-concurrent-findings | accepted | concurrent-activations-audit-interleaved-and-stale | notSelected | notCatalogReady |
 | Assess a credit application | retainedScenario | credit-intake-concurrent-assessments | accepted | concurrent-activations-intake-reverse-assessments | notSelected | notCatalogReady |
-| Screen a new supplier | retainedScenario | supplier-screening-concurrent-checks | accepted | concurrent-scope-effects-supplier-review-first | notSelected | notCatalogReady |
+| Screen a new supplier | retainedScenario | supplier-screening-concurrent-checks | accepted | concurrent-scope-effects-supplier-review-first | retainedEvidence | notCatalogReady |
 | Take in an insurance claim | retainedScenario | claim-intake-priced-assessments | accepted | concurrent-scope-effects-claim-price-two-first | notSelected | notCatalogReady |
 | Assess claim damage | retainedScenario | claim-damage-assessment-concurrent-pricing | accepted | concurrent-scope-data-claim-fetch-one-first | notSelected | notCatalogReady |
-| Inspect a facility | retainedScenario | facility-inspection-concurrent-checks | accepted | concurrent-scope-data-facility-inspection | notSelected | notCatalogReady |
+| Inspect a facility | retainedScenario | facility-inspection-concurrent-checks | accepted | concurrent-scope-data-facility-inspection | retainedEvidence | notCatalogReady |
 | Ask two experts about a supplier at once | retainedScenario | supplier-onboarding-concurrent-expert-calls | accepted | concurrent-mapped-calls-supplier-compliance-first | retainedEvidence | notCatalogReady |
 | Prepare a business trip | retainedScenario | travel-request-concurrent-checks | accepted | concurrent-mapped-calls-travel-request | retainedEvidence | notCatalogReady |
 | Fulfil an order | retainedScenario | order-fulfilment-concurrent-structured-data | accepted | concurrent-structured-scope-data-order-review-first | notSelected | notCatalogReady |
@@ -111,9 +111,9 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Receive application documents during review | retainedScenario | subprocess-termination | accepted | subscription-receive-task-resume | retainedEvidence | notCatalogReady |
 | Cancel a confirmed travel itinerary | retainedScenario | dependency-aware-travel-compensation | accepted | compensation-success-b-c-a | notSelected | guidedJourneyBacked |
 | Withdraw a resource reservation | retainedScenario | transaction-reservation-withdrawal | accepted | transaction-cancellation-retained-active | notSelected | guidedJourneyBacked |
-| Validate and classify an invoice | retainedScenario | invoice-validation-classification | accepted | classification | notSelected | notCatalogReady |
-| Review and rework an invoice | retainedScenario | invoice-validation-rework | accepted | invoice-rework | notSelected | notCatalogReady |
-| Recover from invoice business Errors | retainedScenario | invoice-business-error-recovery | accepted | invoice-business-error-recovery | notSelected | notCatalogReady |
+| Validate and classify an invoice | retainedScenario | invoice-validation-classification | accepted | classification | retainedEvidence | notCatalogReady |
+| Review and rework an invoice | retainedScenario | invoice-validation-rework | accepted | invoice-rework | retainedEvidence | notCatalogReady |
+| Recover from invoice business Errors | retainedScenario | invoice-business-error-recovery | accepted | invoice-business-error-recovery | retainedEvidence | notCatalogReady |
 | Debounce an alarm before paging | retainedScenario | timer-then-human-review | accepted | intermediate-catch-timer-alarm-debounce | retainedEvidence | notCatalogReady |
 | CIB Seven order goods | externalGit | cib-order-goods | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven review invoice | externalGit | cib-review-invoice | rejected | none | notApplicable | notCatalogReady |
