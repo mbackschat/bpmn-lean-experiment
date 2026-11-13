@@ -47,6 +47,11 @@ public final class ScenarioJson {
     return MAPPER.readValue(json, PopulationProtocol.PopulationScenario.class);
   }
 
+  static SourceOverlayProtocol.SourceOverlay readOverlay(String json) throws JsonProcessingException {
+    rejectInvalidWireTokens(json);
+    return MAPPER.readValue(json, SourceOverlayProtocol.SourceOverlay.class);
+  }
+
   /** The `id` of a scenario line, read leniently so a scenario the protocol refuses can still be named; else null. */
   public static String scenarioIdOf(String json) {
     return textMember(json, "id");

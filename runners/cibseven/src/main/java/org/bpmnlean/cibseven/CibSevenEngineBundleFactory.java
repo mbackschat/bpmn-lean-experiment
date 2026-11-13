@@ -1,7 +1,6 @@
 package org.bpmnlean.cibseven;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import org.cibseven.bpm.engine.ProcessEngine;
@@ -62,11 +61,7 @@ final class CibSevenEngineBundleFactory {
       configuration.setCreateIncidentOnFailedJobEnabled(true);
     }
     var effects = new CibSevenScriptedEffect();
-    var beans = new HashMap<Object, Object>();
-    for (var handler : CibSevenScriptedEffect.HANDLER_BEANS) {
-      beans.put(handler, effects.delegate(handler));
-    }
-    configuration.setBeans(beans);
+    configuration.setBeans(effects.beans());
     // A mutable list: engine initialization appends its own post-parse listeners to it.
     var postParseListeners = new ArrayList<BpmnParseListener>();
     if (configuration.getCustomPostBPMNParseListeners() != null) {

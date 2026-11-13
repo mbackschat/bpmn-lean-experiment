@@ -59,12 +59,17 @@ final class CibSevenPopulationRunner {
   /** Engine identifier to public identifier of every root instance, in start order. */
   private final Map<String, String> roots = new LinkedHashMap<>();
 
-  CibSevenPopulationRunner(ProcessEngine engine, CibSevenScriptedEffect effects, Date logicalEpoch) {
+  CibSevenPopulationRunner(
+      ProcessEngine engine,
+      CibSevenScriptedEffect effects,
+      CibSevenEffectBindings effectBindings,
+      Date logicalEpoch) {
     this.engine = engine;
     this.logicalEpoch = logicalEpoch;
     this.effects = effects;
     this.registry = new CibSevenPopulationRegistry(engine);
-    this.projector = new CibSevenStateProjector(engine, logicalEpoch, false, false, registry::calledDefinition);
+    this.projector =
+        new CibSevenStateProjector(engine, logicalEpoch, false, false, effectBindings, registry::calledDefinition);
     this.starts = new CibSevenStarts(engine, logicalEpoch);
     this.executor = new CibSevenCommandExecutor(
         engine, projector, effects, CibEffectExecutionSchedule.PLAIN_SUCCESS, new Options(null), logicalEpoch);

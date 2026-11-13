@@ -3,6 +3,7 @@ package org.bpmnlean.cibseven;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
@@ -19,9 +20,13 @@ import javax.xml.stream.XMLStreamException;
 import org.bpmnlean.cibseven.PopulationProtocol.PopulationScenario;
 import org.bpmnlean.cibseven.ScenarioProtocol.BpmnResource;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
+import org.bpmnlean.cibseven.ScenarioProtocol.SourceOverlayIdentity;
 import org.bpmnlean.cibseven.ScenarioProtocol.Start;
 
-/** Validates the closed scenario shape and binds its content-addressed BPMN and DMN resources, a population's too. */
+/**
+ * Validates the closed scenario shape and binds its content-addressed BPMN, DMN and source-overlay resources, a
+ * population's too.
+ */
 final class CibSevenScenarioValidator {
 
   private static final String BPMN_MODEL = "http://www.omg.org/spec/BPMN/20100524/MODEL";
@@ -47,7 +52,7 @@ final class CibSevenScenarioValidator {
       throw new IllegalArgumentException("Scenario starts exactly once, with its first stimulus");
     }
     var resource = resource(scenario.bpmn(), projectRoot);
-    return new ValidatedScenario(start, resource.bpmnPath(), resource.decisionPaths());
+    return new ValidatedScenario(start, resource.bpmnPath(), resource.decisionPaths(), resource.effectBindings());
   }
 
   /**
@@ -82,7 +87,33 @@ final class CibSevenScenarioValidator {
       verifySha256(decisionPaths.get(index), bpmn.declaredDecisions().get(index).sha256());
     }
     requireRealizable(bpmnPath, !decisionPaths.isEmpty());
-    return new ValidatedResource(bpmnPath, decisionPaths);
+    var effectBindings = bpmn.sourceOverlay() == null
+        ? CibSevenEffectBindings.BUILT_IN
+        : overlayBindings(bpmn.sourceOverlay(), bpmnPath);
+    return new ValidatedResource(bpmnPath, decisionPaths, effectBindings);
+  }
+
+  /**
+   * The effect bindings of the overlay a definition names by digest, retained beside its BPMN source. The scenario
+   * reaches the runner without its own path, so the scenario-side location the differential also searches
+   * (`scenario-discovery.ts#boundOverlay`) is not available here; an overlay kept only there is refused.
+   */
+  private static CibSevenEffectBindings overlayBindings(SourceOverlayIdentity identity, Path bpmnPath)
+      throws IOException {
+    List<Path> candidates;
+    try (var listing = Files.list(bpmnPath.getParent())) {
+      candidates = listing
+          .filter(path -> path.getFileName().toString().endsWith(".json") && Files.isRegularFile(path))
+          .sorted()
+          .toList();
+    }
+    for (var candidate : candidates) {
+      if (sha256(candidate).equals(identity.sha256())) {
+        return CibSevenEffectBindings.read(identity, Files.readString(candidate, StandardCharsets.UTF_8));
+      }
+    }
+    throw new IllegalArgumentException(
+        "Source overlay " + identity.id() + " has no file beside " + bpmnPath.getFileName());
   }
 
   /**
@@ -160,23 +191,31 @@ final class CibSevenScenarioValidator {
   }
 
   private static void verifySha256(Path path, String expected) throws IOException {
+    var actual = sha256(path);
+    if (!actual.equals(expected)) {
+      throw new IllegalArgumentException(
+          "Resource SHA-256 mismatch for " + path + ": expected " + expected + ", got " + actual);
+    }
+  }
+
+  private static String sha256(Path path) throws IOException {
     try {
       var digest = MessageDigest.getInstance("SHA-256");
       try (InputStream input = new DigestInputStream(Files.newInputStream(path), digest)) {
         input.transferTo(OutputStream.nullOutputStream());
       }
-      var actual = HexFormat.of().formatHex(digest.digest());
-      if (!actual.equals(expected)) {
-        throw new IllegalArgumentException(
-            "Resource SHA-256 mismatch for " + path + ": expected " + expected + ", got " + actual);
-      }
+      return HexFormat.of().formatHex(digest.digest());
     } catch (NoSuchAlgorithmException impossible) {
       throw new IllegalStateException("Java runtime does not provide SHA-256", impossible);
     }
   }
 
-  record ValidatedScenario(Start start, Path bpmnPath, List<Path> decisionPaths) {}
+  record ValidatedScenario(
+      Start start, Path bpmnPath, List<Path> decisionPaths, CibSevenEffectBindings effectBindings) {}
 
-  /** A definition's BPMN document and the DMN resources deployed with it, each verified against its digest. */
-  record ValidatedResource(Path bpmnPath, List<Path> decisionPaths) {}
+  /**
+   * A definition's BPMN document, the DMN resources deployed with it, each verified against its digest, and the effect
+   * bindings its source overlay declares.
+   */
+  record ValidatedResource(Path bpmnPath, List<Path> decisionPaths, CibSevenEffectBindings effectBindings) {}
 }

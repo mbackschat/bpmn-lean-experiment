@@ -2,6 +2,7 @@ package org.bpmnlean.cibseven;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,7 +33,10 @@ import org.cibseven.bpm.engine.delegate.JavaDelegate;
  */
 final class CibSevenScriptedEffect {
 
-  /** The bean tokens the retained models bind (`camunda:delegateExpression`); any other token fails to resolve. */
+  /**
+   * The bean tokens every scenario may bind (`camunda:delegateExpression`); a scenario's source overlay adds its own
+   * ({@link CibSevenEffectBindings}), and any other token fails to resolve.
+   */
   static final List<String> HANDLER_BEANS =
       List.of("bpmnLeanEffectHandler", "mappedSuccessHandler", "mappedBoundaryErrorHandler");
 
@@ -44,6 +48,12 @@ final class CibSevenScriptedEffect {
   static final String EFFECT_PROTOCOL = "urn:bpmn-lean:effect-protocol:activity-v1";
   static final String EFFECT_OPERATION = "urn:bpmn-lean:effect-operation:probe-v1";
 
+  /**
+   * The engine's bean map, which {@link #bind} refills for each scenario. CIB keeps the configured map by reference
+   * and reads it on every resolution (`JuelExpressionManager.java:63-67,148-152`, `ReadOnlyMapELResolver#getValue`,
+   * `BeansResolverFactory.java:34-44`), so a token bound for one scenario resolves in no later one.
+   */
+  private final Map<Object, Object> beans = new HashMap<>();
   private CibEffectExecutionSchedule schedule = CibEffectExecutionSchedule.PLAIN_SUCCESS;
   private List<EffectResult> pending = new ArrayList<>();
   private final List<String> consumed = new ArrayList<>();
@@ -54,6 +64,23 @@ final class CibSevenScriptedEffect {
   private int invocations;
   private int mutations;
   private int failedOnce;
+
+  CibSevenScriptedEffect() {
+    bind(CibSevenEffectBindings.BUILT_IN);
+  }
+
+  /** The live map the engine configuration resolves beans from. */
+  Map<Object, Object> beans() {
+    return beans;
+  }
+
+  /** Registers exactly the scenario's handler tokens, each answered by this effect, replacing the previous set. */
+  void bind(CibSevenEffectBindings bindings) {
+    beans.clear();
+    for (var token : bindings.handlerTokens()) {
+      beans.put(token, delegate(token));
+    }
+  }
 
   void beginScenario(CibEffectExecutionSchedule nextSchedule, List<EffectResult> results) {
     schedule = nextSchedule;

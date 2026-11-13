@@ -42,11 +42,12 @@ final class CibSevenStateProjector {
       Date logicalEpoch,
       boolean incidentsEnabled,
       boolean incidentsCancellable,
+      CibSevenEffectBindings effectBindings,
       Function<ProcessDefinition, DefinitionRef> calledDefinition) {
     this.engine = engine;
     this.logicalEpoch = logicalEpoch;
     this.incidentsEnabled = incidentsEnabled;
-    this.waits = new CibSevenOpenWaitProjector(engine, logicalEpoch, incidentsCancellable);
+    this.waits = new CibSevenOpenWaitProjector(engine, logicalEpoch, incidentsCancellable, effectBindings);
     this.occurrences = new CibSevenOccurrences(engine, calledDefinition);
   }
 

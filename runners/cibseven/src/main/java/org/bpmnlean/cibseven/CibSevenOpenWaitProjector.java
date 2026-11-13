@@ -113,13 +113,19 @@ final class CibSevenOpenWaitProjector {
   private final ProcessEngine engine;
   private final Date logicalEpoch;
   private final boolean incidentsCancellable;
+  private final CibSevenEffectBindings effectBindings;
   /** Every failed-job incident seen per job within the scenario: the effect's `failures` count. */
   private final Map<String, Set<String>> incidentsByJob = new HashMap<>();
 
-  CibSevenOpenWaitProjector(ProcessEngine engine, Date logicalEpoch, boolean incidentsCancellable) {
+  CibSevenOpenWaitProjector(
+      ProcessEngine engine,
+      Date logicalEpoch,
+      boolean incidentsCancellable,
+      CibSevenEffectBindings effectBindings) {
     this.engine = engine;
     this.logicalEpoch = logicalEpoch;
     this.incidentsCancellable = incidentsCancellable;
+    this.effectBindings = effectBindings;
   }
 
   /** What a command acts on: one engine object per wait. */
@@ -378,11 +384,15 @@ final class CibSevenOpenWaitProjector {
             wait(instance, elementId, activation, new TimerDetail(deadlineMs, recurrence), handle));
       } else if (instance.model().getModelElementById(elementId) instanceof ServiceTask task) {
         projectEffect(instance, occurrences, projection, job,
-            new DelegatedTask(task.getId(), task.getImplementation(), task.getCamundaDelegateExpression()),
+            new DelegatedTask(
+                task.getId(), task.getImplementation(), task.getAttributeValue("implementation"),
+                task.getCamundaDelegateExpression()),
             executable, handle);
       } else if (instance.model().getModelElementById(elementId) instanceof SendTask task) {
         projectEffect(instance, occurrences, projection, job,
-            new DelegatedTask(task.getId(), task.getImplementation(), task.getCamundaDelegateExpression()),
+            new DelegatedTask(
+                task.getId(), task.getImplementation(), task.getAttributeValue("implementation"),
+                task.getCamundaDelegateExpression()),
             executable, handle);
       } else {
         throw new IllegalStateException("Unsupported asynchronous continuation at " + elementId);
@@ -398,18 +408,15 @@ final class CibSevenOpenWaitProjector {
       DelegatedTask task,
       boolean executable,
       JobHandle handle) {
-    var protocol = task.implementation();
-    var handler = beanToken(task.delegateExpression());
     // A token no handler bean carries still waits at its job: CIB resolves the token only when the job runs
     // (`ServiceTaskDelegateExpressionActivityBehavior#performExecution`), so the wait is projected like any other and
     // the job's failure is CIB's answer (CIB-LIM-0051).
-    if (!CibSevenScriptedEffect.SOURCE_PROTOCOL.equals(protocol)) {
-      throw new IllegalStateException("Task " + task.id() + " has no effect binding in this runner");
-    }
+    var bound = effectBindings.effect(task.id(), task.declaredImplementation(), task.delegateExpression());
     var activation = occurrences.pendingActivation(instance, task.id(), job.getExecutionId());
     projection.effects().add(
         new EffectJob(
-            task.id(), activation, protocol, handler, job.getRetries(), executable, job.getDuedate() != null));
+            task.id(), activation, task.implementation(), bound.handler(), job.getRetries(), executable,
+            job.getDuedate() != null));
     var incidents =
         engine.getRuntimeService().createIncidentQuery().processInstanceId(instance.engineId()).list().stream()
             .filter(incident -> job.getId().equals(incident.getConfiguration()))
@@ -421,10 +428,7 @@ final class CibSevenOpenWaitProjector {
     incidents.forEach(incident -> seen.add(incident.getId()));
     // The asynchronous continuation runs the input mappings only when the job executes, so arguments are not
     // observable while the effect waits.
-    var effect =
-        new Effect(
-            CibSevenScriptedEffect.EFFECT_PROTOCOL, CibSevenScriptedEffect.EFFECT_OPERATION, List.of(), seen.size(),
-            null);
+    var effect = new Effect(bound.protocol(), bound.operation(), List.of(), seen.size(), null);
     FailedJobIncident raw = null;
     if (incidents.isEmpty()) {
       projection.waits().add(wait(instance, task.id(), activation, new EffectDetail(effect), handle));
@@ -446,24 +450,19 @@ final class CibSevenOpenWaitProjector {
             task.id(), raw));
   }
 
-  /** A Service or Send Task whose delegate expression the runner's effect handler answers. */
-  private record DelegatedTask(String id, String implementation, String delegateExpression) {}
+  /**
+   * A Service or Send Task whose delegate expression the runner's effect handler answers. `implementation` is the
+   * model API's value, `##WebService` when absent; `declaredImplementation` is the attribute as written, null when
+   * absent, which a binding matches exactly as the kernel reader does.
+   */
+  private record DelegatedTask(
+      String id, String implementation, String declaredImplementation, String delegateExpression) {}
 
   private static ProjectedWait wait(
       Instance instance, String elementId, long activation, ScenarioProtocol.WaitDetail detail, Handle handle) {
     return new ProjectedWait(
         new OpenWait(new OccurrenceId(instance.stableId(), elementId, activation), instance.definition(), detail),
         handle);
-  }
-
-  private static String beanToken(String delegateExpression) {
-    if (delegateExpression == null
-        || !delegateExpression.startsWith("${")
-        || !delegateExpression.endsWith("}")
-        || delegateExpression.length() <= 3) {
-      throw new IllegalStateException("Delegate expression is not one exact bean-token reference");
-    }
-    return delegateExpression.substring(2, delegateExpression.length() - 1);
   }
 
   private static String instant(Date date) {

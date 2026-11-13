@@ -141,7 +141,10 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
         throw new IllegalStateException("Effect results of one element in several instances have no realization");
       }
       effects.beginScenario(CibEffectExecutionSchedule.PLAIN_SUCCESS, results);
-      var population = new CibSevenPopulationRunner(processEngine, effects, LOGICAL_EPOCH);
+      var effectBindings = CibSevenEffectBindings.shared(
+          resources.values().stream().map(CibSevenScenarioValidator.ValidatedResource::effectBindings).toList());
+      effects.bind(effectBindings);
+      var population = new CibSevenPopulationRunner(processEngine, effects, effectBindings, LOGICAL_EPOCH);
       PopulationResult answer;
       CleanupProjection cleanup;
       RuntimeException undeletable = null;
@@ -179,6 +182,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
     var validated = scenarioValidator.validate(scenario, projectRoot);
     restoreBootTables();
     ids.restart();
+    effects.bind(validated.effectBindings());
     var options = scenario.declaredOptions();
     var projector =
         new CibSevenStateProjector(
@@ -186,6 +190,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
             LOGICAL_EPOCH,
             options.incidentsEnabled(),
             options.incidentsCancellable(),
+            validated.effectBindings(),
             CibSevenOccurrences::keyAndVersionTag);
     var executor =
         new CibSevenCommandExecutor(processEngine, projector, effects, effectSchedule, options, LOGICAL_EPOCH);

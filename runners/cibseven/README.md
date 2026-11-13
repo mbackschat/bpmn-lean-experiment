@@ -6,6 +6,8 @@ This Java 21 module executes selected scenarios against pinned CIB Seven release
 
 Run the retained CIB oracle cases, inspect bounded source-grounded probes, and explicitly replace content-bound evidence after review. The runner deploys exact BPMN resources, uses public engine services, reports diagnostics separately from canonical results, and removes scenario-owned engine state after each run.
 
+Every Service and Send Task handler is the runner's one scripted effect, which answers each invocation with the scenario's own `effectResult` stimulus, so no handler name selects behavior. The engine resolves the built-in delegate tokens and every token the scenario's exact source overlay declares, and an effect wait publishes the descriptor of the overlay binding its task matches. The runner receives no scenario path, so it finds the overlay by digest beside the BPMN source only; an overlay kept only beside the scenario, a population whose definitions bind different overlays, and a task whose token no binding declares are harness failures, except a probe-protocol task, whose job CIB fails when it resolves the token (CIB-LIM-0051).
+
 The same JSON-lines boundary also runs population scenarios (`kind: populationScenario`): several deployments at logical times, instance steps and population commands, answered with a `cibSevenPopulationResult` that keeps the kernel's population result within CIB's observation boundary.
 
 A population run names every root instance by the identity the scenario gives it or the [population semantics](../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md) derive for it; an instance it cannot name fails the run as a harness failure rather than being observed under a guessed identity. Runner limitations of that mapping:
