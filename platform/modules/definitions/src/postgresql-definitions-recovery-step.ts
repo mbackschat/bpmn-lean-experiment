@@ -14,6 +14,7 @@ export type PostgresqlDefinitionsRecoveryStepKind =
 
 export const PostgresqlDefinitionsRecoveryRetryReason = {
   HostUnavailable: "hostUnavailable",
+  StartPending: "startPending",
 } as const;
 
 export type PostgresqlDefinitionsRecoveryRetryReason =
@@ -88,6 +89,14 @@ export function retryHostUnavailable(): PostgresqlDefinitionsRecoveryStepResult 
   return {
     kind: PostgresqlDefinitionsRecoveryStepKind.Retry,
     reason: PostgresqlDefinitionsRecoveryRetryReason.HostUnavailable,
+  };
+}
+
+/** The host retains the start, which has no verdict yet: its dispatcher records it, or a later pass does. */
+export function retryStartPending(): PostgresqlDefinitionsRecoveryStepResult {
+  return {
+    kind: PostgresqlDefinitionsRecoveryStepKind.Retry,
+    reason: PostgresqlDefinitionsRecoveryRetryReason.StartPending,
   };
 }
 

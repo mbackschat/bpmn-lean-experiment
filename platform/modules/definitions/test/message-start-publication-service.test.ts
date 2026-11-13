@@ -27,6 +27,7 @@ import type {
   DefinitionMetadata,
   DefinitionRepository,
   ExactArtifactStore,
+  MessageStartPublicationDescriptionResult,
   MessageStartPublicationHost,
   MessageStartPublicationHostRequest,
 } from "@bpmn-lean/platform-definitions";
@@ -318,14 +319,39 @@ test("describe infrastructure failure preserves starting and returns an unavaila
   });
 });
 
+test("a lost response over an undecided Message start stays pending, and the kernel's refusal is never accepted", async () => {
+  await withDatabase(async ({ databaseFile, artifacts, definitions }) => {
+    const repository = new SqliteMessageStartPublicationRepository(databaseFile);
+    const host = new RecordingHost();
+    host.startBehavior = "throw";
+    host.descriptionStatus = "pending";
+    const capture = publicationCapture();
+    const sut = service(repository, host, artifacts, definitions, capture);
+
+    const undecided = await sut.put("undecided", request());
+    assert.equal(undecided.publication.status, "pending");
+    assert.equal(undecided.publication.instance, null);
+    assert.equal((await repository.get("undecided"))?.state, MessageStartPublicationState.Starting);
+
+    host.descriptionStatus = "notCommitted";
+    await assert.rejects(
+      () => sut.reconcilePublication("undecided"),
+      (error: unknown) => error instanceof MessageStartPublicationIntegrityError,
+    );
+    assert.equal((await repository.get("undecided"))?.state, MessageStartPublicationState.IntegrityFailure);
+    assert.equal(host.starts, 1);
+    assert.deepEqual(capture.confirmedPublications, []);
+    repository.close();
+  });
+});
+
 class RecordingHost implements MessageStartPublicationHost {
   prepares = 0;
   starts = 0;
   sdkStarts = 0;
   describes = 0;
   startBehavior: "started" | "throw" | "integrityFailure" = "started";
-  descriptionStatus: "matching" | "missing" | "divergent" | "unavailable" =
-    "matching";
+  descriptionStatus: MessageStartPublicationDescriptionResult["status"] = "matching";
   onStart: (() => Promise<void>) | null = null;
   mutatePreparationRequest = false;
   startedRequest: MessageStartPublicationHostRequest | null = null;

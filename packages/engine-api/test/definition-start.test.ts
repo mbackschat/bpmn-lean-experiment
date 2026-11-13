@@ -17,13 +17,14 @@ import {
   startBpmnDefinitionVersion,
   startPreparedBpmnDefinitionVersion,
   type EngineDefinitionStartRequest,
+  type EngineHost,
 } from "@bpmn-lean/engine-api";
 
 import { canonicalBytes, chainCapacity } from "@bpmn-lean/temporal-host/host";
 
-import { deployed, limits, scenarioBytes, servesEverything, sha256, standardProfile, testHost, testPopulation, type TestHost } from "./support.ts";
+import { deployed, heldStart, limits, scenarioBytes, servesEverything, sha256, standardProfile, testHost, testPopulation } from "./support.ts";
 
-async function request(host: TestHost, processInstanceId = "instance-1"): Promise<EngineDefinitionStartRequest> {
+async function request(host: EngineHost, processInstanceId = "instance-1"): Promise<EngineDefinitionStartRequest> {
   const bytes = await scenarioBytes("user-task-preserved-notation/process.bpmn");
   return deployed({
     host,
@@ -68,6 +69,57 @@ test("the prepared start runs once; a retried dispatch is the same start; recove
   assert.equal(await describeBpmnDefinitionVersionStart({
     host, processInstanceId: "instance-1", expectedIntent: { ...prepared.intent, intentSha256: "0".repeat(64) } }),
     EngineStartDescriptionStatus.Divergent);
+});
+
+for (const verdict of ["commits", "refuses"] as const) {
+  test(`a description racing a start the kernel ${verdict} answers pending, then that start's own verdict`, async () => {
+    const held = heldStart(testHost());
+    const prepared = await prepareBpmnDefinitionVersionStart(await request(held.host));
+    if (prepared.status !== EngineDefinitionStartStatus.Admitted) throw new Error("not admitted");
+    const describe = () =>
+      describeBpmnDefinitionVersionStart({ host: held.host, processInstanceId: "instance-1", expectedIntent: prepared.intent });
+    const started = startPreparedBpmnDefinitionVersion({ ...await request(held.host), expectedIntent: prepared.intent });
+    await held.reached;
+    assert.equal(await describe(), EngineStartDescriptionStatus.Pending);
+    held.release(verdict);
+    assert.equal((await started).status,
+      verdict === "commits" ? EngineDefinitionStartStatus.Started : EngineDefinitionStartStatus.Rejected);
+    assert.equal(await describe(),
+      verdict === "commits" ? EngineStartDescriptionStatus.Matching : EngineStartDescriptionStatus.NotCommitted);
+  });
+}
+
+test("a direct start the kernel refuses is retained yet described notCommitted, and its retry answers that refusal", async () => {
+  const host = testHost();
+  const bytes = await scenarioBytes("message-start-event/process.bpmn");
+  // The model's only start is a Message start, so the kernel refuses a direct start (`no-start-event`).
+  const refusedRequest = await deployed({
+    host, bytes, sourceId: "message-only", expectedSha256: await sha256(bytes), profile: standardProfile,
+    expectedProcessId: "Process_MessageStart", version: 1, processInstanceId: "refused-instance", initialVariables: [], limits,
+  });
+  const prepared = await prepareBpmnDefinitionVersionStart(refusedRequest);
+  if (prepared.status !== EngineDefinitionStartStatus.Admitted) throw new Error("not admitted");
+  const refused = await startPreparedBpmnDefinitionVersion({ ...refusedRequest, expectedIntent: prepared.intent });
+  assert.equal(refused.status, EngineDefinitionStartStatus.Rejected);
+  if (refused.status === EngineDefinitionStartStatus.Rejected) assert.equal(refused.failure.code, "no-start-event");
+  assert.equal(await describeBpmnDefinitionVersionStart({ host, processInstanceId: "refused-instance", expectedIntent: prepared.intent }),
+    EngineStartDescriptionStatus.NotCommitted);
+  const retried = await startPreparedBpmnDefinitionVersion({ ...refusedRequest, expectedIntent: prepared.intent });
+  assert.equal(retried.status, EngineDefinitionStartStatus.Rejected);
+  if (retried.status === EngineDefinitionStartStatus.Rejected) assert.equal(retried.failure.code, "startNotCommitted");
+});
+
+test("a retried dispatch racing its undecided start never answers that start refused", async () => {
+  const held = heldStart(testHost());
+  const prepared = await prepareBpmnDefinitionVersionStart(await request(held.host));
+  if (prepared.status !== EngineDefinitionStartStatus.Admitted) throw new Error("not admitted");
+  const dispatch = async () => startPreparedBpmnDefinitionVersion({ ...await request(held.host), expectedIntent: prepared.intent });
+  const first = dispatch();
+  await held.reached;
+  await assert.rejects(dispatch(), /no verdict yet/u);
+  held.release("commits");
+  assert.equal((await first).status, EngineDefinitionStartStatus.Started);
+  assert.equal((await dispatch()).status, EngineDefinitionStartStatus.Started);
 });
 
 test("a start whose content differs from its intent is refused, and so is a different start at a taken address", async () => {

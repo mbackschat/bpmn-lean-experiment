@@ -196,6 +196,7 @@ export class ConfirmedProcessInstancePublicationService {
     switch (description.status) {
       case "matching":
         return await this.#transitionToConfirmed(record);
+      case "pending":
       case "missing":
       case "unavailable":
         if (record.state === ConfirmedProcessInstanceState.Starting) {
@@ -206,6 +207,12 @@ export class ConfirmedProcessInstancePublicationService {
           )) ?? await this.#requireRecord(record.instance.processInstanceId);
         }
         return record;
+      case "notCommitted":
+        await this.#transitionToIntegrity(record);
+        throw new ConfirmedProcessInstanceIntegrityError(
+          record.instance.processInstanceId,
+          "the retained start did not commit",
+        );
       case "divergent":
         await this.#transitionToIntegrity(record);
         throw new ConfirmedProcessInstanceIntegrityError(

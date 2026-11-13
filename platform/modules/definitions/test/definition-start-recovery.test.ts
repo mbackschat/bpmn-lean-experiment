@@ -341,6 +341,68 @@ for (const hold of ["beforeHostStart", "afterHostCommit"] as const) {
   });
 }
 
+// A recovery pass may read the chain while its start's first Workflow task still runs: the chain retains the start's
+// intent, yet only the kernel's verdict decides whether the row is confirmed.
+for (const verdict of ["commits", "refuses"] as const) {
+  test(`recovery racing an undecided engine start leaves it to its dispatcher when the kernel ${verdict}`, async () => {
+    const engine = await engineStartFixture();
+    const held = undecidedStart(engine.processes);
+    const live = engine.service(held.processes, () => "undecided-engine-instance").start(engine.reference, { initialVariables: [] });
+    await held.reached;
+    const step = new PostgresqlDirectStartRecoveryStep({
+      runtime: recoveryRuntime(engine.repository),
+      host: engine.service(held.processes, () => "unused").directStartRecoveryHost(),
+    });
+    await runRecoveryStep(step, engine.repository, "undecided-engine-instance", PostgresqlDefinitionsRecoveryStepKind.Retry);
+    assert.equal((await engine.repository.get("undecided-engine-instance"))?.state, ConfirmedProcessInstanceState.Starting);
+    held.release(verdict);
+
+    if (verdict === "commits") {
+      assert.equal((await live).status, DefinitionVersionStartStatus.Started);
+    } else {
+      await assert.rejects(live, (error: unknown) => error instanceof DefinitionStartIntegrityError);
+    }
+    assert.equal(
+      (await engine.repository.get("undecided-engine-instance"))?.state,
+      verdict === "commits" ? ConfirmedProcessInstanceState.Confirmed : ConfirmedProcessInstanceState.IntegrityFailure,
+    );
+  });
+}
+
+test("a lost response over an engine start the kernel refused is an integrity failure, never a confirmed start", async () => {
+  const engine = await engineStartFixture();
+  const held = undecidedStart(engine.processes);
+  held.release("refuses", "lost");
+
+  await assert.rejects(
+    engine.service(held.processes, () => "refused-engine-instance").start(engine.reference, { initialVariables: [] }),
+    (error: unknown) => error instanceof DefinitionStartIntegrityError,
+  );
+  assert.equal(
+    (await engine.repository.get("refused-engine-instance"))?.state,
+    ConfirmedProcessInstanceState.IntegrityFailure,
+  );
+});
+
+test("recovery records an engine start the kernel refused, whose dispatcher never answered, as an integrity failure", async () => {
+  const engine = await engineStartFixture();
+  const held = undecidedStart(engine.processes);
+  void engine.service(held.processes, () => "unanswered-engine-instance").start(engine.reference, { initialVariables: [] });
+  await held.reached;
+  held.release("refuses", "withheld");
+  const step = new PostgresqlDirectStartRecoveryStep({
+    runtime: recoveryRuntime(engine.repository),
+    host: engine.service(held.processes, () => "unused").directStartRecoveryHost(),
+  });
+
+  await runRecoveryStep(step, engine.repository, "unanswered-engine-instance");
+
+  assert.equal(
+    (await engine.repository.get("unanswered-engine-instance"))?.state,
+    ConfirmedProcessInstanceState.IntegrityFailure,
+  );
+});
+
 test("recovery dispatches a reserved engine start the crashed API left behind", async () => {
   const engine = await engineStartFixture(new CrashAfterDirectReservationRepository());
   await assert.rejects(
@@ -502,6 +564,55 @@ function holdStart(processes: EngineProcesses, hold: "beforeHostStart" | "afterH
 }
 
 /**
+ * The live start held undecided as Temporal shows it while the start's first Workflow task runs: the chain and its
+ * memo are retained and the chain runs, with no committed view. Released, the kernel commits it, or refuses it and the
+ * chain ends with no committed view; the dispatcher's answer arrives, is lost, or is withheld as by a crashed caller.
+ */
+function undecidedStart(processes: EngineProcesses) {
+  let reach!: () => void;
+  let decide!: (decision: Readonly<{ verdict: "commits" | "refuses"; response: "answered" | "lost" | "withheld" }>) => void;
+  const reached = new Promise<void>((resolve) => {
+    reach = resolve;
+  });
+  const decided = new Promise<Parameters<typeof decide>[0]>((resolve) => {
+    decide = resolve;
+  });
+  let phase: "inFlight" | "commits" | "refuses" | null = null;
+  const hidden = (): boolean => phase === "inFlight" || phase === "refuses";
+  const held: EngineProcesses = {
+    start: async (request) => {
+      const result = await processes.start(request);
+      if (phase !== null) return result;
+      phase = "inFlight";
+      reach();
+      const { verdict, response } = await decided;
+      phase = verdict;
+      if (response === "lost") throw new Error("the host decided the start but its response was lost");
+      if (response === "withheld") return await new Promise<never>(() => undefined);
+      return verdict === "commits" ? result : { outcome: "rejected", code: "undecided-start-refused", revision: null };
+    },
+    command: (workflowId, stimulus) => processes.command(workflowId, stimulus),
+    deliver: (workflowId, stimulus) => processes.deliver(workflowId, stimulus),
+    observation: (workflowId) => processes.observation(workflowId),
+    hostView: async (workflowId) => {
+      const snapshot = await processes.hostView(workflowId);
+      return hidden() ? { ...snapshot, view: null } : snapshot;
+    },
+    publication: (workflowId, afterRevision, limit) => processes.publication(workflowId, afterRevision, limit),
+    describe: async (workflowId) => {
+      const described = await processes.describe(workflowId);
+      return described === null || !hidden() ? described : { ...described, running: phase === "inFlight" };
+    },
+  };
+  return {
+    processes: held,
+    reached,
+    release: (verdict: "commits" | "refuses", response: "answered" | "lost" | "withheld" = "answered") =>
+      decide({ verdict, response }),
+  };
+}
+
+/**
  * The recovery worker's reads and fenced compare-and-set over the in-memory rows: the SELECT the step reads a row with
  * and the UPDATE its transition applies, as `applyConfirmedRecoveryState` issues them.
  */
@@ -535,11 +646,15 @@ function recoveryRuntime(repository: InMemoryConfirmedProcessInstanceRepository)
   } as never;
 }
 
-/** One recovery-worker pass over the item, its intermediates applied while owned as `handleDefinitionsRecoveryStep` does. */
+/**
+ * One recovery-worker pass over the item, its intermediates applied while owned as `handleDefinitionsRecoveryStep` does;
+ * the pass must end in `expected`, and a complete one is applied.
+ */
 async function runRecoveryStep(
   step: PostgresqlDirectStartRecoveryStep,
   repository: InMemoryConfirmedProcessInstanceRepository,
   processInstanceId: string,
+  expected: PostgresqlDefinitionsRecoveryStepKind = PostgresqlDefinitionsRecoveryStepKind.Complete,
 ): Promise<void> {
   const session = recoveryRuntime(repository);
   let result = await step.prepare(new TextEncoder().encode(JSON.stringify([processInstanceId])));
@@ -547,10 +662,10 @@ async function runRecoveryStep(
     if (await result.applyWhileOwned(session) !== PostgresqlDefinitionsRecoveryIntermediateResult.Applied) return;
     result = await result.continue();
   }
-  if (result.kind !== PostgresqlDefinitionsRecoveryStepKind.Complete) {
+  if (result.kind !== expected) {
     throw new Error(`the recovery step answered ${result.kind}`);
   }
-  await result.apply(session);
+  if (result.kind === PostgresqlDefinitionsRecoveryStepKind.Complete) await result.apply(session);
 }
 
 function createFixture(initialDescription: "missing" | "matching") {

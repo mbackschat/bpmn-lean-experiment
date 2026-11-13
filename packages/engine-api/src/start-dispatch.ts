@@ -4,7 +4,15 @@
  * lost response is recognized by the intent the chain retains in its memo.
  */
 import { stimulusFromJson } from "@bpmn-lean/kernel";
-import { CapacityBound, canonicalBytes, canonicalJson, capacityCode, chainCapacity, workflowType } from "@bpmn-lean/temporal-host/host";
+import {
+  CapacityBound,
+  canonicalBytes,
+  canonicalJson,
+  capacityCode,
+  chainCapacity,
+  workflowType,
+  type ProcessDescription,
+} from "@bpmn-lean/temporal-host/host";
 
 import {
   member,
@@ -126,8 +134,9 @@ export type StartDispatch =
 /**
  * Starts the prepared chain under the deployment its definition version registered, so the population's commands reach
  * its waits; an unregistered version is `definition-not-deployed`. A Workflow ID already taken by a chain with the same
- * intent is this start, retried; with another intent it is a different start holding the address. A start the kernel
- * did not commit is rejected with the kernel's code.
+ * intent is this start, retried, answering that start's own verdict; with another intent it is a different start
+ * holding the address. A start the kernel did not commit is rejected with the kernel's code. A retry racing a start that
+ * has no verdict yet throws, as a lost response does, for a later description to settle.
  */
 export async function dispatchStart(host: EngineHost, prepared: PreparedStart): Promise<StartDispatch> {
   const population = await engineDeploymentScope(host, prepared.compiled.compilation.definition);
@@ -149,23 +158,49 @@ export async function dispatchStart(host: EngineHost, prepared: PreparedStart): 
   }
   const described = await host.processes.describe(prepared.workflowId);
   const retained = described === null ? null : retainedMemo(described.memo);
-  if (retained === null || !sameIntent(retained.intent, prepared.intent)) {
+  if (described === null || retained === null || !sameIntent(retained.intent, prepared.intent)) {
     return {
       kind: StartDispatchKind.IntegrityFailure,
       failure: { code: "startAddressTaken", evidence: "Another start already holds this process instance's host address." },
     };
   }
-  const snapshot = await host.processes.hostView(prepared.workflowId);
-  return snapshot.view === null
-    ? { kind: StartDispatchKind.Rejected, failure: { code: "startNotCommitted", evidence: "The retained start did not commit." } }
-    : { kind: StartDispatchKind.Started };
+  const verdict = await retainedStartVerdict(host, prepared.workflowId, described);
+  switch (verdict) {
+    case EngineStartDescriptionStatus.Matching:
+      return { kind: StartDispatchKind.Started };
+    case EngineStartDescriptionStatus.NotCommitted:
+      return { kind: StartDispatchKind.Rejected, failure: { code: "startNotCommitted", evidence: "The retained start did not commit." } };
+    case EngineStartDescriptionStatus.Pending:
+      throw new Error(`The start retained under ${prepared.workflowId} has no verdict yet.`);
+  }
 }
 
+/**
+ * What the host retains of a start under its Workflow ID. A retained start with the expected intent is `matching` only
+ * once it committed; before its verdict it is `pending`, and `notCommitted` once its chain ended without committing.
+ */
 export enum EngineStartDescriptionStatus {
   Matching = "matching",
+  Pending = "pending",
+  NotCommitted = "notCommitted",
   Missing = "missing",
   Divergent = "divergent",
   Unavailable = "unavailable",
+}
+
+/**
+ * The verdict on a retained start, read from its chain rather than from the chain's presence: a committed start leaves
+ * a committed view; without one, a running chain's start has no verdict yet (its first Workflow task may still run) and
+ * an ended chain's start did not commit.
+ */
+async function retainedStartVerdict(
+  host: EngineHost,
+  workflowId: string,
+  described: ProcessDescription,
+): Promise<EngineStartDescriptionStatus.Matching | EngineStartDescriptionStatus.Pending | EngineStartDescriptionStatus.NotCommitted> {
+  const snapshot = await host.processes.hostView(workflowId);
+  if (snapshot.view !== null) return EngineStartDescriptionStatus.Matching;
+  return described.running ? EngineStartDescriptionStatus.Pending : EngineStartDescriptionStatus.NotCommitted;
 }
 
 /** Compares what the host retained under `workflowId` with the expected intent; transport failures are `unavailable`. */
@@ -182,10 +217,15 @@ export async function describeStart(
   }
   if (described === null) return EngineStartDescriptionStatus.Missing;
   const retained = retainedMemo(described.memo);
-  return described.workflowType === workflowType && described.taskQueue === host.taskQueue && retained !== null &&
-      sameIntent(retained.intent, expected)
-    ? EngineStartDescriptionStatus.Matching
-    : EngineStartDescriptionStatus.Divergent;
+  if (described.workflowType !== workflowType || described.taskQueue !== host.taskQueue || retained === null ||
+      !sameIntent(retained.intent, expected)) {
+    return EngineStartDescriptionStatus.Divergent;
+  }
+  try {
+    return await retainedStartVerdict(host, workflowId, described);
+  } catch {
+    return EngineStartDescriptionStatus.Unavailable;
+  }
 }
 
 /** Whether the chain under `workflowId` runs `identity`; `null` when the host retains no engine memo for it. */

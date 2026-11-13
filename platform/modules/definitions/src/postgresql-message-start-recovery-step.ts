@@ -30,6 +30,7 @@ import {
   PostgresqlDefinitionsRecoveryStepKind,
   PostgresqlDefinitionsRecoveryStoredValueError,
   retryHostUnavailable,
+  retryStartPending,
 } from "./postgresql-definitions-recovery-step.js";
 import type {
   PostgresqlDefinitionsRecoveryStepResult,
@@ -175,6 +176,10 @@ export class PostgresqlMessageStartRecoveryStep {
           MessageStartPublicationState.Accepted,
           this.#confirmation(record),
         );
+      case "pending":
+        return retryStartPending();
+      case "notCommitted":
+        return apply(record, MessageStartPublicationState.IntegrityFailure);
       case "missing":
         return record.state === MessageStartPublicationState.Starting
           ? apply(record, MessageStartPublicationState.Indeterminate)

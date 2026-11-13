@@ -89,8 +89,9 @@ export interface ProcessWorkLocatorFactory {
   canonicalLocator(processInstanceId: string): string;
 }
 
+/** `matching` only once the retained start committed; before its verdict it is `pending`, and ended uncommitted `notCommitted`. */
 export type DirectProcessInstanceDescription = Readonly<{
-  status: "matching" | "missing" | "divergent" | "unavailable";
+  status: "matching" | "pending" | "notCommitted" | "missing" | "divergent" | "unavailable";
 }>;
 
 export type DirectProcessInstanceDispatchResult =

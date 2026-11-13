@@ -19,9 +19,10 @@ import {
   startBpmnDefinitionMessageStart,
   EngineOpenWorkStatus,
   type EngineDefinitionMessageStartPreparationRequest,
+  type EngineHost,
 } from "@bpmn-lean/engine-api";
 
-import { deployed, limits, scenarioBytes, sha256, standardProfile, testHost, testPopulation, type TestHost } from "./support.ts";
+import { deployed, heldStart, limits, scenarioBytes, sha256, standardProfile, testHost, testPopulation } from "./support.ts";
 
 const channel = {
   kind: "operationMessage",
@@ -30,7 +31,7 @@ const channel = {
   messageId: "Message_ApprovalRequest",
 } as const;
 
-async function request(host: TestHost): Promise<EngineDefinitionMessageStartPreparationRequest> {
+async function request(host: EngineHost): Promise<EngineDefinitionMessageStartPreparationRequest> {
   const bytes = await scenarioBytes("message-start-event/process.bpmn");
   const compiled = await compileBpmnDefinition({ bytes, sourceId: "m", profile: standardProfile, limits });
   if (compiled.status !== EngineDefinitionCompilationStatus.Accepted) throw new Error("not admitted");
@@ -71,6 +72,24 @@ test("the selected Message start runs once under its address, opening the model'
     host, workflowId: engineDefinitionMessageStartWorkflowId(testPopulation, "message-instance"), expectedIntent: prepared.intent }),
     EngineStartDescriptionStatus.Matching);
 });
+
+for (const verdict of ["commits", "refuses"] as const) {
+  test(`a description racing a Message start the kernel ${verdict} answers pending, then that start's own verdict`, async () => {
+    const held = heldStart(testHost());
+    const prepared = await prepareBpmnDefinitionMessageStart(await request(held.host));
+    if (prepared.status !== EngineDefinitionMessageStartStatus.Admitted) throw new Error("not admitted");
+    const describe = () => describeBpmnDefinitionMessageStart({
+      host: held.host, workflowId: engineDefinitionMessageStartWorkflowId(testPopulation, "message-instance"), expectedIntent: prepared.intent });
+    const started = startBpmnDefinitionMessageStart({ ...await request(held.host), expectedIntent: prepared.intent });
+    await held.reached;
+    assert.equal(await describe(), EngineStartDescriptionStatus.Pending);
+    held.release(verdict);
+    assert.equal((await started).status,
+      verdict === "commits" ? EngineDefinitionMessageStartStatus.Started : EngineDefinitionMessageStartStatus.Rejected);
+    assert.equal(await describe(),
+      verdict === "commits" ? EngineStartDescriptionStatus.Matching : EngineStartDescriptionStatus.NotCommitted);
+  });
+}
 
 test("a Message start the definition does not publish is refused; changed capabilities are drift", async () => {
   const host = testHost();

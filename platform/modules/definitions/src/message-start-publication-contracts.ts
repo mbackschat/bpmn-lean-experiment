@@ -115,8 +115,9 @@ export type MessageStartPublicationHostStartResult =
       evidence: string;
     }>;
 
+/** `matching` only once the retained start committed; before its verdict it is `pending`, and ended uncommitted `notCommitted`. */
 export type MessageStartPublicationDescriptionResult = Readonly<{
-  status: "matching" | "missing" | "divergent" | "unavailable";
+  status: "matching" | "pending" | "notCommitted" | "missing" | "divergent" | "unavailable";
 }>;
 
 /**

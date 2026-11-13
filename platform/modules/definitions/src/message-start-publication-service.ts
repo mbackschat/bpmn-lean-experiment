@@ -350,6 +350,10 @@ export class MessageStartPublicationService {
     switch (result.status) {
       case "matching":
         return await this.#persistAccepted(record.publicationId);
+      case "pending":
+        return record;
+      case "notCommitted":
+        return await this.#failIntegrity(record, "the retained start did not commit");
       case "missing":
         if (record.state === MessageStartPublicationState.Indeterminate) {
           return record;

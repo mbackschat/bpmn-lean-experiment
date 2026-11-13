@@ -16,6 +16,7 @@ import {
   PostgresqlDefinitionsRecoveryStepKind,
   PostgresqlDefinitionsRecoveryStoredValueError,
   retryHostUnavailable,
+  retryStartPending,
   completeWithoutDatabaseChange,
 } from "./postgresql-definitions-recovery-step.js";
 import type {
@@ -135,6 +136,10 @@ export class PostgresqlDirectStartRecoveryStep {
     switch (description.status) {
       case "matching":
         return transition(record, ConfirmedProcessInstanceState.Confirmed);
+      case "pending":
+        return retryStartPending();
+      case "notCommitted":
+        return transition(record, ConfirmedProcessInstanceState.IntegrityFailure);
       case "missing":
         return record.state === ConfirmedProcessInstanceState.Starting
           ? transition(record, ConfirmedProcessInstanceState.Indeterminate)
