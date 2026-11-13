@@ -2,7 +2,7 @@
   "request-review-with-form": ["noneEndEvent","noneStartEvent","process","sequenceFlow","userTask"],
   "parallel-content-and-risk-review": ["noneEndEvent","noneStartEvent","parallelGateway","process","sequenceFlow","userTask"],
   "parallel-work-preparation": ["noneEndEvent","noneStartEvent","parallelGateway","process","sequenceFlow","userTask"],
-  "expense-exception-review": ["exclusiveGateway","noneEndEvent","noneStartEvent","process","sequenceFlow","userTask"],
+  "expense-exception-review": ["directDataOutputUserTask","exclusiveGateway","noneEndEvent","noneStartEvent","process","sequenceFlow","userTask"],
   "boolean-decision-routing": ["exclusiveGateway","noneEndEvent","noneStartEvent","process","sequenceFlow","userTask"],
   "called-process-fulfilment": ["callActivity","noneEndEvent","noneStartEvent","process","sequenceFlow","userTask"],
   "supplier-onboarding-call-data": ["callActivityScalarData","directDataInputOutputUserTask","noneEndEvent","noneStartEvent","process","sequenceFlow","userTask"],

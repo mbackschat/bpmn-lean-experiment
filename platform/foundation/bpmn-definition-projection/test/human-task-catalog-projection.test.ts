@@ -85,9 +85,11 @@ test("defaults priority to 50 and preserves structured User Tasks in source orde
   const sourceXml = await readFile(sourcePath, "utf8");
   const originalTask = sourceXml.match(/    <bpmn:userTask id="ReviewException"[\s\S]*?    <\/bpmn:userTask>/u)?.[0];
   assert.ok(originalTask);
+  // BPMN identifiers are document-unique and each form key names its own Data Output, so the copy renames both.
   const secondTask = originalTask
-    .replace('id="ReviewException"', 'id="ReviewExceptionSecond"')
-    .replace('id="ReviewExceptionRendering"', 'id="ReviewExceptionSecondRendering"')
+    .replaceAll(/ id="([^"]+)"/gu, ' id="$1Second"')
+    .replaceAll(/>([^<]+)<\/bpmn:(dataOutputRefs|sourceRef)>/gu, ">$1Second</bpmn:$2>")
+    .replaceAll(/"(key|resolutionVariable)":"([^"]+)"/gu, '"$1":"$2Second"')
     .replace('"worklistPriority":80,', "");
   const mutation = sourceXml.replace(originalTask, `${originalTask}\n${secondTask}`);
 
