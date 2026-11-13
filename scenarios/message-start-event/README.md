@@ -1,6 +1,6 @@
 # Message Start Event scenario
 
-The [answer-free scenario](scenario.json) executes the byte-identical [BPMN source](process.bpmn) admitted by the [BPMN 2.0.2 Message Start Event profile](../../profiles/bpmn-2.0.2/profile.json) and governed by the [Message Start Event specification](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md).
+The [answer-free scenario](scenario.json) executes the byte-identical [BPMN source](process.bpmn) admitted under the [`bpmn-2.0.2` profile](../../profiles/bpmn-2.0.2/profile.json) and governed by the [Message Start Event specification](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md).
 
 The first stimulus resolves `MessageStart_ApprovalRequest` through the complete `Interface_ProcessMessages` and `Operation_ReceiveApprovalRequest` channel and creates semantic instance `MessageStartInstance_1`. The second stimulus completes `UserTask_Approve` activation 1 with no submitted values. Empty Process variables are therefore an observed semantic result, not an omitted payload.
 

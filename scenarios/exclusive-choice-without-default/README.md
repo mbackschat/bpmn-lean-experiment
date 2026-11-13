@@ -1,6 +1,6 @@
 # Exclusive Choice without a default scenarios
 
-The [Exclusive Choice without a default proposal](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md) owns the bounded account. Both models are witnesses for the [nested scope-data profile](../../profiles/cibseven-2.2.0-scope-chain/profile.json), each with an exact source overlay binding its one mapped Service Task to a caller-supplied Activity handler.
+The [Exclusive Choice without a default proposal](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md) owns the bounded account. Both models are witnesses for the [`cibseven-2.2.0-scope-chain` profile](../../profiles/cibseven-2.2.0-scope-chain/profile.json), each with an exact source overlay binding its one mapped Service Task to a caller-supplied Activity handler.
 
 - The [expense routing](expense-routing.bpmn), with its [handler](expense-routing-overlay.json), routes a claim by its Start-supplied `priority` and `category` through the Choice *Route expense* (urgent first, then travel or equipment), which has no default, and pays it out through the Choice *Pay out*, also without a default, by the Service Task *Reimburse claimant* or the User Task *Add to payroll*.
 - The [ticket triage](ticket-triage.bpmn), with its [handler](ticket-triage-overlay.json), assesses `severity` in the User Task *Triage ticket* inside the Sub-Process *Triage*, then routes through the Choice *Route by severity*, which has no default, to the User Task *Escalate* or to the Service Task *Auto-close*.

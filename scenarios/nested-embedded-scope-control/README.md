@@ -1,6 +1,6 @@
 # Nested embedded scope-control scenarios
 
-The cumulative [embedded Sub-Process completion profile](../../profiles/cibseven-2.2.0/profile.json) and the [nested embedded scope-control semantics](../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md) own the bounded account. Two retained project-authored models use only User Tasks, Parallel Gateways and ordinary Sub-Processes nested to depth three, with no data, effects or source overlay. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent, because the standard settles every selected behavior.
+The cumulative [`cibseven-2.2.0` profile](../../profiles/cibseven-2.2.0/profile.json) and the [nested embedded scope-control semantics](../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md) own the bounded account. Two retained project-authored models use only User Tasks, Parallel Gateways and ordinary Sub-Processes nested to depth three, with no data, effects or source overlay. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent, because the standard settles every selected behavior.
 
 | Model | Business narrative |
 |---|---|

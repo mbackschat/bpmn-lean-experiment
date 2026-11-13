@@ -6,7 +6,7 @@ This directory contains three exact BPMN 2.0.2 sources for the [concurrent embed
 - The [credit intake source](credit-intake.bpmn) opens an application and then runs three checks in parallel. Each check reaches its own Assess activation, which scores the applicant, and the root decides after the Intake scope quiesces.
 - The [claim escalation source](claim-escalation.bpmn) places the region in a depth-2 Review body whose target, Escalation, sits at depth 3. File case and Close claim follow in the enclosing scopes.
 
-The bounded profile admits these shapes.
+The schedules declare the [`cibseven-2.2.0` profile](../../profiles/cibseven-2.2.0/README.md).
 
 The differential discovers these answer-free schedules from this directory through [scenario discovery](../../packages/differential/test/scenario-discovery.ts) and runs each on every kernel target:
 
