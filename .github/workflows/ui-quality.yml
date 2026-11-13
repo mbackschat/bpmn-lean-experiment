@@ -119,7 +119,5 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
           path: |
-            showcase/platform-ui-quality/playwright-report/
-            showcase/platform-ui-quality/test-results/
-            showcase/mue-preview-alpha/playwright-report/
-            showcase/mue-preview-alpha/test-results/
+            showcase/*/playwright-report/
+            showcase/*/test-results/

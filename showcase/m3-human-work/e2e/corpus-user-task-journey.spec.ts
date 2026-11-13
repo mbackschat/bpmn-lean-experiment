@@ -4,6 +4,7 @@ import { expect, test } from "@playwright/test";
 
 import { readWorkAudit } from "../test/http-support.ts";
 import { historyInputs } from "./execution-history.ts";
+import { navigate } from "./workspace-navigation.ts";
 import { metadataProfile } from "../test/fixture.ts";
 
 const apiOrigin = requireApiOrigin();
@@ -86,8 +87,8 @@ test("corpus request-review-with-form completes its production user journey", as
   const history = detail.locator('[data-ui="execution-history"]');
   await expect(history).toContainText("UserTask_Approve");
   expect(await historyInputs(history)).toEqual([
-    { input: "start", element: "StartEvent_1", completes: false },
-    { input: "command", element: "None", completes: true },
+    { input: "start", element: "StartEvent_1", signals: ["armScope"], endsInstance: false },
+    { input: "command", element: "None", signals: ["write", "complete"], endsInstance: true },
   ]);
   const revisions = await history.locator("[data-revision]").evaluateAll((rows) =>
     rows.map((row) => Number(row.getAttribute("data-revision")))
@@ -110,16 +111,6 @@ test("corpus request-review-with-form completes its production user journey", as
     taskId.activation === 1
   )).toBe(true);
 });
-
-async function navigate(
-  page: import("@playwright/test").Page,
-  workspace: "Definitions" | "Operations" | "Work",
-): Promise<void> {
-  await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("link", { name: workspace, exact: true })
-    .click();
-  await expect(page.getByRole("heading", { name: workspace, level: 1 })).toBeFocused();
-}
 
 function requireApiOrigin(): string {
   const value = process.env.PLATFORM_API_ORIGIN;

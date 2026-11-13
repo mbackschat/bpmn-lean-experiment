@@ -22,6 +22,7 @@ import {
   readHeadlineDemoConfig,
 } from "../src/headline-demo.ts";
 import { historyInputs } from "./execution-history.ts";
+import { navigate, operationsRetainsInstance } from "./workspace-navigation.ts";
 
 const apiOrigin = requireApiOrigin();
 const modelPath = fileURLToPath(new URL(
@@ -307,7 +308,7 @@ async function proveTerminalHistory(
 ): Promise<void> {
   await navigate(page, "Operations");
   const back = page.getByRole("button", { name: "Back to Process instances", exact: true });
-  if (await back.isVisible()) await back.click();
+  if (operationsRetainsInstance(page)) await back.click();
   await page.getByLabel("Process-instance ID").fill(processInstanceId);
   await page.getByRole("button", { name: "Search", exact: true }).click();
   const row = page.getByRole("table", { name: "Process instances" })
@@ -320,8 +321,8 @@ async function proveTerminalHistory(
   const history = detail.locator('[data-ui="execution-history"]');
   await expect(history).toContainText("ReviewException");
   expect(await historyInputs(history)).toEqual([
-    { input: "start", element: "Start_ExpenseException", completes: false },
-    { input: "command", element: "None", completes: true },
+    { input: "start", element: "Start_ExpenseException", signals: ["armScope"], endsInstance: false },
+    { input: "command", element: "None", signals: [], endsInstance: true },
   ]);
   const revisions = await history.locator("[data-revision]").evaluateAll((rows) =>
     rows.map((entry) => Number(entry.getAttribute("data-revision")))
@@ -380,32 +381,6 @@ function taskRow(
   return tasks.getByRole("table", { name: "Current tasks" })
     .getByRole("row")
     .filter({ hasText: name });
-}
-
-async function navigate(
-  page: import("@playwright/test").Page,
-  workspace: "About" | "Definitions" | "Operations" | "Work",
-): Promise<void> {
-  const button = page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("link", { name: workspace, exact: true });
-  const heading = page.getByRole("heading", { name: workspace, level: 1 });
-  if (await button.getAttribute("aria-current") === "page") {
-    await expect(heading).toBeVisible();
-    return;
-  }
-  const href = await button.getAttribute("href");
-  if (href === null) throw new Error("Primary navigation must publish its destination.");
-  const destinationSearch = new URLSearchParams(new URL(href, page.url()).hash.split("?")[1]);
-  // Retained URL selection outlives hidden Activity content: docs/BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#browser-location-and-state-ownership.
-  const instanceId = workspace === "Operations" ? destinationSearch.get("instance") : null;
-  const focusTarget = instanceId === null ? heading : page.getByRole("heading", {
-    name: `Process instance ${instanceId}`,
-    exact: true,
-    level: 2,
-  });
-  await button.click();
-  await expect(heading).toBeVisible();
-  await expect(focusTarget).toBeFocused();
 }
 
 function requireApiOrigin(): string {

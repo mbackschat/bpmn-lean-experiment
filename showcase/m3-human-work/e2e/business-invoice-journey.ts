@@ -17,6 +17,7 @@ import {
 import type { PublicProcessInstanceIdentity, PublicWorkTaskId } from "@bpmn-lean/platform-contracts";
 
 import { listWorkTasks, readTaskDetail, readWorkAudit } from "../test/http-support.ts";
+import { navigate } from "./workspace-navigation.ts";
 
 type StringBindings = readonly (readonly [name: string, value: string])[];
 type InvoiceTask = Readonly<{
@@ -239,9 +240,4 @@ function bindings(entries: StringBindings) {
 
 function projectPath(relative: string): string {
   return fileURLToPath(new URL(`../../../${relative}`, import.meta.url));
-}
-
-async function navigate(page: Page, workspace: "Definitions" | "Work" | "Operations"): Promise<void> {
-  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: workspace, exact: true }).click();
-  await expect(page.getByRole("heading", { name: workspace, level: 1 })).toBeFocused();
 }

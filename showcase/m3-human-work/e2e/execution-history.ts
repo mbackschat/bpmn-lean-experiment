@@ -2,10 +2,13 @@ import type { Locator } from "@playwright/test";
 
 /**
  * One input row of the History view, in revision order: the input kind, the element the row names (`None` when the
- * kernel names none, as for a command) and whether its command's batch completed an occurrence, which the kernel
- * publishes as a `complete` Signal row under the same command ID.
+ * kernel names none, as for a command), the Signals its command's batch published in order, and whether that batch
+ * ended the instance, which the kernel publishes as the root scope (`0`) going idle. A User Task completion is a
+ * `write` and a `complete` Signal where the profile installs the submission before completing (CIB's
+ * `TaskService.complete`), and part of the command's own transition under the standards OutputSet rule, so the
+ * Signals are asserted per model rather than read as "the command completed work".
  */
-export type HistoryInput = Readonly<{ input: string; element: string; completes: boolean }>;
+export type HistoryInput = Readonly<{ input: string; element: string; signals: readonly string[]; endsInstance: boolean }>;
 
 /** The input rows of the rendered History, read from each row's labelled facts. */
 export async function historyInputs(history: Locator): Promise<HistoryInput[]> {
@@ -18,9 +21,15 @@ export async function historyInputs(history: Locator): Promise<HistoryInput[]> {
       const input = row.get("Input");
       if (input === undefined) return [];
       const command = row.get("Command ID");
-      const completes = facts.slice(index + 1)
-        .some((later) => later.get("Command ID") === command && later.get("Signal") === "complete");
-      return [{ input, element: row.get("Element") ?? "", completes }];
+      const next = facts.findIndex((later, at) => at > index && later.has("Input"));
+      const batch = facts.slice(index + 1, next === -1 ? undefined : next)
+        .filter((later) => later.get("Command ID") === command);
+      return [{
+        input,
+        element: row.get("Element") ?? "",
+        signals: batch.flatMap((later) => later.has("Signal") ? [later.get("Signal")!] : []),
+        endsInstance: batch.some((later) => later.get("Idle scope") === "0"),
+      }];
     });
   });
 }

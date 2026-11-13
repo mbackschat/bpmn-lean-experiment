@@ -4,6 +4,7 @@ import { expect, test } from "@playwright/test";
 
 import { readWorkAudit } from "../test/http-support.ts";
 import { historyInputs } from "./execution-history.ts";
+import { navigate, operationsRetainsInstance } from "./workspace-navigation.ts";
 import { parallelMetadataProfile } from "../test/fixture.ts";
 
 const apiOrigin = requireApiOrigin();
@@ -92,9 +93,9 @@ test("parallel content and risk review completes its production user journey", a
   await expect(history).toContainText("UserTask_ContentReview");
   await expect(history).toContainText("UserTask_RiskReview");
   expect(await historyInputs(history)).toEqual([
-    { input: "start", element: "StartEvent_1", completes: false },
-    { input: "command", element: "None", completes: true },
-    { input: "command", element: "None", completes: true },
+    { input: "start", element: "StartEvent_1", signals: ["armScope"], endsInstance: false },
+    { input: "command", element: "None", signals: ["write", "complete"], endsInstance: false },
+    { input: "command", element: "None", signals: ["write", "complete", "complete", "complete"], endsInstance: true },
   ]);
   const revisions = await history.locator("[data-revision]").evaluateAll((rows) =>
     rows.map((row) => Number(row.getAttribute("data-revision")))
@@ -164,7 +165,7 @@ async function openExecution(
 ): Promise<void> {
   await navigate(page, "Operations");
   const back = page.getByRole("button", { name: "Back to Process instances", exact: true });
-  if (await back.isVisible()) await back.click();
+  if (operationsRetainsInstance(page)) await back.click();
   await page.getByLabel("Process-instance ID").fill(processInstanceId);
   await page.getByRole("button", { name: "Search", exact: true }).click();
   const instanceRow = page
@@ -178,22 +179,6 @@ async function openExecution(
   await expect(page.getByRole("heading", {
     name: `Process instance ${processInstanceId}`,
   })).toBeFocused();
-}
-
-async function navigate(
-  page: import("@playwright/test").Page,
-  workspace: "Definitions" | "Operations" | "Work",
-): Promise<void> {
-  await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("link", { name: workspace, exact: true })
-    .click();
-  await expect(page.getByRole("heading", { name: workspace, level: 1 })).toBeVisible();
-  const instanceHeading = page.locator("#process-execution-detail-heading");
-  if (workspace === "Operations" && await instanceHeading.isVisible()) {
-    await expect(instanceHeading).toBeFocused();
-  } else {
-    await expect(page.getByRole("heading", { name: workspace, level: 1 })).toBeFocused();
-  }
 }
 
 function requireApiOrigin(): string {
