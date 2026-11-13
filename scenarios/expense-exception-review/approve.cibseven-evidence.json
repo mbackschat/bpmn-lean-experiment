@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "expense-exception-review-approve",
-    "sha256": "48b82ccd562233a9229cf8ab405f7494834986c6e5e42cacba7e27c91ce2ec91"
+    "sha256": "1f0ac0e55347e91c8fb1cc495212e02d57d6337cc27c20b9e81f2890c36d6272"
   },
   "profile": {
     "id": "bpmn-2.0.2",
