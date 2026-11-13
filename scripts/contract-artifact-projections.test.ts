@@ -82,7 +82,7 @@ test("binds repeated Sub-Process relationships to the live register", async () =
  */
 const relationshipSubstitutions: ReadonlyArray<Readonly<{ profile: string; relationship: string; boundary: string }>> = [
   { profile: "cibseven-2.2.0", relationship: "CIB-EXT-0020",
-    boundary: "Under the embedded completion profile, in data-bearing Programs" },
+    boundary: "In the `cibseven-2.2.0` embedded-completion models, in data-bearing Programs" },
 ];
 
 test("binds every scenario CIB relationship to its profile artifact or a recorded substitution", async () => {
