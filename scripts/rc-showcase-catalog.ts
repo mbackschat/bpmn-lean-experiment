@@ -2,11 +2,12 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
+import { mvpBpmnCapabilities } from "../model-corpus/mvp-capabilities.ts";
+import type { MvpBpmnCapabilityId } from "../model-corpus/mvp-capabilities.ts";
 import { rcShowcases } from "../model-corpus/rc-showcases.ts";
 import type { ProcessShowcaseEntry } from "../model-corpus/rc-showcases.ts";
 import type { DefinitionVersionStartCommand } from "../platform/contracts/src/definition-start-command.ts";
-import { detectExecutableBpmnCapabilities } from "./executable-model-capabilities.ts";
-import { requireExecutableModelCorpusManifest } from "./executable-model-corpus-manifest.ts";
+import { requireExecutableModelCorpusManifest, retainedModelCapabilitiesRelativePath } from "./executable-model-corpus-manifest.ts";
 import { flattenElements, parseXmlElements } from "./minimal-xml-tree.ts";
 
 /** Builds a read-only UI projection; source admission and execution remain engine operations. */
@@ -14,6 +15,7 @@ export async function buildProcessShowcaseCatalog(projectRoot: string): Promise<
   const manifest = requireExecutableModelCorpusManifest(JSON.parse(
     await readFile(resolve(projectRoot, "model-corpus/manifest.json"), "utf8"),
   ));
+  const capabilities = await readRetainedModelCapabilities(projectRoot);
   const result: ProcessShowcaseEntry[] = [];
   for (const model of manifest.models) {
     if (model.source.kind !== "retainedScenario") continue;
@@ -60,7 +62,7 @@ export async function buildProcessShowcaseCatalog(projectRoot: string): Promise<
           if (attributes.id === undefined) throw new Error(`Showcase BPMN Process lacks an ID: ${model.id}`);
           return { id: xmlAttributeText(attributes.id), name: attributes.name === undefined ? null : xmlAttributeText(attributes.name) };
         }),
-      capabilityIds: detectExecutableBpmnCapabilities(xml),
+      capabilityIds: capabilitiesOf(capabilities, model.id),
       pipelineCaseId: model.pipelineCaseId,
       browserEvidence: model.product2.kind,
       browserLimit: model.product2.kind === "notCatalogReady" ? model.product2.reason
@@ -73,6 +75,30 @@ export async function buildProcessShowcaseCatalog(projectRoot: string): Promise<
     if (!result.some(({ id }) => id === selection.modelId)) throw new Error(`Unknown showcase ${selection.modelId}`);
   }
   return result;
+}
+
+/**
+ * The catalog variants each retained model's admitted program exercises, as the post-build corpus guard generates them
+ * from the kernel IL; the browser build reads that list, never the kernel.
+ */
+async function readRetainedModelCapabilities(projectRoot: string): Promise<ReadonlyMap<string, ReadonlyArray<MvpBpmnCapabilityId>>> {
+  const known = new Map<string, MvpBpmnCapabilityId>(mvpBpmnCapabilities.map(({ id }) => [id, id]));
+  const list: unknown = JSON.parse(await readFile(resolve(projectRoot, retainedModelCapabilitiesRelativePath), "utf8"));
+  if (typeof list !== "object" || list === null || Array.isArray(list)) throw new Error("Retained model capabilities must be an object");
+  return new Map(Object.entries(list).map(([id, ids]) => {
+    if (!Array.isArray(ids)) throw new Error(`Retained model capabilities of ${id} must be a list`);
+    return [id, ids.map((capability: unknown) => {
+      const variant = typeof capability === "string" ? known.get(capability) : undefined;
+      if (variant === undefined) throw new Error(`Retained model ${id} names unknown capability ${String(capability)}`);
+      return variant;
+    })];
+  }));
+}
+
+function capabilitiesOf(list: ReadonlyMap<string, ReadonlyArray<MvpBpmnCapabilityId>>, modelId: string): ReadonlyArray<MvpBpmnCapabilityId> {
+  const capabilities = list.get(modelId);
+  if (capabilities === undefined) throw new Error(`Retained model capabilities lack ${modelId}`);
+  return capabilities;
 }
 
 function xmlAttributeText(value: string): string {

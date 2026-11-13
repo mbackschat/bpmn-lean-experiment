@@ -2,8 +2,8 @@ name: CIB evidence branch
 
 # Copies the replaced CIB evidence of one Verify run onto a branch, so a development computer that cannot reach the
 # artifact storage host fetches it with git instead. The evidence bytes are the artifacts' own; only the corpus map, which
-# records the retained evidence per model, is regenerated in the same commit (evidence commits that left it stale broke
-# the corpus guard twice, repaired by 043190d3a and 86c66a097).
+# records the retained evidence per model, and the retained-model capability list rendered with it are regenerated in the
+# same commit (evidence commits that left the map stale broke the corpus guard twice, repaired by 043190d3a and 86c66a097).
 # The replay runs in shards (`replace_cib_evidence` in verify.yml), one artifact each, and installing them refuses a set
 # that lacks a shard, so a lost artifact fails here instead of producing a partial evidence commit.
 on:
@@ -111,6 +111,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scenarios model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md
+          git add scenarios model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md model-corpus/retained-model-capabilities.json
           git commit -m "chore(evidence): retained CIB evidence of Verify run ${RUN_ID}"
           git push origin "HEAD:refs/heads/evidence/run-${RUN_ID}"

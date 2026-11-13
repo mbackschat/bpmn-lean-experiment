@@ -20,7 +20,7 @@ test("the evidence branch regenerates the corpus map after writing the evidence 
   const render = at("run: ./scripts/pnpm.sh run render:corpus-map\n");
   const commit = at("git commit -m");
   assert.ok(install < build && build < render && render < commit, "install evidence, build, render, then commit");
-  assert.match(workflow, /git add scenarios model-corpus\/EXECUTABLE-MODEL-CORPUS-MAP\.md\n/u);
+  assert.match(workflow, /git add scenarios model-corpus\/EXECUTABLE-MODEL-CORPUS-MAP\.md model-corpus\/retained-model-capabilities\.json\n/u);
   assert.match(workflow, /\.\/scripts\/setup-external-sources\.sh verify\n\s+\.\/scripts\/setup-external-sources\.sh research cibseven\/cibseven uniba-dsg\/betsy\n/u,
     "the corpus reads the pinned external models the integration lane provisions");
   assert.match(workflow, /BPMN_EXTERNAL_ROOT=[^\n]*pwd\)[^\n]*>> "\$GITHUB_ENV"/u);

@@ -1,5 +1,8 @@
 import path from "node:path";
 
+/** The corpus guard's generated list of each retained model's catalog variants, which the showcase catalog reads. */
+export const retainedModelCapabilitiesRelativePath = "model-corpus/retained-model-capabilities.json";
+
 export type ExternalGitCorpusSource = {
   kind: "git";
   id: string;

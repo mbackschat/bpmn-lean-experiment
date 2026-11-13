@@ -40,9 +40,14 @@ export { isJavascriptFormat } from "./admission/work.js";
 export { step } from "./step.js";
 export { definitionCapabilities, hostRequirements, hostView, refusesSignalVariables, rootStarts } from "./host.js";
 export {
-  ScopeKindTag, WorkTag, elementActivity, elementHeader, elementScope, programBoundary, programElement, programTarget,
+  ElementTag, EventRoleTag, GatewayKindTag, MappingDialect, MultiInstanceMode, Placement, ScopeKindTag, ThrowTag,
+  TimerScheduleTag, TriggerTag, WorkTag, assertNever, elementActivity, elementHeader, elementScope, programBoundary,
+  programElement, programTarget,
 } from "./il/types.js";
-export type { Program, Value } from "./il/types.js";
+export type {
+  Element, Envelope, EventPayload, GatewayKind, Header, Mapping, MultiInstance, Program, ScopeKind, Subscription, Throw,
+  Value, Work,
+} from "./il/types.js";
 export {
   DeliveryTriggerTag, EffectOutcomeTag, FailureTag, InputTag, LeaveTag, SignalAddressTag, SignalReach, StartTriggerTag,
   leaveFlows,

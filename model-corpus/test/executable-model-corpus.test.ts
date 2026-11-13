@@ -1,7 +1,7 @@
 /**
  * The executable model corpus against the kernel: every manifest model's exact bytes and inventory, the kernel's own
- * admission of each (the kernel reader, then `admit`), the MVP capability catalog against what the discovered scenarios
- * exercise, and the generated corpus map. Retained models bind the scenarios the differential discovers, so a corpus
+ * admission of each (the kernel reader, then `admit`), the MVP capability catalog against what the admitted programs of
+ * the discovered scenarios exercise, and the generated corpus map and retained-model capability list. Retained models bind the scenarios the differential discovers, so a corpus
  * model's scenario runs in the kernel oracle; nothing here registers a case or writes a count.
  */
 import assert from "node:assert/strict";
@@ -11,7 +11,7 @@ import { test } from "node:test";
 import { isOpenRowWitness, readOpenRowOwners } from "../../scripts/contract-artifact-cases.ts";
 import { requireExecutableModelCorpusManifest } from "../../scripts/executable-model-corpus.ts";
 import type { CorpusScenario } from "../../scripts/executable-model-corpus.ts";
-import { admitSource, corpusMapPath, discovered, inspect, loadManifest, renderCorpusMap, scenarios } from "./corpus-inspection.ts";
+import { admitSource, discovered, inspect, loadManifest, renderCorpusFiles, scenarios } from "./corpus-inspection.ts";
 
 test("the kernel admits every model exactly as the corpus records it", async () => {
   const report = await inspect(requireExecutableModelCorpusManifest(await loadManifest()));
@@ -24,8 +24,8 @@ test("the kernel admits every model exactly as the corpus records it", async () 
   );
 });
 
-test("keeps the generated corpus map exact", async () => {
-  assert.equal(await readFile(corpusMapPath, "utf8"), await renderCorpusMap());
+test("keeps the generated corpus map and retained-model capability list exact", async () => {
+  for (const [file, rendered] of await renderCorpusFiles()) assert.equal(await readFile(file, "utf8"), rendered, file);
 });
 
 test("every retained model binds a discovered scenario of its own identity", async () => {
@@ -148,7 +148,7 @@ test("a source the kernel refuses claims no capability, so a refused exerciser l
   );
 });
 
-test("the detector never reads a source the kernel refuses, and reads one it admits", async () => {
+test("a source the kernel refuses has no program to classify, and an admitted one claims only what its program exercises", async () => {
   const manifest = requireExecutableModelCorpusManifest(await loadManifest());
   const refusalWitness = scenarios.find(({ relativePath }) =>
     relativePath.startsWith("scenarios/open-rows/transaction-cancel-refusals/") && relativePath.endsWith("cancel-end-at-process-level.scenario.json"));
@@ -158,9 +158,13 @@ test("the detector never reads a source the kernel refuses, and reads one it adm
   assert.equal(refused.status, "rejected");
   await assert.doesNotReject(inspect(manifest, [...scenarios, planted]));
   await assert.rejects(
-    inspect(manifest, [...scenarios, planted], async (scenario, source) =>
-      scenario === planted ? { status: "accepted" } : admitSource(scenario, source)),
-    /unclassified executable BPMN/u,
+    inspect(manifest, scenarios, async (scenario, source) => {
+      const admission = await admitSource(scenario, source);
+      return admission.status === "accepted"
+        ? { status: "accepted", capabilities: () => admission.capabilities().filter((id) => id !== "cancelEndEvent") }
+        : admission;
+    }),
+    /MVP capability catalog differs from the discovered scenarios: cancelEndEvent/u,
   );
 });
 

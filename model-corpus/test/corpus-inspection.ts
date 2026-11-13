@@ -1,14 +1,18 @@
 /**
  * The executable model corpus as the kernel inspects it: the discovered scenarios, the kernel's own admission of every
- * model and scenario source, and the inspection that both the corpus guard (`executable-model-corpus.test.ts`) and the
- * map renderer (`render-corpus-map.ts`) run, so the rendered map is by construction what the guard compares.
+ * model and scenario source with the catalog variants each admitted program exercises (`programCapabilities`), and the
+ * inspection that both the corpus guard (`executable-model-corpus.test.ts`) and the renderer (`render-corpus-map.ts`)
+ * run, so the rendered map and retained-model capability list are by construction what the guard compares.
  */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { kernelAdmission, kernelStimulusDecoding, readCaseSource } from "../../packages/differential/test/kernel-program.ts";
+import { programCapabilities } from "../../packages/differential/test/kernel-capabilities.ts";
+import {
+  kernelAdmission, kernelAdmittedProgram, kernelStimulusDecoding, readCaseSource,
+} from "../../packages/differential/test/kernel-program.ts";
 import {
   DiscoveredKind,
   discoverScenarios,
@@ -18,7 +22,9 @@ import type { DiscoveredScenario, SourceDefinition } from "../../packages/differ
 import {
   inspectExecutableModelCorpus,
   renderExecutableModelCorpusMap,
+  renderRetainedModelCapabilities,
   requireExecutableModelCorpusManifest,
+  retainedModelCapabilitiesRelativePath,
 } from "../../scripts/executable-model-corpus.ts";
 import type {
   CorpusAdmission,
@@ -32,6 +38,7 @@ import { externalRoot } from "../../scripts/external-root.ts";
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const manifestPath = path.join(projectRoot, "model-corpus/manifest.json");
 export const corpusMapPath = path.join(projectRoot, "model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md");
+export const capabilityListPath = path.join(projectRoot, retainedModelCapabilitiesRelativePath);
 
 export async function loadManifest(): Promise<unknown> {
   return JSON.parse(await readFile(manifestPath, "utf8"));
@@ -66,11 +73,21 @@ function corpusScenario(scenario: DiscoveredScenario): CorpusScenario {
 
 export const scenarios = discovered.map(corpusScenario);
 
-/** Retained models read through the differential's own source path, bound overlay included; external ones bare. */
+/** The kernel's decision on one read, with the catalog variants the admitted program exercises. */
+function corpusAdmission(read: Parameters<typeof kernelAdmittedProgram>[0]): CorpusAdmission {
+  const admitted = kernelAdmittedProgram(read);
+  return admitted.status === "accepted" ? { status: "accepted", capabilities: () => programCapabilities(admitted.program) } : admitted;
+}
+
+/**
+ * Retained models read through the differential's own source path, bound overlay included; external ones bare, and
+ * their programs unclassified, as an external candidate claims nothing.
+ */
 const admitModel: CorpusAdmitter = async (model, bytes, scenario) => {
   if (scenario === null) {
-    return kernelAdmission(await readCaseSource({ relativePath: model.id, bytes, sha256: model.source.sha256, overlay: null },
-      model.profile));
+    const admission = kernelAdmission(await readCaseSource(
+      { relativePath: model.id, bytes, sha256: model.source.sha256, overlay: null }, model.profile));
+    return admission.status === "accepted" ? { status: "accepted", capabilities: () => [] } : admission;
   }
   const found = discovered.find(({ relativePath }) => relativePath === scenario.relativePath);
   assert.ok(found !== undefined);
@@ -80,7 +97,7 @@ const admitModel: CorpusAdmitter = async (model, bytes, scenario) => {
   const source = sources.find(({ relativePath }) =>
     model.source.kind === "retainedScenario" && relativePath === model.source.bpmnRelativePath);
   assert.ok(source !== undefined);
-  return kernelAdmission(await readSourceFor(found.relativePath, source, found.document.profile));
+  return corpusAdmission(await readSourceFor(found.relativePath, source, found.document.profile));
 };
 
 /** Every discovered source by what admission reads: its profile, bytes and the overlay and decisions it binds. */
@@ -97,7 +114,7 @@ export const admitSource: CorpusSourceAdmitter = (scenario, source) => {
   assert.ok(known !== undefined, `${scenario.relativePath} binds no discovered source ${source.relativePath}`);
   const identity = `${key}\0${known.definition.sourceOverlay?.sha256 ?? ""}\0${(known.definition.decisions ?? []).map(({ sha256 }) => sha256).join(",")}`;
   const admission = sourceAdmissions.get(identity) ??
-    readSourceFor(known.found.relativePath, known.definition, known.found.document.profile).then(kernelAdmission);
+    readSourceFor(known.found.relativePath, known.definition, known.found.document.profile).then(corpusAdmission);
   sourceAdmissions.set(identity, admission);
   return admission;
 };
@@ -110,7 +127,11 @@ export const inspect = (
   projectRoot, externalRoot, scenarios: selected, admitModel, admitSource: admit, decodeStimulus: kernelStimulusDecoding,
 });
 
-/** The corpus map the manifest and the discovered scenarios imply; the guard compares it with the committed file and the renderer writes it. */
-export async function renderCorpusMap(): Promise<string> {
-  return renderExecutableModelCorpusMap(await inspect(requireExecutableModelCorpusManifest(await loadManifest())));
+/**
+ * The generated files the manifest and the discovered scenarios imply, by path: the corpus map and the retained-model
+ * capability list. The guard compares each with the committed file and the renderer writes it.
+ */
+export async function renderCorpusFiles(): Promise<ReadonlyArray<readonly [string, string]>> {
+  const report = await inspect(requireExecutableModelCorpusManifest(await loadManifest()));
+  return [[corpusMapPath, renderExecutableModelCorpusMap(report)], [capabilityListPath, renderRetainedModelCapabilities(report)]];
 }

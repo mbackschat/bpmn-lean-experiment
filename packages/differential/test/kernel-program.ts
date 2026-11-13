@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { kernelProfileOptions, readKernelProgram } from "@bpmn-lean/bpmn-source";
 import type { KernelJson, KernelProfileOptions, KernelRead, KernelSource } from "@bpmn-lean/bpmn-source";
-import { admit, decodeProgram, encodeProgram, stimulusFromJson, type JsonValue } from "@bpmn-lean/kernel";
+import { admit, decodeProgram, encodeProgram, stimulusFromJson, type JsonValue, type Program } from "@bpmn-lean/kernel";
 
 import { parseWireJson } from "../../../scripts/strict-json.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
@@ -56,13 +56,19 @@ export async function readCaseKernelProgram(source: CaseSource, profileId: strin
 
 export type KernelAdmission = Readonly<{ status: "accepted" } | { status: "rejected"; refusal: string }>;
 
-/** The kernel's admission decision for one read: the reader's refusal, a strict-decoding refusal, or `admit`'s. */
-export function kernelAdmission(read: KernelRead): KernelAdmission {
+/** `kernelAdmission` with the admitted program. */
+export function kernelAdmittedProgram(read: KernelRead): Readonly<{ status: "accepted"; program: Program } | { status: "rejected"; refusal: string }> {
   if (read.kind === "refused") return { status: "rejected", refusal: read.code };
   const decoded = decodeProgram(read.program);
   if (!decoded.ok) return { status: "rejected", refusal: decoded.refusal };
   const refusal = admit(decoded.value);
-  return refusal === null ? { status: "accepted" } : { status: "rejected", refusal };
+  return refusal === null ? { status: "accepted", program: decoded.value } : { status: "rejected", refusal };
+}
+
+/** The kernel's admission decision for one read: the reader's refusal, a strict-decoding refusal, or `admit`'s. */
+export function kernelAdmission(read: KernelRead): KernelAdmission {
+  const admitted = kernelAdmittedProgram(read);
+  return admitted.status === "accepted" ? { status: "accepted" } : admitted;
 }
 
 /** The kernel's own reading of one scenario stimulus, values and payloads included: accepted, or the codec's refusal. */

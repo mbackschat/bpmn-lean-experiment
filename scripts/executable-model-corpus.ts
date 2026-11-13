@@ -1,12 +1,13 @@
 /**
  * The executable BPMN model corpus inspection: every manifest model's exact source bytes, construct inventory, clone
  * family and admission, the MVP capability catalog against what the discovered scenarios exercise, and the generated
- * corpus map.
+ * corpus map and retained-model capability list.
  *
  * Scenarios are discovered from directories, not registered (guard 14 of the kernel rewrite proposal): a retained model
  * binds the discovered scenario at its `scenarioRelativePath`, whose identifier is the model's `pipelineCaseId`.
  * Admission is the kernel's own decision (the kernel reader, then `Kernel.Admission`), supplied by the caller so this
- * module stays free of package code; a model whose recorded admission differs from the kernel's is listed in
+ * module stays free of package code, and so are the catalog variants an admitted program exercises, which the caller
+ * derives from the admitted kernel IL; a model whose recorded admission differs from the kernel's is listed in
  * `admissionMismatches`, never reconciled here. A rejected model's recorded digest is the SHA-256 of the kernel's
  * stable refusal code.
  */
@@ -28,7 +29,6 @@ import {
   parseXmlElements,
 } from "./minimal-xml-tree.ts";
 import { isOpenRowWitness } from "./contract-artifact-cases.ts";
-import { claimOfSource, detectExecutableBpmnCapabilities } from "./executable-model-capabilities.ts";
 import { compareCanonicalStrings } from "./strict-json.ts";
 import type {
   CorpusModel,
@@ -41,6 +41,7 @@ import {
 
 export {
   requireExecutableModelCorpusManifest,
+  retainedModelCapabilitiesRelativePath,
 } from "./executable-model-corpus-manifest.ts";
 export type {
   CorpusModel,
@@ -65,7 +66,14 @@ export type CorpusScenario = Readonly<{
 /** One JSON document read through the kernel's own codec: accepted, or its refusal. */
 export type CorpusDecoding = Readonly<{ ok: true } | { ok: false; refusal: string }>;
 
-export type CorpusAdmission = Readonly<{ status: "accepted" } | { status: "rejected"; refusal: string }>;
+/**
+ * The kernel's decision on one source: admitted, with the catalog variants its program exercises, or refused. The
+ * variants are derived only when read, so a source that claims nothing (an open-row witness) is never classified.
+ */
+export type CorpusAdmission = Readonly<
+  | { status: "accepted"; capabilities: () => ReadonlyArray<MvpBpmnCapabilityId> }
+  | { status: "rejected"; refusal: string }
+>;
 
 /** Reads and admits one BPMN source a scenario binds, under the scenario's profile and overlay. */
 export type CorpusSourceAdmitter = (
@@ -268,7 +276,6 @@ export async function inspectExecutableModelCorpus(
   const claimingPaths = new Set(claiming.map(({ relativePath }) => relativePath));
   const restricted = new Set(mvpBpmnRestrictions.map(({ refusalCode }) => refusalCode));
   const exhibited = new Set<string>();
-  const read = new Set<string>();
   for (const scenario of options.scenarios) {
     for (const source of scenario.sources) {
       const admission = await options.admitSource(scenario, source);
@@ -280,11 +287,7 @@ export async function inspectExecutableModelCorpus(
         }
         continue;
       }
-      const key = `${scenario.profile}\0${source.relativePath}\0${source.sha256}`;
-      if (read.has(key)) continue;
-      read.add(key);
-      const claim = claimOfSource(await readFile(path.join(options.projectRoot, source.relativePath), "utf8"), admission);
-      if (claim.kind === "capabilities") for (const capability of claim.capabilities) exercised.add(capability);
+      for (const capability of admission.capabilities()) exercised.add(capability);
     }
   }
   const catalogCapabilities = new Set(mvpBpmnCapabilities.map(({ id }) => id));
@@ -376,7 +379,7 @@ export async function inspectExecutableModelCorpus(
       product2: model.product2.kind,
       constructs: Object.freeze([...model.constructs]),
       mechanisms: Object.freeze([...model.mechanisms]),
-      capabilities: model.source.kind === "retainedScenario" ? detectExecutableBpmnCapabilities(xml) : [],
+      capabilities: model.source.kind === "retainedScenario" && admission.status === "accepted" ? admission.capabilities() : [],
       blockers: Object.freeze(blockers),
     }));
   }
@@ -424,6 +427,13 @@ export async function inspectExecutableModelCorpus(
       product2 === "journeyBacked" || product2 === "guidedJourneyBacked"
     ).length,
   });
+}
+
+/** The generated retained-model capability list (`retainedModelCapabilitiesRelativePath`): one line per retained model, in manifest order. */
+export function renderRetainedModelCapabilities(report: ExecutableModelCorpusReport): string {
+  const entries = report.models.filter(({ sourceKind }) => sourceKind === "retainedScenario")
+    .map(({ id, capabilities }) => `  ${JSON.stringify(id)}: ${JSON.stringify(capabilities)}`);
+  return `{\n${entries.join(",\n")}\n}\n`;
 }
 
 function tableCell(value: string): string {
