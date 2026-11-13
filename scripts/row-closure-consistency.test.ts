@@ -3,12 +3,13 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
+import { readCoverageRowStates } from "./coverage-row-states.ts";
+
 const root = path.resolve(import.meta.dirname, "..");
 
 /** The coverage rows whose status cell starts with `done`: the closure record every other document follows. */
 function doneRows(): Set<string> {
-  const target = readFileSync(path.join(root, "docs", "PRACTICAL-CIB7-COVERAGE-TARGET.md"), "utf8");
-  return new Set([...target.matchAll(/^\| `(PC-[A-Z]+-\d+)` \|[^|\n]*\|[^|\n]*\| *done\b/gmu)].map((match) => match[1] ?? ""));
+  return new Set([...readCoverageRowStates(root)].filter(([, state]) => state === "done").map(([row]) => row));
 }
 
 /** Each row ID named in the first cell of an `## Open rows` table row, with the spec that names it. */

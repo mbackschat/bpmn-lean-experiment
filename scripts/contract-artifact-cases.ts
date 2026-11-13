@@ -12,7 +12,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { compareCanonicalStrings } from "./strict-json.ts";
+import { compareCanonicalStrings, parseStrictJson } from "./strict-json.ts";
 
 export type ArtifactCase = Readonly<{
   scenarioRelativePath: string;
@@ -32,6 +32,14 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
  * `scenarios/` when the row closes.
  */
 export const openRowScenarioRoot = "scenarios/open-rows/";
+export const openRowOwnersRelativePath = `${openRowScenarioRoot}owners.json`;
+
+/** The coverage rows each directory under `scenarios/open-rows/` witnesses, from the machine-owned `owners.json`. */
+export function readOpenRowOwners(root: string = projectRoot): ReadonlyMap<string, ReadonlyArray<string>> {
+  const owners = parseStrictJson<Record<string, ReadonlyArray<string>>>(
+    readFileSync(path.join(root, openRowOwnersRelativePath), "utf8"), openRowOwnersRelativePath);
+  return new Map(Object.entries(owners));
+}
 
 export const isOpenRowWitness = (scenarioRelativePath: string): boolean =>
   scenarioRelativePath.startsWith(openRowScenarioRoot);

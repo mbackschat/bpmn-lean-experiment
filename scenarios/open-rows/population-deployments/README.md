@@ -1,6 +1,6 @@
 # Deployments of a population
 
-Answer-free population schedules for how [`Population.deploy`](../../../Kernel/Population.lean) numbers versions and decides which copies of other deployments' processes a program keeps ([population contract](../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#deployments), PC-SCOPE-03). The profile is `bpmn-2.0.2` with no source overlay. All three documents share one `targetNamespace`, so the caller's unprefixed `calledElement` names `Process_Callee` in it.
+Answer-free population schedules for how [`Population.deploy`](../../../Kernel/Population.lean) numbers versions and decides which copies of other deployments' processes a program keeps ([population contract](../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#deployments), [PC-SCOPE-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list)). The profile is `bpmn-2.0.2` with no source overlay. All three documents share one `targetNamespace`, so the caller's unprefixed `calledElement` names `Process_Callee` in it.
 
 ## Models
 

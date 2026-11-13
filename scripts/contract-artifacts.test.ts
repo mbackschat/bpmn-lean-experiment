@@ -23,8 +23,11 @@ import {
 import {
   artifactCases,
   normativeArtifactCases,
+  openRowOwnersRelativePath,
   openRowScenarioRoot,
+  readOpenRowOwners,
 } from "./contract-artifact-cases.ts";
+import { parseCoverageRowStates, readCoverageRowStates } from "./coverage-row-states.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -319,4 +322,53 @@ test("applies the value-surface claim guard to registered scenarios and never to
   };
   assert.throws(() => verifyArtifactSet(withList(artifactSet.scenarioRelativePath)), /stringList is only admitted/u);
   assert.doesNotThrow(() => verifyArtifactSet(withList(`${openRowScenarioRoot}user-task/scenario.json`)));
+});
+
+test("reads a row's state from the last cell of the delivery task list and refuses a state it cannot read", () => {
+  const row = (id: string, state: string) => `| \`${id}\` | outcome, with \`code\` | PC-X-01; PC-Y-02. | ${state} |\n`;
+  const table = row("PC-AA-01", "done; M9 track review, 2026-11-12") + row("PC-AA-02", "open ") + row("PC-AA-03", "held: re-qualified");
+  assert.deepEqual([...parseCoverageRowStates(table)], [["PC-AA-01", "done"], ["PC-AA-02", "open"], ["PC-AA-03", "held"]]);
+  assert.throws(() => parseCoverageRowStates(row("PC-AA-04", "closed")), /PC-AA-04: the state cell starts with none of/u);
+  assert.throws(() => parseCoverageRowStates(table + row("PC-AA-01", "open")), /PC-AA-01: listed twice/u);
+  const live = readCoverageRowStates(projectRoot);
+  assert.ok(live.size >= 100, `the delivery task list yields ${live.size} rows`);
+  assert.deepEqual([...live.values()].filter((state) => !["open", "held", "done"].includes(state)), []);
+});
+
+/** The coverage rows a witness README links, by the IDs in the text of its links to the coverage target. */
+function linkedRows(readme: string): Set<string> {
+  const linked = new Set<string>();
+  for (const [, text] of readme.matchAll(/\[([^\]]*)\]\([^)]*PRACTICAL-CIB7-COVERAGE-TARGET\.md[^)]*\)/gu)) {
+    for (const id of text!.match(/PC-[A-Z]+-\d{2}/gu) ?? []) linked.add(id);
+  }
+  return linked;
+}
+
+test("maps every open-rows directory to the existing coverage rows its README links", async () => {
+  const text = await readFile(path.join(projectRoot, openRowOwnersRelativePath), "utf8");
+  const owners = readOpenRowOwners(projectRoot);
+  assert.ok(
+    text === `${JSON.stringify(Object.fromEntries(owners), null, 2)}\n`,
+    "owners.json is canonical: two-space JSON in the order and form its generator wrote",
+  );
+  const directories = (await readdir(path.join(projectRoot, openRowScenarioRoot), { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  const rows = readCoverageRowStates(projectRoot);
+  const faults = [
+    ...directories.filter((directory) => !owners.has(directory)).map((directory) => `${directory}: no owners entry`),
+    ...[...owners.keys()].filter((directory) => !directories.includes(directory)).map((directory) => `${directory}: an owners entry for a missing directory`),
+  ];
+  for (const [directory, owned] of owners) {
+    if (owned.length === 0) faults.push(`${directory}: no owning row`);
+    if (new Set(owned).size !== owned.length || owned.some((row, index) => index > 0 && owned[index - 1]! > row)) {
+      faults.push(`${directory}: owning rows are not sorted and unique`);
+    }
+    if (!directories.includes(directory)) continue;
+    const linked = linkedRows(await readFile(path.join(projectRoot, openRowScenarioRoot, directory, "README.md"), "utf8"));
+    for (const row of owned) {
+      if (!rows.has(row)) faults.push(`${directory}: ${row} is not a row of the delivery task list`);
+      else if (!linked.has(row)) faults.push(`${directory}: its README does not link ${row} to the coverage target`);
+    }
+  }
+  assert.equal(faults.length, 0, faults.slice(0, 10).join("\n"));
 });

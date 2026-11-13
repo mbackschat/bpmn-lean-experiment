@@ -1,6 +1,6 @@
 # A Transaction and a Sub-Process without a start Event
 
-This directory serves [#73](https://github.com/mbackschat/bpmn-lean-experiment/issues/73): the witnesses of [CIB-LIM-0024](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-lim-0024--cib-needs-a-start-event-in-a-sub-process-and-a-transaction). BPMN 2.0.2 §13.3.4 lets a Sub-Process without a start Event begin every Activity that has no incoming flow. CIB Seven `2.2.0` refuses deploying such a Sub-Process, and fails entering such a Transaction. Both models are project-authored MIT source for the `cibseven-2.2.0` profile with no source overlay; every schedule is answer-free and the retained CIB Seven `2.2.0` answer is the target.
+This directory serves [#73](https://github.com/mbackschat/bpmn-lean-experiment/issues/73): the witnesses of [CIB-LIM-0024](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-lim-0024--cib-needs-a-start-event-in-a-sub-process-and-a-transaction). BPMN 2.0.2 §13.3.4 lets a Sub-Process without a start Event begin every Activity that has no incoming flow. CIB Seven `2.2.0` refuses deploying such a Sub-Process, and fails entering such a Transaction. Both models are project-authored MIT source for the `cibseven-2.2.0` profile with no source overlay; every schedule is answer-free and the retained CIB Seven `2.2.0` answer is the target. The witnesses belong to [PC-SCOPE-01](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) (entering a Scope) and [PC-TX-01](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) (a Transaction's entry).
 
 ## Models
 

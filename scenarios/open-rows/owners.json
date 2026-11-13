@@ -1,0 +1,584 @@
+{
+  "activity-split-merge": [
+    "PC-CF-07"
+  ],
+  "addressless-receive-compositions": [
+    "PC-HUM-06"
+  ],
+  "automation-business-error-non-ancestor": [
+    "PC-AUTO-02"
+  ],
+  "automation-business-error-routing": [
+    "PC-AUTO-02"
+  ],
+  "automation-handler-reuse": [
+    "PC-AUTO-01"
+  ],
+  "automation-incident-composition": [
+    "PC-AUTO-03"
+  ],
+  "business-rule-hit-policies": [
+    "PC-AUTO-07"
+  ],
+  "business-rule-routing": [
+    "PC-AUTO-08"
+  ],
+  "call-binding-population": [
+    "PC-SCOPE-03"
+  ],
+  "call-binding-time": [
+    "PC-SCOPE-03"
+  ],
+  "call-binding-versions": [
+    "PC-SCOPE-03"
+  ],
+  "call-counter-output": [
+    "PC-SCOPE-04"
+  ],
+  "call-exceptional-return": [
+    "PC-SCOPE-06"
+  ],
+  "call-raised-outputs": [
+    "PC-SCOPE-06"
+  ],
+  "called-process-links": [
+    "PC-BASIC-02"
+  ],
+  "compensation-activity-ref-refusals": [
+    "PC-COMPENSATION-02"
+  ],
+  "compensation-context": [
+    "PC-COMPENSATION-01",
+    "PC-COMPENSATION-03",
+    "PC-COMPENSATION-05"
+  ],
+  "compensation-context-live-outer": [
+    "PC-COMPENSATION-01",
+    "PC-COMPENSATION-05"
+  ],
+  "compensation-effect-and-call-records": [
+    "PC-COMPENSATION-03",
+    "PC-COMPENSATION-04"
+  ],
+  "compensation-eligibility": [
+    "PC-COMPENSATION-03"
+  ],
+  "compensation-event-subprocess-multi-instance": [
+    "PC-COMPENSATION-05"
+  ],
+  "compensation-event-subprocess-nesting": [
+    "PC-COMPENSATION-05"
+  ],
+  "compensation-event-subprocess-throws": [
+    "PC-COMPENSATION-02",
+    "PC-COMPENSATION-05"
+  ],
+  "compensation-handler-bodies": [
+    "PC-COMPENSATION-04"
+  ],
+  "compensation-handler-bodies-without-receive": [
+    "PC-COMPENSATION-04"
+  ],
+  "compensation-handler-consumption": [
+    "PC-COMPENSATION-05"
+  ],
+  "compensation-handler-failure-at-wait": [
+    "PC-COMPENSATION-01",
+    "PC-COMPENSATION-04",
+    "PC-TX-02"
+  ],
+  "compensation-handler-failures": [
+    "PC-COMPENSATION-01",
+    "PC-COMPENSATION-04"
+  ],
+  "compensation-handler-form-refusals": [
+    "PC-COMPENSATION-04",
+    "PC-COMPENSATION-05"
+  ],
+  "compensation-handler-terminate": [
+    "PC-COMPENSATION-04"
+  ],
+  "compensation-multi-instance-bodies": [
+    "PC-COMPENSATION-03"
+  ],
+  "compensation-order-and-multiplicity": [
+    "PC-COMPENSATION-01",
+    "PC-COMPENSATION-03"
+  ],
+  "compensation-order-chronology": [
+    "PC-COMPENSATION-01",
+    "PC-COMPENSATION-02"
+  ],
+  "compensation-regions": [
+    "PC-COMPENSATION-02",
+    "PC-COMPENSATION-03"
+  ],
+  "compensation-targeting": [
+    "PC-COMPENSATION-02"
+  ],
+  "condition-expression-routing": [
+    "PC-DATA-07",
+    "PC-DATA-08",
+    "PC-DATA-09"
+  ],
+  "condition-language-declarations": [
+    "PC-DATA-07"
+  ],
+  "condition-whitespace": [
+    "PC-DATA-07"
+  ],
+  "conditional-boundary-hosts": [
+    "PC-CONDITION-04"
+  ],
+  "conditional-catch": [
+    "PC-CONDITION-03"
+  ],
+  "conditional-contests": [
+    "PC-CONDITION-03",
+    "PC-CONDITION-04"
+  ],
+  "conditional-esp": [
+    "PC-CONDITION-04",
+    "PC-CONDITION-05"
+  ],
+  "conditional-evaluation": [
+    "PC-CONDITION-01"
+  ],
+  "conditional-start-compositions": [
+    "PC-CONDITION-02"
+  ],
+  "conditional-start-population": [
+    "PC-CONDITION-02"
+  ],
+  "cycle-compositions": [
+    "PC-CF-06"
+  ],
+  "error-ancestor-search": [
+    "PC-ERROR-01"
+  ],
+  "error-boundary-candidates": [
+    "PC-ERROR-01"
+  ],
+  "error-called-child": [
+    "PC-ERROR-03"
+  ],
+  "error-called-child-error-data": [
+    "PC-ERROR-03"
+  ],
+  "error-called-child-uncaught": [
+    "PC-ERROR-03"
+  ],
+  "error-catch-variables": [
+    "PC-ERROR-01"
+  ],
+  "error-esp-catch-variables": [
+    "PC-ERROR-01"
+  ],
+  "error-event-subprocess-nested-rethrow": [
+    "PC-ERROR-02"
+  ],
+  "error-event-subprocess-precedence": [
+    "PC-ERROR-02"
+  ],
+  "error-event-subprocess-recovery": [
+    "PC-ERROR-02"
+  ],
+  "error-event-subprocess-rethrow": [
+    "PC-ERROR-02"
+  ],
+  "error-java-class-codes": [
+    "PC-AUTO-02",
+    "PC-ERROR-01"
+  ],
+  "error-multi-instance": [
+    "PC-ERROR-03"
+  ],
+  "error-non-interrupting-declarations": [
+    "PC-ERROR-01",
+    "PC-ERROR-02"
+  ],
+  "error-null-message": [
+    "PC-ERROR-01"
+  ],
+  "error-thrower-leave": [
+    "PC-ERROR-03"
+  ],
+  "error-unhandled": [
+    "PC-ERROR-01"
+  ],
+  "error-unhandled-outcomes": [
+    "PC-ERROR-01"
+  ],
+  "error-unhandled-standards": [
+    "PC-ERROR-01"
+  ],
+  "escalation-boundary-conflicts": [
+    "PC-ESCALATION-02",
+    "PC-ESCALATION-03"
+  ],
+  "escalation-boundary-hosts": [
+    "PC-ESCALATION-02"
+  ],
+  "escalation-busy-called-root": [
+    "PC-ESCALATION-03"
+  ],
+  "escalation-call-propagation": [
+    "PC-ESCALATION-03"
+  ],
+  "escalation-call-relay": [
+    "PC-ESCALATION-03"
+  ],
+  "escalation-called-uncaught": [
+    "PC-ESCALATION-01",
+    "PC-ESCALATION-03"
+  ],
+  "escalation-catch-write-origin": [
+    "PC-ESCALATION-01",
+    "PC-ESCALATION-03"
+  ],
+  "escalation-code-variable": [
+    "PC-ESCALATION-01"
+  ],
+  "escalation-event-subprocess-modes": [
+    "PC-ESCALATION-03"
+  ],
+  "escalation-event-subprocess-nesting": [
+    "PC-ESCALATION-03"
+  ],
+  "escalation-multi-instance": [
+    "PC-ESCALATION-02",
+    "PC-ESCALATION-03"
+  ],
+  "escalation-throw-propagation": [
+    "PC-ESCALATION-01"
+  ],
+  "escalation-uncaught": [
+    "PC-ESCALATION-01"
+  ],
+  "event-race-compositions": [
+    "PC-BASIC-03",
+    "PC-CF-05",
+    "PC-CF-08"
+  ],
+  "event-reference-forms": [
+    "PC-BASIC-04"
+  ],
+  "event-subprocess-boundary": [
+    "PC-TIMER-08"
+  ],
+  "exclusive-choice-compositions": [
+    "PC-BASIC-03",
+    "PC-CF-02"
+  ],
+  "expression-cardinality-and-collections": [
+    "PC-DATA-08",
+    "PC-DATA-09"
+  ],
+  "flow-simple-boolean-outflow": [
+    "PC-CF-02",
+    "PC-CF-04",
+    "PC-CF-07"
+  ],
+  "gateway-composition-matrix": [
+    "PC-CF-08"
+  ],
+  "human-task-metadata-composition": [
+    "PC-HUM-02"
+  ],
+  "human-task-result-identity": [
+    "PC-HUM-01"
+  ],
+  "inclusive-join-activation": [
+    "PC-CF-04"
+  ],
+  "inclusive-join-compositions": [
+    "PC-BASIC-03",
+    "PC-CF-04",
+    "PC-CF-08"
+  ],
+  "input-mapping-contexts": [
+    "PC-DATA-05"
+  ],
+  "interchange-reference-forms": [
+    "PC-BASIC-04"
+  ],
+  "journey-booking-recovery": [
+    "PC-JOURNEY-07"
+  ],
+  "journey-fulfillment-calls": [
+    "PC-JOURNEY-02"
+  ],
+  "journey-order-invoice": [
+    "PC-JOURNEY-01"
+  ],
+  "journey-order-payment": [
+    "PC-JOURNEY-06"
+  ],
+  "journey-parallel-applicants": [
+    "PC-JOURNEY-04"
+  ],
+  "journey-scheduled-case": [
+    "PC-JOURNEY-05"
+  ],
+  "journey-sequential-applicants": [
+    "PC-JOURNEY-03"
+  ],
+  "juel-core-forms": [
+    "PC-DATA-05",
+    "PC-DATA-07"
+  ],
+  "juel-core-table": [
+    "PC-DATA-07"
+  ],
+  "juel-evaluation-failures": [
+    "PC-DATA-07",
+    "PC-DATA-09"
+  ],
+  "juel-form-separations": [
+    "PC-DATA-07"
+  ],
+  "juel-unsupported-syntax": [
+    "PC-DATA-07"
+  ],
+  "link-event-compositions": [
+    "PC-BASIC-02",
+    "PC-BASIC-03"
+  ],
+  "manual-task-split-merge": [
+    "PC-HUM-05"
+  ],
+  "mapping-failure-sites": [
+    "PC-DATA-09"
+  ],
+  "mapping-order": [
+    "PC-DATA-05",
+    "PC-DATA-06"
+  ],
+  "message-boundary-interrupting": [
+    "PC-MESSAGE-04"
+  ],
+  "message-boundary-repeated": [
+    "PC-MESSAGE-05"
+  ],
+  "message-correlation-criteria": [
+    "PC-MESSAGE-08"
+  ],
+  "message-esp-interrupting": [
+    "PC-MESSAGE-06"
+  ],
+  "message-esp-repeatable": [
+    "PC-MESSAGE-07"
+  ],
+  "message-name-addressing": [
+    "PC-MESSAGE-01"
+  ],
+  "message-payload-catches": [
+    "PC-MESSAGE-03"
+  ],
+  "message-start-compositions": [
+    "PC-MESSAGE-02"
+  ],
+  "message-start-population": [
+    "PC-MESSAGE-02",
+    "PC-MESSAGE-08"
+  ],
+  "message-throw-bound": [
+    "PC-MESSAGE-09"
+  ],
+  "message-throw-retry": [
+    "PC-MESSAGE-09"
+  ],
+  "message-throw-unbound": [
+    "PC-MESSAGE-09"
+  ],
+  "multi-instance-activity-mapping-scope": [
+    "PC-MI-10"
+  ],
+  "multi-instance-call-activity": [
+    "PC-MI-03"
+  ],
+  "multi-instance-completion-failures": [
+    "PC-DATA-08",
+    "PC-DATA-09"
+  ],
+  "multi-instance-expression-results": [
+    "PC-DATA-08",
+    "PC-DATA-09"
+  ],
+  "multi-instance-expressions": [
+    "PC-MI-07"
+  ],
+  "multi-instance-instance-sites": [
+    "PC-MI-01",
+    "PC-MI-04",
+    "PC-MI-05",
+    "PC-MI-06",
+    "PC-MI-10",
+    "PC-MI-11"
+  ],
+  "multi-instance-mutable-collection": [
+    "PC-MI-08"
+  ],
+  "multi-instance-nesting": [
+    "PC-MI-11"
+  ],
+  "multi-instance-service-task": [
+    "PC-MI-02"
+  ],
+  "multi-instance-sub-process": [
+    "PC-MI-04"
+  ],
+  "multi-instance-user-task": [
+    "PC-MI-01"
+  ],
+  "nested-scope-quiescence": [
+    "PC-SCOPE-01"
+  ],
+  "none-event-compositions": [
+    "PC-BASIC-01"
+  ],
+  "output-mapping-fanout": [
+    "PC-DATA-06"
+  ],
+  "parallel-region-compositions": [
+    "PC-CF-03"
+  ],
+  "population-deployments": [
+    "PC-SCOPE-03"
+  ],
+  "receive-delivery-scopes": [
+    "PC-HUM-03"
+  ],
+  "receive-task-payload": [
+    "PC-HUM-03"
+  ],
+  "receive-task-payload-correlation": [
+    "PC-HUM-03"
+  ],
+  "region-interruption-subtree": [
+    "PC-SCOPE-07"
+  ],
+  "same-definition-scope-lifetimes": [
+    "PC-SCOPE-02"
+  ],
+  "scalar-types-in-multi-instance": [
+    "PC-DATA-02"
+  ],
+  "scope-data-visibility": [
+    "PC-DATA-04"
+  ],
+  "scope-without-start": [
+    "PC-SCOPE-01",
+    "PC-TX-01"
+  ],
+  "script-task-javascript": [
+    "PC-AUTO-05",
+    "PC-AUTO-06"
+  ],
+  "send-task-configured-send": [
+    "PC-AUTO-04"
+  ],
+  "signal-broadcast-population": [
+    "PC-SIGNAL-02",
+    "PC-SIGNAL-04"
+  ],
+  "signal-start-compositions": [
+    "PC-SIGNAL-02",
+    "PC-SIGNAL-04"
+  ],
+  "signal-subscriptions": [
+    "PC-SIGNAL-03"
+  ],
+  "signal-throw-expression": [
+    "PC-SIGNAL-01"
+  ],
+  "signal-throw-literal": [
+    "PC-SIGNAL-01"
+  ],
+  "signal-throw-payload": [
+    "PC-SIGNAL-01"
+  ],
+  "split-branch-order": [
+    "PC-BASIC-03"
+  ],
+  "structured-order-values": [
+    "PC-DATA-03"
+  ],
+  "structured-value-bounds": [
+    "PC-DATA-03"
+  ],
+  "synchronous-effect-failure": [
+    "PC-AUTO-02",
+    "PC-AUTO-04"
+  ],
+  "terminate-called-child": [
+    "PC-TERMINATE-02"
+  ],
+  "terminate-containing-region": [
+    "PC-TERMINATE-01"
+  ],
+  "terminate-event-subprocess-instances": [
+    "PC-TERMINATE-02"
+  ],
+  "terminate-multi-instance-bodies": [
+    "PC-TERMINATE-02"
+  ],
+  "timer-boundary-hosts": [
+    "PC-TIMER-06"
+  ],
+  "timer-catch-cycles": [
+    "PC-TIMER-05"
+  ],
+  "timer-data-derived": [
+    "PC-TIMER-03"
+  ],
+  "timer-date-forms": [
+    "PC-TIMER-01"
+  ],
+  "timer-duration-forms": [
+    "PC-TIMER-01"
+  ],
+  "timer-event-subprocess": [
+    "PC-TIMER-07"
+  ],
+  "timer-lifetimes": [
+    "PC-TIMER-08"
+  ],
+  "timer-recurrence": [
+    "PC-TIMER-02"
+  ],
+  "timer-start-forms": [
+    "PC-TIMER-04"
+  ],
+  "timer-start-population": [
+    "PC-TIMER-04"
+  ],
+  "transaction-and-error-exits": [
+    "PC-TX-01"
+  ],
+  "transaction-cancel-mixed": [
+    "PC-TX-02"
+  ],
+  "transaction-cancel-refusals": [
+    "PC-TX-02",
+    "PC-TX-03"
+  ],
+  "transaction-cancel-waiting-handlers": [
+    "PC-TX-02"
+  ],
+  "transaction-methods": [
+    "PC-TX-01"
+  ],
+  "transaction-multi-instance": [
+    "PC-TX-03"
+  ],
+  "transaction-multi-instance-concurrent-cancel": [
+    "PC-TX-03"
+  ],
+  "transaction-nested": [
+    "PC-TX-03"
+  ],
+  "transaction-paths": [
+    "PC-TX-01"
+  ]
+}
