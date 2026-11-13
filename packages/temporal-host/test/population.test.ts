@@ -43,7 +43,7 @@ const registerDeployment = (kernel: PopulationPort<never, never, Wire>, state: I
   import("../src/population.ts").DeploymentCandidate, number]) => population.registerDeployment(kernel, frame, state, ...rest);
 /** A command accepted for the queue, as `[state, ticket]`, or `[state, null]` when the ingress refused it. */
 function enqueueCommand(state: IngressState, commandId: string, kind: string, command: JsonValue, digest: string): readonly [IngressState, number | null] {
-  const enqueued = population.enqueueCommand(frame, state, commandId, kind, command, digest);
+  const enqueued = population.enqueueCommand(frame, state, commandId, kind, command, digest, []);
   return "refused" in enqueued ? [state, null] : [enqueued.state, enqueued.ticket];
 }
 
@@ -104,7 +104,7 @@ test("a fan-out machine of 10,000 pending items crosses the wire flat and comes 
   assert.equal(decoded.budget, machine.budget);
 });
 
-test("a full queue refuses a command before acceptance, and an emit is never refused", () => {
+test("a full queue refuses a command before acceptance, and an emit is not counted against the queue's command capacity", () => {
   let state: IngressState = emptyIngress;
   for (let index = 0; index < populationCapacity.queue; index += 1) {
     const [next, ticket] = enqueueCommand(state, `c${String(index)}`, "broadcast", {}, "d");
@@ -112,9 +112,11 @@ test("a full queue refuses a command before acceptance, and an emit is never ref
     state = next;
   }
   assert.equal(enqueueCommand(state, "over", "broadcast", {}, "d")[1], null);
-  const emitted = enqueueEmit(state, { workflowId: "W", commandId: "i1", count: 1, digest: "" });
-  assert.equal(emitted.queue.length, populationCapacity.queue + 1);
-  assert.equal(enqueueEmit(emitted, { workflowId: "W", commandId: "i1", count: 1, digest: "" }), emitted, "a repeated emit is one hand-off");
+  const offered = enqueueEmit(frame, state, { workflowId: "W", commandId: "i1", count: 1, digest: "" }, []);
+  assert.ok("state" in offered);
+  assert.equal(offered.state.queue.length, populationCapacity.queue + 1);
+  assert.deepEqual(enqueueEmit(frame, offered.state, { workflowId: "W", commandId: "i1", count: 1, digest: "" }, []), offered,
+    "a repeated emit is one hand-off");
 });
 
 test("a new chain beyond the registration count is refused, whatever it would carry", () => {

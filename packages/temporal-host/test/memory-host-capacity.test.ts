@@ -302,3 +302,49 @@ test("a population refuses a deployment program or a command past its byte bound
   await assert.rejects(population.command("broadcast", { ...broadcast(15_000, top + 1), commandId: "b2" } as never),
     (error: unknown) => error instanceof PopulationRefused && error.code === "host.capacity.stimulus");
 });
+
+// #138: the ingress defers a hand-off it cannot hold, and the emitter carries it, so the overflow lands on the emitter's
+// own continuation row before its next Signal throw commits, never on the ingress after publication.
+test("an emitter whose deferred hand-offs fill its continuation row has its next Signal throw refused before commit; they are delivered once room appears", async () => {
+  const chains = { emitter: workflowId, receiver: "R", filler: "F" };
+  const setup = async (digest: number) => {
+    const host = fresh();
+    const filled = await fx.handoffPopulation(host, host.population("P", external), external, chains, digest);
+    return { host, filled };
+  };
+  // 15,000 bytes below the line no 20 KB hand-off fits, and closing the filler's wait frees enough for one.
+  const fill = await fx.handoffLine(async (digest) => (await setup(digest)).filled) - 15_000;
+  const holding = async (count: number) => {
+    const { host } = await setup(fill);
+    for (let activation = 1; activation <= count; activation += 1) {
+      assert.equal((await host.command(workflowId, fx.emitterCompletion(activation, 20_000))).outcome, "committed");
+    }
+    return host;
+  };
+  const filled = await holding(0);
+  // The emitter's own row bounds what it holds to about 22 hand-offs of 20 KB; 30 only stops a run that never refuses.
+  let held = 0;
+  let refused = null;
+  while (refused === null && held < 30) {
+    const result = await filled.command(workflowId, fx.emitterCompletion(held + 1, 20_000));
+    if (result.outcome === "committed") held += 1;
+    else refused = result;
+  }
+  assert.deepEqual(refused, { outcome: "rejected", code: "host.capacity.continuation", revision: null });
+  assert.ok(held > 10, `the emitter held ${String(held)} deferred hand-offs`);
+  assert.ok((await filled.hostView("R")).view?.openWaits.some((wait) => wait.id.elementId === "Catch"), "no hand-off was delivered");
+  const last = held + 1;
+  const knob = await fx.continuationKnob(async (candidate) =>
+    (await (await holding(held)).command(workflowId, fx.emitterCompletion(last, candidate))).outcome === "committed", 20_000);
+  const fitting = await holding(held);
+  assert.equal((await fitting.command(workflowId, fx.emitterCompletion(last, knob))).outcome, "committed", "exact fit");
+  const over = await holding(held);
+  const unchanged = await observed(over);
+  assert.deepEqual(await over.command(workflowId, fx.emitterCompletion(last, knob + 1)),
+    { outcome: "rejected", code: "host.capacity.continuation", revision: null });
+  assert.deepEqual(await observed(over), unchanged, "no commit, publication, effect or Timer");
+  assert.equal((await over.deliver("F", fx.fillerDelivery)).outcome, "committed");
+  assert.ok((await over.hostView("R")).view?.openWaits.some((wait) => wait.id.elementId === "Hold"), "the first hand-off reached the receiver");
+  assert.equal((await over.command(workflowId, fx.emitterCompletion(last, knob + 1))).outcome, "committed",
+    "the settled hand-offs left the emitter's row");
+});

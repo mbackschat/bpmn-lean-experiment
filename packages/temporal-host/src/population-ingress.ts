@@ -5,15 +5,22 @@
  * driver of `population.ts` from its main loop, one action at a time, each through one Activity. Its handlers change
  * only ingress state and never wait on a chain or on the main loop, except a command's handler, which waits for its own
  * answer; so the only wait edges run from a chain to an ingress handler and from the main loop to a chain's population
- * handler, and the wait graph is acyclic. A deployment's registration is serialized with every other: it takes the next
- * ordinal, starts the deployment's Workflow and only then becomes visible to commands.
+ * handler or wake handler, and the wait graph is acyclic. A deployment's registration is serialized with every other: it
+ * takes the next ordinal, starts the deployment's Workflow and only then becomes visible to commands.
+ *
+ * An emit the ingress cannot hold is deferred, not refused: its reference waits in this Run's memory, in arrival order,
+ * and the Run accepts it as soon as a settled item or a shrunk registration leaves room, then wakes its chain (`emitWake`
+ * through `wakePopulationEmit`). The waiting references are never carried, since nothing bounds how many chains defer:
+ * a Run that continues as new first hands them back (a `reoffer` wake), and while it does so its validator rejects every
+ * emit, so a chain's offer fails as transport does and its retry reaches the next Run. The capacity wait itself is never
+ * a retry: a deferred chain waits for its wake.
  *
  * When its history suggests Continue-As-New the ingress releases every waiting command handler with `pending` (the
  * caller reads the answer from `populationResult`), waits for the handlers to finish and carries its state, the item in
  * flight included: it may continue between two receivers of one fan-out. Its argument stays within the continuation
  * bound: a deployment, registration, command or Timer start that would carry it past is refused with
- * `host.capacity.continuation`, the ledger yields its oldest answers first, and an item in flight beyond the bound
- * defers the rollover until it settles.
+ * `host.capacity.continuation`, an emit is deferred, the ledger yields its oldest answers first, and an item in flight
+ * beyond the bound defers the rollover until it settles.
  *
  * The deployment Workflow holds one registered deployment's program, never steps, and answers Queries over it.
  */
@@ -32,11 +39,14 @@ import type {
   CommandAnswer,
   DeploymentAnswer,
   DeploymentArgs,
+  EmitReference,
   IngressState,
   PopulationActivities,
   PopulationIngressArgs,
+  WakeRequest,
 } from "./population-contract.js";
 import {
+  admitWaiting,
   advance,
   answer,
   commandRefusal,
@@ -50,6 +60,7 @@ import {
   register,
   registerDeployment,
   registeredDeploymentIds,
+  sameEmit,
   takeAnswer,
   type Action,
   type Queued,
@@ -89,6 +100,9 @@ const activities = proxyActivities<PopulationActivities>({
 function rejection(code: string): ApplicationFailure {
   return ApplicationFailure.create({ message: code, type: rejectionType, nonRetryable: true });
 }
+
+/** The failure type of an emit that reached a Run continuing as new: a transport failure the emitting chain retries. */
+const rollingOverType = "PopulationIngressRollingOver";
 
 async function perform(population: PopulationIngressArgs, action: Action): Promise<Answer> {
   switch (action.kind) {
@@ -133,6 +147,25 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
   let rolling = false;
   /** Serializes registrations: each takes its ordinal and starts its Workflow before the next is considered. */
   let registering: Promise<unknown> = Promise.resolve();
+  /** This Run's deferred hand-offs, in arrival order; never carried (see the module comment). */
+  let waiting: readonly EmitReference[] = [];
+  /** The wakes owed to chains, which the main loop sends before its next action. */
+  let wakes: readonly WakeRequest[] = [];
+  /** Accepts the waiting hand-offs that now fit, in order, and owes each chain its wake. */
+  const admitNow = (): void => {
+    if (waiting.length === 0) return;
+    const admitted = admitWaiting(frame, state, waiting);
+    state = admitted.state;
+    waiting = admitted.waiting;
+    wakes = [...wakes, ...admitted.taken.map((reference): WakeRequest =>
+      ({ workflowId: reference.workflowId, wake: { kind: "accepted", commandId: reference.commandId } }))];
+  };
+  /** Sends every wake owed; each wake handler only marks the chain's emit, so this waits on no chain's main loop. */
+  const sendWakes = async (): Promise<void> => {
+    const sending = wakes;
+    wakes = [];
+    await Promise.all(sending.map((request) => activities.wakePopulationEmit(request)));
+  };
 
   setHandler(populationResultQuery, (commandId) => populationResult(state, commandId));
   setHandler(populationDeploymentQuery, (deploymentRequestId) => deploymentOf(state, deploymentRequestId));
@@ -176,15 +209,27 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
   setHandler(populationRegisterUpdate, (registration) => {
     const [next, refused] = register(frame, state, registration);
     state = next;
+    // A registration that shrank or left frees room.
+    admitNow();
     return refused;
   });
 
   setHandler(populationEmitUpdate, (reference) => {
-    state = enqueueEmit(state, reference);
+    const offered = enqueueEmit(frame, state, reference, waiting);
+    if ("state" in offered) {
+      state = offered.state;
+      return { kind: "accepted" } as const;
+    }
+    if (!waiting.some((held) => sameEmit(held, reference))) waiting = [...waiting, reference];
+    return { kind: "deferred", run: workflowInfo().runId } as const;
+  }, {
+    validator: (_reference: EmitReference) => {
+      if (rolling) throw ApplicationFailure.create({ message: "the population ingress is continuing as new", type: rollingOverType });
+    },
   });
 
   setHandler(populationCommandUpdate, async (request) => {
-    const enqueued = enqueueCommand(frame, state, request.commandId, request.kind, request.command, request.digest);
+    const enqueued = enqueueCommand(frame, state, request.commandId, request.kind, request.command, request.digest, waiting);
     if ("refused" in enqueued) throw rejection(enqueued.refused);
     const { ticket } = enqueued;
     state = enqueued.state;
@@ -220,7 +265,10 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
     unfit = state.current.item;
     return false;
   };
-  /** A driver step, whose settled item the ingress could not carry even with an empty ledger, fails the ingress closed. */
+  /**
+   * A driver step, whose settled item the ingress could not carry even with an empty ledger, fails the ingress closed:
+   * admission makes that unreachable from admitted inputs, so it marks a broken invariant, never a capacity outcome.
+   */
   const closed = <T>(step: () => T): T => {
     try {
       return step();
@@ -234,6 +282,11 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
     // could shrink the state, which admission should have made impossible, so the ingress fails closed.
     if (rolloverDue() && carriable()) {
       rolling = true;
+      // Hands the waiting emits back before the Run ends; no emit is deferred again while it rolls (the validator).
+      wakes = [...wakes, ...waiting.map((reference): WakeRequest =>
+        ({ workflowId: reference.workflowId, wake: { kind: "reoffer", run: workflowInfo().runId } }))];
+      waiting = [];
+      await sendWakes();
       await registering;
       await condition(allHandlersFinished);
       const fitted = fittedIngress(port, frame, releaseHandlers(state));
@@ -241,14 +294,17 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
       // The released handlers' commands answer through the ledger, which `populationResult` reads.
       return continueAsNew<(next: PopulationIngressArgs) => Promise<void>>({ ...args, carried: carriedState(port, fitted) });
     }
+    await sendWakes();
     const [next, action] = closed(() => advance(port, frame, state, Date.now()));
     state = next;
+    admitNow();
     if (action === null) {
-      await condition(() => state.queue.length > 0 || rolloverDue());
+      await condition(() => state.queue.length > 0 || wakes.length > 0 || rolloverDue());
       continue;
     }
     const answered = await perform(args, action);
     state = closed(() => answer(port, frame, state, answered, populationCapacity.receivers));
+    admitNow();
     acted = true;
   }
 }

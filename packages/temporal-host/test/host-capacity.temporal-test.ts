@@ -2,10 +2,11 @@
  * Hosted witnesses of the capacity table (PC-QUALIFY-10), run in hosted CI only: a real Continue-As-New carrying exactly
  * the continuation bound and the candidate one byte past it refused before Event History; the rollover at the server's
  * history-size suggestion; the 128th Run and the refused 129th; one byte pair through an Update validator; one byte
- * pair of effect results returned by a real Activity, whose refusal halts the chain; and the
+ * pair of effect results returned by a real Activity, whose refusal halts the chain; the
  * realistic sixteen-body parallel Multi-Instance journey on durable scheduling with its sixteen effects as concurrent
- * Activities, forced across Runs mid-Multi-Instance. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since
- * it judges candidates with the Workflow's own measure.
+ * Activities, forced across Runs mid-Multi-Instance; and an emitted hand-off the full population ingress defers, delivered
+ * once room appears. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since it judges candidates
+ * with the Workflow's own measure.
  */
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -16,7 +17,7 @@ import { defaultPayloadConverter } from "@temporalio/client";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import type { Worker } from "@temporalio/worker";
 
-import { ProcessClient, ResultKind, Scheduling, type HostConfig, type JsonValue } from "@bpmn-lean/temporal-host/client";
+import { PopulationClient, ProcessClient, ResultKind, Scheduling, type HostConfig, type JsonValue } from "@bpmn-lean/temporal-host/client";
 import { canonicalBytes, chainCapacity } from "@bpmn-lean/temporal-host/host";
 import { createMemoryProcessHost } from "@bpmn-lean/temporal-host/memory-host";
 import {
@@ -226,4 +227,35 @@ test("the realistic sixteen-body parallel journey runs on durable scheduling acr
   const chain = await chainHistories(environment.client, id);
   await replayClosedRuns(id, chain);
   assert.ok(chain.length > 2, "the journey crossed Runs mid-Multi-Instance");
+});
+
+test("hand-off: an emit the full population ingress defers waits outside its queue and is delivered once a closed wait frees room", async () => {
+  const population = `capacity-handoff-${randomUUID()}`;
+  const config = external(null);
+  const chains = { emitter: workflowId("handoff-emitter"), receiver: workflowId("handoff-receiver"), filler: workflowId("handoff-filler") };
+  // The memory host finds the filling digest with the ingress's own measure under the same population and Workflow IDs;
+  // 15,000 bytes below that line no 20 KB hand-off fits, and closing the filler's Message wait frees room for one.
+  const line = await fx.handoffLine(async (digest) => {
+    const memory = createMemoryProcessHost({ taskQueue: "measure", now: Date.now });
+    return fx.handoffPopulation(memory, memory.population(population, config), config, chains, digest);
+  });
+  const ingress = new PopulationClient(environment.client, taskQueue, population, config);
+  assert.ok("deploymentId" in await fx.handoffPopulation(client, ingress, config, chains, line - 15_000));
+  let answered = false;
+  const completing = client.command(chains.emitter, fx.emitterCompletion(1, 20_000)).then((result) => {
+    answered = true;
+    return result;
+  });
+  // The completion commits and publishes at once; its Update answers only once the ingress accepted the hand-off.
+  await until("the completion's commit", () => client.hostView(chains.emitter),
+    (snapshot) => snapshot.view?.openWaits.some((wait) => wait.id.activation === 2) ?? false);
+  // An observation window for the negative claims: an accepted hand-off answers the Update within milliseconds.
+  await new Promise((resolve) => setTimeout(resolve, 2_000));
+  assert.equal(answered, false, "the Update waits while its hand-off is deferred");
+  assert.equal(await ingress.backlog(), 0, "the deferred hand-off is not queued");
+  assert.ok((await client.hostView(chains.receiver)).view?.openWaits.some((wait) => wait.id.elementId === "Catch"));
+  assert.equal((await client.deliver(chains.filler, fx.fillerDelivery)).outcome, "committed");
+  assert.equal((await completing).outcome, "committed");
+  await until("the receiver's Signal", () => client.hostView(chains.receiver),
+    (snapshot) => snapshot.view?.openWaits.some((wait) => wait.id.elementId === "Hold") ?? false);
 });

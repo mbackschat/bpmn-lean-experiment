@@ -12,6 +12,9 @@ import { readFile } from "node:fs/promises";
 import { kernelProfileOptions, readKernelProgram } from "@bpmn-lean/bpmn-source";
 
 import type { JsonValue } from "../../src/port.ts";
+import type { DeploymentAnswer } from "../../src/population-contract.ts";
+import type { PopulationHost, ProcessHost } from "../../src/process-port.ts";
+import type { HostConfig } from "../../src/protocol.ts";
 
 const { canonicalBytes, chainCapacity } = await import(new URL("../../dist/capacity.js", import.meta.url).href) as
   typeof import("../../src/capacity.ts");
@@ -241,9 +244,9 @@ export async function continuationCase(): Promise<Readonly<{
  * The largest knob whose last input `commits`: one character more is one carried byte more, so its successor carries
  * exactly the continuation bound.
  */
-export async function continuationKnob(commits: (knob: number) => Promise<boolean>): Promise<number> {
+export async function continuationKnob(commits: (knob: number) => Promise<boolean>, above = 15_500): Promise<number> {
   let low = 0;
-  let high = 15_500;
+  let high = above;
   assert.ok(await commits(low) && !await commits(high));
   while (high - low > 1) {
     const middle = Math.floor((low + high) / 2);
@@ -252,3 +255,99 @@ export async function continuationKnob(commits: (knob: number) => Promise<boolea
   }
   return low;
 }
+
+const handoffDocument = (body: string) => new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions" targetNamespace="urn:capacity:handoff">
+  <signal id="Signal_Go" name="go" />${body}
+</definitions>`);
+
+/**
+ * The hand-off witness's programs (#138): *Emitter* throws the Signal *go* each time its User Task *Task* completes and
+ * loops back to it; *Receiver* waits for *go*; *Filler* is the intermediate Message catch scenario, whose open Message
+ * wait holds room at the ingress until a direct delivery closes it.
+ */
+export function handoffPrograms(): Promise<Readonly<{ emitter: JsonValue; receiver: JsonValue; filler: JsonValue }>> {
+  handoffRead ??= readHandoffPrograms();
+  return handoffRead;
+}
+
+let handoffRead: ReturnType<typeof readHandoffPrograms> | null = null;
+
+async function readHandoffPrograms(): Promise<Readonly<{ emitter: JsonValue; receiver: JsonValue; filler: JsonValue }>> {
+  return {
+    emitter: await cibProgram(handoffDocument(`<process id="Emitter" isExecutable="true">
+    <startEvent id="Start" /><exclusiveGateway id="Merge" /><userTask id="Task" />
+    <intermediateThrowEvent id="Throw"><signalEventDefinition signalRef="Signal_Go" /></intermediateThrowEvent>
+    <sequenceFlow id="f1" sourceRef="Start" targetRef="Merge" /><sequenceFlow id="f2" sourceRef="Merge" targetRef="Task" />
+    <sequenceFlow id="f3" sourceRef="Task" targetRef="Throw" /><sequenceFlow id="f4" sourceRef="Throw" targetRef="Merge" />
+  </process>`)),
+    receiver: await cibProgram(handoffDocument(`<process id="Receiver" isExecutable="true">
+    <startEvent id="Start" /><intermediateCatchEvent id="Catch"><signalEventDefinition signalRef="Signal_Go" /></intermediateCatchEvent>
+    <userTask id="Hold" />
+    <sequenceFlow id="f1" sourceRef="Start" targetRef="Catch" /><sequenceFlow id="f2" sourceRef="Catch" targetRef="Hold" />
+  </process>`)),
+    filler: await scenarioProgram("scenarios/intermediate-catch-message/process.bpmn"),
+  };
+}
+
+/** The Workflow IDs of the hand-off witness's chains. */
+export interface HandoffChains {
+  readonly emitter: string;
+  readonly receiver: string;
+  readonly filler: string;
+}
+
+/** The filler's instance identity: its registration holds about 10 KB at the ingress. */
+export const fillerInstanceId = `Filler_${"f".repeat(5_000)}`;
+
+/** The Message delivery that closes the filler's wait, which removes its registration. */
+export const fillerDelivery: JsonValue = {
+  kind: "deliver", commandId: "free-room",
+  occurrence: { processInstanceId: fillerInstanceId, elementId: "MessageCatch_ApprovalRequest", activation: 1 },
+  trigger: { kind: "message", channel: { kind: "operationMessage", interfaceId: "Interface_ProcessMessages",
+    interfaceOperationId: "Operation_ReceiveApprovalRequest", messageId: "Message_ApprovalRequest" } },
+};
+
+/**
+ * Deploys the hand-off witness's programs to `population`, starts the receiver and the filler there, registers one more
+ * deployment whose digest of `digest` characters fills the ingress, and starts the emitter (`instanceId`), whose User
+ * Task opens no population wait. Answers that filling deployment's answer.
+ */
+export async function handoffPopulation(host: ProcessHost, population: PopulationHost, config: HostConfig, chains: HandoffChains,
+  digest: number): Promise<DeploymentAnswer> {
+  const programs = await handoffPrograms();
+  const deployments: number[] = [];
+  for (const [request, program] of [["emitter", programs.emitter], ["receiver", programs.receiver], ["filler", programs.filler]] as const) {
+    const answer = await population.registerDeployment({ deploymentRequestId: request, digest: request, program });
+    assert.ok("deploymentId" in answer, `${request}: ${JSON.stringify(answer)}`);
+    deployments.push(answer.deploymentId);
+  }
+  const start = async (workflowId: string, program: JsonValue, deployment: number, chainInstance: string) => {
+    const started = await host.start({ workflowId, program, config, population: { population: population.population, deploymentId: deployment },
+      start: { kind: "start", commandId: "start", instanceId: chainInstance, variables: [] } });
+    assert.equal(started.outcome, "committed", `${workflowId}: ${JSON.stringify(started)}`);
+    assert.equal((await host.hostView(workflowId)).halt, null, `${workflowId} registered`);
+  };
+  await start(chains.receiver, programs.receiver, deployments[1]!, "Receiver_1");
+  await start(chains.filler, programs.filler, deployments[2]!, fillerInstanceId);
+  const filled = await population.registerDeployment({ deploymentRequestId: "fill", digest: "d".repeat(digest), program: programs.filler });
+  await start(chains.emitter, programs.emitter, deployments[0]!, instanceId);
+  return filled;
+}
+
+/** The longest filling digest the ingress still admits after `setup`: one character more is one carried byte more. */
+export async function handoffLine(setup: (digest: number) => Promise<DeploymentAnswer>): Promise<number> {
+  let low = 0;
+  let high = 300_000;
+  assert.ok("deploymentId" in await setup(low) && !("deploymentId" in await setup(high)));
+  while (high - low > 1) {
+    const middle = Math.floor((low + high) / 2);
+    if ("deploymentId" in await setup(middle)) low = middle;
+    else high = middle;
+  }
+  return low;
+}
+
+/** The emitter's `activation`th completion of *Task*, whose command identifier holds `characters` padding characters. */
+export const emitterCompletion = (activation: number, characters: number): JsonValue =>
+  completeTask(`complete-${String(activation)}-${"x".repeat(characters)}`, "Task", activation);

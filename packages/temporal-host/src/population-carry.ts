@@ -69,6 +69,7 @@ export function answerReserve(frame: IngressFrame): number {
 /**
  * The ingress could not carry its state across Continue-As-New even with an empty ledger once an item settled: nothing
  * left could shrink it, so the ingress fails closed rather than run on over the bound (`ingressContinuationCode`).
+ * Admission makes it unreachable from admitted inputs (`settledFit` in `population.ts`); it guards that invariant.
  */
 export class IngressCapacityExceeded extends Error {
   constructor() {
@@ -95,12 +96,17 @@ export function ingressContinuationBytes<P, S, M>(port: PopulationPort<P, S, M>,
 }
 
 /**
- * The bytes of that argument for `state` at rest, with no item in flight: what every admission and every settled item
- * must keep within the bound. An item in flight is measured only when the ingress would continue as new during it, and
- * holds that rollover until it settles when it does not fit.
+ * The bytes of that argument for `state` at rest: what every admission and every settled item must keep within the
+ * bound. The item in flight counts as the queue entry it was admitted as, never its fan-out machine: its settled entry
+ * replaces that queue entry and grows the ingress by at most the answer reserve, which leaves out the identifiers the
+ * entry carried (`answerReserve`), so an admission made while it is in flight must still see them. Its machine is
+ * measured only when the ingress would continue as new during it, and holds that rollover until it settles when it
+ * does not fit.
  */
 export function restingIngressBytes<M>(frame: IngressFrame, state: IngressState<M>): number {
-  return argumentBytes(frame, canonicalBytes({ ...releaseHandlers(state), current: null }));
+  const released = releaseHandlers(state);
+  const queue = released.current === null ? released.queue : [released.current.item, ...released.queue];
+  return argumentBytes(frame, canonicalBytes({ ...released, queue, current: null }));
 }
 
 /** `state` carried whole, its item in flight included, with the ledger yielding as in `fittedAtRest`; `null` if impossible. */

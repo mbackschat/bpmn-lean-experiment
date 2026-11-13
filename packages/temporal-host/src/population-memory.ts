@@ -8,6 +8,7 @@
  * ([population ingress](../../../docs/kernel/ARCHITECTURE-SPEC.md#population-ingress)).
  */
 import {
+  admitWaiting,
   advance,
   answer,
   emptyIngress,
@@ -15,13 +16,16 @@ import {
   enqueueEmit,
   register,
   registerDeployment,
+  sameEmit,
   takeAnswer,
   type Action,
   type Answer,
   type DeploymentAnswer,
+  type EmitReference,
   type IngressState,
 } from "./population.js";
 import type { IngressFrame } from "./population-carry.js";
+import type { UnsettledEmit } from "./population-contract.js";
 import type { HostView, JsonValue, PopulationPort, ReachOutcome, Wire } from "./port.js";
 
 /** A process chain as the population reads it: the deployment it runs, its program and its committed state. */
@@ -67,6 +71,8 @@ export class MemoryPopulation<P, S, M> {
   private readonly starts = new Map<string, ReachOutcome>();
   /** The intents a committed chain input left, until the ingress settles their emit. */
   private readonly unsettled = new Map<string, Readonly<{ instanceId: string; intents: readonly Wire[] }>>();
+  /** The emits the ingress deferred, in arrival order, as the Workflow's Run holds them until room frees. */
+  private waiting: readonly EmitReference[] = [];
   /** The chains whose registration the ingress refused, with its code: as on Temporal, they halt after that commit. */
   readonly halts = new Map<string, string>();
 
@@ -94,20 +100,36 @@ export class MemoryPopulation<P, S, M> {
 
   /**
    * A chain's own committed input `commandId` with its new `state`, which its holder stored: its registration follows
-   * the state, and the Signals the input threw are handed to the ingress, which reaches them when the driver next runs.
+   * the state, and the Signals the input threw are handed to the ingress, which reaches them when the driver next runs,
+   * or defers them until a later run frees room (`enqueueEmit`). The chain holds them until their emit settles (`held`).
    */
   committed(workflowId: string, deploymentId: number, program: P, state: S, commandId: string): void {
     this.settle(workflowId, deploymentId, program, state);
     const intents = this.port.intentsOf(program, state);
     if (intents.length === 0) return;
     this.unsettled.set(JSON.stringify([workflowId, commandId]), { instanceId: this.port.instanceIdOf(state), intents });
-    this.ingress = enqueueEmit(this.ingress, { workflowId, commandId, count: intents.length, digest: "" });
+    const reference = { workflowId, commandId, count: intents.length, digest: "" };
+    const offered = enqueueEmit(this.frame, this.ingress, reference, this.waiting);
+    if ("state" in offered) this.ingress = offered.state;
+    else if (!this.waiting.some((held) => sameEmit(held, reference))) this.waiting = [...this.waiting, reference];
+  }
+
+  /**
+   * The emits chain `workflowId` holds until they settle, in commit order, each accepted unless the ingress deferred it:
+   * what the Workflow carries beside its state (`PopulationCarry.emits`).
+   */
+  held(workflowId: string): readonly UnsettledEmit[] {
+    return [...this.unsettled].flatMap(([key, held]) => {
+      const [chain, commandId] = JSON.parse(key) as [string, string];
+      if (chain !== workflowId) return [];
+      return [{ commandId, held, accepted: !this.waiting.some((waiting) => sameEmit(waiting, { workflowId, commandId })) }];
+    });
   }
 
   /** Submit a population command; its answer once the driver ran it at `atMs`, or the code the ingress refused it with. */
   command(commandId: string, kind: string, json: JsonValue, digest: string, atMs: number):
     { readonly answer: JsonValue } | { readonly refused: string } {
-    const enqueued = enqueueCommand(this.frame, this.ingress, commandId, kind, json, digest);
+    const enqueued = enqueueCommand(this.frame, this.ingress, commandId, kind, json, digest, this.waiting);
     if ("refused" in enqueued) return { refused: enqueued.refused };
     this.ingress = enqueued.state;
     this.run(atMs);
@@ -117,12 +139,21 @@ export class MemoryPopulation<P, S, M> {
     return { answer: taken[1] };
   }
 
-  /** Run the driver at `atMs` until nothing is queued or in flight. */
+  /**
+   * Run the driver at `atMs` until nothing is queued or in flight, accepting each deferred emit, in order, once the
+   * items settled before it leave room, as the Workflow does after each driver step.
+   */
   run(atMs: number): void {
     for (;;) {
       const [state, action] = advance(this.port, this.frame, this.ingress, atMs);
       this.ingress = state;
-      if (action === null) break;
+      if (action === null) {
+        const admitted = admitWaiting(this.frame, this.ingress, this.waiting);
+        if (admitted.taken.length === 0) break;
+        this.ingress = admitted.state;
+        this.waiting = admitted.waiting;
+        continue;
+      }
       // `perform` may re-register a chain it steps, which writes `this.ingress`, so the answer reads the ingress after it.
       const answered = this.perform(action, atMs);
       this.ingress = answer(this.port, this.frame, this.ingress, answered, this.receivers);

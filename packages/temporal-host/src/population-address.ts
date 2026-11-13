@@ -51,6 +51,11 @@ export function populationCommandUpdateId(request: PopulationCommandRequest): st
   return `population:${request.commandId}:${request.digest}`;
 }
 
-export function emitUpdateId(reference: EmitReference): string {
-  return `emit:${sha256(canonicalJson([reference.workflowId, reference.commandId]))}`;
+/**
+ * An emit offer's Update ID. Temporal answers a repeated Update ID with its first result within a Run, so an offer made
+ * after Run `handedBack` handed the emit back carries that Run in its ID: were that Run still continuing as new, it would
+ * otherwise answer its own stale deferral instead of rejecting the offer to the next Run.
+ */
+export function emitUpdateId(reference: EmitReference, handedBack: string | null): string {
+  return `emit:${sha256(canonicalJson([reference.workflowId, reference.commandId, handedBack]))}`;
 }

@@ -8,7 +8,9 @@
  * judges every candidate against the same capacity bounds (`chain-candidate.ts`) and halts a chain as the Workflow does
  * when a host arrival or a registration is refused; it keeps no delivery ledger, so it measures no ledger entry. A
  * population runs its driver at the host clock as soon as a command or a chain's committed input gives it work, so a
- * thrown Signal reaches its receivers before the input's caller resumes. It drives no timers or Activities; a test that
+ * thrown Signal reaches its receivers before the input's caller resumes, unless the ingress deferred its hand-off: the
+ * chain then carries it, as the Workflow does, and it is delivered once a later input frees room. The caller resumes
+ * without waiting for that acceptance, where the Workflow's Update waits. It drives no timers or Activities; a test that
  * needs them uses the hosted witnesses.
  */
 import { canonicalJson } from "./canonical-json.js";
@@ -244,15 +246,20 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
     return { port: this.port, program: chain.program, programBytes: chain.programBytes, config: chain.config, population: chain.population, run: 1 };
   }
 
-  /** `state` judged against the chain's bounds; a Signal it threw would wait in the chain's carry until handed off. */
-  #judge(chain: Chain<P, S>, commandId: string, state: S): Judged<S> {
+  /**
+   * `state` judged against the chain's bounds, carrying beside it the emits its population still holds for it, which the
+   * ingress deferred, and a Signal it threw, which would wait in the chain's carry until handed off.
+   */
+  #judge(workflowId: string, chain: Chain<P, S>, commandId: string, state: S): Judged<S> {
+    const scope = chain.population;
+    const held = scope === null ? [] : this.#populations.get(scope.population)?.driver.held(workflowId) ?? [];
     return judgeCommitted(this.#frame(chain), chain.log, commandId, state, (view) => {
-      const intents = chain.population === null ? [] : this.populationPort.intentsOf(chain.program, state);
+      const intents = scope === null ? [] : this.populationPort.intentsOf(chain.program, state);
       return {
-        registeredAddresses: chain.population === null || view.status !== running ? [] : (view.addresses ?? []) as unknown as JsonValue,
+        registeredAddresses: scope === null || view.status !== running ? [] : (view.addresses ?? []) as unknown as JsonValue,
         deliveries: [],
-        emits: intents.length === 0 ? []
-          : [{ commandId, held: { instanceId: this.populationPort.instanceIdOf(state), intents }, accepted: false }],
+        emits: intents.length === 0 ? held
+          : [...held, { commandId, held: { instanceId: this.populationPort.instanceIdOf(state), intents }, accepted: false }],
         startOutcome: null,
       };
     });
@@ -287,7 +294,7 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
           config, population: { population: name, deploymentId: entry.deploymentId }, memo: null,
           instance: null, log: openLog(initialCursor), halt: null,
         };
-        const judged = this.#judge(chain, commandId, entry.state);
+        const judged = this.#judge(workflowId, chain, commandId, entry.state);
         if (!judged.committed) return judged.code;
         this.#chains.set(workflowId, chain);
         this.#commit(chain, judged);
@@ -334,7 +341,7 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
     if (!applied.committed) {
       return { outcome: applied.outcome, code: applied.code, revision: applied.rejected ? null : chain.log.cursor.revision };
     }
-    const judged = this.#judge(chain, commandId, applied.state);
+    const judged = this.#judge(workflowId, chain, commandId, applied.state);
     if (!judged.committed) {
       if (arrival) return halted(judged.code);
       return { outcome: "rejected", code: judged.code, revision: null };

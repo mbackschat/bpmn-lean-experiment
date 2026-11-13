@@ -294,11 +294,14 @@ export type Enqueued<M> = { readonly state: IngressState<M>; readonly ticket: nu
 
 /**
  * Accept a command for the queue, or refuse it before acceptance: a command beyond the stimulus bound, a full queue,
- * or one the ingress could no longer carry across Continue-As-New.
+ * or one the ingress could no longer carry across Continue-As-New. While emitted hand-offs wait (`waiting`, see
+ * `enqueueEmit`) every command is refused that way: the room that frees is theirs first, in arrival order.
  */
-export function enqueueCommand<M>(frame: IngressFrame, state: IngressState<M>, commandId: string, commandKind: string, command: JsonValue, digest: string): Enqueued<M> {
+export function enqueueCommand<M>(frame: IngressFrame, state: IngressState<M>, commandId: string, commandKind: string, command: JsonValue,
+  digest: string, waiting: readonly EmitReference[]): Enqueued<M> {
   const refusal = commandRefusal(state, command);
   if (refusal !== null) return { refused: refusal };
+  if (waiting.length > 0) return { refused: ingressContinuationCode };
   const ticket = state.tickets + 1;
   const fitted = admittedAtRest(frame,
     { ...state, tickets: ticket, queue: [...state.queue, { kind: "command", ticket, commandId, commandKind, command, digest }] });
@@ -312,17 +315,53 @@ export function commandRefusal<M>(state: IngressState<M>, command: JsonValue): s
   return null;
 }
 
-/** Accept an emit; one already queued, in flight or settled is accepted again without a second hand-off. */
-export function enqueueEmit<M>(state: IngressState<M>, reference: EmitReference): IngressState<M> {
-  const same = (other: EmitReference): boolean => other.workflowId === reference.workflowId && other.commandId === reference.commandId;
+/** An emit the ingress accepted for its queue, or deferred: its chain keeps it and offers it again when woken. */
+export type EmitOffer<M> = { readonly state: IngressState<M> } | { readonly deferred: true };
+
+/**
+ * Accept an emit under the same measure as a command (`admittedAtRest`), or defer it: an emit is a committed input's
+ * hand-off, so it is never refused, but one the ingress could not carry with room for the answer in flight waits.
+ * `waiting` are the hand-offs deferred before it, in arrival order; while any waits, every later emit waits behind it
+ * and every later command is refused (`enqueueCommand`), so acceptance keeps arrival order and none takes the room the
+ * first one waits for. One already queued, in flight or settled is accepted again without a second hand-off.
+ */
+export function enqueueEmit<M>(frame: IngressFrame, state: IngressState<M>, reference: EmitReference,
+  waiting: readonly EmitReference[]): EmitOffer<M> {
   const current = state.current?.item;
-  if (state.queue.some((item) => item.kind === "emit" && same(item.reference)) ||
-      (current !== undefined && current.kind === "emit" && same(current.reference)) ||
-      state.ledger.some((entry) => entry.kind === "emit" && entry.workflowId === reference.workflowId && entry.commandId === reference.commandId)) {
-    return state;
+  if (state.queue.some((item) => item.kind === "emit" && sameEmit(item.reference, reference)) ||
+      (current !== undefined && current.kind === "emit" && sameEmit(current.reference, reference)) ||
+      state.ledger.some((entry) => entry.kind === "emit" && sameEmit(entry, reference))) {
+    return { state };
   }
-  const ticket = state.tickets + 1;
-  return { ...state, tickets: ticket, queue: [...state.queue, { kind: "emit", ticket: null, reference }] };
+  if (waiting.length > 0) return { deferred: true };
+  const fitted = queuedEmit(frame, state, reference);
+  return fitted === null ? { deferred: true } : { state: fitted };
+}
+
+/** Whether two emits are the hand-off of one committed input. */
+export function sameEmit(one: Pick<EmitReference, "workflowId" | "commandId">, other: Pick<EmitReference, "workflowId" | "commandId">): boolean {
+  return one.workflowId === other.workflowId && one.commandId === other.commandId;
+}
+
+function queuedEmit<M>(frame: IngressFrame, state: IngressState<M>, reference: EmitReference): IngressState<M> | null {
+  return admittedAtRest(frame, { ...state, tickets: state.tickets + 1, queue: [...state.queue, { kind: "emit", ticket: null, reference }] });
+}
+
+/**
+ * The waiting hand-offs the ingress can hold now, accepted in arrival order until the first that does not fit, which
+ * holds back the rest: the ingress with them queued, those `taken`, and those still `waiting`.
+ */
+export function admitWaiting<M>(frame: IngressFrame, state: IngressState<M>, waiting: readonly EmitReference[]):
+  { readonly state: IngressState<M>; readonly taken: readonly EmitReference[]; readonly waiting: readonly EmitReference[] } {
+  let admitted = state;
+  let count = 0;
+  for (const reference of waiting) {
+    const fitted = queuedEmit(frame, admitted, reference);
+    if (fitted === null) break;
+    admitted = fitted;
+    count += 1;
+  }
+  return { state: admitted, taken: waiting.slice(0, count), waiting: waiting.slice(count) };
 }
 
 /** The answer a registered or refused deployment request received, `null` for a request never registered. */
@@ -550,37 +589,15 @@ function fanOutAction<P, S, M>(port: PopulationPort<P, S, M>, state: IngressStat
 
 /**
  * Run every step that needs no answer, taking queued items at `atMs`; the action the item in flight needs next, if any.
- * Throws `IngressCapacityExceeded` when an item settled that the ingress cannot carry (`settledFit`).
+ * Each item that settles is fitted on its own (`settledFit`).
  */
 export function advance<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, initial: IngressState<M>,
-  atMs: number): readonly [IngressState<M>, Action | null] {
-  const [state, action] = advanced(port, frame, initial, atMs);
-  return [settledFit(frame, initial, state), action];
-}
-
-/**
- * `after` once the items settled since `before` grew the ledger, which then yields its oldest entries to the
- * continuation bound; measured once an item, so a driver step measures nothing else. Admission keeps room for a settling
- * answer (`admittedAtRest`) and the fan-out stops within it, so this fails only past what admission could see: emitted
- * hand-offs, which the ingress accepts unmeasured (an emit of a committed input is never refused,
- * [population ingress](../../../docs/kernel/ARCHITECTURE-SPEC.md#population-ingress)). It stays the last line: an ingress
- * still beyond the bound with only the new answers left fails closed rather than run on.
- */
-function settledFit<M>(frame: IngressFrame, before: IngressState<M>, after: IngressState<M>): IngressState<M> {
-  if (after.ledger === before.ledger) return after;
-  const earlier = new Set(before.ledger);
-  const fitted = fittedAtRest(frame, after, after.ledger.filter((entry) => !earlier.has(entry)).length);
-  if (fitted === null) throw new IngressCapacityExceeded();
-  return fitted;
-}
-
-function advanced<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, initial: IngressState<M>,
   atMs: number): readonly [IngressState<M>, Action | null] {
   let state = initial;
   for (;;) {
     if (state.current === null) {
       if (state.queue.length === 0) return [state, null];
-      state = take(port, frame, state, atMs);
+      state = settledFit(frame, state, take(port, frame, state, atMs));
       continue;
     }
     const current = state.current;
@@ -620,11 +637,29 @@ function advanced<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, i
       case "fanOut": {
         const [next, action] = fanOutAction(port, state, answerReserve(frame));
         if (action !== null) return [next, action];
-        state = next;
+        state = settledFit(frame, state, next);
         continue;
       }
     }
   }
+}
+
+/**
+ * `after` once the one item settled since `before` grew the ledger, which then yields its oldest entries to the
+ * continuation bound, the new entry kept; measured once an item, so a driver step measures nothing else. It cannot fail
+ * for a state built from admitted inputs: every admission, emitted hand-offs included (`enqueueEmit`), keeps the resting
+ * ingress, its item in flight counted as queued, within the bound less the answer reserve, and the fan-out stops an
+ * answer within that reserve, so the settled entry fits once the older ledger entries yield. Fitting each item on its own
+ * keeps that true when one driver step settles several, as a run of repeated commands does. It stays the guard of that
+ * invariant: an ingress still beyond the bound with only the new answer left fails closed (`IngressCapacityExceeded`)
+ * rather than run on.
+ */
+function settledFit<M>(frame: IngressFrame, before: IngressState<M>, after: IngressState<M>): IngressState<M> {
+  if (after.ledger === before.ledger) return after;
+  const earlier = new Set(before.ledger);
+  const fitted = fittedAtRest(frame, after, after.ledger.filter((entry) => !earlier.has(entry)).length);
+  if (fitted === null) throw new IngressCapacityExceeded();
+  return fitted;
 }
 
 function scopeOf<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>, view: Extract<CommandView, { kind: "publish" }>): readonly number[] | null {
@@ -647,7 +682,7 @@ function signalSnapshot<P, S, M>(port: PopulationPort<P, S, M>, current: InFligh
 
 /**
  * Record `answer` to the action the item in flight needed; `receivers` is the most receivers one command may reach, the
- * host's capacity (`populationCapacity.receivers`) on Temporal. Throws `IngressCapacityExceeded` as `advance` does.
+ * host's capacity (`populationCapacity.receivers`) on Temporal. Fits the item it settles as `advance` does.
  */
 export function answer<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, state: IngressState<M>, given: Answer,
   receivers: number): IngressState<M> {

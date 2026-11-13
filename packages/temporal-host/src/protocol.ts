@@ -19,6 +19,8 @@ import type {
   DeploymentAnswer,
   DeploymentRequest,
   EmitReference,
+  EmitVerdict,
+  EmitWake,
   PopulationActivities,
   PopulationCommandOutcome,
   PopulationCommandRequest,
@@ -65,15 +67,15 @@ export const stateQuery = defineQuery<TextPage, [from: number]>("state");
 export const publicationQuery = defineQuery<PublicationPage, [afterRevision: number, limit: number]>("publication");
 
 /**
- * Resolves once the instance's open waits are registered and the Signals it threw are handed to its population; returns
- * the publication head.
+ * Resolves once the instance's open waits are registered and the Signals it threw are accepted by its population's
+ * ingress, which may first defer them; returns the publication head.
  */
 export const settleUpdate = defineUpdate<number>("settle");
 export const registerDeploymentUpdate = defineUpdate<DeploymentAnswer, [DeploymentRequest]>("registerDeployment");
 /** A chain's registration; answers the ingress's refusal code, `null` when registered. */
 export const populationRegisterUpdate = defineUpdate<string | null, [ChainRegistration]>("register");
 export const populationCommandUpdate = defineUpdate<PopulationCommandOutcome, [PopulationCommandRequest]>("command");
-export const populationEmitUpdate = defineUpdate<void, [EmitReference]>("emit");
+export const populationEmitUpdate = defineUpdate<EmitVerdict, [EmitReference]>("emit");
 /** A command's recorded answer, `{kind: "pending"}` while queued or in flight, `{kind: "unknown"}` otherwise. */
 export const populationResultQuery = defineQuery<JsonValue, [commandId: string]>("populationResult");
 /** The answer a deployment request received, `null` for a request never registered. */
@@ -95,6 +97,8 @@ export const populationMessageQuery = defineQuery<MessageScan, [publication: Wir
 export const pendingIntentsQuery = defineQuery<TextPage, [commandId: string, from: number]>("pendingIntents");
 export const populationDeliverUpdate = defineUpdate<ReachOutcome, [PopulationDelivery]>("populationDeliver");
 export const emitSettledUpdate = defineUpdate<void, [commandId: string]>("emitSettled");
+/** The ingress's wake of a chain whose emit it deferred. */
+export const emitWakeUpdate = defineUpdate<void, [EmitWake]>("emitWake");
 /**
  * The outcome of the chain's population start; sent with the start (Update-with-Start). A chain no population start
  * made answers `identityInUse` at once.

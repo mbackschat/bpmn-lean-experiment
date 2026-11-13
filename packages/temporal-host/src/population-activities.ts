@@ -39,6 +39,7 @@ import {
   deploymentProgramQuery,
   deploymentSignalStartsQuery,
   emitSettledUpdate,
+  emitWakeUpdate,
   pendingIntentsQuery,
   populationDeliverUpdate,
   populationEmitUpdate,
@@ -140,6 +141,7 @@ function settlingOnCancellation(activities: PopulationActivities): PopulationAct
     settlePopulationEmit: settling(activities.settlePopulationEmit),
     registerPopulation: settling(activities.registerPopulation),
     emitPopulation: settling(activities.emitPopulation),
+    wakePopulationEmit: settling(activities.wakePopulationEmit),
     startDeployment: settling(activities.startDeployment),
     fireTimerStart: settling(activities.fireTimerStart),
   };
@@ -194,9 +196,13 @@ export function createPopulationActivities(): PopulationActivities {
     },
     registerPopulation: async (request) => ingress(Context.current().client, request.population)
       .executeUpdate(populationRegisterUpdate, { args: [request.registration] }),
-    emitPopulation: async (request) => {
-      await ingress(Context.current().client, request.population)
-        .executeUpdate(populationEmitUpdate, { args: [request.reference], updateId: emitUpdateId(request.reference) });
+    // While the ingress continues as new its validator rejects an emit, which fails this attempt as transport does, so
+    // the retry reaches the next Run.
+    emitPopulation: async (request) => ingress(Context.current().client, request.population)
+      .executeUpdate(populationEmitUpdate, { args: [request.reference], updateId: emitUpdateId(request.reference, request.handedBack) }),
+    wakePopulationEmit: async (request) => {
+      await unlessGone(() => Context.current().client.workflow.getHandle(request.workflowId)
+        .executeUpdate(emitWakeUpdate, { args: [request.wake] }));
     },
     startDeployment: async (request) => {
       const { client, info } = Context.current();

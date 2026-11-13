@@ -159,22 +159,22 @@ test("an ingress command is refused past the stimulus bound or past the continua
     return { ...shell, payload: "p".repeat(bytes - capacity.canonicalBytes(shell)) };
   };
   assert.equal(capacity.canonicalBytes(command(chainCapacity.stimulusBytes)), chainCapacity.stimulusBytes);
-  const accepted = population.enqueueCommand(frame, population.emptyIngress, "c", "publish", command(chainCapacity.stimulusBytes), "d");
+  const accepted = population.enqueueCommand(frame, population.emptyIngress, "c", "publish", command(chainCapacity.stimulusBytes), "d", []);
   assert.ok("ticket" in accepted);
-  assert.deepEqual(population.enqueueCommand(frame, population.emptyIngress, "c", "publish", command(chainCapacity.stimulusBytes + 1), "d"),
+  assert.deepEqual(population.enqueueCommand(frame, population.emptyIngress, "c", "publish", command(chainCapacity.stimulusBytes + 1), "d", []),
     { refused: "host.capacity.stimulus" });
   let state: IngressState = population.emptyIngress;
   for (let index = 0; ingressBytes(state) + chainCapacity.stimulusBytes + 200 < admissible; index += 1) {
-    const next = population.enqueueCommand(frame, state, `c${String(index)}`, "publish", command(chainCapacity.stimulusBytes - 500), "d");
+    const next = population.enqueueCommand(frame, state, `c${String(index)}`, "publish", command(chainCapacity.stimulusBytes - 500), "d", []);
     assert.ok("state" in next);
     state = next.state;
   }
-  const probe = population.enqueueCommand(frame, state, "last", "publish", { kind: "publish", payload: "" }, "d");
+  const probe = population.enqueueCommand(frame, state, "last", "publish", { kind: "publish", payload: "" }, "d", []);
   assert.ok("state" in probe);
   const exact = { kind: "publish", payload: "p".repeat(admissible - ingressBytes(probe.state)) };
-  const fits = population.enqueueCommand(frame, state, "last", "publish", exact, "d");
+  const fits = population.enqueueCommand(frame, state, "last", "publish", exact, "d", []);
   assert.ok("state" in fits && ingressBytes(fits.state) === admissible, "exact fit");
-  const over = population.enqueueCommand(frame, state, "last", "publish", { ...exact, payload: `${exact.payload}p` }, "d");
+  const over = population.enqueueCommand(frame, state, "last", "publish", { ...exact, payload: `${exact.payload}p` }, "d", []);
   assert.equal("refused" in over ? over.refused : "accepted", carry.ingressContinuationCode);
 });
 
@@ -192,12 +192,12 @@ test("a near-full ingress refuses a command at admission, keeping room for the a
   const command = { kind: "broadcast", commandId: "c", variables: [], address: { signalRef: { id: "S", namespace: "urn:t" } } };
   assert.ok(ingressBytes(state) + capacity.canonicalBytes(command) + 200 < chainCapacity.continuationBytes, "the command alone would fit");
   // Compared as its refusal alone: a failing comparison would otherwise render the whole near-full state.
-  const refused = population.enqueueCommand(frame, state, "c", "broadcast", command, "d");
+  const refused = population.enqueueCommand(frame, state, "c", "broadcast", command, "d", []);
   assert.equal("refused" in refused ? refused.refused : "accepted", carry.ingressContinuationCode);
   // Healthy: nothing changed, and once a chain leaves, the same command is taken.
   const [left] = population.register(frame, state, { ...registration(0), revision: 2, addresses: [] });
   const shrunk = { ...left, registrations: left.registrations.slice(0, -40) };
-  assert.ok("ticket" in population.enqueueCommand(frame, shrunk, "c", "broadcast", command, "d"));
+  assert.ok("ticket" in population.enqueueCommand(frame, shrunk, "c", "broadcast", command, "d", []));
 });
 
 test("the answer reserve is the Query bound plus the ledger entry's fixed overhead, exactly", () => {
@@ -251,6 +251,7 @@ test("an item that settles past the continuation bound evicts the ledger, and fa
   const fitted = answerSettled(settling("n".repeat(100_000), [0, 1, 2, 3].map(old)));
   assert.deepEqual(fitted.ledger.map((entry) => entry.commandId), ["old1", "old2", "old3", "i"], "the oldest answer yields");
   assert.ok(ingressBytes(fitted) <= chainCapacity.continuationBytes);
+  // Hand-built past anything admission lets settle (`handoff-capacity.test.ts`): the guard of a broken invariant.
   assert.throws(() => answerSettled(settling("n".repeat(chainCapacity.continuationBytes), [old(0)])),
     carry.IngressCapacityExceeded, "never carried on past the bound");
 });

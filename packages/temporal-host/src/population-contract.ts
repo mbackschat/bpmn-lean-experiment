@@ -149,9 +149,28 @@ export interface RegistrationRequest {
   readonly registration: ChainRegistration;
 }
 
+/** An emit offer; `handedBack` is the ingress Run that last handed the chain's deferred emits back (`emitUpdateId`). */
 export interface EmitRequest {
   readonly population: string;
   readonly reference: EmitReference;
+  readonly handedBack: string | null;
+}
+
+/**
+ * The ingress's answer to an emit: accepted for its queue, or deferred while it holds no room for it (`enqueueEmit`).
+ * `run` names the ingress Run that deferred it, which alone wakes the chain again.
+ */
+export type EmitVerdict = { readonly kind: "accepted" } | { readonly kind: "deferred"; readonly run: string };
+
+/**
+ * What the ingress tells a chain whose emit it deferred: it accepted that emit, or Run `run` is handing its deferred
+ * emits back as it continues as new, so the chain offers them to the next Run.
+ */
+export type EmitWake = { readonly kind: "accepted"; readonly commandId: string } | { readonly kind: "reoffer"; readonly run: string };
+
+export interface WakeRequest {
+  readonly workflowId: string;
+  readonly wake: EmitWake;
 }
 
 export interface IntentsRequest {
@@ -191,7 +210,9 @@ export interface PopulationActivities {
   readonly settlePopulationEmit: (request: IntentsRequest) => Promise<void>;
   /** Returns the ingress's refusal code, `null` when registered. */
   readonly registerPopulation: (request: RegistrationRequest) => Promise<string | null>;
-  readonly emitPopulation: (request: EmitRequest) => Promise<void>;
+  readonly emitPopulation: (request: EmitRequest) => Promise<EmitVerdict>;
+  /** Wakes a chain whose emit the ingress deferred; a chain that no longer exists needs no wake. */
+  readonly wakePopulationEmit: (request: WakeRequest) => Promise<void>;
   readonly startDeployment: (request: StartDeploymentRequest) => Promise<void>;
   /** Submits a firing's `timerStart` and returns the population's answer to it. */
   readonly fireTimerStart: (request: TimerFiringRequest) => Promise<CommandAnswer>;
@@ -203,7 +224,7 @@ export type PopulationStartOutcome = ReachOutcome;
 /** A population start's answer: its outcome, or `identityInUse` when a chain no population start made holds the identity. */
 export type PopulationStartAnswer = ReachOutcome | { readonly kind: "identityInUse" };
 
-/** The Signals one committed non-population input threw, with whether the ingress accepted their emit. */
+/** The Signals one committed non-population input threw, with whether the ingress accepted their emit (`EmitVerdict`). */
 export interface UnsettledEmit {
   readonly commandId: string;
   readonly held: HeldIntents;

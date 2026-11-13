@@ -29,6 +29,15 @@
  * ingress whenever they change, one Activity at a time from the main loop, and clears them when it ends or halts. That
  * registration is a barrier: an input's Update returns only once the waits its commit opened are registered, and a
  * start's caller waits on the `settle` Update, so a population command sent after the caller saw the commit finds them.
+ *
+ * The Signals a committed input throws are handed to the ingress after the registration, one emit at a time in commit
+ * order. An emit the ingress cannot hold is deferred: the chain keeps it in its carry, unaccepted, offers nothing after
+ * it, and offers it again only when the ingress wakes it (`emitWake`). Every held emit counts in the continuation bound
+ * of each later candidate (`judge`), so a further Signal throw the chain could not carry is refused before it commits.
+ * No deadlock: an offer is one Activity whose ingress handler answers at once, accepted or deferred, so a deferral never
+ * holds the main loop and registration is never delayed behind a capacity wait; the wake's handler only marks the chain's
+ * state. So the ingress fan-out's wait on a chain's `populationDeliver`, which waits on registration, never waits on room
+ * the fan-out itself must free.
  */
 import {
   ActivityFailure,
@@ -74,6 +83,8 @@ import {
 } from "./capacity.js";
 import { continuationBytes, judgeCommitted, type ChainFrame, type Judged } from "./chain-candidate.js";
 import type {
+  EmitVerdict,
+  EmitWake,
   PopulationActivities,
   PopulationCarry,
   PopulationDelivery,
@@ -99,6 +110,7 @@ import {
   deliverUpdate,
   effectResultUpdate,
   emitSettledUpdate,
+  emitWakeUpdate,
   hostViewQuery,
   pendingIntentsQuery,
   populationDeliverUpdate,
@@ -222,10 +234,16 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   const settled = async (): Promise<void> => {
     if (populationOwed()) await condition(() => !populationOwed() || halt !== null || ended());
   };
-  /** The emit barrier: resolves once the ingress accepted every hand-off committed so far, which it can never refuse. */
+  /** The emit barrier: resolves once the ingress accepted every hand-off committed so far; it never refuses one, it defers it. */
   const emitted = async (): Promise<void> => {
     if (emits.some((emit) => !emit.accepted)) await condition(() => emits.every((emit) => emit.accepted));
   };
+  /** The emit the ingress deferred, offered again only once woken; only the first unaccepted emit is ever offered. */
+  let deferredEmit: string | null = null;
+  /** The ingress Run that last handed its deferred emits back: a deferral it answered is void even if it arrives later. */
+  let handedBack: string | null = null;
+  /** Whether an emit waits to be offered: some is unaccepted and the ingress deferred none of them. */
+  const offerDue = (): boolean => scope !== null && deferredEmit === null && emits.some((emit) => !emit.accepted);
 
   setHandler(observationQuery, (from) =>
     textPage(instance === null ? null : port.observation(program, instance.state), from));
@@ -255,6 +273,18 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   };
   setHandler(emitSettledUpdate, counted((commandId: string) => {
     emits = emits.filter((emit) => emit.commandId !== commandId);
+  }));
+  setHandler(emitWakeUpdate, counted((wake: EmitWake) => {
+    switch (wake.kind) {
+      case "accepted":
+        emits = emits.map((emit) => emit.commandId === wake.commandId ? { ...emit, accepted: true } : emit);
+        if (deferredEmit === wake.commandId) deferredEmit = null;
+        return;
+      case "reoffer":
+        handedBack = wake.run;
+        deferredEmit = null;
+        return;
+    }
   }));
   setHandler(publicationQuery, (afterRevision, limit) => readPage(log, afterRevision, limit));
   setHandler(settleUpdate, counted(async () => {
@@ -424,13 +454,13 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   const populationActivities = (): Pick<PopulationActivities, "registerPopulation" | "emitPopulation"> => ({
     registerPopulation: (request) => scheduleActivity<string | null>("registerPopulation" satisfies keyof HostActivities, [request],
       { startToCloseTimeout: config.effectStartToCloseMs, retry: transportRetry }),
-    emitPopulation: (request) => scheduleActivity<void>("emitPopulation" satisfies keyof HostActivities, [request],
+    emitPopulation: (request) => scheduleActivity<EmitVerdict>("emitPopulation" satisfies keyof HostActivities, [request],
       { startToCloseTimeout: config.effectStartToCloseMs, retry: transportRetry }),
   });
   /**
-   * Registers the open waits' addresses with the population ingress at the current publication revision, then hands it
-   * every emit not yet accepted, one at a time. A registration the ingress refuses halts the chain, never leaving a wait
-   * no command can reach.
+   * Registers the open waits' addresses with the population ingress at the current publication revision, then offers it
+   * every emit not yet accepted, one at a time, until one is deferred. A registration the ingress refuses halts the
+   * chain, never leaving a wait no command can reach.
    */
   const reportPopulation = async (): Promise<void> => {
     if (scope === null || instance === null) return;
@@ -452,10 +482,19 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     }
     for (const emit of emits) {
       if (emit.accepted) continue;
-      await populationActivities().emitPopulation({
+      if (deferredEmit !== null) return;
+      const verdict = await populationActivities().emitPopulation({
         population: scope.population,
         reference: { workflowId: workflowInfo().workflowId, commandId: emit.commandId, count: emit.held.intents.length, digest: "" },
+        handedBack,
       });
+      // A wake or the emit's settlement may have answered it while the offer was in flight.
+      if (!emits.some((held) => held.commandId === emit.commandId && !held.accepted)) continue;
+      if (verdict.kind === "deferred") {
+        // A Run that already handed its deferred emits back wakes no one: the next Run is offered it at once (`offerDue`).
+        if (verdict.run !== handedBack) deferredEmit = emit.commandId;
+        return;
+      }
       emits = emits.map((held) => held.commandId === emit.commandId ? { ...held, accepted: true } : held);
     }
   };
@@ -540,7 +579,9 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     await reportPopulation();
     if (reconciled !== commits) continue;
     if (draining && effects.size === 0 && arrivals.length === 0) {
-      await condition(allHandlersFinished);
+      // A caller's Update waits on the emit barrier, so a handed-back emit is offered again before the Run ends.
+      await condition(() => allHandlersFinished() || offerDue());
+      if (offerDue()) continue;
       if (arrivals.length === 0 && halt === null && instance !== null && !ended()) {
         const next = successor(instance);
         if ("kind" in next) return continueAsNew<(next: RunProcessArgs) => Promise<ProcessResult>>(next);
@@ -548,7 +589,7 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
         continue;
       }
     }
-    await condition(() => arrivals.length > 0 || commits !== reconciled || halt !== null ||
+    await condition(() => arrivals.length > 0 || commits !== reconciled || halt !== null || offerDue() ||
       (draining ? effects.size === 0 : rolloverDue()));
     while (arrivals.length > 0 && halt === null && !ended()) {
       const [arrival] = arrivals.splice(nextArrival(arrivals), 1);
@@ -566,6 +607,11 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
 
   for (const scope of [...timers.values(), ...effects.values()]) scope.cancel();
   await reportPopulation();
+  // An ended or halted chain still owes the Signals it committed: it stays until the ingress accepted every one.
+  while (scope !== null && emits.some((emit) => !emit.accepted)) {
+    await condition(() => offerDue() || emits.every((emit) => emit.accepted));
+    await reportPopulation();
+  }
   await condition(allHandlersFinished);
   if (halt !== null) return { kind: ResultKind.Halted, halt, revision: log.cursor.revision };
   return { kind: ResultKind.Ended, status: instance?.view.status ?? running, revision: log.cursor.revision };
