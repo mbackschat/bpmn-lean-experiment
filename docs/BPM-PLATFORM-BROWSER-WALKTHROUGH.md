@@ -78,7 +78,7 @@ Use this run of show when presenting the project rather than evaluating each wor
 
 ### Zero-build demo machine
 
-The recommended demo-machine path is the [RC evaluation bundle](https://github.com/mbackschat/bpmn-lean-experiment/releases/download/v0.2.0-rc.1/mue-evaluation-v0.2.0-rc.1.tar.gz) from the qualified prerelease. The bundle contains the Compose topology, database-role initialization, this guide and fallback images, three prepared interactive human-process definitions, additional retained presentation models, and an environment file that pins all four project images to their published OCI index digests. Each index contains `linux/amd64` and `linux/arm64`, carries the source commit and complete tracked-source-tree digest, and is published with BuildKit provenance and an SBOM. PostgreSQL and Temporal retain their separately pinned upstream digests. On macOS, use Docker Desktop with Linux containers or Rancher Desktop with dockerd (moby), select the matching Docker context, and verify `docker info` plus Docker Compose `2.24.4` or later before preparing the bundle.
+The recommended demo-machine path is the [RC evaluation bundle](https://github.com/mbackschat/bpmn-lean-experiment/releases/download/v0.2.0-rc.1/mue-evaluation-v0.2.0-rc.1.tar.gz) from the qualified prerelease. It runs the engine generation that preceded the current kernel; the current kernel is evaluated with the same stack built from a checkout ([README](../README.md#try-the-release-candidate-with-docker-or-rancher-desktop)). The bundle contains the Compose topology, database-role initialization, this guide and fallback images, three prepared interactive human-process definitions, additional retained presentation models, and an environment file that pins all four project images to their published OCI index digests. Each index contains `linux/amd64` and `linux/arm64`, carries the source commit and complete tracked-source-tree digest, and is published with BuildKit provenance and an SBOM. PostgreSQL and Temporal retain their separately pinned upstream digests. On macOS, use Docker Desktop with Linux containers or Rancher Desktop with dockerd (moby), select the matching Docker context, and verify `docker info` plus Docker Compose `2.24.4` or later before preparing the bundle.
 
 Download and unpack that artifact on a compatible Docker host. No repository checkout, Node, pnpm, compiler, or image build is used there. While online, prepare and prove one fresh isolated stack with:
 
@@ -254,7 +254,7 @@ For a validation exercise, select **Abort** before entering a required resolutio
 1. Open **Operations**, then **Process instances**.
 2. Search for the retained Process-instance ID and choose **View details**.
 3. Confirm status **completed**.
-4. Open **History** and inspect the contiguous engine-published `completeUserTaskInstance` record for `ReviewException`.
+4. Open **History**: the **Sequence Flow arrival** record at `ReviewException` opens the task, and the task completion is the one **Command** record after it; an input names no element of its own.
 
 Semantic History is published by the engine. Product 2 never reconstructs it from Temporal Event History or state differences.
 
@@ -328,7 +328,7 @@ Screenshot refresh is not part of ordinary commit CI and performs no pixel compa
 
 ## Screenshot capture record
 
-Refreshed on 2026-09-28 from the UI committed at `ed6e0cc6` with the subsequent stable-router security correction, using Chromium at 1440 × 900, English locale, UTC and reduced motion. Every screenshot was captured from the public UI with real starts, task actions, metrics and incident outcomes; no requests were intercepted or results fabricated.
+Refreshed on 2026-11-13 from the UI at `edaab9ad0` by the [evaluation distribution run 43518803826](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/43518803826), using Chromium at 1440 × 900, English locale, UTC and reduced motion. The previous capture (2026-09-28, UI `ed6e0cc6` with the subsequent stable-router security correction) stays in the repository history. Every screenshot was captured from the public UI with real starts, task actions, metrics and incident outcomes; no requests were intercepted or results fabricated.
 
 The capture used freshly built production containers for the API, recovery worker and BPMN worker, with fresh isolated PostgreSQL 18 and Temporal services. The final public-browser journey passed, including retained-command resolution before leaving an incident. Task-owned containers and volumes were removed afterwards; reusable images were retained. This establishes a current container build and documentation capture, not a new semantic-conformance or production-capacity claim.
 

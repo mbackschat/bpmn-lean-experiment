@@ -31,6 +31,15 @@ The last command downloads the published images, starts the stack, and prepares 
 
 The [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#zero-build-demo-machine) covers the full journey and evaluation limits. From the same directory, use `./deploy/evaluation/demo stop` when finished and `./deploy/evaluation/demo start` to resume later.
 
+**🧱 Evaluate the current kernel.** The qualified evaluation distribution of the current kernel is the same stack built from a repository checkout; no bundle of it is published yet ([decision](docs/kernel/ARCHITECTURE-SPEC.md#owner-decisions-on-the-path)). From the checkout, with Docker Compose only, run these commands and open `http://localhost:3000/`; `docker compose down --volumes` removes the stack and its data:
+
+```sh
+docker compose build
+docker compose up --no-build --wait temporal
+docker compose run --rm --no-deps bpmn-worker initialize-fresh-namespace --retention-seconds 86400
+docker compose up --no-build --wait
+```
+
 ## Why this project exists
 
 Moving BPMN processes from an engine such as CIB Seven to Temporal raises a question: **will the processes still behave as their BPMN models specify?** Parallel work, messages, timers, and cancellation must keep their meaning even when the underlying runtime changes.
