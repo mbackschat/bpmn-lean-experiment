@@ -197,6 +197,22 @@ export function armingModel(wait: "timer" | "effect"): Uint8Array {
 }
 
 /** Process variables `names`, each a pad of `characters` characters. */
+/**
+ * A success outcome of exactly the effect-result bound plus `extra` canonical bytes: five pads move it by five bytes a
+ * character, and the `result` String tops the nearest size below the bound up to it.
+ */
+export function effectOutcomeAtBound(extra: number): JsonValue {
+  const outcome = (characters: number, top = 0): JsonValue => ({
+    kind: "success",
+    outputs: [{ name: "result", value: str(`ok${"k".repeat(top)}`) },
+      ...["r1", "r2", "r3", "r4", "r5"].map((name) => ({ name, value: pad(padLengths(characters)) }))],
+  });
+  const below = Math.floor((chainCapacity.effectResultBytes - canonicalBytes(outcome(0))) / 5);
+  const sized = outcome(below, chainCapacity.effectResultBytes - canonicalBytes(outcome(below)) + extra);
+  assert.equal(canonicalBytes(sized), chainCapacity.effectResultBytes + extra);
+  return sized;
+}
+
 export const sizingVariables = (names: readonly string[], characters: number): JsonValue[] =>
   names.map((name) => ({ name, value: pad(padLengths(characters)) }));
 

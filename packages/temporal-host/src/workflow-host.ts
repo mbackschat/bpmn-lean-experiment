@@ -31,6 +31,7 @@
  * start's caller waits on the `settle` Update, so a population command sent after the caller saw the commit finds them.
  */
 import {
+  ActivityFailure,
   ApplicationFailure,
   CancellationScope,
   allHandlersFinished,
@@ -133,6 +134,22 @@ const transportRetry = {
 
 function rejection(code: string): ApplicationFailure {
   return ApplicationFailure.create({ message: code, type: rejectionType, nonRetryable: true });
+}
+
+/**
+ * The halt a non-retryable effect Activity failure leaves. Temporal hands the Workflow an `ActivityFailure` whose
+ * message is the server's "Activity task failed" and whose cause is the Activity's own refusal, so the refusal is read
+ * from the cause. An effect result over its bound halts as the arrival loop and the memory host halt it, `unsupported`
+ * with the bound's code; any other refusal (a Script language admission should have refused) is a host failure.
+ */
+export function effectFailureHalt(key: string, error: unknown): Halt {
+  const refusal = error instanceof ActivityFailure && error.cause !== undefined ? error.cause : error;
+  const commandId = arrivalCommandId({ key });
+  const effectResultBound = capacityCode(CapacityBound.EffectResult);
+  if (refusal instanceof ApplicationFailure && refusal.type === effectResultBound) {
+    return { commandId, outcome: "unsupported", code: effectResultBound };
+  }
+  return { commandId, outcome: "hostFailure", code: failureProjection(refusal instanceof Error ? refusal.message : String(refusal)) };
 }
 
 /** Whether the host itself submits the inputs of `route` under `scheduling`. */
@@ -454,9 +471,8 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
       (value) => { if (owned.get(key) === scope) arrivals.push(arrive(value)); },
       (error: unknown) => {
         if (owned.get(key) !== scope || isCancellation(error)) return;
-        // Only a non-retryable Activity failure gets here (a host refusal, such as a Script language admission
-        // should have refused): no input exists for it, so the schedule halts.
-        halt ??= { commandId: `host:${key}`, outcome: "hostFailure", code: failureProjection(error instanceof Error ? error.message : String(error)) };
+        // Only a non-retryable Activity failure gets here: no input exists for it, so the schedule halts.
+        halt ??= effectFailureHalt(key, error);
       },
     );
   };

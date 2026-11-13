@@ -210,20 +210,10 @@ test("effect result: a result of exactly 64 KiB is applied, one byte more halts 
       fx.completeTask("fill-1", "Fill1", 1)]);
     return host;
   };
-  const result = (characters: number): JsonValue => ({
+  const sized = (extra: number): JsonValue => ({
     kind: "effectResult", commandId: "sent", occurrence: { processInstanceId: fx.instanceId, elementId: "Send", activation: 1 },
-    outcome: { kind: "success", outputs: [{ name: "result", value: fx.str("ok") },
-      ...["r1", "r2", "r3", "r4", "r5"].map((name) => ({ name, value: fx.pad(fx.padLengths(characters)) }))] },
+    outcome: fx.effectOutcomeAtBound(extra),
   });
-  const bytes = (characters: number) => canonicalBytes((result(characters) as { readonly outcome: JsonValue }).outcome);
-  // Five pads move the result by five bytes a character; `result` tops the nearest size below the bound up to it.
-  const below = Math.floor((chainCapacity.effectResultBytes - bytes(0)) / 5);
-  const sized = (extra: number): JsonValue => {
-    const base = result(below) as { readonly outcome: { readonly outputs: readonly JsonValue[] } };
-    const top = chainCapacity.effectResultBytes - bytes(below) + extra;
-    return { ...base, outcome: { kind: "success", outputs: [{ name: "result", value: fx.str(`ok${"k".repeat(top)}`) }, ...base.outcome.outputs.slice(1)] } } as JsonValue;
-  };
-  assert.equal(canonicalBytes((sized(0) as { readonly outcome: JsonValue }).outcome), chainCapacity.effectResultBytes);
   const fitting = await before();
   assert.equal((await fitting.arrive(workflowId, sized(0))).outcome, "committed");
   const over = await before();

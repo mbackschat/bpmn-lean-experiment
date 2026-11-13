@@ -170,7 +170,7 @@ export function arrivalInput<P, S, I>(port: KernelPort<P, S, I>, arrival: Arriva
 }
 
 /** The command identifier of a host-generated input, stable under replay. */
-export function arrivalCommandId(arrival: Arrival): string {
+export function arrivalCommandId(arrival: Pick<Arrival, "key">): string {
   return `host:${arrival.key}`;
 }
 

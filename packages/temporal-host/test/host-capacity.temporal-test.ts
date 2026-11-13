@@ -1,7 +1,8 @@
 /**
  * Hosted witnesses of the capacity table (PC-QUALIFY-10), run in hosted CI only: a real Continue-As-New carrying exactly
  * the continuation bound and the candidate one byte past it refused before Event History; the rollover at the server's
- * history-size suggestion; the 128th Run and the refused 129th; one byte pair through an Update validator; and the
+ * history-size suggestion; the 128th Run and the refused 129th; one byte pair through an Update validator; one byte
+ * pair of effect results returned by a real Activity, whose refusal halts the chain; and the
  * realistic sixteen-body parallel Multi-Instance journey on durable scheduling with its sixteen effects as concurrent
  * Activities, forced across Runs mid-Multi-Instance. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since
  * it judges candidates with the Workflow's own measure.
@@ -19,7 +20,7 @@ import { ProcessClient, ResultKind, Scheduling, type HostConfig, type JsonValue 
 import { canonicalBytes, chainCapacity } from "@bpmn-lean/temporal-host/host";
 import { createMemoryProcessHost } from "@bpmn-lean/temporal-host/memory-host";
 import { createCachedLocalEnvironment } from "@bpmn-lean/temporal-host/testing";
-import { EffectResultKind, createHostWorker, replayHistory } from "@bpmn-lean/temporal-host/worker";
+import { EffectResultKind, createHostWorker, replayHistory, type EffectResult } from "@bpmn-lean/temporal-host/worker";
 
 import * as fx from "./fixtures/capacity-journey.ts";
 
@@ -47,11 +48,13 @@ before(async () => {
     connection: environment.nativeConnection,
     taskQueue,
     scriptTimeoutMs: 1_000,
-    // *Validate* answers each body with its business-sized validation record.
-    effects: async (request) => ({
-      kind: EffectResultKind.Success,
-      outputs: [{ name: "result", value: fx.validationRecord(request.occurrence.activation) }],
-    }),
+    // *Send* answers with a result `extra` bytes past the effect-result bound; *Validate* answers each body with its
+    // business-sized validation record.
+    effects: async (request) => {
+      const extra = request.arguments.find((binding) => binding.name === "extra")?.value as { value: number } | undefined;
+      if (request.occurrence.elementId === "Send" && extra !== undefined) return fx.effectOutcomeAtBound(extra.value) as EffectResult;
+      return { kind: EffectResultKind.Success, outputs: [{ name: "result", value: fx.validationRecord(request.occurrence.activation) }] };
+    },
   });
   running = worker.run();
   client = new ProcessClient(environment.client, taskQueue);
@@ -208,6 +211,25 @@ test("Run count: the 128th Run commits its input, and a chain needing a 129th ha
     ["unsupported", "host.capacity.runs"]);
   assert.equal((await client.hostView(id)).view?.openWaits.filter((wait) => wait.deadlineMs !== undefined).length, 127,
     "the 128th Run's commit stands");
+});
+
+test("effect result on durable scheduling: an Activity's result of exactly 64 KiB commits, one byte more halts the chain with its code", async () => {
+  const program = await fx.cibProgram(fx.sizingModel(1, ["extra"], 0));
+  const run = async (extra: number) => {
+    const id = workflowId(`effect-result-${String(extra)}`);
+    await client.start({ workflowId: id, program, config: durable(null),
+      start: { kind: "start", commandId: "s", instanceId: fx.instanceId, variables: [{ name: "extra", value: fx.int(extra) }] } });
+    await committed(id, [fx.completeTask("fill-1", "Fill1", 1)]);
+    return id;
+  };
+  const fits = await run(0);
+  await until("the fitting result's commit", () => client.hostView(fits),
+    (snapshot) => snapshot.view?.openWaits.some((wait) => wait.id.elementId === "Final") === true);
+  const over = await run(1);
+  const result = await client.result(over);
+  assert.deepEqual(result.kind === ResultKind.Halted ? [result.halt.outcome, result.halt.code] : result,
+    ["unsupported", "host.capacity.effectResult"]);
+  assert.ok((await client.hostView(over)).view?.openWaits.every((wait) => wait.id.elementId !== "Final"), "the result was never applied");
 });
 
 test("one byte pair through the Update validator: a state of exactly 256 KiB commits, one byte more never enters history", async () => {

@@ -214,10 +214,5 @@ test("a host-clocked stimulus gets the host's time, and one stating its own time
 });
 
 test("host-generated command identifiers are derived from the arrival key", () => {
-  assert.equal(machine.arrivalCommandId({
-    kind: machine.ArrivalKind.Timer,
-    key: "timer:k",
-    timer: views.occurrence("T"),
-    deadlineMs: 1,
-  }), "host:timer:k");
+  assert.equal(machine.arrivalCommandId({ key: "timer:k" }), "host:timer:k");
 });
