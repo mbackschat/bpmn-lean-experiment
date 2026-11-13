@@ -20,6 +20,13 @@ export const standardProfile: EngineProfile = { id: "test-standard", relations: 
 /** A technical failure raises an incident that Retry or Cancel resolves (CIB-EXT-0013, CIB-OP-0009). */
 export const incidentProfile: EngineProfile = { id: "test-incident", relations: ["CIB-EXT-0013", "CIB-OP-0009"] };
 
+/** The CIB Seven 2.2.0 cumulative profile as the catalog holds it: its identity and its selected relations. */
+export async function cibProfile(): Promise<EngineProfile> {
+  const document = JSON.parse(await readFile(new URL("../../../profiles/cibseven-2.2.0/profile.json", import.meta.url), "utf8")) as
+    Readonly<{ id: string; bpmn: Readonly<{ relationships: readonly string[] }> }>;
+  return { id: document.id, relations: document.bpmn.relationships };
+}
+
 export async function scenarioBytes(relativePath: string): Promise<Uint8Array> {
   return new Uint8Array(await readFile(new URL(`../../../scenarios/${relativePath}`, import.meta.url)));
 }

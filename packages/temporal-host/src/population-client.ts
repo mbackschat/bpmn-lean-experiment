@@ -122,8 +122,14 @@ export class PopulationClient implements PopulationHost {
     }
   }
 
+  /** Before the first call no ingress runs, so it recorded no command, as `deployment` reads it. */
   async result(commandId: string): Promise<PopulationResult> {
-    return await this.ingress().query(populationResultQuery, commandId) as PopulationResult;
+    try {
+      return await this.ingress().query(populationResultQuery, commandId) as PopulationResult;
+    } catch (error) {
+      if (error instanceof WorkflowNotFoundError) return { kind: "unknown" };
+      throw error;
+    }
   }
 
   /** How many commands and hand-offs the ingress has queued or in flight. */

@@ -65,5 +65,6 @@ export interface PopulationHost {
   deployments(): Promise<readonly RegisteredDeployment[]>;
   /** Submits a command in the population scenario contract's form, `kind` its step kind; its answer once it settled. */
   command(kind: string, command: JsonValue & { readonly commandId: string }): Promise<CommandAnswer>;
+  /** A command's recorded answer; `unknown` when never submitted, no longer in the ledger, or before the first call. */
   result(commandId: string): Promise<PopulationResult>;
 }

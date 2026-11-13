@@ -50,11 +50,12 @@ verify_runtime() {
   ./scripts/pnpm.sh run test:differential:built
 }
 
-# Both hosted lanes run before the stage fails, so one lane's failure never hides the other's witnesses.
+# Every hosted lane runs before the stage fails, so one lane's failure never hides another's witnesses.
 verify_temporal() {
   temporal_status=0
   ./scripts/pnpm.sh run test:temporal-host:hosted:built || temporal_status=1
   ./scripts/pnpm.sh run test:differential:hosted:built || temporal_status=1
+  ./scripts/pnpm.sh run test:engine-api:hosted:built || temporal_status=1
   return "$temporal_status"
 }
 

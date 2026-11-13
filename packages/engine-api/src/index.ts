@@ -1,7 +1,8 @@
 /**
  * Product 1's narrow entry point for Product 2: compilation through the kernel reader and admission, starts, Timer
- * start Schedules, human work, incident operations and committed publication, over the generic Temporal host. No
- * kernel program, kernel state or Temporal identity crosses it; Product 2 holds opaque locators and intents.
+ * start Schedules, Message publication, population results, human work, incident operations and committed publication,
+ * over the generic Temporal host. No kernel program, kernel state or Temporal identity crosses it; Product 2 holds
+ * opaque locators and intents.
  */
 export {
   type EngineBinding,
@@ -102,14 +103,27 @@ export {
   type EngineDeploymentResult,
 } from "./definition-deployment.js";
 export {
-  EngineCorrelatedMessageStatus,
-  engineCorrelationAmbiguousCode,
-  engineNotCorrelatedCode,
-  publishEngineCorrelatedMessage,
-  type EngineCorrelatedMessageRequest,
-  type EngineCorrelatedMessageResult,
-  type EngineCorrelationTarget,
-} from "./definition-correlated-message.js";
+  EngineMessagePublicationMode,
+  EngineMessagePublicationStatus,
+  publishEngineMessage,
+  type EngineCorrelationMatch,
+  type EngineCriterionTarget,
+  type EngineDefinitionSelector,
+  type EngineMessageAddress,
+  type EngineMessagePublicationRequest,
+  type EngineMessagePublicationResult,
+} from "./message-publication.js";
+export {
+  EnginePopulationResolutionKind,
+  EnginePopulationResultStatus,
+  observeEnginePopulationResult,
+  type EngineFanOutEntry,
+  type EnginePopulationCommandResult,
+  type EnginePopulationReceiver,
+  type EnginePopulationResolution,
+  type EnginePopulationResultObservation,
+  type EnginePopulationResultRequest,
+} from "./population-result.js";
 export {
   EngineDefinitionScheduleStatus,
   createBpmnDefinitionSchedule,

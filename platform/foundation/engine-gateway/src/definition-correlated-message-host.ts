@@ -1,20 +1,21 @@
 /**
  * The port Product 2's correlated Message service consumes: target-free capability discovery and publication over
- * exact admitted definition bytes, and its realization over the engine's correlated Message ingress.
+ * exact admitted definition bytes, and its realization over the engine's Message publication.
  *
  * Discovery lists each correlated catch the engine publishes for the definition (`correlatedChannels`) on an operation
- * channel with its one correlation key. A publication goes to the engine's ingress for the stored version, which
- * delivers it to the one instance whose key matches at delivery time. A deployment that serves no Messages answers
- * both operations `unavailable` with its host refusal code.
+ * channel with its one correlation key. A publication is the engine's executions-only publication on that channel to the
+ * stored version's deployment, with the catch's key as its one criterion, which the engine delivers to the one instance
+ * whose key matches at delivery time. A deployment that serves no Messages answers both operations `unavailable` with
+ * its host refusal code.
  */
 import {
-  EngineCorrelatedMessageStatus,
-  engineCorrelationAmbiguousCode,
+  EngineMessagePublicationMode,
+  EngineMessagePublicationStatus,
+  EnginePopulationResolutionKind,
   engineHostRefusalCodes,
-  engineNotCorrelatedCode,
-  publishEngineCorrelatedMessage,
-  type EngineCorrelatedMessageResult,
+  publishEngineMessage,
   type EngineDefinitionCapabilities,
+  type EngineMessagePublicationResult,
   type EngineSourceOverlaySelection,
 } from "@bpmn-lean/engine-api";
 import type { PublicSourceOverlayIdentity } from "@bpmn-lean/platform-contracts";
@@ -206,56 +207,59 @@ function correlatedMessages(capabilities: EngineDefinitionCapabilities): Definit
   return messages;
 }
 
-function resolution(commandId: string, result: EngineCorrelatedMessageResult): DefinitionCorrelatedMessagePublicationResult {
-  switch (result.status) {
-    case EngineCorrelatedMessageStatus.Delivered:
-      return {
-        status: DefinitionCorrelatedMessagePublicationStatus.Resolved,
-        resolution: {
-          kind: DefinitionCorrelatedMessageResolutionKind.Semantic,
-          commandId,
-          ingressOrdinal: result.ingressOrdinal,
-          outcome: {
-            kind: DefinitionCorrelatedMessageSemanticOutcomeKind.Committed,
-            target: { processInstanceId: result.target.processInstanceId },
-          },
-        },
-      };
-    case EngineCorrelatedMessageStatus.Rejected:
-      if (result.target !== null) {
-        // The sole match refused the delivery when it rechecked it: no rematch, the target is reported.
-        return {
-          status: DefinitionCorrelatedMessagePublicationStatus.Resolved,
-          resolution: {
-            kind: DefinitionCorrelatedMessageResolutionKind.InfrastructureIndeterminate,
-            commandId,
-            ingressOrdinal: result.ingressOrdinal,
-            phase: "targetDelivery",
-            target: { processInstanceId: result.target.processInstanceId },
-            failure: { kind: "targetInconsistent" },
-          },
-        };
-      }
-      if (result.failure.code !== engineNotCorrelatedCode && result.failure.code !== engineCorrelationAmbiguousCode) {
-        return { status: DefinitionCorrelatedMessagePublicationStatus.IntegrityFailure, evidence: result.failure.evidence };
-      }
-      return {
-        status: DefinitionCorrelatedMessagePublicationStatus.Resolved,
-        resolution: {
-          kind: DefinitionCorrelatedMessageResolutionKind.Semantic,
-          commandId,
-          ingressOrdinal: result.ingressOrdinal,
-          outcome: {
-            kind: result.failure.code === engineNotCorrelatedCode
-              ? DefinitionCorrelatedMessageSemanticOutcomeKind.RejectedNoMatch
-              : DefinitionCorrelatedMessageSemanticOutcomeKind.RejectedAmbiguous,
-          },
-        },
-      };
-    case EngineCorrelatedMessageStatus.IdentityConflict:
+function semantic(commandId: string, ingressOrdinal: number,
+  outcome: Extract<DefinitionCorrelatedMessageResolution, { kind: DefinitionCorrelatedMessageResolutionKind.Semantic }>["outcome"],
+): DefinitionCorrelatedMessagePublicationResult {
+  return {
+    status: DefinitionCorrelatedMessagePublicationStatus.Resolved,
+    resolution: { kind: DefinitionCorrelatedMessageResolutionKind.Semantic, commandId, ingressOrdinal, outcome },
+  };
+}
+
+function resolution(commandId: string, published: EngineMessagePublicationResult): DefinitionCorrelatedMessagePublicationResult {
+  switch (published.status) {
+    case EngineMessagePublicationStatus.IdentityConflict:
       return { status: DefinitionCorrelatedMessagePublicationStatus.IdentityConflict };
-    case EngineCorrelatedMessageStatus.Refused:
-      return { status: DefinitionCorrelatedMessagePublicationStatus.Unavailable, ...result.failure };
+    case EngineMessagePublicationStatus.Refused:
+      return { status: DefinitionCorrelatedMessagePublicationStatus.Unavailable, ...published.failure };
+    case EngineMessagePublicationStatus.Resolved:
+      break;
+  }
+  const { ingressOrdinal, resolution: answered } = published.result;
+  switch (answered.kind) {
+    case EnginePopulationResolutionKind.Committed:
+      return semantic(commandId, ingressOrdinal, {
+        kind: DefinitionCorrelatedMessageSemanticOutcomeKind.Committed,
+        target: { processInstanceId: answered.target.processInstanceId },
+      });
+    case EnginePopulationResolutionKind.Failed:
+      // The sole match refused the delivery when it rechecked it: no rematch, the target is reported.
+      return {
+        status: DefinitionCorrelatedMessagePublicationStatus.Resolved,
+        resolution: {
+          kind: DefinitionCorrelatedMessageResolutionKind.InfrastructureIndeterminate,
+          commandId,
+          ingressOrdinal,
+          phase: "targetDelivery",
+          target: { processInstanceId: answered.target.processInstanceId },
+          failure: { kind: "targetInconsistent" },
+        },
+      };
+    case EnginePopulationResolutionKind.NoMatch:
+      return semantic(commandId, ingressOrdinal, { kind: DefinitionCorrelatedMessageSemanticOutcomeKind.RejectedNoMatch });
+    case EnginePopulationResolutionKind.Ambiguous:
+      return semantic(commandId, ingressOrdinal, { kind: DefinitionCorrelatedMessageSemanticOutcomeKind.RejectedAmbiguous });
+    case EnginePopulationResolutionKind.Rejected:
+    case EnginePopulationResolutionKind.Unsupported:
+      return {
+        status: DefinitionCorrelatedMessagePublicationStatus.IntegrityFailure,
+        evidence: `The population refused the publication (${answered.kind} ${answered.code}).`,
+      };
+    case EnginePopulationResolutionKind.FanOut:
+      return {
+        status: DefinitionCorrelatedMessagePublicationStatus.IntegrityFailure,
+        evidence: "An executions-only publication answered with a fan-out.",
+      };
   }
 }
 
@@ -298,14 +302,19 @@ export class BpmnDefinitionCorrelatedMessageGateway implements DefinitionCorrela
       return { status: DefinitionCorrelatedMessagePublicationStatus.CapabilityNotFound };
     }
     const { ref, profile, sourceOverlay } = resolved.compilation.definition;
-    const result = await publishEngineCorrelatedMessage({
+    // The payload is the correlation value, carried as the criterion of the catch's one key; a correlated catch writes
+    // no payload (`message.correlation.output`).
+    const published = await publishEngineMessage({
       host: this.#context.host,
-      definition: { ref: { ...ref, version: request.definition.version }, profile, sourceOverlay },
-      channel: { ...request.message.channel },
-      correlationKey: request.message.correlationKeyId,
       commandId: request.commandId,
-      payload: { ...request.payload },
+      message: { kind: "channel", channel: { ...request.message.channel } },
+      definition: { kind: "version", definition: { ref: { ...ref, version: request.definition.version }, profile, sourceOverlay } },
+      criteria: [{ target: { kind: "processVariable", name: request.message.correlationKeyId }, expected: { ...request.payload } }],
+      payload: null,
+      variables: [],
+      businessKey: null,
+      mode: EngineMessagePublicationMode.ExecutionsOnly,
     });
-    return resolution(request.commandId, result);
+    return resolution(request.commandId, published);
   }
 }

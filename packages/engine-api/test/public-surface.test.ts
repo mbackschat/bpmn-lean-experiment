@@ -18,7 +18,8 @@ test("exports opaque locator operations without a way to decode one", () => {
 });
 
 test("schedule and publication result declarations carry no Workflow, Run or SDK identity", async () => {
-  for (const file of ["definition-correlated-message.d.ts", "definition-schedule.d.ts", "process-publication.d.ts", "process-work.d.ts"]) {
+  const files = ["message-publication.d.ts", "population-result.d.ts", "definition-schedule.d.ts", "process-publication.d.ts", "process-work.d.ts"];
+  for (const file of files) {
     const declaration = await readFile(new URL(`../dist/${file}`, import.meta.url), "utf8");
     const results = declaration.match(/export type Engine\w*Result[\s\S]*?;\n/gu) ?? [];
     assert.notDeepEqual(results, [], file);

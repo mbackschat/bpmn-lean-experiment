@@ -179,7 +179,10 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.equal(linesContaining(verifyScript, "test:infrastructure"), 1);
   assert.equal(linesContaining(verifyScript, "build:verification-typescript"), 1);
   assert.equal(matches(verifyScript, /run test:kernel$/gmu), 1);
-  for (const command of ["test:bpmn-source:built", "test:differential:built", "test:temporal-host:hosted:built", "test:differential:hosted:built"]) {
+  for (const command of [
+    "test:bpmn-source:built", "test:differential:built", "test:temporal-host:hosted:built", "test:differential:hosted:built",
+    "test:engine-api:hosted:built",
+  ]) {
     assert.equal(linesContaining(verifyScript, command), 1);
   }
   assert.doesNotMatch(verifyScript, /test:contracts|check:source-hygiene|test:infrastructure:runtime/u);
