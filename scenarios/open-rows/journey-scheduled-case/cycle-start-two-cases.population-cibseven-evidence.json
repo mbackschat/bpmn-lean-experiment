@@ -1,0 +1,122 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "journey-scheduled-case-cycle-start-two-cases",
+    "sha256": "c521f2e3d8bd2d6d8fc6e3ff77cc8ff2a2c1901ffcef054d14695396412bd57f"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "scheduled-case-cycle",
+        "versions": [
+          {
+            "key": "Process_ScheduledCaseByCycle",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-start-first-case",
+        "ordinal": 1,
+        "at": 28800000,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "timer:1:1:13:CaseScheduled:28800000",
+              "deploymentId": 1,
+              "version": 1,
+              "startEvent": "CaseScheduled"
+            }
+          ]
+        }
+      },
+      {
+        "commandId": "s03-start-second-case",
+        "ordinal": 2,
+        "at": 57600000,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "timer:1:1:13:CaseScheduled:57600000",
+              "deploymentId": 1,
+              "version": 1,
+              "startEvent": "CaseScheduled"
+            }
+          ]
+        }
+      }
+    ],
+    "inputFailures": [
+      {
+        "commandId": "s07-fire-first-case-reminder-3-after-its-review",
+        "outcome": "rejected"
+      },
+      {
+        "commandId": "s12-complete-interrupted-follow-up",
+        "outcome": "rejected"
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "timer:1:1:13:CaseScheduled:28800000",
+        "status": "completed",
+        "logicalTimeMs": 230400000,
+        "variables": [
+          {
+            "name": "finding",
+            "value": {
+              "kind": "string",
+              "value": "Findings confirmed"
+            }
+          }
+        ],
+        "openWaits": []
+      },
+      {
+        "kind": "state",
+        "instanceId": "timer:1:1:13:CaseScheduled:57600000",
+        "status": "completed",
+        "logicalTimeMs": 230400000,
+        "variables": [
+          {
+            "name": "resolution",
+            "value": {
+              "kind": "string",
+              "value": "Escalated to the board"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

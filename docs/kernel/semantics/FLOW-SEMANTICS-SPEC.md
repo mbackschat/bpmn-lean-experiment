@@ -264,9 +264,7 @@ A model with a single defect therefore refuses with one stable code, and a consi
 
 ## Open rows
 
-| Row | Decision owed or not yet implemented |
-|---|---|
-| PC-BASIC-03 | Nothing owed: declaration order is semantic for conditional candidates and a tie between catchers, identifiers never; a split's branch schedule is profile data (`ProfileOptions.branchSchedule`): the standards profile refuses branches whose reads and writes race (`flow.concurrentWrite`), and CIB's depth-first declaration order (CIB-OP-0016) is selected by both CIB profiles, which the retained [split-branch-order](../../../scenarios/open-rows/split-branch-order/README.md) evidence confirms. The [rename-and-permute check](../../../packages/differential/test/rename-permutation-invariance.test.ts) runs over every admitted single-instance and population witness, and each one's declaration-reversed twin, with no per-model case: it renames flow nodes, Sequence Flows, Messages, Signals, Errors and Escalations, together with their references and the schedules that address them, while names, codes and handler bindings keep their values; the row closes once the final event, task and scope cohort is accepted (M10 track review) |
+None: every row this document owns is closed.
 
 ## Sources
 

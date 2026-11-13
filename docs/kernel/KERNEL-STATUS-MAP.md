@@ -105,16 +105,16 @@ The kernel column reads: `accepted`, the row is `done` and the listed kernel sce
 | PC-TX-03 | accepted | [`transaction-nested`](../../scenarios/open-rows/transaction-nested/README.md); [`transaction-multi-instance`](../../scenarios/open-rows/transaction-multi-instance/README.md); [`transaction-multi-instance-concurrent-cancel`](../../scenarios/open-rows/transaction-multi-instance-concurrent-cancel/README.md); [`transaction-cancel-refusals`](../../scenarios/open-rows/transaction-cancel-refusals/README.md) | Compensation and Transaction, Multi-Instance |
 | PC-BASIC-01 | accepted | [`none-intermediate-throw`](../../scenarios/none-intermediate-throw/README.md); [`single-scope-models`](../../scenarios/single-scope-models/README.md); [`terminal-forks`](../../scenarios/terminal-forks/README.md); [`data-declaring-terminal-branches`](../../scenarios/data-declaring-terminal-branches/README.md); [`pass-through-implicit-split-merge`](../../scenarios/pass-through-implicit-split-merge/README.md); [`none-event-compositions`](../../scenarios/open-rows/none-event-compositions/README.md) | — |
 | PC-BASIC-02 | accepted | [`link-events`](../../scenarios/link-events/README.md); [`link-event-compositions`](../../scenarios/open-rows/link-event-compositions/README.md) | — |
-| PC-BASIC-03 | slice | [`event-race-compositions`](../../scenarios/open-rows/event-race-compositions/README.md); [`exclusive-choice-compositions`](../../scenarios/open-rows/exclusive-choice-compositions/README.md); [`inclusive-join-compositions`](../../scenarios/open-rows/inclusive-join-compositions/README.md); [`link-event-compositions`](../../scenarios/open-rows/link-event-compositions/README.md); [`split-branch-order`](../../scenarios/open-rows/split-branch-order/README.md) | — |
+| PC-BASIC-03 | accepted | [`event-race-compositions`](../../scenarios/open-rows/event-race-compositions/README.md); [`exclusive-choice-compositions`](../../scenarios/open-rows/exclusive-choice-compositions/README.md); [`inclusive-join-compositions`](../../scenarios/open-rows/inclusive-join-compositions/README.md); [`link-event-compositions`](../../scenarios/open-rows/link-event-compositions/README.md); [`split-branch-order`](../../scenarios/open-rows/split-branch-order/README.md) | — |
 | PC-BASIC-04 | accepted | [`user-task-preserved-notation`](../../scenarios/user-task-preserved-notation/README.md); [`user-task-process-data-preserved-notation`](../../scenarios/user-task-process-data-preserved-notation/README.md); [`event-reference-forms`](../../scenarios/open-rows/event-reference-forms/README.md); [`interchange-reference-forms`](../../scenarios/open-rows/interchange-reference-forms/README.md) | — |
 | PC-DELIVERY-01 | slice (held) | [`serial-classification`](../../packages/differential/test/fixtures/serial-classification.scenario.json); [`mixed-invoice-rework`](../../packages/differential/test/fixtures/mixed-invoice-rework.scenario.json); [`business-error`](../../packages/differential/test/fixtures/business-error.scenario.json) | — |
-| PC-JOURNEY-01 | absent | — | — |
-| PC-JOURNEY-02 | slice | [`expense-exception-review`](../../scenarios/expense-exception-review/README.md) (does not complete: `undeclared-output` rejections) | — |
-| PC-JOURNEY-03 | absent | — | — |
-| PC-JOURNEY-04 | absent | — | — |
-| PC-JOURNEY-05 | absent | — | — |
-| PC-JOURNEY-06 | absent | — | — |
-| PC-JOURNEY-07 | absent | — | — |
+| PC-JOURNEY-01 | accepted | [`journey-order-invoice`](../../scenarios/open-rows/journey-order-invoice/README.md) | — |
+| PC-JOURNEY-02 | accepted | [`journey-fulfillment-calls`](../../scenarios/open-rows/journey-fulfillment-calls/README.md) | — |
+| PC-JOURNEY-03 | accepted | [`journey-sequential-applicants`](../../scenarios/open-rows/journey-sequential-applicants/README.md) | — |
+| PC-JOURNEY-04 | accepted | [`journey-parallel-applicants`](../../scenarios/open-rows/journey-parallel-applicants/README.md) | — |
+| PC-JOURNEY-05 | accepted | [`journey-scheduled-case`](../../scenarios/open-rows/journey-scheduled-case/README.md) | — |
+| PC-JOURNEY-06 | accepted | [`journey-order-payment`](../../scenarios/open-rows/journey-order-payment/README.md) | — |
+| PC-JOURNEY-07 | accepted | [`journey-booking-recovery`](../../scenarios/open-rows/journey-booking-recovery/README.md) | — |
 | PC-QUALIFY-01 | absent | — | — |
 | PC-QUALIFY-02 | absent | — | — |
 | PC-QUALIFY-03 | absent (held) | — | — |
