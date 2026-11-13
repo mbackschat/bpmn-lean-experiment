@@ -128,6 +128,17 @@ export type StateBroadcast = Readonly<{
 }> & (Readonly<{ name: string }> | Readonly<{ signalRef: Readonly<{ id: string; namespace?: string }> }>);
 
 /**
+ * Why a failed instance failed (`canonical-result.schema.json#/$defs/instanceFailure`): its code and message, the
+ * failed occurrence, and the occurrences the failure names, such as a Compensation's trigger and handler.
+ */
+export type StateInstanceFailure = Readonly<{
+  code: string;
+  message: string | null;
+  occurrence: StateOccurrenceId;
+  related: readonly Readonly<{ name: string; occurrence: StateOccurrenceId }>[];
+}>;
+
+/**
  * The canonical state observation (`canonical-result.schema.json#/$defs/state`); `failure` only when failed and
  * `broadcasts` only after an input that threw a Signal.
  */
@@ -140,7 +151,7 @@ export type ExecutionState = Readonly<{
   scopes: readonly PublicJsonObject[];
   openWaits: readonly StateOpenWait[];
   broadcasts?: readonly StateBroadcast[];
-  failure?: PublicJsonObject;
+  failure?: StateInstanceFailure;
 }>;
 
 export type CurrentCommittedExecution = Readonly<{

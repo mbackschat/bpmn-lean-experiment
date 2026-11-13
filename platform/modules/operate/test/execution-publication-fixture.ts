@@ -151,12 +151,13 @@ export function failedPage(message: string | null = "échec 😀\u0000"): Execut
         status: "failed",
         openWaits: [],
         failure: {
-          kind: "compensationHandlerFailure",
-          triggerId: { processInstanceId: "Instance_1", elementId: "Throw", activation: 1 },
-          handlerId: { processInstanceId: "Instance_1", elementId: "Undo", activation: 2 },
-          effectId: { processInstanceId: "Instance_1", elementId: "Undo_Service", activation: 3 },
           code: "undo-échec",
           message,
+          occurrence: { processInstanceId: "Instance_1", elementId: "Undo_Service", activation: 3 },
+          related: [
+            { name: "trigger", occurrence: { processInstanceId: "Instance_1", elementId: "Throw", activation: 1 } },
+            { name: "handler", occurrence: { processInstanceId: "Instance_1", elementId: "Undo", activation: 2 } },
+          ],
         },
       },
     },

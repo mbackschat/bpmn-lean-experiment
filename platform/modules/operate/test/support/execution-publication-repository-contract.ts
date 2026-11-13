@@ -45,7 +45,7 @@ export function registerExecutionPublicationRepositoryContract(
         await assert.rejects(fixture.executions.applyPage(exact, failedPage("changed")),
           { name: "ExecutionPublicationIntegrityError" });
         const current = suffix.current;
-        if (current?.state.status !== "failed") assert.fail("failed fixture");
+        if (current?.state.status !== "failed" || current.state.failure === undefined) assert.fail("failed fixture");
         const substituted = {
           ...suffix,
           current: {

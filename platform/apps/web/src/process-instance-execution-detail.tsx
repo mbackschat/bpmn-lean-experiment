@@ -3,9 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ProcessStatus } from "@bpmn-lean/platform-contracts";
 import type {
   ExecutionPublicationExport,
-  PublicJsonObject,
-  PublicJsonValue,
   PublicProcessInstanceIdentity,
+  StateInstanceFailure,
   StateOccurrenceId,
 } from "@bpmn-lean/platform-contracts";
 import {
@@ -384,72 +383,29 @@ function ExecutionOverview({
   );
 }
 
-/** The kernel's failure form (`canonical-result.schema.json#/$defs/instanceFailure`), read from the opaque contract value. */
-type InstanceFailure = Readonly<{
-  code: string;
-  message: string | null;
-  occurrence: StateOccurrenceId;
-  related: readonly Readonly<{ name: string; occurrence: StateOccurrenceId }>[];
-}>;
-
-function FailureDetails({ failure }: Readonly<{ failure: PublicJsonObject }>) {
-  const read = readInstanceFailure(failure);
+function FailureDetails({ failure }: Readonly<{ failure: StateInstanceFailure }>) {
   return (
     <section className={styles.overview} aria-labelledby="process-failure-heading">
       <h4 id="process-failure-heading">Process failure</h4>
-      {read === null ? (
-        <p>The published failure does not have the engine's failure form; its exact value follows.</p>
-      ) : (
-        <>
-          <dl className={styles.facts}>
-            <Fact label="Code" value={read.code} />
-            <dt>Message</dt>
-            <dd>{read.message === null ? <span>Absent (null)</span> : <code>{read.message}</code>}</dd>
-          </dl>
-          <FailureOccurrence id="failure-occurrence-heading" label="Failed occurrence" occurrence={read.occurrence} />
-          {read.related.map(({ name, occurrence }, index) => (
-            <FailureOccurrence
-              id={`failure-related-heading-${index}`}
-              key={JSON.stringify([name, occurrence.processInstanceId, occurrence.elementId, occurrence.activation])}
-              label={`Related occurrence: ${name}`}
-              occurrence={occurrence}
-            />
-          ))}
-        </>
-      )}
+      <dl className={styles.facts}>
+        <Fact label="Code" value={failure.code} />
+        <dt>Message</dt>
+        <dd>{failure.message === null ? <span>Absent (null)</span> : <code>{failure.message}</code>}</dd>
+      </dl>
+      <FailureOccurrence id="failure-occurrence-heading" label="Failed occurrence" occurrence={failure.occurrence} />
+      {failure.related.map(({ name, occurrence }, index) => (
+        <FailureOccurrence
+          id={`failure-related-heading-${index}`}
+          key={JSON.stringify([name, occurrence.processInstanceId, occurrence.elementId, occurrence.activation])}
+          label={`Related occurrence: ${name}`}
+          occurrence={occurrence}
+        />
+      ))}
       <InlineDisclosure title="Exact failure value">
         <pre>{JSON.stringify(failure, null, 2)}</pre>
       </InlineDisclosure>
     </section>
   );
-}
-
-function readInstanceFailure(failure: PublicJsonObject): InstanceFailure | null {
-  const { code, message, occurrence, related } = failure;
-  const occurrenceId = readOccurrence(occurrence);
-  if (typeof code !== "string" || (message !== null && typeof message !== "string") ||
-      occurrenceId === null || !Array.isArray(related)) return null;
-  const relatedOccurrences: { name: string; occurrence: StateOccurrenceId }[] = [];
-  for (const entry of related) {
-    if (!isJsonObject(entry)) return null;
-    const name = entry.name;
-    const relatedId = readOccurrence(entry.occurrence);
-    if (typeof name !== "string" || relatedId === null) return null;
-    relatedOccurrences.push({ name, occurrence: relatedId });
-  }
-  return { code, message: message ?? null, occurrence: occurrenceId, related: relatedOccurrences };
-}
-
-function readOccurrence(value: PublicJsonValue | undefined): StateOccurrenceId | null {
-  if (!isJsonObject(value)) return null;
-  const { processInstanceId, elementId, activation } = value;
-  return typeof processInstanceId === "string" && typeof elementId === "string" && typeof activation === "number"
-    ? { processInstanceId, elementId, activation }
-    : null;
-}
-
-function isJsonObject(value: PublicJsonValue | undefined): value is PublicJsonObject {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function FailureOccurrence({ id, label, occurrence }: Readonly<{
