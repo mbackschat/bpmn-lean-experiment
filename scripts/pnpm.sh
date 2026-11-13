@@ -89,7 +89,7 @@ trap 'kill -INT "$pnpm_pid" 2>/dev/null || true' 2
 trap 'kill -TERM "$pnpm_pid" 2>/dev/null || true' 15
 
 # Every Node process tree runs under the memory brake: a V8 heap cap misses Buffers, native memory
-# and child processes, and on 2026-11-13 one test that never settled drove a 16 GB host to 145 GB;
+# and child processes, and on 2026-11-13 one population test drove a 16 GB host to 145 GB;
 # see scripts/memory-brake.sh. The brake's output goes nowhere: its orphaned `sleep` would otherwise
 # hold a piped or captured stdout open for up to two seconds after pnpm exits.
 "$script_dir/memory-brake.sh" "$$" "$((node_memory_brake_mib * 1024))" "$node_memory_brake_marker" \

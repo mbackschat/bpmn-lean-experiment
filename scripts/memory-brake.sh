@@ -8,7 +8,7 @@
 # incidents set the rule:
 # - 2026-10-14: a kernel-reduced conformance module reached a 13 GB footprint in a Lean build and
 #   filled the host's swap (Finding 78 of the retired process assessment ledger).
-# - 2026-11-13: a Node population test that never settled drove a 16 GB host to 145 GB.
+# - 2026-11-13: a Node population test under an uncommitted host change drove a 16 GB host to 145 GB.
 # This is an emergency brake, not a measurement; the resource bounds live in the wrappers' manifest
 # values (`package.json` `config`) and in docs/kernel/ENGINEERING-POLICY.md#local-loop.
 #
