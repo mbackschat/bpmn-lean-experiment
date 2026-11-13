@@ -17,14 +17,21 @@ import type { KernelJson } from "./wire.js";
 
 const configuredHandlers: ReadonlyMap<string, string> = new Map([["urn:bpmn-lean:task-handler:probe-v1", operation("probe")]]);
 
-const serviceWork = (ctx: ReadContext, element: ElementRecord): KernelJson =>
-  ctor("service", { payload: { ...(effectBinding(ctx, element) as Record<string, KernelJson>), handlerKey: handlerKey(ctx, element) } });
+const serviceWork = (ctx: ReadContext, element: ElementRecord): KernelJson => ctor("service", {
+  payload: { ...(effectBinding(ctx, element) as Record<string, KernelJson>), handlerKey: handlerKey(ctx, element), taskDefinition: false },
+});
 
+/**
+ * A Task's `bpmnLean:taskDefinition` extension, read under every profile and marked as such: CIB ignores it (CIB-LIM-0011),
+ * so admission, not the reader, refuses it where a profile selects `ConfiguredTask.refused`.
+ */
 function configuredTaskWork(element: ElementRecord): KernelJson | null {
   const definition = extensionValues(element).find((value) => value.$type === "bpmnLean:TaskDefinition");
   if (definition === undefined) return null;
   const handler = text(definition, "type") ?? "";
-  return ctor("service", { payload: { protocol: activityProtocol, operation: configuredHandlers.get(handler) ?? handler, handlerKey: null } });
+  return ctor("service", {
+    payload: { protocol: activityProtocol, operation: configuredHandlers.get(handler) ?? handler, handlerKey: null, taskDefinition: true },
+  });
 }
 
 /**

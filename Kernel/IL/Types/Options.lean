@@ -262,6 +262,16 @@ inductive BusinessRuleTask where
   | decisionTable
   deriving DecidableEq, Repr
 
+/-- What a Task carrying the project's `bpmnLean:taskDefinition` extension does
+([work semantics](../../../docs/kernel/semantics/WORK-SEMANTICS-SPEC.md#tasks-without-work)). -/
+inductive ConfiguredTask where
+  /-- BPMN 2.0.2 §7.7, §8.3.3: an extended Task type that waits for the external work its handler type names. -/
+  | externalWork
+  /-- CIB-LIM-0011: CIB ignores the extension and passes the Task through as an Abstract Task, so a profile that claims
+  CIB compatibility refuses it rather than open work CIB never opens. -/
+  | refused
+  deriving DecidableEq, Repr
+
 /-- What a Script Task executes ([script semantics](../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md)). -/
 inductive ScriptTask where
   /-- BPMN 2.0.2 §10.3.3 names no script language, so a Script Task has no meaning the kernel executes. -/
@@ -425,6 +435,7 @@ structure ProfileOptions where
   multiInstanceCollection : CollectionRead := .entrySnapshot
   businessRuleTask : BusinessRuleTask := .refused
   scriptTask : ScriptTask := .refused
+  configuredTask : ConfiguredTask := .externalWork
   inclusiveJoinReach : InclusiveJoinReach := .withBoundaries
   branchSchedule : BranchSchedule := .orderInvariant
   conditionalRetrigger : ConditionalRetrigger := .edge

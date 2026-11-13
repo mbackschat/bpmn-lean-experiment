@@ -336,8 +336,12 @@ def script (options : ProfileOptions) (work : ScriptWork) : Option String :=
         | none => some "work.script.source"
         | some source => if sourceExpression source then some "work.script.sourceExpression" else none
 
-def service (work : ServiceWork) : Option String :=
-  if work.protocol.isEmpty || work.operation.isEmpty then some "work.service.unboundImplementation" else none
+/-- Service work without a binding has no handler to invoke (CIB-LIM-0051). The work of a Task carrying the
+`bpmnLean:taskDefinition` extension is refused under `ConfiguredTask.refused`, since CIB ignores the extension and passes
+the Task through (CIB-LIM-0011). -/
+def service (options : ProfileOptions) (work : ServiceWork) : Option String :=
+  if work.taskDefinition && options.configuredTask == .refused then some "work.configuredTask"
+  else if work.protocol.isEmpty || work.operation.isEmpty then some "work.service.unboundImplementation" else none
 
 /-- A looping Call's input Data Associations: the reader reads the loop's item association as the Call's own input from
 the `inputDataItem`, while each instance holds the item under the Data Input that association feeds (BPMN 2.0.2
@@ -356,7 +360,7 @@ def activity (program : Program) (header : Header) (payload : ActivityPayload) :
     | .manual => none
     | .user task => userTask task
     | .receive work => receive program.options work payload.envelope
-    | .service work => service work
+    | .service work => service program.options work
     | .send _ => some "work.send"
     | .script work => script program.options work
     | .rule work => ruleAcrossDeployments program header <|> Decision.task program work payload.envelope

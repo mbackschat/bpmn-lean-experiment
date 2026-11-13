@@ -71,6 +71,7 @@
     "multiInstanceCollection": "entrySnapshot",
     "businessRuleTask": "refused",
     "scriptTask": "refused",
+    "configuredTask": "externalWork",
     "inclusiveJoinReach": "withBoundaries",
     "branchSchedule": "orderInvariant",
     "conditionalRetrigger": "edge",
@@ -531,7 +532,8 @@
               "payload": {
                 "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
                 "operation": "urn:bpmn-lean:effect-operation:compensation-single-effect-v1",
-                "handlerKey": null
+                "handlerKey": null,
+                "taskDefinition": false
               }
             }
           },
@@ -578,7 +580,8 @@
               "payload": {
                 "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
                 "operation": "urn:bpmn-lean:effect-operation:compensation-single-effect-v1",
-                "handlerKey": null
+                "handlerKey": null,
+                "taskDefinition": false
               }
             }
           },
@@ -615,7 +618,8 @@
               "payload": {
                 "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
                 "operation": "urn:bpmn-lean:effect-operation:compensation-single-effect-v1",
-                "handlerKey": null
+                "handlerKey": null,
+                "taskDefinition": false
               }
             }
           },

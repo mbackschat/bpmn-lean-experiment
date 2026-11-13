@@ -83,6 +83,7 @@ export type KernelProfileOptions = Readonly<{
   multiInstanceCollection: "entrySnapshot" | "sequentialReread";
   businessRuleTask: "refused" | "decisionTable";
   scriptTask: "refused" | "javascript";
+  configuredTask: "externalWork" | "refused";
   inclusiveJoinReach: "withBoundaries" | "outgoingOnly";
   branchSchedule: "orderInvariant" | "declarationDepthFirst";
   conditionalRetrigger: "edge" | "eachWrite";
@@ -145,6 +146,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     multiInstanceCollection: selects("CIB-INT-0043") ? "sequentialReread" : "entrySnapshot",
     businessRuleTask: selects("CIB-EXT-0032") ? "decisionTable" : "refused",
     scriptTask: selects("CIB-EXT-0048") ? "javascript" : "refused",
+    configuredTask: selects("CIB-LIM-0011") ? "refused" : "externalWork",
     inclusiveJoinReach: selects("CIB-INT-0020") ? "outgoingOnly" : "withBoundaries",
     branchSchedule: selects("CIB-OP-0016") ? "declarationDepthFirst" : "orderInvariant",
     conditionalRetrigger: selects("CIB-EXT-0035") ? "eachWrite" : "edge",

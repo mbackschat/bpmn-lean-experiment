@@ -462,6 +462,17 @@ export const rows: readonly Row[] = [
     mutate: withTask(serviceWork("http", "")),
     control: withTask(serviceWork()),
   },
+  {
+    code: "work.configuredTask", description: "a Task's task-definition extension under configuredTask = refused (CIB-LIM-0011)",
+    mutate: (program) => withOptions(withTask(serviceWork("urn:p", "urn:o", null, true))(program), { configuredTask: "refused" }),
+    control: withTask(serviceWork("urn:p", "urn:o", null, true)),
+  },
+  {
+    code: "work.service.unboundImplementation",
+    description: "a Service Task without an operation under configuredTask = refused, which refuses only the extension's work",
+    mutate: (program) => withOptions(withTask(serviceWork("http", ""))(program), { configuredTask: "refused" }),
+    control: (program) => withOptions(withTask(serviceWork())(program), { configuredTask: "refused" }),
+  },
   { code: "work.send", description: "a Send Task", mutate: withTask(sendWork()) },
   {
     code: "work.script", description: "a Script Task under the standards reading",

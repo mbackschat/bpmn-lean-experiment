@@ -30,7 +30,7 @@ function program(mode: string, options: Json = cib): Json {
     elements: [
       { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_T"] } } },
       { activity: { header: header("T", "serviceTask"), payload: {
-        work: { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null } } },
+        work: { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null, taskDefinition: false } } },
         envelope: { incoming: ["To_T"], outgoing: ["To_End"], inputs: [], outputs: [], boundaries: [], multiInstance: {
           mode, count: { collection: { items: { variable: { name: "items" } } } }, elementVariable: null,
           completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: null, outputCollection: null,

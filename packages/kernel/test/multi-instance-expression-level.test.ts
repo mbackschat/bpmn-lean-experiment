@@ -37,7 +37,7 @@ function program(shape: Shape = {}): Json {
   const work = shape.user === true
     ? { user: { payload: { name: null, assignee: null, candidateUsers: [], candidateGroups: [], formKey: null, formFields: [],
       dueDate: null, followUpDate: null, priority: null } } }
-    : { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null } } };
+    : { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null, taskDefinition: false } } };
   return {
     ...slice,
     options: { ...(slice["options"] as Json), ...cib, ...shape.options },

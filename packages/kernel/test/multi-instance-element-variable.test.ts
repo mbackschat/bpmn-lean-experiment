@@ -30,7 +30,7 @@ function program(loop: Json): Json {
     elements: [
       { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_T"] } } },
       { activity: { header: header("T", "serviceTask"), payload: {
-        work: { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null } } },
+        work: { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null, taskDefinition: false } } },
         envelope: { incoming: ["To_T"], outgoing: ["To_End"], inputs: [], outputs: [], boundaries: [], multiInstance: {
           mode: "parallel", count: { collection: { items: { variable: { name: "flags" } } } }, elementVariable: "flag",
           completionCondition: { variable: { name: "flag" } }, inputDataItem: null, outputDataItem: null,

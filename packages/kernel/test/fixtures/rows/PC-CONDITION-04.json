@@ -71,6 +71,7 @@
     "multiInstanceCollection": "entrySnapshot",
     "businessRuleTask": "refused",
     "scriptTask": "refused",
+    "configuredTask": "externalWork",
     "inclusiveJoinReach": "withBoundaries",
     "branchSchedule": "orderInvariant",
     "conditionalRetrigger": "edge",

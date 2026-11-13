@@ -177,6 +177,7 @@
     "multiInstanceCollection": "sequentialReread",
     "businessRuleTask": "decisionTable",
     "scriptTask": "javascript",
+    "configuredTask": "externalWork",
     "inclusiveJoinReach": "outgoingOnly",
     "branchSchedule": "declarationDepthFirst",
     "conditionalRetrigger": "eachWrite",

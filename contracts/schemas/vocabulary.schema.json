@@ -364,6 +364,12 @@
             "javascript"
           ]
         },
+        "configuredTask": {
+          "enum": [
+            "externalWork",
+            "refused"
+          ]
+        },
         "inclusiveJoinReach": {
           "enum": [
             "withBoundaries",
@@ -654,6 +660,7 @@
         "work.call.propagateAll",
         "work.call.rootProcess",
         "work.call.tenant",
+        "work.configuredTask",
         "work.handlerKeyName",
         "work.receive.correlation",
         "work.receive.dataOutputItem",

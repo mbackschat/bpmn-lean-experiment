@@ -322,6 +322,7 @@ test("the profile options are the full record, each non-default selected by the 
     multiInstanceCollection: "entrySnapshot",
     businessRuleTask: "refused",
     scriptTask: "refused",
+    configuredTask: "externalWork",
     inclusiveJoinReach: "withBoundaries",
     branchSchedule: "orderInvariant",
     conditionalRetrigger: "edge",
@@ -374,6 +375,7 @@ test("the profile options are the full record, each non-default selected by the 
     multiInstanceCollection: "entrySnapshot",
     businessRuleTask: "refused",
     scriptTask: "refused",
+    configuredTask: "externalWork",
     inclusiveJoinReach: "withBoundaries",
     branchSchedule: "orderInvariant",
     conditionalRetrigger: "edge",
@@ -407,6 +409,7 @@ test("the profile options are the full record, each non-default selected by the 
   assert.equal(kernelProfileOptions(["CIB-EXT-0036"]).malformedTimer, "rollsBackArming");
   assert.equal(kernelProfileOptions(["CIB-LIM-0022"]).messageNames, "addresses");
   assert.equal(kernelProfileOptions(["CIB-LIM-0024"]).scopeStart, "required");
+  assert.equal(kernelProfileOptions(["CIB-LIM-0011"]).configuredTask, "refused");
   assert.equal(kernelProfileOptions(["CIB-EXT-0005"]).submission, "installsVariables");
   for (const creates of ["CIB-EXT-0005", "CIB-EXT-0007", "CIB-EXT-0009", "CIB-EXT-0020"]) {
     assert.equal(kernelProfileOptions([creates]).undeclaredWrite, "atInstanceRoot", creates);
@@ -515,9 +518,28 @@ test("a Send Task without an implementation is read as Send work, a declared one
     operationRef: null,
   } } });
   assert.equal(element(p, "Plain").activity.header.sourceType, "sendTask");
-  assert.deepEqual(element(p, "Delegate").activity.payload.work, { service: { payload: { protocol: "##WebService", operation: "", handlerKey: "d" } } });
+  assert.deepEqual(element(p, "Delegate").activity.payload.work, { service: { payload: { protocol: "##WebService", operation: "", handlerKey: "d", taskDefinition: false } } });
   // CIB records the tag name as the activity type (`BpmnParse.java:1912`), whichever behaviour performs the task.
   assert.equal(element(p, "Delegate").activity.header.sourceType, "sendTask");
+});
+
+test("a Task's task-definition extension is read as Service work marked as the extension's, whatever the options", async () => {
+  const xml = model(`<bpmn:task id="Configured"><bpmn:extensionElements>
+    <bpmnLean:taskDefinition xmlns:bpmnLean="urn:bpmn-lean:bpmn:extensions:v1" type="urn:bpmn-lean:task-handler:probe-v1"/>
+    </bpmn:extensionElements></bpmn:task><bpmn:task id="Plain"/>`);
+  // Admission, not the reader, refuses the extension where CIB-LIM-0011 selects `configuredTask = refused`.
+  for (const relations of [[], ["CIB-LIM-0011"]]) {
+    const result = await readKernelProgram({
+      bytes: new TextEncoder().encode(xml), overlay: null, profile: "any-profile", limits: { maxBytes: 1 << 20, parserDeadlineMs: 2_000 },
+    }, kernelProfileOptions(relations));
+    assert.equal(result.kind, "read", JSON.stringify(result));
+    const p = (result as Extract<KernelRead, { kind: "read" }>).program as Json;
+    assert.deepEqual(element(p, "Configured").activity.payload.work, { service: { payload: {
+      protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation: "urn:bpmn-lean:effect-operation:probe-v1", handlerKey: null,
+      taskDefinition: true,
+    } } }, relations.join());
+    assert.equal(element(p, "Plain").activity.payload.work, "none", relations.join());
+  }
 });
 
 test("an unknown element, foreign attribute or unsafe source is refused with a stable code", async () => {

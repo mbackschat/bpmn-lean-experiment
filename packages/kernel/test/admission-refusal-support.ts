@@ -78,8 +78,9 @@ export const userWork = (over: Json = {}): Json => ({
     },
   },
 });
-export const serviceWork = (protocol = "http", operation = "get", handlerKey: string | null = null): Json =>
-  ({ service: { payload: { protocol, operation, handlerKey } } });
+/** Service work; `taskDefinition` marks a Task's `bpmnLean:taskDefinition` extension. */
+export const serviceWork = (protocol = "http", operation = "get", handlerKey: string | null = null, taskDefinition = false): Json =>
+  ({ service: { payload: { protocol, operation, handlerKey, taskDefinition } } });
 export const receiveWork = (over: Json = {}, instantiate = false, data: Json = {}): Json =>
   ({ receive: { payload: { message: messageBody(over), instantiate, dataOutputs: [], outputSets: 0, ...data } } });
 /**

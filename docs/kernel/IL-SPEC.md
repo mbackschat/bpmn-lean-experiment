@@ -53,7 +53,7 @@ The shared activity envelope, on Activity and Scope alike: `incoming` and `outgo
 
 `MultiInstance` is `mode`, `count` (`collection` or `cardinality` expression), `elementVariable`, `completionCondition`, `inputDataItem`, `outputDataItem` and `outputCollection`, read through the Data Associations; the loop characteristics' own transaction-boundary marks `asyncBefore` and `asyncAfter`, which mark each instance (CIB-EXT-0027); and the literal `loopDataInputRef` and `inputDataItemName`, which `multiInstanceBinding` may select instead (CIB-INT-0014).
 
-`Work` is one of `none`, `manual`, `user` (name, assignee, candidate users and groups, form key and fields, due and follow-up dates, priority), `receive` (a Message trigger, `instantiate`, the `dataOutputs` of its `ioSpecification`, each a `DataOutputDecl` of `id` and `itemRef`, and the count of its `outputSets`), `service` (protocol, operation), `send` (binding, recipient, correlation, Message and Operation references), `script` (format, source, result variable), `rule` (decision, result variable, binding, result mapping), `call` (called element, binding, tenant, business key, input and output mappings, propagate-all flags).
+`Work` is one of `none`, `manual`, `user` (name, assignee, candidate users and groups, form key and fields, due and follow-up dates, priority), `receive` (a Message trigger, `instantiate`, the `dataOutputs` of its `ioSpecification`, each a `DataOutputDecl` of `id` and `itemRef`, and the count of its `outputSets`), `service` (protocol, operation, delegate token, and whether a Task's `bpmnLean:taskDefinition` extension declared it), `send` (binding, recipient, correlation, Message and Operation references), `script` (format, source, result variable), `rule` (decision, result variable, binding, result mapping), `call` (called element, binding, tenant, business key, input and output mappings, propagate-all flags).
 
 ### Subscriptions and throws
 
@@ -102,6 +102,7 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `effectResultValues` | `outputSet`, `activityLocals` |
 | `outputContext` | `submission`, `activityScope` |
 | `multiInstanceCollection` | `entrySnapshot`, `sequentialReread` |
+| `configuredTask` | `externalWork`, `refused` |
 
 ## Inputs
 

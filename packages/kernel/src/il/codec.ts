@@ -46,6 +46,7 @@ import {
   MultiInstanceCount,
   BusinessRuleTask,
   ScriptTask,
+  ConfiguredTask,
   InclusiveJoinReach,
   BranchSchedule,
   ConditionalRetrigger,
@@ -302,7 +303,9 @@ const work = inductive<Work>("Work", {
   [WorkTag.Receive]: {
     payload: struct("ReceiveWork", { message: messageTrigger, instantiate: bool, dataOutputs: list(dataOutputDecl), outputSets: nat }),
   },
-  [WorkTag.Service]: { payload: struct("ServiceWork", { protocol: string, operation: string, handlerKey: option(string) }) },
+  [WorkTag.Service]: {
+    payload: struct("ServiceWork", { protocol: string, operation: string, handlerKey: option(string), taskDefinition: bool }),
+  },
   [WorkTag.Send]: {
     payload: struct("SendWork", {
       binding: effectBinding,
@@ -489,6 +492,7 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   multiInstanceCollection: members("CollectionRead", CollectionRead),
   businessRuleTask: members("BusinessRuleTask", BusinessRuleTask),
   scriptTask: members("ScriptTask", ScriptTask),
+  configuredTask: members("ConfiguredTask", ConfiguredTask),
   inclusiveJoinReach: members("InclusiveJoinReach", InclusiveJoinReach),
   branchSchedule: members("BranchSchedule", BranchSchedule),
   conditionalRetrigger: members("ConditionalRetrigger", ConditionalRetrigger),

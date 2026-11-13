@@ -17,6 +17,7 @@ import {
   WorkTag,
   assertNever,
   CalledElementResolution,
+  ConfiguredTask,
   ScriptTask,
   callWorkNamesDefinition,
   definitionRefEligibleFor,
@@ -481,7 +482,13 @@ function script(options: ProfileOptions, work: ScriptWork): string | null {
   return assertNever(options.scriptTask);
 }
 
-function service(work: ServiceWork): string | null {
+/**
+ * Service work without a binding has no handler to invoke (CIB-LIM-0051). The work of a Task carrying the
+ * `bpmnLean:taskDefinition` extension is refused under `ConfiguredTask.Refused`, since CIB ignores the extension and
+ * passes the Task through (CIB-LIM-0011).
+ */
+function service(options: ProfileOptions, work: ServiceWork): string | null {
+  if (work.taskDefinition && options.configuredTask === ConfiguredTask.Refused) return "work.configuredTask";
   return work.protocol.length === 0 || work.operation.length === 0 ? "work.service.unboundImplementation" : null;
 }
 
@@ -509,7 +516,7 @@ function work(program: Program, header: Header, payload: ActivityPayload): strin
     case WorkTag.Receive:
       return receive(program.options, assigned.payload, payload.envelope);
     case WorkTag.Service:
-      return service(assigned.payload);
+      return service(program.options, assigned.payload);
     case WorkTag.Send:
       return "work.send";
     case WorkTag.Script:

@@ -178,6 +178,7 @@
     "multiInstanceCollection": "sequentialReread",
     "businessRuleTask": "decisionTable",
     "scriptTask": "javascript",
+    "configuredTask": "externalWork",
     "inclusiveJoinReach": "outgoingOnly",
     "branchSchedule": "declarationDepthFirst",
     "conditionalRetrigger": "eachWrite",
@@ -441,7 +442,8 @@
               "payload": {
                 "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
                 "operation": "refundDeposit",
-                "handlerKey": "refundDeposit"
+                "handlerKey": "refundDeposit",
+                "taskDefinition": false
               }
             }
           },

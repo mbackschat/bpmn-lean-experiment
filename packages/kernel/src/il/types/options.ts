@@ -268,6 +268,20 @@ export enum BusinessRuleTask {
   DecisionTable = "decisionTable",
 }
 
+/**
+ * What a Task carrying the project's `bpmnLean:taskDefinition` extension does
+ * ([work semantics](../../../../../docs/kernel/semantics/WORK-SEMANTICS-SPEC.md#tasks-without-work)).
+ */
+export enum ConfiguredTask {
+  /** BPMN 2.0.2 §7.7, §8.3.3: an extended Task type that waits for the external work its handler type names. */
+  ExternalWork = "externalWork",
+  /**
+   * CIB-LIM-0011: CIB ignores the extension and passes the Task through as an Abstract Task, so a profile that claims CIB
+   * compatibility refuses it rather than open work CIB never opens.
+   */
+  Refused = "refused",
+}
+
 /** What a Script Task executes ([script semantics](../../../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md)). */
 export enum ScriptTask {
   /** BPMN 2.0.2 §10.3.3 names no script language, so a Script Task has no meaning the kernel executes. */
@@ -462,6 +476,7 @@ export interface ProfileOptions {
   readonly multiInstanceCollection: CollectionRead;
   readonly businessRuleTask: BusinessRuleTask;
   readonly scriptTask: ScriptTask;
+  readonly configuredTask: ConfiguredTask;
   readonly inclusiveJoinReach: InclusiveJoinReach;
   readonly branchSchedule: BranchSchedule;
   readonly conditionalRetrigger: ConditionalRetrigger;

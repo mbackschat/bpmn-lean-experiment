@@ -52,7 +52,7 @@ function program(shape: Shape = {}): Json {
     activity: {
       header: header("T", "serviceTask"),
       payload: {
-        work: { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null } } },
+        work: { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null, taskDefinition: false } } },
         envelope: {
           incoming: ["To_T"], outgoing: [outOf], inputs: [], outputs: [], boundaries: [], multiInstance: shape.plain === true ? null : loop,
           compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false, ...shape.envelope,
