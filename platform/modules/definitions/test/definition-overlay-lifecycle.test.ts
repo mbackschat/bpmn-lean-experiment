@@ -10,7 +10,7 @@ import { DefinitionDeploymentService, DefinitionStartService, DefinitionHttpRout
 import type { ExactArtifactStore } from "@bpmn-lean/platform-definitions";
 import type { DefinitionCompiler, DefinitionVersionRegistrar, DefinitionCompilationRequest, DefinitionVersionStarter, DefinitionVersionStartRequest } from "@bpmn-lean/platform-engine-gateway";
 import { registeringEngine } from "./support/engine-registration.ts";
-import { unexpectedInternalFailure } from "./support/internal-failure-reporters.ts";
+import { unexpectedInternalFailure } from "@bpmn-lean/platform-contracts/testing";
 
 const bytes = new TextEncoder().encode("<exact-bpmn/>");
 const overlayBytes = new TextEncoder().encode('{"exact":"overlay"}');

@@ -12,7 +12,7 @@ import type {
 import {
   recordingInternalFailures,
   unexpectedInternalFailure,
-} from "./support/internal-failure-reporters.ts";
+} from "@bpmn-lean/platform-contracts/testing";
 
 test("serves the exact identity-only page for decoded filters", async () => {
   const search = new StubSearch(page(

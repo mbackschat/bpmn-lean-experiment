@@ -15,7 +15,7 @@ import {
 import {
   recordingInternalFailures,
   unexpectedInternalFailure,
-} from "./support/internal-failure-reporters.ts";
+} from "@bpmn-lean/platform-contracts/testing";
 
 test("uses configured public origin instead of an untrusted Host header", async () => {
   let routedUrl = "";

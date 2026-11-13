@@ -21,7 +21,7 @@ import {
 import {
   recordingInternalFailures,
   unexpectedInternalFailure,
-} from "./support/internal-failure-reporters.ts";
+} from "@bpmn-lean/platform-contracts/testing";
 
 const source = {
   kind: "bpmnSource",

@@ -1,7 +1,8 @@
+/** Test doubles for the platform's shared runtime types; never imported by production code. */
 import type {
   InternalFailureReport,
   InternalFailureReporter,
-} from "@bpmn-lean/platform-contracts";
+} from "./index.js";
 
 /** For tests that exercise no failure: a report is a test failure, and its throw surfaces at the awaited `handle`. */
 export const unexpectedInternalFailure: InternalFailureReporter = (report) => {

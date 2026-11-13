@@ -13,7 +13,7 @@ import type {
 import {
   recordingInternalFailures,
   unexpectedInternalFailure,
-} from "./support/internal-failure-reporters.ts";
+} from "@bpmn-lean/platform-contracts/testing";
 
 const definition = {
   processId: "Process/Review",

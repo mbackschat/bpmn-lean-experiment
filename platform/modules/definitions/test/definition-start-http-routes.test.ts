@@ -35,7 +35,7 @@ import { registeringEngine } from "./support/engine-registration.ts";
 import {
   recordingInternalFailures,
   unexpectedInternalFailure,
-} from "./support/internal-failure-reporters.ts";
+} from "@bpmn-lean/platform-contracts/testing";
 
 const bytes = new TextEncoder().encode("<exact-process/>");
 const storedDefinition = {

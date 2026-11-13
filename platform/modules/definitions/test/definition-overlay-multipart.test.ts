@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { DefinitionHttpRoutes, DefinitionDeploymentService, DefinitionStartService, ConfirmedProcessInstancePublicationService, InMemoryConfirmedProcessInstanceRepository } from "@bpmn-lean/platform-definitions";
 import type { DefinitionCompilationRequest } from "@bpmn-lean/platform-engine-gateway";
 import { registeringEngine } from "./support/engine-registration.ts";
-import { recordingInternalFailures, unexpectedInternalFailure } from "./support/internal-failure-reporters.ts";
+import { recordingInternalFailures, unexpectedInternalFailure } from "@bpmn-lean/platform-contracts/testing";
 
 const endpoint = "http://test/api/v1/definitions?sourceId=source&semanticProfile=profile";
 const source = new TextEncoder().encode("<bpmn/>");

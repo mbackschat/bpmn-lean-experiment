@@ -34,7 +34,7 @@ import { registeringEngine } from "./support/engine-registration.ts";
 import {
   recordingInternalFailures,
   unexpectedInternalFailure,
-} from "./support/internal-failure-reporters.ts";
+} from "@bpmn-lean/platform-contracts/testing";
 
 const encoder = new TextEncoder();
 const compilerFailure = new Error("private compiler detail");

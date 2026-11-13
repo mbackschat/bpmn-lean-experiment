@@ -41,6 +41,9 @@
       "@bpmn-lean/platform-contracts": [
         "./platform/contracts/src/index.ts"
       ],
+      "@bpmn-lean/platform-contracts/testing": [
+        "./platform/contracts/src/testing.ts"
+      ],
       "@bpmn-lean/platform-definitions": [
         "./platform/modules/definitions/src/index.ts"
       ],

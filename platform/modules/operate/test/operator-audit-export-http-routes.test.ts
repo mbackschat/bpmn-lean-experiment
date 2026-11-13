@@ -19,7 +19,7 @@ import {
 import {
   recordingInternalFailures,
   unexpectedInternalFailure,
-} from "./support/internal-failure-reporters.ts";
+} from "@bpmn-lean/platform-contracts/testing";
 import {
   operatorAuditExport,
   operatorAuditInstance,

@@ -11,7 +11,7 @@ import {
 import {
   recordingInternalFailures,
   unexpectedInternalFailure,
-} from "./support/internal-failure-reporters.ts";
+} from "@bpmn-lean/platform-contracts/testing";
 
 const route = "http://platform.example/api/v1/definitions/Process_1/versions/7/flow-node-metrics";
 

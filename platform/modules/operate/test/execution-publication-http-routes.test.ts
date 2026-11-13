@@ -23,7 +23,7 @@ import { firstPage } from "./execution-publication-fixture.ts";
 import {
   recordingInternalFailures,
   unexpectedInternalFailure,
-} from "./support/internal-failure-reporters.ts";
+} from "@bpmn-lean/platform-contracts/testing";
 import { PostgresqlProjectionReadKind } from "@bpmn-lean/platform-operate";
 
 test("serves the exact projected page and canonical export bytes", async () => {

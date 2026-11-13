@@ -15,7 +15,7 @@ import {
   createPlatformHttpServer,
   createStaticAssetsRoute,
 } from "@bpmn-lean/platform-server";
-import { unexpectedInternalFailure } from "./support/internal-failure-reporters.ts";
+import { unexpectedInternalFailure } from "@bpmn-lean/platform-contracts/testing";
 
 test("serves SPA assets with bounded MIME and cache policy", async () => {
   const root = await createAssetTree();

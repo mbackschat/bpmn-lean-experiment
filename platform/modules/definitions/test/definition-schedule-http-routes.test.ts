@@ -23,7 +23,7 @@ import type {
 import {
   recordingInternalFailures,
   unexpectedInternalFailure,
-} from "./support/internal-failure-reporters.ts";
+} from "@bpmn-lean/platform-contracts/testing";
 
 const dueAt = "2026-08-11T12:00:01.250Z";
 const definition = {
