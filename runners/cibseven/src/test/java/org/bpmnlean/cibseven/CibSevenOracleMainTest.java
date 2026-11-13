@@ -11,14 +11,23 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.MalformedInputException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class CibSevenOracleMainTest {
 
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
+  private static final String ORDER_INVOICE = "scenarios/open-rows/journey-order-invoice/";
+
+  @Rule public final TemporaryFolder temporary = new TemporaryFolder();
 
   @Test
   public void rejectsMalformedUtf8AtStdinBeforeJsonAdmission() throws Exception {
@@ -119,6 +128,55 @@ public class CibSevenOracleMainTest {
 
     var result = ScenarioJson.readResult(output.toString().lines().findFirst().orElseThrow());
     assertEquals("structured-value-bounds-start-over-depth-bound", result.scenarioId());
+  }
+
+  @Test
+  public void answersEveryHandlerTheScenariosOverlayNamesWithTheScenariosOwnResults() throws Exception {
+    var scenario = ScenarioJson.writeScenario(
+        ScenarioJson.read(PROJECT_ROOT.resolve(ORDER_INVOICE + "automatic-success.scenario.json")));
+    var output = new StringWriter();
+
+    CibSevenOracleMain.serve(new StringReader(scenario + System.lineSeparator()), output, PROJECT_ROOT);
+
+    var line = output.toString().lines().findFirst().orElseThrow();
+    var trace = ScenarioJson.readResult(line).trace();
+    for (var command : List.of("s01-start", "s02-enter-1", "s03-post-1", "s04-notice-1")) {
+      assertTrue(command, trace.contains(
+          new ScenarioProtocol.CommandObservation(command, ScenarioProtocol.CommandOutcome.COMMITTED)));
+    }
+    // Each wait publishes the overlay's descriptor, the one the kernel reads from the same overlay.
+    assertTrue(line.contains("\"operation\":\"postInvoice\""));
+    assertTrue(line.contains("\"operation\":\"sendPostingNotice\""));
+  }
+
+  @Test
+  public void failsLoudlyAtATaskWhoseTokenTheScenariosOverlayDoesNotDeclare() throws Exception {
+    var journey = PROJECT_ROOT.resolve(ORDER_INVOICE);
+    var root = temporary.getRoot().toPath();
+    Files.copy(journey.resolve("order-invoice.bpmn"), root.resolve("order-invoice.bpmn"));
+    Files.copy(journey.resolve("grade-decision.dmn"), root.resolve("grade-decision.dmn"));
+    var overlay = "{\"kind\":\"bpmnSourceOverlay\",\"id\":\"posting-only\",\"semanticProfile\":\"cibseven-2.2.0\","
+        + "\"effectBindings\":[{\"source\":{\"implementation\":\"urn:bpmn-lean:effect-protocol:activity-v1\","
+        + "\"delegateExpression\":\"${postInvoice}\"},\"descriptor\":{\"protocol\":"
+        + "\"urn:bpmn-lean:effect-protocol:activity-v1\",\"operation\":\"postInvoice\"}}],\"inertAttributes\":[]}";
+    Files.writeString(root.resolve("posting-only-overlay.json"), overlay, StandardCharsets.UTF_8);
+    var source = ScenarioJson.read(journey.resolve("automatic-success.scenario.json"));
+    var scenario = ScenarioJson.writeScenario(source)
+        .replace(ORDER_INVOICE, "")
+        .replace(source.bpmn().sourceOverlay().sha256(), sha256(overlay))
+        .replace("\"id\":\"order-invoice-handlers\"", "\"id\":\"posting-only\"");
+    var output = new StringWriter();
+
+    CibSevenOracleMain.serve(new StringReader(scenario + System.lineSeparator()), output, root);
+
+    var line = output.toString().lines().findFirst().orElseThrow();
+    assertTrue(line, line.startsWith("{\"kind\":\"scenarioHarnessFailure\""));
+    assertTrue(line, line.contains("SendNotice has no effect binding"));
+  }
+
+  private static String sha256(String text) throws Exception {
+    return HexFormat.of().formatHex(
+        MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8)));
   }
 
   @Test

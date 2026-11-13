@@ -465,7 +465,13 @@
       "BPMN 2.0.2 §10.6.2",
       "BPMN 2.0.2 §13.3.3"
     ],
-    "cibRevision": "not-applicable",
-    "cibRefs": []
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine-dmn/engine/src/main/java/org/cibseven/bpm/dmn/engine/impl/hitpolicy/UniqueHitPolicyHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/DmnBusinessRuleTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java"
+    ]
   }
 }
