@@ -1770,21 +1770,21 @@
     "evidence": "scenarios/open-rows/multi-instance-sub-process/concurrent-condition-race.cibseven-evidence.json",
     "firstDifference": "trace[0].outcome",
     "owners": [
-      "CIB-INT-0014"
+      "CIB-OP-0016"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/concurrent-write-race-call.cibseven-evidence.json",
     "firstDifference": "trace[0].outcome",
     "owners": [
-      "CIB-INT-0014"
+      "CIB-OP-0016"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/concurrent-write-race.cibseven-evidence.json",
     "firstDifference": "trace[0].outcome",
     "owners": [
-      "CIB-INT-0014"
+      "CIB-OP-0016"
     ]
   },
   {
@@ -2538,7 +2538,7 @@
     "evidence": "scenarios/user-task-cycle/cibseven-evidence.json",
     "firstDifference": "trace[3].outcome",
     "owners": [
-      "CIB-LIM-0013"
+      "CIB-EXT-0030"
     ]
   }
 ]
