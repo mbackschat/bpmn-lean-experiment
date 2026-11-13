@@ -205,7 +205,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Sequential Multi-Instance User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One generated User Task at a time in item order, over a collection read once on entry or a cardinality; each instance holds its item and submits exactly its output data item. The output collection, in item order and in the input's form, is written atomically only when every slot is filled, and an early completion or an interrupting boundary writes none. Only the standards profile writes it: CIB Seven 2.2.0 installs no standard Multi-Instance output aggregation (CIB-LIM-0001), so under the cibseven profiles no output collection is written. The kernel sets no instance count of its own, so the Multi-Instance refusal codes are its restrictions; a collection holds at most 32 members and a cardinality at most 2,147,483,647. On the Temporal host each instance counts against the Workflow-chain capacity table: at most 32 pending effects, 64 pending Timers and a 256 KiB state, and the host refuses an input that would exceed one before it commits. Among the refusals are a User Task loop without its output data item and an output mapping on the Activity.",
+    restriction: "One generated User Task at a time in item order, over a collection read once on entry or a cardinality; each instance holds its item and submits exactly its output data item. The output collection, in item order and in the input's form, is written atomically only when every slot is filled, and an early completion or an interrupting boundary writes none. Only the standards profile writes it: CIB Seven 2.2.0 installs no standard Multi-Instance output aggregation (CIB-LIM-0001), so under the cibseven profiles no output collection is written. The kernel sets no instance count of its own, so the Multi-Instance refusal codes are its restrictions; a collection holds at most 32 members and a cardinality at most 2,147,483,647. On the Temporal host each instance counts against the Hosted engine restrictions' pending-work and state limits, and the host refuses an input that would exceed one before it commits. Among the refusals are a User Task loop without its output data item and an output mapping on the Activity.",
     cibEvidence: notSelected,
   },
   {
@@ -213,7 +213,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Parallel Multi-Instance User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Every generated User Task begins on entry, over a collection read once on entry or a cardinality; each instance holds its item and submits exactly its output data item in any completion order, and the completion condition is evaluated after each completion. The output collection, in item order and in the input's form, is written only when every slot is filled; an early completion or an interrupting boundary ends the remaining instances and writes none. Only the standards profile writes it: CIB Seven 2.2.0 installs no standard Multi-Instance output aggregation (CIB-LIM-0001), so under the cibseven profiles no output collection is written. The kernel sets no instance count of its own, so the Multi-Instance refusal codes are its restrictions; a collection holds at most 32 members and a cardinality at most 2,147,483,647. On the Temporal host each instance counts against the Workflow-chain capacity table: at most 32 pending effects, 64 pending Timers and a 256 KiB state, and the host refuses an input that would exceed one before it commits.",
+    restriction: "Every generated User Task begins on entry, over a collection read once on entry or a cardinality; each instance holds its item and submits exactly its output data item in any completion order, and the completion condition is evaluated after each completion. The output collection, in item order and in the input's form, is written only when every slot is filled; an early completion or an interrupting boundary ends the remaining instances and writes none. Only the standards profile writes it: CIB Seven 2.2.0 installs no standard Multi-Instance output aggregation (CIB-LIM-0001), so under the cibseven profiles no output collection is written. The kernel sets no instance count of its own, so the Multi-Instance refusal codes are its restrictions; a collection holds at most 32 members and a cardinality at most 2,147,483,647. On the Temporal host each instance counts against the Hosted engine restrictions' pending-work and state limits, and the host refuses an input that would exceed one before it commits.",
     cibEvidence: notSelected,
   },
   // Owned by PC-MI-01–12, PC-TX-03 and PC-AUTO-06; the kernel's admission decides every loop form it describes.
@@ -668,7 +668,8 @@ export const mvpCapabilityCatalog = Object.freeze({
  *
  * A source the kernel admits claims capabilities; a source it refuses claims the restriction its code names. The
  * corpus guard (`scripts/executable-model-corpus.ts`) requires a row for every refusal code a claiming witness exhibits
- * and refuses a row whose code no retained scenario exhibits. The About page does not read these rows yet.
+ * and refuses a row whose code no retained scenario exhibits. The About page groups the rows by their basis's first
+ * semantics document.
  */
 export type MvpBpmnRestriction = Readonly<{
   refusalCode: string;

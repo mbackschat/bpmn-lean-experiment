@@ -7,7 +7,8 @@ import type { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { build } from "vite";
 
-import { mvpCapabilityCatalog } from "../../../../model-corpus/mvp-capabilities.ts";
+import { HostLimitUnit, hostRestrictions } from "../../../../model-corpus/host-restrictions.ts";
+import { mvpBpmnRestrictions, mvpCapabilityCatalog } from "../../../../model-corpus/mvp-capabilities.ts";
 import { muePreviewBetaTestOracle } from "../../../../scripts/mue-preview-beta-test-oracle.ts";
 
 const dependencies = ["react/jsx-runtime", "react", "@bpmn-lean/platform-ui-kit"] as const;
@@ -71,6 +72,46 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   assert.deepEqual(
     [...html.matchAll(/data-capability-id="([^"]+)"/gu)].map((match) => match[1]).sort(),
     mvpCapabilityCatalog.capabilities.map(({ id }) => id).sort(),
+  );
+});
+
+/** The markup of the table row whose start tag carries `attribute`, or `null` when no row carries it. */
+function rowWith(html: string, attribute: string): string | null {
+  const start = html.indexOf(attribute);
+  return start === -1 ? null : html.slice(start, html.indexOf("</tr>", start));
+}
+
+test("discloses every kernel restriction row and every hosted-engine restriction", () => {
+  const html = renderToStaticMarkup(createElement(module.CapabilitiesPanel, {
+    productVersion: "0.1.0",
+  }));
+
+  for (const { refusalCode, restriction, basis } of mvpBpmnRestrictions) {
+    const row = rowWith(html, `data-refusal-code="${refusalCode}"`);
+    assert.notEqual(row, null, `missing restriction row ${refusalCode}`);
+    for (const text of [refusalCode, restriction, basis]) {
+      assert.ok(row?.includes(escapedText(text)), `${refusalCode} must render ${JSON.stringify(text)}`);
+    }
+  }
+  assert.deepEqual(
+    [...html.matchAll(/data-refusal-code="([^"]+)"/gu)].map((match) => match[1]).sort(),
+    mvpBpmnRestrictions.map(({ refusalCode }) => refusalCode).sort(),
+  );
+
+  for (const { code, restriction, limit, issue } of hostRestrictions) {
+    const row = rowWith(html, `data-host-restriction-code="${code}"`);
+    assert.notEqual(row, null, `missing host restriction ${code}`);
+    // Every byte limit in the capacity table is a whole number of KiB.
+    const limitText = limit === null ? "No numeric limit" : limit.unit === HostLimitUnit.Bytes
+      ? `${String(limit.value / 1_024)} KiB`
+      : limit.value.toLocaleString("en-US");
+    for (const text of [code, restriction, limitText, `#${String(issue)}`]) {
+      assert.ok(row?.includes(escapedText(text)), `${code} must render ${JSON.stringify(text)}`);
+    }
+  }
+  assert.deepEqual(
+    [...html.matchAll(/data-host-restriction-code="([^"]+)"/gu)].map((match) => match[1]).sort(),
+    hostRestrictions.map(({ code }) => code).sort(),
   );
 });
 

@@ -93,6 +93,14 @@ test("every restriction row names a vocabulary refusal code and a basis that exi
   assert.deepEqual(findings, []);
 });
 
+test("every restriction row's basis begins with the semantics document the About page groups it under", () => {
+  assert.deepEqual(
+    mvpBpmnRestrictions.filter(({ basis }) => !semanticsDocuments.has(basis.split(";")[0]?.trim() ?? ""))
+      .map(({ refusalCode }) => refusalCode),
+    [],
+  );
+});
+
 test("the fact patterns recognize what they check", () => {
   assert.deepEqual(unknownFacts("refused (scope.withoutStart, CIB-LIM-0024) under scopeStart = required"), []);
   assert.deepEqual(unknownFacts("under the standards profile and the cibseven-2.2.0-scope-chain profile"), []);

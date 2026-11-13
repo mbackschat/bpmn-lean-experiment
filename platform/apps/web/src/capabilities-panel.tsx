@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { Button, ButtonVariant, InlineDisclosure } from "@bpmn-lean/platform-ui-kit";
 
+import { HostLimitUnit, hostRestrictions } from "../../../../model-corpus/host-restrictions.ts";
+import type { HostLimit } from "../../../../model-corpus/host-restrictions.ts";
 import {
   BpmnCapabilitySupport,
   CibCapabilityEvidenceKind,
+  mvpBpmnRestrictions,
   mvpCapabilityCatalog,
 } from "../../../../model-corpus/mvp-capabilities.ts";
 import type {
@@ -28,16 +31,11 @@ export type CapabilitiesPanelProps = Readonly<{
 
 export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
   const [expandedFamilies, setExpandedFamilies] = useState<ReadonlySet<string>>(() => new Set());
+  const [expandedAreas, setExpandedAreas] = useState<ReadonlySet<string>>(() => new Set());
   const families = Map.groupBy(mvpCapabilityCatalog.capabilities, (capability) => capability.family);
+  const areas = new Map([...Map.groupBy(mvpBpmnRestrictions, ({ basis }) => restrictionArea(basis))]
+    .sort(([left], [right]) => left.localeCompare(right, "en")));
 
-  function setFamilyExpanded(family: string, expanded: boolean): void {
-    setExpandedFamilies((previous) => {
-      const next = new Set(previous);
-      if (expanded) next.add(family);
-      else next.delete(family);
-      return next;
-    });
-  }
   return (
     <section className={styles.panel} aria-labelledby="capabilities-heading">
       <div className={styles.introduction}>
@@ -97,7 +95,7 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
             <Button variant={ButtonVariant.Secondary} onPress={() => setExpandedFamilies(new Set())}>Collapse all families</Button>
           </div>
           {[...families].map(([family, capabilities]) => (
-            <InlineDisclosure key={family} title={`${family} (${capabilities.length})`} isExpanded={expandedFamilies.has(family)} onExpandedChange={(expanded) => setFamilyExpanded(family, expanded)}>
+            <InlineDisclosure key={family} title={`${family} (${capabilities.length})`} isExpanded={expandedFamilies.has(family)} onExpandedChange={(expanded) => setExpandedFamilies((previous) => toggled(previous, family, expanded))}>
               <div className={`${styles.tableOwner} ${styles.capabilityTable}`}>
                 <table>
                   <caption>{family} — elements and variants</caption>
@@ -125,11 +123,100 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
           ))}
         </section>
       </InlineDisclosure>
+      <InlineDisclosure title="Refused BPMN forms">
+        <section className={styles.families} aria-label="Refused BPMN forms by semantic area">
+          <p>{mvpBpmnRestrictions.length} forms in {areas.size} semantic areas are refused when a definition is deployed. Each refusal names its stable refusal code; the basis names the semantics document and relation-register entries that record why.</p>
+          <div className={styles.familyActions}>
+            <Button variant={ButtonVariant.Secondary} onPress={() => setExpandedAreas(new Set(areas.keys()))}>Expand all areas</Button>
+            <Button variant={ButtonVariant.Secondary} onPress={() => setExpandedAreas(new Set())}>Collapse all areas</Button>
+          </div>
+          {[...areas].map(([area, restrictions]) => (
+            <InlineDisclosure key={area} title={`${area} (${restrictions.length})`} isExpanded={expandedAreas.has(area)} onExpandedChange={(expanded) => setExpandedAreas((previous) => toggled(previous, area, expanded))}>
+              <div className={`${styles.tableOwner} ${styles.restrictionTable}`}>
+                <table>
+                  <caption>{area} — refused forms</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Refusal code</th>
+                      <th scope="col">What it refuses</th>
+                      <th scope="col">Basis</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {restrictions.map((restriction) => (
+                      <tr key={restriction.refusalCode} data-refusal-code={restriction.refusalCode}>
+                        <th scope="row" data-label="Refusal code"><code>{restriction.refusalCode}</code></th>
+                        <td data-label="What it refuses">{restriction.restriction}</td>
+                        <td data-label="Basis">{restriction.basis}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </InlineDisclosure>
+          ))}
+        </section>
+      </InlineDisclosure>
+      <InlineDisclosure title="Hosted engine restrictions">
+        <section className={styles.families} aria-label="Hosted engine restriction overview">
+          <p>The kernel executes these, but the hosted engine refuses them with a stable host code. It runs each process instance as a chain of Temporal Workflow Runs whose capacity limits a large or busy instance can meet. An open issue tracks each restriction.</p>
+          <div className={`${styles.tableOwner} ${styles.hostTable}`}>
+            <table>
+              <caption>Hosted engine — restrictions and limits</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Code</th>
+                  <th scope="col">What it refuses</th>
+                  <th scope="col">Limit</th>
+                  <th scope="col">Tracked in</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hostRestrictions.map((restriction) => (
+                  <tr key={restriction.code} data-host-restriction-code={restriction.code}>
+                    <th scope="row" data-label="Code"><code>{restriction.code}</code></th>
+                    <td data-label="What it refuses">{restriction.restriction}</td>
+                    <td data-label="Limit">{limitLabel(restriction.limit)}</td>
+                    <td data-label="Tracked in">{`Issue #${String(restriction.issue)}`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </InlineDisclosure>
       <p className={styles.followUp}>
         The repository requirement ledger owns BPMN dispositions; the kernel status map owns exact current evidence. Unsupported or broader behavior remains outside these rows until its semantic profile and tests are approved.
       </p>
     </section>
   );
+}
+
+function toggled(previous: ReadonlySet<string>, key: string, expanded: boolean): ReadonlySet<string> {
+  const next = new Set(previous);
+  if (expanded) next.add(key);
+  else next.delete(key);
+  return next;
+}
+
+/**
+ * The semantic area a restriction row belongs to: its basis's first part, a semantics document name such as
+ * `MULTI-INSTANCE-SEMANTICS-SPEC`, read as "Multi-instance" (`scripts/capability-catalog-disclosures.test.ts` holds
+ * every row's basis to begin with one).
+ */
+function restrictionArea(basis: string): string {
+  const area = (basis.split(";")[0] ?? "").trim().replace(/-SEMANTICS-SPEC$/u, "");
+  return area.charAt(0) + area.slice(1).toLowerCase();
+}
+
+function limitLabel(limit: HostLimit | null): string {
+  if (limit === null) return "No numeric limit";
+  switch (limit.unit) {
+    case HostLimitUnit.Bytes:
+      return `${String(limit.value / 1_024)} KiB`;
+    case HostLimitUnit.Count:
+      return limit.value.toLocaleString("en-US");
+  }
 }
 
 function supportLabel(support: BpmnCapabilitySupportValue): string {

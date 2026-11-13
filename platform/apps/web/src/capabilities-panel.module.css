@@ -127,10 +127,23 @@
   font: var(--ui-font-label);
 }
 
+.tableOwner tbody code {
+  overflow-wrap: anywhere;
+}
+
 .capabilityTable thead th:nth-child(1) { width: 22%; }
 .capabilityTable thead th:nth-child(2) { width: 18%; }
 .capabilityTable thead th:nth-child(3) { width: 38%; }
 .capabilityTable thead th:nth-child(4) { width: 22%; }
+
+.restrictionTable thead th:nth-child(1) { width: 28%; }
+.restrictionTable thead th:nth-child(2) { width: 50%; }
+.restrictionTable thead th:nth-child(3) { width: 22%; }
+
+.hostTable thead th:nth-child(1) { width: 26%; }
+.hostTable thead th:nth-child(2) { width: 46%; }
+.hostTable thead th:nth-child(3) { width: 12%; }
+.hostTable thead th:nth-child(4) { width: 16%; }
 
 .families {
   display: grid;
