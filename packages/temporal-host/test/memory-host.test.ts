@@ -67,6 +67,13 @@ test("a command commits through the kernel and publishes its journal; the ended 
   assert.deepEqual(await host.command("W", complete), { outcome: "rejected", code: "workflow-closed", revision: null });
 });
 
+test("an Update to an address the host never held is workflow-unknown, not workflow-closed", async () => {
+  const host = createMemoryProcessHost({ taskQueue: "queue", now: () => 5_000 });
+  assert.equal(await host.describe("never-started"), null);
+  assert.deepEqual(await host.command("never-started", complete), { outcome: "rejected", code: "workflow-unknown", revision: null });
+  assert.deepEqual(await host.deliver("never-started", complete), { outcome: "rejected", code: "workflow-unknown", revision: null });
+});
+
 // One input's journal grows with its closure: a 2,000-step automatic loop published 2.2 MB of it, beyond Temporal's
 // 2 MB query blob limit (PR #69, 2026-11-10). The publication pages carry those facts in bounded pages instead.
 test("a host snapshot carries the open state without the last input's journal", async () => {

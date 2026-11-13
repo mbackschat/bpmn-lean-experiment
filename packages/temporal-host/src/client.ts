@@ -3,7 +3,8 @@
  * addresses the Workflow ID, never a Run ID, so it reaches whichever Run of the chain is current.
  *
  * A refused Update comes back as the kernel's `rejected` outcome with the validator's code; an Update sent to a
- * chain that has ended is `rejected` too, since no instance is running to take it.
+ * chain that has ended is `rejected` too, since no instance is running to take it, and one sent to an address that
+ * holds no chain Temporal can describe is `rejected` as unknown.
  */
 import {
   ApplicationFailure,
@@ -33,6 +34,7 @@ import {
   timerFireUpdate,
   workflowClosed,
   workflowType,
+  workflowUnknown,
   type CommandResult,
   type HostSnapshot,
   type ProcessResult,
@@ -80,9 +82,28 @@ export async function submitUpdate(
         error.cause.type === rejectionType) {
       return { outcome: "rejected", code: error.cause.message, revision: null };
     }
-    if (error instanceof WorkflowNotFoundError) return { outcome: "rejected", code: workflowClosed, revision: null };
+    if (error instanceof WorkflowNotFoundError) {
+      return { outcome: "rejected", code: await notFoundVerdict(client, workflowId), revision: null };
+    }
     throw error;
   }
+}
+
+/**
+ * Why an Update found no Workflow at `workflowId`. SDK 1.21.0 raises `WorkflowNotFoundError` both for a closed
+ * Workflow and for an address Temporal never held or no longer retains; a closed execution is still described within
+ * its retention period, an unknown one is not. A running description contradicts the Update's answer and propagates.
+ */
+async function notFoundVerdict(client: Client, workflowId: string): Promise<string> {
+  let status: string;
+  try {
+    status = (await client.workflow.getHandle(workflowId).describe()).status.name;
+  } catch (error) {
+    if (error instanceof WorkflowNotFoundError) return workflowUnknown;
+    throw error;
+  }
+  if (status === "RUNNING") throw new Error(`Workflow ${workflowId} is running, yet an Update found no Workflow to take it`);
+  return workflowClosed;
 }
 
 /**

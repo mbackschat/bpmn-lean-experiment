@@ -80,6 +80,17 @@ test("an input after the chain ended carries the kernel's verdict, never the hos
   assert.deepEqual(trace.at(-2), { kind: "command", commandId: "stale", outcome: "rejected", code: "instance-not-running" });
 });
 
+test("a chain the runner started that the host no longer knows is a harness failure, never a semantic verdict", async () => {
+  const program = await userTaskProgram();
+  const forgetting: ScenarioClient = {
+    ...closingClient(program),
+    command: () => Promise.resolve({ outcome: "rejected" as const, code: "workflow-unknown", revision: null }),
+  };
+  const scenario = { stimuli: [{ kind: "start", commandId: "start", instanceId: "I", variables: [] }, complete("complete")] };
+  await assert.rejects(runScenarioThroughHost(kernelPort, { client: forgetting, workflowIdPrefix: "w" }, program, scenario),
+    /no longer knows chain w-1/u);
+});
+
 test("a run starts its chain under the host's history budget, the program's own when it names none", async () => {
   const program = await userTaskProgram();
   const budgets: Array<number | null> = [];

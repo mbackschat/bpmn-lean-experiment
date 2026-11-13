@@ -23,6 +23,7 @@ import {
   type HostSnapshot,
   snapshotView,
   workflowClosed,
+  workflowUnknown,
 } from "./host-contract.js";
 import { applyInput, assertNever, clockStimulus, hostOwnsLogicalTime } from "./host-machine.js";
 import { kernelPort } from "./kernel-port.js";
@@ -136,7 +137,8 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
 
   async arrive(workflowId: string, stimulus: JsonValue): Promise<CommandResult> {
     const chain = this.#chains.get(workflowId);
-    if (chain === undefined || !this.#running(chain)) return { outcome: "rejected", code: workflowClosed, revision: null };
+    if (chain === undefined) return { outcome: "rejected", code: workflowUnknown, revision: null };
+    if (!this.#running(chain)) return { outcome: "rejected", code: workflowClosed, revision: null };
     if (this.#halt(workflowId, chain) !== null) return { outcome: "rejected", code: "host-halted", revision: null };
     const route = this.port.route(this.port.decodeStimulus(stimulus).input);
     switch (route) {
@@ -296,7 +298,8 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
 
   async #submit(workflowId: string, stimulus: JsonValue, route: Route): Promise<CommandResult> {
     const chain = this.#chains.get(workflowId);
-    if (chain === undefined || !this.#running(chain)) return { outcome: "rejected", code: workflowClosed, revision: null };
+    if (chain === undefined) return { outcome: "rejected", code: workflowUnknown, revision: null };
+    if (!this.#running(chain)) return { outcome: "rejected", code: workflowClosed, revision: null };
     if (this.#halt(workflowId, chain) !== null) return { outcome: "rejected", code: "host-halted", revision: null };
     if (canonicalBytes(stimulus) > chainCapacity.stimulusBytes) {
       return { outcome: "rejected", code: capacityCode(CapacityBound.Stimulus), revision: null };

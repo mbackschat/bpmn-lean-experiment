@@ -295,6 +295,7 @@ test("maps only exact committed semantic results to committed and every uncertai
         commandId: "closedUnreadable",
         receipt: { processInstanceId: "instance", status: null },
       }],
+      ["unknown", { kind: "processUnknown", commandId: "unknown", processInstanceId: "instance" }],
       ["mismatch", { kind: "semantic", commandId: "another-action", outcome: "committed", code: null }],
     ]);
     const gateway = gatewayFor([published], async ({ stimulus }) =>
@@ -319,6 +320,7 @@ test("maps only exact committed semantic results to committed and every uncertai
       unsupported: "rejected",
       uncoded: "indeterminate",
       closedUnreadable: "indeterminate",
+      unknown: "indeterminate",
       mismatch: "indeterminate",
     });
   });

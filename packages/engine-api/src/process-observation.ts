@@ -4,7 +4,7 @@
  * Every read distinguishes an ended chain (`closed`), a chain the host does not know (`unknown`) and a host it could
  * not reach (`unavailable`).
  */
-import type { ProcessDescription } from "@bpmn-lean/temporal-host/host";
+import { workflowClosed, workflowUnknown, type ProcessDescription } from "@bpmn-lean/temporal-host/host";
 
 import { member, requireWireString, type EngineBinding, type EngineOccurrenceId, type JsonValue } from "./common.js";
 import type { EngineHost } from "./host.js";
@@ -82,8 +82,10 @@ export function requireOccurrence(value: EngineOccurrenceId, name: string): Engi
 }
 
 /**
- * A command's verdict as Product 2 records it: the kernel's outcome, or the chain having ended before it arrived, with
- * the instance's final status (`null` when the ended chain's state could not be read).
+ * A command's verdict as Product 2 records it: the kernel's outcome; the chain having ended before it arrived, with
+ * the instance's final status (`null` when the ended chain's state could not be read); or the address holding no chain
+ * the host can describe (`processUnknown`), never started or no longer retained, which says nothing about the
+ * instance's fate.
  */
 export type EngineCommandResult =
   | Readonly<{ kind: "semantic"; commandId: string; outcome: string; code: string | null }>
@@ -91,7 +93,8 @@ export type EngineCommandResult =
       kind: "processClosed";
       commandId: string;
       receipt: Readonly<{ processInstanceId: string; status: string | null }>;
-    }>;
+    }>
+  | Readonly<{ kind: "processUnknown"; commandId: string; processInstanceId: string }>;
 
 /** Submits one command stimulus to the chain behind `locator`. */
 export async function submitCommand(
@@ -102,8 +105,11 @@ export async function submitCommand(
 ): Promise<EngineCommandResult> {
   const workflowId = engineProcessLocatorWorkflowId(locator);
   const result = await host.processes.command(workflowId, stimulus);
-  if (result.outcome === "rejected" && result.code === "workflow-closed") {
+  if (result.outcome === "rejected" && result.code === workflowClosed) {
     return closed(host, workflowId, stimulus.commandId, processInstanceId);
+  }
+  if (result.outcome === "rejected" && result.code === workflowUnknown) {
+    return { kind: "processUnknown", commandId: stimulus.commandId, processInstanceId };
   }
   return { kind: "semantic", commandId: stimulus.commandId, outcome: result.outcome, code: result.code };
 }

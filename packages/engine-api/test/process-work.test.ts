@@ -95,3 +95,11 @@ test("a locator the host does not know, or one minted for another instance, is u
   assert.deepEqual(await observeOpenWork({ host, locator, hostingProcessInstanceId: "someone-else" }),
     { status: EngineOpenWorkStatus.Unknown });
 });
+
+test("completion through a locator the host holds no chain for is processUnknown, never processClosed", async () => {
+  const host = await started();
+  const completion = { commandId: "complete-1", taskId: { ...taskId, processInstanceId: "nobody" }, values: [] };
+  assert.deepEqual(await completeWork({
+    host, locator: engineProcessLocatorForCanonicalProcess(testPopulation, "nobody"), hostingProcessInstanceId: "nobody", completion }),
+    { kind: "processUnknown", commandId: "complete-1", processInstanceId: "nobody" });
+});

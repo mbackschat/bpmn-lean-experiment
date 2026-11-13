@@ -35,6 +35,7 @@ export {
   snapshotView,
   workflowClosed,
   workflowType,
+  workflowUnknown,
   type CommandResult,
   type Halt,
   type HostConfig,

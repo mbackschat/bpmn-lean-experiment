@@ -74,6 +74,13 @@ test("the started process's Work shows its task, reads its detail and completes 
     { status: ProcessWorkObservationStatus.Closed });
 });
 
+test("completing Work through a locator the host holds no instance for is processUnknown, not processClosed", async () => {
+  const work = new BpmnProcessWorkGateway(testHost());
+  const stimulus = { kind: "completeUserTaskInstance", commandId: "complete-1", taskId, submittedValues: [] } as const;
+  assert.deepEqual(await work.completeWork({ locator: work.canonicalLocator(processInstanceId), hostingProcessInstanceId: processInstanceId, stimulus }),
+    { kind: "processUnknown", commandId: "complete-1", processInstanceId });
+});
+
 const userTask = {
   name: "Review",
   assignee: null,

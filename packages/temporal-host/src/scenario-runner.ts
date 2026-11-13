@@ -10,7 +10,7 @@
  * chain's final state, so a late input carries the kernel's code and never the host's closed-chain one.
  */
 import type { ProcessClient } from "./client.js";
-import { workflowClosed } from "./host-contract.js";
+import { workflowClosed, workflowUnknown } from "./host-contract.js";
 import { assertNever } from "./host-machine.js";
 import { Route, type JsonValue, type KernelPort } from "./port.js";
 import { Scheduling, type CommandResult, type HostConfig } from "./protocol.js";
@@ -97,6 +97,9 @@ export async function runScenarioThroughHost<P, S, I>(
     }
     if (instance === null) return judged(null, input);
     const result = await hosted(instance, stimulus, route);
+    if (result.outcome === "rejected" && result.code === workflowUnknown) {
+      throw new Error(`the host no longer knows chain ${instance}, which this run started`);
+    }
     if (result.outcome !== "rejected" || result.code !== workflowClosed) return result;
     const final = await host.client.state(instance);
     return final === null ? result : judged(port.decodeState(final), input);

@@ -137,7 +137,7 @@ after(async () => {
   await environment.teardown();
 });
 
-test("start, effect and command: the host runs the effect as one Activity and a refused command changes nothing", async () => {
+test("start, effect and command: the host runs the effect as one Activity, a refused command changes nothing, and an ended chain is closed, not unknown", async () => {
   const { program, scenario } = await retainedCase("scenarios/configured-task/scenario.json");
   const id = workflowId("effect");
   assert.equal((await client.start({ workflowId: id, program, config: durable(scenario), start: stimulus(scenario, 0) })).outcome,
@@ -160,6 +160,10 @@ test("start, effect and command: the host runs the effect as one Activity and a 
   const result = await client.result(id);
   assert.equal(result.kind, ResultKind.Ended);
   assert.equal(result.kind === ResultKind.Ended ? result.status : null, "completed");
+  // Temporal raises `WorkflowNotFoundError` for both Updates; only describing the address tells them apart.
+  assert.deepEqual(await client.command(id, stimulus(scenario, 2)), { outcome: "rejected", code: "workflow-closed", revision: null });
+  assert.deepEqual(await client.command(workflowId("never-started"), stimulus(scenario, 2)),
+    { outcome: "rejected", code: "workflow-unknown", revision: null });
   finished.push(id);
 });
 

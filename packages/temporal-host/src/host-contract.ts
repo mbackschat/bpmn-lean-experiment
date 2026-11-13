@@ -122,3 +122,9 @@ export const rejectionType = "rejected";
 
 /** The host's verdict for an input sent to a chain that has ended: there is no Workflow left to judge it. */
 export const workflowClosed = "workflow-closed";
+
+/**
+ * The host's verdict for an input sent to an address that holds no chain the host can describe: one never started, or
+ * one Temporal no longer retains. It is not `workflowClosed`, since nothing shows that an instance ever ran there.
+ */
+export const workflowUnknown = "workflow-unknown";
