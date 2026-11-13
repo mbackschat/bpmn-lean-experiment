@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { engineDirectStartProtocol, engineMessageStartProtocol } from "@bpmn-lean/engine-api";
+
 import {
   deployDefinition,
   readWorkAudit,
@@ -333,7 +335,9 @@ function isPrivateFactKey(key: string): boolean {
 }
 
 function containsPrivateFactText(value: string): boolean {
-  return /(?:bpmn-(?:definition-schedule|direct-start|process)-sha256:|bpmn-direct-start-v1|command transport payload|describe result|direct[- ]start intent|event history|intent sha|process work locator|run id|schedule (?:id|identity)|task queue|temporal status|workflow (?:id|type))/iu.test(
-    value,
-  );
+  // The engine's start-intent protocols are read from the engine, so a renamed protocol cannot leave this check stale.
+  return value.includes(engineDirectStartProtocol) || value.includes(engineMessageStartProtocol) ||
+    /(?:bpmn-(?:definition-schedule|direct-start|process)-sha256:|command transport payload|describe result|direct[- ]start intent|event history|intent sha|process work locator|run id|schedule (?:id|identity)|task queue|temporal status|workflow (?:id|type))/iu.test(
+      value,
+    );
 }
