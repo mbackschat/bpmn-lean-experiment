@@ -1,210 +1,245 @@
 [
   {
     "evidence": "scenarios/activity-data-input-output-user-task/absent.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/activity-data-input-output-user-task/null.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits[0].detail.inputs.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/activity-data-input-output-user-task/omitted.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits[0].detail.inputs.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/activity-data-input-output-user-task/present.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits[0].detail.inputs.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/activity-data-input-user-task/absent.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/activity-data-input-user-task/null.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits[0].detail.inputs.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/activity-data-input-user-task/present.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits[0].detail.inputs.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/activity-data-output-user-task/null.cibseven-evidence.json",
+    "firstDifference": "trace[4].variables[0].name",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/activity-data-output-user-task/omitted.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/activity-data-output-user-task/supplied.cibseven-evidence.json",
+    "firstDifference": "trace[4].variables[0].name",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/called-process-call-activity/cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-EXT-0045"
     ]
   },
   {
     "evidence": "scenarios/configured-task/cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits[0].detail.assignee",
     "owners": [
       "CIB-LIM-0011"
     ]
   },
   {
     "evidence": "scenarios/exclusive-gateway-simple-boolean/cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-EXT-0030"
     ]
   },
   {
     "evidence": "scenarios/expense-exception-review/abort.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "PC-JOURNEY-02"
     ]
   },
   {
     "evidence": "scenarios/expense-exception-review/approve.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "PC-JOURNEY-02"
     ]
   },
   {
     "evidence": "scenarios/expense-exception-review/request-changes.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "PC-JOURNEY-02"
     ]
   },
   {
     "evidence": "scenarios/inclusive-gateway-selected-branches/both-true-a-then-b.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-EXT-0030"
     ]
   },
   {
     "evidence": "scenarios/inclusive-gateway-selected-branches/both-true-b-then-a.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-EXT-0030"
     ]
   },
   {
     "evidence": "scenarios/inclusive-gateway-selected-branches/default.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-EXT-0030"
     ]
   },
   {
     "evidence": "scenarios/inclusive-gateway-selected-branches/one-true.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-EXT-0030"
     ]
   },
   {
     "evidence": "scenarios/message-payload-catch/absent-payload.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/message-payload-catch/supplied-null.cibseven-evidence.json",
+    "firstDifference": "trace[4].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/message-payload-catch/supplied-scalar.cibseven-evidence.json",
+    "firstDifference": "trace[4].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/automation-business-error-routing/route-rejected-unmatched-code.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0006"
     ]
   },
   {
     "evidence": "scenarios/open-rows/automation-business-error-routing/scope-non-ancestor-after-completion.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0006"
     ]
   },
   {
     "evidence": "scenarios/open-rows/automation-handler-reuse/unknown-delegate.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0051"
     ]
   },
   {
     "evidence": "scenarios/open-rows/business-rule-hit-policies/after-timer-failure.cibseven-evidence.json",
+    "firstDifference": "trace[4].logicalTimeMs",
     "owners": [
       "CIB-OP-0017"
     ]
   },
   {
     "evidence": "scenarios/open-rows/business-rule-hit-policies/unknown-decision.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0015"
     ]
   },
   {
     "evidence": "scenarios/open-rows/call-binding-population/carried-call-cycle.population-cibseven-evidence.json",
+    "firstDifference": "result.deployments[0].outcome.kind",
     "owners": [
       "CIB-LIM-0034"
     ]
   },
   {
     "evidence": "scenarios/open-rows/call-binding-population/copied-callee-boundary.population-cibseven-evidence.json",
+    "firstDifference": "result.inputFailures",
     "owners": [
       "CIB-EXT-0045"
     ]
   },
   {
     "evidence": "scenarios/open-rows/call-binding-population/nested-callee-binds-at-own-deployment-key-text.population-cibseven-evidence.json",
+    "firstDifference": "result.processStates[0].openWaits[0].definition.deployment",
     "owners": [
       "CIB-INT-0034"
     ]
   },
   {
     "evidence": "scenarios/open-rows/call-binding-population/nested-callee-binds-at-own-deployment.population-cibseven-evidence.json",
+    "firstDifference": "result.inputFailures",
     "owners": [
       "CIB-EXT-0045"
     ]
   },
   {
     "evidence": "scenarios/open-rows/call-binding-time/binding-dynamic.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0032"
     ]
   },
   {
     "evidence": "scenarios/open-rows/call-binding-time/binding-missing.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-INT-0034"
     ]
   },
   {
     "evidence": "scenarios/open-rows/call-binding-time/binding-other-namespace.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-EXT-0045",
       "CIB-INT-0034"
@@ -212,6 +247,7 @@
   },
   {
     "evidence": "scenarios/open-rows/call-binding-time/binding-unbound-prefix.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-EXT-0045",
       "CIB-INT-0034"
@@ -219,6 +255,7 @@
   },
   {
     "evidence": "scenarios/open-rows/call-binding-time/binding-version-2-missing.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-EXT-0045",
       "CIB-INT-0034"
@@ -226,12 +263,14 @@
   },
   {
     "evidence": "scenarios/open-rows/call-binding-time/call-tenant-selector.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0033"
     ]
   },
   {
     "evidence": "scenarios/open-rows/call-binding-time/tag-unknown.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-EXT-0045",
       "CIB-INT-0034"
@@ -239,12 +278,14 @@
   },
   {
     "evidence": "scenarios/open-rows/call-binding-versions/callee-redeployed-after-caller.population-cibseven-evidence.json",
+    "firstDifference": "result.processStates[0].openWaits[0].definition.deployment",
     "owners": [
       "CIB-INT-0034"
     ]
   },
   {
     "evidence": "scenarios/open-rows/call-binding-versions/shared-tag-ambiguous.population-cibseven-evidence.json",
+    "firstDifference": "result.deployments[2].outcome.kind",
     "owners": [
       "CIB-EXT-0045",
       "CIB-INT-0034"
@@ -252,54 +293,63 @@
   },
   {
     "evidence": "scenarios/open-rows/call-binding-versions/tag-deployed-after-caller.population-cibseven-evidence.json",
+    "firstDifference": "result.deployments[1].outcome.kind",
     "owners": [
       "CIB-INT-0034"
     ]
   },
   {
     "evidence": "scenarios/open-rows/call-counter-output/counter-outputs-dropped.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0004"
     ]
   },
   {
     "evidence": "scenarios/open-rows/call-raised-outputs/error-caught-at-busy-root.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-EXT-0034"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-activity-ref-refusals/throw-names-a-start-event.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-EXT-0046"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-context-live-outer/default-handler-reads-and-writes-outer.cibseven-evidence.json",
+    "firstDifference": "trace[10].openWaits[0].detail.inputs[0].value.value",
     "owners": [
       "CIB-LIM-0050"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-eligibility/late-third-second-throw.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-eligibility/two-records-live-data.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-eligibility/unfinished-third-ineligible.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/parallel-out-of-order-consumed.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0014",
       "CIB-INT-0040",
@@ -308,6 +358,7 @@
   },
   {
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/parallel-out-of-order-rethrown.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0014",
       "CIB-INT-0040",
@@ -316,6 +367,7 @@
   },
   {
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/sequential-in-turn-consumed.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0011",
       "CIB-DEV-0014",
@@ -324,6 +376,7 @@
   },
   {
     "evidence": "scenarios/open-rows/compensation-event-subprocess-multi-instance/sequential-in-turn-rethrown.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0011",
       "CIB-DEV-0014",
@@ -332,84 +385,98 @@
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-bodies/abandoned-while-handlers-wait.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-LIM-0049"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-bodies/all-forms-complete.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-LIM-0049"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-bodies/premature-and-stale-handler-results.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-LIM-0049"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-consumption/subprocess-handler-over-inner-record.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits.length",
     "owners": [
       "CIB-DEV-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-consumption/task-handler-over-inner-record.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits.length",
     "owners": [
       "CIB-DEV-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/both-succeed-reversed.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits[0].detail.assignee",
     "owners": [
       "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/duplicate-results.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits[0].detail.assignee",
     "owners": [
       "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/one-fails-caught.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0046"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/one-fails-uncaught.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits.length",
     "owners": [
       "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/technical-failure-cancelled.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/technical-failure-retried.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-terminate/slow-first.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0047"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-terminate/terminate-first.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0047"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/regions-parallel-out-of-order.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0014",
       "CIB-INT-0040"
@@ -417,6 +484,7 @@
   },
   {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/regions-sequential-in-turn.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0011",
       "CIB-DEV-0014"
@@ -424,12 +492,14 @@
   },
   {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/tasks-parallel-out-of-order.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0012"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/tasks-sequential-in-turn.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0012",
       "CIB-INT-0041"
@@ -437,12 +507,14 @@
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/call-parallel-three-reviewers.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0012"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/call-sequential-three-reviewers.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0012",
       "CIB-INT-0041"
@@ -450,1356 +522,1582 @@
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/user-handler-two-items.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0012"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/user-handler-zero-items.cibseven-evidence.json",
+    "firstDifference": "trace[4].openWaits[0].detail.name",
     "owners": [
       "CIB-DEV-0012"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/with-message-before-a-completes.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-chronology/advancing-clock-a-b-c.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-chronology/advancing-clock-a-c-b.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-chronology/advancing-clock-c-a-b.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-chronology/frozen-clock-a-b-c.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-order-chronology/frozen-clock-c-a-b.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-regions/inner-throw-then-outer-all.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-regions/inner-throw-then-region-targeted.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-regions/outer-all-without-inner-throw.cibseven-evidence.json",
+    "firstDifference": "trace[10].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-regions/region-targeted-after-completion.cibseven-evidence.json",
+    "firstDifference": "trace[10].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-targeting/end-untargeted.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/compensation-targeting/unwaited-handler-open.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0041"
     ]
   },
   {
     "evidence": "scenarios/open-rows/condition-language-declarations/definitions-xpath-default.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/condition-language-declarations/named-javascript.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/condition-language-declarations/named-juel.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-boundary-hosts/completion-write-read-by-own-boundary.cibseven-evidence.json",
+    "firstDifference": "trace[4].openWaits[0].detail.assignee",
     "owners": [
       "CIB-INT-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-boundary-hosts/effect-host-condition.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits.length",
     "owners": [
       "CIB-EXT-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-boundary-hosts/level-both-eligible.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0053"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-esp/handler-writes-bounded-chain.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/create-false-then-update-true.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/create-true.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/delete-and-recreate.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/entry-true.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/nearest-visible-scope.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/non-boolean-result.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/null-and-false-values.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/unrelated-write-with-absent-variables.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-start-population/one-start-fails-others-start.population-cibseven-evidence.json",
+    "firstDifference": "result.steps[0].outcome",
     "owners": [
       "CIB-INT-0033"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-start-population/start-continuation-fails.population-cibseven-evidence.json",
+    "firstDifference": "result.steps[0].outcome",
     "owners": [
       "CIB-INT-0033"
     ]
   },
   {
     "evidence": "scenarios/open-rows/cycle-compositions/automatic-loop-beyond-bound.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0016"
     ]
   },
   {
     "evidence": "scenarios/open-rows/cycle-compositions/automatic-loop-tail-beyond-closure-bound.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0016"
     ]
   },
   {
     "evidence": "scenarios/open-rows/cycle-compositions/automatic-loop-waiting-branch-beyond-work-bound.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0016"
     ]
   },
   {
     "evidence": "scenarios/open-rows/error-called-child/finance-unlisted-code.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0006"
     ]
   },
   {
     "evidence": "scenarios/open-rows/error-event-subprocess-precedence/duplicate-code-handlers-standards.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-INT-0007"
     ]
   },
   {
     "evidence": "scenarios/open-rows/error-event-subprocess-precedence/duplicate-code-handlers.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0025"
     ]
   },
   {
     "evidence": "scenarios/open-rows/error-java-class-codes/illegal-state-technical-failure.cibseven-evidence.json",
+    "firstDifference": "trace[4].openWaits[0].detail.assignee",
     "owners": [
       "CIB-EXT-0029"
     ]
   },
   {
     "evidence": "scenarios/open-rows/error-java-class-codes/runtime-exception-technical-failure.cibseven-evidence.json",
+    "firstDifference": "trace[4].openWaits[0].detail.assignee",
     "owners": [
       "CIB-EXT-0029"
     ]
   },
   {
     "evidence": "scenarios/open-rows/error-non-interrupting-declarations/boundary-failure-then-substitute.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0018"
     ]
   },
   {
     "evidence": "scenarios/open-rows/error-non-interrupting-declarations/boundary-failure.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0018"
     ]
   },
   {
     "evidence": "scenarios/open-rows/error-unhandled-outcomes/root-last-path-with-outputs.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0006"
     ]
   },
   {
     "evidence": "scenarios/open-rows/event-race-compositions/instantiating-with-start-message-wins.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0008"
     ]
   },
   {
     "evidence": "scenarios/open-rows/event-race-compositions/parallel-with-start-both-messages.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0008"
     ]
   },
   {
     "evidence": "scenarios/open-rows/event-reference-forms/multiple-event-definitions-message-then-timer.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0008"
     ]
   },
   {
     "evidence": "scenarios/open-rows/event-reference-forms/parallel-multiple-message-then-timer.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0008"
     ]
   },
   {
     "evidence": "scenarios/open-rows/event-subprocess-boundary/deployment-and-ordinary-work.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0005"
     ]
   },
   {
     "evidence": "scenarios/open-rows/event-subprocess-boundary/handler-then-boundary-timer.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0005"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/boolean-count.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/fractional-computed-count.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/map-collection.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/negative-computed-count.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/nested-list-collection.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/non-numeric-text-count.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/null-collection.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/null-count.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/numeric-text-count.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/size-method.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/structured-count.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/human-task-metadata-composition/task-metadata-condition.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0012"
     ]
   },
   {
     "evidence": "scenarios/open-rows/human-task-metadata-composition/undeclared-handler-key.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0017"
     ]
   },
   {
     "evidence": "scenarios/open-rows/human-task-metadata-composition/writable-handler-key.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0017"
     ]
   },
   {
     "evidence": "scenarios/open-rows/human-task-result-identity/items-parallel-counter-submission.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0020"
     ]
   },
   {
     "evidence": "scenarios/open-rows/human-task-result-identity/items-sequential-counter-submission.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0020"
     ]
   },
   {
     "evidence": "scenarios/open-rows/inclusive-join-activation/boundary-exit-parked-then-withdrawn.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits.length",
     "owners": [
       "CIB-DEV-0002"
     ]
   },
   {
     "evidence": "scenarios/open-rows/inclusive-join-activation/nested-skip-a-then-skipped.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0002"
     ]
   },
   {
     "evidence": "scenarios/open-rows/inclusive-join-activation/nested-skip-outer-first-a-then-skipped.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0002"
     ]
   },
   {
     "evidence": "scenarios/open-rows/inclusive-join-activation/raised-path-parked-then-failed.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits.length",
     "owners": [
       "CIB-DEV-0002"
     ]
   },
   {
     "evidence": "scenarios/open-rows/inclusive-join-compositions/unselected-path-parked-then-unselected.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits.length",
     "owners": [
       "CIB-DEV-0002"
     ]
   },
   {
     "evidence": "scenarios/open-rows/input-mapping-contexts/multi-instance-entry.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/interchange-reference-forms/event-definition-ref-start-message-start.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0008"
     ]
   },
   {
     "evidence": "scenarios/open-rows/interchange-reference-forms/event-definition-ref-start-none-start.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0008"
     ]
   },
   {
     "evidence": "scenarios/open-rows/interchange-reference-forms/instantiating-receive-task-message-start.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0008"
     ]
   },
   {
     "evidence": "scenarios/open-rows/interchange-reference-forms/instantiating-receive-task-none-start-then-deliver.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0008"
     ]
   },
   {
     "evidence": "scenarios/open-rows/journey-booking-recovery/cancel-leaves-unfinished-work-uncompensated.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits[0].detail.assignee",
     "owners": [
       "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/journey-booking-recovery/card-declined-reaches-the-transaction-boundary.cibseven-evidence.json",
+    "firstDifference": "trace[8].variables.length",
     "owners": [
       "CIB-LIM-0057"
     ]
   },
   {
     "evidence": "scenarios/open-rows/journey-order-payment/status-updates-repeat-with-payload.population-cibseven-evidence.json",
+    "firstDifference": "result.processStates[0].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/journey-order-payment/withdrawal-after-payment-and-beside-a-handler.population-cibseven-evidence.json",
+    "firstDifference": "result.processStates[1].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/journey-scheduled-case/duplicate-reminder.cibseven-evidence.json",
+    "firstDifference": "trace[10].openWaits.length",
     "owners": [
       "CIB-DEV-0006"
     ]
   },
   {
     "evidence": "scenarios/open-rows/journey-scheduled-case/late-firing-keeps-cadence.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0006"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-forms/access-structured-results.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-forms/division.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-forms/functions.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/boolean-receiver-equals.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/collection-parameter.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/composite-part-list.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/computed-method.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/counter-outside-multi-instance.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/decimal-against-double.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/decimal-noncanonical-result.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/decimal-plus-large-integer.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/decimal-plus-non-ascii-text.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/equal-text-list.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/index-non-ascii-text.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/integer-class-contains.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/integer-class-equals.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/integer-plus-non-ascii-text.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/integer-receiver-size.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/list-equals-integers.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/list-get-text-argument.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/list-index-boolean.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/list-index-of-integer.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/map-contains-value-integer.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/map-equals-integers.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/order-list-text.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/order-text-list.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/property-of-text-by-list.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/replace-integer-arguments.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/string-bean-property.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/string-over-limit.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/substring-text-argument.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/text-double-operand.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/authenticated-user-name.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/bean-reference.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-CFG-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/division-by-zero.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/execution-mutation.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/execution-read.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/integer-overflow.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/list-mutating-method.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/map-replace.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/negative-result.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/reflection-through-method.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/unknown-method.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-form-separations/authenticated-user-name.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-form-separations/execution-mutation.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-form-separations/execution-read.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-form-separations/list-mutating-method.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-form-separations/reflection-through-method.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/juel-form-separations/unknown-method.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-boundary-interrupting/effect-abort-before-result.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits.length",
     "owners": [
       "CIB-EXT-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-boundary-interrupting/effect-result-first.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits.length",
     "owners": [
       "CIB-EXT-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-correlation-criteria/ambiguous-same-instance.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-correlation-criteria/engine-integer-criterion.cibseven-evidence.json",
+    "firstDifference": "trace[7].outcome",
     "owners": [
       "CIB-LIM-0040"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-correlation-criteria/modeled-key-api-criterion.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0002"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-correlation-criteria/object-valued-criterion.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-EXT-0025"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-correlation-criteria/payload-with-matching-criterion.cibseven-evidence.json",
+    "firstDifference": "trace[4].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-correlation-criteria/payload-with-mismatching-criterion.cibseven-evidence.json",
+    "firstDifference": "trace[6].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-esp-interrupting/process-cancel-without-payload.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-esp-interrupting/region-abort-then-deadline.cibseven-evidence.json",
+    "firstDifference": "trace[4].openWaits.length",
     "owners": [
       "CIB-INT-0044"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-esp-interrupting/region-abort-then-hold.cibseven-evidence.json",
+    "firstDifference": "trace[4].openWaits.length",
     "owners": [
       "CIB-INT-0044"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-name-addressing/expression-names-resolve-equal.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/branches-each-own-destination.cibseven-evidence.json",
+    "firstDifference": "trace[6].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/payload-absent.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/payload-null.cibseven-evidence.json",
+    "firstDifference": "trace[4].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/payload-of-another-kind.cibseven-evidence.json",
+    "firstDifference": "trace[4].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/payload-offered-without-data-output.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0037"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/payload-to-receive-task.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0037"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-payload-catches/repeated-arrival-fresh-wait.cibseven-evidence.json",
+    "firstDifference": "trace[4].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-start-compositions/shipment-payload-absent.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-start-compositions/shipment-payload-map.cibseven-evidence.json",
+    "firstDifference": "trace[2].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-start-compositions/shipment-payload-string.cibseven-evidence.json",
+    "firstDifference": "trace[2].variables.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-start-population/criterion-reaching-start.population-cibseven-evidence.json",
+    "firstDifference": "result.steps[0].outcome",
     "owners": [
       "CIB-EXT-0025"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-start-population/object-valued-criterion-with-start.population-cibseven-evidence.json",
+    "firstDifference": "result.steps[0].outcome",
     "owners": [
       "CIB-EXT-0025"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-start-population/start-only-with-criteria.population-cibseven-evidence.json",
+    "firstDifference": "result.steps[1].outcome",
     "owners": [
       "CIB-EXT-0025"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-throw-retry/technical-failure-then-retry.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-EXT-0049"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-activity-mapping-scope/sequential-loop-counter-async.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-activity-mapping-scope/sequential-loop-counter.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-completion-failures/standards-reads-item.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expression-results/completion-counter-equals.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expression-results/count-cdata-wrapped.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expression-results/count-decimal-fractional.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expression-results/count-integer-over-int.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expression-results/count-whitespace-only.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/parallel-forms.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/parallel-structured-equal-lines.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/parallel-structured-wrong-collection-type.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/sequential-forms.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/sequential-structured-equal-lines.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/sequential-structured-wrong-collection-type.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-instance-sites/nested-output-writes-counter.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0020"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-mutable-collection/sequential-collection-removed.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0054"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-parallel-equal-items.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-sequential-equal-items.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-sequential-inner-early.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-sequential-reentry.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/sequential-parallel-equal-items.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/sequential-parallel-inner-early.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/sequential-sequential-equal-items.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/concurrent-condition-race.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/concurrent-write-race-call.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/concurrent-write-race.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-malformed.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-negative.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-noninteger.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-numeric-text.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-two.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-decimal-fractional.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-body-locals-isolated.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-both-count-below-items.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-cardinality-zero.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-cardinality.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-collection-replaced-after-entry.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-completion-then-timer.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-concurrent-control-closes.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-concurrent-control-stays-running.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-equal-items.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-data-flips.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-final-body-non-boolean.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-final-body-unresolvable.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-initially-true.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-one-item.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-output-collection-standards.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-timer-while-work-remains.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-zero-items.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/portable-sequential-collection-removed.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0054"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-body-locals-reset.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-both-count-below-items.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-cardinality-zero.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-cardinality.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-collection-grown.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-collection-removed.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-collection-shrunk-then-restored.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-completion-then-timer.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-equal-items.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-data-flips.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-final-body-non-boolean.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-final-body-unresolvable.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-initially-true.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-nonfinal-non-boolean.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-one-item.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-timer-while-work-remains.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-zero-items-timer.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-zero-items.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/parallel-region-compositions/duplicate-arrival-join-left-pair-first.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits.length",
     "owners": [
       "CIB-DEV-0001"
     ]
   },
   {
     "evidence": "scenarios/open-rows/population-deployments/refused-callee-between.population-cibseven-evidence.json",
+    "firstDifference": "result.deployments[1].outcome.kind",
     "owners": [
       "CIB-EXT-0044"
     ]
   },
   {
     "evidence": "scenarios/open-rows/receive-task-payload-correlation/items-parallel-local-correlation.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0039",
       "CIB-EXT-0025",
@@ -1808,204 +2106,238 @@
   },
   {
     "evidence": "scenarios/open-rows/receive-task-payload-correlation/items-parallel-local-element.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0039"
     ]
   },
   {
     "evidence": "scenarios/open-rows/receive-task-payload-correlation/order-branches-correlated-delivery.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/receive-task-payload-correlation/order-repetition-previous-occurrence.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/receive-task-payload-correlation/order-wrong-correlation.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/receive-task-payload-correlation/order-wrong-owner-and-activation.cibseven-evidence.json",
+    "firstDifference": "trace[7].outcome",
     "owners": [
       "CIB-LIM-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/receive-task-payload/into-scope.cibseven-evidence.json",
+    "firstDifference": "trace[4].openWaits[0].detail.inputs.length",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/receive-task-payload/payload-required.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/string-over-bytes-human-completion.cibseven-evidence.json",
+    "firstDifference": "trace[5].outcome",
     "owners": [
       "CIB-LIM-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/string-over-bytes-service-result.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/scope-without-start/transaction-entry-rolls-back.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0024"
     ]
   },
   {
     "evidence": "scenarios/open-rows/script-task-javascript/probe-host-mutation.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits[0].detail.assignee",
     "owners": [
       "CIB-LIM-0052"
     ]
   },
   {
     "evidence": "scenarios/open-rows/script-task-javascript/probe-other-language-juel.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-EXT-0048"
     ]
   },
   {
     "evidence": "scenarios/open-rows/script-task-javascript/probe-thrown-error.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-EXT-0049"
     ]
   },
   {
     "evidence": "scenarios/open-rows/script-task-javascript/probe-unknown-name.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-EXT-0049"
     ]
   },
   {
     "evidence": "scenarios/open-rows/signal-broadcast-population/broadcast-catch-continuation-fails.population-cibseven-evidence.json",
+    "firstDifference": "result.steps[0].outcome",
     "owners": [
       "CIB-INT-0033"
     ]
   },
   {
     "evidence": "scenarios/open-rows/signal-broadcast-population/broadcast-start-fails-catch-still-delivered.population-cibseven-evidence.json",
+    "firstDifference": "result.steps[0].outcome",
     "owners": [
       "CIB-INT-0033"
     ]
   },
   {
     "evidence": "scenarios/open-rows/signal-broadcast-population/sibling-branch-cascade.population-cibseven-evidence.json",
+    "firstDifference": "result.processStates[0].openWaits[0].detail.assignee",
     "owners": [
       "CIB-INT-0035"
     ]
   },
   {
     "evidence": "scenarios/open-rows/structured-value-bounds/completion-over-depth-after-valid-entry.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/structured-value-bounds/start-over-byte-bound.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/structured-value-bounds/start-over-depth-bound.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/structured-value-bounds/start-over-node-bound.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0014"
     ]
   },
   {
     "evidence": "scenarios/open-rows/synchronous-effect-failure/send-task-failure-then-retry.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-EXT-0049"
     ]
   },
   {
     "evidence": "scenarios/open-rows/synchronous-effect-failure/service-task-failure-then-retry.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-EXT-0049"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/call-reminders-then-late.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits.length",
     "owners": [
       "CIB-DEV-0006"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/effect-result-first.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits.length",
     "owners": [
       "CIB-EXT-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/effect-timer-before-result.cibseven-evidence.json",
+    "firstDifference": "trace[2].openWaits.length",
     "owners": [
       "CIB-EXT-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-data-derived/catch-point-without-digits.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0003"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-data-derived/cron-arming-past-bound.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0003"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-data-derived/cron-descending-range.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0003"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-data-derived/cron-never-matches.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0003"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-data-derived/cycle-value-at-host-entry.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0006"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-data-derived/date-unpadded-fields.cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0003"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-data-derived/value-outside-subset.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-LIM-0003"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-date-forms/no-designator.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-CFG-0013",
       "CIB-LIM-0003"
@@ -2013,108 +2345,126 @@
   },
   {
     "evidence": "scenarios/open-rows/timer-duration-forms/form-five-weeks-in-february.cibseven-evidence.json",
+    "firstDifference": "trace[4].openWaits[0].detail.deadlineMs",
     "owners": [
       "CIB-DEV-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-duration-forms/form-sub-millisecond.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0003"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-recurrence/count-finite-overlap.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0006"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-recurrence/count-last-fire-chain.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits.length",
     "owners": [
       "CIB-DEV-0006"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-recurrence/count-sub-second-arming.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits[0].detail.deadlineMs",
     "owners": [
       "CIB-DEV-0007"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-recurrence/cron-refused-day-name.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0003"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-recurrence/cron-refused-last-day.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0003"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-recurrence/cron-refused-two-day-fields.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0003"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-start-population/cycle-start-late-firing.population-cibseven-evidence.json",
+    "firstDifference": "result.steps[1].outcome",
     "owners": [
       "CIB-DEV-0008"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-start-population/cycle-start-second-and-third-occurrence.population-cibseven-evidence.json",
+    "firstDifference": "result.steps[0].outcome",
     "owners": [
       "CIB-DEV-0008"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-start-population/timer-start-continuation-fails.population-cibseven-evidence.json",
+    "firstDifference": "result.steps[0].outcome",
     "owners": [
       "CIB-INT-0033"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-cancel-mixed/refund-business-failure.cibseven-evidence.json",
+    "firstDifference": "trace[9].outcome",
     "owners": [
       "CIB-LIM-0046"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-cancel-mixed/refund-incident-retried.cibseven-evidence.json",
+    "firstDifference": "trace[9].outcome",
     "owners": [
       "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-cancel-refusals/cancel-end-without-boundary.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0043"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-cancel-refusals/non-interrupting-cancel-boundary.cibseven-evidence.json",
+    "firstDifference": "trace[0].outcome",
     "owners": [
       "CIB-LIM-0043"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-cancel-waiting-handlers/handlers-user-first.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-cancel-waiting-handlers/stale-interior-result-while-handlers-wait.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-LIM-0042"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-multi-instance/parallel-complete-then-compensate.cibseven-evidence.json",
+    "firstDifference": "trace[16].openWaits.length",
     "owners": [
       "CIB-DEV-0014",
       "CIB-INT-0040"
@@ -2122,6 +2472,7 @@
   },
   {
     "evidence": "scenarios/open-rows/transaction-multi-instance/sequential-complete-then-compensate.cibseven-evidence.json",
+    "firstDifference": "trace[16].openWaits.length",
     "owners": [
       "CIB-DEV-0011",
       "CIB-DEV-0014"
@@ -2129,54 +2480,63 @@
   },
   {
     "evidence": "scenarios/open-rows/transaction-nested/outer-cancel-after-inner-completed.cibseven-evidence.json",
+    "firstDifference": "trace[10].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-paths/cancel-end.cibseven-evidence.json",
+    "firstDifference": "trace[6].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-paths/success-then-outer-throw.cibseven-evidence.json",
+    "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-DEV-0011"
     ]
   },
   {
     "evidence": "scenarios/parallel-multi-instance/all.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/parallel-multi-instance/first.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/parallel-multi-instance/interrupted.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/sequential-multi-instance/interrupted.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/sequential-multi-instance/natural.cibseven-evidence.json",
+    "firstDifference": "trace[1].outcome",
     "owners": [
       "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/user-task-cycle/cibseven-evidence.json",
+    "firstDifference": "trace[3].outcome",
     "owners": [
       "CIB-LIM-0013"
     ]

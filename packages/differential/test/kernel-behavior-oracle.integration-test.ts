@@ -11,10 +11,13 @@
  * (`scenario-discovery.ts`), so a new scenario or evidence file joins without an edit here.
  *
  * No disagreement between the kernels is expected. A disagreement with retained evidence is expected exactly when the
- * [ledger](cib-disagreement-ledger.ts) classifies it under an open row or a registered relation; every other one, and
- * every listed one that now agrees, fails the test and is listed with the scenario and the first differing path, never
- * adjusted away. The evidence is compared against the TypeScript kernel's result; the first test establishes that it is
- * also Lean's.
+ * [ledger](cib-disagreement-ledger.ts) classifies it under an open row or a registered relation and records where it
+ * begins: both comparators report the first difference in run order (trace step by step, the outcome last; a
+ * population's deployments and steps before its final states), and `disagreementLocation` must equal the recorded
+ * location, so every step before the classified difference is held to CIB. Every other disagreement, every listed one
+ * whose first difference moved, and every listed one that now agrees fails the test and is listed with the scenario and
+ * the first differing path, never adjusted away. The evidence is compared against the TypeScript kernel's result; the
+ * first test establishes that it is also Lean's.
  *
  * The host-facing functions no scenario run reaches (`rootStarts`, `refusesSignalVariables`, `registerSummary`), and
  * `definitionCapabilities` in the cases no scenario model reaches, are held to kernel fixtures instead
@@ -32,6 +35,7 @@ import {
   DifferentialTarget,
   comparePopulationResults,
   compareTargetResults,
+  disagreementLocation,
   firstValueDisagreement,
   foldSynchronousEffects,
   populationClockMs,
@@ -175,8 +179,10 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
   assert.ok(scenarios.length > populationCount && populationCount > 0, "discovery found no scenarios of a required kind");
   assert.ok(evidenceCount > 0, "discovery found no retained CIB evidence");
   assert.ok(messageAddresses > 0 && signalAddresses > 0, "the host views registered no Message or no Signal address");
-  const violations = ledgerViolations(new Set(evidenceDisagreements.map(({ evidence }) => evidence)), retained, ledger);
-  const unlisted = new Set(violations.unlisted);
+  const violations = ledgerViolations(
+    new Map(evidenceDisagreements.map(({ evidence, disagreement }) => [evidence, disagreementLocation(disagreement)])),
+    retained, ledger);
+  const reported = new Set([...violations.unlisted, ...violations.moved.map(({ evidence }) => evidence)]);
   t.diagnostic(
     `scenarios ${String(scenarios.length - populationCount)}, populations ${String(populationCount)}, ` +
       `retained CIB results ${String(evidenceCount)}, kernel disagreements ${String(kernelDisagreements.length)}, ` +
@@ -185,8 +191,8 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
   );
   assert.deepEqual(
     { kernelDisagreements, violations },
-    { kernelDisagreements: [], violations: { unlisted: [], agreeing: [], orphaned: [] } },
-    [...kernelDisagreements, ...evidenceDisagreements.filter(({ evidence }) => unlisted.has(evidence))]
+    { kernelDisagreements: [], violations: { unlisted: [], moved: [], agreeing: [], orphaned: [] } },
+    [...kernelDisagreements, ...evidenceDisagreements.filter(({ evidence }) => reported.has(evidence))]
       .map((entry) => JSON.stringify(entry)).join("\n"),
   );
 });

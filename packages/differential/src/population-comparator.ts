@@ -133,15 +133,27 @@ function projected(
 }
 
 /**
- * The first difference between retained CIB population evidence (`evidence.result`) and the kernel's population result
- * at CIB's boundary; null when they agree. `clockMs` is CIB's clock at the end of the run (`populationClockMs`).
+ * The projected members in the order a run produces them, so a diverging step is reported before the input failures
+ * and final states it leads to; `projected` builds no other member.
+ */
+const memberOrder = ["deployments", "steps", "inputFailures", "processStates"] as const;
+
+/**
+ * The first difference, in `memberOrder`, between retained CIB population evidence (`evidence.result`) and the kernel's
+ * population result at CIB's boundary; null when they agree. `clockMs` is CIB's clock at the end of the run
+ * (`populationClockMs`).
  */
 export function comparePopulationResults(
   evidence: PopulationResultDocument,
   kernel: PopulationResultDocument,
   clockMs: number,
 ): ValueDisagreement | null {
-  return firstValueDisagreement(projected(evidence, cibStep, null), projected(kernel, kernelStep, clockMs), "result");
+  const [cib, kernelAtCib] = [projected(evidence, cibStep, null), projected(kernel, kernelStep, clockMs)];
+  for (const member of memberOrder) {
+    const difference = firstValueDisagreement(cib[member], kernelAtCib[member], `result.${member}`);
+    if (difference !== null) return difference;
+  }
+  return null;
 }
 
 /**

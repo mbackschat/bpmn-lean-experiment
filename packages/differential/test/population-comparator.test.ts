@@ -74,6 +74,12 @@ test("every member CIB observes still separates the targets after the projection
   }
 });
 
+test("reports a diverging step before the final states it leads to", () => {
+  const evidence = { ...cib, steps: [...cib.steps.slice(0, 3), { ...cib.steps[3]!, outcome: "rolledBack" }],
+    inputFailures: [], processStates: [state("Claim", 5, called)] };
+  assert.equal(comparePopulationResults(evidence, kernel, 7)?.path, "result.steps[3].outcome");
+});
+
 test("CIB's clock at the end of a population is the latest step, input or Timer time", () => {
   assert.equal(populationClockMs([]), 0);
   assert.equal(populationClockMs([

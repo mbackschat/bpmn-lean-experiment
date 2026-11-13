@@ -6,6 +6,7 @@ import {
   DifferentialTarget,
   DisagreementKind,
   compareTargetResults,
+  disagreementLocation,
   foldSynchronousEffects,
 } from "@bpmn-lean/differential";
 import type {
@@ -89,6 +90,20 @@ test("distinguishes outcome, trace-length, and observation-kind disagreements", 
     kernel({ ...base, trace: base.trace.map((entry, index) =>
       index === 2 ? { kind: "command", commandId: "start", outcome: "committed" } : entry) }),
   ])).kind, DisagreementKind.ObservationKind);
+});
+
+test("reports the earliest diverging trace step before a differing trace length or outcome, and locates it", () => {
+  const base = recut([wait("Task_A", "userTask")], null);
+  const located = (result: CanonicalResult) =>
+    disagreementLocation(requireDisagreement(compareTargetResults(evidence(), [kernel(result)])));
+  const completed = (entry: Readonly<{ kind: string }>) => entry.kind === "state" ? { ...entry, status: "completed" } : entry;
+  const committedOutcome = { kind: "semantic", outcome: "committed" };
+  assert.equal(located({ outcome: committedOutcome, trace: base.trace.map(completed) }), "trace[2].status");
+  assert.equal(located({ outcome: committedOutcome, trace: [...base.trace.slice(0, 2), { kind: "deployment", outcome: "committed" }] }),
+    "trace[2].kind");
+  assert.equal(located({ outcome: committedOutcome, trace: base.trace.slice(0, -1) }), "trace[3]");
+  assert.equal(located({ ...base, trace: [...base.trace, { kind: "deployment", outcome: "committed" }] }), "trace[4]");
+  assert.equal(located({ ...base, outcome: committedOutcome }), "outcome.outcome");
 });
 
 test("compares open waits in the schema's canonical order, never in the order a target lists them", () => {

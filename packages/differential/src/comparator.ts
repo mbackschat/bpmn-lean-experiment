@@ -170,36 +170,18 @@ function comparableWait(wait: unknown, observed: Observed): unknown {
   };
 }
 
+/**
+ * The first disagreement in trace order: each step's kind, then its comparable value, then a step only one target
+ * records, and the outcome last, as it summarizes the trace. Reporting the earliest step keeps the cause of a
+ * divergence visible rather than the outcome or trace length it leads to.
+ */
 function compareScenarioResults(
   reference: CanonicalResult,
   candidate: CanonicalResult,
   observed: Observed,
 ): ScenarioDisagreement | null {
-  const outcomeDifference = firstValueDisagreement(
-    reference.outcome,
-    candidate.outcome,
-    "outcome",
-  );
-  if (outcomeDifference !== null) {
-    return {
-      kind: DisagreementKind.Outcome,
-      ...outcomeDifference,
-    };
-  }
-
-  if (reference.trace.length !== candidate.trace.length) {
-    return {
-      kind: DisagreementKind.TraceLength,
-      expectedLength: reference.trace.length,
-      actualLength: candidate.trace.length,
-    };
-  }
-
-  for (const [index, expectedObservation] of reference.trace.entries()) {
-    const actualObservation = candidate.trace[index];
-    if (actualObservation === undefined) {
-      throw new TypeError("Trace length changed during comparison");
-    }
+  for (const [index, expectedObservation] of reference.trace.slice(0, candidate.trace.length).entries()) {
+    const actualObservation = candidate.trace[index]!;
     if (expectedObservation.kind !== actualObservation.kind) {
       return {
         kind: DisagreementKind.ObservationKind,
@@ -221,7 +203,37 @@ function compareScenarioResults(
     }
   }
 
-  return null;
+  if (reference.trace.length !== candidate.trace.length) {
+    return {
+      kind: DisagreementKind.TraceLength,
+      expectedLength: reference.trace.length,
+      actualLength: candidate.trace.length,
+    };
+  }
+
+  const outcomeDifference = firstValueDisagreement(
+    reference.outcome,
+    candidate.outcome,
+    "outcome",
+  );
+  return outcomeDifference === null ? null : { kind: DisagreementKind.Outcome, ...outcomeDifference };
+}
+
+/**
+ * Where a disagreement begins, as a path into the compared result: the differing field's path, a step's `kind`, or the
+ * first step only one target records. A path names no value, so it moves only when the divergence does.
+ */
+export function disagreementLocation(disagreement: ScenarioDisagreement | ValueDisagreement): string {
+  if (!("kind" in disagreement)) return disagreement.path;
+  switch (disagreement.kind) {
+    case DisagreementKind.TraceLength:
+      return `trace[${Math.min(disagreement.expectedLength, disagreement.actualLength)}]`;
+    case DisagreementKind.ObservationKind:
+      return `trace[${disagreement.observationIndex}].kind`;
+    case DisagreementKind.Outcome:
+    case DisagreementKind.ObservationValue:
+      return disagreement.path;
+  }
 }
 
 export function compareTargetResults(
