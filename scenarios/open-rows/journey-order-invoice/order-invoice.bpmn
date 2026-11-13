@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OrderInvoice" targetNamespace="urn:bpmn-lean:journeys:order-invoice">
+  <process id="Process_OrderInvoice" name="Process a supplier invoice" isExecutable="true">
+    <startEvent id="InvoiceReceived" name="Invoice received" />
+    <userTask id="EnterInvoice" name="Enter the invoice" camunda:candidateGroups="clerks">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="enteredBy" type="string" />
+        </camunda:formData>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="draft">${invoice}</camunda:inputParameter>
+          <camunda:inputParameter name="enteredBy">unknown</camunda:inputParameter>
+          <camunda:outputParameter name="clerk">${enteredBy}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <businessRuleTask id="ClassifyInvoice" name="Classify the invoice" camunda:decisionRef="gradeDecision"
+                      camunda:mapDecisionResult="singleResult" camunda:resultVariable="outcome">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="amountCents">${invoice.amountCents}</camunda:inputParameter>
+          <camunda:inputParameter name="supplierCountry">${invoice.supplier.country}</camunda:inputParameter>
+          <camunda:inputParameter name="outcome">none</camunda:inputParameter>
+          <camunda:outputParameter name="grade">${outcome.grade}</camunda:outputParameter>
+          <camunda:outputParameter name="approver">${outcome.approver}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </businessRuleTask>
+    <exclusiveGateway id="Route" name="Route by grade" gatewayDirection="Diverging" default="Flow_Route_Manual" />
+    <userTask id="ApproveInvoice" name="Approve the invoice" camunda:candidateGroups="approvers">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="verdict" type="string" />
+          <camunda:formField id="note" type="string" />
+        </camunda:formData>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="summary">${invoice}</camunda:inputParameter>
+          <camunda:inputParameter name="verdict">pending</camunda:inputParameter>
+          <camunda:inputParameter name="note">none</camunda:inputParameter>
+          <camunda:outputParameter name="review">${verdict}</camunda:outputParameter>
+          <camunda:outputParameter name="approvalNote">${note}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="Reviewed" name="Review outcome" gatewayDirection="Diverging" default="Flow_Reviewed_Post" />
+    <serviceTask id="PostInvoice" name="Post the invoice" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${postInvoice}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="invoice">${invoice}</camunda:inputParameter>
+          <camunda:inputParameter name="grade">${grade}</camunda:inputParameter>
+          <camunda:outputParameter name="receipt">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <sendTask id="SendNotice" name="Send the posting notice" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+              camunda:delegateExpression="${sendPostingNotice}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="recipient">${invoice.supplier.contactEmail}</camunda:inputParameter>
+          <camunda:inputParameter name="correlationId">${invoice.number}</camunda:inputParameter>
+          <camunda:inputParameter name="ledgerEntry">${receipt.ledgerEntry}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </sendTask>
+    <endEvent id="InvoiceCompleted" name="Invoice completed" />
+    <sequenceFlow id="Flow_Received_Enter" sourceRef="InvoiceReceived" targetRef="EnterInvoice" />
+    <sequenceFlow id="Flow_Enter_Classify" sourceRef="EnterInvoice" targetRef="ClassifyInvoice" />
+    <sequenceFlow id="Flow_Classify_Route" sourceRef="ClassifyInvoice" targetRef="Route" />
+    <sequenceFlow id="Flow_Route_Automatic" sourceRef="Route" targetRef="PostInvoice">
+      <conditionExpression xsi:type="tFormalExpression">${grade == 'A'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Route_Manual" sourceRef="Route" targetRef="ApproveInvoice" />
+    <sequenceFlow id="Flow_Approve_Reviewed" sourceRef="ApproveInvoice" targetRef="Reviewed" />
+    <sequenceFlow id="Flow_Reviewed_Rework" sourceRef="Reviewed" targetRef="EnterInvoice">
+      <conditionExpression xsi:type="tFormalExpression">${review == 'rework'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Reviewed_Post" sourceRef="Reviewed" targetRef="PostInvoice" />
+    <sequenceFlow id="Flow_Post_Notice" sourceRef="PostInvoice" targetRef="SendNotice" />
+    <sequenceFlow id="Flow_Notice_Completed" sourceRef="SendNotice" targetRef="InvoiceCompleted" />
+  </process>
+</definitions>

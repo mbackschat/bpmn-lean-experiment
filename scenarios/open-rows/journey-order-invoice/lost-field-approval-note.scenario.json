@@ -1,0 +1,522 @@
+{
+  "kind": "scenario",
+  "id": "journey-order-invoice-lost-field-approval-note",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "journey-order-invoice-process",
+    "relativePath": "scenarios/open-rows/journey-order-invoice/order-invoice.bpmn",
+    "sha256": "795f567f2e1ab03e98f5d29de7ba88baf308eabedd3d5ca1b59e82b5a106425d",
+    "sourceOverlay": {
+      "id": "order-invoice-handlers",
+      "sha256": "f0f999aaa4435b16045d63a0d845f2733024b8b89cddeb07cfc35a5675a99763"
+    },
+    "decisions": [
+      {
+        "relativePath": "scenarios/open-rows/journey-order-invoice/grade-decision.dmn",
+        "sha256": "e299f9fbfacd591589d91a05e0328d8b501735fad252dbcf1e21eadaecde3c8e"
+      }
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Invoice_1",
+      "variables": [
+        {
+          "name": "invoice",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "amountCents",
+                "value": {
+                  "kind": "integer",
+                  "value": 114000
+                }
+              },
+              {
+                "name": "lines",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "map",
+                      "value": [
+                        {
+                          "name": "description",
+                          "value": {
+                            "kind": "string",
+                            "value": "Paper A4"
+                          }
+                        },
+                        {
+                          "name": "quantity",
+                          "value": {
+                            "kind": "integer",
+                            "value": 10
+                          }
+                        },
+                        {
+                          "name": "unitPrice",
+                          "value": {
+                            "kind": "decimal",
+                            "coefficient": "45",
+                            "scale": 1
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "map",
+                      "value": [
+                        {
+                          "name": "description",
+                          "value": {
+                            "kind": "string",
+                            "value": "Paper A4"
+                          }
+                        },
+                        {
+                          "name": "quantity",
+                          "value": {
+                            "kind": "integer",
+                            "value": 10
+                          }
+                        },
+                        {
+                          "name": "unitPrice",
+                          "value": {
+                            "kind": "decimal",
+                            "coefficient": "45",
+                            "scale": 1
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "map",
+                      "value": [
+                        {
+                          "name": "description",
+                          "value": {
+                            "kind": "string",
+                            "value": "Freight"
+                          }
+                        },
+                        {
+                          "name": "quantity",
+                          "value": {
+                            "kind": "integer",
+                            "value": 1
+                          }
+                        },
+                        {
+                          "name": "unitPrice",
+                          "value": {
+                            "kind": "decimal",
+                            "coefficient": "1050",
+                            "scale": 0
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "note",
+                "value": {
+                  "kind": "null"
+                }
+              },
+              {
+                "name": "number",
+                "value": {
+                  "kind": "string",
+                  "value": "INV-2026-0417"
+                }
+              },
+              {
+                "name": "supplier",
+                "value": {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "contactEmail",
+                      "value": {
+                        "kind": "string",
+                        "value": "buchhaltung@nordlicht-papier.example"
+                      }
+                    },
+                    {
+                      "name": "country",
+                      "value": {
+                        "kind": "string",
+                        "value": "DE"
+                      }
+                    },
+                    {
+                      "name": "iban",
+                      "value": {
+                        "kind": "null"
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "value": {
+                        "kind": "string",
+                        "value": "Nordlicht Papier GmbH"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "vatRate",
+                "value": {
+                  "kind": "decimal",
+                  "coefficient": "19",
+                  "scale": 2
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-enter-1",
+      "occurrence": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "EnterInvoice",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "enteredBy",
+            "value": {
+              "kind": "string",
+              "value": "mara"
+            }
+          },
+          {
+            "name": "invoice",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amountCents",
+                  "value": {
+                    "kind": "integer",
+                    "value": 114000
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Paper A4"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 10
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "45",
+                              "scale": 1
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "description",
+                            "value": {
+                              "kind": "string",
+                              "value": "Freight"
+                            }
+                          },
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "unitPrice",
+                            "value": {
+                              "kind": "decimal",
+                              "coefficient": "1050",
+                              "scale": 0
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "number",
+                  "value": {
+                    "kind": "string",
+                    "value": "INV-2026-0417"
+                  }
+                },
+                {
+                  "name": "supplier",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "contactEmail",
+                        "value": {
+                          "kind": "string",
+                          "value": "buchhaltung@nordlicht-papier.example"
+                        }
+                      },
+                      {
+                        "name": "country",
+                        "value": {
+                          "kind": "string",
+                          "value": "DE"
+                        }
+                      },
+                      {
+                        "name": "iban",
+                        "value": {
+                          "kind": "null"
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Nordlicht Papier GmbH"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "vatRate",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "19",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-approve-1-without-note",
+      "occurrence": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "ApproveInvoice",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s04-post-1",
+      "occurrence": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "PostInvoice",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "ledgerEntry",
+                  "value": {
+                    "kind": "string",
+                    "value": "LE-2026-0417-1"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "account",
+                            "value": {
+                              "kind": "string",
+                              "value": "4400"
+                            }
+                          },
+                          {
+                            "name": "cents",
+                            "value": {
+                              "kind": "integer",
+                              "value": 9000
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "account",
+                            "value": {
+                              "kind": "string",
+                              "value": "4400"
+                            }
+                          },
+                          {
+                            "name": "cents",
+                            "value": {
+                              "kind": "integer",
+                              "value": 9000
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "account",
+                            "value": {
+                              "kind": "string",
+                              "value": "4730"
+                            }
+                          },
+                          {
+                            "name": "cents",
+                            "value": {
+                              "kind": "integer",
+                              "value": 105000
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "postedTotal",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "1140",
+                    "scale": 0
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "posted"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s05-notice-1",
+      "occurrence": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "SendNotice",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §10.6.2",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

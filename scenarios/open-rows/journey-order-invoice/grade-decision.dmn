@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="Definitions_GradeDecision" name="Invoice grade" namespace="urn:bpmn-lean:journeys:order-invoice:grade">
+  <decision id="gradeDecision" name="Grade an invoice by amount and supplier country">
+    <decisionTable id="DecisionTable_gradeDecision" hitPolicy="UNIQUE">
+      <input id="Input_gradeDecision_amount" label="Amount in cents">
+        <inputExpression id="InputExpression_gradeDecision_amount" typeRef="integer"><text>amountCents</text></inputExpression>
+      </input>
+      <input id="Input_gradeDecision_country" label="Supplier country">
+        <inputExpression id="InputExpression_gradeDecision_country" typeRef="string"><text>supplierCountry</text></inputExpression>
+      </input>
+      <output id="Output_gradeDecision_grade" name="grade" typeRef="string" />
+      <output id="Output_gradeDecision_approver" name="approver" typeRef="string" />
+      <rule id="Rule_gradeDecision_1">
+        <inputEntry id="InputEntry_gradeDecision_1_1"><text>&lt;= 50000</text></inputEntry>
+        <inputEntry id="InputEntry_gradeDecision_1_2"><text>"DE"</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeDecision_1_1"><text>"A"</text></outputEntry>
+        <outputEntry id="OutputEntry_gradeDecision_1_2"><text>"none"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeDecision_2">
+        <inputEntry id="InputEntry_gradeDecision_2_1"><text>&lt;= 50000</text></inputEntry>
+        <inputEntry id="InputEntry_gradeDecision_2_2"><text>not("DE")</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeDecision_2_1"><text>"B"</text></outputEntry>
+        <outputEntry id="OutputEntry_gradeDecision_2_2"><text>"clerk"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeDecision_3">
+        <inputEntry id="InputEntry_gradeDecision_3_1"><text>&gt; 50000</text></inputEntry>
+        <inputEntry id="InputEntry_gradeDecision_3_2"><text></text></inputEntry>
+        <outputEntry id="OutputEntry_gradeDecision_3_1"><text>"B"</text></outputEntry>
+        <outputEntry id="OutputEntry_gradeDecision_3_2"><text>"manager"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>
