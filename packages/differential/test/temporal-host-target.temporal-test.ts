@@ -17,7 +17,6 @@ import path from "node:path";
 import { after, before, test } from "node:test";
 
 import { firstValueDisagreement } from "@bpmn-lean/differential";
-import type { ValueDisagreement } from "@bpmn-lean/differential";
 import { runScenario as runKernelScenario } from "@bpmn-lean/kernel";
 import { ProcessClient } from "@bpmn-lean/temporal-host/client";
 import type { JsonValue } from "@bpmn-lean/temporal-host/client";
@@ -64,15 +63,20 @@ after(async () => {
   await environment.teardown();
 });
 
-test("the Temporal host returns the kernel's result on every discovered single-instance scenario", async (t) => {
-  const disagreements: Array<Readonly<{ scenario: string } & ValueDisagreement>> = [];
-  let compared = 0;
-  let restricted = 0;
-  for (const scenario of await discoverScenarios()) {
-    if (scenario.kind !== DiscoveredKind.Scenario) continue;
+/**
+ * One test per scenario, so the runner's per-test deadline bounds one scenario rather than the whole corpus: the corpus
+ * ran in 142 s at 51131ee87 (Verify 43413430103) and crossed the 180 s deadline as one test at d8cffcfcb (Verify
+ * 43419579034) with no scenario added. The job's own time limit bounds the lane.
+ */
+let compared = 0;
+const restricted = new Set<string>();
+
+for (const scenario of await discoverScenarios()) {
+  if (scenario.kind !== DiscoveredKind.Scenario) continue;
+  test(`the Temporal host returns the kernel's result on ${scenario.relativePath}`, async () => {
     const input = await scenarioKernelInput(scenario.relativePath, scenario.document.bpmn, scenario.document.profile);
     // A source the reader refuses is rejected at deployment and never reaches a Workflow; the oracle owns its result.
-    if (input.kind === "refused") continue;
+    if (input.kind === "refused") return;
     const program = wire(input.program);
     const document = wire(JSON.parse(await readFile(path.join(projectRoot, scenario.relativePath), "utf8")));
     const hosted = await runScenario(program, document, {
@@ -81,20 +85,19 @@ test("the Temporal host returns the kernel's result on every discovered single-i
     });
     const restriction = hostCapacityRestrictions.get(scenario.relativePath);
     if (restriction !== undefined) {
-      assert.deepEqual(firstUncommitted(hosted), { ...restriction, outcome: "rejected" }, scenario.relativePath);
-      restricted += 1;
-      continue;
+      assert.deepEqual(firstUncommitted(hosted), { ...restriction, outcome: "rejected" });
+      restricted.add(scenario.relativePath);
+      return;
     }
-    const difference = firstValueDisagreement(wire(runKernelScenario(program, document)), wire(hosted), "result");
-    if (difference !== null) disagreements.push({ scenario: `${scenario.document.id} (${scenario.relativePath})`, ...difference });
+    assert.equal(firstValueDisagreement(wire(runKernelScenario(program, document)), wire(hosted), "result"), null);
     compared += 1;
-  }
-  t.diagnostic(`scenarios ${String(compared)}, disagreements ${String(disagreements.length)}, effect Activities ${String(effectRequests.length)}`);
+  });
+}
+
+test("the corpus run compared scenarios, met every declared restriction and started no effect Activity", (t) => {
+  t.diagnostic(`scenarios ${String(compared)}, restricted ${String(restricted.size)}, effect Activities ${String(effectRequests.length)}`);
   assert.ok(compared > 0, "discovery found no single-instance scenario");
-  assert.equal(restricted, hostCapacityRestrictions.size, "every declared restriction names a discovered scenario");
-  assert.deepEqual(
-    { disagreements, effectRequests: effectRequests.map(({ key }) => key) },
-    { disagreements: [], effectRequests: [] },
-    disagreements.map((entry) => JSON.stringify(entry)).join("\n"),
-  );
+  assert.deepEqual([...hostCapacityRestrictions.keys()].filter((scenario) => !restricted.has(scenario)), [],
+    "every declared restriction names a discovered scenario");
+  assert.deepEqual(effectRequests.map(({ key }) => key), []);
 });
