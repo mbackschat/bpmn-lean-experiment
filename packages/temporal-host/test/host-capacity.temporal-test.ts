@@ -5,8 +5,9 @@
  * pair of effect results returned by a real Activity, whose refusal halts the chain; an effect Activity of an instance
  * whose identity exceeds Temporal's identifier limit; the
  * realistic sixteen-body parallel Multi-Instance journey on durable scheduling with its sixteen effects as concurrent
- * Activities, forced across Runs mid-Multi-Instance; and an emitted hand-off the full population ingress defers, delivered
- * once room appears. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since it judges candidates
+ * Activities, forced across Runs mid-Multi-Instance; an emitted hand-off the full population ingress defers, delivered
+ * once room appears; and a Run draining while a hand-off is deferred, which still registers a commit made during the
+ * drain and continues as new. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since it judges candidates
  * with the Workflow's own measure.
  */
 import assert from "node:assert/strict";
@@ -266,10 +267,52 @@ test("hand-off: an emit the full population ingress defers waits outside its que
   // An observation window for the negative claims: an accepted hand-off answers the Update within milliseconds.
   await new Promise((resolve) => setTimeout(resolve, 2_000));
   assert.equal(answered, false, "the Update waits while its hand-off is deferred");
-  assert.equal(await ingress.backlog(), 0, "the deferred hand-off is not queued");
+  assert.equal(await ingress.backlog(), 1, "the deferred hand-off waits, counted in the backlog");
   assert.ok((await client.hostView(chains.receiver)).view?.openWaits.some((wait) => wait.id.elementId === "Catch"));
   assert.equal((await client.deliver(chains.filler, fx.fillerDelivery)).outcome, "committed");
   assert.equal((await completing).outcome, "committed");
   await until("the receiver's Signal", () => client.hostView(chains.receiver),
     (snapshot) => snapshot.view?.openWaits.some((wait) => wait.id.elementId === "Hold") ?? false);
+});
+
+/** `answer` once it settles within the deadline; a hang fails the test instead of holding it open. */
+async function within<T>(label: string, answer: Promise<T>): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} not answered within ${String(deadlineMs)} ms`)), deadlineMs);
+  });
+  try {
+    return await Promise.race([answer, late]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// #140 and the cold audit's R1: a draining Run waited only for its handlers, so a commit made during the drain, whose
+// Update waits for a registration only the main loop performs, never answered, and the Run never ended.
+test("drain: a Run draining while a hand-off is deferred registers a commit made meanwhile, answers both Updates and continues as new", async () => {
+  const population = `capacity-drain-${randomUUID()}`;
+  // An event budget of one makes every committed input due for Continue-As-New, so the completion's Run drains at once.
+  const config = external(1);
+  const chains = { emitter: workflowId("drain-watcher"), receiver: workflowId("drain-receiver"), filler: workflowId("drain-filler") };
+  const line = await fx.handoffLine(async (digest) => {
+    const memory = createMemoryProcessHost({ taskQueue: "measure", now: Date.now });
+    return fx.handoffPopulation(memory, memory.population(population, config), config, chains, digest, "watcher");
+  });
+  const ingress = new PopulationClient(environment.client, taskQueue, population, config);
+  assert.ok("deploymentId" in await fx.handoffPopulation(client, ingress, config, chains, line - 15_000, "watcher"));
+  const completing = client.command(chains.emitter, fx.emitterCompletion(1, 20_000));
+  await until("the completion's commit", () => client.hostView(chains.emitter),
+    (snapshot) => snapshot.view !== null && snapshot.view.openWaits.every((wait) => wait.id.elementId !== "Task"));
+  // Closing the watcher's Message wait changes its registered addresses and throws no Signal.
+  const watching = client.deliver(chains.emitter, fx.watchDelivery);
+  await until("the delivery's commit", () => client.hostView(chains.emitter),
+    (snapshot) => snapshot.view?.openWaits.some((wait) => wait.id.elementId === "Watched") ?? false);
+  assert.equal((await client.deliver(chains.filler, fx.fillerDelivery)).outcome, "committed");
+  assert.equal((await within("the completion", completing)).outcome, "committed");
+  assert.equal((await within("the Message delivery", watching)).outcome, "committed");
+  await until("the receiver's Signal", () => client.hostView(chains.receiver),
+    (snapshot) => snapshot.view?.openWaits.some((wait) => wait.id.elementId === "Hold") ?? false);
+  await until("the emitter's Continue-As-New after both commits", () => chainHistories(environment.client, chains.emitter),
+    (runs) => runs.length >= 3);
 });

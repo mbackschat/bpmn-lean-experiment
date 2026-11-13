@@ -348,3 +348,43 @@ test("an emitter whose deferred hand-offs fill its continuation row has its next
   assert.equal((await over.command(workflowId, fx.emitterCompletion(last, knob + 1))).outcome, "committed",
     "the settled hand-offs left the emitter's row");
 });
+
+/** The hand-off witness's population under emitter program `emitter`, filled 15,000 bytes below its line. */
+async function handoffHost(emitter: "watcher" | "ticker") {
+  const chains = { emitter: workflowId, receiver: "R", filler: "F" };
+  const setup = async (digest: number) => {
+    const host = fresh();
+    const population = host.population("P", external);
+    const filled = await fx.handoffPopulation(host, population, external, chains, digest, emitter);
+    return { host, population, filled };
+  };
+  return setup(await fx.handoffLine(async (digest) => (await setup(digest)).filled) - 15_000);
+}
+
+test("behind a deferred hand-off a population command is refused, and an input that throws no Signal still commits", async () => {
+  const { host, population } = await handoffHost("watcher");
+  assert.equal((await host.command(workflowId, fx.emitterCompletion(1, 20_000))).outcome, "committed");
+  await assert.rejects(population.command("broadcast", { kind: "broadcast", commandId: "b", address: { kind: "named", name: "go" }, variables: [] } as never),
+    (error: unknown) => error instanceof PopulationRefused && error.code === "host.capacity.continuation");
+  assert.equal((await host.deliver(workflowId, fx.watchDelivery)).outcome, "committed", "the watcher's Message closes its wait");
+  assert.ok((await host.hostView("R")).view?.openWaits.some((wait) => wait.id.elementId === "Catch"), "no hand-off was delivered");
+  assert.equal((await host.deliver("F", fx.fillerDelivery)).outcome, "committed");
+  assert.ok((await host.hostView("R")).view?.openWaits.some((wait) => wait.id.elementId === "Hold"), "the hand-off reached the receiver");
+});
+
+test("a host arrival whose Signal throw the deferred hand-offs leave no room for halts the emitter at its own row", async () => {
+  const { host } = await handoffHost("ticker");
+  // The emitter's own row bounds what it holds to about 22 hand-offs of 20 KB; 30 only stops a run that never refuses.
+  let held = 0;
+  let refused = null;
+  while (refused === null && held < 30) {
+    const result = await host.arrive(workflowId, fx.tickerFiring(held + 1, 20_000));
+    if (result.outcome === "committed") held += 1;
+    else refused = result;
+  }
+  assert.equal(refused?.outcome, "unsupported");
+  assert.equal(refused?.code, "host.capacity.continuation");
+  assert.ok(held > 10, `the emitter held ${String(held)} deferred hand-offs`);
+  assert.equal((await host.hostView(workflowId)).halt?.code, "host.capacity.continuation", "the arrival halted the emitter");
+  assert.ok((await host.hostView("R")).view?.openWaits.some((wait) => wait.id.elementId === "Catch"), "no hand-off was delivered");
+});

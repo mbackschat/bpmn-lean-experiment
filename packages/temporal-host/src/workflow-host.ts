@@ -36,8 +36,9 @@
  * of each later candidate (`judge`), so a further Signal throw the chain could not carry is refused before it commits.
  * No deadlock: an offer is one Activity whose ingress handler answers at once, accepted or deferred, so a deferral never
  * holds the main loop and registration is never delayed behind a capacity wait; the wake's handler only marks the chain's
- * state. So the ingress fan-out's wait on a chain's `populationDeliver`, which waits on registration, never waits on room
- * the fan-out itself must free.
+ * state. A Run draining for Continue-As-New still registers and offers whatever a handler waits on, a commit made during
+ * the drain included, before it ends. So the ingress fan-out's wait on a chain's `populationDeliver`, which waits on
+ * registration, never waits on room the fan-out itself must free.
  */
 import {
   ActivityFailure,
@@ -580,9 +581,11 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     await reportPopulation();
     if (reconciled !== commits) continue;
     if (draining && effects.size === 0 && arrivals.length === 0) {
-      // A caller's Update waits on the emit barrier, so a handed-back emit is offered again before the Run ends.
-      await condition(() => allHandlersFinished() || offerDue());
-      if (offerDue()) continue;
+      // A handler still running may wait on a registration or an offer that only this loop performs, for its own commit
+      // or for one made while the Run drains, so the drain goes round again for either before the Run ends (#140).
+      const owed = (): boolean => offerDue() || commits !== reconciled || populationOwed();
+      await condition(() => allHandlersFinished() || owed());
+      if (owed()) continue;
       if (arrivals.length === 0 && halt === null && instance !== null && !ended()) {
         const next = successor(instance);
         if ("kind" in next) return continueAsNew<(next: RunProcessArgs) => Promise<ProcessResult>>(next);

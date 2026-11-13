@@ -155,6 +155,34 @@ test("an ingress filled to its ceiling while a hand-off is in flight settles tha
   assert.deepEqual(population.enqueueEmit(frame, state, reference(commandId(2), chainId(2)), []), { deferred: true });
 });
 
+// The cold audit's R2 sequence: the rollover measured the whole carry once, an in-flight fan-out machine of 300,000
+// bytes included, and the at-rest admissions made while the Run waited to end, which count that item as its queue entry
+// only, could then fill the ingress past what it can carry.
+test("while the ingress rolls over, an admission is refused once the whole carry, the machine in flight included, could not hold it", () => {
+  const head = reference(commandId(1), chainId(1));
+  const [item] = accepted(population.enqueueEmit(frame, population.emptyIngress, head, [])).queue;
+  assert.ok(item !== undefined);
+  const machinePort = port({ machineWire: (machine: Wire) => machine });
+  const window: IngressState = { ...population.emptyIngress, tickets: 1, current: { item, ordinal: 0, atMs: 0, command: null, view: null,
+    phase: { kind: "fanOut", machine: "m".repeat(300_000), budget: 1, finish: { kind: "emit" },
+      answer: { growth: 0, entries: 0, listBytes: 0, instanceIdBytes: 0 }, spent: false }, routes: [], reached: 0 } };
+  assert.notEqual(carry.fittedIngress(machinePort, frame, window), null, "the carry fits as the rollover begins");
+  const command = { kind: "broadcast", payload: "p".repeat(50_000) };
+  const fill = (admits: (candidate: IngressState) => boolean) => {
+    let state = window;
+    for (let index = 0; ; index += 1) {
+      const next = population.enqueueCommand(frame, state, `c${String(index)}`, "broadcast", command, "d", []);
+      if (!("state" in next) || !admits(next.state)) return { state, refusedAt: index };
+      state = next.state;
+    }
+  };
+  const atRest = fill(() => true);
+  assert.equal(carry.fittedIngress(machinePort, frame, atRest.state), null, "at-rest admission alone carries the ingress past its bound");
+  const rolling = fill((candidate) => carry.rollingAdmits(machinePort, frame, candidate));
+  assert.ok(rolling.refusedAt > 0 && rolling.refusedAt < atRest.refusedAt, "the rollover refuses before the at-rest ceiling");
+  assert.notEqual(carry.fittedIngress(machinePort, frame, rolling.state), null, "every admission the rollover took still fits");
+});
+
 test("three repeats of a command whose answer filled the Query bound settle in one driver step, each within the bound", () => {
   const answer = (pad: number) => ({ commandId: "c", ordinal: 1, atMs: 0, resolution: "r".repeat(pad), chain: null });
   const full = answer(chainCapacity.queryBytes - canonicalBytes({ kind: "settled", answer: answer(0) }));

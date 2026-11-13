@@ -147,17 +147,24 @@ export class MemoryPopulation<P, S, M> {
     for (;;) {
       const [state, action] = advance(this.port, this.frame, this.ingress, atMs);
       this.ingress = state;
+      const taken = this.admitWaiting();
       if (action === null) {
-        const admitted = admitWaiting(this.frame, this.ingress, this.waiting);
-        if (admitted.taken.length === 0) break;
-        this.ingress = admitted.state;
-        this.waiting = admitted.waiting;
+        if (taken === 0) break;
         continue;
       }
       // `perform` may re-register a chain it steps, which writes `this.ingress`, so the answer reads the ingress after it.
       const answered = this.perform(action, atMs);
       this.ingress = answer(this.port, this.frame, this.ingress, answered, this.receivers);
+      this.admitWaiting();
     }
+  }
+
+  /** Accepts the waiting emits that fit now, in order; answers how many it took. */
+  private admitWaiting(): number {
+    const admitted = admitWaiting(this.frame, this.ingress, this.waiting);
+    this.ingress = admitted.state;
+    this.waiting = admitted.waiting;
+    return admitted.taken.length;
   }
 
   private settle(workflowId: string, deploymentId: number, program: P, state: S): void {

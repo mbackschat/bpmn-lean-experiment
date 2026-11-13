@@ -11,16 +11,17 @@
  * An emit the ingress cannot hold is deferred, not refused: its reference waits in this Run's memory, in arrival order,
  * and the Run accepts it as soon as a settled item or a shrunk registration leaves room, then wakes its chain (`emitWake`
  * through `wakePopulationEmit`). The waiting references are never carried, since nothing bounds how many chains defer:
- * a Run that continues as new first hands them back (a `reoffer` wake), and while it does so its validator rejects every
- * emit, so a chain's offer fails as transport does and its retry reaches the next Run. The capacity wait itself is never
- * a retry: a deferred chain waits for its wake.
+ * a Run that continues as new first hands them back (a `reoffer` wake), and while it does so its validators reject every
+ * emit and registration, so a chain's Activity fails as transport does and its retry reaches the next Run. The capacity
+ * wait itself is never a retry: a deferred chain waits for its wake.
  *
  * When its history suggests Continue-As-New the ingress releases every waiting command handler with `pending` (the
  * caller reads the answer from `populationResult`), waits for the handlers to finish and carries its state, the item in
  * flight included: it may continue between two receivers of one fan-out. Its argument stays within the continuation
  * bound: a deployment, registration, command or Timer start that would carry it past is refused with
  * `host.capacity.continuation`, an emit is deferred, the ledger yields its oldest answers first, and an item in flight
- * beyond the bound defers the rollover until it settles.
+ * beyond the bound defers the rollover until it settles. Once the rollover measured the whole carry, the machine in flight
+ * included, a command or deployment it takes must keep that whole carry within the bound (`rollingAdmits`).
  *
  * The deployment Workflow holds one registered deployment's program, never steps, and answers Queries over it.
  */
@@ -36,6 +37,7 @@ import {
 
 import type {
   Answer,
+  ChainRegistration,
   CommandAnswer,
   DeploymentAnswer,
   DeploymentArgs,
@@ -72,6 +74,7 @@ import {
   ingressContinuationCode,
   releaseHandlers,
   resumedState,
+  rollingAdmits,
 } from "./population-carry.js";
 import { CapacityBound, canonicalBytes, capacityCode, chainCapacity } from "./capacity.js";
 import type { JsonValue, KernelPort, PopulationPort } from "./port.js";
@@ -101,8 +104,13 @@ function rejection(code: string): ApplicationFailure {
   return ApplicationFailure.create({ message: code, type: rejectionType, nonRetryable: true });
 }
 
-/** The failure type of an emit that reached a Run continuing as new: a transport failure the emitting chain retries. */
-const rollingOverType = "PopulationIngressRollingOver";
+/**
+ * The failure of an emit or registration that reached a Run continuing as new: a transport failure its chain's Activity
+ * retries until the next Run takes it.
+ */
+function rollingOver(): ApplicationFailure {
+  return ApplicationFailure.create({ message: "the population ingress is continuing as new", type: "PopulationIngressRollingOver" });
+}
 
 async function perform(population: PopulationIngressArgs, action: Action): Promise<Answer> {
   switch (action.kind) {
@@ -170,7 +178,9 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
   setHandler(populationResultQuery, (commandId) => populationResult(state, commandId));
   setHandler(populationDeploymentQuery, (deploymentRequestId) => deploymentOf(state, deploymentRequestId));
   setHandler(populationDeploymentsQuery, () => registeredDeploymentIds(state));
-  setHandler(populationBacklogQuery, () => state.queue.length + (state.current === null ? 0 : 1));
+  setHandler(populationBacklogQuery, () => state.queue.length + (state.current === null ? 0 : 1) + waiting.length);
+  /** Whether the ingress may take `candidate` now: while it continues as new, only if it can still carry it whole. */
+  const admits = (candidate: IngressState<M>): boolean => !rolling || rollingAdmits(port, frame, candidate);
 
   setHandler(registerDeploymentUpdate, (request) => {
     const turn = registering.then(async (): Promise<DeploymentAnswer> => {
@@ -183,6 +193,7 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
       const atMs = Date.now();
       const [next, deployed] = registerDeployment(port, frame, state, request.deploymentRequestId, request.digest, candidate, atMs);
       if (next === state) return deployed;
+      if (!admits(next)) return { refused: ingressContinuationCode };
       if ("deploymentId" in deployed) {
         await activities.startDeployment({ population: args.population, deploymentId: deployed.deploymentId, program: request.program });
       }
@@ -212,6 +223,11 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
     // A registration that shrank or left frees room.
     admitNow();
     return refused;
+  }, {
+    // A registration may grow the carry the rollover measured; its chain's Activity retries into the next Run.
+    validator: (_registration: ChainRegistration) => {
+      if (rolling) throw rollingOver();
+    },
   });
 
   setHandler(populationEmitUpdate, (reference) => {
@@ -224,13 +240,15 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
     return { kind: "deferred", run: workflowInfo().runId } as const;
   }, {
     validator: (_reference: EmitReference) => {
-      if (rolling) throw ApplicationFailure.create({ message: "the population ingress is continuing as new", type: rollingOverType });
+      if (rolling) throw rollingOver();
     },
   });
 
   setHandler(populationCommandUpdate, async (request) => {
     const enqueued = enqueueCommand(frame, state, request.commandId, request.kind, request.command, request.digest, waiting);
     if ("refused" in enqueued) throw rejection(enqueued.refused);
+    // Its caller does not retry, so a command the rolling Run could not carry is refused, not deferred to the next Run.
+    if (!admits(enqueued.state)) throw rejection(ingressContinuationCode);
     const { ticket } = enqueued;
     state = enqueued.state;
     await condition(() => rolling || state.answers.some(([held]) => held === ticket));

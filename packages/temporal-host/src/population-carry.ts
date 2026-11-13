@@ -101,7 +101,9 @@ export function ingressContinuationBytes<P, S, M>(port: PopulationPort<P, S, M>,
  * replaces that queue entry and grows the ingress by at most the answer reserve, which leaves out the identifiers the
  * entry carried (`answerReserve`), so an admission made while it is in flight must still see them. Its machine is
  * measured only when the ingress would continue as new during it, and holds that rollover until it settles when it
- * does not fit.
+ * does not fit. Two growths happen while the item is in flight and are absorbed by that entry's bytes beyond its
+ * identifiers, which `answerReserve` leaves free: a Timer start's consumed occurrence, added when the start answers, and
+ * the ordinal's digit growth when the item is taken (a `timerStart` command carries the occurrence's fields in its entry).
  */
 export function restingIngressBytes<M>(frame: IngressFrame, state: IngressState<M>): number {
   const released = releaseHandlers(state);
@@ -112,6 +114,15 @@ export function restingIngressBytes<M>(frame: IngressFrame, state: IngressState<
 /** `state` carried whole, its item in flight included, with the ledger yielding as in `fittedAtRest`; `null` if impossible. */
 export function fittedIngress<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, state: IngressState<M>): IngressState<M> | null {
   return evicted(state, ingressContinuationBytes(port, frame, state) - frame.continuationBytes, 0);
+}
+
+/**
+ * Whether an ingress that is continuing as new may take `candidate`: the at-rest measure counts the item in flight as its
+ * queue entry, never its machine, so once the rollover measured the whole carry, an admission it takes must keep that
+ * whole carry within the bound, or the Run could no longer end.
+ */
+export function rollingAdmits<P, S, M>(port: PopulationPort<P, S, M>, frame: IngressFrame, candidate: IngressState<M>): boolean {
+  return fittedIngress(port, frame, candidate) !== null;
 }
 
 /**
