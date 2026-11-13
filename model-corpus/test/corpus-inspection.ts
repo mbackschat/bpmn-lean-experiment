@@ -34,7 +34,8 @@ import type {
   ExecutableModelCorpusManifest,
 } from "../../scripts/executable-model-corpus.ts";
 import { mvpBpmnRestrictions } from "../mvp-capabilities.ts";
-import { bindModelRows, coverageRowView, parseStatusMapRows, parseTargetStates, rowLinks } from "./coverage-rows.ts";
+import { bindModelRows, coverageRowView, parseQualificationRows, parseStatusMapRows, parseTargetStates, rowLinks } from "./coverage-rows.ts";
+import { readOpenRowOwners } from "../../scripts/contract-artifact-cases.ts";
 import { externalRoot } from "../../scripts/external-root.ts";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
@@ -134,9 +135,12 @@ export const inspect = (
 
 /** The status map's coverage rows and the coverage target's task states, as committed. */
 export async function readCoverageRows() {
+  const target = await readFile(coverageTargetPath, "utf8");
   return {
     rows: parseStatusMapRows(await readFile(statusMapPath, "utf8")),
-    targetStates: parseTargetStates(await readFile(coverageTargetPath, "utf8")),
+    targetStates: parseTargetStates(target),
+    qualificationRows: parseQualificationRows(target),
+    owners: readOpenRowOwners(),
   };
 }
 

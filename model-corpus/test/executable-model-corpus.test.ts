@@ -12,7 +12,7 @@ import { isOpenRowWitness, readOpenRowOwners } from "../../scripts/contract-arti
 import { requireExecutableModelCorpusManifest } from "../../scripts/executable-model-corpus.ts";
 import type { CorpusScenario } from "../../scripts/executable-model-corpus.ts";
 import type { MvpBpmnCapabilityId } from "../mvp-capabilities.ts";
-import { acceptedWithoutScenario } from "./coverage-rows.ts";
+import { statusMapDrift } from "./coverage-rows.ts";
 import { admitSource, discovered, inspect, loadManifest, readCoverageRows, renderCorpusFiles, scenarios } from "./corpus-inspection.ts";
 
 test("the kernel admits every model exactly as the corpus records it", async () => {
@@ -28,22 +28,34 @@ test("the kernel admits every model exactly as the corpus records it", async () 
 
 test("keeps the generated corpus map and retained-model capability list exact", async () => {
   for (const [file, rendered] of await renderCorpusFiles()) assert.equal(await readFile(file, "utf8"), rendered, file);
-  const { rows, targetStates } = await readCoverageRows();
-  assert.deepEqual(acceptedWithoutScenario(rows, targetStates), [], "a done row the status map accepts links no scenario");
+  assert.deepEqual(statusMapDrift(await readCoverageRows()), []);
 });
 
 // The orphan-variant check, a capability of the catalog no retained model claims, is "rejects a supported element
 // variant without a retained MVP model" below and `uncoveredMvpCapabilities`; it is not repeated here.
-test("a done row the status map accepts without any linked scenario is named", async () => {
-  const { rows, targetStates } = await readCoverageRows();
-  const [row, status] = [...rows].find(([id, { kernel, links }]) =>
-    kernel === "accepted" && links.length > 0 && (targetStates.get(id) ?? "").startsWith("done")) ?? [];
+test("names status-map drift from the coverage target and the open-row owners", async () => {
+  const sources = await readCoverageRows();
+  const { rows, targetStates, qualificationRows, owners } = sources;
+  const [row, status] = [...rows].find(([id, { links }]) =>
+    links.some((link) => link.startsWith("scenarios/open-rows/")) && (targetStates.get(id) ?? "").startsWith("done")) ?? [];
   assert.ok(row !== undefined && status !== undefined);
-  const unlinked = new Map(rows).set(row, { ...status, links: [] });
-  assert.deepEqual(acceptedWithoutScenario(unlinked, targetStates), [row]);
-  const open = new Map(targetStates).set(row, "open");
-  assert.deepEqual(acceptedWithoutScenario(unlinked, open), [], "an open row may be accepted by the map before it closes");
-  assert.deepEqual(acceptedWithoutScenario(new Map(rows).set(row, { ...status, kernel: "slice", links: [] }), targetStates), []);
+  const owned = status.links.find((link) => link.startsWith("scenarios/open-rows/"))!;
+  const withRow = (changed: typeof status) => ({ ...sources, rows: new Map(rows).set(row, changed) });
+  assert.deepEqual(statusMapDrift(withRow({ ...status, kernel: "slice" })), [`${row} is done but the status map does not accept it with a linked scenario`]);
+  assert.deepEqual(statusMapDrift({ ...withRow({ ...status, kernel: "slice" }), targetStates: new Map(targetStates).set(row, "open") }), [],
+    "an open row may stay a slice");
+  assert.ok(statusMapDrift(withRow({ ...status, links: status.links.filter((link) => link !== owned) })).includes(`${row} does not link its owned ${owned}`));
+  assert.deepEqual(statusMapDrift(withRow({ ...status, links: [...status.links, "scenarios/open-rows/unowned-directory/"] })),
+    [`${row} links scenarios/open-rows/unowned-directory/, which owners.json does not own`]);
+  assert.deepEqual(statusMapDrift(withRow({ ...status, kernel: "integration", runs: ["1"] })), [
+    `${row} is done but the status map does not accept it with a linked scenario`, `${row} is integration but is no qualification task`]);
+  const qualification = [...qualificationRows][0]!;
+  const done = new Map(targetStates).set(qualification, "done; integration closure review");
+  const integration = (runs: ReadonlyArray<string>) => ({ ...sources, targetStates: done,
+    rows: new Map(rows).set(qualification, { kernel: "integration", links: [], runs }) });
+  assert.deepEqual(statusMapDrift(integration(["43519645222"])), []);
+  assert.deepEqual(statusMapDrift(integration([])), [`${qualification} is done but the status map does not record it as integration with a hosted run`]);
+  assert.ok(owners.size > 0);
 });
 
 test("every retained model binds a discovered scenario of its own identity", async () => {

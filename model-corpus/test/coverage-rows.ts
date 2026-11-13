@@ -11,13 +11,15 @@ import { compareCanonicalStrings } from "../../scripts/strict-json.ts";
 
 const statusMapRowForm = /^\| (PC-[A-Z]+-\d{2}) \| ([^|]+) \| ([^|]+) \| [^|]+ \|$/;
 const statusMapLinkForm = /\]\((\.\.\/\.\.\/[^)\s]+)\)/g;
+const hostedRunForm = /\]\(https:\/\/github\.com\/[^)\s]+\/actions\/runs\/(\d+)[^)\s]*\)/g;
 
-export type StatusMapRow = Readonly<{ kernel: string; links: ReadonlyArray<string> }>;
+export type StatusMapRow = Readonly<{ kernel: string; links: ReadonlyArray<string>; runs: ReadonlyArray<string> }>;
 
 /**
  * Each coverage row of the status map's "Row status" table, by row ID in table order: its kernel cell, and what its
  * "Kernel scenario evidence" cell links as repository-relative paths. A scenario `README.md` stands for its directory
- * (a trailing `/`), any other link, such as a differential fixture, for that file alone. Rows are the lines under the
+ * (a trailing `/`), any other link, such as a differential fixture, for that file alone; linked hosted runs are kept
+ * by run ID. Rows are the lines under the
  * table header up to its first blank line; any such line that is not in the table's form fails.
  */
 export function parseStatusMapRows(markdown: string): ReadonlyMap<string, StatusMapRow> {
@@ -34,6 +36,7 @@ export function parseStatusMapRows(markdown: string): ReadonlyMap<string, Status
     if (rows.has(row)) throw new Error(`Row status lists ${row} twice`);
     rows.set(row, {
       kernel: match[2]!.trim(),
+      runs: [...match[3]!.matchAll(hostedRunForm)].map((run) => run[1]!),
       links: [...match[3]!.matchAll(statusMapLinkForm)].map((link) => {
         const target = path.posix.join("docs/kernel", link[1]!);
         return path.posix.basename(target) === "README.md" ? `${path.posix.dirname(target)}/` : target;
@@ -60,17 +63,59 @@ export function parseTargetStates(markdown: string): ReadonlyMap<string, string>
   return states;
 }
 
+/** The task IDs of the coverage target's "Integrated qualification" table, whose acceptance is a hosted qualification. */
+export function parseQualificationRows(markdown: string): ReadonlySet<string> {
+  const lines = markdown.split("\n");
+  const start = lines.indexOf("### Integrated qualification");
+  if (start < 0) throw new Error("PRACTICAL-CIB7-COVERAGE-TARGET.md has no Integrated qualification section");
+  const end = lines.findIndex((line, index) => index > start && line.startsWith("#"));
+  return new Set(lines.slice(start, end < 0 ? undefined : end)
+    .flatMap((line) => /^\| `(PC-[A-Z]+-\d{2})` \|/.exec(line)?.[1] ?? []));
+}
+
+export type StatusMapSources = Readonly<{
+  rows: ReadonlyMap<string, StatusMapRow>;
+  targetStates: ReadonlyMap<string, string>;
+  qualificationRows: ReadonlySet<string>;
+  owners: ReadonlyMap<string, ReadonlyArray<string>>;
+}>;
+
 /**
- * The rows a target task closed as `done` and the status map calls `accepted` although the map links no scenario, so
- * nothing witnesses the acceptance.
+ * Every disagreement between the status map, the coverage target and `scenarios/open-rows/owners.json`, one message
+ * each. A `done` task must be `accepted` with a linked scenario, or, for a qualification task, `integration` with a
+ * linked hosted run; `integration` belongs to qualification tasks only. Every row `owners.json` names for a directory
+ * links that directory or a file in it, and every linked `open-rows` directory has an owner. The second direction checks
+ * existence only, because a row may cite another row's owned witnesses as shared evidence.
  */
-export function acceptedWithoutScenario(
-  rows: ReadonlyMap<string, StatusMapRow>,
-  targetStates: ReadonlyMap<string, string>,
-): ReadonlyArray<string> {
-  return [...rows]
-    .filter(([row, { kernel, links }]) => kernel === "accepted" && links.length === 0 && (targetStates.get(row) ?? "").startsWith("done"))
-    .map(([row]) => row);
+export function statusMapDrift({ rows, targetStates, qualificationRows, owners }: StatusMapSources): ReadonlyArray<string> {
+  const drift: string[] = [];
+  for (const [row, state] of targetStates) {
+    const status = rows.get(row);
+    if (status === undefined) { drift.push(`${row} is missing from the status map`); continue; }
+    if (!state.startsWith("done")) continue;
+    const qualification = qualificationRows.has(row);
+    if (qualification ? status.kernel !== "integration" || status.runs.length === 0 : status.kernel !== "accepted" || status.links.length === 0) {
+      drift.push(qualification
+        ? `${row} is done but the status map does not record it as integration with a hosted run`
+        : `${row} is done but the status map does not accept it with a linked scenario`);
+    }
+  }
+  for (const [row, { kernel }] of rows) {
+    if (kernel === "integration" && !qualificationRows.has(row)) drift.push(`${row} is integration but is no qualification task`);
+  }
+  for (const [directory, owning] of owners) {
+    const prefix = `scenarios/open-rows/${directory}/`;
+    for (const row of owning) {
+      if (!(rows.get(row)?.links ?? []).some((link) => link.startsWith(prefix))) drift.push(`${row} does not link its owned ${prefix}`);
+    }
+  }
+  for (const [row, { links }] of rows) {
+    for (const link of links) {
+      const directory = /^scenarios\/open-rows\/([^/]+)\//.exec(link)?.[1];
+      if (directory !== undefined && !owners.has(directory)) drift.push(`${row} links ${link}, which owners.json does not own`);
+    }
+  }
+  return drift;
 }
 
 /** The row IDs each retained model witnesses, in ascending order: its scenario lies inside a directory the row links. */
