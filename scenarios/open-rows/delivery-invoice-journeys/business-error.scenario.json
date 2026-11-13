@@ -250,7 +250,7 @@
       "BPMN 2.0.2 Clause 10.6.3",
       "BPMN 2.0.2 Clause 13.3.3"
     ],
-    "cibRevision": "2.2.0",
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "cibRefs": [
       "CIB-AGR-0012",
       "CIB-EXT-0015",

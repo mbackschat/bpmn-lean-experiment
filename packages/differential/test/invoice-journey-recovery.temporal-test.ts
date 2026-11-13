@@ -32,9 +32,9 @@ const historyEventBudget = 12;
 
 /** Each journey with the User Task completion before which its Worker is replaced, past every rework and recovery. */
 const journeys = [
-  { scenario: "packages/differential/test/fixtures/serial-classification.scenario.json", replaceBefore: "finalize" },
-  { scenario: "packages/differential/test/fixtures/mixed-invoice-rework.scenario.json", replaceBefore: "review-2" },
-  { scenario: "packages/differential/test/fixtures/business-error.scenario.json", replaceBefore: "review-3" },
+  { scenario: "scenarios/open-rows/delivery-invoice-journeys/serial-classification.scenario.json", replaceBefore: "finalize" },
+  { scenario: "scenarios/open-rows/delivery-invoice-journeys/mixed-invoice-rework.scenario.json", replaceBefore: "review-2" },
+  { scenario: "scenarios/open-rows/delivery-invoice-journeys/business-error.scenario.json", replaceBefore: "review-3" },
 ] as const;
 
 /** JSON serialization erases what a wire value cannot carry, as every Temporal payload does. */

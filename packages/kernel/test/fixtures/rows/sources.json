@@ -464,7 +464,7 @@
     "profile": "cibseven-2.2.0"
   },
   "PC-DELIVERY-01": {
-    "scenario": "packages/differential/test/fixtures/mixed-invoice-rework.scenario.json",
+    "scenario": "scenarios/open-rows/delivery-invoice-journeys/mixed-invoice-rework.scenario.json",
     "source": "packages/bpmn-source/test/fixtures/mixed-task-invoice-rework.bpmn",
     "profile": "cibseven-2.2.0"
   },

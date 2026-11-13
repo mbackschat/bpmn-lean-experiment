@@ -153,6 +153,9 @@
   "cycle-compositions": [
     "PC-CF-06"
   ],
+  "delivery-invoice-journeys": [
+    "PC-DELIVERY-01"
+  ],
   "error-ancestor-search": [
     "PC-ERROR-01"
   ],

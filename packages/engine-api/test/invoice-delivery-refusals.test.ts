@@ -1,6 +1,6 @@
 /**
  * PC-DELIVERY-01's refusals through the engine API, on the exact source, overlay and profile each of its three invoice
- * journeys binds (`packages/differential/test/fixtures/{serial-classification,mixed-invoice-rework,business-error}`):
+ * journeys binds (`scenarios/open-rows/delivery-invoice-journeys/{serial-classification,mixed-invoice-rework,business-error}`):
  * after rework the superseded Review occurrence is refused; a technical failure of *Validate* is an incident that its
  * business Error boundary never catches; and stale bytes or another journey's overlay are refused before any instance
  * exists. The kernel scenarios beside the journeys carry the first two schedules (`*-superseded-review*`,
@@ -37,7 +37,7 @@ import {
 import { cibProfile, deployed, limits, sha256, testHost, testPopulation, type TestHost } from "./support.ts";
 
 const projectRoot = new URL("../../../", import.meta.url);
-const fixtures = "packages/differential/test/fixtures/";
+const fixtures = "scenarios/open-rows/delivery-invoice-journeys/";
 const profile = await cibProfile();
 const instance = "invoice";
 const locator = engineProcessLocatorForCanonicalProcess(testPopulation, instance);
@@ -58,11 +58,11 @@ type Journey = Readonly<{
   overlay: EngineSourceOverlaySelection;
 }>;
 
-async function journey(name: string, processId: string): Promise<Journey> {
+async function journey(name: string, source: string, processId: string): Promise<Journey> {
   const scenario = JSON.parse(await readFile(new URL(`${fixtures}${name}.scenario.json`, projectRoot), "utf8")) as Scenario;
   assert.equal(scenario.profile, profile.id);
   const bytes = new Uint8Array(await readFile(new URL(scenario.bpmn.relativePath, projectRoot)));
-  const overlayBytes = new Uint8Array(await readFile(new URL(`${fixtures}${name}.overlay.json`, projectRoot)));
+  const overlayBytes = new Uint8Array(await readFile(new URL(`packages/bpmn-source/test/fixtures/${source}.overlay.json`, projectRoot)));
   assert.equal(await sha256(bytes), scenario.bpmn.sha256, `${name} binds its source's exact bytes`);
   assert.equal(await sha256(overlayBytes), scenario.bpmn.sourceOverlay.sha256, `${name} binds its overlay's exact bytes`);
   return {
@@ -71,9 +71,9 @@ async function journey(name: string, processId: string): Promise<Journey> {
   };
 }
 
-const serial = await journey("serial-classification", "Process_InvoiceValidation");
-const rework = await journey("mixed-invoice-rework", "Invoice");
-const businessError = await journey("business-error", "Invoice");
+const serial = await journey("serial-classification", "serial-invoice-classification", "Process_InvoiceValidation");
+const rework = await journey("mixed-invoice-rework", "mixed-task-invoice-rework", "Invoice");
+const businessError = await journey("business-error", "mixed-task-invoice-business-error", "Invoice");
 
 const text = (value: string) => ({ kind: "string", value }) as const;
 const binding = (name: string, value: string): EngineBinding => ({ name, value: text(value) });

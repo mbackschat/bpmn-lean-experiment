@@ -1,15 +1,15 @@
 {
   "kind": "scenario",
-  "id": "classification",
+  "id": "invoice-rework",
   "profile": "cibseven-2.2.0",
   "bpmn": {
-    "id": "classified-invoice",
-    "relativePath": "packages/bpmn-source/test/fixtures/serial-invoice-classification.bpmn",
-    "sha256": "e0fb2d20e42bf41b2fa008d919cd485e6057394bfac918c765b4b561baa4862d",
+    "id": "reviewed-invoice",
+    "sha256": "9f3aa0845c7faf28267c3f82bd5d4b9d413895e3e87fb3475505b98593d3b0a4",
     "sourceOverlay": {
       "id": "invoice-handlers",
-      "sha256": "4d4c3d17416b6b0e32d5e91a0868c43e9d5698865583043d430d1376b3e0f02c"
-    }
+      "sha256": "466302458623119c5d1cd2d17a78ab2f7bce692e3ad4467f8a2870277b64ec3c"
+    },
+    "relativePath": "packages/bpmn-source/test/fixtures/mixed-task-invoice-rework.bpmn"
   },
   "stimuli": [
     {
@@ -18,35 +18,63 @@
       "instanceId": "invoice",
       "variables": [
         {
-          "name": "payload",
-          "value": {
-            "kind": "string",
-            "value": "parent-payload"
-          }
-        },
-        {
           "name": "request",
           "value": {
             "kind": "string",
             "value": "initial"
-          }
-        },
-        {
-          "name": "result",
-          "value": {
-            "kind": "string",
-            "value": "parent-result"
           }
         }
       ]
     },
     {
       "kind": "command",
-      "commandId": "review",
+      "commandId": "review-1",
       "occurrence": {
         "processInstanceId": "invoice",
         "elementId": "Review",
         "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:6a6a59099e472c37b1f6c0581b3ed81ac9d0db2c82474839da67af29164a8855",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "review-2",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 2
       },
       "action": {
         "kind": "completeUserTask",
@@ -63,11 +91,11 @@
     },
     {
       "kind": "effectResult",
-      "commandId": "complete-effect-sha256:88873c2dd48feb536e28a259dc6df22497ed6546063ef71f0a3b91b1bf549230",
+      "commandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
       "occurrence": {
         "processInstanceId": "invoice",
         "elementId": "Validate",
-        "activation": 1
+        "activation": 2
       },
       "outcome": {
         "kind": "success",
@@ -77,27 +105,6 @@
             "value": {
               "kind": "string",
               "value": "valid"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "effectResult",
-      "commandId": "complete-effect-sha256:a701f25ee7c4a345c21d681ce12fc7fe9f6787938f28a78bfed54c0da15ca15e",
-      "occurrence": {
-        "processInstanceId": "invoice",
-        "elementId": "Classify",
-        "activation": 1
-      },
-      "outcome": {
-        "kind": "success",
-        "outputs": [
-          {
-            "name": "result",
-            "value": {
-              "kind": "string",
-              "value": "standard"
             }
           }
         ]
@@ -119,10 +126,12 @@
   ],
   "provenance": {
     "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.2",
       "BPMN 2.0.2 Clause 13.3.2",
-      "BPMN 2.0.2 Clause 13.3.3"
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.2"
     ],
-    "cibRevision": "2.2.0",
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "cibRefs": [
       "CIB-EXT-0015"
     ]

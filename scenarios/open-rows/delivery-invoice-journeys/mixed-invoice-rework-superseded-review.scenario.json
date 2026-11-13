@@ -1,6 +1,6 @@
 {
   "kind": "scenario",
-  "id": "invoice-rework",
+  "id": "invoice-rework-superseded-review",
   "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "reviewed-invoice",
@@ -70,6 +70,27 @@
     },
     {
       "kind": "command",
+      "commandId": "review-1-superseded",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "stale-draft"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
       "commandId": "review-2",
       "occurrence": {
         "processInstanceId": "invoice",
@@ -131,7 +152,7 @@
       "BPMN 2.0.2 Clause 13.3.3",
       "BPMN 2.0.2 Clause 13.4.2"
     ],
-    "cibRevision": "2.2.0",
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "cibRefs": [
       "CIB-EXT-0015"
     ]

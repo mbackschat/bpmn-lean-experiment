@@ -1,6 +1,6 @@
 {
   "kind": "scenario",
-  "id": "invoice-business-error-technical-failure",
+  "id": "invoice-business-error-superseded-reviews",
   "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "invoice-business-error",
@@ -56,52 +56,6 @@
     },
     {
       "kind": "effectResult",
-      "commandId": "report-validate-technical-failure",
-      "occurrence": {
-        "processInstanceId": "invoice",
-        "elementId": "Validate",
-        "activation": 1
-      },
-      "outcome": {
-        "kind": "technicalFailure"
-      }
-    },
-    {
-      "kind": "command",
-      "commandId": "correct-data-without-error",
-      "occurrence": {
-        "processInstanceId": "invoice",
-        "elementId": "CorrectData",
-        "activation": 1
-      },
-      "action": {
-        "kind": "completeUserTask",
-        "values": [
-          {
-            "name": "request",
-            "value": {
-              "kind": "string",
-              "value": "policy-review"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "command",
-      "commandId": "retry-validate-incident",
-      "occurrence": {
-        "processInstanceId": "invoice",
-        "elementId": "Validate",
-        "activation": 1
-      },
-      "action": {
-        "kind": "retryIncident",
-        "generation": 1
-      }
-    },
-    {
-      "kind": "effectResult",
       "commandId": "complete-effect-sha256:0e5077a72746f8c686f1ed8f0510517c57f00fffe54e9292d5126b8dd0286949",
       "occurrence": {
         "processInstanceId": "invoice",
@@ -139,6 +93,27 @@
             "value": {
               "kind": "string",
               "value": "policy-review"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "review-1-superseded",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "stale-draft"
             }
           }
         ]
@@ -224,6 +199,27 @@
     },
     {
       "kind": "command",
+      "commandId": "review-2-superseded",
+      "occurrence": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "stale-policy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
       "commandId": "review-3",
       "occurrence": {
         "processInstanceId": "invoice",
@@ -291,25 +287,18 @@
       }
     }
   ],
-  "options": {
-    "incidents": {
-      "cancellable": true
-    }
-  },
   "provenance": {
     "normativeRefs": [
-      "BPMN 2.0.2 Clause 10.3.3.1",
+      "BPMN 2.0.2 Clause 10.6.2",
       "BPMN 2.0.2 Clause 10.6.3",
-      "BPMN 2.0.2 Clause 13.3.3",
-      "BPMN 2.0.2 Table 10.8"
+      "BPMN 2.0.2 Clause 13.3.2",
+      "BPMN 2.0.2 Clause 13.3.3"
     ],
-    "cibRevision": "2.2.0",
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "cibRefs": [
       "CIB-AGR-0012",
-      "CIB-EXT-0013",
       "CIB-EXT-0015",
-      "CIB-EXT-0016",
-      "CIB-OP-0009"
+      "CIB-EXT-0016"
     ]
   }
 }

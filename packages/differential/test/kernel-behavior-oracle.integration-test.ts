@@ -218,7 +218,7 @@ function refusalCode(run: () => unknown): Promise<string> {
 }
 
 test("the Lean and TypeScript kernels refuse the same malformed inputs with the same strict-decoding code", async () => {
-  const relativePath = "packages/differential/test/fixtures/serial-classification.scenario.json";
+  const relativePath = "scenarios/open-rows/delivery-invoice-journeys/serial-classification.scenario.json";
   const scenarioText = await readFile(path.join(projectRoot, relativePath), "utf8");
   const scenario = JSON.parse(scenarioText) as ScenarioDocument & Readonly<{ stimuli: ReadonlyArray<Record<string, unknown>> }>;
   const program = await kernelProgramFor(relativePath, { ...scenario.bpmn, sourceOverlay: null }, scenario.profile) as
@@ -310,7 +310,7 @@ test("the Lean and TypeScript kernels read every wire number class up to 2^53 âˆ
     Record<string, unknown>;
   const literal = `"number":{"coefficient":"40","scale":0}`;
   assert.ok(JSON.stringify(rowProgram).includes(literal), "the row program keeps its FEEL number literal");
-  const scenarioPath = "packages/differential/test/fixtures/serial-classification.scenario.json";
+  const scenarioPath = "scenarios/open-rows/delivery-invoice-journeys/serial-classification.scenario.json";
   const scenario = JSON.parse(await readFile(path.join(projectRoot, scenarioPath), "utf8")) as ScenarioDocument &
     Readonly<{ stimuli: ReadonlyArray<Record<string, unknown>> }>;
   const scenarioProgram = await kernelProgramFor(scenarioPath, { ...scenario.bpmn, sourceOverlay: null }, scenario.profile);
