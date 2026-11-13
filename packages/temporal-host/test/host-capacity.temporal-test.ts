@@ -6,8 +6,8 @@
  * whose identity exceeds Temporal's identifier limit; the
  * realistic sixteen-body parallel Multi-Instance journey on durable scheduling with its sixteen effects as concurrent
  * Activities, forced across Runs mid-Multi-Instance; an emitted hand-off the full population ingress defers, delivered
- * once room appears; and a Run draining while a hand-off is deferred, which still registers a commit made during the
- * drain and continues as new. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since it judges candidates
+ * once room appears; a Run draining while a hand-off is deferred, which still registers a commit made during the
+ * drain and continues as new; and a start whose Signal is deferred, whose caller's next population command waits behind it. The memory host finds each exact knob (`memory-host-capacity.test.ts`), since it judges candidates
  * with the Workflow's own measure.
  */
 import assert from "node:assert/strict";
@@ -19,7 +19,7 @@ import { defaultPayloadConverter } from "@temporalio/client";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import type { Worker } from "@temporalio/worker";
 
-import { PopulationClient, ProcessClient, ResultKind, Scheduling, type HostConfig, type JsonValue } from "@bpmn-lean/temporal-host/client";
+import { PopulationClient, PopulationRefused, ProcessClient, ResultKind, Scheduling, type HostConfig, type JsonValue } from "@bpmn-lean/temporal-host/client";
 import { canonicalBytes, chainCapacity } from "@bpmn-lean/temporal-host/host";
 import { createMemoryProcessHost } from "@bpmn-lean/temporal-host/memory-host";
 import {
@@ -305,4 +305,31 @@ test("drain: a Run draining while a hand-off is deferred registers a commit made
     (snapshot) => snapshot.view?.openWaits.some((wait) => wait.id.elementId === "Hold") ?? false);
   await until("the emitter's Continue-As-New after both commits", () => chainHistories(environment.client, chains.emitter),
     (runs) => runs.length >= 3);
+});
+
+// A start's own Signals hold the same barrier as an input's: its verdict answers only once the ingress answered them, so
+// the caller's next population command waits behind the deferred hand-off instead of overtaking it.
+test("start barrier: a start whose Signal the full ingress defers answers after the deferral, and the caller's next command waits behind it", async () => {
+  const population = `capacity-start-barrier-${randomUUID()}`;
+  const config = external(null);
+  const chains = { emitter: workflowId("barrier-thrower"), receiver: workflowId("barrier-receiver"), filler: workflowId("barrier-filler") };
+  const line = await fx.handoffLine(async (digest) => {
+    const memory = createMemoryProcessHost({ taskQueue: "measure", now: Date.now });
+    return fx.handoffPopulation(memory, memory.population(population, config), config, chains, digest, "thrower");
+  });
+  const ingress = new PopulationClient(environment.client, taskQueue, population, config);
+  assert.ok("deploymentId" in await fx.handoffPopulation(client, ingress, config, chains, line - 15_000, "thrower"));
+  const programs = await fx.handoffPrograms();
+  // The same request answers its recorded deployment again and takes no room.
+  const deployed = await ingress.registerDeployment({ deploymentRequestId: "emitter", digest: "emitter", program: programs.thrower });
+  assert.ok("deploymentId" in deployed);
+  const late = workflowId("barrier-late-thrower");
+  const started = await within("the late start", client.start({ workflowId: late, program: programs.thrower, config,
+    population: { population, deploymentId: deployed.deploymentId },
+    start: { kind: "start", commandId: `start-${"x".repeat(20_000)}`, instanceId: "Thrower_2", variables: [] } }));
+  assert.equal(started.outcome, "committed");
+  await assert.rejects(ingress.command("broadcast", { kind: "broadcast", commandId: "after-start", address: { kind: "named", name: "go" }, variables: [] } as never),
+    (error: unknown) => error instanceof PopulationRefused && error.code === "host.capacity.continuation", "the caller's next command waits behind the start's Signal");
+  assert.equal((await client.deliver(chains.filler, fx.fillerDelivery)).outcome, "committed");
+  await until("the start's hand-off settled", () => ingress.backlog(), (backlog) => backlog === 0);
 });

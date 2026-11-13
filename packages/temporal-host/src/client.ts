@@ -8,6 +8,7 @@
  */
 import {
   ApplicationFailure,
+  WithStartWorkflowOperation,
   WorkflowExecutionAlreadyStartedError,
   WorkflowNotFoundError,
   WorkflowUpdateFailedError,
@@ -120,32 +121,40 @@ export class ProcessClient implements ProcessHost {
   /**
    * Starts the chain and reports the start's verdict. A Workflow ID is one instance for good: a second start under it
    * is `rejected`, whether the first chain still runs or has ended.
+   *
+   * The start carries its `settle` Update (Update-with-Start), which answers once the start committed, its waits are
+   * registered and the ingress answered the Signals it threw, so the caller's next population command never overtakes
+   * them. Sent with the start, it is the Run's first Update and no fence refuses it; should it fail all the same, a start
+   * the chain shows committed is still reported committed, and one it does not answers the Run's own verdict.
    */
   async start(request: StartRequest): Promise<CommandResult> {
-    let handle: WorkflowHandle<ProcessWorkflow>;
+    const startWorkflowOperation = new WithStartWorkflowOperation<ProcessWorkflow>(workflowType, {
+      taskQueue: this.taskQueue,
+      workflowId: request.workflowId,
+      workflowIdConflictPolicy: "FAIL",
+      workflowIdReusePolicy: "REJECT_DUPLICATE",
+      args: [{
+        kind: RunKind.Start,
+        program: request.program,
+        config: request.config,
+        population: request.population ?? null,
+        start: request.start,
+      }],
+      ...(request.memo === undefined ? {} : { memo: request.memo }),
+    });
     try {
-      handle = await this.client.workflow.start<ProcessWorkflow>(workflowType, {
-        taskQueue: this.taskQueue,
-        workflowId: request.workflowId,
-        workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [{
-          kind: RunKind.Start,
-          program: request.program,
-          config: request.config,
-          population: request.population ?? null,
-          start: request.start,
-        }],
-        ...(request.memo === undefined ? {} : { memo: request.memo }),
-      });
+      const revision = await this.client.workflow.executeUpdateWithStart(settleUpdate, { startWorkflowOperation });
+      return { outcome: "committed", code: null, revision };
     } catch (error) {
       if (error instanceof WorkflowExecutionAlreadyStartedError) {
         return { outcome: "rejected", code: "workflow-already-started", revision: null };
       }
-      throw error;
+      // A settle that failed, or found the Run already closed, says nothing about the start itself; the chain does.
+      if (!(error instanceof WorkflowUpdateFailedError) && !(error instanceof WorkflowNotFoundError)) throw error;
     }
     const snapshot = await this.hostView(request.workflowId);
-    if (snapshot.view !== null && !snapshot.registering) return { outcome: "committed", code: null, revision: snapshot.revision };
-    if (snapshot.view !== null) return { outcome: "committed", code: null, revision: await handle.executeUpdate(settleUpdate) };
+    if (snapshot.view !== null) return { outcome: "committed", code: null, revision: snapshot.revision };
+    const handle: WorkflowHandle<ProcessWorkflow> = this.handle(request.workflowId);
     const result = await handle.result();
     switch (result.kind) {
       case ResultKind.NotStarted: return { outcome: result.outcome, code: result.code, revision: null };

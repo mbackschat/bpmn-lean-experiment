@@ -28,7 +28,8 @@
  * Under a population scope the instance registers its open Message and Signal waits' addresses with the population
  * ingress whenever they change, one Activity at a time from the main loop, and clears them when it ends or halts. That
  * registration is a barrier: an input's Update returns only once the waits its commit opened are registered, and a
- * start's caller waits on the `settle` Update, so a population command sent after the caller saw the commit finds them.
+ * start's caller waits on the `settle` Update it sends with the start, which also waits for the ingress's answer to the
+ * start's Signals, so a population command sent after the caller saw the commit finds them and follows them.
  *
  * The Signals a committed input throws are handed to the ingress after the registration, one emit at a time in commit
  * order. An emit the ingress cannot hold is deferred: the ingress keeps it in arrival order and accepts it once room
@@ -192,6 +193,9 @@ function commandResult(applied: Judged<unknown>, revision: number): CommandResul
     : { outcome: applied.outcome, code: applied.code, revision };
 }
 
+/** The refusal a `settle` answers when the Run's start committed nothing; the caller then reads the Run's result. */
+const startNotCommitted = "start-not-committed";
+
 /** The code of a population start whose Conditional predicate did not hold, so that no instance started. */
 const conditionNotHeldCode = "conditional-start-not-held";
 
@@ -259,7 +263,6 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   setHandler(stateQuery, (from) => textPage(instance === null ? null : port.encodeState(instance.state), from));
   setHandler(hostViewQuery, (from) => textPage({
     revision: log.cursor.revision, view: instance === null ? null : snapshotView(instance.view), halt,
-    registering: populationOwed(),
   }, from));
   setHandler(populationSignalQuery, (question) => instance === null || halt !== null
     ? { instanceId: null, receivers: [], refusesVariables: false }
@@ -300,9 +303,15 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     offers = handedBack(offers, wake);
   }));
   setHandler(publicationQuery, (afterRevision, limit) => readPage(log, afterRevision, limit));
+  /** Whether the Run's start committed nothing, so a `settle` waiting for it answers that it did not. */
+  let notStarted = false;
   // A `settle` waits on the same barriers as a caller's input, so the fence bounds it too: with at most one population
-  // Update from the ingress at a time, a hand-back's wake always finds a free in-flight slot (Temporal allows ten).
+  // Update from the ingress at a time, a hand-back's wake always finds a free in-flight slot (Temporal allows ten). A
+  // start's own `settle` arrives with it (Update-with-Start, `client.ts`) and is dispatched before any caller Update has
+  // a handler, so the fence never refuses it.
   setHandler(settleUpdate, fenced(async () => {
+    await condition(() => instance !== null || notStarted);
+    if (instance === null) throw rejection(startNotCommitted);
     await settled();
     await emitted();
     return log.cursor.revision;
@@ -389,29 +398,31 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     frame.programBytes > chainCapacity.programBytes ? CapacityBound.Program
       : canonicalBytes(start) > chainCapacity.startBytes ? CapacityBound.Start : null;
 
+  /** The Run's result when its start committed nothing, once every handler, a waiting `settle` included, finished. */
+  const startFailed = async (outcome: string, code: string): Promise<ProcessResult> => {
+    notStarted = true;
+    await condition(allHandlersFinished);
+    return { kind: ResultKind.NotStarted, outcome, code };
+  };
   if (args.kind === RunKind.PopulationStart) {
     const refused = startRefusal(args.request);
     startOutcome = refused !== null
       ? { kind: "failed", failure: populationPort.capacityFailure(capacityCode(refused)) }
       : reached(`population:${workflowInfo().workflowId}`, populationPort.populationStart(program, args.request, Date.now()), null);
     if (startOutcome.kind !== "committed") {
-      await condition(allHandlersFinished);
-      const code = startOutcome.kind === "failed" ? populationPort.failureCode(startOutcome.failure) : conditionNotHeldCode;
-      return { kind: ResultKind.NotStarted, outcome: startOutcome.kind, code };
+      return startFailed(startOutcome.kind, startOutcome.kind === "failed" ? populationPort.failureCode(startOutcome.failure) : conditionNotHeldCode);
     }
   } else if (args.kind === RunKind.Start) {
     const refused = startRefusal(args.start);
-    if (refused !== null) return { kind: ResultKind.NotStarted, outcome: "rejected", code: capacityCode(refused) };
+    if (refused !== null) return startFailed("rejected", capacityCode(refused));
     const start = timed(args.start);
-    if (start === null) return { kind: ResultKind.NotStarted, outcome: "rejected", code: hostOwnsLogicalTime };
+    if (start === null) return startFailed("rejected", hostOwnsLogicalTime);
     const decoded = port.decodeStimulus(start);
     if (port.route(decoded.input) !== Route.Start) {
       throw ApplicationFailure.create({ message: "the start argument is not a start stimulus", nonRetryable: true });
     }
     const started = commit(decoded.commandId, decoded.input);
-    if (!started.committed) {
-      return { kind: ResultKind.NotStarted, outcome: started.capacity ? "rejected" : started.outcome, code: started.code };
-    }
+    if (!started.committed) return startFailed(started.capacity ? "rejected" : started.outcome, started.code);
   } else {
     const state = port.decodeState(args.state);
     instance = { state, view: port.hostView(program, state) };

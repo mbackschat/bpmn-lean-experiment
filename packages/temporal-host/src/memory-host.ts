@@ -212,7 +212,7 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
     const chain = this.#chain(workflowId);
     const code = this.#halt(workflowId, chain);
     const halt = chain.halt ?? (code === null ? null : { commandId: "host:population", outcome: "unsupported", code });
-    return pagedAnswer({ revision: chain.log.cursor.revision, view: chain.instance === null ? null : snapshotView(chain.instance.view), halt, registering: false });
+    return pagedAnswer({ revision: chain.log.cursor.revision, view: chain.instance === null ? null : snapshotView(chain.instance.view), halt });
   }
 
   async publication(workflowId: string, afterRevision: number, limit = 100): Promise<PublicationPage> {

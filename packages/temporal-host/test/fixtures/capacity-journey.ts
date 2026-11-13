@@ -261,11 +261,12 @@ const handoffDocument = (body: string, messages = "") => new TextEncoder().encod
   <signal id="Signal_Go" name="go" />${messages}${body}
 </definitions>`);
 
-/** The hand-off witness's programs; `watcher` and `ticker` are emitter variants. */
+/** The hand-off witness's programs; `watcher`, `ticker` and `thrower` are emitter variants. */
 export interface HandoffPrograms {
   readonly emitter: JsonValue;
   readonly watcher: JsonValue;
   readonly ticker: JsonValue;
+  readonly thrower: JsonValue;
   readonly receiver: JsonValue;
   readonly filler: JsonValue;
 }
@@ -273,7 +274,8 @@ export interface HandoffPrograms {
 /**
  * The hand-off witness's programs (#138): *Emitter* throws the Signal *go* each time its User Task *Task* completes and
  * loops back to it; *Watcher* throws *go* once *Task* completes while a parallel branch waits for the Message *watch* at
- * *Watch*; *Ticker* throws *go* each time its Timer *Tick* fires and loops back to it; *Receiver* waits for *go*; *Filler* is the intermediate Message catch scenario, whose open Message wait holds
+ * *Watch*; *Ticker* throws *go* each time its Timer *Tick* fires and loops back to it; *Thrower* throws *go* as it starts
+ * and then holds its User Task *Held*; *Receiver* waits for *go*; *Filler* is the intermediate Message catch scenario, whose open Message wait holds
  * room at the ingress until a direct delivery closes it.
  */
 export function handoffPrograms(): Promise<HandoffPrograms> {
@@ -309,6 +311,11 @@ async function readHandoffPrograms(): Promise<HandoffPrograms> {
     <sequenceFlow id="f1" sourceRef="Start" targetRef="Merge" /><sequenceFlow id="f2" sourceRef="Merge" targetRef="Tick" />
     <sequenceFlow id="f3" sourceRef="Tick" targetRef="Throw" /><sequenceFlow id="f4" sourceRef="Throw" targetRef="Merge" />
   </process>`)),
+    thrower: await cibProgram(handoffDocument(`<process id="Thrower" isExecutable="true">
+    <startEvent id="Start" /><intermediateThrowEvent id="Throw"><signalEventDefinition signalRef="Signal_Go" /></intermediateThrowEvent>
+    <userTask id="Held" />
+    <sequenceFlow id="f1" sourceRef="Start" targetRef="Throw" /><sequenceFlow id="f2" sourceRef="Throw" targetRef="Held" />
+  </process>`)),
     receiver: await cibProgram(handoffDocument(`<process id="Receiver" isExecutable="true">
     <startEvent id="Start" /><intermediateCatchEvent id="Catch"><signalEventDefinition signalRef="Signal_Go" /></intermediateCatchEvent>
     <userTask id="Hold" />
@@ -342,7 +349,7 @@ export const fillerDelivery: JsonValue = {
  * ingress. Answers that filling deployment's answer.
  */
 export async function handoffPopulation(host: ProcessHost, population: PopulationHost, config: HostConfig, chains: HandoffChains,
-  digest: number, emitter: "emitter" | "watcher" | "ticker" = "emitter"): Promise<DeploymentAnswer> {
+  digest: number, emitter: keyof Omit<HandoffPrograms, "receiver" | "filler"> = "emitter"): Promise<DeploymentAnswer> {
   const programs = await handoffPrograms();
   const deployments: number[] = [];
   for (const [request, program] of [["emitter", programs[emitter]], ["receiver", programs.receiver], ["filler", programs.filler]] as const) {

@@ -109,12 +109,6 @@ export interface HostSnapshot {
   /** `null` before a committed start. */
   readonly view: SnapshotView | null;
   readonly halt: Halt | null;
-  /**
-   * The instance's open Message and Signal waits are not yet all registered with its population's ingress. An input's
-   * Update returns only once they are, and a start's caller waits on the `settle` Update, so a population command sent
-   * after the caller saw a commit finds every wait that commit opened.
-   */
-  readonly registering: boolean;
 }
 
 /** The failure type a validator refuses with; the message is the kernel's or the host's refusal code. */
