@@ -32,12 +32,16 @@ function logRecord(report: InternalFailureReport): Readonly<Record<string, unkno
   };
 }
 
-function renderError(error: unknown): Readonly<Record<string, string>> {
+/** How many `cause` links are rendered; a deeper or cyclic chain ends there. */
+const causeDepth = 8;
+
+function renderError(error: unknown, depth = 0): Readonly<Record<string, unknown>> {
   if (error instanceof Error) {
     return {
       name: error.name,
       message: error.message,
       ...(typeof error.stack === "string" ? { stack: error.stack } : {}),
+      ...(error.cause !== undefined && depth < causeDepth ? { cause: renderError(error.cause, depth + 1) } : {}),
     };
   }
   return { name: typeof error, message: renderValue(error) };

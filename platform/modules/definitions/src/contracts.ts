@@ -224,9 +224,10 @@ export class DefinitionArtifactIntegrityError extends Error {
 export class DefinitionStartIntegrityError extends Error {
   readonly definition: DefinitionReference;
 
-  constructor(definition: DefinitionReference) {
+  constructor(definition: DefinitionReference, options?: ErrorOptions) {
     super(
       `definition ${definition.processId}/${definition.version} did not remain identity-bound during start`,
+      options,
     );
     this.name = "DefinitionStartIntegrityError";
     this.definition = { processId: definition.processId, version: definition.version };

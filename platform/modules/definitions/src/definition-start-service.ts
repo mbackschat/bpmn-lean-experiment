@@ -122,6 +122,9 @@ export class DefinitionStartService {
           definition: toPublicDefinition(definition),
         };
         let record;
+        // The publication lifecycle answers a thrown dispatch with a description; when that leaves the start
+        // unresolved, the thrown engine failure is the only account of why, so it travels as the error's cause.
+        let dispatchFailure: unknown;
         try {
           record = await this.#confirmedInstances.startDirect(
             {
@@ -130,7 +133,7 @@ export class DefinitionStartService {
               intent: prepared.intent,
               startCommandBytes: Uint8Array.from(startCommandBytes),
             },
-            this.#directHost(
+            withDispatchFailure(this.#directHost(
               {
                 ...request,
                 initialVariables: decodeCanonicalDefinitionVersionStartCommand(
@@ -140,7 +143,9 @@ export class DefinitionStartService {
               prepared.intent,
               definition,
               selectedReference,
-            ),
+            ), (error) => {
+              dispatchFailure = error;
+            }),
           );
         } catch (error: unknown) {
           if (error instanceof ConfirmedProcessInstanceIntegrityError) {
@@ -149,7 +154,10 @@ export class DefinitionStartService {
           throw error;
         }
         if (record.state !== ConfirmedProcessInstanceState.Confirmed) {
-          throw new DefinitionStartIntegrityError(selectedReference);
+          throw new DefinitionStartIntegrityError(
+            selectedReference,
+            dispatchFailure === undefined ? undefined : { cause: dispatchFailure },
+          );
         }
         return {
           status: DefinitionVersionStartStatus.Started,
@@ -383,4 +391,22 @@ function cloneReference(reference: DefinitionReference): DefinitionReference {
 
 function assertNever(value: never): never {
   throw new TypeError(`Unsupported definition start result: ${String(value)}`);
+}
+
+/** The host with every thrown start passed to `observe` before it propagates unchanged. */
+function withDispatchFailure(
+  host: DirectProcessInstanceHost,
+  observe: (error: unknown) => void,
+): DirectProcessInstanceHost {
+  return {
+    start: async (reservation) => {
+      try {
+        return await host.start(reservation);
+      } catch (error: unknown) {
+        observe(error);
+        throw error;
+      }
+    },
+    describe: (reservation) => host.describe(reservation),
+  };
 }

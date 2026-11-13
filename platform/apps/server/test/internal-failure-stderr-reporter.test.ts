@@ -33,6 +33,24 @@ test("writes exactly one JSON line per report with the error's name, message and
   assert.equal(rendered.stack, error.stack);
 });
 
+test("renders the cause chain, so a wrapped engine failure is still told", () => {
+  const lines: string[] = [];
+  const reporter = createStderrInternalFailureReporter((line) => lines.push(line));
+  const cyclic = new Error("cycle");
+  (cyclic as { cause?: unknown }).cause = cyclic;
+  const error = new Error("start unresolved", { cause: new Error("engine answer lost", { cause: cyclic }) });
+
+  reporter({ ...report, error });
+
+  const rendered = (JSON.parse(lines[0]!) as { error: Record<string, unknown> }).error;
+  const cause = rendered.cause as Record<string, unknown>;
+  assert.equal(cause.message, "engine answer lost");
+  assert.equal((cause.cause as Record<string, unknown>).message, "cycle");
+  let depth = 0;
+  for (let link: Record<string, unknown> | undefined = rendered; link !== undefined; link = link.cause as Record<string, unknown> | undefined) depth += 1;
+  assert.equal(depth, 9);
+});
+
 test("renders a thrown non-Error with String() and no stack", () => {
   const lines: string[] = [];
   const reporter = createStderrInternalFailureReporter((line) => lines.push(line));

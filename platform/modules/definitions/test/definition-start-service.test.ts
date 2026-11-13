@@ -268,6 +268,17 @@ test("treats every started identity drift and gateway integrity result as an int
   );
 });
 
+test("an unresolved start keeps the engine failure that left it indeterminate as its cause", async () => {
+  const bytes = encoder.encode("lost-answer-source");
+  const stored = definition(1, "lost-answer-source", "8".repeat(64), bytes);
+  const lost = new Error("engine answer lost");
+  const fixture = createFixture([stored], new Map([[stored.source.sha256, bytes]]), { startThrows: lost });
+  await assert.rejects(
+    fixture.service.start({ processId: "Process_A", version: 1 }, emptyStartCommand),
+    (error: unknown) => error instanceof DefinitionStartIntegrityError && error.cause === lost,
+  );
+});
+
 test("requires one synchronous nonempty well-formed generated instance identity", async () => {
   const bytes = encoder.encode("identity-source");
   const stored = definition(1, "identity-source", "8".repeat(64), bytes);
@@ -353,6 +364,8 @@ type StartFixtureOptions = Readonly<{
   startGate?: Promise<void>;
   redirectExactGetToLatest?: boolean;
   startOnlyDrift?: boolean;
+  /** Thrown by the prepared start, as a lost engine answer is; the description then answers `missing`. */
+  startThrows?: Error;
   startedDrift?: Readonly<{
     processInstanceId?: string;
     sourceId?: string;
@@ -473,6 +486,7 @@ function createFixture(
     startPreparedDefinitionVersion: async (request) => {
       markStartEntered();
       await options.startGate;
+      if (options.startThrows !== undefined) throw options.startThrows;
       return {
         status: EngineDefinitionStartStatus.Started,
         source: {
@@ -495,7 +509,7 @@ function createFixture(
       };
     },
     describeDefinitionVersionStart: async () => ({
-      status: "matching" as DefinitionStartDescriptionResult["status"],
+      status: (options.startThrows === undefined ? "matching" : "missing") as DefinitionStartDescriptionResult["status"],
     }),
     startDefinitionVersion: async () => {
       throw new Error("legacy direct start is outside this fixture");
