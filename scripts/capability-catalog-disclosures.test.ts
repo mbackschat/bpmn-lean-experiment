@@ -3,12 +3,14 @@ import { readFileSync, readdirSync } from "node:fs";
 import { test } from "node:test";
 
 import { mvpBpmnCapabilities, mvpBpmnRestrictions } from "../model-corpus/mvp-capabilities.ts";
+import { outsideTargetFeatures } from "../model-corpus/outside-target-features.ts";
 
 // A catalog row is prose for the Product 2 About page; what this guard holds it to are the facts it names, each checked
 // against its owner rather than against the row's wording: a refusal code against the generated kernel vocabulary, a
 // register entry against the CIB-BPMN relation register, a `name = value` profile option against the vocabulary's
 // profile options, and every "<name> profile" against `profiles/`. A row naming a profile that no longer exists, such as a
-// retired per-variant capsule profile, therefore fails here. The Product 2 panel test
+// retired per-variant capsule profile, therefore fails here. A feature outside the Practical CIB7 target is held to the
+// same facts and must name an existing capability row and register entry. The Product 2 panel test
 // (`platform/apps/web/test/capabilities-panel.test.ts`) checks rendering only.
 const read = (relative: string): string => readFileSync(new URL(`../${relative}`, import.meta.url), "utf8");
 
@@ -99,6 +101,22 @@ test("every restriction row's basis begins with the semantics document the About
       .map(({ refusalCode }) => refusalCode),
     [],
   );
+});
+
+test("every feature outside the Practical CIB7 target belongs to a capability row and rests on a register entry", () => {
+  const capabilityIds = new Set(mvpBpmnCapabilities.map(({ id }) => id));
+  const findings = outsideTargetFeatures.flatMap(({ capability, feature, description, basis }) => [
+    ...capabilityIds.has(capability) ? [] : [`capability row ${capability} does not exist`],
+    ...registerIds.has(basis) ? [] : [`basis ${basis} is not a register entry`],
+    ...unknownFacts(`${feature}\n${description}`),
+  ].map((finding) => `${capability} (${basis}): ${finding}`));
+  assert.deepEqual(findings, []);
+  assert.ok(outsideTargetFeatures.length > 0, "the guard checks no feature");
+});
+
+test("no capability row names one feature outside the Practical CIB7 target twice", () => {
+  const keys = outsideTargetFeatures.map(({ capability, basis }) => JSON.stringify([capability, basis]));
+  assert.deepEqual(keys.filter((key, index) => keys.indexOf(key) !== index), []);
 });
 
 test("the fact patterns recognize what they check", () => {

@@ -13,6 +13,8 @@ import type {
   BpmnCapabilitySupport as BpmnCapabilitySupportValue,
   CibCapabilityEvidence,
 } from "../../../../model-corpus/mvp-capabilities.ts";
+import { OutsideTargetReach, outsideTargetFeatures } from "../../../../model-corpus/outside-target-features.ts";
+import type { OutsideTargetReach as OutsideTargetReachValue } from "../../../../model-corpus/outside-target-features.ts";
 import {
   MuePreviewBetaEvidenceKind,
   MuePreviewBetaProductSurface,
@@ -33,6 +35,8 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
   const [expandedFamilies, setExpandedFamilies] = useState<ReadonlySet<string>>(() => new Set());
   const [expandedAreas, setExpandedAreas] = useState<ReadonlySet<string>>(() => new Set());
   const families = Map.groupBy(mvpCapabilityCatalog.capabilities, (capability) => capability.family);
+  const elements = new Map(mvpCapabilityCatalog.capabilities.map(({ id, element }) => [id, element]));
+  const outsideTarget = Map.groupBy(outsideTargetFeatures, ({ capability }) => capability);
   const areas = new Map([...Map.groupBy(mvpBpmnRestrictions, ({ basis }) => restrictionArea(basis))]
     .sort(([left], [right]) => left.localeCompare(right, "en")));
 
@@ -111,7 +115,12 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
                     {capabilities.map((capability) => (
                       <tr key={capability.id} data-capability-id={capability.id}>
                         <th scope="row" data-label="Element or variant">{capability.element}</th>
-                        <td data-label="Current status">{supportLabel(capability.support)}</td>
+                        <td data-label="Current status">
+                          {supportLabel(capability.support)}
+                          {(outsideTarget.get(capability.id) ?? []).map(({ feature, reach, basis }) => (
+                            <span key={basis} className={styles.outsideTargetNote}>{`Outside the Practical CIB7 target: ${feature} (${reachLabel(reach).toLowerCase()})`}</span>
+                          ))}
+                        </td>
                         <td data-label="Current restriction">{capability.restriction}</td>
                         <td data-label="CIB Seven evidence">{cibEvidenceLabel(capability.cibEvidence)}</td>
                       </tr>
@@ -185,6 +194,36 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
           </div>
         </section>
       </InlineDisclosure>
+      <InlineDisclosure title="Outside the Practical CIB7 target">
+        <section className={styles.families} aria-label="Supported features outside the Practical CIB7 target">
+          <p>The kernel supports these, but CIB Seven 2.2.0 lacks them, so they lie outside the Practical CIB7 target and count toward none of its rows. Most run only under the standards profile: the cibseven profiles refuse such a model or, for Multi-Instance output aggregation, write no output collection. The basis names the relation-register entry that records what CIB Seven lacks; the capability rows they belong to carry a note.</p>
+          <div className={`${styles.tableOwner} ${styles.outsideTargetTable}`}>
+            <table>
+              <caption>Outside the Practical CIB7 target — supported features</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Element or variant</th>
+                  <th scope="col">Feature</th>
+                  <th scope="col">What it does</th>
+                  <th scope="col">Runs under</th>
+                  <th scope="col">Basis</th>
+                </tr>
+              </thead>
+              <tbody>
+                {outsideTargetFeatures.map(({ capability, feature, description, reach, basis }) => (
+                  <tr key={JSON.stringify([capability, basis])} data-outside-target-capability={capability} data-outside-target-basis={basis}>
+                    <th scope="row" data-label="Element or variant">{elements.get(capability) ?? capability}</th>
+                    <td data-label="Feature">{feature}</td>
+                    <td data-label="What it does">{description}</td>
+                    <td data-label="Runs under">{reachLabel(reach)}</td>
+                    <td data-label="Basis">{basis}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </InlineDisclosure>
       <p className={styles.followUp}>
         The repository requirement ledger owns BPMN dispositions; the kernel status map owns exact current evidence. Unsupported or broader behavior remains outside these rows until its semantic profile and tests are approved.
       </p>
@@ -207,6 +246,15 @@ function toggled(previous: ReadonlySet<string>, key: string, expanded: boolean):
 function restrictionArea(basis: string): string {
   const area = (basis.split(";")[0] ?? "").trim().replace(/-SEMANTICS-SPEC$/u, "");
   return area.charAt(0) + area.slice(1).toLowerCase();
+}
+
+function reachLabel(reach: OutsideTargetReachValue): string {
+  switch (reach) {
+    case OutsideTargetReach.StandardsProfile:
+      return "Standards profile only";
+    case OutsideTargetReach.EveryProfile:
+      return "Every profile";
+  }
 }
 
 function limitLabel(limit: HostLimit | null): string {

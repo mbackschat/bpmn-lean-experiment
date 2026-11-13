@@ -9,6 +9,7 @@ import { build } from "vite";
 
 import { HostLimitUnit, hostRestrictions } from "../../../../model-corpus/host-restrictions.ts";
 import { mvpBpmnRestrictions, mvpCapabilityCatalog } from "../../../../model-corpus/mvp-capabilities.ts";
+import { OutsideTargetReach, outsideTargetFeatures } from "../../../../model-corpus/outside-target-features.ts";
 import { muePreviewBetaTestOracle } from "../../../../scripts/mue-preview-beta-test-oracle.ts";
 
 const dependencies = ["react/jsx-runtime", "react", "@bpmn-lean/platform-ui-kit"] as const;
@@ -113,6 +114,46 @@ test("discloses every kernel restriction row and every hosted-engine restriction
     [...html.matchAll(/data-host-restriction-code="([^"]+)"/gu)].map((match) => match[1]).sort(),
     hostRestrictions.map(({ code }) => code).sort(),
   );
+});
+
+test("discloses every feature outside the Practical CIB7 target and marks the capability rows it belongs to", () => {
+  const html = renderToStaticMarkup(createElement(module.CapabilitiesPanel, {
+    productVersion: "0.1.0",
+  }));
+  const reachLabels: Readonly<Record<OutsideTargetReach, string>> = {
+    [OutsideTargetReach.StandardsProfile]: "Standards profile only",
+    [OutsideTargetReach.EveryProfile]: "Every profile",
+  };
+  const note = "Outside the Practical CIB7 target";
+
+  assert.match(html, new RegExp(note, "u"));
+  for (const { capability, feature, description, reach, basis } of outsideTargetFeatures) {
+    const key = JSON.stringify([capability, basis]);
+    const row = rowWith(html, `data-outside-target-capability="${capability}" data-outside-target-basis="${basis}"`);
+    assert.notEqual(row, null, `missing feature row ${key}`);
+    const element = mvpCapabilityCatalog.capabilities.find(({ id }) => id === capability)?.element ?? capability;
+    for (const text of [element, feature, description, reachLabels[reach], basis]) {
+      assert.ok(row?.includes(escapedText(text)), `${key} must render ${JSON.stringify(text)}`);
+    }
+  }
+  assert.deepEqual(
+    [...html.matchAll(/data-outside-target-capability="([^"]+)" data-outside-target-basis="([^"]+)"/gu)]
+      .map(([, capability, basis]) => JSON.stringify([capability, basis])).sort(),
+    outsideTargetFeatures.map(({ capability, basis }) => JSON.stringify([capability, basis])).sort(),
+  );
+
+  for (const { id } of mvpCapabilityCatalog.capabilities) {
+    const row = rowWith(html, `data-capability-id="${id}"`) ?? "";
+    const features = outsideTargetFeatures.filter(({ capability }) => capability === id);
+    if (features.length === 0) {
+      assert.ok(!row.includes(note), `${id} must carry no outside-target note`);
+      continue;
+    }
+    for (const { feature, reach } of features) {
+      const text = `${note}: ${feature} (${reachLabels[reach].toLowerCase()})`;
+      assert.ok(row.includes(escapedText(text)), `${id} must render ${JSON.stringify(text)}`);
+    }
+  }
 });
 
 test("presents the exact Beta checkpoint matrix without changing the capability catalog", () => {

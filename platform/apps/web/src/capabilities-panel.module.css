@@ -145,6 +145,19 @@
 .hostTable thead th:nth-child(3) { width: 12%; }
 .hostTable thead th:nth-child(4) { width: 16%; }
 
+.outsideTargetTable thead th:nth-child(1) { width: 18%; }
+.outsideTargetTable thead th:nth-child(2) { width: 16%; }
+.outsideTargetTable thead th:nth-child(3) { width: 40%; }
+.outsideTargetTable thead th:nth-child(4) { width: 12%; }
+.outsideTargetTable thead th:nth-child(5) { width: 14%; }
+
+.outsideTargetNote {
+  display: block;
+  margin-top: var(--ui-space-1);
+  color: var(--ui-color-muted);
+  font: var(--ui-font-label);
+}
+
 .families {
   display: grid;
   gap: var(--ui-space-4);
