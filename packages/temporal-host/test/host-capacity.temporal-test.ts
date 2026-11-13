@@ -11,6 +11,7 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
 
+import { defaultPayloadConverter, type WorkflowHandle } from "@temporalio/client";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import type { Worker } from "@temporalio/worker";
 
@@ -73,15 +74,38 @@ async function until<T>(label: string, read: () => Promise<T>, done: (value: T) 
   }
 }
 
-/** The chain's Runs, newest first, each replayed; a Run's start names the Run it continued. */
-async function runsOf(id: string): Promise<number> {
-  let runs = 0;
-  for (let runId: string | undefined = undefined; ; runs += 1) {
+type History = Awaited<ReturnType<WorkflowHandle["fetchHistory"]>>;
+
+/** The Event Histories of the chain's Runs, newest first; a Run's start names the Run it continued. */
+async function chainHistories(id: string): Promise<History[]> {
+  const histories: History[] = [];
+  for (let runId: string | undefined = undefined; ;) {
     const history = await environment.client.workflow.getHandle(id, runId).fetchHistory();
-    await replayHistory(history, id);
+    histories.push(history);
     runId = history.events?.[0]?.workflowExecutionStartedEventAttributes?.continuedExecutionRunId ?? undefined;
-    if (runId === undefined || runId === "") return runs + 1;
+    if (runId === undefined || runId === "") return histories;
   }
+}
+
+/**
+ * Replays closed Runs only. `Worker.runReplayHistory` settles on the replay Worker's eviction, which sdk-core requests
+ * after the first activation that is no longer replaying (`replay/mod.rs`, `get_post_activate_hook`, SDK 1.21.0); the
+ * replay of an open Run's history never settled in the hosted runs of 2026-11-13.
+ */
+async function replayClosed(id: string, histories: readonly History[]): Promise<void> {
+  for (const history of histories) {
+    const last = history.events?.at(-1);
+    assert.ok(last?.workflowExecutionContinuedAsNewEventAttributes != null || last?.workflowExecutionCompletedEventAttributes != null,
+      "only a Run that continued as new or completed is replayed");
+    await replayHistory(history, id);
+  }
+}
+
+/** The canonical bytes of the argument a Run continued as new with. */
+function carriedBytes(history: History | undefined): number {
+  const payload = history?.events?.at(-1)?.workflowExecutionContinuedAsNewEventAttributes?.input?.payloads?.[0];
+  assert.ok(payload != null, "the Run continued as new");
+  return canonicalBytes(defaultPayloadConverter.fromPayload(payload));
 }
 
 async function committed(id: string, stimuli: readonly JsonValue[]): Promise<void> {
@@ -94,23 +118,29 @@ async function committed(id: string, stimuli: readonly JsonValue[]): Promise<voi
 
 test("continuation: a Run continues as new carrying exactly 448 KiB, and the candidate one byte more is refused", async () => {
   const { program, inputs, last } = await fx.continuationCase();
+  // A one-Event budget rolls the chain over after every commit, so the fitting candidate is carried at once. The
+  // configuration travels in the carried argument, so the memory host measures under the same one.
+  const config = external(1);
   const memory = async (knob: number) => {
     const host = createMemoryProcessHost({ taskQueue: "measure" });
-    await host.start({ workflowId: "W", program, config: external(null), start: inputs[0]! });
+    await host.start({ workflowId: "W", program, config, start: inputs[0]! });
     for (const stimulus of inputs.slice(1)) await host.command("W", stimulus);
     return (await host.command("W", last(knob))).outcome === "committed";
   };
   const knob = await fx.continuationKnob(memory);
-  // A one-Event budget rolls the chain over after every commit, so the fitting candidate is carried at once.
   const fits = workflowId("continuation-fits");
-  assert.equal((await client.start({ workflowId: fits, program, config: external(1), start: inputs[0]! })).outcome, "committed");
+  assert.equal((await client.start({ workflowId: fits, program, config, start: inputs[0]! })).outcome, "committed");
   await committed(fits, [...inputs.slice(1), last(knob)]);
-  // The exact fit's Run continues as new; the next Run holds *Final* open with the carried state.
-  await until("the Run after the exact fit", () => runsOf(fits), (runs) => runs >= inputs.length + 1);
+  // Each input commits in a Run of its own, so the exact fit commits in the sixth Run and the seventh holds *Final*
+  // open with the carried state.
+  const chain = await until("the Run after the exact fit", () => chainHistories(fits), (runs) => runs.length >= inputs.length + 2);
+  assert.equal(chain.length, inputs.length + 2);
+  assert.equal(carriedBytes(chain[1]), chainCapacity.continuationBytes);
+  await replayClosed(fits, chain.slice(1));
   assert.ok((await client.hostView(fits)).view?.openWaits.some((wait) => wait.id.elementId === "Final"));
 
   const over = workflowId("continuation-over");
-  await client.start({ workflowId: over, program, config: external(1), start: inputs[0]! });
+  await client.start({ workflowId: over, program, config, start: inputs[0]! });
   await committed(over, inputs.slice(1));
   const head = (await client.hostView(over)).revision;
   assert.deepEqual(await client.command(over, last(knob + 1)), { outcome: "rejected", code: "host.capacity.continuation", revision: null });
@@ -193,5 +223,7 @@ test("the realistic sixteen-body parallel journey runs on durable scheduling acr
   await committed(id, [journey.publish]);
   const result = await client.result(id);
   assert.equal(result.kind === ResultKind.Ended ? result.status : result.kind, "completed");
-  assert.ok(await runsOf(id) > 2, "the journey crossed Runs mid-Multi-Instance");
+  const chain = await chainHistories(id);
+  await replayClosed(id, chain);
+  assert.ok(chain.length > 2, "the journey crossed Runs mid-Multi-Instance");
 });
