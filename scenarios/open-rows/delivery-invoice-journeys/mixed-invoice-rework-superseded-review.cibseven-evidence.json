@@ -1,0 +1,660 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "invoice-rework-superseded-review",
+    "sha256": "6bc0849a4a54a729b6c64ff7cc97861acde8ae72082e7922adb87d3e6976882d"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "075309a075dd2de59d27f81742e7dfdf951ba0a2666edbba93fabcd04e6f58fe"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "initial"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:6a6a59099e472c37b1f6c0581b3ed81ac9d0db2c82474839da67af29164a8855",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-1-superseded",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "finalize",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:6a6a59099e472c37b1f6c0581b3ed81ac9d0db2c82474839da67af29164a8855",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-1-superseded",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-2",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
+        "tasks": [
+          {
+            "elementId": "Finalize",
+            "name": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "finalize",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:6a6a59099e472c37b1f6c0581b3ed81ac9d0db2c82474839da67af29164a8855",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review-1-superseded",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "finalize",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review-1",
+        "jobs": [
+          {
+            "elementId": "Validate",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "invoiceValidator",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:6a6a59099e472c37b1f6c0581b3ed81ac9d0db2c82474839da67af29164a8855",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review-1-superseded",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review-2",
+        "jobs": [
+          {
+            "elementId": "Validate",
+            "activation": 2,
+            "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+            "handler": "invoiceValidator",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "finalize",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "review-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:6a6a59099e472c37b1f6c0581b3ed81ac9d0db2c82474839da67af29164a8855",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "review-1-superseded",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "review-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "finalize",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "complete-effect-sha256:6a6a59099e472c37b1f6c0581b3ed81ac9d0db2c82474839da67af29164a8855",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
+        "schedule": "plainSuccess",
+        "invocations": 2,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "initial"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "invoice",
+              "elementId": "Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": null,
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "review-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "invoice",
+              "elementId": "Validate",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "invoiceValidator",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:6a6a59099e472c37b1f6c0581b3ed81ac9d0db2c82474839da67af29164a8855",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "invoice",
+              "elementId": "Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": null,
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "review-1-superseded",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "invoice",
+              "elementId": "Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": null,
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "review-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "invoice",
+              "elementId": "Validate",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "invoiceValidator",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "invoice",
+              "elementId": "Finalize",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": null,
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "finalize",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "invoice",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}
