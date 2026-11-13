@@ -169,9 +169,7 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 
 ## Open rows
 
-| Row | Decision owed or not yet implemented |
-|---|---|
-| PC-CONDITION-03, PC-CONDITION-04 | Contests of Conditional items true at one evaluation fire in the input's ranked order and are refused unranked, where CIB takes an order no profile selects ([CIB-LIM-0053][r-lim-0053], [#117](https://github.com/mbackschat/bpmn-lean-experiment/issues/117)), except a ranking under which an interruption overtakes an earlier firing's work ([CIB-LIM-0055][r-lim-0055]); the track review of M12 is owed; a completion's writes read by its own boundaries ([CIB-INT-0042][r-int-0042]); Event Sub-Process starts of one scope with one condition, which both CIB and the kernel deploy (CIB's duplicate-condition check covers root starts only, `BpmnParse.java:1289`, `:1042`). |
+None: every row this document owns is closed.
 
 ## Sources
 
