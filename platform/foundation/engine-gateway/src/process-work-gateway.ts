@@ -18,7 +18,7 @@ import {
 } from "@bpmn-lean/engine-api";
 import type { PublicWorkTask, VariableBinding as PlatformVariableBinding } from "@bpmn-lean/platform-contracts";
 
-import { engineBindings } from "./gateway-context.js";
+import { engineBindings, occurrenceId } from "./gateway-context.js";
 import { processCommandResult, type ProcessCommandResult } from "./process-command-result.js";
 
 export const ProcessWorkObservationStatus = EngineOpenWorkStatus;
@@ -98,7 +98,7 @@ export function processWorkTask(wait: EngineOpenWait): ProcessWorkTask {
   const [group] = detail.candidateGroups;
   const [field] = detail.formFields;
   if (field !== undefined && group === undefined) refuse("a form without a candidate group");
-  const id = { ...wait.id };
+  const id = occurrenceId(wait.id);
   if (group === undefined) return { id, name: detail.name, state: "active" };
   const assignment = { candidates: [{ kind: "group", id: group }] } as const;
   if (field === undefined) return { id, name: detail.name, state: "active", metadata: { assignment } };

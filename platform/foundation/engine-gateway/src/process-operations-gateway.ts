@@ -15,6 +15,7 @@ import type {
   PublicRetryIncidentInteraction,
 } from "@bpmn-lean/platform-contracts";
 
+import { occurrenceId } from "./gateway-context.js";
 import { processCommandResult, type ProcessCommandResult } from "./process-command-result.js";
 
 export const ProcessIncidentObservationStatus = EngineIncidentObservationStatus;
@@ -70,14 +71,14 @@ export function processIncident(wait: EngineOpenWait, hostingProcessInstanceId: 
   if (detail.effect.arguments.length > 0) {
     throw new TypeError(`The incident at ${wait.id.elementId} has effect arguments, which Product 2 cannot present`);
   }
-  const incidentId = { effectId: { ...wait.id }, generation: detail.generation };
+  const incidentId = { effectId: occurrenceId(wait.id), generation: detail.generation };
   const retry: PublicRetryIncidentInteraction = { kind: "retryIncident", incidentId };
   return {
     incident: {
       kind: "effectExecutionFailed",
       id: incidentId,
       effect: {
-        id: { ...wait.id },
+        id: occurrenceId(wait.id),
         descriptor: { protocol: detail.effect.protocol, operation: detail.effect.operation },
         arguments: [],
       },

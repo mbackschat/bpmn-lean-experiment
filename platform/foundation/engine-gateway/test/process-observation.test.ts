@@ -17,6 +17,7 @@ import {
   DefinitionStartStatus,
   ProcessIncidentObservationStatus,
 } from "@bpmn-lean/platform-engine-gateway";
+import { decodePublicEffectIncident, decodePublicWorkTaskId } from "@bpmn-lean/platform-contracts";
 import { engineProcessLocatorForCanonicalProcess } from "@bpmn-lean/engine-api";
 import type { MemoryEngineHost } from "@bpmn-lean/engine-api/testing";
 
@@ -68,6 +69,42 @@ test("a technical failure shows as an incident that a Retry stimulus resolves", 
     stimulus: { kind: "retryIncident", commandId: "retry-1", incidentId: { effectId, generation: 1 } },
   });
   assert.deepEqual(retried, { kind: "semantic", commandId: "retry-1", outcome: "committed", code: null });
+});
+
+// Product 2 compares engine-observed identities with stored ones by their JSON text, so the gateway must hand them over
+// in the contract decoders' form; the memory host, like the Temporal client, delivers paged Query answers with sorted keys.
+test("observed task and incident identities arrive in the platform contract's decoded form", async () => {
+  const host = testHost();
+  const { locator: workLocator } = await start(host, "user-task-preserved-notation/process.bpmn",
+    "Process_SequentialUserTask", standardProfile, "work-instance");
+  const work = new BpmnProcessWorkGateway(host);
+  const open = await work.observeOpenWork({ locator: workLocator, hostingProcessInstanceId: "work-instance" });
+  assert.equal(open.status, "open");
+  if (open.status !== "open") return;
+  const task = open.openUserTasks[0];
+  assert.ok(task !== undefined);
+  assert.equal(JSON.stringify(task.id), JSON.stringify(decodePublicWorkTaskId(task.id, "task.id")));
+  const detail = await work.readWorkDetail({
+    locator: workLocator, hostingProcessInstanceId: "work-instance", taskId: task.id, inputVariableNames: [],
+  });
+  assert.equal(detail.status, "found");
+  if (detail.status !== "found") return;
+  assert.equal(JSON.stringify(detail.detail.task), JSON.stringify(task));
+
+  const { locator } = await start(host, "service-task-effect/process.bpmn", "Process_ServiceTaskEffectProbe",
+    incidentProfile, "incident-instance");
+  const workflowId = decodeURIComponent(locator.slice("bpmn-process:".length));
+  await host.processes.arrive(workflowId, { kind: "effectResult", commandId: "fail",
+    occurrence: { processInstanceId: "incident-instance", elementId: "ServiceTask_Record", activation: 1 },
+    outcome: { kind: "technicalFailure" } });
+  const observed = await new BpmnProcessOperationsGateway(host)
+    .observeIncidents({ locator, hostingProcessInstanceId: "incident-instance" });
+  assert.equal(observed.status, ProcessIncidentObservationStatus.Observed);
+  if (observed.status !== ProcessIncidentObservationStatus.Observed) return;
+  const incident = observed.incidents[0]?.incident;
+  assert.equal(JSON.stringify(incident), JSON.stringify(decodePublicEffectIncident(incident)));
+  assert.equal(JSON.stringify(observed.incidents[0]?.interactions[0]),
+    JSON.stringify({ kind: "retryIncident", incidentId: decodePublicEffectIncident(incident).id }));
 });
 
 test("execution and occurrence pages read from revision 0 under Product 2's publication identity", async () => {

@@ -7,6 +7,7 @@ import type {
   EngineDefinitionIdentity,
   EngineHost,
   EngineLimits,
+  EngineOccurrenceId,
   EngineProfile,
   EngineSourceIdentity,
   EngineSourceOverlayIdentity,
@@ -81,6 +82,15 @@ export function engineDefinitionIdentity(identity: PublicationDefinitionIdentity
     profile: identity.profile,
     sourceOverlay: identity.sourceOverlay === null ? null : { id: identity.sourceOverlay.id, sha256: identity.sourceOverlay.sha256 },
   };
+}
+
+/**
+ * An observed occurrence identity rebuilt field by field. A paged Query answer arrives as canonical JSON with sorted
+ * keys, and Product 2 compares identities by their JSON text in its contract decoders' order, so a copied identity would
+ * never equal a stored one.
+ */
+export function occurrenceId(id: EngineOccurrenceId): EngineOccurrenceId {
+  return { processInstanceId: id.processInstanceId, elementId: id.elementId, activation: id.activation };
 }
 
 /** Product 2's value arms are a subset of the engine's, in the same wire form. */

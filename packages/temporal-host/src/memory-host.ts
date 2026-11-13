@@ -196,19 +196,19 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
 
   async observation(workflowId: string): Promise<JsonValue> {
     const chain = this.#chain(workflowId);
-    return chain.instance === null ? null : this.port.observation(chain.program, chain.instance.state);
+    return pagedAnswer(chain.instance === null ? null : this.port.observation(chain.program, chain.instance.state));
   }
 
   async state(workflowId: string): Promise<JsonValue> {
     const chain = this.#chain(workflowId);
-    return chain.instance === null ? null : this.port.encodeState(chain.instance.state);
+    return pagedAnswer(chain.instance === null ? null : this.port.encodeState(chain.instance.state));
   }
 
   async hostView(workflowId: string): Promise<HostSnapshot> {
     const chain = this.#chain(workflowId);
     const code = this.#halt(workflowId, chain);
     const halt = chain.halt ?? (code === null ? null : { commandId: "host:population", outcome: "unsupported", code });
-    return { revision: chain.log.cursor.revision, view: chain.instance === null ? null : snapshotView(chain.instance.view), halt, registering: false };
+    return pagedAnswer({ revision: chain.log.cursor.revision, view: chain.instance === null ? null : snapshotView(chain.instance.view), halt, registering: false });
   }
 
   async publication(workflowId: string, afterRevision: number, limit = 100): Promise<PublicationPage> {
@@ -360,4 +360,12 @@ function effectResultBytes(stimulus: JsonValue): number {
 
 export function createMemoryProcessHost(options: MemoryProcessHostOptions): MemoryProcessHost {
   return new MemoryHost(kernelPort, populationPort, options.taskQueue, options.now ?? Date.now);
+}
+
+/**
+ * A paged Query answer as the Temporal client reads it back: `textPage` sends canonical JSON, so every object arrives
+ * with its keys in code-unit order. Answering in the same form keeps consumers from depending on construction order.
+ */
+function pagedAnswer<Value>(value: Value): Value {
+  return JSON.parse(canonicalJson(value)) as Value;
 }
