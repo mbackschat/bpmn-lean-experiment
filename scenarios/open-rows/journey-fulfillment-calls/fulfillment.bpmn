@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_Fulfillment" targetNamespace="urn:bpmn-lean:journeys:fulfillment-calls">
+  <error id="Error_OutOfStock" name="Out of stock" errorCode="OUT_OF_STOCK" />
+  <error id="Error_AddressRejected" name="Address rejected" errorCode="ADDRESS_REJECTED" />
+
+  <process id="Process_Order" name="Fulfil a customer order in parcels" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <callActivity id="ShipParcel" name="Ship a parcel" calledElement="Process_Fulfil">
+      <extensionElements>
+        <camunda:in source="orderId" target="orderId" />
+        <camunda:in source="address" target="address" />
+        <camunda:in source="lines" target="lines" />
+        <camunda:out source="trackingId" target="trackingId" />
+      </extensionElements>
+    </callActivity>
+    <boundaryEvent id="StockShort" name="Out of stock" attachedToRef="ShipParcel" cancelActivity="true">
+      <errorEventDefinition id="StockShort_Error" errorRef="Error_OutOfStock" />
+    </boundaryEvent>
+    <boundaryEvent id="AddressBad" name="Address rejected" attachedToRef="ShipParcel" cancelActivity="true">
+      <errorEventDefinition id="AddressBad_Error" errorRef="Error_AddressRejected" />
+    </boundaryEvent>
+    <boundaryEvent id="CustomerGaveUp" name="Customer gave up" attachedToRef="ShipParcel" cancelActivity="true">
+      <timerEventDefinition id="CustomerGaveUp_Timer">
+        <timeDuration xsi:type="tFormalExpression">P2D</timeDuration>
+      </timerEventDefinition>
+    </boundaryEvent>
+    <userTask id="ReviewShipment" name="Review the shipment" camunda:candidateGroups="dispatchers" />
+    <exclusiveGateway id="MoreParcels" name="Another parcel?" default="Flow_NoMoreParcels" />
+    <userTask id="ResolveShortage" name="Resolve the shortage" camunda:candidateGroups="sales" />
+    <userTask id="HoldOrder" name="Hold the order for a new address" camunda:candidateGroups="sales" />
+    <userTask id="NotifyCancellation" name="Tell the customer the order is cancelled" camunda:candidateGroups="sales" />
+    <endEvent id="OrderShipped" name="Order shipped" />
+    <endEvent id="ShortageHandled" name="Shortage handled" />
+    <endEvent id="OrderOnHold" name="Order on hold" />
+    <endEvent id="OrderCancelled" name="Order cancelled" />
+    <sequenceFlow id="Flow_Received_Ship" sourceRef="OrderReceived" targetRef="ShipParcel" />
+    <sequenceFlow id="Flow_Ship_Review" sourceRef="ShipParcel" targetRef="ReviewShipment" />
+    <sequenceFlow id="Flow_Review_More" sourceRef="ReviewShipment" targetRef="MoreParcels" />
+    <sequenceFlow id="Flow_More_Ship" sourceRef="MoreParcels" targetRef="ShipParcel">
+      <conditionExpression xsi:type="tFormalExpression">${moreParcels == true}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoMoreParcels" sourceRef="MoreParcels" targetRef="OrderShipped" />
+    <sequenceFlow id="Flow_Short_Resolve" sourceRef="StockShort" targetRef="ResolveShortage" />
+    <sequenceFlow id="Flow_Resolve_Handled" sourceRef="ResolveShortage" targetRef="ShortageHandled" />
+    <sequenceFlow id="Flow_Bad_Hold" sourceRef="AddressBad" targetRef="HoldOrder" />
+    <sequenceFlow id="Flow_Hold_OnHold" sourceRef="HoldOrder" targetRef="OrderOnHold" />
+    <sequenceFlow id="Flow_GaveUp_Notify" sourceRef="CustomerGaveUp" targetRef="NotifyCancellation" />
+    <sequenceFlow id="Flow_Notify_Cancelled" sourceRef="NotifyCancellation" targetRef="OrderCancelled" />
+  </process>
+
+  <process id="Process_Fulfil" name="Fulfil one parcel" isExecutable="true">
+    <startEvent id="ParcelRequested" name="Parcel requested" />
+    <userTask id="PickParcel" name="Pick the parcel" camunda:candidateGroups="warehouse" />
+    <exclusiveGateway id="PickOutcome" name="Stock found?" default="Flow_Picked_Check" />
+    <endEvent id="NoStock" name="Raise out of stock">
+      <errorEventDefinition id="NoStock_Error" errorRef="Error_OutOfStock" />
+    </endEvent>
+    <callActivity id="CheckAddress" name="Check the delivery address" calledElement="Process_AddressCheck">
+      <extensionElements>
+        <camunda:in source="address" target="address" />
+        <camunda:out source="addressVerified" target="addressVerified" />
+      </extensionElements>
+    </callActivity>
+    <userTask id="HandOver" name="Hand the parcel to the carrier" camunda:candidateGroups="carriers" />
+    <endEvent id="ParcelShipped" name="Parcel shipped" />
+    <sequenceFlow id="Flow_Requested_Pick" sourceRef="ParcelRequested" targetRef="PickParcel" />
+    <sequenceFlow id="Flow_Pick_Outcome" sourceRef="PickParcel" targetRef="PickOutcome" />
+    <sequenceFlow id="Flow_Outcome_NoStock" sourceRef="PickOutcome" targetRef="NoStock">
+      <conditionExpression xsi:type="tFormalExpression">${outcome == 'short'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Picked_Check" sourceRef="PickOutcome" targetRef="CheckAddress" />
+    <sequenceFlow id="Flow_Check_HandOver" sourceRef="CheckAddress" targetRef="HandOver" />
+    <sequenceFlow id="Flow_HandOver_Shipped" sourceRef="HandOver" targetRef="ParcelShipped" />
+  </process>
+
+  <process id="Process_AddressCheck" name="Check a delivery address" isExecutable="true">
+    <startEvent id="CheckRequested" name="Check requested" />
+    <userTask id="VerifyAddress" name="Verify the address" camunda:candidateGroups="clerks" />
+    <exclusiveGateway id="AddressVerdict" name="Address usable?" default="Flow_Verdict_Verified" />
+    <endEvent id="RaiseAddressRejected" name="Raise address rejected">
+      <errorEventDefinition id="RaiseAddressRejected_Error" errorRef="Error_AddressRejected" />
+    </endEvent>
+    <endEvent id="AddressVerified" name="Address verified" />
+    <sequenceFlow id="Flow_Check_Verify" sourceRef="CheckRequested" targetRef="VerifyAddress" />
+    <sequenceFlow id="Flow_Verify_Verdict" sourceRef="VerifyAddress" targetRef="AddressVerdict" />
+    <sequenceFlow id="Flow_Verdict_Rejected" sourceRef="AddressVerdict" targetRef="RaiseAddressRejected">
+      <conditionExpression xsi:type="tFormalExpression">${addressVerified == false}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Verdict_Verified" sourceRef="AddressVerdict" targetRef="AddressVerified" />
+  </process>
+</definitions>

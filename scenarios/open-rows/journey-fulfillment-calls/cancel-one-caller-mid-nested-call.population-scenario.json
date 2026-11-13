@@ -1,0 +1,499 @@
+{
+  "kind": "populationScenario",
+  "id": "journey-fulfillment-calls-cancel-one-caller-mid-nested-call",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "fulfillment",
+      "bpmn": {
+        "id": "journey-fulfillment-calls-process",
+        "relativePath": "scenarios/open-rows/journey-fulfillment-calls/fulfillment.bpmn",
+        "sha256": "b640d942e0718f25c9c8c87af5554c7cb61eb49f6405fae85cf487cc286a40b0",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-order_1",
+        "instanceId": "Order_1",
+        "variables": [
+          {
+            "name": "address",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "city",
+                  "value": {
+                    "kind": "string",
+                    "value": "Berlin"
+                  }
+                },
+                {
+                  "name": "country",
+                  "value": {
+                    "kind": "string",
+                    "value": "DE"
+                  }
+                },
+                {
+                  "name": "street",
+                  "value": {
+                    "kind": "string",
+                    "value": "Invalidenstrasse 3"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "PAPER-A4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "TONER-BK"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_2",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s02-start-order_2",
+        "instanceId": "Order_2",
+        "variables": [
+          {
+            "name": "address",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "city",
+                  "value": {
+                    "kind": "string",
+                    "value": "Lyon"
+                  }
+                },
+                {
+                  "name": "country",
+                  "value": {
+                    "kind": "string",
+                    "value": "FR"
+                  }
+                },
+                {
+                  "name": "street",
+                  "value": {
+                    "kind": "string",
+                    "value": "Rue Merciere 12"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 5
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "PAPER-A3"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "B-2"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_1",
+      "at": 1000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s03-pick-order_1-1",
+        "occurrence": {
+          "processInstanceId": "call:7:Order_1:10:ShipParcel:1",
+          "elementId": "PickParcel",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": [
+            {
+              "name": "outcome",
+              "value": {
+                "kind": "string",
+                "value": "picked"
+              }
+            },
+            {
+              "name": "pickNote",
+              "value": {
+                "kind": "string",
+                "value": "Order_1 aisle 1"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_2",
+      "at": 2000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s04-pick-order_2-1",
+        "occurrence": {
+          "processInstanceId": "call:7:Order_2:10:ShipParcel:1",
+          "elementId": "PickParcel",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": [
+            {
+              "name": "outcome",
+              "value": {
+                "kind": "string",
+                "value": "picked"
+              }
+            },
+            {
+              "name": "pickNote",
+              "value": {
+                "kind": "string",
+                "value": "Order_2 aisle 1"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_2",
+      "at": 169200000,
+      "stimulus": {
+        "kind": "timerFire",
+        "commandId": "s05-fire-window-of-order-2-before-due",
+        "logicalTimeMs": 169200000,
+        "occurrence": {
+          "processInstanceId": "Order_2",
+          "elementId": "CustomerGaveUp",
+          "activation": 1
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_2",
+      "at": 172800000,
+      "stimulus": {
+        "kind": "timerFire",
+        "commandId": "s06-fire-window-of-order-2",
+        "logicalTimeMs": 172800000,
+        "occurrence": {
+          "processInstanceId": "Order_2",
+          "elementId": "CustomerGaveUp",
+          "activation": 1
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_2",
+      "at": 172801000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s07-verify-removed-nested-address",
+        "occurrence": {
+          "processInstanceId": "call:30:call:7:Order_2:10:ShipParcel:1:12:CheckAddress:1",
+          "elementId": "VerifyAddress",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": [
+            {
+              "name": "addressVerified",
+              "value": {
+                "kind": "boolean",
+                "value": true
+              }
+            },
+            {
+              "name": "checkNote",
+              "value": {
+                "kind": "string",
+                "value": "Order_2 check 1"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_2",
+      "at": 172802000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s08-hand-over-removed-parcel",
+        "occurrence": {
+          "processInstanceId": "call:7:Order_2:10:ShipParcel:1",
+          "elementId": "HandOver",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": [
+            {
+              "name": "carrierNote",
+              "value": {
+                "kind": "string",
+                "value": "Order_2 carrier 1"
+              }
+            },
+            {
+              "name": "trackingId",
+              "value": {
+                "kind": "string",
+                "value": "TRK-GONE"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_1",
+      "at": 172803000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s09-verify-order_1-1",
+        "occurrence": {
+          "processInstanceId": "call:30:call:7:Order_1:10:ShipParcel:1:12:CheckAddress:1",
+          "elementId": "VerifyAddress",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": [
+            {
+              "name": "addressVerified",
+              "value": {
+                "kind": "boolean",
+                "value": true
+              }
+            },
+            {
+              "name": "checkNote",
+              "value": {
+                "kind": "string",
+                "value": "Order_1 check 1"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_1",
+      "at": 172804000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s10-hand-over-order_1-1",
+        "occurrence": {
+          "processInstanceId": "call:7:Order_1:10:ShipParcel:1",
+          "elementId": "HandOver",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": [
+            {
+              "name": "carrierNote",
+              "value": {
+                "kind": "string",
+                "value": "Order_1 carrier 1"
+              }
+            },
+            {
+              "name": "trackingId",
+              "value": {
+                "kind": "string",
+                "value": "TRK-A1"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_1",
+      "at": 172805000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s11-review-order_1-1",
+        "occurrence": {
+          "processInstanceId": "Order_1",
+          "elementId": "ReviewShipment",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": [
+            {
+              "name": "moreParcels",
+              "value": {
+                "kind": "boolean",
+                "value": false
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "fulfillment",
+      "instanceId": "Order_2",
+      "at": 172806000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s12-notify-order_2",
+        "occurrence": {
+          "processInstanceId": "Order_2",
+          "elementId": "NotifyCancellation",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": [
+            {
+              "name": "cancellationNote",
+              "value": {
+                "kind": "string",
+                "value": "Cancelled at the customer's request"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallableElementActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/tree/OutputVariablesPropagator.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/callactivity/CallActivityTest.java#testTimerOnCallActivity",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/callactivity/CallActivityTest.java#testDeleteDoubleNestedProcessInstanceInCallActivity"
+    ]
+  }
+}

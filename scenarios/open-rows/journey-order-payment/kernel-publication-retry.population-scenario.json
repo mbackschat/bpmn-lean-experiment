@@ -1,0 +1,284 @@
+{
+  "kind": "populationScenario",
+  "id": "journey-order-payment-kernel-publication-retry",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "order-payment",
+      "bpmn": {
+        "id": "journey-order-payment-process",
+        "relativePath": "scenarios/open-rows/journey-order-payment/order-payment.bpmn",
+        "sha256": "72afd2e9f3876f7b7dc4e232071ce427da72f1225bb4cf2c37ef565a61c99063",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-order_1",
+        "instanceId": "Order_1",
+        "variables": [
+          {
+            "name": "amountCents",
+            "value": {
+              "kind": "integer",
+              "value": 45900
+            }
+          },
+          {
+            "name": "customer",
+            "value": {
+              "kind": "string",
+              "value": "Nordlicht GmbH"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_2",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s02-start-order_2",
+        "instanceId": "Order_2",
+        "variables": [
+          {
+            "name": "amountCents",
+            "value": {
+              "kind": "integer",
+              "value": 12800
+            }
+          },
+          {
+            "name": "customer",
+            "value": {
+              "kind": "string",
+              "value": "Atelier Moreau"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "B-2"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "publish",
+      "commandId": "s03-pay-b-2",
+      "address": {
+        "name": "payment-received"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "B-2"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 1000
+    },
+    {
+      "kind": "publish",
+      "commandId": "s03-pay-b-2",
+      "address": {
+        "name": "payment-received"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "B-2"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 2000
+    },
+    {
+      "kind": "publish",
+      "commandId": "s05-pay-b-2-again",
+      "address": {
+        "name": "payment-received"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "B-2"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 3000
+    },
+    {
+      "kind": "publish",
+      "commandId": "s03-pay-b-2",
+      "address": {
+        "name": "payment-received"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "A-1"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 4000
+    },
+    {
+      "kind": "publish",
+      "commandId": "s07-pay-a-1",
+      "address": {
+        "name": "payment-received"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "A-1"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 5000
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_2",
+      "at": 6000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s03-record-payment-order_2",
+        "occurrence": {
+          "processInstanceId": "Order_2",
+          "elementId": "RecordPayment",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_1",
+      "at": 7000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s04-record-payment-order_1",
+        "occurrence": {
+          "processInstanceId": "Order_1",
+          "elementId": "RecordPayment",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_2",
+      "at": 8000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s05-ship-order_2",
+        "occurrence": {
+          "processInstanceId": "Order_2",
+          "elementId": "ShipOrder",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_1",
+      "at": 9000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s06-ship-order_1",
+        "occurrence": {
+          "processInstanceId": "Order_1",
+          "elementId": "ShipOrder",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.99",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

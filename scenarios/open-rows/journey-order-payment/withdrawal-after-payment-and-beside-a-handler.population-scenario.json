@@ -1,0 +1,322 @@
+{
+  "kind": "populationScenario",
+  "id": "journey-order-payment-withdrawal-after-payment-and-beside-a-handler",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "order-payment",
+      "bpmn": {
+        "id": "journey-order-payment-process",
+        "relativePath": "scenarios/open-rows/journey-order-payment/order-payment.bpmn",
+        "sha256": "72afd2e9f3876f7b7dc4e232071ce427da72f1225bb4cf2c37ef565a61c99063",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-order_1",
+        "instanceId": "Order_1",
+        "variables": [
+          {
+            "name": "amountCents",
+            "value": {
+              "kind": "integer",
+              "value": 45900
+            }
+          },
+          {
+            "name": "customer",
+            "value": {
+              "kind": "string",
+              "value": "Nordlicht GmbH"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_2",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s02-start-order_2",
+        "instanceId": "Order_2",
+        "variables": [
+          {
+            "name": "amountCents",
+            "value": {
+              "kind": "integer",
+              "value": 12800
+            }
+          },
+          {
+            "name": "customer",
+            "value": {
+              "kind": "string",
+              "value": "Atelier Moreau"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "B-2"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "publish",
+      "commandId": "s03-pay-order_1",
+      "address": {
+        "name": "payment-received"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "A-1"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 1000
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_1",
+      "at": 2000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s04-record-payment-order_1",
+        "occurrence": {
+          "processInstanceId": "Order_1",
+          "elementId": "RecordPayment",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    },
+    {
+      "kind": "publish",
+      "commandId": "s05-withdraw-a-1-after-payment",
+      "address": {
+        "name": "order-withdrawn"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "A-1"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 3000
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_1",
+      "at": 4000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s06-ship-order_1",
+        "occurrence": {
+          "processInstanceId": "Order_1",
+          "elementId": "ShipOrder",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    },
+    {
+      "kind": "publish",
+      "commandId": "s07-status-b-2",
+      "address": {
+        "name": "order-status"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "B-2"
+          }
+        }
+      ],
+      "payload": {
+        "kind": "string",
+        "value": "Waiting for the carrier"
+      },
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 5000
+    },
+    {
+      "kind": "publish",
+      "commandId": "s08-withdraw-b-2",
+      "address": {
+        "name": "order-withdrawn"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "B-2"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 6000
+    },
+    {
+      "kind": "publish",
+      "commandId": "s09-pay-order_2",
+      "address": {
+        "name": "payment-received"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "B-2"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 7000
+    },
+    {
+      "kind": "publish",
+      "commandId": "s10-status-b-2-after-withdrawal",
+      "address": {
+        "name": "order-status"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "B-2"
+          }
+        }
+      ],
+      "payload": {
+        "kind": "string",
+        "value": "Still waiting"
+      },
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 8000
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_2",
+      "at": 9000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s11-note-status-order_2-1",
+        "occurrence": {
+          "processInstanceId": "Order_2",
+          "elementId": "NoteStatus",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-payment",
+      "instanceId": "Order_2",
+      "at": 10000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s12-cancel-order_2",
+        "occurrence": {
+          "processInstanceId": "Order_2",
+          "elementId": "CancelOrder",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.99",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultCorrelationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/MessageCorrelationBuilderImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/AbstractCorrelateMessageCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/EventSubscriptionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/message/MessageBoundaryEventTest.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/message/MessageNonInterruptingBoundaryEventTest.java"
+    ]
+  }
+}

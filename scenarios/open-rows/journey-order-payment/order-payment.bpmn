@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OrderPayment" targetNamespace="urn:bpmn-lean:journeys:order-payment">
+  <itemDefinition id="ItemDefinition_StatusNote" structureRef="xsd:string" />
+  <message id="Message_PaymentReceived" name="payment-received" />
+  <message id="Message_OrderWithdrawn" name="order-withdrawn" />
+  <message id="Message_OrderStatus" name="order-status" itemRef="ItemDefinition_StatusNote" />
+  <process id="Process_OrderPayment" name="Take payment for a customer order" isExecutable="true">
+    <property id="Property_StatusNote" />
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <subProcess id="SettleOrder" name="Settle the order">
+      <startEvent id="SettlementOpened" />
+      <intermediateCatchEvent id="AwaitPayment" name="Await payment">
+        <messageEventDefinition id="AwaitPayment_Message" messageRef="Message_PaymentReceived" />
+      </intermediateCatchEvent>
+      <userTask id="RecordPayment" name="Record the payment" camunda:candidateGroups="accounting" />
+      <endEvent id="PaymentRecorded" />
+      <sequenceFlow id="Flow_Opened_Await" sourceRef="SettlementOpened" targetRef="AwaitPayment" />
+      <sequenceFlow id="Flow_Await_Record" sourceRef="AwaitPayment" targetRef="RecordPayment" />
+      <sequenceFlow id="Flow_Record_Recorded" sourceRef="RecordPayment" targetRef="PaymentRecorded" />
+    </subProcess>
+    <boundaryEvent id="WithdrawalReceived" name="Customer withdraws" attachedToRef="SettleOrder" cancelActivity="true">
+      <messageEventDefinition id="WithdrawalReceived_Message" messageRef="Message_OrderWithdrawn" />
+    </boundaryEvent>
+    <boundaryEvent id="StatusReceived" name="Status update arrives" attachedToRef="SettleOrder" cancelActivity="false">
+      <dataOutput id="DataOutput_StatusNote" name="Status note" itemSubjectRef="ItemDefinition_StatusNote" />
+      <dataOutputAssociation id="DataOutputAssociation_StatusNote">
+        <sourceRef>DataOutput_StatusNote</sourceRef>
+        <targetRef>Property_StatusNote</targetRef>
+      </dataOutputAssociation>
+      <outputSet id="OutputSet_StatusNote">
+        <dataOutputRefs>DataOutput_StatusNote</dataOutputRefs>
+      </outputSet>
+      <messageEventDefinition id="StatusReceived_Message" messageRef="Message_OrderStatus" />
+    </boundaryEvent>
+    <userTask id="ShipOrder" name="Ship the order" camunda:candidateGroups="warehouse" />
+    <userTask id="CancelOrder" name="Cancel the order" camunda:candidateGroups="sales" />
+    <userTask id="NoteStatus" name="Note the status update" camunda:candidateGroups="sales" />
+    <endEvent id="OrderShipped" name="Order shipped" />
+    <endEvent id="OrderCancelled" name="Order cancelled" />
+    <endEvent id="StatusNoted" name="Status noted" />
+    <sequenceFlow id="Flow_Placed_Settle" sourceRef="OrderPlaced" targetRef="SettleOrder" />
+    <sequenceFlow id="Flow_Settle_Ship" sourceRef="SettleOrder" targetRef="ShipOrder" />
+    <sequenceFlow id="Flow_Ship_Shipped" sourceRef="ShipOrder" targetRef="OrderShipped" />
+    <sequenceFlow id="Flow_Withdrawn_Cancel" sourceRef="WithdrawalReceived" targetRef="CancelOrder" />
+    <sequenceFlow id="Flow_Cancel_Cancelled" sourceRef="CancelOrder" targetRef="OrderCancelled" />
+    <sequenceFlow id="Flow_Status_Note" sourceRef="StatusReceived" targetRef="NoteStatus" />
+    <sequenceFlow id="Flow_Note_Noted" sourceRef="NoteStatus" targetRef="StatusNoted" />
+  </process>
+</definitions>
