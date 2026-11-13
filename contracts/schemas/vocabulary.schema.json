@@ -564,6 +564,7 @@
         "reader.conditionExpressionType",
         "reader.dataAssociationShape",
         "reader.dataObjectReferenceWithoutObject",
+        "reader.emptyCandidateEntry",
         "reader.emptyLoopCardinality",
         "reader.eventDefinitionOnElement",
         "reader.eventDefinitionRef",

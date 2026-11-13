@@ -3,7 +3,8 @@ import type { ElementRecord } from "../moddle-graph.js";
 import { envelopeFor, headerOf } from "./build.js";
 import { activityProtocol, declaredImplementation, effectBinding, handlerKey, operation } from "./binding.js";
 import {
-  associationMappings, associationSourceId, associationSourceItem, associationTargetId, associationTargetItem, dataOutputDecl, inputOutputParameters, valueSource, variableCopies,
+  associationMappings, associationSourceId, associationSourceItem, associationTargetId, associationTargetItem, dataOutputDecl, inputOutputParameters, javaTrim, valueSource,
+  variableCopies,
 } from "./data.js";
 import { messageTrigger } from "./events.js";
 import {
@@ -26,8 +27,25 @@ function configuredTaskWork(element: ElementRecord): KernelJson | null {
   return ctor("service", { payload: { protocol: activityProtocol, operation: configuredHandlers.get(handler) ?? handler, handlerKey: null } });
 }
 
-const commaList = (value: string | null): string[] =>
-  value === null ? [] : value.split(",").map((entry) => entry.trim()).filter((entry) => entry.length > 0);
+/**
+ * The entries of a CIB candidate list as `BpmnParse.parseCommaSeparatedList` reads them: split at commas, each trimmed
+ * by Java's `String.trim`, so U+00A0 stays, and a bare last comma ends the list rather than opening an entry. CIB
+ * publishes an entry that trims to empty as a candidate with the empty ID, which the canonical result cannot hold
+ * (CIB-EXT-0011), so such an entry is refused.
+ */
+function candidateList(ctx: ReadContext, element: ElementRecord, attribute: "candidateUsers" | "candidateGroups"): KernelJson[] {
+  const value = ctx.attribute(element, attribute);
+  if (value === null || value === "") return [];
+  const segments = value.split(",");
+  if (segments.at(-1) === "") segments.pop();
+  return segments.map((segment) => {
+    const entry = javaTrim(segment);
+    if (entry === "") {
+      throw new ReadRefusal(ReadRefusalCode.EmptyCandidateEntry, optionalId(element), `camunda:${attribute} ${JSON.stringify(value)}`);
+    }
+    return valueSource(entry);
+  });
+}
 
 const optionalSource = (value: string | null): KernelJson => (value === null ? null : valueSource(value));
 
@@ -46,8 +64,8 @@ function userWork(ctx: ReadContext, element: ElementRecord): KernelJson {
   return ctor("user", { payload: {
     name: text(element, "name"),
     assignee: optionalSource(ctx.attribute(element, "assignee")),
-    candidateUsers: commaList(ctx.attribute(element, "candidateUsers")).map(valueSource),
-    candidateGroups: commaList(ctx.attribute(element, "candidateGroups")).map(valueSource),
+    candidateUsers: candidateList(ctx, element, "candidateUsers"),
+    candidateGroups: candidateList(ctx, element, "candidateGroups"),
     formKey: ctx.attribute(element, "formKey"),
     formFields: formFields(ctx, element),
     dueDate: optionalSource(ctx.attribute(element, "dueDate")),

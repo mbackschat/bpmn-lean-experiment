@@ -41,6 +41,8 @@ export enum ReadRefusalCode {
   ThrowMessageListener = "throw.message.listener",
   MultiInstanceWithoutCount = "reader.multiInstanceWithoutCount",
   EmptyLoopCardinality = "reader.emptyLoopCardinality",
+  /** A candidate list entry empty after Java's trim, which CIB publishes as a candidate with the empty ID (CIB-EXT-0011). */
+  EmptyCandidateEntry = "reader.emptyCandidateEntry",
   ConditionExpressionType = "reader.conditionExpressionType",
   DecisionSchema = "decision.schema",
 }

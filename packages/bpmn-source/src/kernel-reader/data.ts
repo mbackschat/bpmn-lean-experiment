@@ -133,7 +133,7 @@ export const valueSource = (source: string): KernelJson =>
   expressionMarkerPattern.test(source) ? expressionSource(valueExpression(source)) : literalSource(source);
 
 /** Java `String.trim`: strips every character up to U+0020 at both ends. */
-const javaTrim = (body: string): string => body.replace(/^[\u0000- ]+|[\u0000- ]+$/gu, "");
+export const javaTrim = (body: string): string => body.replace(/^[\u0000- ]+|[\u0000- ]+$/gu, "");
 
 function parameterValue(parameter: ElementRecord): KernelJson {
   if (asElementArray(parameter.$children) !== undefined) {

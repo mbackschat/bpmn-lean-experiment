@@ -14,19 +14,6 @@
       "commandId": "start",
       "instanceId": "Request_1",
       "variables": []
-    },
-    {
-      "kind": "command",
-      "commandId": "complete-review",
-      "occurrence": {
-        "processInstanceId": "Request_1",
-        "elementId": "Review",
-        "activation": 1
-      },
-      "action": {
-        "kind": "completeUserTask",
-        "values": []
-      }
     }
   ],
   "provenance": {

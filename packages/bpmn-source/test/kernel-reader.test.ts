@@ -434,6 +434,15 @@ test("every User Task assignment and date attribute the BPMN sets is populated",
   });
 });
 
+test("a candidate list's entries are trimmed as Java's String.trim trims them, and a bare last comma ends the list", async () => {
+  const p = await program(model(`<bpmn:userTask id="U" camunda:candidateUsers="&#160;a ,b," camunda:candidateGroups=" g , h&#8195;"/>`));
+  const user = element(p, "U").activity.payload.work.user.payload;
+  assert.deepEqual(user.candidateUsers, [{ literal: { value: " a" } }, { literal: { value: "b" } }]);
+  assert.deepEqual(user.candidateGroups, [{ literal: { value: "g" } }, { literal: { value: "h " } }]);
+  const empty = await program(model(`<bpmn:userTask id="U" camunda:candidateGroups=""/>`));
+  assert.deepEqual(element(empty, "U").activity.payload.work.user.payload.candidateGroups, []);
+});
+
 test("error and escalation variables are read from their event definitions", async () => {
   const p = await program(model(`<bpmn:task id="T"/><bpmn:boundaryEvent id="B" attachedToRef="T">
       <bpmn:errorEventDefinition errorRef="Err" camunda:errorCodeVariable="c" camunda:errorMessageVariable="m"/></bpmn:boundaryEvent>

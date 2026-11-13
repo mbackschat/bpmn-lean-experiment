@@ -399,6 +399,27 @@ export const rows: readonly Row[] = [
     control: { xml: ending(`<bpmn:messageEventDefinition/>`) },
   },
   {
+    code: "reader.emptyCandidateEntry",
+    description: "a candidate group list with an empty entry between two commas",
+    evidence: "camunda:candidateGroups",
+    refused: { xml: model(`<bpmn:userTask id="U" camunda:candidateGroups="triagers,,leads"/>`) },
+    control: { xml: model(`<bpmn:userTask id="U" camunda:candidateGroups="triagers,leads"/>`) },
+  },
+  {
+    code: "reader.emptyCandidateEntry",
+    description: "a candidate group list with a leading comma",
+    evidence: "camunda:candidateGroups",
+    refused: { xml: model(`<bpmn:userTask id="U" camunda:candidateGroups=",triagers"/>`) },
+    control: { xml: model(`<bpmn:userTask id="U" camunda:candidateGroups="triagers,"/>`) },
+  },
+  {
+    code: "reader.emptyCandidateEntry",
+    description: "a candidate user list whose last entry is blank",
+    evidence: "camunda:candidateUsers",
+    refused: { xml: model(`<bpmn:userTask id="U" camunda:candidateUsers="bob, "/>`) },
+    control: { xml: model(`<bpmn:userTask id="U" camunda:candidateUsers="bob"/>`) },
+  },
+  {
     code: "reader.multiInstanceWithoutCount",
     description: "a Multi-Instance loop with neither a collection nor a cardinality",
     refused: { xml: model(`<bpmn:userTask id="U"><bpmn:multiInstanceLoopCharacteristics/></bpmn:userTask>`) },
