@@ -168,6 +168,15 @@ export const mvpBpmnCapabilities = Object.freeze([
     restriction: "One ordered String-list snapshot, at most sixteen concurrent generated tasks, exact all-or-first completion policy, atomic index-ordered output only when every slot is filled, and no partial output on early closure.",
     cibEvidence: notSelected,
   },
+  // Owned by PC-MI-01–12, PC-TX-03 and PC-AUTO-06; the kernel's admission decides every loop form it describes.
+  {
+    id: "multiInstanceActivity",
+    family: "Activities",
+    element: "Multi-Instance Activity",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "Sequential and parallel Multi-Instance loops on User, Service, Receive, Script and Call Activities and on embedded Sub-Processes and Transactions, over a collection or a cardinality, with an optional completion condition and nested in any mode. The number of instances is fixed on entry; a sequential collection is read again before each later instance only where the profile follows CIB. Each instance runs in a scope of its own holding its item; the output collection is written only when every instance has filled its slot, and an early completion ends the remaining instances without one. Boundaries belong to the whole Activity. Standard loops, looping Event Sub-Processes and output mappings are refused, and under an order-invariant schedule so is a parallel loop whose instances may meet one another's writes.",
+    cibEvidence: notSelected,
+  },
   {
     id: "serviceTask",
     family: "Activities",
@@ -254,6 +263,16 @@ export const mvpBpmnCapabilities = Object.freeze([
     element: "Transaction Sub-Process",
     support: BpmnCapabilitySupport.BoundedStandard,
     restriction: "One depth-one, single-activation cancellation Transaction; method omitted or exactly ##Compensate. Two parallel branches of one or two ordinary User Tasks, one eligible Task on the non-Cancel branch, empty data and handler arguments. One retained record/4096 bytes and one trigger/handler/20480 bytes; no metadata, loops, nested scopes, protocol success, hazard handling, Store/Image methods or generalized Transactions.",
+    cibEvidence: notSelected,
+  },
+  // Owned by the Event Sub-Process rows PC-ERROR-02, PC-ESCALATION-03, PC-MESSAGE-06/07, PC-SIGNAL-03, PC-TIMER-07,
+  // PC-CONDITION-05 and PC-COMPENSATION-01–05; the kernel's admission decides every trigger and placement it describes.
+  {
+    id: "eventSubProcess",
+    family: "Activities",
+    element: "Event Sub-Process",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "Event Sub-Processes in a Process, a called Process or an embedded Sub-Process, started by an Error, Escalation, Message, Signal, Timer, Conditional or Compensation Start Event. A start is armed while its enclosing scope runs and goes with it; an interrupting start cancels that scope's ordinary work and keeps its data for the handler, and a non-interrupting one starts a further handler beside that work on every trigger. A non-interrupting Error start, a Compensation Event Sub-Process at Process level, a looping Event Sub-Process and a boundary on one are refused, and under the standards reading so is every interrupting Event Sub-Process.",
     cibEvidence: notSelected,
   },
   {

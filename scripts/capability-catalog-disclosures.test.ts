@@ -12,6 +12,14 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ["timerStartEvent", "restriction", ["no recurrence or calendar form"]],
   ["sequentialMultiInstanceUserTask", "element", ["Sequential Multi-Instance User Task"]],
   ["sequentialMultiInstanceUserTask", "restriction", ["atomic index-ordered String-list output"]],
+  ["multiInstanceActivity", "restriction", [
+    "the output collection is written only when every instance has filled its slot",
+    "Boundaries belong to the whole Activity",
+  ]],
+  ["eventSubProcess", "restriction", [
+    "A non-interrupting Error start, a Compensation Event Sub-Process at Process level, a looping Event Sub-Process and a boundary on one are refused",
+    "under the standards reading so is every interrupting Event Sub-Process",
+  ]],
   ["messagePayloadCatchEvent", "element", ["Message Intermediate Catch Event with a direct Data Output"]],
   ["messagePayloadCatchEvent", "restriction", [
     "absent payload is refused and leaves the subscription live",

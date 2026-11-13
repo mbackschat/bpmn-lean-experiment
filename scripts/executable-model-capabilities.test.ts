@@ -100,7 +100,7 @@ test("inventories the retained Compensation graph without ordinary handler claim
   const capabilities = detectExecutableBpmnCapabilities(xml);
   assert.deepEqual(capabilities.filter((id) => id.startsWith("compensation")), compensationCapabilityIds);
   assert.equal(capabilities.includes("serviceTask"), false);
-  assert.deepEqual(capabilities, [...compensationCapabilityIds, "embeddedSubProcess", "noneEndEvent", "noneStartEvent", "parallelGateway", "process", "sequenceFlow", "userTask"].sort());
+  assert.deepEqual(capabilities, [...compensationCapabilityIds, "embeddedSubProcess", "eventSubProcess", "noneEndEvent", "noneStartEvent", "parallelGateway", "process", "sequenceFlow", "userTask"].sort());
   assert.deepEqual(detectExecutableBpmnCapabilities(xml.replaceAll("ReserveHotel", "ReserveRoom").replaceAll("GroundTravel", "Transfers").replaceAll('name="Confirm travel insurance"', 'name="Unrelated display label"')), capabilities);
   assert.deepEqual(detectExecutableBpmnCapabilities(xml.replaceAll('isForCompensation="true"', 'isForCompensation="1"')), capabilities);
 });
@@ -114,14 +114,13 @@ const dormantCompensation = `<bpmn:subProcess triggeredByEvent="true">
 test("dormant Compensation bodies do not claim ordinary starts, effects or embedded scopes", () => {
   const xml = `<bpmn:process><bpmn:subProcess>${dormantCompensation}</bpmn:subProcess></bpmn:process>`;
   for (const input of [xml, xml.replace('triggeredByEvent="true"', 'triggeredByEvent="1"')]) {
-    assert.deepEqual(detectExecutableBpmnCapabilities(input), ["compensationEventSubProcess", "compensationHandlerServiceTask", "embeddedSubProcess", "process"]);
+    assert.deepEqual(detectExecutableBpmnCapabilities(input), ["compensationEventSubProcess", "compensationHandlerServiceTask", "embeddedSubProcess", "eventSubProcess", "process"]);
   }
 });
 
 test("refuses unclassified dormant, standalone and unrelated Compensation markers", async () => {
   const source = await readFile(new URL("../scenarios/compensation/travel-cancellation.bpmn", import.meta.url), "utf8");
   for (const xml of [
-    source.replace('compensateEventDefinition id="Compensate_UndoGroundTravel"', 'messageEventDefinition id="Compensate_UndoGroundTravel"'),
     `<bpmn:process><bpmn:serviceTask isForCompensation="true" /></bpmn:process>`,
     `<bpmn:process><bpmn:serviceTask isForCompensation="1" /></bpmn:process>`,
     `<bpmn:process><bpmn:startEvent><bpmn:compensateEventDefinition /></bpmn:startEvent></bpmn:process>`,
@@ -129,7 +128,6 @@ test("refuses unclassified dormant, standalone and unrelated Compensation marker
     source.replace('id="Compensate_Global"', 'id="Compensate_Global" activityRef="Task_ReserveHotel"'),
     source.replace('id="Compensate_Global"', 'id="Compensate_Global" waitForCompletion="false"'),
     source.replace('id="Task_ReserveHotel" name=', 'id="Task_ReserveHotel" isForCompensation="true" name='),
-    `<bpmn:process>${dormantCompensation}</bpmn:process>`,
     `<bpmn:process><bpmn:subProcess>${dormantCompensation.replace("bpmn:serviceTask", "bpmn:scriptTask")}</bpmn:subProcess></bpmn:process>`,
   ]) assert.throws(() => detectExecutableBpmnCapabilities(xml), /unclassified executable BPMN/u);
 });
@@ -145,7 +143,7 @@ test("the Compensation capability rows disclose that no CIB evidence is selected
 // The catalog-against-sources union lives in the corpus guard (`model-corpus/test/executable-model-corpus.test.ts`),
 // because what a source claims depends on the kernel's admission, which script gates cannot reach before the builds.
 test("what a source claims is decided by its admission: capabilities when admitted, its refusal code when refused", () => {
-  const unclassifiable = "<bpmn:process><bpmn:subProcess><bpmn:multiInstanceLoopCharacteristics /></bpmn:subProcess></bpmn:process>";
+  const unclassifiable = "<bpmn:process><bpmn:subProcess><bpmn:standardLoopCharacteristics /></bpmn:subProcess></bpmn:process>";
   assert.throws(() => detectExecutableBpmnCapabilities(unclassifiable), /unclassified executable BPMN/u);
   assert.deepEqual(claimOfSource(unclassifiable, { status: "rejected", refusal: "multiInstance.mappings" }),
     { kind: "restriction", refusalCode: "multiInstance.mappings" });
@@ -439,6 +437,62 @@ test("classifies only an explicitly declared Multi-Instance User Task mode", () 
   assert.ok(parallel.includes("userTask"));
   assert.ok(parallel.includes("parallelMultiInstanceUserTask"));
   assert.ok(!parallel.includes("sequentialMultiInstanceUserTask"));
+});
+
+const loopHosts = [
+  ["userTask", "userTask"],
+  ["serviceTask", "serviceTask"],
+  ["receiveTask", "receiveTask"],
+  ["sendTask", "sendTask"],
+  ["task", "abstractTask"],
+  ["manualTask", "manualTask"],
+  ["callActivity", "callActivity"],
+  ["subProcess", "embeddedSubProcess"],
+] as const;
+
+test("a Multi-Instance loop claims its capability beside its host's on every Activity, in either mode", async () => {
+  const process = (host: string, loop: string) =>
+    `<bpmn:process><bpmn:${host} id="Host">${loop}</bpmn:${host}></bpmn:process>`;
+  for (const [host, capability] of loopHosts) {
+    const plain = detectExecutableBpmnCapabilities(process(host, ""));
+    assert.ok(plain.includes(capability), host);
+    assert.ok(!plain.includes("multiInstanceActivity"), host);
+    for (const mode of ["true", "false"]) {
+      const looping = detectExecutableBpmnCapabilities(process(host, `<bpmn:multiInstanceLoopCharacteristics isSequential="${mode}" />`));
+      assert.ok(looping.includes(capability) && looping.includes("multiInstanceActivity"), `${host} isSequential=${mode}`);
+    }
+    assert.throws(() => detectExecutableBpmnCapabilities(process(host, "<bpmn:standardLoopCharacteristics />")),
+      new RegExp(`unclassified executable BPMN loop variant on ${host}`, "u"));
+  }
+  const transaction = (await readFile(transactionFixture, "utf8")).replace('<bpmn:transaction id="Transaction_Reservation">',
+    '<bpmn:transaction id="Transaction_Reservation"><bpmn:multiInstanceLoopCharacteristics isSequential="false" />');
+  const looping = detectExecutableBpmnCapabilities(transaction);
+  assert.ok(looping.includes("transaction") && looping.includes("multiInstanceActivity"));
+});
+
+test("an Event Sub-Process claims its capability whatever its trigger and interruption, and its start no ordinary start", async () => {
+  // The kernel's admission decides which trigger, interruption and placement it accepts (an Error start that does not
+  // interrupt, a Compensation one at Process level); the detector reads only admitted sources, so it states none.
+  const triggers = ["error", "escalation", "message", "signal", "timer", "conditional", "compensate"];
+  for (const trigger of triggers) {
+    for (const interrupting of ["", ' isInterrupting="true"', ' isInterrupting="false"']) {
+      const handler = `<bpmn:subProcess id="Handler" triggeredByEvent="true">
+        <bpmn:startEvent id="Trigger"${interrupting}><bpmn:${trigger}EventDefinition /></bpmn:startEvent>
+        <bpmn:userTask id="Recover" /><bpmn:endEvent id="Recovered" />
+      </bpmn:subProcess>`;
+      for (const xml of [`<bpmn:process>${handler}</bpmn:process>`,
+        `<bpmn:process><bpmn:subProcess id="Region">${handler}</bpmn:subProcess></bpmn:process>`]) {
+        const capabilities = detectExecutableBpmnCapabilities(xml);
+        assert.ok(capabilities.includes("eventSubProcess") && capabilities.includes("userTask"), `${trigger}${interrupting}`);
+        assert.ok(!capabilities.some((id) => id.endsWith("StartEvent")), `${trigger}${interrupting}: ${capabilities.join(", ")}`);
+      }
+    }
+  }
+  const source = await readFile(new URL("../scenarios/compensation/travel-cancellation.bpmn", import.meta.url), "utf8");
+  const message = detectExecutableBpmnCapabilities(source.replace('compensateEventDefinition id="Compensate_UndoGroundTravel"',
+    'messageEventDefinition id="Compensate_UndoGroundTravel"'));
+  assert.ok(message.includes("eventSubProcess"));
+  assert.ok(!message.includes("compensationEventSubProcess"));
 });
 
 test("classifies the interrupting Timer by its sequential Multi-Instance host", () => {

@@ -76,9 +76,12 @@ export function detectExecutableBpmnCapabilities(
       case "sequenceFlow":
         capabilities.add("sequenceFlow");
         break;
-      case "startEvent":
-        addStartCapability(element, capabilities);
+      case "startEvent": {
+        // An Event Sub-Process's start is its trigger, claimed with the Event Sub-Process and never as a Process start.
+        const owner = parents.get(element);
+        if (owner?.name !== "subProcess" || !isTrue(owner.attributes.triggeredByEvent)) addStartCapability(element, capabilities);
         break;
+      }
       case "endEvent":
         if (eventDefinition(element) === "cancelEventDefinition") capabilities.add("cancelEndEvent");
         else addEndCapability(element, capabilities);
@@ -87,39 +90,37 @@ export function detectExecutableBpmnCapabilities(
         addUserTaskCapability(element, capabilities);
         break;
       case "serviceTask":
-        rejectLoopVariant(element);
+        addLoopCapability(element, capabilities);
         capabilities.add(compensation.handlers.has(element) ? "compensationHandlerServiceTask" : "serviceTask");
         break;
       case "receiveTask":
-        rejectLoopVariant(element);
+        addLoopCapability(element, capabilities);
         capabilities.add("receiveTask");
         break;
       case "sendTask":
-        rejectLoopVariant(element);
+        addLoopCapability(element, capabilities);
         capabilities.add("sendTask");
         break;
       case "task":
-        rejectLoopVariant(element);
+        addLoopCapability(element, capabilities);
         // Only the configured-Task extension carries a task definition; a plain Task is the pass-through account.
         capabilities.add(hasDirectChild(element, "extensionElements") ? "configuredTask" : "abstractTask");
         break;
       case "manualTask":
-        rejectLoopVariant(element);
+        addLoopCapability(element, capabilities);
         capabilities.add("manualTask");
         break;
       case "callActivity":
-        rejectLoopVariant(element);
+        addLoopCapability(element, capabilities);
         capabilities.add(hasDirectChild(element, "ioSpecification") ? "callActivityScalarData"
           : hasCallVariableMapping(element) ? "callActivityVariableMappings" : "callActivity");
         break;
       case "subProcess":
-        rejectLoopVariant(element);
-        if (isTrue(element.attributes.triggeredByEvent)) {
-          throw new TypeError("unclassified executable BPMN element eventSubProcess");
-        }
-        capabilities.add("embeddedSubProcess");
+        addLoopCapability(element, capabilities);
+        capabilities.add(isTrue(element.attributes.triggeredByEvent) ? "eventSubProcess" : "embeddedSubProcess");
         break;
       case "transaction":
+        addLoopCapability(element, capabilities);
         capabilities.add("transaction");
         break;
       case "exclusiveGateway":
@@ -195,7 +196,6 @@ function transactionContext(
   const ends = new Map<XmlElement, number>();
   const boundaries = new Map<XmlElement, number>();
   for (const transaction of transactions) {
-    rejectLoopVariant(transaction);
     const owner = parents.get(transaction);
     if (owner?.name !== "process" || owners.has(owner) || isTrue(transaction.attributes.triggeredByEvent) ||
         (transaction.attributes.method !== undefined && transaction.attributes.method !== "##Compensate")) {
@@ -246,25 +246,10 @@ function compensationContext(
   const boundaries = new Set<XmlElement>();
   for (const element of elements) {
     if (element.name !== "subProcess" || !isTrue(element.attributes.triggeredByEvent)) continue;
-    rejectLoopVariant(element);
-    const owner = parents.get(element);
-    const starts = element.children.filter(({ name }) => name === "startEvent");
-    const tasks = element.children.filter(({ name }) => name === "serviceTask");
-    const ends = element.children.filter(({ name }) => name === "endEvent");
-    if (owner?.name !== "subProcess" || isTrue(owner.attributes.triggeredByEvent) || parents.get(owner)?.name !== "process" ||
-        starts.length !== 1 || starts[0] === undefined || eventDefinition(starts[0]) !== "compensateEventDefinition" ||
-        tasks.length !== 1 || tasks[0] === undefined || !isCompensationEffect(tasks[0]) ||
-        ends.length !== 1 || ends[0] === undefined || eventDefinition(ends[0]) !== null) {
-      throw new TypeError("unclassified executable BPMN eventSubProcess variant");
-    }
-    rejectLoopVariant(tasks[0]);
-    const body = flattenElements(element.children);
-    for (const child of body) {
-      if (child === starts[0] || child === tasks[0] || child === ends[0]) continue;
-      if (child.name === "subProcess") throw new TypeError("unclassified executable BPMN nested Compensation handler");
-      rejectUnknownExecutableElement(child);
-    }
-    for (const child of [element, ...body]) dormant.add(child);
+    const body = firstProfileCompensationHandlerBody(element, parents);
+    // Every other Event Sub-Process, a Compensation one included, is an ordinary one the element loop claims.
+    if (body === undefined) continue;
+    for (const child of body) dormant.add(child);
     capabilities.add("compensationEventSubProcess");
     capabilities.add("compensationHandlerServiceTask");
   }
@@ -294,6 +279,33 @@ function compensationContext(
     }
   }
   return { dormant, handlers, boundaries };
+}
+
+/**
+ * The body of the first-profile Compensation Event Sub-Process, whose one compensation-effect Service Task claims the
+ * handler capability in place of an ordinary Service Task: a Compensation start, that Task and a None End, and no other
+ * executable element, directly inside a Sub-Process at Process level. `undefined` for any other Event Sub-Process.
+ */
+function firstProfileCompensationHandlerBody(
+  element: XmlElement,
+  parents: ReadonlyMap<XmlElement, XmlElement>,
+): ReadonlyArray<XmlElement> | undefined {
+  const owner = parents.get(element);
+  const starts = element.children.filter(({ name }) => name === "startEvent");
+  const tasks = element.children.filter(({ name }) => name === "serviceTask");
+  const ends = element.children.filter(({ name }) => name === "endEvent");
+  const [start, task, end] = [starts[0], tasks[0], ends[0]];
+  if (owner?.name !== "subProcess" || isTrue(owner.attributes.triggeredByEvent) || parents.get(owner)?.name !== "process" ||
+      isLooping(element) || starts.length !== 1 || start === undefined || eventDefinition(start) !== "compensateEventDefinition" ||
+      tasks.length !== 1 || task === undefined || !isCompensationEffect(task) || isLooping(task) ||
+      ends.length !== 1 || end === undefined || eventDefinition(end) !== null) {
+    return undefined;
+  }
+  const body = flattenElements(element.children);
+  return body.every((child) => child === start || child === task || child === end ||
+      (child.name !== "subProcess" && !isExecutableNodeName(child.name)))
+    ? body
+    : undefined;
 }
 
 function isCompensationEffect(task: XmlElement): boolean {
@@ -341,9 +353,7 @@ function addUserTaskCapability(
   capabilities: Set<MvpBpmnCapabilityId>,
 ): void {
   capabilities.add("userTask");
-  if (hasDirectChild(task, "standardLoopCharacteristics")) {
-    throw new TypeError("unclassified executable BPMN loop variant on userTask");
-  }
+  addLoopCapability(task, capabilities);
   const multiInstance = task.children.find(
     ({ name }) => name === "multiInstanceLoopCharacteristics",
   );
@@ -558,22 +568,30 @@ function eventDefinition(event: XmlElement): string | null {
   return definitions[0] ?? null;
 }
 
+function isLooping(activity: XmlElement): boolean {
+  return hasDirectChild(activity, "standardLoopCharacteristics") ||
+    hasDirectChild(activity, "multiInstanceLoopCharacteristics");
+}
+
 function rejectLoopVariant(activity: XmlElement): void {
-  if (
-    hasDirectChild(activity, "standardLoopCharacteristics") ||
-    hasDirectChild(activity, "multiInstanceLoopCharacteristics")
-  ) {
+  if (isLooping(activity)) throw new TypeError(`unclassified executable BPMN loop variant on ${activity.name}`);
+}
+
+/**
+ * A Multi-Instance loop claims its capability beside its host's, whatever its mode, generation or condition: which of
+ * them the host admits is the kernel's admission. A standard loop has no capability, as the reader refuses it.
+ */
+function addLoopCapability(activity: XmlElement, capabilities: Set<MvpBpmnCapabilityId>): void {
+  if (hasDirectChild(activity, "standardLoopCharacteristics")) {
     throw new TypeError(`unclassified executable BPMN loop variant on ${activity.name}`);
   }
+  if (hasDirectChild(activity, "multiInstanceLoopCharacteristics")) capabilities.add("multiInstanceActivity");
+}
+
+function isExecutableNodeName(name: string): boolean {
+  return name.endsWith("Task") || name.endsWith("Gateway") || name.endsWith("Event") || name === "transaction";
 }
 
 function rejectUnknownExecutableElement(element: XmlElement): void {
-  if (
-    element.name.endsWith("Task") ||
-    element.name.endsWith("Gateway") ||
-    element.name.endsWith("Event") ||
-    element.name === "transaction"
-  ) {
-    throw new TypeError(`unclassified executable BPMN element ${element.name}`);
-  }
+  if (isExecutableNodeName(element.name)) throw new TypeError(`unclassified executable BPMN element ${element.name}`);
 }
