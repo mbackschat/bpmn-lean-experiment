@@ -295,7 +295,8 @@ jobs:
       - name: Replace retained CIB evidence
         run: ./scripts/pnpm.sh run replace:cib-evidence --shard "${{ matrix.shard }}/${{ strategy.job-total }}"
 
-      # Stages and uploads even when the replacement failed on scenarios CIB cannot run, which it reports after writing the rest.
+      # Stages and uploads even when the replacement failed: it reports harness failures that differ from their declaration
+      # (`scripts/cib-declared-harness-failures.ts`) only after writing the evidence it took.
       - name: Stage this shard's CIB evidence
         if: always()
         run: node scripts/cib-evidence-shards.ts stage "${{ matrix.shard }}/${{ strategy.job-total }}" "$RUNNER_TEMP/cib-evidence-shard"

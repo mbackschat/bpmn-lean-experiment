@@ -28,5 +28,6 @@ This contributor map groups the Java runner by source responsibility. Human orie
 | [Business public-delivery metadata calibration](src/test/java/org/bpmnlean/cibseven/CibSevenBusinessPublicDeliveryMetadataTest.java) | Exact composed source bytes, public TaskService/FormService observations at every human site, and candidate/field drift controls; metadata calibration only, without whole-model execution equivalence |
 | [`CibSevenPipelineExportBridge.java`](src/test/java/org/bpmnlean/cibseven/CibSevenPipelineExportBridge.java) | Test-scope bridge used by the Node differential pipeline |
 | [`replace-cibseven-evidence.ts`](../../scripts/replace-cibseven-evidence.ts) | Explicit verifier-checked evidence replacement |
+| [`cib-declared-harness-failures.ts`](../../scripts/cib-declared-harness-failures.ts) | The scenarios CIB cannot answer, each with its register entry, protocol rule or resource bound; the replacement fails when its harness failures differ from it |
 
 Pinned source resources live under [`src/test/resources/`](src/test/resources/). Their provenance and release identities are owned by the [source registry](../../docs/SOURCES.md).

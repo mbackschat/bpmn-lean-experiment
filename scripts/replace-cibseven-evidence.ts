@@ -11,6 +11,8 @@ import { fileURLToPath } from "node:url";
 
 import type { ValidateFunction } from "ajv/dist/2020.js";
 
+import { declaredCibHarnessFailures } from "./cib-declared-harness-failures.ts";
+import type { DeclaredHarnessFailure } from "./cib-declared-harness-failures.ts";
 import { parseShard, shardCases } from "./cib-evidence-shards.ts";
 import type { Shard } from "./cib-evidence-shards.ts";
 import { resolveCibSevenMavenTimeoutMs, wrapCibSevenMavenFailure } from "./cibseven-maven-budget.ts";
@@ -200,6 +202,9 @@ export function bridgeOutcomes(requested: ReadonlyArray<string>, lines: Readonly
 /** The bridge's failure text for a scenario during which the JVM exhausted its heap (`CibSevenOracleMain`). */
 const heapExhaustedFailure = "CIB_SCENARIO_HEAP_EXHAUSTED";
 
+/** The leading text of the failure a lone scenario records when it exceeded the batch deadline. */
+const deadlineExceededFailure = "CIB_SCENARIO_DEADLINE_EXCEEDED";
+
 /** A bridge call the JVM heap ceiling ended; the bridge's last line names the scenario it was running then. */
 export class CibHeapExhaustedError extends Error {
   readonly scenarioId: string;
@@ -226,7 +231,7 @@ export function exhaustedHeapScenario(lines: ReadonlyArray<string>): string | un
 function resourceBreach(error: unknown): string | undefined {
   if (error instanceof CibHeapExhaustedError) return heapExhaustedFailure;
   if (error instanceof Error && error.cause instanceof CommandTimeoutError) {
-    return `CIB_SCENARIO_DEADLINE_EXCEEDED budgetMs=${String(error.cause.timeoutMs)}`;
+    return `${deadlineExceededFailure} budgetMs=${String(error.cause.timeoutMs)}`;
   }
   return undefined;
 }
@@ -366,23 +371,65 @@ export function cibEvidenceEffectSchedule(
   return cancels ? "incidentReportCancel" : "incidentReportRetrySuccess";
 }
 
-type Replacement = Readonly<{ relativePath: string; value: unknown }>;
+type Replacement = Readonly<{ scenarioRelativePath: string; relativePath: string; value: unknown }>;
+
+/** A case the replay could not answer: its scenario and the harness failure or schema violation that stopped it. */
+export type CaseFailure = Readonly<{ scenarioRelativePath: string; failure: string }>;
 
 /**
- * The replacements that meet their evidence schema, and one failure line for each that does not: evidence the runner
- * wrote outside its contract is never retained, so the retake reports it beside the scenarios CIB could not run.
+ * The replacements that meet their evidence schema, and one failure for each that does not: evidence the runner wrote
+ * outside its contract is never retained, so the retake reports it beside the scenarios CIB could not run.
  */
 export function admitReplacements(
   replacements: ReadonlyArray<Replacement>,
   validate: ValidateFunction,
-): Readonly<{ admitted: ReadonlyArray<Replacement>; failures: ReadonlyArray<string> }> {
+): Readonly<{ admitted: ReadonlyArray<Replacement>; failures: ReadonlyArray<CaseFailure> }> {
   const admitted: Replacement[] = [];
-  const failures: string[] = [];
+  const failures: CaseFailure[] = [];
   for (const replacement of replacements) {
     if (validate(replacement.value)) admitted.push(replacement);
-    else failures.push(`${replacement.relativePath}: evidence violates its schema: ${JSON.stringify(validate.errors)}`);
+    else {
+      failures.push({
+        scenarioRelativePath: replacement.scenarioRelativePath,
+        failure: `evidence violates its schema: ${JSON.stringify(validate.errors)}`,
+      });
+    }
   }
   return { admitted, failures };
+}
+
+function declaredFailureMatches(declaration: DeclaredHarnessFailure, failure: string): boolean {
+  if (declaration.kind === "resource") {
+    return failure === heapExhaustedFailure || failure.startsWith(`${deadlineExceededFailure} `);
+  }
+  return failure.startsWith(declaration.failure);
+}
+
+/**
+ * How the cases a replay could not answer differ from their declaration (`cib-declared-harness-failures.ts`), one line
+ * per difference: a failure of an undeclared scenario, a declared scenario that failed another way, and a declared
+ * scenario of `covered` that did not fail. A declared scenario outside `covered` belongs to another shard's replay.
+ */
+export function harnessFailureDrift(
+  covered: ReadonlyArray<string>,
+  failures: ReadonlyArray<CaseFailure>,
+  declared: ReadonlyMap<string, DeclaredHarnessFailure>,
+): ReadonlyArray<string> {
+  const drift: string[] = [];
+  for (const { scenarioRelativePath, failure } of failures) {
+    const declaration = declared.get(scenarioRelativePath);
+    if (declaration === undefined) drift.push(`${scenarioRelativePath}: undeclared harness failure: ${failure}`);
+    else if (!declaredFailureMatches(declaration, failure)) {
+      drift.push(`${scenarioRelativePath}: failed otherwise than declared (${JSON.stringify(declaration)}): ${failure}`);
+    }
+  }
+  const failed = new Set(failures.map(({ scenarioRelativePath }) => scenarioRelativePath));
+  for (const scenarioRelativePath of covered) {
+    if (declared.has(scenarioRelativePath) && !failed.has(scenarioRelativePath)) {
+      drift.push(`${scenarioRelativePath}: declared as a harness failure, but CIB answered it`);
+    }
+  }
+  return drift;
 }
 
 /** A population run removed everything it created, under the profile's pinned producer. */
@@ -404,14 +451,14 @@ export function requireCleanPopulation(result: CibPopulationResult, profile: Sem
 async function populationReplacements(
   cases: ReadonlyArray<PopulationEvidenceCase>,
   temporaryDirectory: string,
-): Promise<Readonly<{ replacements: ReadonlyArray<Replacement>; failures: ReadonlyArray<string> }>> {
+): Promise<Readonly<{ replacements: ReadonlyArray<Replacement>; failures: ReadonlyArray<CaseFailure> }>> {
   const sources = await Promise.all(cases.map(async (artifactCase) => {
     const scenario = await readJsonWithBytes<Readonly<{ id: string; profile: string }>>(artifactCase.scenarioRelativePath);
     const profile = await readJsonWithBytes<SemanticProfile>(`profiles/${scenario.value.profile}/profile.json`);
     return { artifactCase, scenario, profile };
   }));
   const replacements: Replacement[] = [];
-  const failures: string[] = [];
+  const failures: CaseFailure[] = [];
   for (const [engineVersion, versionSources] of Map.groupBy(sources, ({ profile }) => profile.value.oracle.version)) {
     await runCibBatch([], temporaryDirectory, engineVersion, "plainSuccess");
     for (let start = 0; start < versionSources.length; start += cibBatchChunkSize) {
@@ -422,13 +469,21 @@ async function populationReplacements(
         logSplit,
       );
       if (batch.results.length > 0) throw new Error("CIB answered a population with a single-instance result");
-      failures.push(...batch.failures.map(({ scenarioId, failure }) => `${scenarioId}: ${failure}`));
+      const sourceOf = (scenarioId: string) => {
+        const source = chunk.find(({ scenario }) => scenario.value.id === scenarioId);
+        if (source === undefined) throw new Error(`CIB answered population ${scenarioId}, which it was not asked`);
+        return source;
+      };
+      failures.push(...batch.failures.map(({ scenarioId, failure }) => ({
+        scenarioRelativePath: sourceOf(scenarioId).artifactCase.scenarioRelativePath,
+        failure,
+      })));
       for (const result of batch.populations) {
-        const source = chunk.find(({ scenario }) => scenario.value.id === result.scenarioId);
-        if (source === undefined) throw new Error(`CIB answered population ${result.scenarioId}, which it was not asked`);
+        const source = sourceOf(result.scenarioId);
         requireCleanPopulation(result, source.profile.value);
         const { scenario, profile } = source;
         replacements.push({
+          scenarioRelativePath: source.artifactCase.scenarioRelativePath,
           relativePath: source.artifactCase.evidenceRelativePath,
           value: populationEvidenceDocument(
             { id: scenario.value.id, bytes: scenario.bytes },
@@ -470,7 +525,8 @@ async function replaceEvidence(shard: Shard | undefined) {
       ]),
     );
     const results: CibRunnerResult[] = [];
-    const failures: string[] = [];
+    const failedIds = new Set<string>();
+    const failures: CaseFailure[] = [];
     for (const [group, versionSources] of sourcesByVersion) {
       const parsed: unknown = JSON.parse(group);
       if (
@@ -495,10 +551,14 @@ async function replaceEvidence(shard: Shard | undefined) {
           logSplit,
         );
         results.push(...batch.results);
-        failures.push(...batch.failures.map(({ scenarioId, failure }) => `${scenarioId}: ${failure}`));
+        for (const { scenarioId, failure } of batch.failures) {
+          const source = versionSources.find(({ scenario }) => scenario.value.id === scenarioId);
+          if (source === undefined) throw new Error(`CIB failed scenario ${scenarioId}, which it was not asked`);
+          failedIds.add(scenarioId);
+          failures.push({ scenarioRelativePath: source.artifactCase.scenarioRelativePath, failure });
+        }
       }
     }
-    const failedIds = new Set(failures.map((failure) => failure.slice(0, failure.indexOf(": "))));
     const produced = sources.filter(({ scenario }) => !failedIds.has(scenario.value.id));
     const byScenario = new Map<string, CibRunnerResult>(
       results.map(
@@ -529,6 +589,7 @@ async function replaceEvidence(shard: Shard | undefined) {
           );
         }
         return {
+          scenarioRelativePath: artifactCase.scenarioRelativePath,
           relativePath: artifactCase.evidenceRelativePath,
           value: {
             kind: "cibSevenScenarioEvidence",
@@ -624,9 +685,20 @@ async function replaceEvidence(shard: Shard | undefined) {
     process.stdout.write(
       `replaced ${admitted.length} content-bound CIB evidence artifacts\n`,
     );
-    if (failures.length > 0) {
-      throw new Error(`CIB could not run ${String(failures.length)} scenarios:\n${failures.join("\n")}`);
+    for (const { scenarioRelativePath, failure } of failures) {
+      process.stdout.write(`CIB could not run ${scenarioRelativePath}: ${failure}\n`);
     }
+    const drift = harnessFailureDrift(
+      [...cases.scenarios, ...cases.populations].map(({ scenarioRelativePath }) => scenarioRelativePath),
+      failures,
+      declaredCibHarnessFailures,
+    );
+    if (drift.length > 0) {
+      throw new Error(
+        `CIB's harness failures differ from scripts/cib-declared-harness-failures.ts:\n${drift.join("\n")}`,
+      );
+    }
+    process.stdout.write(`all ${String(failures.length)} harness failures are declared\n`);
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true });
   }

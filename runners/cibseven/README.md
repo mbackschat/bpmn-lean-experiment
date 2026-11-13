@@ -28,7 +28,7 @@ Run the complete pinned oracle gate:
 
 The script uses Java 21 and the repository Maven wrapper. `BPMN_JAVA_HOME`, `BPMN_MAVEN_SETTINGS`, and `BPMN_MAVEN_REPO_LOCAL` override the Java installation, Maven settings, and isolated artifact cache.
 
-Ordinary verification never rewrites retained evidence. Use `./scripts/pnpm.sh run replace:cib-evidence` only for the explicit verifier-checked replacement operation; the hosted Verify workflow runs it as parallel shards (`--shard <i>/<n>`) when dispatched with `replace_cib_evidence`.
+Ordinary verification never rewrites retained evidence. Use `./scripts/pnpm.sh run replace:cib-evidence` only for the explicit verifier-checked replacement operation; the hosted Verify workflow runs it as parallel shards (`--shard <i>/<n>`) when dispatched with `replace_cib_evidence`. A scenario CIB cannot answer is declared in [`cib-declared-harness-failures.ts`](../../scripts/cib-declared-harness-failures.ts) with its register entry, protocol rule or resource bound; the replacement still runs it and fails when a declared scenario is answered or fails another way, or an undeclared one fails.
 
 ## Learn more
 

@@ -11,6 +11,7 @@ import {
   CibHeapExhaustedError,
   exhaustedHeapScenario,
   cibBridgeDeadlineMs,
+  harnessFailureDrift,
   cibEvidenceEffectSchedule,
   isolateResourceBreaches,
   requireCleanPopulation,
@@ -188,12 +189,16 @@ test("a replacement outside its evidence schema is reported as a failure and nev
   delete invalid.producerObservations.taskQueries.find(({ tasks }) => tasks.length > 0)!.tasks[0]!["name"];
   const validate = await scenarioEvidenceValidator(new URL("..", import.meta.url).pathname);
   const { admitted, failures } = admitReplacements(
-    [{ relativePath, value: valid }, { relativePath: "elsewhere.cibseven-evidence.json", value: invalid }],
+    [
+      { scenarioRelativePath: "valid.scenario.json", relativePath, value: valid },
+      { scenarioRelativePath: "elsewhere.scenario.json", relativePath: "elsewhere.cibseven-evidence.json", value: invalid },
+    ],
     validate,
   );
   assert.deepEqual(admitted.map(({ relativePath: admittedPath }) => admittedPath), [relativePath]);
   assert.equal(failures.length, 1);
-  assert.match(failures[0]!, /^elsewhere\.cibseven-evidence\.json: evidence violates its schema: .*name/u);
+  assert.equal(failures[0]!.scenarioRelativePath, "elsewhere.scenario.json");
+  assert.match(failures[0]!.failure, /^evidence violates its schema: .*name/u);
 });
 
 // A Message whose name expression resolves to null leaves CIB's subscription without a name: the engine stores the
@@ -213,4 +218,44 @@ test("the evidence schema keeps a Message subscription whose name resolved to nu
   assert.equal(withName("Settlement confirmed"), true, JSON.stringify(validate.errors));
   assert.equal(withName(null), true, JSON.stringify(validate.errors));
   assert.equal(withName(""), false);
+});
+
+test("a replay whose harness failures are exactly the declared ones of its cases has no drift", () => {
+  const declared = new Map([
+    ["a.scenario.json", { kind: "register", entry: "CIB-LIM-0048", failure: "java.lang.IndexOutOfBoundsException:" }],
+    ["b.scenario.json", { kind: "resource" }],
+    ["elsewhere.scenario.json", { kind: "protocol", rule: "rule.java#check", failure: "java.lang.IllegalArgumentException:" }],
+  ] as const);
+  const failures = [
+    { scenarioRelativePath: "a.scenario.json", failure: "java.lang.IndexOutOfBoundsException: Index -1 out of bounds for length 0" },
+    { scenarioRelativePath: "b.scenario.json", failure: "CIB_SCENARIO_HEAP_EXHAUSTED" },
+  ];
+  // A declared scenario of another shard is neither run nor missed here.
+  assert.deepEqual(harnessFailureDrift(["a.scenario.json", "b.scenario.json", "c.scenario.json"], failures, declared), []);
+  // Whichever resource bound a resource-declared scenario reaches first matches.
+  assert.deepEqual(harnessFailureDrift(["b.scenario.json"], [
+    { scenarioRelativePath: "b.scenario.json", failure: "CIB_SCENARIO_DEADLINE_EXCEEDED budgetMs=30000" },
+  ], declared), []);
+});
+
+test("reports drift in both directions and a declared scenario that fails another way", () => {
+  const declared = new Map([
+    ["declared.scenario.json", { kind: "register", entry: "CIB-DEV-0006", failure: "java.lang.IllegalStateException: CIB chained" }],
+    ["answered.scenario.json", { kind: "protocol", rule: "rule.java#check", failure: "java.lang.IllegalArgumentException:" }],
+    ["bounded.scenario.json", { kind: "resource" }],
+  ] as const);
+  const drift = harnessFailureDrift(
+    ["declared.scenario.json", "answered.scenario.json", "bounded.scenario.json", "new.scenario.json"],
+    [
+      { scenarioRelativePath: "declared.scenario.json", failure: "java.lang.NullPointerException: eventName" },
+      { scenarioRelativePath: "bounded.scenario.json", failure: "java.lang.IllegalStateException: no host" },
+      { scenarioRelativePath: "new.scenario.json", failure: "java.lang.IllegalStateException: no host" },
+    ],
+    declared,
+  );
+  assert.equal(drift.length, 4, drift.join("\n"));
+  assert.match(drift[0]!, /^declared\.scenario\.json: failed otherwise than declared .*CIB-DEV-0006.*NullPointerException/u);
+  assert.match(drift[1]!, /^bounded\.scenario\.json: failed otherwise than declared .*resource.*no host/u);
+  assert.match(drift[2]!, /^new\.scenario\.json: undeclared harness failure: java\.lang\.IllegalStateException: no host$/u);
+  assert.match(drift[3]!, /^answered\.scenario\.json: declared as a harness failure, but CIB answered it$/u);
 });
