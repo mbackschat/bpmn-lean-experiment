@@ -300,20 +300,6 @@ test("a population refuses a deployment program or a command past its byte bound
     program: await programOf(chainCapacity.programBytes - base) }));
   assert.deepEqual(await population.registerDeployment({ deploymentRequestId: "over", digest: "over",
     program: await programOf(chainCapacity.programBytes - base + 1) }), { refused: "host.capacity.program" });
-  const command = { kind: "broadcast", commandId: "b", address: { name: "S" }, variables: [] };
-  const padded = { ...command, padding: "p".repeat(chainCapacity.stimulusBytes + 1 - canonicalBytes({ ...command, padding: "" })) };
-  await assert.rejects(population.command("broadcast", padded as never),
-    (error: unknown) => error instanceof PopulationRefused && error.code === "host.capacity.stimulus");
-});
-test("a population refuses a deployment program or a command past its byte bound before acceptance", async () => {
-  const host = fresh();
-  const population = host.population("P", external);
-  const programOf = async (pad: number) => fx.cibProgram(fx.sizingModel(1, [], pad));
-  const base = canonicalBytes(await programOf(0));
-  assert.ok("deploymentId" in await population.registerDeployment({ deploymentRequestId: "fits", digest: "fits",
-    program: await programOf(chainCapacity.programBytes - base) }));
-  assert.deepEqual(await population.registerDeployment({ deploymentRequestId: "over", digest: "over",
-    program: await programOf(chainCapacity.programBytes - base + 1) }), { refused: "host.capacity.program" });
   const broadcast = (characters: number, top: number) => ({
     kind: "broadcast", commandId: "b", address: { kind: "named", name: "S" },
     variables: [...["v1", "v2", "v3", "v4"].map((name) => ({ name, value: fx.pad(fx.padLengths(characters)) })),

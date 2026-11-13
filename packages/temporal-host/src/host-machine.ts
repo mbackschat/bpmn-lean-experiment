@@ -174,7 +174,7 @@ export function arrivalCommandId(arrival: Arrival): string {
   return `host:${arrival.key}`;
 }
 
-/** Temporal's Event History warning threshold, the point at which the SDK starts suggesting Continue-As-New. */
+/** Temporal's default Event History warn limit (`limit.historyCount.warn`); the server suggests Continue-As-New earlier, at 4,096 Events or 4 MiB by default. */
 const historyWarningEvents = 10_240;
 /** One Workflow Task (scheduled, started, completed) per activation. */
 const workflowTaskEvents = 3;
