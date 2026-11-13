@@ -222,6 +222,26 @@ test("the hosted replay runs one bounded job per shard and verifies the runtime 
   assert.match(runtime, new RegExp(String.raw`if: ${replayRequested.replaceAll(".", String.raw`\.`)}\n {8}run: node scripts/cib-evidence-shards\.ts install`, "u"));
 });
 
+test("every job downstream of the optional replay names its prerequisites' results instead of the implicit success()", async () => {
+  // GitHub's implicit `success()` is false when any ancestor job was skipped, and the replay is skipped whenever it
+  // was not requested; a downstream job without `!cancelled()` and explicit results was therefore skipped on every
+  // ordinary run (PR #135, Verify run 43404699101: Temporal and the pipeline skipped, verify-complete failed).
+  const workflow = await readWorkflow("verify.yml");
+  const needsOf = (job: string): string[] =>
+    [...(jobBlock(workflow, job).match(/^ {4}needs:\n((?: {6}- [\w-]+\n)+)/mu)?.[1] ?? "").matchAll(/- ([\w-]+)/gu)].map((m) => m[1]!);
+  const jobs = [...workflow.matchAll(/^ {2}([\w-]+):\n {4}/gmu)].map((m) => m[1]!);
+  const downstream = (job: string): boolean => needsOf(job).some((need) => need === "replace_cib_evidence" || downstream(need));
+  const checked = jobs.filter((job) => job !== "verify-complete" && job !== "release_staged_outputs" && downstream(job));
+  assert.ok(checked.includes("verify_temporal") && checked.includes("verify_pipeline"), "the walk reaches the jobs past the runtime");
+  for (const job of checked) {
+    const condition = jobBlock(workflow, job).match(/^ {4}if: (.*)$/mu)?.[1] ?? "";
+    assert.match(condition, /!cancelled\(\)/u, `${job} does not inherit a skipped ancestor through the implicit success()`);
+    for (const need of needsOf(job).filter((need) => need !== "changes" && need !== "replace_cib_evidence")) {
+      assert.ok(condition.includes(`needs.${need}.result == 'success'`), `${job} requires ${need} to have succeeded`);
+    }
+  }
+});
+
 test("verify-complete fails when the requested replay did not succeed in every shard", async () => {
   const complete = jobBlock(await readWorkflow("verify.yml"), "verify-complete");
   assert.match(complete, /^ {6}- verify_pipeline\n {6}- replace_cib_evidence$/mu);

@@ -423,7 +423,9 @@ jobs:
     needs:
       - changes
       - verify_runtime
-    if: needs.changes.outputs.product1 == 'true'
+    # Explicit results with `!cancelled()`: the replay job upstream is skipped unless requested, and a skipped
+    # ancestor makes the implicit success() false.
+    if: needs.changes.outputs.product1 == 'true' && !cancelled() && needs.verify_runtime.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -481,7 +483,8 @@ jobs:
       - changes
       - verify_lean_checks
       - verify_runtime
-    if: needs.changes.outputs.product1 == 'true'
+    # As for verify_temporal: the skipped replay upstream would otherwise skip this job.
+    if: needs.changes.outputs.product1 == 'true' && !cancelled() && needs.verify_lean_checks.result == 'success' && needs.verify_runtime.result == 'success'
     runs-on: ubuntu-latest
     # Derived by the classify job from `scripts/pipeline-budget.ts` (scenario count × the per-scenario bound, plus
     # setup), so a pathological run ends as that budget failure; the bound itself is unchanged.
