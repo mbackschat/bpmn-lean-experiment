@@ -2,11 +2,11 @@
 
 ## Status
 
-Implemented; independently closure-reviewed. The receipt below records the exact review and correction targets.
+**Record of the deleted adapter.** The W0.4 rewrite (`f0ba57716`) deleted the adapter that implemented this contract, and the generic Temporal host implements none of it: it sets no `workerDeploymentOptions`, `PINNED` behavior or Build ID, and adopting native deployment versioning again is hosting work under the held delivery rows ([architecture](ARCHITECTURE.md#worker-deployment-ownership)). Every Workflow, file, witness and rule below describes that adapter, including the `PINNED` Process and correlation-ingress Workflows; the correlation-ingress Workflow was retired for the [population ingress](kernel/ARCHITECTURE-SPEC.md#population-ingress), and no rule here applies to it. The receipt at the end records the exact review and correction targets of the adapter's closure.
 
-## Implemented checkpoint boundary
+## Deleted adapter's checkpoint boundary
 
-The implementation contains immutable native Worker registration, explicit fresh-Namespace initialization, creation-readiness checks, Process and ingress pin inheritance, retained paired-publication/recovery Query isolation, and the Query-only replay discriminator. The complete Temporal package gate covers those live witnesses and the maintained product-start fixtures; the client gate separately covers every creation entry point. [The evidence map](kernel/KERNEL-STATUS-MAP.md) identifies the deciding tests.
+The adapter's implementation contained immutable native Worker registration, explicit fresh-Namespace initialization, creation-readiness checks, Process and ingress pin inheritance, retained paired-publication/recovery Query isolation, and the Query-only replay discriminator. The complete Temporal package gate covers those live witnesses and the maintained product-start fixtures; the client gate separately covers every creation entry point. [The evidence map](kernel/KERNEL-STATUS-MAP.md) identifies the deciding tests.
 
 Downstream witnesses preserve one A ingress across A/B Process populations, same-B-target response-loss recovery, and exact A-created Schedule dispatch under B. Evaluation initialization/readiness composition is checked through command, launcher, Compose-configuration, and live-container evidence. Existing unversioned environments remain unchanged.
 

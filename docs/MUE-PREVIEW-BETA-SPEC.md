@@ -127,7 +127,7 @@ The reproducible implementation range is `553adfb3..b7ac924d`: `+391/-14` nonbla
 
 #### Risk-first execution bands
 
-These closed bands retain the Beta evidence boundary; the closure evidence above owns their integration.
+These closed bands are the historical record of the Beta evidence boundary, reached on the deleted adapter: the subscription, correlation-ingress continuation and Worker-replacement checkpoints of rows 1, 2 and 6 make no claim about the generic host, whose [population ingress](kernel/ARCHITECTURE-SPEC.md#population-ingress) replaced the per-definition correlation ingress. The closure evidence above owns their integration.
 
 | Order | State | Band | Exit condition; deferred work |
 |---|---|---|---|

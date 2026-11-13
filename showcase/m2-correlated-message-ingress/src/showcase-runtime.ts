@@ -51,9 +51,8 @@ const processWorkflowId = (processInstanceId: string): string =>
   engineDefinitionMessageStartWorkflowId(taskQueue, processInstanceId);
 
 /**
- * What a Process waiting for the correlated Message publishes: the wait's channel and the correlation key it is
- * correlated by, and the instance variables that hold that key's value. The old adapter's candidate query, which
- * paired an address with the key value, has no host counterpart until correlation-key registration lands.
+ * What a Process waiting for the correlated Message publishes: the wait, whose detail names its channel and the
+ * correlation key it is correlated by (`criteria`), and the instance variables that hold that key's value.
  */
 export type CorrelatedWait = Readonly<{
   wait: EngineOpenWait;
