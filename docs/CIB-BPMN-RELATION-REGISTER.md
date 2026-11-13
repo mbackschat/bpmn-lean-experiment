@@ -1598,6 +1598,16 @@ BPMN 2.0.2 §10.4.2 executes an Activity's output Data Associations "When an Act
 
 ## Extension register
 
+### CIB-LIM-0058 — CIB re-arms the boundary Timers of a scope that completes holding compensation records
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile: the re-armed Timer sits where the oracle's activity-instance observation cannot place it, and the harness failure is no CIB answer; not yet classified as a deviation, since no witness lets the Timer fire
+
+When a Sub-Process or Transaction completes holding compensation subscriptions, CIB Seven `2.2.0` creates an event-scope execution for it and enters an activity instance on that execution. For a scope Activity, entering an activity instance initializes the scope's Timer declarations, and a boundary Event's declarations belong to its host's scope, so a fresh boundary Timer job is armed on the completed scope's inactive event-scope execution. BPMN 2.0.2 lets a boundary Event trigger only while its Activity is active (§10.5.3, §10.5.6). `getActivityInstance` leaves event-scope executions out, so the runner finds no host occurrence for the job and ends the schedule as a harness failure.
+
+**Evidence:** Pinned `bpmn/helper/CompensationUtil.java:100` and `:113`, `pvm/runtime/PvmExecutionImpl.java:1304` and `:1317`, `persistence/entity/ExecutionEntity.java:418` and `cmd/GetActivityInstanceCmd.java:85`; hosted run 43413054884's harness failure `java.lang.IllegalStateException: Subscription Boundary_Deadline has no unique host instance` in [normal-completion](../scenarios/open-rows/transaction-cancel-mixed/README.md), whose Transaction completes normally with compensation records and carries the boundary Timer `Boundary_Deadline`.
+
+**Boundary:** Scopes that complete normally while holding compensation records and declare a boundary Timer; the witness retains no evidence, so the ledger holds none of it. Whether such a Timer can later fire on the event-scope execution is unobserved.
+
 ### CIB-LIM-0025 — CIB admits two interrupting Error Event Sub-Processes of one code in one scope
 
 **Status:** Profile limitation; not a deviation

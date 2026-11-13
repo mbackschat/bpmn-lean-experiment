@@ -113,6 +113,11 @@ export const declaredCibHarnessFailures: ReadonlyMap<string, DeclaredHarnessFail
   ["scenarios/open-rows/timer-date-forms/before-epoch.scenario.json", timerDueOutsideWire],
   ["scenarios/open-rows/timer-recurrence/dated-start-and-end.scenario.json", finiteCycleChain],
   ["scenarios/open-rows/timer-recurrence/dated-start-and-period.scenario.json", finiteCycleChain],
+  ["scenarios/open-rows/transaction-cancel-mixed/normal-completion.scenario.json", {
+    kind: "register",
+    entry: "CIB-LIM-0058",
+    failure: "java.lang.IllegalStateException: Subscription Boundary_Deadline has no unique host instance",
+  }],
   ["scenarios/open-rows/transaction-cancel-mixed/subjects-effect-first.scenario.json", activityInstanceTree],
   ["scenarios/open-rows/transaction-cancel-mixed/subjects-user-first.scenario.json", activityInstanceTree],
 ]);
