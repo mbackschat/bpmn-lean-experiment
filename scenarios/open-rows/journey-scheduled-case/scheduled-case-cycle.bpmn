@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ScheduledCaseByCycle" targetNamespace="urn:bpmn-lean:journeys:scheduled-case-by-cycle">
+  <escalation id="Escalation_Overdue" name="Review overdue" escalationCode="OVERDUE" />
+  <process id="Process_ScheduledCaseByCycle" name="Review cases scheduled every eight hours with reminders and a deadline" isExecutable="true">
+    <startEvent id="CaseScheduled" name="Every eight hours">
+      <timerEventDefinition id="CaseScheduled_Timer">
+        <timeCycle xsi:type="tFormalExpression">R/PT8H</timeCycle>
+      </timerEventDefinition>
+    </startEvent>
+    <subProcess id="ReviewCase" name="Review the case">
+      <startEvent id="ReviewOpened" />
+      <userTask id="ReviewFindings" name="Review the case" camunda:candidateGroups="reviewers" />
+      <endEvent id="ReviewDone" />
+      <boundaryEvent id="ReminderDue" name="Reminder due" attachedToRef="ReviewFindings" cancelActivity="false">
+        <timerEventDefinition id="ReminderDue_Timer">
+          <timeCycle xsi:type="tFormalExpression">R3/PT4H</timeCycle>
+        </timerEventDefinition>
+      </boundaryEvent>
+      <userTask id="FollowUp" name="Follow up with the reviewer" camunda:candidateGroups="coordinators" />
+      <endEvent id="FollowedUp" />
+      <boundaryEvent id="DeadlinePassed" name="Deadline passed" attachedToRef="ReviewFindings" cancelActivity="true">
+        <timerEventDefinition id="DeadlinePassed_Timer">
+          <timeDuration xsi:type="tFormalExpression">P2D</timeDuration>
+        </timerEventDefinition>
+      </boundaryEvent>
+      <endEvent id="RaiseOverdue" name="Raise the overdue escalation">
+        <escalationEventDefinition id="RaiseOverdue_Escalation" escalationRef="Escalation_Overdue" />
+      </endEvent>
+      <sequenceFlow id="Flow_Opened_Review" sourceRef="ReviewOpened" targetRef="ReviewFindings" />
+      <sequenceFlow id="Flow_Review_Done" sourceRef="ReviewFindings" targetRef="ReviewDone" />
+      <sequenceFlow id="Flow_Reminder_FollowUp" sourceRef="ReminderDue" targetRef="FollowUp" />
+      <sequenceFlow id="Flow_FollowUp_FollowedUp" sourceRef="FollowUp" targetRef="FollowedUp" />
+      <sequenceFlow id="Flow_Deadline_Raise" sourceRef="DeadlinePassed" targetRef="RaiseOverdue" />
+    </subProcess>
+    <boundaryEvent id="OverdueCaught" name="Overdue" attachedToRef="ReviewCase" cancelActivity="true">
+      <escalationEventDefinition id="OverdueCaught_Escalation" escalationRef="Escalation_Overdue" />
+    </boundaryEvent>
+    <userTask id="HandleOverdue" name="Handle the overdue case" camunda:candidateGroups="managers" />
+    <endEvent id="CaseClosed" name="Case closed" />
+    <endEvent id="CaseEscalated" name="Case escalated" />
+    <sequenceFlow id="Flow_Scheduled_Review" sourceRef="CaseScheduled" targetRef="ReviewCase" />
+    <sequenceFlow id="Flow_Review_Closed" sourceRef="ReviewCase" targetRef="CaseClosed" />
+    <sequenceFlow id="Flow_Overdue_Handle" sourceRef="OverdueCaught" targetRef="HandleOverdue" />
+    <sequenceFlow id="Flow_Handle_Escalated" sourceRef="HandleOverdue" targetRef="CaseEscalated" />
+  </process>
+</definitions>

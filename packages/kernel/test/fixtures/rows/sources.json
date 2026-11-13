@@ -496,7 +496,7 @@
     "scenario": null,
     "source": "packages/kernel/test/fixtures/rows/models/PC-JOURNEY-05.bpmn",
     "profile": "cibseven-2.2.0",
-    "note": "The journey consumes a cycle Timer start (PC-TIMER-04), a repeating non-interrupting reminder boundary on the review (PC-TIMER-06), an interrupting deadline boundary (PC-TIMER-01) that raises a coded Escalation (PC-ESCALATION-01) caught by an interrupting boundary of the enclosing Sub-Process (PC-ESCALATION-02); ordinary completion leaves through that Sub-Process's end, withdrawing both timers."
+    "note": "The journey consumes a root Timer start in each selected form (PC-TIMER-04; the journey-scheduled-case witnesses start by date, duration and cycle, and this fixture holds the cycle form), a repeating non-interrupting reminder boundary on the review (PC-TIMER-06), an interrupting deadline boundary (PC-TIMER-01) that raises a coded Escalation (PC-ESCALATION-01) caught by an interrupting boundary of the enclosing Sub-Process (PC-ESCALATION-02); ordinary completion leaves through that Sub-Process's end, withdrawing both timers."
   },
   "PC-JOURNEY-06": {
     "scenario": "scenarios/open-rows/message-name-addressing/esp-root-name-from-start-variable.scenario.json",

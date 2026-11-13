@@ -1,0 +1,109 @@
+{
+  "kind": "scenario",
+  "id": "journey-scheduled-case-duration-start-ordinary-completion",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "journey-scheduled-case-duration-process",
+    "relativePath": "scenarios/open-rows/journey-scheduled-case/scheduled-case-duration.bpmn",
+    "sha256": "e4a3d700ef80ef5681e8a074d2eae9a6ce14a76a9b64af905adf22b7049bd360",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Case_1",
+      "variables": [],
+      "startEvent": "CaseScheduled",
+      "trigger": {
+        "kind": "timer",
+        "logicalTimeMs": 28800000
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s02-fire-reminder-1",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "ReminderDue",
+        "activation": 1
+      },
+      "logicalTimeMs": 43200000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s03-fire-reminder-2",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "ReminderDue",
+        "activation": 2
+      },
+      "logicalTimeMs": 57600000
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-follow-up-1",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "FollowUp",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-review",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "ReviewFindings",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "finding",
+            "value": {
+              "kind": "string",
+              "value": "Findings confirmed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-follow-up-2",
+      "occurrence": {
+        "processInstanceId": "Case_1",
+        "elementId": "FollowUp",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.2",
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerStartEventJobHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowEscalationEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationHandler.java"
+    ]
+  }
+}

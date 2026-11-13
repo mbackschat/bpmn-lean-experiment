@@ -1,0 +1,260 @@
+{
+  "kind": "populationScenario",
+  "id": "journey-scheduled-case-cycle-start-two-cases",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "scheduled-case-cycle",
+      "bpmn": {
+        "id": "journey-scheduled-case-cycle-process",
+        "relativePath": "scenarios/open-rows/journey-scheduled-case/scheduled-case-cycle.bpmn",
+        "sha256": "64aed4b1c05618c3e5bf07d6e7df84c17885ec7302f20e91c2b54c0123693a27",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "timerStart",
+      "commandId": "s01-start-first-case",
+      "deploymentId": 1,
+      "startEvent": "CaseScheduled",
+      "dueMs": 28800000,
+      "at": 28800000
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "scheduled-case-cycle",
+      "instanceId": "timer:1:1:13:CaseScheduled:28800000",
+      "at": 43200000,
+      "stimulus": {
+        "kind": "timerFire",
+        "commandId": "s02-fire-first-case-reminder-1",
+        "occurrence": {
+          "processInstanceId": "timer:1:1:13:CaseScheduled:28800000",
+          "elementId": "ReminderDue",
+          "activation": 1
+        },
+        "logicalTimeMs": 43200000
+      }
+    },
+    {
+      "kind": "timerStart",
+      "commandId": "s03-start-second-case",
+      "deploymentId": 1,
+      "startEvent": "CaseScheduled",
+      "dueMs": 57600000,
+      "at": 57600000
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "scheduled-case-cycle",
+      "instanceId": "timer:1:1:13:CaseScheduled:28800000",
+      "at": 57600000,
+      "stimulus": {
+        "kind": "timerFire",
+        "commandId": "s04-fire-first-case-reminder-2",
+        "occurrence": {
+          "processInstanceId": "timer:1:1:13:CaseScheduled:28800000",
+          "elementId": "ReminderDue",
+          "activation": 2
+        },
+        "logicalTimeMs": 57600000
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "scheduled-case-cycle",
+      "instanceId": "timer:1:1:13:CaseScheduled:28800000",
+      "at": 57600000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s05-complete-first-case-follow-up-1",
+        "occurrence": {
+          "processInstanceId": "timer:1:1:13:CaseScheduled:28800000",
+          "elementId": "FollowUp",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "scheduled-case-cycle",
+      "instanceId": "timer:1:1:13:CaseScheduled:28800000",
+      "at": 57600000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s06-review-first-case",
+        "occurrence": {
+          "processInstanceId": "timer:1:1:13:CaseScheduled:28800000",
+          "elementId": "ReviewFindings",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": [
+            {
+              "name": "finding",
+              "value": {
+                "kind": "string",
+                "value": "Findings confirmed"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "scheduled-case-cycle",
+      "instanceId": "timer:1:1:13:CaseScheduled:28800000",
+      "at": 72000000,
+      "stimulus": {
+        "kind": "timerFire",
+        "commandId": "s07-fire-first-case-reminder-3-after-its-review",
+        "occurrence": {
+          "processInstanceId": "timer:1:1:13:CaseScheduled:28800000",
+          "elementId": "ReminderDue",
+          "activation": 3
+        },
+        "logicalTimeMs": 72000000
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "scheduled-case-cycle",
+      "instanceId": "timer:1:1:13:CaseScheduled:57600000",
+      "at": 72000000,
+      "stimulus": {
+        "kind": "timerFire",
+        "commandId": "s08-fire-second-case-reminder-1",
+        "occurrence": {
+          "processInstanceId": "timer:1:1:13:CaseScheduled:57600000",
+          "elementId": "ReminderDue",
+          "activation": 1
+        },
+        "logicalTimeMs": 72000000
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "scheduled-case-cycle",
+      "instanceId": "timer:1:1:13:CaseScheduled:28800000",
+      "at": 72000000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s09-complete-first-case-follow-up-2",
+        "occurrence": {
+          "processInstanceId": "timer:1:1:13:CaseScheduled:28800000",
+          "elementId": "FollowUp",
+          "activation": 2
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "scheduled-case-cycle",
+      "instanceId": "timer:1:1:13:CaseScheduled:57600000",
+      "at": 86400000,
+      "stimulus": {
+        "kind": "timerFire",
+        "commandId": "s10-fire-second-case-reminder-2",
+        "occurrence": {
+          "processInstanceId": "timer:1:1:13:CaseScheduled:57600000",
+          "elementId": "ReminderDue",
+          "activation": 2
+        },
+        "logicalTimeMs": 86400000
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "scheduled-case-cycle",
+      "instanceId": "timer:1:1:13:CaseScheduled:57600000",
+      "at": 230400000,
+      "stimulus": {
+        "kind": "timerFire",
+        "commandId": "s11-fire-second-case-deadline",
+        "occurrence": {
+          "processInstanceId": "timer:1:1:13:CaseScheduled:57600000",
+          "elementId": "DeadlinePassed",
+          "activation": 1
+        },
+        "logicalTimeMs": 230400000
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "scheduled-case-cycle",
+      "instanceId": "timer:1:1:13:CaseScheduled:57600000",
+      "at": 230400000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s12-complete-interrupted-follow-up",
+        "occurrence": {
+          "processInstanceId": "timer:1:1:13:CaseScheduled:57600000",
+          "elementId": "FollowUp",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "scheduled-case-cycle",
+      "instanceId": "timer:1:1:13:CaseScheduled:57600000",
+      "at": 230400000,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s13-handle-second-case-overdue",
+        "occurrence": {
+          "processInstanceId": "timer:1:1:13:CaseScheduled:57600000",
+          "elementId": "HandleOverdue",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": [
+            {
+              "name": "resolution",
+              "value": {
+                "kind": "string",
+                "value": "Escalated to the board"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.2",
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerStartEventJobHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/CycleBusinessCalendar.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowEscalationEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationHandler.java"
+    ]
+  }
+}
