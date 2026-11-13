@@ -16,6 +16,7 @@ import {
 import {
   FlowNodeMetricsResultKind,
 } from "@bpmn-lean/platform-contracts";
+import type { InternalFailureReporter } from "@bpmn-lean/platform-contracts";
 import {
   ConfirmedProcessInstancePublicationService,
   ConfirmedProcessInstanceState,
@@ -95,6 +96,9 @@ import {
   createPlatformHttpServerFromValidatedOrigin,
 } from "./http-adapter.js";
 import {
+  createStderrInternalFailureReporter,
+} from "./internal-failure-stderr-reporter.js";
+import {
   NodePlatformServerRuntime,
   closeResources,
 } from "./runtime.js";
@@ -131,6 +135,8 @@ export type SharedPlatformServerCompositionOverrides = Readonly<{
   checkReadiness?: (
     options: SharedPlatformServerReadinessOptions,
   ) => Promise<void>;
+  /** Where every HTTP boundary reports an unexpected failure; one JSON line on stderr when absent. */
+  reportInternalFailure?: InternalFailureReporter;
 }>;
 
 /** Creates one PostgreSQL-only API replica with no startup reconciliation or fleet query. */
@@ -155,6 +161,7 @@ export async function createSharedPlatformServer(
       database,
       engine,
       config.projectionMaxAgeMs,
+      overrides.reportInternalFailure ?? createStderrInternalFailureReporter(),
     );
   } catch (error: unknown) {
     await closeResources(engine === null ? [database] : [database, engine]);
@@ -167,6 +174,7 @@ function composeSharedPlatformServer(
   database: PostgresqlRuntime,
   engine: BpmnEngineGatewayRuntime,
   projectionMaxAgeMs: number,
+  reportInternalFailure: InternalFailureReporter,
 ): PlatformServerRuntime {
   const artifacts = new PostgresqlExactArtifactStore(database);
   const definitions = new PostgresqlDefinitionRepository(database);
@@ -335,10 +343,12 @@ function composeSharedPlatformServer(
     workSnapshot,
     workDetails,
     workMutations,
+    reportInternalFailure,
   });
   const server = createPlatformHttpServerFromValidatedOrigin({
     publicOrigin: config.publicOrigin,
     routes,
+    reportInternalFailure,
   });
   const resources: CloseableResource[] = [database, engine];
   return new NodePlatformServerRuntime(server, resources, config);
@@ -368,6 +378,7 @@ type SharedRouteDependencies = Readonly<Record<string, unknown>> & Readonly<{
   workSnapshot: PostgresqlWorkSnapshotService;
   workDetails: WorkTaskDetailService;
   workMutations: WorkMutationService;
+  reportInternalFailure: InternalFailureReporter;
 }>;
 
 function createSharedRoutes(dependencies: SharedRouteDependencies) {
@@ -383,24 +394,31 @@ function createSharedRoutes(dependencies: SharedRouteDependencies) {
     workRepository,
     workAuditRepository,
     incidentAuditRepository,
+    reportInternalFailure,
   } = dependencies;
   const definitionRoutes = new DefinitionHttpRoutes(
     dependencies.definitionService,
     dependencies.startService,
-    { maxSourceBytes: config.maxSourceBytes },
+    { maxSourceBytes: config.maxSourceBytes, reportInternalFailure },
     dependencies.presentationService,
   );
   const scheduleRoutes = new DefinitionScheduleHttpRoutes(
     dependencies.scheduleService,
     dependencies.definitionService,
+    reportInternalFailure,
   );
   const messageStartRoutes = new MessageStartPublicationHttpRoutes(
     dependencies.messageStartService,
+    reportInternalFailure,
   );
   const correlatedMessageRoutes = new DefinitionCorrelatedMessageHttpRoutes(
     dependencies.correlatedMessageService,
+    reportInternalFailure,
   );
-  const processRoutes = new ProcessInstanceHttpRoutes(dependencies.processInstances);
+  const processRoutes = new ProcessInstanceHttpRoutes(
+    dependencies.processInstances,
+    reportInternalFailure,
+  );
   const executionRoutes = new ExecutionPublicationHttpRoutes({
     actors,
     authorization: operationsAuthorization,
@@ -408,6 +426,7 @@ function createSharedRoutes(dependencies: SharedRouteDependencies) {
       runtime: database,
       maxAgeMs: projectionMaxAgeMs,
     }),
+    reportInternalFailure,
   });
   const metricsReader = new PostgresqlFlowNodeMetricsReader({
     runtime: database,
@@ -433,6 +452,7 @@ function createSharedRoutes(dependencies: SharedRouteDependencies) {
         }
       },
     },
+    reportInternalFailure,
   });
   const incidentRoutes = new IncidentHttpRoutes({
     actors,
@@ -441,6 +461,7 @@ function createSharedRoutes(dependencies: SharedRouteDependencies) {
     mutations: dependencies.incidentMutations,
     audit: new IncidentAuditSearchService(incidentAuditRepository),
     outbox: backgroundAuditDelivery,
+    reportInternalFailure,
   });
   const workAudit = new WorkAuditService({
     actors,
@@ -461,6 +482,7 @@ function createSharedRoutes(dependencies: SharedRouteDependencies) {
     },
     audit: workAudit,
     outbox: backgroundAuditDelivery,
+    reportInternalFailure,
   });
   const operatorAuditRoutes = new OperatorAuditExportHttpRoutes({
     actors,
@@ -479,6 +501,7 @@ function createSharedRoutes(dependencies: SharedRouteDependencies) {
       workAudit: workAuditRepository,
       incidentAudit: incidentAuditRepository,
     }),
+    reportInternalFailure,
   });
   return [
     (request: Request) => operatorAuditRoutes.handle(request),

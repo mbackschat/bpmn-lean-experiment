@@ -7,6 +7,7 @@ import {
   operatorAuditExportPath,
   serializeOperatorAuditExport,
 } from "@bpmn-lean/platform-contracts";
+import type { InternalFailureReporter } from "@bpmn-lean/platform-contracts";
 import {
   OperatorAuditExportHttpRoutes,
 } from "@bpmn-lean/platform-operate";
@@ -15,6 +16,10 @@ import {
   OperationsAuthorizationSurface,
 } from "@bpmn-lean/platform-identity-policy";
 
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 import {
   operatorAuditExport,
   operatorAuditInstance,
@@ -73,9 +78,12 @@ test("distinguishes unknown confirmed identity, audit unavailability, and intern
 
   for (const failure of ["actor", "authorization", "registration"] as const) {
     const calls = counters();
-    const response = await createRoutes(calls, { internalFailure: failure }).handle(
-      request(operatorAuditExportPath(operatorAuditInstance.processInstanceId)),
-    );
+    const recorded = recordingInternalFailures();
+    const path = operatorAuditExportPath(operatorAuditInstance.processInstanceId);
+    const response = await createRoutes(calls, {
+      internalFailure: failure,
+      reportInternalFailure: recorded.reporter,
+    }).handle(request(path));
     assert.equal(response?.status, 500);
     await assertError(
       response,
@@ -83,6 +91,11 @@ test("distinguishes unknown confirmed identity, audit unavailability, and intern
       "The operator audit request could not be completed.",
     );
     assert.deepEqual(calls.exports, []);
+    assert.equal(recorded.reports.length, 1, failure);
+    assert.equal(recorded.reports[0]!.route, "OperatorAuditExportHttpRoutes");
+    assert.equal(recorded.reports[0]!.method, "GET");
+    assert.equal(recorded.reports[0]!.path, path);
+    assert.equal(recorded.reports[0]!.error, internalFailures[failure]);
   }
 });
 
@@ -144,6 +157,12 @@ test("refuses private host-field bytes returned across the HTTP service boundary
   }
 });
 
+const internalFailures = {
+  actor: new Error("actor failure"),
+  authorization: new Error("authorization failure"),
+  registration: new Error("registration failure"),
+} as const;
+
 function createRoutes(
   calls: ReturnType<typeof counters>,
   options: Readonly<{
@@ -152,12 +171,13 @@ function createRoutes(
     exportFailure?: Error;
     exportBytes?: Uint8Array;
     internalFailure?: "actor" | "authorization" | "registration";
+    reportInternalFailure?: InternalFailureReporter;
   }> = {},
 ) {
   return new OperatorAuditExportHttpRoutes({
     actors: {
       resolveActor: () => {
-        if (options.internalFailure === "actor") throw new Error("actor failure");
+        if (options.internalFailure === "actor") throw internalFailures.actor;
         return { id: "operator-1", groups: ["operators"] };
       },
     },
@@ -165,7 +185,7 @@ function createRoutes(
       decide: (_actor, surface) => {
         calls.surfaces.push(surface);
         if (options.internalFailure === "authorization") {
-          throw new Error("authorization failure");
+          throw internalFailures.authorization;
         }
         return options.permitted === false
           ? OperationsAuthorizationDecision.Forbidden
@@ -176,7 +196,7 @@ function createRoutes(
       getConfirmed: async (processInstanceId) => {
         calls.registrations.push(processInstanceId);
         if (options.internalFailure === "registration") {
-          throw new Error("registration failure");
+          throw internalFailures.registration;
         }
         return options.registration === undefined
           ? operatorAuditInstance
@@ -191,6 +211,7 @@ function createRoutes(
         return serializeOperatorAuditExport(operatorAuditExport(), instance);
       },
     },
+    reportInternalFailure: options.reportInternalFailure ?? unexpectedInternalFailure,
   });
 }
 

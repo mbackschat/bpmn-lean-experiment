@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import { test } from "node:test";
 
 import {
@@ -7,6 +8,7 @@ import {
   createSharedPlatformServer,
   PlatformStorageMode,
 } from "@bpmn-lean/platform-server";
+import type { InternalFailureReport } from "@bpmn-lean/platform-contracts";
 import type { BpmnEngineGatewayRuntime } from "@bpmn-lean/platform-engine-gateway";
 import type {
   PostgresqlQuery,
@@ -39,6 +41,43 @@ test("shared startup performs one bounded readiness query and closes engine befo
 
   await Promise.all([runtime.close(), runtime.close()]);
   assert.deepEqual(events, ["engine-ready", "engine-close", "database-close"]);
+});
+
+test("shared composition reports an unexpected request failure through its reporter while answering the generic 500", async () => {
+  const reports: InternalFailureReport[] = [];
+  const port = await allocatePort();
+  const origin = `http://127.0.0.1:${port}`;
+  // The fake database answers every query with the readiness row, which no definition read can decode.
+  const runtime = await createPlatformServer(
+    { ...sharedConfig(), port, publicOrigin: origin },
+    {
+      createSharedServer: (config) => createSharedPlatformServer(config, {
+        createPostgresqlRuntime: () => fakeDatabase([], []),
+        createEngineRuntime: () => fakeEngine([]),
+        reportInternalFailure: (report) => reports.push(report),
+      }),
+    },
+  );
+  try {
+    assert.equal(await runtime.listen(), origin);
+    const response = await fetch(`${origin}/api/v1/definitions`, {
+      signal: AbortSignal.timeout(2_000),
+    });
+
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), {
+      error: {
+        code: "internalFailure",
+        message: "The definition request could not be completed.",
+      },
+    });
+    assert.equal(reports.length, 1);
+    assert.equal(reports[0]!.route, "DefinitionHttpRoutes");
+    assert.equal(reports[0]!.method, "GET");
+    assert.equal(reports[0]!.path, "/api/v1/definitions");
+  } finally {
+    await runtime.close();
+  }
 });
 
 test("shared composition contains no local owner, startup scan, or request-time delivery", async () => {
@@ -149,4 +188,23 @@ function sharedConfig() {
     maxWorkProcesses: 100,
     maxWorkTasks: 1_000,
   } as const;
+}
+
+async function allocatePort(): Promise<number> {
+  const server = createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      server.off("error", reject);
+      resolve();
+    });
+  });
+  const address = server.address();
+  if (address === null || typeof address === "string") {
+    throw new Error("ephemeral listener did not expose a TCP address");
+  }
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => error === undefined ? resolve() : reject(error));
+  });
+  return address.port;
 }

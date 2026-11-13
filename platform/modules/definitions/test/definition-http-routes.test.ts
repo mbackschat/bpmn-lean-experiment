@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 import { ArtifactPutStatus } from "@bpmn-lean/platform-artifact-store";
 import { PublicApiErrorCode } from "@bpmn-lean/platform-contracts";
+import type { InternalFailureReporter } from "@bpmn-lean/platform-contracts";
 import {
   createBpmnEngineGatewayRuntime,
   DefinitionCompilationStatus,
@@ -30,8 +31,13 @@ import type {
   NewDefinitionMetadata,
 } from "@bpmn-lean/platform-definitions";
 import { registeringEngine } from "./support/engine-registration.ts";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 
 const encoder = new TextEncoder();
+const compilerFailure = new Error("private compiler detail");
 
 const CompilerBehavior = {
   Accept: "accept",
@@ -371,14 +377,15 @@ test("returns 405 for wrong methods on recognized paths and null for unknown pat
 });
 
 test("maps unexpected service and artifact-integrity failures to a generic 500", async () => {
+  const recorded = recordingInternalFailures();
   const failing = createFixture(CompilerBehavior.Throw);
-  const failingRoutes = routesFor(failing, 128);
+  const failingRoutes = routesFor(failing, 128, recorded.reporter);
   const failedDeploy = await failingRoutes.handle(deploymentRequest(encoder.encode("<xml/>")));
   assert.equal(failedDeploy?.status, 500);
   assert.doesNotMatch(await failedDeploy!.text(), /private compiler detail/u);
 
   const missing = createFixture();
-  const missingRoutes = routesFor(missing, 128);
+  const missingRoutes = routesFor(missing, 128, recorded.reporter);
   await missingRoutes.handle(deploymentRequest(encoder.encode("<xml/>")));
   missing.artifacts.clear();
   const failedRead = await missingRoutes.handle(new Request(
@@ -386,6 +393,27 @@ test("maps unexpected service and artifact-integrity failures to a generic 500",
   ));
   assert.equal(failedRead?.status, 500);
   assert.doesNotMatch(await failedRead!.text(), /missing artifact|sha256-/u);
+  assert.deepEqual(recorded.reports.map((report) => report.method), ["POST", "GET"]);
+});
+
+test("reports the caught error, method and pathname without the query before answering the 500", async () => {
+  const recorded = recordingInternalFailures();
+  const routes = routesFor(createFixture(CompilerBehavior.Throw), 128, recorded.reporter);
+
+  const response = await routes.handle(deploymentRequest(encoder.encode("<xml/>")));
+
+  assert.equal(response?.status, 500);
+  assert.deepEqual(await responseJson(response), {
+    error: {
+      code: PublicApiErrorCode.InternalFailure,
+      message: "The definition request could not be completed.",
+    },
+  });
+  assert.equal(recorded.reports.length, 1);
+  assert.equal(recorded.reports[0]!.error, compilerFailure);
+  assert.equal(recorded.reports[0]!.method, "POST");
+  assert.equal(recorded.reports[0]!.path, "/api/v1/definitions");
+  assert.equal(recorded.reports[0]!.route, "DefinitionHttpRoutes");
 });
 
 test("requires a positive safe source-byte ceiling", () => {
@@ -395,7 +423,7 @@ test("requires a positive safe source-byte ceiling", () => {
       () => new DefinitionHttpRoutes(
         fixture.service,
         fixture.startService,
-        { maxSourceBytes },
+        { maxSourceBytes, reportInternalFailure: unexpectedInternalFailure },
       ),
       /positive safe integer/u,
     );
@@ -442,11 +470,12 @@ function routesFor(
     startService: DefinitionStartService;
   }>,
   maxSourceBytes: number,
+  reportInternalFailure: InternalFailureReporter = unexpectedInternalFailure,
 ): DefinitionHttpRoutes {
   return new DefinitionHttpRoutes(
     fixture.service,
     fixture.startService,
-    { maxSourceBytes },
+    { maxSourceBytes, reportInternalFailure },
   );
 }
 
@@ -471,7 +500,7 @@ function createFixture(
         bytes: Uint8Array.from(request.bytes),
       });
       if (behavior === CompilerBehavior.Throw) {
-        throw new Error("private compiler detail");
+        throw compilerFailure;
       }
       if (behavior === CompilerBehavior.Reject) {
         const runtime = createBpmnEngineGatewayRuntime({

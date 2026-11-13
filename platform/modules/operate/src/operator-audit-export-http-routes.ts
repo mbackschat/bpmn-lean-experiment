@@ -5,9 +5,11 @@ import {
   OperatorAuditUnavailableMessage,
   operatorAuditExportFilename,
   PublicApiErrorCode,
+  reportInternalFailure,
   requireOperatorAuditExportRequestBodyLength,
 } from "@bpmn-lean/platform-contracts";
 import type {
+  InternalFailureReporter,
   PublicApiErrorCatalogCode,
   PublicApiErrorResponse,
   PublicProcessInstanceIdentity,
@@ -36,6 +38,7 @@ export type OperatorAuditExportHttpRoutesOptions = Readonly<{
   authorization: Pick<OperationsAuthorizationPolicy, "decide">;
   registrations: ConfirmedInstanceLookup;
   exports: OperatorAuditExporter;
+  reportInternalFailure: InternalFailureReporter;
 }>;
 
 /** Serves one Operations-authorized canonical audit attachment for a confirmed Process instance. */
@@ -62,8 +65,8 @@ export class OperatorAuditExportHttpRoutes {
       ) {
         return forbidden();
       }
-    } catch {
-      return internalFailure();
+    } catch (error: unknown) {
+      return this.#internalFailure(request, error);
     }
 
     try {
@@ -86,8 +89,8 @@ export class OperatorAuditExportHttpRoutes {
       if (instance.processInstanceId !== processInstanceId) {
         throw new TypeError("confirmed operator audit identity does not match its key");
       }
-    } catch {
-      return internalFailure();
+    } catch (error: unknown) {
+      return this.#internalFailure(request, error);
     }
 
     try {
@@ -104,6 +107,16 @@ export class OperatorAuditExportHttpRoutes {
     } catch {
       return operatorAuditUnavailable();
     }
+  }
+
+  #internalFailure(request: Request, error: unknown): Response {
+    reportInternalFailure(
+      this.options.reportInternalFailure,
+      "OperatorAuditExportHttpRoutes",
+      request,
+      error,
+    );
+    return internalFailure();
   }
 }
 

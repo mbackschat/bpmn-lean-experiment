@@ -12,11 +12,16 @@ import {
 import {
   OperationsAuthorizationDecision,
 } from "@bpmn-lean/platform-identity-policy";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 
 test("uses configured public origin instead of an untrusted Host header", async () => {
   let routedUrl = "";
   const server = createPlatformHttpServer({
     publicOrigin: "https://public.example:8443",
+    reportInternalFailure: unexpectedInternalFailure,
     routes: [async (request) => {
       routedUrl = request.url;
       return new Response("ok");
@@ -41,6 +46,7 @@ test("preserves request method, headers, and streamed body", async () => {
   const body = "<definition>streamed</definition>";
   const server = createPlatformHttpServer({
     publicOrigin: "http://public.example",
+    reportInternalFailure: unexpectedInternalFailure,
     routes: [async (request) => {
       assert.equal(request.method, "POST");
       assert.equal(request.headers.get("content-type"), "application/xml");
@@ -87,9 +93,11 @@ test("preserves transfer framing so a bodyless operator-audit GET rejects before
         return new Uint8Array();
       },
     },
+    reportInternalFailure: unexpectedInternalFailure,
   });
   const server = createPlatformHttpServer({
     publicOrigin: "http://public.example",
+    reportInternalFailure: unexpectedInternalFailure,
     routes: [(request) => operatorAudit.handle(request)],
   });
 
@@ -109,6 +117,7 @@ test("dispatches in declared order and stops after the first response", async ()
   const visits: string[] = [];
   const server = createPlatformHttpServer({
     publicOrigin: "http://public.example",
+    reportInternalFailure: unexpectedInternalFailure,
     routes: [
       async () => {
         visits.push("first");
@@ -132,6 +141,7 @@ test("dispatches in declared order and stops after the first response", async ()
 test("returns closed generic errors for unknown routes and route exceptions", async () => {
   const notFoundServer = createPlatformHttpServer({
     publicOrigin: "http://public.example",
+    reportInternalFailure: unexpectedInternalFailure,
     routes: [async () => null],
   });
   await withListeningServer(notFoundServer, async (port) => {
@@ -146,14 +156,17 @@ test("returns closed generic errors for unknown routes and route exceptions", as
     });
   });
 
+  const routeFailure = new Error("private database credentials");
+  const recorded = recordingInternalFailures();
   const failingServer = createPlatformHttpServer({
     publicOrigin: "http://public.example",
     routes: [async () => {
-      throw new Error("private database credentials");
+      throw routeFailure;
     }],
+    reportInternalFailure: recorded.reporter,
   });
   await withListeningServer(failingServer, async (port) => {
-    const response = await nodeRequest(port, { path: "/failing" });
+    const response = await nodeRequest(port, { path: "/failing?secret=1" });
     assert.equal(response.status, 500);
     assert.equal(
       response.headers["content-type"],
@@ -164,11 +177,41 @@ test("returns closed generic errors for unknown routes and route exceptions", as
     });
     assert.doesNotMatch(response.body, /credentials/u);
   });
+  assert.deepEqual(recorded.reports, [{
+    route: "PlatformHttpServer",
+    method: "GET",
+    path: "/failing",
+    error: routeFailure,
+  }]);
+});
+
+test("reports a request target that cannot become a Fetch request, without its query", async () => {
+  const recorded = recordingInternalFailures();
+  const server = createPlatformHttpServer({
+    publicOrigin: "http://public.example",
+    routes: [async () => new Response("unreachable")],
+    reportInternalFailure: recorded.reporter,
+  });
+
+  await withListeningServer(server, async (port) => {
+    const response = await nodeRequest(port, {
+      method: "PUT",
+      path: "//not-origin-form/target?secret=1",
+    });
+    assert.equal(response.status, 500);
+  });
+
+  assert.equal(recorded.reports.length, 1);
+  assert.equal(recorded.reports[0]!.route, "PlatformHttpServer");
+  assert.equal(recorded.reports[0]!.method, "PUT");
+  assert.equal(recorded.reports[0]!.path, "//not-origin-form/target");
+  assert.ok(recorded.reports[0]!.error instanceof TypeError);
 });
 
 test("copies response status and headers while streaming its body", async () => {
   const server = createPlatformHttpServer({
     publicOrigin: "http://public.example",
+    reportInternalFailure: unexpectedInternalFailure,
     routes: [async () => new Response("streamed response", {
       status: 206,
       headers: [
@@ -196,6 +239,7 @@ test("copies response status and headers while streaming its body", async () => 
 test("suppresses a routed response body for HEAD", async () => {
   const server = createPlatformHttpServer({
     publicOrigin: "http://public.example",
+    reportInternalFailure: unexpectedInternalFailure,
     routes: [async () => new Response("must not be written", {
       status: 200,
       headers: { "x-head": "preserved" },
@@ -224,7 +268,7 @@ test("validates the configured public origin once and snapshots route order", as
   ];
   for (const publicOrigin of invalidOrigins) {
     assert.throws(
-      () => createPlatformHttpServer({ publicOrigin, routes: [] }),
+      () => createPlatformHttpServer({ publicOrigin, routes: [], reportInternalFailure: unexpectedInternalFailure }),
       /publicOrigin/u,
     );
   }
@@ -236,6 +280,7 @@ test("validates the configured public origin once and snapshots route order", as
   }];
   const server = createPlatformHttpServer({
     publicOrigin: "http://public.example",
+    reportInternalFailure: unexpectedInternalFailure,
     routes,
   });
   routes.unshift(async () => {

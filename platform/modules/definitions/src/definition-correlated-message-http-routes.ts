@@ -5,8 +5,10 @@ import {
   matchDefinitionCorrelatedMessagesPath,
   parseWireJson,
   PublicApiErrorCode,
+  reportInternalFailure,
 } from "@bpmn-lean/platform-contracts";
 import type {
+  InternalFailureReporter,
   PublicApiErrorResponse,
   PutDefinitionCorrelatedMessagePublicationRequest,
 } from "@bpmn-lean/platform-contracts";
@@ -35,9 +37,14 @@ const publicationRequestBodyLimit = 4_096;
 /** Fetch-compatible boundary for definition-scoped target-free Message publication. */
 export class DefinitionCorrelatedMessageHttpRoutes {
   readonly #operations: DefinitionCorrelatedMessageOperations;
+  readonly #reportInternalFailure: InternalFailureReporter;
 
-  constructor(operations: DefinitionCorrelatedMessageOperations) {
+  constructor(
+    operations: DefinitionCorrelatedMessageOperations,
+    reportInternalFailure: InternalFailureReporter,
+  ) {
     this.#operations = operations;
+    this.#reportInternalFailure = reportInternalFailure;
   }
 
   async handle(request: Request): Promise<Response | null> {
@@ -67,7 +74,7 @@ export class DefinitionCorrelatedMessageHttpRoutes {
           ? notFound("The definition version was not found.")
           : jsonResponse(200, result);
       } catch (error: unknown) {
-        return correlatedMessageErrorResponse(error);
+        return this.#errorResponse(request, error);
       }
     }
     if (publicationMatch === null) return null;
@@ -101,8 +108,25 @@ export class DefinitionCorrelatedMessageHttpRoutes {
           return assertNever(result);
       }
     } catch (error: unknown) {
-      return correlatedMessageErrorResponse(error);
+      return this.#errorResponse(request, error);
     }
+  }
+
+  #errorResponse(request: Request, error: unknown): Response {
+    if (error instanceof HttpRequestFailure) {
+      return errorResponse(error.status, error.code, error.message);
+    }
+    // The engine's refusal code stays server-side: the public code names the condition, not the engine's vocabulary.
+    if (error instanceof DefinitionCorrelatedMessageUnavailableError) {
+      return correlationUnavailable();
+    }
+    reportInternalFailure(
+      this.#reportInternalFailure,
+      "DefinitionCorrelatedMessageHttpRoutes",
+      request,
+      error,
+    );
+    return internalFailure();
   }
 }
 
@@ -136,17 +160,6 @@ async function readPublicationRequest(
     }
     throw error;
   }
-}
-
-function correlatedMessageErrorResponse(error: unknown): Response {
-  if (error instanceof HttpRequestFailure) {
-    return errorResponse(error.status, error.code, error.message);
-  }
-  // The engine's refusal code stays server-side: the public code names the condition, not the engine's vocabulary.
-  if (error instanceof DefinitionCorrelatedMessageUnavailableError) {
-    return correlationUnavailable();
-  }
-  return internalFailure();
 }
 
 function correlationUnavailable(): Response {

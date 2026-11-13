@@ -4,16 +4,16 @@ import {
   MessageStartPublicationStatus,
   parseWireJson,
   PublicApiErrorCode,
+  reportInternalFailure,
 } from "@bpmn-lean/platform-contracts";
 import type {
+  InternalFailureReporter,
   MessageStartPublication,
   PutMessageStartPublicationRequest,
 } from "@bpmn-lean/platform-contracts";
 
 import {
   MessageStartPublicationConflictError,
-  MessageStartPublicationDeliveryUnavailableError,
-  MessageStartPublicationIntegrityError,
   MessageStartPublicationNotFoundError,
   MessageStartPublicationValidationError,
 } from "./message-start-publication-contracts.js";
@@ -42,9 +42,14 @@ type PublicationOperations = Pick<
 /** Global Fetch-compatible boundary for one immutable Message Start publication. */
 export class MessageStartPublicationHttpRoutes {
   readonly #publications: PublicationOperations;
+  readonly #reportInternalFailure: InternalFailureReporter;
 
-  constructor(publications: PublicationOperations) {
+  constructor(
+    publications: PublicationOperations,
+    reportInternalFailure: InternalFailureReporter,
+  ) {
     this.#publications = publications;
+    this.#reportInternalFailure = reportInternalFailure;
   }
 
   async handle(request: Request): Promise<Response | null> {
@@ -75,8 +80,38 @@ export class MessageStartPublicationHttpRoutes {
           return methodNotAllowed("GET, PUT");
       }
     } catch (error: unknown) {
-      return publicationErrorResponse(error);
+      return this.#errorResponse(request, error);
     }
+  }
+
+  #errorResponse(request: Request, error: unknown): Response {
+    if (error instanceof HttpRequestFailure) {
+      return errorResponse(error.status, error.code, error.message);
+    }
+    if (error instanceof MessageStartPublicationConflictError) {
+      return errorResponse(
+        409,
+        PublicApiErrorCode.Conflict,
+        "The publication identity conflicts with an existing immutable request.",
+      );
+    }
+    if (error instanceof MessageStartPublicationNotFoundError) {
+      return notFound("The exact definition version was not found.");
+    }
+    if (error instanceof MessageStartPublicationValidationError) {
+      return errorResponse(
+        422,
+        PublicApiErrorCode.InvalidRequest,
+        "The exact Message Start target is not admitted.",
+      );
+    }
+    reportInternalFailure(
+      this.#reportInternalFailure,
+      "MessageStartPublicationHttpRoutes",
+      request,
+      error,
+    );
+    return internalFailure();
   }
 
   async #put(
@@ -154,36 +189,6 @@ function putStatus(
     default:
       return assertNever(publication);
   }
-}
-
-function publicationErrorResponse(error: unknown): Response {
-  if (error instanceof HttpRequestFailure) {
-    return errorResponse(error.status, error.code, error.message);
-  }
-  if (error instanceof MessageStartPublicationConflictError) {
-    return errorResponse(
-      409,
-      PublicApiErrorCode.Conflict,
-      "The publication identity conflicts with an existing immutable request.",
-    );
-  }
-  if (error instanceof MessageStartPublicationNotFoundError) {
-    return notFound("The exact definition version was not found.");
-  }
-  if (error instanceof MessageStartPublicationValidationError) {
-    return errorResponse(
-      422,
-      PublicApiErrorCode.InvalidRequest,
-      "The exact Message Start target is not admitted.",
-    );
-  }
-  if (
-    error instanceof MessageStartPublicationIntegrityError ||
-    error instanceof MessageStartPublicationDeliveryUnavailableError
-  ) {
-    return internalFailure();
-  }
-  return internalFailure();
 }
 
 function invalidRequest(message: string): HttpRequestFailure {

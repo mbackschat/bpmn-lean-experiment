@@ -15,6 +15,7 @@ import {
   createPlatformHttpServer,
   createStaticAssetsRoute,
 } from "@bpmn-lean/platform-server";
+import { unexpectedInternalFailure } from "./support/internal-failure-reporters.ts";
 
 test("serves SPA assets with bounded MIME and cache policy", async () => {
   const root = await createAssetTree();
@@ -91,6 +92,7 @@ test("leaves API misses to the ordered API JSON 404", async () => {
   const server = createPlatformHttpServer({
     publicOrigin: "http://127.0.0.1:8388",
     routes: [createStaticAssetsRoute(root)],
+    reportInternalFailure: unexpectedInternalFailure,
   });
   const port = await listen(server);
   try {

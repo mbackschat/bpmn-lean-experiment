@@ -7,6 +7,7 @@ import {
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
+  InternalFailureReporter,
   DefinitionCorrelatedMessageCapabilities,
   DefinitionCorrelatedMessagePublication,
   PutDefinitionCorrelatedMessagePublicationRequest,
@@ -22,6 +23,10 @@ import type {
   DefinitionCorrelatedMessagePublishResult,
   DefinitionReference,
 } from "@bpmn-lean/platform-definitions";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 
 const definition = {
   processId: "Correlated/Settlement",
@@ -163,12 +168,45 @@ test("maps definition/capability absence, command conflict, and private failures
     new DefinitionCorrelatedMessageIntegrityError("private Workflow detail"),
     new Error("private Temporal detail"),
   ]) {
-    const response = await createFixture({ publishError: error }).routes.handle(
-      validPutRequest(),
-    );
+    const recorded = recordingInternalFailures();
+    const response = await createFixture({
+      publishError: error,
+      reportInternalFailure: recorded.reporter,
+    }).routes.handle(validPutRequest());
     const body = await response!.text();
     assert.equal(response?.status, 500);
     assert.doesNotMatch(body, /Workflow|Temporal|private/u);
+    assert.equal(recorded.reports.length, 1);
+    assert.equal(recorded.reports[0]!.error, error);
+  }
+});
+
+test("reports the caught error, route, method and pathname of a failed publication and a failed discovery", async () => {
+  const failure = new Error("private Temporal detail");
+  for (const { request, method, url } of [
+    { request: validPutRequest(), method: "PUT", url: publicationUrl() },
+    { request: new Request(collectionUrl()), method: "GET", url: collectionUrl() },
+  ]) {
+    const recorded = recordingInternalFailures();
+    const response = await createFixture({
+      publishError: failure,
+      describeError: failure,
+      reportInternalFailure: recorded.reporter,
+    }).routes.handle(request);
+
+    assert.equal(response?.status, 500);
+    assert.deepEqual(await responseJson(response), {
+      error: {
+        code: PublicApiErrorCode.InternalFailure,
+        message: "The correlated Message request could not be completed.",
+      },
+    });
+    assert.deepEqual(recorded.reports, [{
+      route: "DefinitionCorrelatedMessageHttpRoutes",
+      method,
+      path: new URL(url).pathname,
+      error: failure,
+    }]);
   }
 });
 
@@ -179,11 +217,15 @@ test("returns definition absence for capability GET and sanitizes discovery fail
   assert.equal(missing?.status, 404);
   assert.equal(await responseCode(missing), PublicApiErrorCode.NotFound);
 
+  const drift = new DefinitionCorrelatedMessageIntegrityError("private source drift");
+  const recorded = recordingInternalFailures();
   const failed = await createFixture({
-    describeError: new DefinitionCorrelatedMessageIntegrityError("private source drift"),
+    describeError: drift,
+    reportInternalFailure: recorded.reporter,
   }).routes.handle(new Request(collectionUrl()));
   assert.equal(failed?.status, 500);
   assert.doesNotMatch(await failed!.text(), /private|drift/u);
+  assert.deepEqual(recorded.reports.map((report) => report.error), [drift]);
 });
 
 test("an engine that cannot correlate answers 503 correlationUnavailable without its private evidence", async () => {
@@ -237,6 +279,7 @@ test("rejects bodies, queries, malformed identities, and unsupported methods", a
 });
 
 type FixtureOptions = Readonly<{
+  reportInternalFailure?: InternalFailureReporter;
   describeResult?: DefinitionCorrelatedMessageCapabilities | null;
   describeError?: unknown;
   publishResult?: DefinitionCorrelatedMessagePublishResult;
@@ -262,7 +305,7 @@ function createFixture(options: FixtureOptions = {}) {
         publication,
       });
     },
-  });
+  }, options.reportInternalFailure ?? unexpectedInternalFailure);
   return { routes, describes, publishes };
 }
 

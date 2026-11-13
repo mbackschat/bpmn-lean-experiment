@@ -6,6 +6,7 @@ import {
   ProcessInstanceStartStatus,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
+import type { InternalFailureReporter } from "@bpmn-lean/platform-contracts";
 import {
   DefinitionCompilationStatus,
   DefinitionStartStatus as EngineDefinitionStartStatus,
@@ -31,6 +32,10 @@ import type {
   NewDefinitionMetadata,
 } from "@bpmn-lean/platform-definitions";
 import { registeringEngine } from "./support/engine-registration.ts";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 
 const bytes = new TextEncoder().encode("<exact-process/>");
 const storedDefinition = {
@@ -49,10 +54,13 @@ const storedDefinition = {
   sourceOverlay: null,
 } as const satisfies DefinitionMetadata;
 
+const prepareFailure = new Error("private prepare detail");
+
 const StartBehavior = {
   Started: "started",
   Rejected: "rejected",
   IntegrityFailure: "integrityFailure",
+  PrepareThrow: "prepareThrow",
   Throw: "throw",
 } as const;
 
@@ -253,7 +261,8 @@ test("rejects malformed references and leaves unknown paths unclaimed", async ()
 
 test("maps engine and start-integrity failures to the same generic 500", async () => {
   for (const behavior of [StartBehavior.Throw, StartBehavior.IntegrityFailure]) {
-    const fixture = createFixture(behavior);
+    const recorded = recordingInternalFailures();
+    const fixture = createFixture(behavior, [storedDefinition], recorded.reporter);
     const response = await fixture.routes.handle(startRequest());
     assert.equal(response?.status, 500, behavior);
     assert.doesNotMatch(
@@ -261,12 +270,35 @@ test("maps engine and start-integrity failures to the same generic 500", async (
       /private start detail|bounded opaque evidence|sha256/u,
       behavior,
     );
+    assert.equal(recorded.reports.length, 1, behavior);
   }
+});
+
+test("reports the caught start failure with the start route's route, method and pathname", async () => {
+  const recorded = recordingInternalFailures();
+  const fixture = createFixture(StartBehavior.PrepareThrow, [storedDefinition], recorded.reporter);
+
+  const response = await fixture.routes.handle(startRequest());
+
+  assert.equal(response?.status, 500);
+  assert.deepEqual(await responseJson(response), {
+    error: {
+      code: PublicApiErrorCode.InternalFailure,
+      message: "The definition request could not be completed.",
+    },
+  });
+  assert.deepEqual(recorded.reports, [{
+    route: "DefinitionHttpRoutes",
+    method: "POST",
+    path: "/api/v1/definitions/Process%2FOne/versions/1/start",
+    error: prepareFailure,
+  }]);
 });
 
 function createFixture(
   behavior: StartBehavior = StartBehavior.Started,
   definitions: ReadonlyArray<DefinitionMetadata> = [storedDefinition],
+  reportInternalFailure: InternalFailureReporter = unexpectedInternalFailure,
 ): Readonly<{
   repositoryGets: number;
   routes: DefinitionHttpRoutes;
@@ -305,6 +337,9 @@ function createFixture(
     prepareDefinitionVersion: async (request) => {
       startCalls += 1;
       initialVariableCalls.push(structuredClone(request.initialVariables));
+      if (behavior === StartBehavior.PrepareThrow) {
+        throw prepareFailure;
+      }
       const common = {
         source: { ...storedDefinition.source },
         definition: {
@@ -403,7 +438,7 @@ function createFixture(
   const routes = new DefinitionHttpRoutes(
     deployment,
     start,
-    { maxSourceBytes: 128 },
+    { maxSourceBytes: 128, reportInternalFailure },
   );
   return {
     get repositoryGets() {

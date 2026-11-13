@@ -4,10 +4,12 @@ import {
   matchFlowNodeMetricsPath,
   projectionFreshnessResponseHeaders,
   PublicApiErrorCode,
+  reportInternalFailure,
   requireFlowNodeMetricsRequestBodyLength,
 } from "@bpmn-lean/platform-contracts";
 import type {
   FlowNodeMetricsResult,
+  InternalFailureReporter,
   ProjectionRead,
   PublicApiErrorCatalogCode,
   PublicApiErrorResponse,
@@ -35,6 +37,7 @@ type FlowNodeMetricsHttpRoutesOptions = Readonly<{
       reference: Parameters<FlowNodeMetricsAggregationService["get"]>[0],
     ): Promise<FlowNodeMetricsResult | ProjectionRead<FlowNodeMetricsResult> | null>;
   }>;
+  reportInternalFailure: InternalFailureReporter;
 }>;
 
 /** Authorization-first bodyless GET owner for exact-version flow-node metrics. */
@@ -62,8 +65,8 @@ export class FlowNodeMetricsHttpRoutes {
       ) {
         return forbidden();
       }
-    } catch {
-      return internalFailure();
+    } catch (error: unknown) {
+      return this.#internalFailure(request, error);
     }
 
     try {
@@ -93,10 +96,20 @@ export class FlowNodeMetricsHttpRoutes {
         case FlowNodeMetricsResultKind.Unavailable:
           return metricsUnavailable();
       }
-      return internalFailure();
-    } catch {
-      return internalFailure();
+      throw new TypeError("the flow-node metrics aggregate returned an unsupported result kind");
+    } catch (error: unknown) {
+      return this.#internalFailure(request, error);
     }
+  }
+
+  #internalFailure(request: Request, error: unknown): Response {
+    reportInternalFailure(
+      this.options.reportInternalFailure,
+      "FlowNodeMetricsHttpRoutes",
+      request,
+      error,
+    );
+    return internalFailure();
   }
 }
 

@@ -9,13 +9,17 @@ import type {
   ProcessInstanceSearchRequest,
   PublicProcessInstanceIdentity,
 } from "@bpmn-lean/platform-contracts";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 
 test("serves the exact identity-only page for decoded filters", async () => {
   const search = new StubSearch(page(
     instance("instance-2", 2),
     instance("instance-1", 1),
   ));
-  const routes = new ProcessInstanceHttpRoutes(search);
+  const routes = new ProcessInstanceHttpRoutes(search, unexpectedInternalFailure);
 
   const response = await routes.handle(new Request(
     "http://platform.test/api/v1/process-instances?processId=Process_A&limit=2",
@@ -31,7 +35,7 @@ test("serves the exact identity-only page for decoded filters", async () => {
 
 test("passes an opaque cursor unchanged and defaults the omitted limit", async () => {
   const search = new StubSearch(page());
-  const routes = new ProcessInstanceHttpRoutes(search);
+  const routes = new ProcessInstanceHttpRoutes(search, unexpectedInternalFailure);
 
   assert.equal((await routes.handle(new Request(
     "http://platform.test/api/v1/process-instances?cursor=v1.MQ",
@@ -42,7 +46,7 @@ test("passes an opaque cursor unchanged and defaults the omitted limit", async (
 
 test("rejects duplicate query fields and a nonempty GET body before search", async () => {
   const search = new StubSearch(page());
-  const routes = new ProcessInstanceHttpRoutes(search);
+  const routes = new ProcessInstanceHttpRoutes(search, unexpectedInternalFailure);
 
   const duplicate = await routes.handle(new Request(
     "http://platform.test/api/v1/process-instances?processId=A&processId=B",
@@ -73,7 +77,7 @@ test("rejects duplicate query fields and a nonempty GET body before search", asy
 
 test("rejects malformed, unsafe, and nonzero Content-Length before search", async () => {
   const search = new StubSearch(page());
-  const routes = new ProcessInstanceHttpRoutes(search);
+  const routes = new ProcessInstanceHttpRoutes(search, unexpectedInternalFailure);
 
   for (const value of ["malformed", "9007199254740992", "1"]) {
     const response = await routes.handle(new Request(
@@ -93,7 +97,7 @@ test("rejects malformed, unsafe, and nonzero Content-Length before search", asyn
 
 test("returns the canonical method error for the recognized route", async () => {
   const search = new StubSearch(page());
-  const routes = new ProcessInstanceHttpRoutes(search);
+  const routes = new ProcessInstanceHttpRoutes(search, unexpectedInternalFailure);
 
   const response = await routes.handle(new Request(
     "http://platform.test/api/v1/process-instances?limit=1",
@@ -113,7 +117,7 @@ test("returns the canonical method error for the recognized route", async () => 
 
 test("leaves unknown paths unclaimed", async () => {
   const search = new StubSearch(page());
-  const routes = new ProcessInstanceHttpRoutes(search);
+  const routes = new ProcessInstanceHttpRoutes(search, unexpectedInternalFailure);
 
   assert.equal(await routes.handle(new Request(
     "http://platform.test/api/v1/process-instances/missing",
@@ -123,11 +127,13 @@ test("leaves unknown paths unclaimed", async () => {
 
 test("maps unexpected search failures to the route-owned internal error", async () => {
   const search = new StubSearch(page());
-  search.failure = new Error("private storage detail");
-  const routes = new ProcessInstanceHttpRoutes(search);
+  const failure = new Error("private storage detail");
+  search.failure = failure;
+  const recorded = recordingInternalFailures();
+  const routes = new ProcessInstanceHttpRoutes(search, recorded.reporter);
 
   const response = await routes.handle(new Request(
-    "http://platform.test/api/v1/process-instances",
+    "http://platform.test/api/v1/process-instances?processId=Process_A&limit=1",
   ));
 
   assert.equal(response?.status, 500);
@@ -137,6 +143,12 @@ test("maps unexpected search failures to the route-owned internal error", async 
       message: "The Process-instance search request could not be completed.",
     },
   });
+  assert.deepEqual(recorded.reports, [{
+    route: "ProcessInstanceHttpRoutes",
+    method: "GET",
+    path: "/api/v1/process-instances",
+    error: failure,
+  }]);
 });
 
 class StubSearch {

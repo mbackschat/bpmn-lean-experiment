@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { DefinitionHttpRoutes, DefinitionDeploymentService, DefinitionStartService, ConfirmedProcessInstancePublicationService, InMemoryConfirmedProcessInstanceRepository } from "@bpmn-lean/platform-definitions";
 import type { DefinitionCompilationRequest } from "@bpmn-lean/platform-engine-gateway";
 import { registeringEngine } from "./support/engine-registration.ts";
+import { recordingInternalFailures, unexpectedInternalFailure } from "./support/internal-failure-reporters.ts";
 
 const endpoint = "http://test/api/v1/definitions?sourceId=source&semanticProfile=profile";
 const source = new TextEncoder().encode("<bpmn/>");
@@ -14,7 +15,7 @@ const artifacts = { put: refuseServiceEntry, get: refuseServiceEntry };
 const publication = new ConfirmedProcessInstancePublicationService({ repository: new InMemoryConfirmedProcessInstanceRepository(), operate: { recordConfirmedProcessInstance: refuseServiceEntry }, work: { recordConfirmedProcessInstance: refuseServiceEntry } });
 const deployment = new DefinitionDeploymentService({ ...registeringEngine(), compileDefinition: refuseServiceEntry }, artifacts, repository);
 const start = new DefinitionStartService({ prepareDefinitionVersion: refuseServiceEntry, startPreparedDefinitionVersion: refuseServiceEntry, startDefinitionVersion: refuseServiceEntry, describeDefinitionVersionStart: refuseServiceEntry }, artifacts, repository, () => { assert.fail("transport refusal must precede identity allocation"); }, publication);
-const routes = new DefinitionHttpRoutes(deployment, start, { maxSourceBytes: 64 });
+const routes = new DefinitionHttpRoutes(deployment, start, { maxSourceBytes: 64, reportInternalFailure: unexpectedInternalFailure });
 
 function form(): FormData {
   const result = new FormData();
@@ -132,10 +133,12 @@ for (const id of ["\uFFFD", "selected-🚀", "\uFEFFliteral", "é\u0000", "scala
       calls.push(request);
       throw new Error("compiler witness stops before storage");
     } }, artifacts, repository);
-    const captureRoutes = new DefinitionHttpRoutes(capture, start, { maxSourceBytes: 64 });
+    const recorded = recordingInternalFailures();
+    const captureRoutes = new DefinitionHttpRoutes(capture, start, { maxSourceBytes: 64, reportInternalFailure: recorded.reporter });
     const bytes = Uint8Array.from([0xff, 0xfe, 0, 60, 0, 62]);
     const response = await captureRoutes.handle(await literalIdRequest(new TextEncoder().encode(id), bytes));
     assert.equal(response?.status, 500);
+    assert.equal(recorded.reports.length, 1);
     assert.equal(calls.length, 1);
     assert.equal(calls[0]?.sourceOverlay?.id, id);
     assert.deepEqual(calls[0]?.bytes, bytes);
@@ -152,13 +155,15 @@ for (const filename of ["identity-does-not-come-from-filename.txt", ""]) {
       calls.push(request);
       throw new Error("compiler witness stops before storage");
     } }, artifacts, repository);
-    const captureRoutes = new DefinitionHttpRoutes(capture, start, { maxSourceBytes: 64 });
+    const recorded = recordingInternalFailures();
+    const captureRoutes = new DefinitionHttpRoutes(capture, start, { maxSourceBytes: 64, reportInternalFailure: recorded.reporter });
     const body = form();
     body.set("sourceOverlay", new Blob([sourceOverlay.bytes], { type: "application/json" }), "overlay.json");
     body.set("sourceOverlaySha256", sourceOverlay.sha256);
     body.set("sourceOverlayId", new Blob([id], { type: "text/plain" }), filename);
     const response = await captureRoutes.handle(new Request(endpoint, { method: "POST", body }));
     assert.equal(response?.status, 500);
+    assert.equal(recorded.reports.length, 1);
     assert.equal(calls.length, 1);
     assert.equal(calls[0]?.sourceOverlay?.id, id);
     assert.deepEqual(calls[0]?.sourceOverlay, sourceOverlay);

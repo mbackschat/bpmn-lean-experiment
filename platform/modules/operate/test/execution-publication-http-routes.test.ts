@@ -10,13 +10,20 @@ import {
   executionPublicationExportFormat,
   serializeExecutionPublicationExport,
 } from "@bpmn-lean/platform-contracts";
-import type { ExecutionPublicationExport } from "@bpmn-lean/platform-contracts";
+import type {
+  ExecutionPublicationExport,
+  InternalFailureReporter,
+} from "@bpmn-lean/platform-contracts";
 import {
   OperationsAuthorizationDecision,
   OperationsAuthorizationSurface,
 } from "@bpmn-lean/platform-identity-policy";
 
 import { firstPage } from "./execution-publication-fixture.ts";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 import { PostgresqlProjectionReadKind } from "@bpmn-lean/platform-operate";
 
 test("serves the exact projected page and canonical export bytes", async () => {
@@ -79,6 +86,7 @@ test("shared projected reads add freshness only to successful page and export re
         };
       },
     },
+    reportInternalFailure: unexpectedInternalFailure,
   });
   for (const path of [
     "/api/v1/process-instances/Instance_1/execution?afterRevision=0&limit=1",
@@ -98,6 +106,7 @@ test("shared projected reads add freshness only to successful page and export re
       page: async () => ({ kind: PostgresqlProjectionReadKind.Unavailable }),
       export: async () => ({ kind: PostgresqlProjectionReadKind.NotFound }),
     },
+    reportInternalFailure: unexpectedInternalFailure,
   });
   const unavailableResponse = await unavailable.handle(request(
     "/api/v1/process-instances/Instance_1/execution?afterRevision=0",
@@ -111,6 +120,53 @@ test("shared projected reads add freshness only to successful page and export re
     assert.equal(response?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), null);
     assert.equal(response?.headers.get("Bpmn-Projection-Max-Age-Ms"), null);
   }
+});
+
+test("reports the caught error, route, method and pathname without the query for each unexpected failure", async () => {
+  const failure = new Error("private store failure");
+  const page = "/api/v1/process-instances/Instance_1/execution";
+  const cases = [
+    { path: `${page}?afterRevision=0&limit=1`, expected: page, options: { reconciliationFailure: failure } },
+    { path: `${page}/export`, expected: `${page}/export`, options: { reconciliationFailure: failure } },
+    { path: `${page}?afterRevision=0`, expected: page, options: { actorFailure: failure } },
+  ] as const;
+
+  for (const { path, expected, options } of cases) {
+    const recorded = recordingInternalFailures();
+    const routes = createRoutes({
+      calls: counters(),
+      reportInternalFailure: recorded.reporter,
+      ...options,
+    });
+
+    const response = await routes.handle(request(path));
+
+    assert.equal(response?.status, 500);
+    await assertError(
+      response,
+      "internalFailure",
+      "The execution publication request could not be completed.",
+    );
+    assert.deepEqual(recorded.reports, [{
+      route: "ExecutionPublicationHttpRoutes",
+      method: "GET",
+      path: expected,
+      error: failure,
+    }]);
+  }
+});
+
+test("answers a page range refusal as an invalid request without reporting an internal failure", async () => {
+  const routes = createRoutes({
+    calls: counters(),
+    reconciliationFailure: new RangeError("afterRevision beyond head"),
+  });
+
+  const response = await routes.handle(request(
+    "/api/v1/process-instances/Instance_1/execution?afterRevision=9",
+  ));
+
+  assert.equal(response?.status, 400);
 });
 
 test("authorizes before reconciliation or any projected repository read", async () => {
@@ -209,10 +265,16 @@ function createRoutes(options: Readonly<{
     ExecutionPublicationReconciliationKind,
     typeof ExecutionPublicationReconciliationKind.Available
   >;
+  reconciliationFailure?: Error;
+  actorFailure?: Error;
+  reportInternalFailure?: InternalFailureReporter;
 }>) {
   return new ExecutionPublicationHttpRoutes({
     actors: {
-      resolveActor: () => ({ id: "operator-1", groups: ["operators"] }),
+      resolveActor: () => {
+        if (options.actorFailure !== undefined) throw options.actorFailure;
+        return { id: "operator-1", groups: ["operators"] };
+      },
     },
     authorization: {
       decide: (_actor, surface) => {
@@ -225,6 +287,7 @@ function createRoutes(options: Readonly<{
     reconciliation: {
       reconcile: async (processInstanceId) => {
         options.calls.reconciliations.push(processInstanceId);
+        if (options.reconciliationFailure !== undefined) throw options.reconciliationFailure;
         return options.reconciliationKind === undefined
           ? {
               kind: ExecutionPublicationReconciliationKind.Available,
@@ -243,6 +306,7 @@ function createRoutes(options: Readonly<{
         return publicationExport();
       },
     },
+    reportInternalFailure: options.reportInternalFailure ?? unexpectedInternalFailure,
   });
 }
 

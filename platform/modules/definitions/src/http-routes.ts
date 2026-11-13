@@ -2,12 +2,14 @@ import {
   DefinitionDeployStatus,
   ProcessInstanceStartStatus,
   PublicApiErrorCode,
+  reportInternalFailure,
 } from "@bpmn-lean/platform-contracts";
 import type {
   AdmissionDiagnostic,
   DefinitionDeployResult,
   DefinitionListResponse,
   DefinitionVersionListResponse,
+  InternalFailureReporter,
   ProcessInstanceStartResult,
   ResolvedBpmnDiagramPresentation,
 } from "@bpmn-lean/platform-contracts";
@@ -80,6 +82,7 @@ type DefinitionRoute =
 
 export type DefinitionHttpRoutesOptions = Readonly<{
   maxSourceBytes: number;
+  reportInternalFailure: InternalFailureReporter;
 }>;
 
 export interface DefinitionPresentationResolver {
@@ -95,6 +98,7 @@ export class DefinitionHttpRoutes {
   readonly #startService: DefinitionStartService;
   readonly #presentationService: DefinitionPresentationResolver | undefined;
   readonly #maxSourceBytes: number;
+  readonly #reportInternalFailure: InternalFailureReporter;
 
   constructor(
     deploymentService: DefinitionDeploymentService,
@@ -112,6 +116,7 @@ export class DefinitionHttpRoutes {
     this.#startService = startService;
     this.#presentationService = presentationService;
     this.#maxSourceBytes = options.maxSourceBytes;
+    this.#reportInternalFailure = options.reportInternalFailure;
   }
 
   async handle(request: Request): Promise<Response | null> {
@@ -126,6 +131,12 @@ export class DefinitionHttpRoutes {
       if (error instanceof HttpRequestFailure) {
         return errorResponse(error.status, error.code, error.message);
       }
+      reportInternalFailure(
+        this.#reportInternalFailure,
+        "DefinitionHttpRoutes",
+        request,
+        error,
+      );
       return errorResponse(
         500,
         PublicApiErrorCode.InternalFailure,

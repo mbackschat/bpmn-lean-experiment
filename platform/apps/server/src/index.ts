@@ -33,6 +33,9 @@ export type {
   PlatformServerRuntime,
 } from "./runtime.js";
 export {
+  createStderrInternalFailureReporter,
+} from "./internal-failure-stderr-reporter.js";
+export {
   createStaticAssetsRoute,
 } from "./static-assets.js";
 export {

@@ -11,12 +11,17 @@ import type {
 import type {
   IncidentActionRequest,
   IncidentAuditPage,
+  InternalFailureReporter,
   NormalizedIncidentAuditRequest,
   PublicIncidentSnapshot,
 } from "@bpmn-lean/platform-contracts";
 import {
   OperationsAuthorizationDecision,
 } from "@bpmn-lean/platform-identity-policy";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 
 const source = {
   kind: "bpmnSource",
@@ -200,7 +205,12 @@ test("denies every surface before a known foreign action or any protected access
 
 test("suppresses list and audit access when pending audit reconciliation fails", async () => {
   const calls = counters();
-  const routes = createRoutes({ calls, outboxFailure: new Error("sink unavailable") });
+  const recorded = recordingInternalFailures();
+  const routes = createRoutes({
+    calls,
+    outboxFailure: new Error("sink unavailable"),
+    reportInternalFailure: recorded.reporter,
+  });
 
   for (const path of ["/api/v1/incidents", "/api/v1/incident-audit"]) {
     const response = await routes.handle(request(path));
@@ -214,6 +224,40 @@ test("suppresses list and audit access when pending audit reconciliation fails",
   assert.equal(calls.outbox, 2);
   assert.equal(calls.aggregations, 0);
   assert.equal(calls.auditRequests.length, 0);
+  assert.equal(recorded.reports.length, 2);
+});
+
+test("reports the caught error, route, method and pathname without the query for each unexpected failure", async () => {
+  const failure = new Error("private store failure");
+  const cases = [
+    { path: "/api/v1/incidents", options: { aggregateFailure: failure } },
+    { path: "/api/v1/incident-audit?actorId=operator-1", options: { outboxFailure: failure } },
+    { path: "/api/v1/incidents", options: { actorFailure: failure } },
+  ] as const;
+
+  for (const { path, options } of cases) {
+    const recorded = recordingInternalFailures();
+    const routes = createRoutes({
+      calls: counters(),
+      reportInternalFailure: recorded.reporter,
+      ...options,
+    });
+
+    const response = await routes.handle(request(path));
+
+    assert.equal(response?.status, 500);
+    await assertError(
+      response,
+      "internalFailure",
+      "The incident request could not be completed.",
+    );
+    assert.deepEqual(recorded.reports, [{
+      route: "IncidentHttpRoutes",
+      method: "GET",
+      path: path.split("?", 1)[0],
+      error: failure,
+    }]);
+  }
 });
 
 test("maps incomplete fresh snapshots to 503 while complete absence conflicts without reservation", async () => {
@@ -370,7 +414,9 @@ function createRoutes(options: Readonly<{
   calls: Calls;
   permitted?: boolean;
   outboxFailure?: Error;
+  actorFailure?: Error;
   aggregateFailure?: Error;
+  reportInternalFailure?: InternalFailureReporter;
   freshness?: Readonly<{ observedAfterEpochMs: number; maxAgeMs: number }>;
   mutationResult?: IncidentMutationResult;
   submit?: (
@@ -382,7 +428,10 @@ function createRoutes(options: Readonly<{
   const snapshot: PublicIncidentSnapshot = { incidents: [incident] };
   return new IncidentHttpRoutes({
     actors: {
-      resolveActor: () => ({ id: "operator-1", groups: ["operators"] }),
+      resolveActor: () => {
+        if (options.actorFailure !== undefined) throw options.actorFailure;
+        return { id: "operator-1", groups: ["operators"] };
+      },
     },
     authorization: {
       decide: () => options.permitted === false
@@ -422,6 +471,7 @@ function createRoutes(options: Readonly<{
         if (options.outboxFailure !== undefined) throw options.outboxFailure;
       },
     },
+    reportInternalFailure: options.reportInternalFailure ?? unexpectedInternalFailure,
   });
 }
 

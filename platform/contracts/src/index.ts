@@ -36,6 +36,7 @@ export * from "./incident-decoders.js";
 export * from "./incident-errors.js";
 export * from "./incident-routes.js";
 export * from "./incidents.js";
+export * from "./internal-failure-report.js";
 export * from "./message-start-publication-decoders.js";
 export * from "./message-start-publication-routes.js";
 export * from "./message-start-publications.js";

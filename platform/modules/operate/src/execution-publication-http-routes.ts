@@ -4,6 +4,7 @@ import {
   matchExecutionPublicationExportPath,
   matchExecutionPublicationPath,
   projectionFreshnessResponseHeaders,
+  reportInternalFailure,
   requireExecutionPublicationRequestBodyLength,
   serializeExecutionPublicationExport,
 } from "@bpmn-lean/platform-contracts";
@@ -11,6 +12,7 @@ import type {
   ExecutionPublicationRouteRequest,
   ExecutionPublicationExport,
   ExecutionPublicationPage,
+  InternalFailureReporter,
   ProjectionRead,
   PublicApiErrorCatalogCode,
   PublicApiErrorResponse,
@@ -43,6 +45,7 @@ import type {
 type ExecutionPublicationHttpRoutesCommonOptions = Readonly<{
   actors: ActorResolver;
   authorization: Pick<OperationsAuthorizationPolicy, "decide">;
+  reportInternalFailure: InternalFailureReporter;
 }>;
 
 type ExecutionPublicationHttpRoutesOptions = ExecutionPublicationHttpRoutesCommonOptions & (
@@ -105,8 +108,8 @@ export class ExecutionPublicationHttpRoutes {
       ) {
         return forbidden();
       }
-    } catch {
-      return internalFailure();
+    } catch (error: unknown) {
+      return this.#internalFailure(request, error);
     }
 
     try {
@@ -155,8 +158,18 @@ export class ExecutionPublicationHttpRoutes {
     } catch (error: unknown) {
       return error instanceof RangeError && route.kind === RouteKind.Page
         ? invalidRequest()
-        : internalFailure();
+        : this.#internalFailure(request, error);
     }
+  }
+
+  #internalFailure(request: Request, error: unknown): Response {
+    reportInternalFailure(
+      this.options.reportInternalFailure,
+      "ExecutionPublicationHttpRoutes",
+      request,
+      error,
+    );
+    return internalFailure();
   }
 
   async #page(

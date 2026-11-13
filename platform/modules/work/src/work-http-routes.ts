@@ -18,10 +18,12 @@ import {
   matchWorkTasksPath,
   parseWireJson,
   projectionFreshnessResponseHeaders,
+  reportInternalFailure,
 } from "@bpmn-lean/platform-contracts";
 import type {
   PublicApiErrorResponse,
   FormValidationIssue,
+  InternalFailureReporter,
   PublicTaskDetail,
   PublicWorkTaskId,
   WorkAuditPage,
@@ -75,6 +77,7 @@ type WorkHttpRoutesOptions = Readonly<{
   tasks: WorkTaskOperations;
   audit: WorkAuditOperations;
   outbox: Readonly<{ reconcileAll(): Promise<void> }>;
+  reportInternalFailure: InternalFailureReporter;
 }>;
 
 const RouteKind = {
@@ -110,7 +113,9 @@ export class WorkHttpRoutes {
     try {
       route = matchRoute(request.url);
     } catch (error: unknown) {
-      return error instanceof TypeError ? invalidRequest() : internalFailure();
+      return error instanceof TypeError
+        ? invalidRequest()
+        : this.#internalFailure(request, error);
     }
     if (route === null) return null;
     try {
@@ -125,8 +130,18 @@ export class WorkHttpRoutes {
       }
       if (error instanceof WorkSnapshotUnavailableError) return snapshotUnavailable();
       if (error instanceof WorkAuditForbiddenError) return forbidden();
-      return internalFailure();
+      return this.#internalFailure(request, error);
     }
+  }
+
+  #internalFailure(request: Request, error: unknown): Response {
+    reportInternalFailure(
+      this.options.reportInternalFailure,
+      "WorkHttpRoutes",
+      request,
+      error,
+    );
+    return internalFailure();
   }
 
   async #dispatch(route: MatchedRoute, request: Request): Promise<Response> {

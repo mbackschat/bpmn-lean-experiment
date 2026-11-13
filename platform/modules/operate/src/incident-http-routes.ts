@@ -13,11 +13,13 @@ import {
   matchIncidentsPath,
   parseWireJson,
   projectionFreshnessResponseHeaders,
+  reportInternalFailure,
   requireIncidentRequestBodyLength,
 } from "@bpmn-lean/platform-contracts";
 import type {
   IncidentActionRequest,
   IncidentAuditPage,
+  InternalFailureReporter,
   NormalizedIncidentAuditRequest,
   PublicApiErrorCatalogCode,
   PublicApiErrorResponse,
@@ -62,6 +64,7 @@ type IncidentHttpRoutesOptions = Readonly<{
   mutations: IncidentMutationOperations;
   audit: IncidentAuditOperations;
   outbox: Readonly<{ reconcileAll(): Promise<void> }>;
+  reportInternalFailure: InternalFailureReporter;
 }>;
 
 const RouteKind = {
@@ -92,7 +95,9 @@ export class IncidentHttpRoutes {
     try {
       route = matchRoute(request.url);
     } catch (error: unknown) {
-      return error instanceof TypeError ? invalidRequest() : internalFailure();
+      return error instanceof TypeError
+        ? invalidRequest()
+        : this.#internalFailure(request, error);
     }
     if (route === null) return null;
 
@@ -109,8 +114,8 @@ export class IncidentHttpRoutes {
         return forbidden();
       }
       actorId = actor.id;
-    } catch {
-      return internalFailure();
+    } catch (error: unknown) {
+      return this.#internalFailure(request, error);
     }
 
     try {
@@ -126,8 +131,18 @@ export class IncidentHttpRoutes {
       if (error instanceof IncidentSnapshotUnavailableError) {
         return snapshotUnavailable();
       }
-      return internalFailure();
+      return this.#internalFailure(request, error);
     }
+  }
+
+  #internalFailure(request: Request, error: unknown): Response {
+    reportInternalFailure(
+      this.options.reportInternalFailure,
+      "IncidentHttpRoutes",
+      request,
+      error,
+    );
+    return internalFailure();
   }
 
   async #dispatch(

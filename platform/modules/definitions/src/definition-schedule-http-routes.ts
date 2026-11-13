@@ -5,16 +5,17 @@ import {
   matchDefinitionSchedulePath,
   matchDefinitionSchedulesPath,
   PublicApiErrorCode,
+  reportInternalFailure,
 } from "@bpmn-lean/platform-contracts";
 import type {
   DefinitionSchedule as PublicDefinitionSchedule,
   DefinitionScheduleListResponse,
   DefinitionScheduleOccurrenceListResponse,
+  InternalFailureReporter,
 } from "@bpmn-lean/platform-contracts";
 
 import {
   DefinitionScheduleConflictError,
-  DefinitionScheduleIntegrityError,
   DefinitionScheduleState,
   DefinitionScheduleValidationError,
 } from "./definition-schedule-contracts.js";
@@ -77,10 +78,16 @@ type DefinitionReader = Pick<
 export class DefinitionScheduleHttpRoutes {
   readonly #schedules: ScheduleOperations;
   readonly #definitions: DefinitionReader;
+  readonly #reportInternalFailure: InternalFailureReporter;
 
-  constructor(schedules: ScheduleOperations, definitions: DefinitionReader) {
+  constructor(
+    schedules: ScheduleOperations,
+    definitions: DefinitionReader,
+    reportInternalFailure: InternalFailureReporter,
+  ) {
     this.#schedules = schedules;
     this.#definitions = definitions;
+    this.#reportInternalFailure = reportInternalFailure;
   }
 
   async handle(request: Request): Promise<Response | null> {
@@ -104,8 +111,31 @@ export class DefinitionScheduleHttpRoutes {
     try {
       return await this.#handleRoute(route, request, url);
     } catch (error: unknown) {
-      return scheduleErrorResponse(error);
+      return this.#errorResponse(request, error);
     }
+  }
+
+  #errorResponse(request: Request, error: unknown): Response {
+    if (error instanceof HttpRequestFailure) {
+      return errorResponse(error.status, error.code, error.message);
+    }
+    if (error instanceof DefinitionScheduleConflictError) {
+      return errorResponse(
+        409,
+        PublicApiErrorCode.Conflict,
+        "The definition schedule conflicts with an existing immutable schedule.",
+      );
+    }
+    if (error instanceof DefinitionScheduleValidationError) {
+      return errorResponse(422, PublicApiErrorCode.InvalidRequest, error.message);
+    }
+    reportInternalFailure(
+      this.#reportInternalFailure,
+      "DefinitionScheduleHttpRoutes",
+      request,
+      error,
+    );
+    return internalFailure();
   }
 
   async #handleRoute(
@@ -312,26 +342,6 @@ function toPublicSchedule(
     default:
       return assertNever(schedule);
   }
-}
-
-function scheduleErrorResponse(error: unknown): Response {
-  if (error instanceof HttpRequestFailure) {
-    return errorResponse(error.status, error.code, error.message);
-  }
-  if (error instanceof DefinitionScheduleConflictError) {
-    return errorResponse(
-      409,
-      PublicApiErrorCode.Conflict,
-      "The definition schedule conflicts with an existing immutable schedule.",
-    );
-  }
-  if (error instanceof DefinitionScheduleValidationError) {
-    return errorResponse(422, PublicApiErrorCode.InvalidRequest, error.message);
-  }
-  if (error instanceof DefinitionScheduleIntegrityError) {
-    return internalFailure();
-  }
-  return internalFailure();
 }
 
 function notFound(message: string): Response {

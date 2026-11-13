@@ -8,6 +8,10 @@ import {
 import {
   OperationsAuthorizationDecision,
 } from "@bpmn-lean/platform-identity-policy";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 
 const route = "http://platform.example/api/v1/definitions/Process_1/versions/7/flow-node-metrics";
 
@@ -22,6 +26,7 @@ test("denies before definition, membership, reconciliation, or gateway work", as
         throw new Error("must not be called");
       },
     },
+    reportInternalFailure: unexpectedInternalFailure,
   });
   const response = await routes.handle(new Request(route));
   assert.equal(response?.status, 403);
@@ -117,6 +122,7 @@ test("adds shared freshness only to successful metrics responses", async () => {
         freshness: { observedAfterEpochMs: 8_388_001, maxAgeMs: 5_000 },
       }),
     },
+    reportInternalFailure: unexpectedInternalFailure,
   }).handle(new Request(route));
   assert.equal(response?.status, 200);
   assert.equal(response?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), "8388001");
@@ -127,6 +133,44 @@ test("adds shared freshness only to successful metrics responses", async () => {
     reason: "flowNodeMetricsUnavailable",
   })).handle(new Request(route));
   assert.equal(unavailable?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), null);
+});
+
+test("reports the caught error, route, method and pathname for each unexpected failure", async () => {
+  const failure = new Error("private store failure");
+  const unknownKind = { kind: "mystery" } as unknown as FlowNodeMetricsResult;
+  const cases = [
+    { actorFailure: undefined, aggregate: async () => { throw failure; }, reported: (error: unknown) => error === failure },
+    { actorFailure: failure, aggregate: async () => null, reported: (error: unknown) => error === failure },
+    { actorFailure: undefined, aggregate: async () => unknownKind, reported: (error: unknown) => error instanceof TypeError },
+  ];
+
+  for (const { actorFailure, aggregate, reported } of cases) {
+    const recorded = recordingInternalFailures();
+    const response = await new FlowNodeMetricsHttpRoutes({
+      actors: {
+        resolveActor: () => {
+          if (actorFailure !== undefined) throw actorFailure;
+          return { id: "operator", groups: ["operators"] };
+        },
+      },
+      authorization: { decide: () => OperationsAuthorizationDecision.Permitted },
+      aggregation: { get: aggregate },
+      reportInternalFailure: recorded.reporter,
+    }).handle(new Request(route));
+
+    assert.equal(response?.status, 500);
+    assert.deepEqual(await response?.json(), {
+      error: {
+        code: "internalFailure",
+        message: "The flow-node metrics request could not be completed.",
+      },
+    });
+    assert.equal(recorded.reports.length, 1);
+    assert.equal(recorded.reports[0]!.route, "FlowNodeMetricsHttpRoutes");
+    assert.equal(recorded.reports[0]!.method, "GET");
+    assert.equal(recorded.reports[0]!.path, new URL(route).pathname);
+    assert.equal(reported(recorded.reports[0]!.error), true);
+  }
 });
 
 test("admits only bodyless GET on the canonical route", async () => {
@@ -149,5 +193,6 @@ function permittedRoutes(
     actors: { resolveActor: () => ({ id: "operator", groups: ["operators"] }) },
     authorization: { decide: () => OperationsAuthorizationDecision.Permitted },
     aggregation: { get },
+    reportInternalFailure: unexpectedInternalFailure,
   });
 }

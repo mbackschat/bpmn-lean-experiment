@@ -10,6 +10,7 @@ import { DefinitionDeploymentService, DefinitionStartService, DefinitionHttpRout
 import type { ExactArtifactStore } from "@bpmn-lean/platform-definitions";
 import type { DefinitionCompiler, DefinitionVersionRegistrar, DefinitionCompilationRequest, DefinitionVersionStarter, DefinitionVersionStartRequest } from "@bpmn-lean/platform-engine-gateway";
 import { registeringEngine } from "./support/engine-registration.ts";
+import { unexpectedInternalFailure } from "./support/internal-failure-reporters.ts";
 
 const bytes = new TextEncoder().encode("<exact-bpmn/>");
 const overlayBytes = new TextEncoder().encode('{"exact":"overlay"}');
@@ -106,7 +107,7 @@ test("exact-version prepare and dispatch reconstruct retained overlay; missing a
 
 test("closed multipart accepts exact files and carries nullable public overlay identity", async () => {
   await withFixture(async (value) => {
-    const routes = new DefinitionHttpRoutes(value.deployment, value.start, { maxSourceBytes: 1024 });
+    const routes = new DefinitionHttpRoutes(value.deployment, value.start, { maxSourceBytes: 1024, reportInternalFailure: unexpectedInternalFailure });
     const form = new FormData();
     form.append("bpmn", new Blob([bytes], { type: "application/xml" }), "ignored.bpmn");
     form.append("sourceOverlay", new Blob([overlayBytes], { type: "application/json" }), "ignored.json");

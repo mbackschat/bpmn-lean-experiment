@@ -6,6 +6,7 @@ import {
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
+  InternalFailureReporter,
   MessageStartPublication,
   PutMessageStartPublicationRequest,
 } from "@bpmn-lean/platform-contracts";
@@ -20,6 +21,10 @@ import {
 import type {
   PutMessageStartPublicationResult,
 } from "@bpmn-lean/platform-definitions";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 
 const messageStart = {
   startEventId: "MessageStart_Order",
@@ -217,14 +222,44 @@ test("maps changed-target conflict and all private failures without evidence lea
   ] as const;
 
   for (const { error, status, code } of cases) {
-    const response = await createFixture({ putError: error }).routes.handle(
-      validPutRequest(),
-    );
+    const recorded = recordingInternalFailures();
+    const response = await createFixture({
+      putError: error,
+      reportInternalFailure: recorded.reporter,
+    }).routes.handle(validPutRequest());
     assert.equal(response?.status, status);
     const body = await response!.text();
     assert.equal((JSON.parse(body) as { error: { code: string } }).error.code, code);
     assert.doesNotMatch(body, /Temporal|Workflow|admission evidence|identity drift/u);
+    assert.deepEqual(
+      recorded.reports.map((report) => report.error),
+      code === PublicApiErrorCode.InternalFailure ? [error] : [],
+    );
   }
+});
+
+test("reports the caught error, route, method and pathname of a failed publication read", async () => {
+  const failure = new Error("private Temporal connection detail");
+  const recorded = recordingInternalFailures();
+
+  const response = await createFixture({
+    getError: failure,
+    reportInternalFailure: recorded.reporter,
+  }).routes.handle(new Request(publicationUrl()));
+
+  assert.equal(response?.status, 500);
+  assert.deepEqual(await responseJson(response), {
+    error: {
+      code: PublicApiErrorCode.InternalFailure,
+      message: "The Message Start publication request could not be completed.",
+    },
+  });
+  assert.deepEqual(recorded.reports, [{
+    route: "MessageStartPublicationHttpRoutes",
+    method: "GET",
+    path: new URL(publicationUrl()).pathname,
+    error: failure,
+  }]);
 });
 
 test("rejects GET input, malformed identities, and every unsupported operation", async () => {
@@ -276,6 +311,7 @@ test("claims only the global publication item route", async () => {
 });
 
 type FixtureOptions = Readonly<{
+  reportInternalFailure?: InternalFailureReporter;
   putResult?: PutMessageStartPublicationResult;
   putError?: unknown;
   getResult?: MessageStartPublication | null;
@@ -311,7 +347,7 @@ function createFixture(options: FixtureOptions = {}): Readonly<{
         options.getResult === undefined ? accepted : options.getResult,
       );
     },
-  });
+  }, options.reportInternalFailure ?? unexpectedInternalFailure);
   return { routes, puts };
 }
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  type InternalFailureReporter,
   type PublicWorkTaskId,
   type WorkClaimRequest,
 } from "@bpmn-lean/platform-contracts";
@@ -10,6 +11,10 @@ import {
   WorkHttpRoutes,
   WorkSnapshotUnavailableError,
 } from "@bpmn-lean/platform-work";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 
 const taskId = {
   processInstanceId: "process-1",
@@ -72,6 +77,60 @@ test("maps uniform hidden task and snapshot availability without private evidenc
       message: "The current Work snapshot is unavailable.",
     },
   });
+});
+
+test("reports the caught error, route, method and pathname without the query for each unexpected failure", async () => {
+  const failure = new Error("private store failure");
+  const cases = [
+    {
+      overrides: { listTasks: async () => { throw failure; } },
+      request: new Request("http://platform.test/api/v1/work-tasks"),
+      method: "GET",
+      path: "/api/v1/work-tasks",
+    },
+    {
+      overrides: { claimTask: async () => { throw failure; } },
+      request: new Request(`${taskUrl()}/claim`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ actionId: "claim-1", expectedGeneration: 0 }),
+      }),
+      method: "PUT",
+      path: "/api/v1/work-tasks/process-1/Review/1/claim",
+    },
+    {
+      overrides: {},
+      request: new Request("http://platform.test/api/v1/work-audit?actionKind=claim&limit=1"),
+      method: "GET",
+      path: "/api/v1/work-audit",
+      outboxFailure: failure,
+    },
+  ];
+
+  for (const { overrides, request, method, path, outboxFailure } of cases) {
+    const recorded = recordingInternalFailures();
+    const routes = createRoutes(
+      overrides,
+      async () => { if (outboxFailure !== undefined) throw outboxFailure; },
+      recorded.reporter,
+    );
+
+    const response = await routes.handle(request);
+
+    assert.equal(response?.status, 500, path);
+    assert.deepEqual(await response?.json(), {
+      error: {
+        code: "internalFailure",
+        message: "The Work request could not be completed.",
+      },
+    });
+    assert.deepEqual(recorded.reports, [{
+      route: "WorkHttpRoutes",
+      method,
+      path,
+      error: failure,
+    }]);
+  }
 });
 
 test("decodes claim JSON within the byte limit and maps the exact result status", async () => {
@@ -332,6 +391,7 @@ test("keeps the M3 completion ceiling while allowing the structured 32768-byte c
 function createRoutes(
   overrides: Record<string, unknown>,
   reconcileAll: () => Promise<void> = async () => undefined,
+  reportInternalFailure: InternalFailureReporter = unexpectedInternalFailure,
 ): WorkHttpRoutes {
   return new WorkHttpRoutes({
     tasks: {
@@ -340,6 +400,7 @@ function createRoutes(
     } as never,
     audit: { search: async () => ({ events: [], nextCursor: null }) },
     outbox: { reconcileAll },
+    reportInternalFailure,
   });
 }
 

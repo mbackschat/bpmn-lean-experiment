@@ -2,8 +2,10 @@ import {
   decodeProcessInstanceSearchPage,
   matchProcessInstancesPath,
   PublicApiErrorCode,
+  reportInternalFailure,
 } from "@bpmn-lean/platform-contracts";
 import type {
+  InternalFailureReporter,
   ProcessInstanceSearchRequest,
   PublicApiErrorCode as PublicApiErrorCodeValue,
   PublicApiErrorResponse,
@@ -23,9 +25,14 @@ type SearchOperations = Pick<
 /** Fetch-compatible identity-only search boundary over confirmed starts. */
 export class ProcessInstanceHttpRoutes {
   readonly #search: SearchOperations;
+  readonly #reportInternalFailure: InternalFailureReporter;
 
-  constructor(search: SearchOperations) {
+  constructor(
+    search: SearchOperations,
+    reportInternalFailure: InternalFailureReporter,
+  ) {
     this.#search = search;
+    this.#reportInternalFailure = reportInternalFailure;
   }
 
   async handle(request: Request): Promise<Response | null> {
@@ -53,7 +60,7 @@ export class ProcessInstanceHttpRoutes {
       if (error instanceof InvalidSearchRequestError) {
         return invalidRequest();
       }
-      return internalFailure();
+      return this.#internalFailure(request, error);
     }
 
     try {
@@ -61,9 +68,19 @@ export class ProcessInstanceHttpRoutes {
         await this.#search.searchProcessInstances(searchRequest),
       );
       return jsonResponse(200, page);
-    } catch {
-      return internalFailure();
+    } catch (error: unknown) {
+      return this.#internalFailure(request, error);
     }
+  }
+
+  #internalFailure(request: Request, error: unknown): Response {
+    reportInternalFailure(
+      this.#reportInternalFailure,
+      "ProcessInstanceHttpRoutes",
+      request,
+      error,
+    );
+    return internalFailure();
   }
 }
 

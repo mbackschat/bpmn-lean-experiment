@@ -4,11 +4,16 @@ import { test } from "node:test";
 import {
   DefinitionHttpRoutes,
 } from "@bpmn-lean/platform-definitions";
+import type { InternalFailureReporter } from "@bpmn-lean/platform-contracts";
 import type {
   DefinitionDeploymentService,
   DefinitionPresentationResolver,
   DefinitionStartService,
 } from "@bpmn-lean/platform-definitions";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 
 const definition = {
   processId: "Process/Review",
@@ -70,11 +75,13 @@ test("presentation route rejects query, wrong method, and missing version", asyn
 });
 
 test("presentation failures return a generic response without private evidence", async () => {
+  const failure = new Error("private generated sidecar corruption at /host/path");
+  const recorded = recordingInternalFailures();
   const routes = createRoutes({
     resolve: async () => {
-      throw new Error("private generated sidecar corruption at /host/path");
+      throw failure;
     },
-  });
+  }, recorded.reporter);
 
   const response = await routes.handle(new Request(
     "http://platform.test/api/v1/definitions/Process/versions/1/presentation",
@@ -82,15 +89,22 @@ test("presentation failures return a generic response without private evidence",
 
   assert.equal(response?.status, 500);
   assert.doesNotMatch(await response!.text(), /sidecar|host\/path/u);
+  assert.deepEqual(recorded.reports, [{
+    route: "DefinitionHttpRoutes",
+    method: "GET",
+    path: "/api/v1/definitions/Process/versions/1/presentation",
+    error: failure,
+  }]);
 });
 
 function createRoutes(
   presentation: DefinitionPresentationResolver,
+  reportInternalFailure: InternalFailureReporter = unexpectedInternalFailure,
 ): DefinitionHttpRoutes {
   return new DefinitionHttpRoutes(
     {} as DefinitionDeploymentService,
     {} as DefinitionStartService,
-    { maxSourceBytes: 1024 },
+    { maxSourceBytes: 1024, reportInternalFailure },
     presentation,
   );
 }

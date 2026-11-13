@@ -14,6 +14,7 @@ import {
   DefinitionDeployStatus,
   messageStartPublicationPath,
 } from "@bpmn-lean/platform-contracts";
+import type { InternalFailureReport } from "@bpmn-lean/platform-contracts";
 import { createMemoryEngineHostRuntime } from "@bpmn-lean/platform-engine-gateway/testing";
 import {
   createPlatformServer,
@@ -220,6 +221,60 @@ test("serves a generated presentation while retaining exact admitted M3 source",
       { signal: AbortSignal.timeout(2_000) },
     );
     assert.deepEqual(Buffer.from(await sourceResponse.arrayBuffer()), sourceBytes);
+  } finally {
+    await runtime.close();
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});
+
+test("reports an unexpected request failure through the composed reporter while answering the generic 500", async () => {
+  const dataDirectory = await mkdtemp(join(tmpdir(), "bpmn-lean-internal-failure-"));
+  const port = await allocatePort();
+  const origin = `http://127.0.0.1:${port}`;
+  const reports: InternalFailureReport[] = [];
+  const runtime = await createPlatformServer(
+    platformConfig(origin, port, dataDirectory),
+    {
+      engineHostRuntime: createMemoryEngineHostRuntime({ taskQueue: "bpmn-semantic" }),
+      reportInternalFailure: (report) => reports.push(report),
+    },
+  );
+  try {
+    assert.equal(await runtime.listen(), origin);
+    const deploy = await fetch(
+      `${origin}/api/v1/definitions?sourceId=m3.bpmn&semanticProfile=cibseven-2.2.0`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/bpmn+xml" },
+        body: await readFile(metadataSourcePath),
+        signal: AbortSignal.timeout(2_000),
+      },
+    );
+    assert.equal(deploy.status, 201);
+    const { definition } = await deploy.json() as Readonly<{
+      definition: Readonly<{ processId: string; version: number }>;
+    }>;
+    assert.equal(reports.length, 0);
+
+    // The retained artifact is the one collaborator whose loss no route can answer except with an internal failure.
+    await rm(join(dataDirectory, "artifacts"), { recursive: true });
+    const sourcePath = `/api/v1/definitions/${definition.processId}/versions/${definition.version}/source`;
+    const response = await fetch(`${origin}${sourcePath}`, {
+      signal: AbortSignal.timeout(2_000),
+    });
+
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), {
+      error: {
+        code: "internalFailure",
+        message: "The definition request could not be completed.",
+      },
+    });
+    assert.equal(reports.length, 1);
+    assert.equal(reports[0]!.route, "DefinitionHttpRoutes");
+    assert.equal(reports[0]!.method, "GET");
+    assert.equal(reports[0]!.path, sourcePath);
+    assert.ok(reports[0]!.error instanceof Error);
   } finally {
     await runtime.close();
     await rm(dataDirectory, { recursive: true, force: true });

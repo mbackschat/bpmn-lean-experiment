@@ -10,6 +10,7 @@ import { pipeline } from "node:stream/promises";
 
 import { PublicApiErrorCode } from "@bpmn-lean/platform-contracts";
 import type {
+  InternalFailureReporter,
   PublicApiErrorCode as PublicApiErrorCodeValue,
   PublicApiErrorResponse,
 } from "@bpmn-lean/platform-contracts";
@@ -26,6 +27,7 @@ export type PlatformHttpRoute = (
 export type PlatformHttpServerOptions = Readonly<{
   publicOrigin: string;
   routes: ReadonlyArray<PlatformHttpRoute>;
+  reportInternalFailure: InternalFailureReporter;
 }>;
 
 type StreamingRequestInit = RequestInit & Readonly<{
@@ -39,6 +41,7 @@ export function createPlatformHttpServer(
   return createPlatformHttpServerFromValidatedOrigin({
     publicOrigin: validatePublicOrigin(options.publicOrigin),
     routes: options.routes,
+    reportInternalFailure: options.reportInternalFailure,
   });
 }
 
@@ -46,18 +49,27 @@ export function createPlatformHttpServerFromValidatedOrigin(
   options: Readonly<{
     publicOrigin: ValidatedPublicOrigin;
     routes: ReadonlyArray<PlatformHttpRoute>;
+    reportInternalFailure: InternalFailureReporter;
   }>,
 ): Server {
   const publicOrigin = options.publicOrigin;
   const routes = snapshotRoutes(options.routes);
+  const reportInternalFailure = options.reportInternalFailure;
   return createServer((incoming, outgoing) => {
-    void serveIncomingRequest(publicOrigin, routes, incoming, outgoing);
+    void serveIncomingRequest(
+      publicOrigin,
+      routes,
+      reportInternalFailure,
+      incoming,
+      outgoing,
+    );
   });
 }
 
 async function serveIncomingRequest(
   publicOrigin: string,
   routes: ReadonlyArray<PlatformHttpRoute>,
+  reportInternalFailure: InternalFailureReporter,
   incoming: IncomingMessage,
   outgoing: ServerResponse,
 ): Promise<void> {
@@ -66,7 +78,14 @@ async function serveIncomingRequest(
     const response = await dispatch(routes, request)
       ?? errorResponse(404, PublicApiErrorCode.NotFound, "Resource not found.");
     await writeFetchResponse(request.method, response, outgoing);
-  } catch {
+  } catch (error: unknown) {
+    // Read from the raw message: the Fetch request may be the thing that failed to exist.
+    reportInternalFailure({
+      route: "PlatformHttpServer",
+      method: incoming.method ?? "GET",
+      path: requestTargetPath(incoming.url),
+      error,
+    });
     if (outgoing.headersSent || outgoing.writableEnded) {
       if (!outgoing.destroyed) {
         outgoing.destroy();
@@ -86,6 +105,12 @@ async function serveIncomingRequest(
       }
     }
   }
+}
+
+function requestTargetPath(target: string | undefined): string {
+  const raw = target ?? "/";
+  const end = raw.search(/[?#]/u);
+  return end === -1 ? raw : raw.slice(0, end);
 }
 
 function createFetchRequest(

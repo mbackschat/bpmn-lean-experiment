@@ -5,6 +5,7 @@ import {
   DefinitionScheduleStatus,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
+import type { InternalFailureReporter } from "@bpmn-lean/platform-contracts";
 import {
   DefinitionScheduleConflictError,
   DefinitionScheduleHttpRoutes,
@@ -19,6 +20,10 @@ import type {
   PutDefinitionSchedule,
   PutDefinitionScheduleResult,
 } from "@bpmn-lean/platform-definitions";
+import {
+  recordingInternalFailures,
+  unexpectedInternalFailure,
+} from "./support/internal-failure-reporters.ts";
 
 const dueAt = "2026-08-11T12:00:01.250Z";
 const definition = {
@@ -217,7 +222,8 @@ test("maps missing, conflict, validation, and integrity outcomes exactly", async
     },
   ] as const;
   for (const { error, status, code } of cases) {
-    const fixture = createFixture({ putError: error });
+    const recorded = recordingInternalFailures();
+    const fixture = createFixture({ putError: error, reportInternalFailure: recorded.reporter });
     const response = await fixture.routes.handle(validPutRequest());
     assert.equal(response?.status, status);
     const body = await response!.text();
@@ -228,7 +234,35 @@ test("maps missing, conflict, validation, and integrity outcomes exactly", async
     if (status === 500) {
       assert.doesNotMatch(body, /private|Temporal|identity/u);
     }
+    assert.deepEqual(
+      recorded.reports.map((report) => report.error),
+      status === 500 ? [error] : [],
+    );
   }
+});
+
+test("reports the caught error, route, method and pathname without the query of a failed occurrence preview", async () => {
+  const failure = new Error("private Temporal failure");
+  const recorded = recordingInternalFailures();
+  const fixture = createFixture({ occurrencesError: failure, reportInternalFailure: recorded.reporter });
+
+  const response = await fixture.routes.handle(new Request(
+    `http://platform.test/api/v1/definitions/Process%2FTimer/versions/2/schedule-occurrences?from=${dueAt}&limit=2`,
+  ));
+
+  assert.equal(response?.status, 500);
+  assert.deepEqual(await responseJson(response), {
+    error: {
+      code: PublicApiErrorCode.InternalFailure,
+      message: "The definition schedule request could not be completed.",
+    },
+  });
+  assert.deepEqual(recorded.reports, [{
+    route: "DefinitionScheduleHttpRoutes",
+    method: "GET",
+    path: "/api/v1/definitions/Process%2FTimer/versions/2/schedule-occurrences",
+    error: failure,
+  }]);
 });
 
 test("returns 404 for missing schedule items and exact Allow headers for wrong methods", async () => {
@@ -283,6 +317,7 @@ test("rejects malformed/query/body route input and leaves unknown paths unclaime
 });
 
 type FixtureOptions = Readonly<{
+  reportInternalFailure?: InternalFailureReporter;
   definition?: DefinitionMetadata | null;
   putResult?: PutDefinitionScheduleResult;
   putError?: unknown;
@@ -331,7 +366,11 @@ function createFixture(options: FixtureOptions = {}): Readonly<{
         : null,
   };
   return {
-    routes: new DefinitionScheduleHttpRoutes(service, definitions),
+    routes: new DefinitionScheduleHttpRoutes(
+      service,
+      definitions,
+      options.reportInternalFailure ?? unexpectedInternalFailure,
+    ),
     puts,
     occurrenceQueries,
   };

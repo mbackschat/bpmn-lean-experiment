@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { FileArtifactStore } from "@bpmn-lean/platform-artifact-store";
+import type { InternalFailureReporter } from "@bpmn-lean/platform-contracts";
 import {
   BpmnAutoLayoutPresentationAdapter,
   projectHumanTaskCatalog,
@@ -91,6 +92,9 @@ import {
   createPlatformHttpServerFromValidatedOrigin,
 } from "./http-adapter.js";
 import {
+  createStderrInternalFailureReporter,
+} from "./internal-failure-stderr-reporter.js";
+import {
   NodePlatformServerRuntime,
   closeResources,
 } from "./runtime.js";
@@ -116,6 +120,8 @@ export type PlatformServerCompositionOverrides = Readonly<{
   ) => Promise<PlatformServerRuntime>;
   /** The engine host the local composition runs against instead of the configured Temporal connection. */
   engineHostRuntime?: EngineHostRuntime;
+  /** Where every HTTP boundary reports an unexpected failure; one JSON line on stderr when absent. */
+  reportInternalFailure?: InternalFailureReporter;
 }>;
 
 /** Selects exactly one complete local or shared storage composition. */
@@ -124,11 +130,12 @@ export async function createPlatformServer(
   overrides: PlatformServerCompositionOverrides = {},
 ): Promise<PlatformServerRuntime> {
   const snapshot = snapshotPlatformServerConfig(config);
+  const reportInternalFailure = overrides.reportInternalFailure ?? createStderrInternalFailureReporter();
   switch (snapshot.storageMode) {
     case PlatformStorageMode.Local:
-      return await (overrides.createLocalServer ?? ((local) => createLocalPlatformServer(local, overrides.engineHostRuntime)))(snapshot);
+      return await (overrides.createLocalServer ?? ((local) => createLocalPlatformServer(local, overrides.engineHostRuntime, reportInternalFailure)))(snapshot);
     case PlatformStorageMode.Shared:
-      return await (overrides.createSharedServer ?? createSharedPlatformServer)(snapshot);
+      return await (overrides.createSharedServer ?? ((shared) => createSharedPlatformServer(shared, { reportInternalFailure })))(snapshot);
   }
 }
 
@@ -136,6 +143,7 @@ export async function createPlatformServer(
 async function createLocalPlatformServer(
   snapshot: ValidatedPlatformServerConfig,
   engineHostRuntime: EngineHostRuntime | undefined,
+  reportInternalFailure: InternalFailureReporter,
 ): Promise<PlatformServerRuntime> {
   await mkdir(snapshot.dataDirectory, { recursive: true });
 
@@ -332,32 +340,38 @@ async function createLocalPlatformServer(
     const definitionRoutes = new DefinitionHttpRoutes(
       service,
       startService,
-      { maxSourceBytes: snapshot.maxSourceBytes },
+      { maxSourceBytes: snapshot.maxSourceBytes, reportInternalFailure },
       presentationService,
     );
     const scheduleRoutes = new DefinitionScheduleHttpRoutes(
       scheduleService,
       service,
+      reportInternalFailure,
     );
     const publicationRoutes = new MessageStartPublicationHttpRoutes(
       publicationService,
+      reportInternalFailure,
     );
     const correlatedMessageRoutes = new DefinitionCorrelatedMessageHttpRoutes(
       correlatedMessageService,
+      reportInternalFailure,
     );
     const processInstanceRoutes = new ProcessInstanceHttpRoutes(
       processInstances,
+      reportInternalFailure,
     );
     const executionPublicationRoutes = new ExecutionPublicationHttpRoutes({
       actors,
       authorization: operationsAuthorization,
       reconciliation: executionPublicationReconciliation,
       publications: executionPublicationRepository,
+      reportInternalFailure,
     });
     const flowNodeMetricsRoutes = new FlowNodeMetricsHttpRoutes({
       actors,
       authorization: operationsAuthorization,
       aggregation: flowNodeMetrics,
+      reportInternalFailure,
     });
     const incidentRoutes = new IncidentHttpRoutes({
       actors,
@@ -371,6 +385,7 @@ async function createLocalPlatformServer(
       mutations: incidentMutations,
       audit: incidentAuditSearch,
       outbox: incidentAuditOutbox,
+      reportInternalFailure,
     });
     const workService = new WorkService({
       repository: work,
@@ -425,6 +440,7 @@ async function createLocalPlatformServer(
         workAudit: auditRepository,
         incidentAudit: incidentAuditRepository,
       }),
+      reportInternalFailure,
     });
     const workRoutes = new WorkHttpRoutes({
       tasks: {
@@ -442,9 +458,11 @@ async function createLocalPlatformServer(
       },
       audit: workAudit,
       outbox: auditOutbox,
+      reportInternalFailure,
     });
     const server = createPlatformHttpServerFromValidatedOrigin({
       publicOrigin: snapshot.publicOrigin,
+      reportInternalFailure,
       routes: [
         (request) => operatorAuditRoutes.handle(request),
         (request) => incidentRoutes.handle(request),
