@@ -174,7 +174,7 @@ Product 2 computes `submittedValues` as follows:
 
 1. reject an unknown action, unknown or duplicate key, hidden submitted field, missing required visible field, wrong type, failed bound, invalid option, duplicate list member, or incompatible current value;
 2. normalize each accepted multiple-choice list into catalog option declaration order, so permutations of the same selected set have one durable meaning;
-3. emit one binding for every visible field, using tagged null for an optional blank rather than omission;
+3. emit one binding for every field, using tagged null for an optional visible blank and for a field hidden for the chosen action rather than omission, because the completion submits the task's whole OutputSet;
 4. append exactly one String binding from `resolutionVariable` to the chosen action's fixed `resolutionValue` and reject any field key equal to that variable;
 5. sort the resulting bindings by the existing canonical binding order and submit them through the existing content-bound completion command.
 
@@ -190,7 +190,7 @@ The public error is `formValidationFailed` with an ordered non-empty list of fie
 
 BPMN 2.0.2 Clause 10.3.4.1 and Table 10.13 define a User Task as human work managed by a task manager and give it an optional list of Rendering extension hooks. The standard deliberately leaves Rendering content undefined and states that a User Task can be deployed even when an implementation does not support its rendering methods. Clause 13.3.3 requires activation to distribute the User Task to its assigned person or group and completion after the work has been done. Potential Owner, actual owner, and the Table 10.14 `taskPriority` User Task instance attribute are standard Human Task concepts, but their complete identity, assignment, and instance-management semantics are not implemented by this specification.
 
-BPMN's Activity data account separately defines InputOutputSpecification, InputSet, OutputSet, DataInput, DataOutput, and Data Associations, and states that User Tasks have access to those data-aware elements. M6 does not reinterpret a form field as one of those standard elements and does not claim that the existing completion patch implements their lifecycle. [The BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements) therefore keeps the standard Potential Owner and full data mechanisms unsupported. M6 targets the structural `BPMN-UTASK-RENDERING-01` requirement by admitting the Rendering hook while keeping its project-defined contents outside execution semantics.
+BPMN's Activity data account separately defines InputOutputSpecification, InputSet, OutputSet, DataInput, DataOutput, and Data Associations, and states that User Tasks have access to those data-aware elements. The form does not define those elements: a structured User Task declares them in standard BPMN, one Data Output whose id is each field key and one whose id is `resolutionVariable`, all in its one OutputSet, because under `bpmn-2.0.2` a completion submits exactly the OutputSet and names each Data Output by id ([data semantics](kernel/semantics/DATA-SEMANTICS-SPEC.md)). The form is a Product 2 view onto that declared output contract. [The BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements) therefore keeps the standard Potential Owner and full data mechanisms unsupported. M6 targets the structural `BPMN-UTASK-RENDERING-01` requirement by admitting the Rendering hook while keeping its project-defined contents outside execution semantics.
 
 CIB Seven forms are research input only. M6 neither widens `CIB-EXT-0012`, adds a new CIB form relationship, nor admits CIB `formData`, form-field validators, form references, buttons, or `camunda:priority` into the selected semantic profile. The new profile selects the independently classified `CIB-EXT-0011` literal candidate-group attribute only. The neutral passive `UserTaskMetadata` wire therefore becomes a closed union of the existing assignment-plus-form shape and a new assignment-only shape, without changing any existing artifact bytes. The old M3 CIB form-metadata profiles and their passive observations remain unchanged.
 
@@ -203,6 +203,7 @@ CIB Seven forms are research input only. M6 neither widens `CIB-EXT-0012`, adds 
 - `SHW-ASSIGN-01`: the M6 profile admits exactly one nonempty literal candidate group through existing `CIB-EXT-0011`, publishes the neutral assignment-only metadata shape, and admits no CIB form metadata; authorization and claiming remain Product 2 policy.
 - `SHW-CATALOG-01`: an accepted M6 Product 2 definition, one whose source carries the project rendering, produces exactly one canonical catalog bound to its source digest, semantic profile, Process ID, and distinct User Task element IDs. Since the profile became the `bpmn-2.0.2` standards profile, a source without that rendering deploys under it with no catalog, and an invalid rendering is still refused.
 - `SHW-CATALOG-02`: Product 2 renders or validates only a catalog whose complete definition identity equals the selected deployed version; absence or mismatch fails closed without engine work.
+- `SHW-CATALOG-03`: a structured form's submitted names, its field keys and `resolutionVariable`, equal the Data Output ids of its User Task's one OutputSet; otherwise catalog projection refuses the deployment with `outputContract`, since no completion the form computes could be admitted.
 - `SHW-FORM-01`: Product 2 owns strict form decoding, field validation, action validation, and completion-patch computation through the versioned JSON contract and its Zod implementation.
 - `SHW-FORM-02`: action-dependent behavior is limited to equality with the submitted action ID; hidden fields reject when submitted and required visible fields reject when absent or null.
 - `SHW-FORM-03`: list selections are sets at the UI boundary but become ordered unique string lists in catalog option order before command identity is computed.
@@ -247,6 +248,15 @@ For example:
 ```xml
 <bpmn:userTask id="ReviewException" name="Review exception" xmlns:bpmnLean="urn:bpmn-lean:bpmn:extensions:v1">
   <bpmn:documentation>Review the expense exception and choose a resolution.</bpmn:documentation>
+  <bpmn:ioSpecification id="ReviewExceptionIoSpecification">
+    <bpmn:dataOutput id="confirmed"/>
+    <bpmn:dataOutput id="resolution"/>
+    <bpmn:inputSet id="ReviewExceptionInputSet"/>
+    <bpmn:outputSet id="ReviewExceptionOutputSet">
+      <bpmn:dataOutputRefs>confirmed</bpmn:dataOutputRefs>
+      <bpmn:dataOutputRefs>resolution</bpmn:dataOutputRefs>
+    </bpmn:outputSet>
+  </bpmn:ioSpecification>
   <bpmn:rendering id="ReviewExceptionRendering">
     <bpmn:extensionElements>
       <bpmnLean:structuredForm>{"schemaVersion":"bpmn-lean-structured-human-work-source/v1","worklistPriority":80,"form":{"schemaVersion":"bpmn-lean-structured-form/v1","fields":[{"key":"confirmed","label":"Confirm review","helpText":null,"defaultValue":null,"visibleForActions":"all","requiredForActions":["approve","abort"],"kind":"boolean"}],"actions":[{"id":"approve","label":"Approve","intent":"primary","resolutionValue":"approved"},{"id":"abort","label":"Abort","intent":"destructive","resolutionValue":"aborted"}],"resolutionVariable":"resolution"}}</bpmnLean:structuredForm>

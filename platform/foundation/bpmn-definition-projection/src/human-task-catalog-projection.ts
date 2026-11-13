@@ -48,6 +48,7 @@ export const HumanTaskCatalogProjectionInvalidEvidence = {
   RenderingPlacement: "renderingPlacement",
   Documentation: "documentation",
   CatalogContract: "catalogContract",
+  OutputContract: "outputContract",
 } as const;
 
 export type HumanTaskCatalogProjectionInvalidEvidence =
@@ -196,6 +197,9 @@ function projectUserTask(
   if (source === undefined) {
     return invalid(HumanTaskCatalogProjectionInvalidEvidence.CatalogContract);
   }
+  if (!submitsExactOutputSet(userTask, source.form)) {
+    return invalid(HumanTaskCatalogProjectionInvalidEvidence.OutputContract);
+  }
   return Object.freeze({
     kind: "task",
     task: Object.freeze({
@@ -205,6 +209,23 @@ function projectUserTask(
       form: source.form,
     }),
   });
+}
+
+/**
+ * Whether the form submits exactly the User Task's OutputSet: under `bpmn-2.0.2` a completion must name every Data
+ * Output of its one OutputSet by id and nothing else (docs/kernel/semantics/DATA-SEMANTICS-SPEC.md, `undeclared-output`
+ * and `output-unavailable`), so a form submitting any other name set could never complete its task.
+ */
+function submitsExactOutputSet(
+  userTask: ModdleElement,
+  form: StructuredFormDefinitionV1,
+): boolean {
+  const outputSets = userTask.ioSpecification?.outputSets ?? [];
+  if (outputSets.length > 1) return false;
+  const outputIds = (outputSets[0]?.dataOutputRefs ?? []).map(({ id }) => id);
+  if (!outputIds.every(validIdentity)) return false;
+  const submitted = [...form.fields.map(({ key }) => key), form.resolutionVariable].toSorted();
+  return sameKeys(outputIds.toSorted(), submitted);
 }
 
 function projectDescription(userTask: ModdleElement): string | undefined {
