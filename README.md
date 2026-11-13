@@ -61,7 +61,7 @@ Business processes may wait hours or days for people, messages, timers, or exter
 
 The kernel runs inside a Temporal Workflow. The kernel owns the BPMN decisions; Temporal owns durable coordination and recovery. A retried service call can still repeat an external action, so integrations must handle duplicate requests. The [Temporal research](docs/research/TEMPORAL-EXECUTION-RESEARCH.md#executive-model) explains the tradeoffs.
 
-Three runtime defects without a released correction are accepted as disclosed qualification exceptions: Temporal SDK Core can drop a read while it evicts a Workflow Run (TD-001) or time an input delivered during a read differently live and on replay (TD-002), and Node can abort a Worker when a Script Task's timeout stops it (TD-005). The [Temporal defects ledger](docs/TEMPORAL-DEFECTS-LEDGER.md#qualification-exceptions) records their exposure and withdraws each exception when its correction is adopted.
+Three runtime defects without a released correction are accepted as disclosed qualification exceptions: Temporal SDK Core can drop a read while it evicts a Workflow Run (TD-001) or time an input delivered during a read differently live and on replay (TD-002), and Node can abort a Worker when a Script Task's timeout stops it (TD-005). A fourth, a native V8 crash during garbage collection (TD-003), is corrected in the adopted Node 26.10.0, but that correction's separating witness has not run on Linux arm64, the evaluation image's platform. The [Temporal defects ledger](docs/TEMPORAL-DEFECTS-LEDGER.md#qualification-exceptions) records their exposure and withdraws each exception when its correction is adopted.
 
 <details>
 <summary>Optional: repository statistics</summary>

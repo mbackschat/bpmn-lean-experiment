@@ -69,7 +69,7 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
         <strong>Not a conformance claim.</strong> Each row is an exact, restricted executable variant. BPMN coverage, selected CIB compatibility evidence, and platform journey coverage remain separate measures.
       </aside>
       <aside className={styles.boundary} aria-label="Runtime qualification exceptions">
-        <strong>Runtime qualification exceptions.</strong> Three recorded runtime defects have no released correction and are accepted as disclosed exceptions: TD-001, where a read of a process can time out while Temporal evicts its Workflow Run; TD-002, where an input delivered during a read can be timed differently live and on replay; and TD-005, where a Script Task stopped by its timeout can abort its Worker process. The Temporal defects ledger records each one.
+        <strong>Runtime qualification exceptions.</strong> Three recorded runtime defects have no released correction and are accepted as disclosed exceptions: TD-001, where a read of a process can time out while Temporal evicts its Workflow Run; TD-002, where an input delivered during a read can be timed differently live and on replay; and TD-005, where a Script Task stopped by its timeout can abort its Worker process. A fourth, TD-003, a native crash during garbage collection, is corrected in the adopted Node release, but its separating witness has not run on Linux arm64, the evaluation image's platform. The Temporal defects ledger records each one.
       </aside>
       <InlineDisclosure title="Implementation checkpoints">
       <div className={styles.beta}>
@@ -126,7 +126,7 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
         </section>
       </InlineDisclosure>
       <p className={styles.followUp}>
-        The repository requirement ledger owns BPMN dispositions; the implementation map owns exact current evidence. Unsupported or broader behavior remains outside these rows until its semantic profile and tests are approved.
+        The repository requirement ledger owns BPMN dispositions; the kernel status map owns exact current evidence. Unsupported or broader behavior remains outside these rows until its semantic profile and tests are approved.
       </p>
     </section>
   );

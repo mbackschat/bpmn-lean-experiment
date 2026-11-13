@@ -57,7 +57,7 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   assert.match(html, /CIB Seven 2\.2\.0/u);
   assert.match(html, /Not a conformance claim/u);
   // Each accepted exception stays disclosed until its ledger entry closes (docs/TEMPORAL-DEFECTS-LEDGER.md, step 10).
-  for (const entry of ["TD-001", "TD-002", "TD-005"]) assert.match(html, new RegExp(`Runtime qualification exceptions.*${entry}`, "su"));
+  for (const entry of ["TD-001", "TD-002", "TD-003", "TD-005"]) assert.match(html, new RegExp(`Runtime qualification exceptions.*${entry}`, "su"));
   // Each row renders its catalog text verbatim; the facts that text names are checked beside the catalog in
   // `scripts/capability-catalog-disclosures.test.ts`, so wording changes never need a second copy here.
   for (const capability of mvpCapabilityCatalog.capabilities) {
