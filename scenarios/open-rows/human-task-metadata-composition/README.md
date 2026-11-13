@@ -26,7 +26,7 @@ The remaining models are the forms the row says fail:
 | [task-metadata-condition](task-metadata-condition.scenario.json) | [metadata-control.bpmn](metadata-control.bpmn) | A Sequence Flow condition that reads the task's assignee through the engine-context name `task`. |
 | [undeclared-handler-key](undeclared-handler-key.scenario.json) | [handler-key-undeclared.bpmn](handler-key-undeclared.bpmn) | The same completion as `writable-handler-key` on a task that declares no such field: the token's name arrives only as an undeclared submitted value. |
 
-The last models carry metadata forms the kernel admits beyond the retained answers, which hold a one-entry or a plain two-entry `candidateGroups` list (`CIB-EXT-0011`) and `string` and `boolean` form fields (`CIB-EXT-0012`). Each runs *Review request* once: the start opens it and a completion without values closes it.
+The last models carry the `candidateGroups` list forms (`CIB-EXT-0011`) and form field types (`CIB-EXT-0012`) the kernel admits beyond the earlier answers, which hold a one-entry or a plain two-entry list and `string` and `boolean` fields. Each runs *Review request* once: the start opens it and a completion without values closes it. Verify run 43413054884 retains CIB's answer for `group-list-spaced`, `group-list-repeated`, `group-list-dollar` and `form-field-long-date`.
 
 | Schedule | Model | Case it separates |
 |---|---|---|
@@ -37,6 +37,8 @@ The last models carry metadata forms the kernel admits beyond the retained answe
 | [group-list-dollar](group-list-dollar.scenario.json) | [group-list-dollar.bpmn](group-list-dollar.bpmn) | `candidateGroups="cost$center,finance"`: a literal entry holding `$` without `{` before a comma. |
 | [group-list-no-break-space](group-list-no-break-space.scenario.json) | [group-list-no-break-space.bpmn](group-list-no-break-space.bpmn) | `candidateGroups="&#160;triagers,leads"`: an entry starting with U+00A0, which JavaScript's `trim` removes and Java's `String.trim` keeps. |
 | [form-field-long-date](form-field-long-date.scenario.json) | [form-field-long-date.bpmn](form-field-long-date.bpmn) | Four form fields alternating `long` and `date`: `amount`, `dueOn`, `quantity`, `shippedOn`. |
+
+In `group-list-repeated` CIB publishes `leads` as two candidate identity links, and in `group-list-dollar` it splits the literal `cost$center,finance` into two groups after its parser kept it as one entry. In `group-list-empty-entry` and `group-list-edge-commas` CIB deploys the model and publishes each empty entry as a candidate group with the empty ID, one in the first and two in the second (Verify run 43413054884): its parser keeps an empty entry (`BpmnParse.java:3021-3022`). The canonical result holds no empty group ID (`nonEmptyString`), so the evidence the runner writes violates its schema, the run ends as a harness failure and no CIB answer is retained.
 
 Notes for the target runners:
 
