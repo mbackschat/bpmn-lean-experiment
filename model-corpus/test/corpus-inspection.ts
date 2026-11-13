@@ -44,6 +44,51 @@ export async function loadManifest(): Promise<unknown> {
   return JSON.parse(await readFile(manifestPath, "utf8"));
 }
 
+const statusMapPath = path.join(projectRoot, "docs/kernel/KERNEL-STATUS-MAP.md");
+const statusMapRowForm = /^\| (PC-[A-Z]+-\d{2}) \| [^|]+ \| ([^|]+) \| [^|]+ \|$/;
+const statusMapLinkForm = /\]\((\.\.\/\.\.\/[^)\s]+)\)/g;
+
+/**
+ * What each coverage row's "Kernel scenario evidence" cell links, by row ID, as repository-relative paths: a scenario
+ * `README.md` stands for its directory (a trailing `/`), any other link, such as a differential fixture, for that file
+ * alone. Rows are the lines under the "Row status" table header up to its first blank line; any such line that is not
+ * in the table's form fails.
+ */
+export function parseStatusMapRowLinks(markdown: string): ReadonlyMap<string, ReadonlyArray<string>> {
+  const lines = markdown.split("\n");
+  const section = lines.findIndex((line) => line === "## Row status");
+  const header = lines.findIndex((line, index) => index > section && line === "| Row | Kernel | Kernel scenario evidence | Open proof lanes |");
+  if (section < 0 || header < 0) throw new Error("KERNEL-STATUS-MAP.md has no Row status table with the expected header");
+  const rows = new Map<string, ReadonlyArray<string>>();
+  for (const line of lines.slice(header + 2)) {
+    if (line === "") break;
+    const match = statusMapRowForm.exec(line);
+    if (match === null) throw new Error(`Row status line does not match the table's form: ${line}`);
+    const [, row, evidence] = match;
+    if (rows.has(row)) throw new Error(`Row status lists ${row} twice`);
+    rows.set(row, [...evidence.matchAll(statusMapLinkForm)].map(([, link]) => {
+      const target = path.posix.join("docs/kernel", link);
+      return path.posix.basename(target) === "README.md" ? `${path.posix.dirname(target)}/` : target;
+    }));
+  }
+  if (rows.size === 0) throw new Error("KERNEL-STATUS-MAP.md Row status table has no rows");
+  return rows;
+}
+
+/** The row IDs each retained model witnesses, in ascending order: its scenario lies inside a directory the row links. */
+export function bindModelRows(
+  manifest: ExecutableModelCorpusManifest,
+  rowLinks: ReadonlyMap<string, ReadonlyArray<string>>,
+): ReadonlyMap<string, ReadonlyArray<string>> {
+  return new Map(manifest.models.map((model) => {
+    const modelPath = model.source.kind === "retainedScenario" ? model.source.scenarioRelativePath : null;
+    const rows = modelPath === null ? [] : [...rowLinks]
+      .filter(([, links]) => links.some((link) => link.endsWith("/") ? modelPath.startsWith(link) : modelPath === link))
+      .map(([row]) => row).sort();
+    return [model.id, rows];
+  }));
+}
+
 export const discovered = await discoverScenarios();
 
 function corpusScenario(scenario: DiscoveredScenario): CorpusScenario {
@@ -132,6 +177,8 @@ export const inspect = (
  * capability list. The guard compares each with the committed file and the renderer writes it.
  */
 export async function renderCorpusFiles(): Promise<ReadonlyArray<readonly [string, string]>> {
-  const report = await inspect(requireExecutableModelCorpusManifest(await loadManifest()));
-  return [[corpusMapPath, renderExecutableModelCorpusMap(report)], [capabilityListPath, renderRetainedModelCapabilities(report)]];
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const report = await inspect(manifest);
+  const rowsByModel = bindModelRows(manifest, parseStatusMapRowLinks(await readFile(statusMapPath, "utf8")));
+  return [[corpusMapPath, renderExecutableModelCorpusMap(report, rowsByModel)], [capabilityListPath, renderRetainedModelCapabilities(report)]];
 }

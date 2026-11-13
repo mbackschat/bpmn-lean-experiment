@@ -442,7 +442,10 @@ function tableCell(value: string): string {
 
 export function renderExecutableModelCorpusMap(
   report: ExecutableModelCorpusReport,
+  rowsByModel: ReadonlyMap<string, ReadonlyArray<string>>,
 ): string {
+  const rowsOf = (id: string): ReadonlyArray<string> => rowsByModel.get(id) ?? [];
+  const boundModels = report.models.filter(({ id }) => rowsOf(id).length > 0).length;
   const lines = [
     "# Executable BPMN model corpus map",
     "",
@@ -453,13 +456,14 @@ export function renderExecutableModelCorpusMap(
     `The first tranche contains ${report.retainedModels} retained executable models and ${report.externalModels} exact external candidates. The kernel admits ${report.acceptedModels} and refuses ${report.rejectedModels}; ${report.admissionMismatches.length} differ from their recorded admission, and ${report.catalogReadyModels} ${report.catalogReadyModels === 1 ? "is" : "are"} eligible for the browser catalog.`,
     `The retained MVP suite covers all ${report.mvpCapabilities.length} registered executable BPMN element or semantic variants.`,
     `Browser eligibility separates ${report.models.filter((model) => model.product2 === "journeyBacked").length} human-work journeys from ${report.models.filter((model) => model.product2 === "guidedJourneyBacked").length} guided simulations with explicit host participants.`,
+    `${boundModels} of the ${report.models.length} models bind at least one coverage row through the kernel status map's scenario links, and ${report.models.length - boundModels} bind none.`,
     "",
     "## Models",
     "",
-    "| Model | Source | Clone family | Kernel admission | Scenario | CIB | Product 2 |",
-    "|---|---|---|---|---|---|---|",
+    "| Model | Source | Clone family | Kernel admission | Scenario | Rows | CIB | Product 2 |",
+    "|---|---|---|---|---|---|---|---|",
     ...report.models.map((model) =>
-      `| ${tableCell(model.title)} | ${tableCell(model.sourceKind)} | ${tableCell(model.cloneFamily)} | ${model.admission} | ${model.pipelineCaseId ?? "none"} | ${model.cibRelation} | ${model.product2} |`
+      `| ${tableCell(model.title)} | ${tableCell(model.sourceKind)} | ${tableCell(model.cloneFamily)} | ${model.admission} | ${model.pipelineCaseId ?? "none"} | ${rowsOf(model.id).join(", ") || "—"} | ${model.cibRelation} | ${model.product2} |`
     ),
     "",
     "## MVP capability coverage",

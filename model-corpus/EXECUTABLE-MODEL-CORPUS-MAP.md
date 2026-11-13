@@ -7,131 +7,132 @@ This file is generated from `manifest.json` by the executable corpus guard. Edit
 The first tranche contains 113 retained executable models and 7 exact external candidates. The kernel admits 113 and refuses 7; 0 differ from their recorded admission, and 12 are eligible for the browser catalog.
 The retained MVP suite covers all 74 registered executable BPMN element or semantic variants.
 Browser eligibility separates 3 human-work journeys from 9 guided simulations with explicit host participants.
+107 of the 120 models bind at least one coverage row through the kernel status map's scenario links, and 13 bind none.
 
 ## Models
 
-| Model | Source | Clone family | Kernel admission | Scenario | CIB | Product 2 |
-|---|---|---|---|---|---|---|
-| Review a request with assignment and form metadata | retainedScenario | human-review-with-form | accepted | user-task-assignment-form-metadata | retainedEvidence | journeyBacked |
-| Review content and risk in parallel | retainedScenario | parallel-two-human-tasks | accepted | parallel-user-task-metadata-content-then-risk | retainedEvidence | journeyBacked |
-| Prepare two work items in parallel | retainedScenario | parallel-two-human-tasks | accepted | parallel-fork-join-a-then-b | retainedEvidence | notCatalogReady |
-| Resolve an expense exception with structured human work | retainedScenario | structured-expense-exception-review | accepted | expense-exception-review-approve | retainedEvidence | journeyBacked |
-| Route a Boolean decision | retainedScenario | exclusive-boolean-decision | accepted | exclusive-gateway-simple-boolean-first-true | retainedEvidence | notCatalogReady |
-| Fulfil work through a called Process | retainedScenario | called-process-human-work | accepted | called-process-call-activity | retainedEvidence | notCatalogReady |
-| Onboard a supplier through isolated due diligence | retainedScenario | supplier-onboarding-call-data | accepted | call-data-supplier-string | notSelected | notCatalogReady |
-| Assess, route and archive an invoice | retainedScenario | structured-invoice-handoff | accepted | structured-composition-invoice-approve | notSelected | notCatalogReady |
-| Hand a review decision to archive work | retainedScenario | structured-serial-handoff | accepted | structured-composition-serial-string | notSelected | notCatalogReady |
-| Hand a reviewed order to archive work | retainedScenario | portable-order-handoff | accepted | portable-handoff-order-nested | notSelected | notCatalogReady |
-| Decide a credit application | retainedScenario | credit-decision-structured-assessment | accepted | effect-data-credit-assessed | retainedEvidence | notCatalogReady |
-| Approve a purchase order | retainedScenario | purchase-order-nested-approval | accepted | nested-scope-data-order-approved | notSelected | notCatalogReady |
-| Review an expense claim | retainedScenario | expense-claim-patch-allowance | accepted | nested-scope-data-claim-limits | notSelected | notCatalogReady |
-| Sign off a bulk quote | retainedScenario | bulk-quote-capacity | accepted | nested-scope-data-quote-signed | notSelected | notCatalogReady |
-| Check a loan applicant's identity through a called Process | retainedScenario | loan-application-identity-check | accepted | call-variable-mapping-loan-approved | notSelected | notCatalogReady |
-| Record an external service effect | retainedScenario | single-service-effect | accepted | service-task-effect-success | retainedEvidence | guidedJourneyBacked |
-| Coordinate parallel work inside a bounded scope | retainedScenario | embedded-parallel-human-work | accepted | embedded-subprocess-completion-a-then-b | retainedEvidence | notCatalogReady |
-| Onboard a new employee | retainedScenario | employee-onboarding-nested-setup | accepted | nested-scope-control-onboarding-setup-first | notSelected | notCatalogReady |
-| Conduct an internal audit | retainedScenario | internal-audit-nested-fieldwork | accepted | nested-scope-control-audit-early-and-stale | notSelected | notCatalogReady |
-| Remediate audit findings | retainedScenario | audit-remediation-concurrent-findings | accepted | concurrent-activations-audit-interleaved-and-stale | notSelected | notCatalogReady |
-| Assess a credit application | retainedScenario | credit-intake-concurrent-assessments | accepted | concurrent-activations-intake-reverse-assessments | notSelected | notCatalogReady |
-| Screen a new supplier | retainedScenario | supplier-screening-concurrent-checks | accepted | concurrent-scope-effects-supplier-review-first | retainedEvidence | notCatalogReady |
-| Take in an insurance claim | retainedScenario | claim-intake-priced-assessments | accepted | concurrent-scope-effects-claim-price-two-first | retainedEvidence | notCatalogReady |
-| Assess claim damage | retainedScenario | claim-damage-assessment-concurrent-pricing | accepted | concurrent-scope-data-claim-fetch-one-first | retainedEvidence | notCatalogReady |
-| Inspect a facility | retainedScenario | facility-inspection-concurrent-checks | accepted | concurrent-scope-data-facility-inspection | retainedEvidence | notCatalogReady |
-| Ask two experts about a supplier at once | retainedScenario | supplier-onboarding-concurrent-expert-calls | accepted | concurrent-mapped-calls-supplier-compliance-first | retainedEvidence | notCatalogReady |
-| Prepare a business trip | retainedScenario | travel-request-concurrent-checks | accepted | concurrent-mapped-calls-travel-request | retainedEvidence | notCatalogReady |
-| Fulfil an order | retainedScenario | order-fulfilment-concurrent-structured-data | accepted | concurrent-structured-scope-data-order-review-first | notSelected | notCatalogReady |
-| Assess a loan application | retainedScenario | loan-assessment-concurrent-expert-reviews | accepted | concurrent-structured-scope-data-loan-credit-first | notSelected | notCatalogReady |
-| Assess an insurance claim with rework | retainedScenario | claim-assessment-rework | accepted | scope-reentry-claim-rework-then-approve | notSelected | notCatalogReady |
-| Revise a supplier contract until legal clears it | retainedScenario | contract-revision-legal-review | accepted | scope-reentry-contract-revise-then-sign | notSelected | notCatalogReady |
-| Handle an equipment return | retainedScenario | equipment-return-inspection | accepted | pass-through-task-equipment-return | notSelected | notCatalogReady |
-| Take in a received document | retainedScenario | document-intake-triage | accepted | pass-through-task-intake-illegible-twice-then-paper | notSelected | notCatalogReady |
-| Onboard a new employee | retainedScenario | employee-onboarding-root-fork | accepted | root-parallel-forks-onboarding-documents-while-laptop-open | notSelected | notCatalogReady |
-| Offboard a departing employee | retainedScenario | employee-offboarding-terminal-fork | accepted | terminal-forks-offboarding-equipment-first | notSelected | notCatalogReady |
-| Clear an old office for a move | retainedScenario | office-move-clearing | accepted | terminal-forks-office-move | notSelected | notCatalogReady |
-| Settle an expense claim | retainedScenario | expense-claim-settlement | accepted | data-declaring-terminal-branches-expense-claim | notSelected | notCatalogReady |
-| Open a customer account after its required checks | retainedScenario | account-opening-required-checks | accepted | inclusive-gateway-regions-account-residency-only | notSelected | notCatalogReady |
-| Book a corporate event with optional extras | retainedScenario | event-booking-optional-extras | accepted | inclusive-gateway-regions-booking-no-extras | notSelected | notCatalogReady |
-| Route a customer complaint | retainedScenario | complaint-handling-routing | accepted | exclusive-choice-arity-complaint-delivery | notSelected | notCatalogReady |
-| Route a travel request to one closure | retainedScenario | travel-request-routed-closure | accepted | none-end-fan-in-travel-booked | notSelected | notCatalogReady |
-| Relocate an employee's office | retainedScenario | office-relocation-parallel-handover | accepted | pass-through-parallel-branches-relocation-packing-first | notSelected | notCatalogReady |
-| Settle a supplier invoice | retainedScenario | invoice-settlement-parallel-recording | accepted | pass-through-parallel-branches-invoice-settled | notSelected | notCatalogReady |
-| Repair a device under warranty | retainedScenario | warranty-repair-milestones | accepted | none-intermediate-throw-warranty-passed | notSelected | notCatalogReady |
-| Onboard a new employee with milestones | retainedScenario | employee-onboarding-milestones | accepted | none-intermediate-throw-onboarding-account-first | notSelected | notCatalogReady |
-| Decide and archive an insurance claim | retainedScenario | claim-archiving | accepted | pass-through-implicit-split-merge-claim-approved | notSelected | notCatalogReady |
-| Dispatch rented equipment | retainedScenario | equipment-dispatch | accepted | pass-through-implicit-split-merge-dispatch-packed-first | notSelected | notCatalogReady |
-| Repair a device under warranty with Go To links | retainedScenario | warranty-repair-milestones | accepted | link-events-warranty-rework | notSelected | notCatalogReady |
-| Onboard a new employee with Off-Page links | retainedScenario | employee-onboarding-milestones | accepted | link-events-onboarding-laptop-first | notSelected | notCatalogReady |
-| Review an insurance claim with an optional expert opinion | retainedScenario | claim-review-expert-opinion | accepted | activity-host-merge-claim-expert | notSelected | notCatalogReady |
-| Onboard a new hire and issue equipment | retainedScenario | employee-onboarding-scope-host | accepted | scope-host-split-onboarding-register-first | notSelected | notCatalogReady |
-| Take in an insurance claim | retainedScenario | insurance-claim-intake-activity-host | accepted | activity-host-split-intake-archive-first | notSelected | notCatalogReady |
-| Approve and place a purchase request | retainedScenario | purchase-request-single-scope | accepted | single-scope-models-purchase-approval-first | notSelected | notCatalogReady |
-| Clear a supplier invoice | retainedScenario | invoice-clearing-single-scope | accepted | single-scope-models-invoice-valid | notSelected | notCatalogReady |
-| Pack an order and send its shipping notice | retainedScenario | shipping-notice-send-task | accepted | send-task-shipping-notice | notSelected | notCatalogReady |
-| Acknowledge, assess and settle a claim | retainedScenario | claim-acknowledgement-send-task | accepted | send-task-claim-assessed-first | notSelected | notCatalogReady |
-| Route and pay out an expense claim | retainedScenario | expense-routing-without-default | accepted | exclusive-choice-without-default-urgent-travel | notSelected | notCatalogReady |
-| Triage a support ticket and route it by severity | retainedScenario | ticket-triage-without-default | accepted | exclusive-choice-without-default-medium-triage | notSelected | notCatalogReady |
-| Onboard a supplier through shared approvals | retainedScenario | supplier-onboarding-repeated-nested-calls | accepted | repeated-nested-calls-natural-order | retainedEvidence | notCatalogReady |
-| Decide a guaranteed loan through two identity checks | retainedScenario | guarantor-loan-embedded-mapped-calls | accepted | repeated-nested-calls-guarantor-verified | notSelected | notCatalogReady |
-| Recover scoped work after a business error | retainedScenario | subprocess-error-recovery | accepted | subprocess-error-propagation-trigger-first | retainedEvidence | notCatalogReady |
-| Wait for a review window | retainedScenario | timer-then-human-review | accepted | timer-user-task-composition | retainedEvidence | notCatalogReady |
-| Continue a review after a message | retainedScenario | message-then-human-review | accepted | intermediate-catch-message | retainedEvidence | notCatalogReady |
-| Review a confirmed settlement | retainedScenario | message-payload-then-human-review | accepted | message-payload-catch-supplied-scalar | retainedEvidence | notCatalogReady |
-| Review a received shipment manifest | retainedScenario | shipment-manifest-structured-payload | accepted | portable-message-payload-manifest-delivered | notSelected | notCatalogReady |
-| Correlate a settlement confirmation to its waiting case | retainedScenario | message-key-correlated-settlement-review | accepted | message-key-correlation-unique | notSelected | notCatalogReady |
-| Wait for an invoice receipt | retainedScenario | addressed-receive-task | accepted | message-addressed-receive-task | retainedEvidence | guidedJourneyBacked |
-| Wait for a courier to pick up a parcel | retainedScenario | addressless-receive-task | accepted | addressless-receive-task | retainedEvidence | notCatalogReady |
-| Prepare every applicable review track | retainedScenario | inclusive-human-review-tracks | accepted | inclusive-gateway-both-true-a-then-b | retainedEvidence | notCatalogReady |
-| Continue on a message or deadline | retainedScenario | message-timer-event-race | accepted | event-based-gateway-message-wins | retainedEvidence | notCatalogReady |
-| Escalate work that misses a deadline | retainedScenario | interrupting-task-deadline | accepted | activity-boundary-timer-deadline-wins | retainedEvidence | notCatalogReady |
-| Withdraw an application during review | retainedScenario | interrupting-task-withdrawal-message | accepted | activity-boundary-message-message-wins | retainedEvidence | notCatalogReady |
-| Escalate a bounded work package | retainedScenario | interrupting-subprocess-deadline | accepted | subprocess-boundary-timer-deadline-wins | retainedEvidence | notCatalogReady |
-| Remind and finish monitored work | retainedScenario | non-interrupting-task-reminder | accepted | non-interrupting-boundary-timer-deadline-then-both-branches | retainedEvidence | notCatalogReady |
-| Review and rework a request until accepted | retainedScenario | cyclic-human-rework | accepted | user-task-cycle-repeat-rework-exit | retainedEvidence | notCatalogReady |
-| Start approval from an addressed message | retainedScenario | message-start-human-approval | accepted | message-start-event | retainedEvidence | notCatalogReady |
-| Start a scheduled review | retainedScenario | timer-start-human-review | accepted | timer-start-event | retainedEvidence | notCatalogReady |
-| Stop remaining scoped work after termination | retainedScenario | subprocess-termination | accepted | terminate-end-event-trigger-first | retainedEvidence | notCatalogReady |
-| Run a configured integration before review | retainedScenario | configured-effect-human-review | accepted | configured-task | retainedEvidence | notCatalogReady |
-| Retain a mapped service result | retainedScenario | mapped-service-success | accepted | mapped-success-service-task | retainedEvidence | guidedJourneyBacked |
-| Route a mapped business error to review | retainedScenario | mapped-service-boundary-error | accepted | mapped-boundary-error-service-task-caught | retainedEvidence | notCatalogReady |
-| Review an ordered batch of documents | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-natural | retainedEvidence | guidedJourneyBacked |
-| Escalate a batch review at its shared deadline | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-interrupted | retainedEvidence | notCatalogReady |
-| Complete every parallel risk assessment | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-all | retainedEvidence | guidedJourneyBacked |
-| Stop a parallel review at the first material risk | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-first | retainedEvidence | notCatalogReady |
-| Escalate a parallel risk review at its shared deadline | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-interrupted | retainedEvidence | notCatalogReady |
-| Review an invoice with its supplied context | retainedScenario | human-review-with-direct-data-input | accepted | activity-data-input-present | retainedEvidence | notCatalogReady |
-| Record an underwriting decision on the application | retainedScenario | human-decision-with-direct-data-output | accepted | activity-data-output-supplied | retainedEvidence | notCatalogReady |
-| Assess a claim and record its decision | retainedScenario | human-assessment-with-direct-data-input-output | accepted | activity-data-input-output-present | retainedEvidence | guidedJourneyBacked |
-| Review an application with repeated reminder Messages | retainedScenario | subprocess-termination | accepted | subscription-boundary-message-repeat | retainedEvidence | guidedJourneyBacked |
-| Remind an application reviewer every second | retainedScenario | subprocess-termination | accepted | subscription-boundary-timer-repeat | retainedEvidence | notCatalogReady |
-| Remind the application review team until its region closes | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-timer-repeat | retainedEvidence | notCatalogReady |
-| Escalate a delayed application review once | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-one-shot-fire | retainedEvidence | notCatalogReady |
-| Continue audit reminders after application review closes | retainedScenario | subprocess-termination | accepted | subscription-message-host-with-child-entry-repeat | retainedEvidence | notCatalogReady |
-| Await an application response during parallel review | retainedScenario | subprocess-termination | accepted | subscription-catch-message-resume | retainedEvidence | notCatalogReady |
-| Await a review deadline beside independent audit | retainedScenario | subprocess-termination | accepted | subscription-catch-timer-resume | retainedEvidence | notCatalogReady |
-| Receive application documents during review | retainedScenario | subprocess-termination | accepted | subscription-receive-task-resume | retainedEvidence | notCatalogReady |
-| Cancel a confirmed travel itinerary | retainedScenario | dependency-aware-travel-compensation | accepted | compensation-success-b-c-a | notSelected | guidedJourneyBacked |
-| Withdraw a resource reservation | retainedScenario | transaction-reservation-withdrawal | accepted | transaction-cancellation-retained-active | notSelected | guidedJourneyBacked |
-| Validate and classify an invoice | retainedScenario | invoice-validation-classification | accepted | classification | retainedEvidence | notCatalogReady |
-| Review and rework an invoice | retainedScenario | invoice-validation-rework | accepted | invoice-rework | retainedEvidence | notCatalogReady |
-| Recover from invoice business Errors | retainedScenario | invoice-business-error-recovery | accepted | invoice-business-error-recovery | retainedEvidence | notCatalogReady |
-| Debounce an alarm before paging | retainedScenario | timer-then-human-review | accepted | intermediate-catch-timer-alarm-debounce | retainedEvidence | notCatalogReady |
-| CIB Seven order goods | externalGit | cib-order-goods | rejected | none | notApplicable | notCatalogReady |
-| CIB Seven review invoice | externalGit | cib-review-invoice | rejected | none | notApplicable | notCatalogReady |
-| CIB Seven invoice receipt version 1 | externalGit | cib-invoice-receipt | rejected | none | notApplicable | notCatalogReady |
-| CIB Seven invoice receipt version 2 | externalGit | cib-invoice-receipt | rejected | none | notApplicable | notCatalogReady |
-| CIB Seven vacation request | externalGit | cib-vacation-request | rejected | none | notApplicable | notCatalogReady |
-| OMG incident management executable example | externalArchiveEntry | omg-incident-management | rejected | none | notApplicable | notCatalogReady |
-| Betsy workflow pattern 16 deferred choice | externalGit | betsy-wcp16-deferred-choice | rejected | none | notApplicable | notCatalogReady |
-| Broadcast order milestones as Signals | retainedScenario | signal-throw-and-catch | accepted | signal-throw-literal-intermediate-throw | retainedEvidence | notCatalogReady |
-| Handle a case with Signal subscriptions | retainedScenario | signal-boundary-subscriptions | accepted | signal-subscriptions-bodies-ping-isolation | retainedEvidence | notCatalogReady |
-| Hand a shift over by Signal | retainedScenario | signal-start-handover | accepted | signal-start-compositions-handover-catch-other-signal | retainedEvidence | notCatalogReady |
-| Ship an order as soon as it is flagged | retainedScenario | conditional-start-order | accepted | conditional-start-compositions-expedited-order-absent | retainedEvidence | notCatalogReady |
-| Route answers by Conditional events | retainedScenario | conditional-catch-and-boundary | accepted | conditional-contests-pending-arms-no-choice | retainedEvidence | notCatalogReady |
-| Escalate a support case review | retainedScenario | escalation-propagation | accepted | escalation-throw-propagation-catch-all | retainedEvidence | notCatalogReady |
-| Notify a customer by thrown Messages | retainedScenario | message-throw-notification | accepted | message-throw-bound-both-sends-succeed | retainedEvidence | notCatalogReady |
-| Undo order steps by targeted compensation | retainedScenario | compensation-targeted-throws | accepted | compensation-targeting-chain-handlers-forward | retainedEvidence | notCatalogReady |
-| Compute order values with JavaScript Script Tasks | retainedScenario | javascript-script-task | accepted | script-task-javascript-probe-arithmetic-total | retainedEvidence | notCatalogReady |
-| Route an applicant by a decision | retainedScenario | business-rule-routing | accepted | business-rule-routing-high-grade-review | retainedEvidence | notCatalogReady |
+| Model | Source | Clone family | Kernel admission | Scenario | Rows | CIB | Product 2 |
+|---|---|---|---|---|---|---|---|
+| Review a request with assignment and form metadata | retainedScenario | human-review-with-form | accepted | user-task-assignment-form-metadata | PC-HUM-02 | retainedEvidence | journeyBacked |
+| Review content and risk in parallel | retainedScenario | parallel-two-human-tasks | accepted | parallel-user-task-metadata-content-then-risk | PC-HUM-02 | retainedEvidence | journeyBacked |
+| Prepare two work items in parallel | retainedScenario | parallel-two-human-tasks | accepted | parallel-fork-join-a-then-b | — | retainedEvidence | notCatalogReady |
+| Resolve an expense exception with structured human work | retainedScenario | structured-expense-exception-review | accepted | expense-exception-review-approve | — | retainedEvidence | journeyBacked |
+| Route a Boolean decision | retainedScenario | exclusive-boolean-decision | accepted | exclusive-gateway-simple-boolean-first-true | PC-DATA-07 | retainedEvidence | notCatalogReady |
+| Fulfil work through a called Process | retainedScenario | called-process-human-work | accepted | called-process-call-activity | PC-SCOPE-03 | retainedEvidence | notCatalogReady |
+| Onboard a supplier through isolated due diligence | retainedScenario | supplier-onboarding-call-data | accepted | call-data-supplier-string | PC-DATA-04, PC-SCOPE-04, PC-SCOPE-05, PC-SCOPE-06 | notSelected | notCatalogReady |
+| Assess, route and archive an invoice | retainedScenario | structured-invoice-handoff | accepted | structured-composition-invoice-approve | PC-CF-07, PC-CF-08, PC-DATA-09 | notSelected | notCatalogReady |
+| Hand a review decision to archive work | retainedScenario | structured-serial-handoff | accepted | structured-composition-serial-string | PC-CF-07, PC-CF-08, PC-DATA-09 | notSelected | notCatalogReady |
+| Hand a reviewed order to archive work | retainedScenario | portable-order-handoff | accepted | portable-handoff-order-nested | PC-DATA-01 | notSelected | notCatalogReady |
+| Decide a credit application | retainedScenario | credit-decision-structured-assessment | accepted | effect-data-credit-assessed | PC-DATA-01 | retainedEvidence | notCatalogReady |
+| Approve a purchase order | retainedScenario | purchase-order-nested-approval | accepted | nested-scope-data-order-approved | PC-SCOPE-01 | notSelected | notCatalogReady |
+| Review an expense claim | retainedScenario | expense-claim-patch-allowance | accepted | nested-scope-data-claim-limits | PC-SCOPE-01 | notSelected | notCatalogReady |
+| Sign off a bulk quote | retainedScenario | bulk-quote-capacity | accepted | nested-scope-data-quote-signed | PC-SCOPE-01 | notSelected | notCatalogReady |
+| Check a loan applicant's identity through a called Process | retainedScenario | loan-application-identity-check | accepted | call-variable-mapping-loan-approved | PC-SCOPE-04 | notSelected | notCatalogReady |
+| Record an external service effect | retainedScenario | single-service-effect | accepted | service-task-effect-success | PC-AUTO-01 | retainedEvidence | guidedJourneyBacked |
+| Coordinate parallel work inside a bounded scope | retainedScenario | embedded-parallel-human-work | accepted | embedded-subprocess-completion-a-then-b | PC-CF-03, PC-SCOPE-01, PC-SCOPE-02 | retainedEvidence | notCatalogReady |
+| Onboard a new employee | retainedScenario | employee-onboarding-nested-setup | accepted | nested-scope-control-onboarding-setup-first | PC-SCOPE-01 | notSelected | notCatalogReady |
+| Conduct an internal audit | retainedScenario | internal-audit-nested-fieldwork | accepted | nested-scope-control-audit-early-and-stale | PC-SCOPE-01 | notSelected | notCatalogReady |
+| Remediate audit findings | retainedScenario | audit-remediation-concurrent-findings | accepted | concurrent-activations-audit-interleaved-and-stale | PC-SCOPE-02 | notSelected | notCatalogReady |
+| Assess a credit application | retainedScenario | credit-intake-concurrent-assessments | accepted | concurrent-activations-intake-reverse-assessments | PC-SCOPE-02 | notSelected | notCatalogReady |
+| Screen a new supplier | retainedScenario | supplier-screening-concurrent-checks | accepted | concurrent-scope-effects-supplier-review-first | — | retainedEvidence | notCatalogReady |
+| Take in an insurance claim | retainedScenario | claim-intake-priced-assessments | accepted | concurrent-scope-effects-claim-price-two-first | — | retainedEvidence | notCatalogReady |
+| Assess claim damage | retainedScenario | claim-damage-assessment-concurrent-pricing | accepted | concurrent-scope-data-claim-fetch-one-first | PC-DATA-04, PC-SCOPE-01, PC-SCOPE-02 | retainedEvidence | notCatalogReady |
+| Inspect a facility | retainedScenario | facility-inspection-concurrent-checks | accepted | concurrent-scope-data-facility-inspection | PC-DATA-04, PC-SCOPE-01, PC-SCOPE-02 | retainedEvidence | notCatalogReady |
+| Ask two experts about a supplier at once | retainedScenario | supplier-onboarding-concurrent-expert-calls | accepted | concurrent-mapped-calls-supplier-compliance-first | PC-DATA-04, PC-DATA-05, PC-DATA-06 | retainedEvidence | notCatalogReady |
+| Prepare a business trip | retainedScenario | travel-request-concurrent-checks | accepted | concurrent-mapped-calls-travel-request | PC-DATA-04, PC-DATA-05, PC-DATA-06 | retainedEvidence | notCatalogReady |
+| Fulfil an order | retainedScenario | order-fulfilment-concurrent-structured-data | accepted | concurrent-structured-scope-data-order-review-first | PC-DATA-03, PC-DATA-05, PC-DATA-06 | notSelected | notCatalogReady |
+| Assess a loan application | retainedScenario | loan-assessment-concurrent-expert-reviews | accepted | concurrent-structured-scope-data-loan-credit-first | PC-DATA-03, PC-DATA-05, PC-DATA-06 | notSelected | notCatalogReady |
+| Assess an insurance claim with rework | retainedScenario | claim-assessment-rework | accepted | scope-reentry-claim-rework-then-approve | PC-CF-06, PC-DATA-04, PC-HUM-01, PC-SCOPE-02 | notSelected | notCatalogReady |
+| Revise a supplier contract until legal clears it | retainedScenario | contract-revision-legal-review | accepted | scope-reentry-contract-revise-then-sign | PC-CF-06, PC-DATA-04, PC-HUM-01, PC-SCOPE-02 | notSelected | notCatalogReady |
+| Handle an equipment return | retainedScenario | equipment-return-inspection | accepted | pass-through-task-equipment-return | PC-HUM-04, PC-HUM-05 | notSelected | notCatalogReady |
+| Take in a received document | retainedScenario | document-intake-triage | accepted | pass-through-task-intake-illegible-twice-then-paper | PC-HUM-04, PC-HUM-05 | notSelected | notCatalogReady |
+| Onboard a new employee | retainedScenario | employee-onboarding-root-fork | accepted | root-parallel-forks-onboarding-documents-while-laptop-open | PC-CF-03, PC-DATA-03, PC-DATA-05, PC-DATA-06 | notSelected | notCatalogReady |
+| Offboard a departing employee | retainedScenario | employee-offboarding-terminal-fork | accepted | terminal-forks-offboarding-equipment-first | PC-BASIC-01, PC-CF-03, PC-HUM-04, PC-HUM-05 | notSelected | notCatalogReady |
+| Clear an old office for a move | retainedScenario | office-move-clearing | accepted | terminal-forks-office-move | PC-BASIC-01, PC-CF-03, PC-HUM-04, PC-HUM-05 | notSelected | notCatalogReady |
+| Settle an expense claim | retainedScenario | expense-claim-settlement | accepted | data-declaring-terminal-branches-expense-claim | PC-BASIC-01, PC-CF-03, PC-HUM-04, PC-HUM-05 | notSelected | notCatalogReady |
+| Open a customer account after its required checks | retainedScenario | account-opening-required-checks | accepted | inclusive-gateway-regions-account-residency-only | PC-CF-04, PC-CF-08 | notSelected | notCatalogReady |
+| Book a corporate event with optional extras | retainedScenario | event-booking-optional-extras | accepted | inclusive-gateway-regions-booking-no-extras | PC-CF-04, PC-CF-08 | notSelected | notCatalogReady |
+| Route a customer complaint | retainedScenario | complaint-handling-routing | accepted | exclusive-choice-arity-complaint-delivery | PC-CF-02 | notSelected | notCatalogReady |
+| Route a travel request to one closure | retainedScenario | travel-request-routed-closure | accepted | none-end-fan-in-travel-booked | — | notSelected | notCatalogReady |
+| Relocate an employee's office | retainedScenario | office-relocation-parallel-handover | accepted | pass-through-parallel-branches-relocation-packing-first | PC-HUM-04, PC-HUM-05 | notSelected | notCatalogReady |
+| Settle a supplier invoice | retainedScenario | invoice-settlement-parallel-recording | accepted | pass-through-parallel-branches-invoice-settled | PC-HUM-04, PC-HUM-05 | notSelected | notCatalogReady |
+| Repair a device under warranty | retainedScenario | warranty-repair-milestones | accepted | none-intermediate-throw-warranty-passed | PC-BASIC-01 | notSelected | notCatalogReady |
+| Onboard a new employee with milestones | retainedScenario | employee-onboarding-milestones | accepted | none-intermediate-throw-onboarding-account-first | PC-BASIC-01 | notSelected | notCatalogReady |
+| Decide and archive an insurance claim | retainedScenario | claim-archiving | accepted | pass-through-implicit-split-merge-claim-approved | PC-BASIC-01, PC-CF-07, PC-HUM-05 | notSelected | notCatalogReady |
+| Dispatch rented equipment | retainedScenario | equipment-dispatch | accepted | pass-through-implicit-split-merge-dispatch-packed-first | PC-BASIC-01, PC-CF-07, PC-HUM-05 | notSelected | notCatalogReady |
+| Repair a device under warranty with Go To links | retainedScenario | warranty-repair-milestones | accepted | link-events-warranty-rework | PC-BASIC-02 | notSelected | notCatalogReady |
+| Onboard a new employee with Off-Page links | retainedScenario | employee-onboarding-milestones | accepted | link-events-onboarding-laptop-first | PC-BASIC-02 | notSelected | notCatalogReady |
+| Review an insurance claim with an optional expert opinion | retainedScenario | claim-review-expert-opinion | accepted | activity-host-merge-claim-expert | PC-CF-07 | notSelected | notCatalogReady |
+| Onboard a new hire and issue equipment | retainedScenario | employee-onboarding-scope-host | accepted | scope-host-split-onboarding-register-first | PC-SCOPE-01 | notSelected | notCatalogReady |
+| Take in an insurance claim | retainedScenario | insurance-claim-intake-activity-host | accepted | activity-host-split-intake-archive-first | PC-CF-07 | notSelected | notCatalogReady |
+| Approve and place a purchase request | retainedScenario | purchase-request-single-scope | accepted | single-scope-models-purchase-approval-first | PC-BASIC-01, PC-CF-03, PC-HUM-04, PC-HUM-05 | notSelected | notCatalogReady |
+| Clear a supplier invoice | retainedScenario | invoice-clearing-single-scope | accepted | single-scope-models-invoice-valid | PC-BASIC-01, PC-CF-03, PC-HUM-04, PC-HUM-05 | notSelected | notCatalogReady |
+| Pack an order and send its shipping notice | retainedScenario | shipping-notice-send-task | accepted | send-task-shipping-notice | PC-AUTO-04 | notSelected | notCatalogReady |
+| Acknowledge, assess and settle a claim | retainedScenario | claim-acknowledgement-send-task | accepted | send-task-claim-assessed-first | PC-AUTO-04 | notSelected | notCatalogReady |
+| Route and pay out an expense claim | retainedScenario | expense-routing-without-default | accepted | exclusive-choice-without-default-urgent-travel | PC-CF-02 | notSelected | notCatalogReady |
+| Triage a support ticket and route it by severity | retainedScenario | ticket-triage-without-default | accepted | exclusive-choice-without-default-medium-triage | PC-CF-02 | notSelected | notCatalogReady |
+| Onboard a supplier through shared approvals | retainedScenario | supplier-onboarding-repeated-nested-calls | accepted | repeated-nested-calls-natural-order | PC-SCOPE-05 | retainedEvidence | notCatalogReady |
+| Decide a guaranteed loan through two identity checks | retainedScenario | guarantor-loan-embedded-mapped-calls | accepted | repeated-nested-calls-guarantor-verified | PC-SCOPE-05 | notSelected | notCatalogReady |
+| Recover scoped work after a business error | retainedScenario | subprocess-error-recovery | accepted | subprocess-error-propagation-trigger-first | PC-ERROR-01 | retainedEvidence | notCatalogReady |
+| Wait for a review window | retainedScenario | timer-then-human-review | accepted | timer-user-task-composition | PC-TIMER-06 | retainedEvidence | notCatalogReady |
+| Continue a review after a message | retainedScenario | message-then-human-review | accepted | intermediate-catch-message | PC-MESSAGE-03 | retainedEvidence | notCatalogReady |
+| Review a confirmed settlement | retainedScenario | message-payload-then-human-review | accepted | message-payload-catch-supplied-scalar | PC-MESSAGE-03 | retainedEvidence | notCatalogReady |
+| Review a received shipment manifest | retainedScenario | shipment-manifest-structured-payload | accepted | portable-message-payload-manifest-delivered | PC-DATA-01, PC-MESSAGE-03 | notSelected | notCatalogReady |
+| Correlate a settlement confirmation to its waiting case | retainedScenario | message-key-correlated-settlement-review | accepted | message-key-correlation-unique | PC-MESSAGE-08 | notSelected | notCatalogReady |
+| Wait for an invoice receipt | retainedScenario | addressed-receive-task | accepted | message-addressed-receive-task | PC-HUM-03 | retainedEvidence | guidedJourneyBacked |
+| Wait for a courier to pick up a parcel | retainedScenario | addressless-receive-task | accepted | addressless-receive-task | PC-HUM-06 | retainedEvidence | notCatalogReady |
+| Prepare every applicable review track | retainedScenario | inclusive-human-review-tracks | accepted | inclusive-gateway-both-true-a-then-b | — | retainedEvidence | notCatalogReady |
+| Continue on a message or deadline | retainedScenario | message-timer-event-race | accepted | event-based-gateway-message-wins | PC-CF-05 | retainedEvidence | notCatalogReady |
+| Escalate work that misses a deadline | retainedScenario | interrupting-task-deadline | accepted | activity-boundary-timer-deadline-wins | PC-TIMER-06 | retainedEvidence | notCatalogReady |
+| Withdraw an application during review | retainedScenario | interrupting-task-withdrawal-message | accepted | activity-boundary-message-message-wins | PC-MESSAGE-04 | retainedEvidence | notCatalogReady |
+| Escalate a bounded work package | retainedScenario | interrupting-subprocess-deadline | accepted | subprocess-boundary-timer-deadline-wins | PC-TIMER-06 | retainedEvidence | notCatalogReady |
+| Remind and finish monitored work | retainedScenario | non-interrupting-task-reminder | accepted | non-interrupting-boundary-timer-deadline-then-both-branches | PC-TIMER-06 | retainedEvidence | notCatalogReady |
+| Review and rework a request until accepted | retainedScenario | cyclic-human-rework | accepted | user-task-cycle-repeat-rework-exit | PC-CF-06, PC-HUM-01 | retainedEvidence | notCatalogReady |
+| Start approval from an addressed message | retainedScenario | message-start-human-approval | accepted | message-start-event | PC-MESSAGE-02 | retainedEvidence | notCatalogReady |
+| Start a scheduled review | retainedScenario | timer-start-human-review | accepted | timer-start-event | PC-TIMER-04 | retainedEvidence | notCatalogReady |
+| Stop remaining scoped work after termination | retainedScenario | subprocess-termination | accepted | terminate-end-event-trigger-first | PC-TERMINATE-01 | retainedEvidence | notCatalogReady |
+| Run a configured integration before review | retainedScenario | configured-effect-human-review | accepted | configured-task | PC-AUTO-01 | retainedEvidence | notCatalogReady |
+| Retain a mapped service result | retainedScenario | mapped-service-success | accepted | mapped-success-service-task | PC-AUTO-01 | retainedEvidence | guidedJourneyBacked |
+| Route a mapped business error to review | retainedScenario | mapped-service-boundary-error | accepted | mapped-boundary-error-service-task-caught | PC-AUTO-02, PC-ERROR-01 | retainedEvidence | notCatalogReady |
+| Review an ordered batch of documents | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-natural | PC-MI-01, PC-MI-09, PC-MI-12 | retainedEvidence | guidedJourneyBacked |
+| Escalate a batch review at its shared deadline | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-interrupted | PC-MI-01, PC-MI-09, PC-MI-12 | retainedEvidence | notCatalogReady |
+| Complete every parallel risk assessment | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-all | PC-MI-01, PC-MI-12 | retainedEvidence | guidedJourneyBacked |
+| Stop a parallel review at the first material risk | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-first | PC-MI-01, PC-MI-12 | retainedEvidence | notCatalogReady |
+| Escalate a parallel risk review at its shared deadline | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-interrupted | PC-MI-01, PC-MI-12 | retainedEvidence | notCatalogReady |
+| Review an invoice with its supplied context | retainedScenario | human-review-with-direct-data-input | accepted | activity-data-input-present | PC-DATA-05 | retainedEvidence | notCatalogReady |
+| Record an underwriting decision on the application | retainedScenario | human-decision-with-direct-data-output | accepted | activity-data-output-supplied | PC-DATA-06 | retainedEvidence | notCatalogReady |
+| Assess a claim and record its decision | retainedScenario | human-assessment-with-direct-data-input-output | accepted | activity-data-input-output-present | PC-DATA-05, PC-DATA-06 | retainedEvidence | guidedJourneyBacked |
+| Review an application with repeated reminder Messages | retainedScenario | subprocess-termination | accepted | subscription-boundary-message-repeat | PC-MESSAGE-05, PC-TIMER-06 | retainedEvidence | guidedJourneyBacked |
+| Remind an application reviewer every second | retainedScenario | subprocess-termination | accepted | subscription-boundary-timer-repeat | PC-MESSAGE-05, PC-TIMER-06 | retainedEvidence | notCatalogReady |
+| Remind the application review team until its region closes | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-timer-repeat | PC-MESSAGE-05, PC-TIMER-06 | retainedEvidence | notCatalogReady |
+| Escalate a delayed application review once | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-one-shot-fire | PC-MESSAGE-05, PC-TIMER-06 | retainedEvidence | notCatalogReady |
+| Continue audit reminders after application review closes | retainedScenario | subprocess-termination | accepted | subscription-message-host-with-child-entry-repeat | PC-MESSAGE-05, PC-TIMER-06 | retainedEvidence | notCatalogReady |
+| Await an application response during parallel review | retainedScenario | subprocess-termination | accepted | subscription-catch-message-resume | PC-MESSAGE-05, PC-TIMER-06 | retainedEvidence | notCatalogReady |
+| Await a review deadline beside independent audit | retainedScenario | subprocess-termination | accepted | subscription-catch-timer-resume | PC-MESSAGE-05, PC-TIMER-06 | retainedEvidence | notCatalogReady |
+| Receive application documents during review | retainedScenario | subprocess-termination | accepted | subscription-receive-task-resume | PC-MESSAGE-05, PC-TIMER-06 | retainedEvidence | notCatalogReady |
+| Cancel a confirmed travel itinerary | retainedScenario | dependency-aware-travel-compensation | accepted | compensation-success-b-c-a | PC-COMPENSATION-01, PC-COMPENSATION-02, PC-COMPENSATION-03 | notSelected | guidedJourneyBacked |
+| Withdraw a resource reservation | retainedScenario | transaction-reservation-withdrawal | accepted | transaction-cancellation-retained-active | PC-TX-02 | notSelected | guidedJourneyBacked |
+| Validate and classify an invoice | retainedScenario | invoice-validation-classification | accepted | classification | PC-AUTO-01, PC-DATA-05, PC-DATA-06 | retainedEvidence | notCatalogReady |
+| Review and rework an invoice | retainedScenario | invoice-validation-rework | accepted | invoice-rework | PC-CF-02, PC-CF-06 | retainedEvidence | notCatalogReady |
+| Recover from invoice business Errors | retainedScenario | invoice-business-error-recovery | accepted | invoice-business-error-recovery | PC-AUTO-02, PC-ERROR-01 | retainedEvidence | notCatalogReady |
+| Debounce an alarm before paging | retainedScenario | timer-then-human-review | accepted | intermediate-catch-timer-alarm-debounce | PC-TIMER-01 | retainedEvidence | notCatalogReady |
+| CIB Seven order goods | externalGit | cib-order-goods | rejected | none | — | notApplicable | notCatalogReady |
+| CIB Seven review invoice | externalGit | cib-review-invoice | rejected | none | — | notApplicable | notCatalogReady |
+| CIB Seven invoice receipt version 1 | externalGit | cib-invoice-receipt | rejected | none | — | notApplicable | notCatalogReady |
+| CIB Seven invoice receipt version 2 | externalGit | cib-invoice-receipt | rejected | none | — | notApplicable | notCatalogReady |
+| CIB Seven vacation request | externalGit | cib-vacation-request | rejected | none | — | notApplicable | notCatalogReady |
+| OMG incident management executable example | externalArchiveEntry | omg-incident-management | rejected | none | — | notApplicable | notCatalogReady |
+| Betsy workflow pattern 16 deferred choice | externalGit | betsy-wcp16-deferred-choice | rejected | none | — | notApplicable | notCatalogReady |
+| Broadcast order milestones as Signals | retainedScenario | signal-throw-and-catch | accepted | signal-throw-literal-intermediate-throw | PC-SIGNAL-01 | retainedEvidence | notCatalogReady |
+| Handle a case with Signal subscriptions | retainedScenario | signal-boundary-subscriptions | accepted | signal-subscriptions-bodies-ping-isolation | PC-SIGNAL-03 | retainedEvidence | notCatalogReady |
+| Hand a shift over by Signal | retainedScenario | signal-start-handover | accepted | signal-start-compositions-handover-catch-other-signal | PC-SIGNAL-02, PC-SIGNAL-04 | retainedEvidence | notCatalogReady |
+| Ship an order as soon as it is flagged | retainedScenario | conditional-start-order | accepted | conditional-start-compositions-expedited-order-absent | PC-CONDITION-02 | retainedEvidence | notCatalogReady |
+| Route answers by Conditional events | retainedScenario | conditional-catch-and-boundary | accepted | conditional-contests-pending-arms-no-choice | PC-CONDITION-03, PC-CONDITION-04 | retainedEvidence | notCatalogReady |
+| Escalate a support case review | retainedScenario | escalation-propagation | accepted | escalation-throw-propagation-catch-all | PC-ESCALATION-01 | retainedEvidence | notCatalogReady |
+| Notify a customer by thrown Messages | retainedScenario | message-throw-notification | accepted | message-throw-bound-both-sends-succeed | PC-MESSAGE-09 | retainedEvidence | notCatalogReady |
+| Undo order steps by targeted compensation | retainedScenario | compensation-targeted-throws | accepted | compensation-targeting-chain-handlers-forward | PC-COMPENSATION-02 | retainedEvidence | notCatalogReady |
+| Compute order values with JavaScript Script Tasks | retainedScenario | javascript-script-task | accepted | script-task-javascript-probe-arithmetic-total | PC-AUTO-05, PC-AUTO-06 | retainedEvidence | notCatalogReady |
+| Route an applicant by a decision | retainedScenario | business-rule-routing | accepted | business-rule-routing-high-grade-review | PC-AUTO-08 | retainedEvidence | notCatalogReady |
 
 ## MVP capability coverage
 
