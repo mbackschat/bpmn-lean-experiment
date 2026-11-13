@@ -36,8 +36,10 @@ export function ProcessMetricsWorkspace({ definitionApi, metricsApi, navigation 
   const selected = versionChoices.find((entry) => entry.version === version);
   const unavailable = definitions.isError || versions.isError;
 
+  // Only the selected Metrics tab may complete its own route; a stale one that reappears while another tab is being
+  // opened would otherwise write `tab: "metrics"` over that navigation (a guided start's opened instance, 2026-11-14).
   useEffect(() => {
-    if (selected === undefined || unavailable || navigation === undefined) return;
+    if (selected === undefined || unavailable || navigation === undefined || selection.tab !== "metrics") return;
     if (selection.process !== selected.processId || selection.version !== selected.version) {
       navigation.navigate({ ...selection, tab: "metrics", process: selected.processId, version: selected.version }, true);
     }
