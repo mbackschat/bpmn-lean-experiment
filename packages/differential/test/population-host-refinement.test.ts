@@ -77,7 +77,6 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
   const results: JsonValue[] = [];
   const inputFailures: JsonValue[] = [];
   const inputCascades: JsonValue[] = [];
-  const definitionOf = new Map<string, Deployment>();
   const deployed = (deploymentId: number, definitionRef: string, answer: ReturnType<typeof population.deploy>): void => {
     deployments.push("refused" in answer
       ? { deploymentId, definitionRef, versions: [], outcome: { kind: "deploymentRefused", code: answer.refused } }
@@ -104,9 +103,10 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
       }
       case StimulusTag.Input: {
         const chain = chains.get(stimulus.instanceId);
+        // An existing chain keeps the deployment it runs, whether an instance input or a population command started it.
         const deployment = chain === undefined
           ? registry.filter((candidate) => candidate.definitionRef === stimulus.definitionRef).at(-1)
-          : definitionOf.get(stimulus.instanceId);
+          : registry.find((candidate) => candidate.deploymentId === chain.deploymentId);
         if (deployment === undefined) {
           inputFailures.push({ commandId: stimulus.commandId, outcome: "rejected", code: "definition-not-deployed" });
           break;
@@ -116,7 +116,6 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
           inputFailures.push({ commandId: stimulus.commandId, outcome: failureName(stepped.failure), code: failureCode(stepped.failure) });
           break;
         }
-        definitionOf.set(stimulus.instanceId, deployment);
         chains.set(stimulus.instanceId, { deploymentId: deployment.deploymentId, program: deployment.program, state: stepped.value });
         population.committed(stimulus.instanceId, deployment.deploymentId, deployment.program, stepped.value, stimulus.commandId);
         population.run(stepped.value.logicalTimeMs);
