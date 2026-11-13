@@ -141,9 +141,13 @@ These are register limitation [CIB-LIM-0008](../../CIB-BPMN-RELATION-REGISTER.md
 
 ### Preserved inert notation
 
-Inert content is kept only in the exact source bytes, never in the IL, and never changes execution. It covers:
-- BPMN DI, `documentation`, Text Annotations, Associations, Groups and Categories, Lanes and Lane Sets;
-- names, `gatewayDirection` and the Definitions' `exporter` attributes;
+The kernel reader admits inert notation under every profile and never executes it. The IL carries none of it: a program keeps only the source's SHA-256 digest (`identity.sourceSha256`, `readKernelProgram` in [`index.ts`](../../../packages/bpmn-source/src/kernel-reader/index.ts)), and the exact bytes stay with the caller (`parseKernelSource` in [`source.ts`](../../../packages/bpmn-source/src/kernel-reader/source.ts)). It covers:
+- Diagram Interchange: the reader reads the Definitions' `rootElements` only, never a `BPMNDiagram`;
+- a Collaboration with its Participants and Message Flows, an inert root element (`inertRootTypes` in [`model.ts`](../../../packages/bpmn-source/src/kernel-reader/model.ts)), except the Correlation Keys of a Conversation whose Message Flow targets a catching element, which become that element's correlation criteria (`conversationKeys` in [`events.ts`](../../../packages/bpmn-source/src/kernel-reader/events.ts));
+- Lanes and Lane Sets: `scanContainer` in [`index.ts`](../../../packages/bpmn-source/src/kernel-reader/index.ts) reads a container's `flowElements` only;
+- Artifacts, that is Text Annotations, Groups with their Categories, and Associations, except an Association from a Compensation boundary Event to its handler, which `indexCompensation` in [`compensation.ts`](../../../packages/bpmn-source/src/kernel-reader/compensation.ts) reads as the compensation link;
+- `documentation` on any element;
+- a `name` the IL does not carry, `gatewayDirection` and the Definitions' `exporter` and `exporterVersion` attributes; a User Task's name is published metadata, and a Signal's and a Link's name address their Event;
 - a User Task's opaque `rendering` content inside its `extensionElements`;
 - a root-level EventDefinition, which acts only through an `eventDefinitionRef` the reader refuses.
 
