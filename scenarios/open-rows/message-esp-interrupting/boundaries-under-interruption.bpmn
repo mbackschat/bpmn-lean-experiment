@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_BoundariesUnderInterruption"
+  targetNamespace="urn:bpmn-lean:scenarios:message-esp-interrupting">
+  <bpmn:message id="Message_Abort" name="abortRegion" />
+  <bpmn:message id="Message_Hold" name="holdRegion" />
+  <bpmn:process id="Process_BoundariesUnderInterruption" name="Region boundaries under an interrupting Event Sub-Process" isExecutable="true">
+    <bpmn:startEvent id="Start_Order" />
+    <bpmn:subProcess id="Region" name="Inspect the lot">
+      <bpmn:startEvent id="Start_Inner" />
+      <bpmn:userTask id="Inner" name="Inspect the lot" />
+      <bpmn:endEvent id="End_Inner" />
+      <bpmn:sequenceFlow id="Flow_Start_Inner_Inner" sourceRef="Start_Inner" targetRef="Inner" />
+      <bpmn:sequenceFlow id="Flow_Inner_End_Inner" sourceRef="Inner" targetRef="End_Inner" />
+      <bpmn:subProcess id="ESP_RegionAbort" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_RegionAbort">
+          <bpmn:messageEventDefinition id="MED_RegionAbort" messageRef="Message_Abort" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Abort_Handler" name="Record the aborted lot" />
+        <bpmn:endEvent id="End_Abort_Handler" />
+        <bpmn:sequenceFlow id="Flow_Start_RegionAbort_Abort_Handler" sourceRef="Start_RegionAbort" targetRef="Abort_Handler" />
+        <bpmn:sequenceFlow id="Flow_Abort_Handler_End_Abort_Handler" sourceRef="Abort_Handler" targetRef="End_Abort_Handler" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Region_Deadline" attachedToRef="Region">
+      <bpmn:timerEventDefinition id="TED_Region_Deadline">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Region_Hold" attachedToRef="Region">
+      <bpmn:messageEventDefinition id="MED_Region_Hold" messageRef="Message_Hold" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Late" name="Chase the late lot" />
+    <bpmn:endEvent id="End_Late" />
+    <bpmn:userTask id="Held" name="Hold the lot" />
+    <bpmn:endEvent id="End_Held" />
+    <bpmn:userTask id="Finish" name="Release the order" />
+    <bpmn:endEvent id="End_Order" />
+    <bpmn:sequenceFlow id="Flow_Start_Order_Region" sourceRef="Start_Order" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Region_Finish" sourceRef="Region" targetRef="Finish" />
+    <bpmn:sequenceFlow id="Flow_Finish_End_Order" sourceRef="Finish" targetRef="End_Order" />
+    <bpmn:sequenceFlow id="Flow_Deadline_Late" sourceRef="Boundary_Region_Deadline" targetRef="Late" />
+    <bpmn:sequenceFlow id="Flow_Late_End_Late" sourceRef="Late" targetRef="End_Late" />
+    <bpmn:sequenceFlow id="Flow_Hold_Held" sourceRef="Boundary_Region_Hold" targetRef="Held" />
+    <bpmn:sequenceFlow id="Flow_Held_End_Held" sourceRef="Held" targetRef="End_Held" />
+  </bpmn:process>
+</bpmn:definitions>

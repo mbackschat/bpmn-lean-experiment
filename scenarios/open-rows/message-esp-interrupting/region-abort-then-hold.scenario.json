@@ -1,0 +1,104 @@
+{
+  "kind": "scenario",
+  "id": "message-esp-interrupting-region-abort-then-hold",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-esp-interrupting-boundaries",
+    "relativePath": "scenarios/open-rows/message-esp-interrupting/boundaries-under-interruption.bpmn",
+    "sha256": "81acedbc046abebf329236c3fd451a26ff202e8b415bce622fbdc9c030cd9485",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-abort-region",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_RegionAbort",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Abort"
+        }
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s03-hold-region",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Boundary_Region_Hold",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Hold"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Abort_Handler",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Abort_Handler",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Finish",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Finish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Held",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Held",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.5.4",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/operation/PvmAtomicOperationActivityStartInterruptEventScope.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/operation/PvmAtomicOperationInterruptScope.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

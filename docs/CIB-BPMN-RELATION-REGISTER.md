@@ -25,10 +25,10 @@ The counts below cover only entries recorded by this project, including the sepa
 | Normative agreement records | 24 | 0 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 13 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 41 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB interpretations of BPMN gaps or inconsistencies | 41 | 1 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 47 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 14 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 51 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 52 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1004,6 +1004,16 @@ BPMN 2.0.2 §13.3.7 evaluates the number of instances once and generates a seque
 
 **Boundary:** Sequential collection loops of both CIB profiles. The kernel reads the collection in the completing instance's scope occurrence before it is left, after the completion's writes, as CIB reads it in the body's execution that holds the item, `loopCounter` and the instance's result locals; a value that is no collection rolls the completion back (`multiInstance.notACollection`), as does a collection shorter than the next index (`multiInstance.collectionShortened`) and a failing JUEL read. A removed or null collection is `CIB-LIM-0054`'s. An earlier instance's result local that this one did not overwrite is `unsupported` (`multiInstance.sequentialResultLeftover`). With a loop-characteristics `asyncAfter` the re-read runs in the after-job, where a failure is `unsupported` (`async-boundary-failure`). Parallel loops and cardinality loops read nothing again; output aggregation with a re-read is refused (`profile.multiInstanceCollection.sequentialReread`).
 
+### CIB-INT-0044 — CIB withdraws a Sub-Process's event-triggered boundaries when an interrupting Event Sub-Process starts
+
+**Status:** Interpretation candidate from the pinned source; selected by no profile; awaits retained evidence, an interpretation and a cold review before any change to the Scopes rule ([#100](https://github.com/mbackschat/bpmn-lean-experiment/issues/100))
+
+BPMN 2.0.2 §10.3.5 and §13.5.4 let an interrupting Event Sub-Process interrupt its parent's ordinary work and run its handler in the parent's context; they do not say whether the parent Activity's own boundary Events stay armed while the handler runs. A Cancel End settles this through the Activity lifecycle (§13.3.2, Figure 13.2), an interrupting Event Sub-Process does not. Under every profile the kernel clears the parent occurrence's work and its other Event Sub-Process starts and keeps the parent's own boundaries armed in the grandparent until the parent completes ([Scopes semantics](kernel/semantics/SCOPES-SEMANTICS-SPEC.md#event-sub-processes), `Scopes.arriveScope`), so a later Timer, Message, Signal or Conditional on such a boundary interrupts the parent and removes the running handler. CIB Seven `2.2.0` starts an interrupting Event Sub-Process by interrupting the scope execution that holds it, which removes that execution's jobs and its event subscriptions except compensation; a boundary's declarations live on the execution of the Activity it is attached to, which for a Sub-Process is that same scope execution, so CIB withdraws the Sub-Process's event-triggered boundaries and only the handler remains (**H**: no retained evidence yet).
+
+**Evidence:** Pinned `pvm/runtime/operation/PvmAtomicOperationActivityStartInterruptEventScope.java:32-41` and `PvmAtomicOperationInterruptScope.java:29-48` (the interrupt of the scope execution), `persistence/entity/ExecutionEntity.java:575-588` (`removeJobs` and `removeEventSubscriptionsExceptCompensation` unless `preserveScope`, which only process instance modification sets), `bpmn/parser/BpmnParse.java:3298-3301` (a boundary's event scope is its attached Activity) with its Timer, Signal, Message and Conditional declarations at `:3424`, `:3439`, `:3455` and `:3503`. The separating witnesses [boundaries-under-interruption](../scenarios/open-rows/message-esp-interrupting/README.md) `region-abort-then-deadline` and `region-abort-then-hold`, where the kernel still lists `Region`'s Timer and Message boundaries while `Abort_Handler` waits and lets either remove the handler; their evidence run is pending.
+
+**Boundary:** Event-triggered boundaries (Timer, Message, Signal, Conditional) of the Activity whose scope an interrupting Event Sub-Process starts in, at a Sub-Process level; at the process level there is no such boundary. CIB keeps compensation subscriptions through the interrupt. A Cancel End's withdrawal of a Transaction's boundaries is Interpretation M9's I18. A variable write on the path to a Cancel End that a Conditional boundary on the Transaction might see, which CIB dispatches before the interrupt, is outside this entry.
+
 ## Known limitation register
 
 ### CIB-INT-0042 — CIB offers a task's submitted variables to its own Conditional boundaries before it leaves
@@ -1276,7 +1286,7 @@ BPMN 2.0.2 §13.3.4 lets a Sub-Process without a start Event begin, on entry, ev
 
 **Evidence:** Pinned `BpmnParse.java:967-968` (the deployment check, `process` and `subProcess` only), `:1083-1084` (a start Event sets `INITIAL_ACTIVITY`), `:3902-3917` (`parseTransaction`), `SubProcessActivityBehavior.java:41-45` (`ensureNotNull` on the initial activity); the kernel test `packages/differential/test/scope-start-profiles.test.ts`. The witnesses are [scope-without-start](../scenarios/open-rows/scope-without-start/README.md).
 
-**Boundary:** Embedded Sub-Processes, a looping one and a compensation handler included, and Transactions. An Event Sub-Process always holds its triggering start. A process or called process without a start Event is outside this entry: the kernel admits it and rejects the start (`no-start-event`) or fails the Call (`called-process-without-none-start`), where CIB refuses the deployment.
+**Boundary:** Embedded Sub-Processes, a looping one and a compensation handler included, and Transactions. An Event Sub-Process always holds its triggering start. A process or called process without a start Event is [CIB-LIM-0056](#cib-lim-0056--cib-refuses-deploying-a-process-without-a-start-event-which-the-kernel-admits-and-cannot-start)'s.
 
 ### CIB-LIM-0026 — CIB keeps Signal names unique per document and per event scope
 
@@ -1565,6 +1575,16 @@ When one micro-step fires several items, at one evaluation in the input's ranked
 **Evidence:** The pinned source above; the kernel's `Conditions.overtakes` and `Step.stale`; `interruption-queued-begin.test.ts` (a Signal-throwing non-interrupting handler refused under the write order and under the ranking, and committed with the interruption first), `condition-simultaneous.test.ts`, `conditional-preemption.test.ts`; the refused schedules `esp-mixed-warn-then-stop`, `nested-inner-then-outer`, `enabled-sub-start-then-boundary`, `enabled-call-start-then-boundary`, `enabled-effect-start-then-boundary`, `standards-nested-inner-then-outer` and `standards-enabled-start-then-boundary` of [`conditional-contests`](../scenarios/open-rows/conditional-contests/README.md), beside the committed `esp-mixed-stop-first`, `nested-outer-first`, `standards-mixed-stop-first`, `standards-mixed-warn-then-stop` and `standards-nested-outer-first`.
 
 **Boundary:** Firings of one micro-step's evaluations and writes, and queued begins, armings and `occur`s of one closure, under every profile. A token in flight before the interrupting firing ran, a sibling branch of a fork whose other branch raises among them, is removed with its region as before; work that reaches the removed region only after a later micro-step's tokens move is outside this entry.
+
+### CIB-LIM-0056 — CIB refuses deploying a process without a start Event, which the kernel admits and cannot start
+
+**Status:** Known limitation within reviewed scope; a deployment-outcome difference under every profile, not an over-claim; selected by no profile, and no option refuses it at admission ([#77](https://github.com/mbackschat/bpmn-lean-experiment/issues/77))
+
+BPMN 2.0.2 §10.5.2 makes a start Event optional at every process level, a top-level and a called process included: without one, every flow object without incoming flow, compensation Activities excepted, is instantiated when the process is. CIB Seven `2.2.0` refuses deploying a `process` without a `startEvent` ("must define a startEvent element"), as it refuses a `subProcess` (CIB-LIM-0024). The kernel admits such a process under every profile and implements no implicit start at the process level: it rejects the start of a root instance (`no-start-event`) and fails a Call to such a process (`called-process-without-none-start`), so the deployment that CIB refuses is admitted and then answers no start. Extending `ProfileOptions.scopeStart = required` from embedded scopes to process levels would refuse it at admission under the cibseven profiles and make the outcomes agree.
+
+**Evidence:** Pinned `BpmnParse.java:966-968` (the check, `process` and `subProcess` alike); the retained answer of [event-race-compositions](../scenarios/open-rows/event-race-compositions/README.md) `instantiating-no-start-start` (CIB Seven `2.2.0`), whose deployment is `unsupported`, while the kernel refuses that model for its instantiating Event-Based Gateway (`gateway.eventBased.instantiate`) before this difference shows; the kernel's `Hooks.chooseStart` (`no-start-event`) and the Call's `called-process-without-none-start`.
+
+**Boundary:** Top-level and called processes with no start Event under every profile. Embedded Sub-Processes and Transactions are CIB-LIM-0024's. A called process whose only starts are triggered is outside this entry.
 
 ## Extension register
 
