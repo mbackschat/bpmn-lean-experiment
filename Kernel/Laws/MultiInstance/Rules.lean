@@ -123,7 +123,7 @@ theorem numbered_of_placed {s : State} {run : MultiInstanceRun} (numbered : Numb
 
 An instance's begin waits in a queue from its body's entry or from its predecessor's completion until the closure
 reaches it, so whether instances number in item order depends on the order of the begins still queued. A committed
-running state queues nothing, so these are inductive strengthening (root decision E6, 2026-11-15). -/
+running state queues nothing, so these are inductive strengthening (root decision, 2026-11-14). -/
 
 /-- The queued begin `request` begins the instance in slot `index` of `run`. -/
 def QueuedFor (run : MultiInstanceRun) (index : Nat) (request : BeginRequest) : Prop :=

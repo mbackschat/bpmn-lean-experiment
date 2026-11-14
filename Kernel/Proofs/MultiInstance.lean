@@ -51,7 +51,7 @@ def Apart (s : State) (run : MultiInstanceRun) : Prop :=
 `Apart`, its scope occurrence is its body occurrence's (`BodyOwns`), and each active instance's scope occurrence belongs to
 no occurrence (`InstancesUnowned`), is no compensation handler's context (`InstancesUnheld`) and holds no occurrence of
 the Activity but its instance (`InstancesPlaced`), so that `Shaped`'s numbering of the instances numbers every
-occurrence of the Activity in them (`Laws.MultiInstance.numbered_of_placed`; root decisions E1 and E5, 2026-11-15). -/
+occurrence of the Activity in them (`Laws.MultiInstance.numbered_of_placed`; root decision, 2026-11-14). -/
 structure RunFormed (program : Program) (s : State) (run : MultiInstanceRun) : Prop where
   owned : Owned s run
   shaped : ∀ loop, LoopOf program run.element loop → Shaped s run loop
@@ -68,8 +68,8 @@ proves it preserved, as P2 does `WellFormed`: by a committed input (`RunsShaped`
 the after-state), at a start (`RunsFormedAtStart`) and in every instance of a population run
 (`RunsFormedInPopulation`). The clauses besides `Shaped` and `Apart` are inductive strengthening: without them a
 body whose occurrence is no Multi-Instance element's would outlive its occurrence, and two runs of one occurrence would
-let a completion fill one and finish the other (root decision D2, 2026-11-14), and without `BeginsQueued` a before-state
-whose queues hold begins out of slot order would number its instances out of order (root decision E6, 2026-11-15). -/
+let a completion fill one and finish the other (root decision, 2026-11-14), and without `BeginsQueued` a before-state
+whose queues hold begins out of slot order would number its instances out of order (root decision, 2026-11-14). -/
 structure RunsFormed (program : Program) (s : State) : Prop where
   keyed : RunsKeyed s
   formed : ∀ run ∈ s.slots.multiInstances, RunFormed program s run
