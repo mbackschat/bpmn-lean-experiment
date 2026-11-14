@@ -509,7 +509,7 @@ theorem Ended.queue {inv : State → Prop} {settled : State → Nat → Prop} (o
 theorem Ended.done {inv : State → Prop} {settled : State → Nat → Prop} {state ended : State}
     (done : Ended inv settled state ended) {scope : ScopeOccurrenceId} :
     inv ended ∧ Follows settled state ended ∧ (Unheld state scope → ∀ entry ∈ state.scopes, entry ∈ ended.scopes) :=
-  ⟨done.1, done.2.1, fun _ entry member => done.2.2.1 ▸ member⟩
+  ⟨done.1, done.2.1, fun _ _entry member => done.2.2.1 ▸ member⟩
 
 theorem Ended.complete {inv : State → Prop} {settled : State → Nat → Prop} (ops : RunsOps inv settled)
     {state ended : State} (done : Ended inv settled state ended) {scope : ScopeOccurrenceId} {id : Nat}
