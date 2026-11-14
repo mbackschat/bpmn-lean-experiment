@@ -39,8 +39,9 @@ theorem ReservationsClaimed.shrink {before after : State} (claimed : Reservation
     (issued : before.nextIssue ≤ after.nextIssue)
     (signals : after.signals.Sublist before.signals) (tokens : after.tokens.Sublist before.tokens) :
     ReservationsClaimed after where
-  attached item member attached other inside same :=
-    claimed.attached item (items item member) attached other (items other inside) same
+  attached item member attached reserved other inside same :=
+    have ⟨found, held, rest⟩ := reserved
+    claimed.attached item (items item member) attached ⟨found, occurrences found held, rest⟩ other (items other inside) same
   named request queued := by
     obtain ⟨nodup, beginnable⟩ := claimed.named request (queued.shrink signals tokens)
     refine ⟨nodup, fun id named => ?_⟩

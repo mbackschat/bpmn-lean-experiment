@@ -78,6 +78,10 @@ theorem hooks_completed : Registry.hooks.completed = Feature.Compensation.comple
 theorem hooks_failCompensation : Registry.hooks.failCompensation = Feature.Compensation.failCompensation := by
   simp only [Registry.hooks]
 
+/-- Subscriptions arrives at every catch Event. -/
+theorem hooks_arriveCatch : Registry.hooks.arriveCatch = Feature.Subscriptions.arriveCatch := by
+  simp only [Registry.hooks]
+
 /-- Data applies every write. -/
 theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOutputs := by
   simp only [Registry.hooks]

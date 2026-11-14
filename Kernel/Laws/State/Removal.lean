@@ -180,8 +180,9 @@ theorem disarm_wellFormed {s : State} (formed : WellFormed s) (host : Nat) : Wel
       · rw [Bool.false_or, Bool.not_eq_true', List.any_eq_false]
         intro reserving held same
         obtain ⟨heldOld, attached⟩ := List.mem_filter.mp held
-        have equal := formed.claimed.attached reserving heldOld (by simp at attached; simp [attached]) item old
-          (by simp at same; rw [← waits, same])
+        have named : occurrence.id = reserving.occurrence := by simp at same; exact same.symm
+        have equal := formed.claimed.attached reserving heldOld (by simp at attached; simp [attached])
+          ⟨occurrence, inside, named, begunFlag⟩ item old (by rw [← waits, named])
         subst equal
         simp at attached unattached
         exact unattached attached

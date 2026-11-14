@@ -354,8 +354,12 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       · exact formed.ownedBelow entry member occurrence old owned
   case claimed =>
     exact {
-      attached := fun item member attached other inside same =>
-        formed.claimed.attached item (begins.openItems ▸ member) attached other (begins.openItems ▸ inside) same
+      attached := fun item member attached reserved other inside same => by
+        obtain ⟨found, held, named, unbegun⟩ := reserved
+        rcases members found held with rfl | ⟨old, _⟩
+        · simp [begins.isBegun] at unbegun
+        · exact formed.claimed.attached item (begins.openItems ▸ member) attached ⟨found, old, named, unbegun⟩ other
+            (begins.openItems ▸ inside) same
       named := fun other queued => by
         have queuedBefore : Queued before other := by simpa [Queued, begins.signals, begins.tokens] using queued
         obtain ⟨nodup, beginnable⟩ := formed.claimed.named other queuedBefore
@@ -563,8 +567,14 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       · exact formed.ownedBelow entry member occurrence old owned
   case claimed =>
     exact {
-      attached := fun item member attached other inside same =>
-        formed.claimed.attached item (reserves.openItems ▸ member) attached other (reserves.openItems ▸ inside) same
+      attached := fun item member attached reserved other inside same => by
+        obtain ⟨found, held, named, unbegun⟩ := reserved
+        rcases members found held with rfl | old
+        · obtain ⟨waited, waitedIn, same, _⟩ := formed.owned.itemOccurrences item (reserves.openItems ▸ member)
+          have := formed.issued.occurrences waited waitedIn
+          omega
+        · exact formed.claimed.attached item (reserves.openItems ▸ member) attached ⟨found, old, named, unbegun⟩ other
+            (reserves.openItems ▸ inside) same
       named := fun request queued => by
         obtain ⟨nodup, beginnable⟩ := formed.claimed.named request (queuedBefore request queued)
         refine ⟨nodup, fun id named => ?_⟩
@@ -752,8 +762,12 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
       · exact formed.ownedBelow entry inside found old owned
   case claimed =>
     exact {
-      attached := fun item inside attached other held same =>
-        formed.claimed.attached item (starts_.openItems ▸ inside) attached other (starts_.openItems ▸ held) same
+      attached := fun item inside attached reserved other held same => by
+        obtain ⟨found, present, named, unbegun⟩ := reserved
+        rcases members found present with rfl | ⟨old, _⟩
+        · simp at unbegun
+        · exact formed.claimed.attached item (starts_.openItems ▸ inside) attached ⟨found, old, named, unbegun⟩ other
+            (starts_.openItems ▸ held) same
       named := fun request queued => by
         obtain ⟨nodup, beginnable⟩ := formed.claimed.named request (queuedBefore request queued)
         refine ⟨nodup, fun id named => ?_⟩

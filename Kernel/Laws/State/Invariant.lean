@@ -220,13 +220,14 @@ def Unclaimed (s : State) (id : Nat) : Prop :=
 /-- `first` occurs in `l` before `second`. -/
 def Precedes {α : Type} (l : List α) (first second : α) : Prop := [first, second].Sublist l
 
-/-- Each reservation has one claimant, so it begins once: an item attached to a host holds its reservation alone, as
-`State.openSubscription` reserves afresh for each subscription; a queued begin names distinct beginnable reservations,
+/-- Each reservation has one claimant, so it begins once: an item attached to a host holds its unbegun reservation
+alone, as `State.openSubscription` reserves afresh for each subscription; a queued begin names distinct beginnable reservations,
 which no other queued begin or completion names, as a firing that queues a begin closes the item that held its
 reservation (`Subscriptions.fireBoundary`, `fireEventStart`). -/
 structure ReservationsClaimed (s : State) : Prop where
-  attached : ∀ item ∈ s.openItems, item.attachedTo.isSome = true → ∀ other ∈ s.openItems,
-    other.occurrence = item.occurrence → other = item
+  attached : ∀ item ∈ s.openItems, item.attachedTo.isSome = true →
+    (∃ occurrence ∈ s.occurrences, occurrence.id = item.occurrence ∧ occurrence.begun = false) → ∀ other ∈ s.openItems,
+      other.occurrence = item.occurrence → other = item
   named : ∀ request, Queued s request → (names request).Nodup ∧ ∀ id ∈ names request, Beginnable s request.scope id
   signalsApart : ∀ first second, Precedes s.signals (.begin first) (.begin second) →
     ∀ id ∈ names first, id ∉ names second
@@ -740,7 +741,8 @@ theorem shared_reservation_rejected (kind : OpenKind) :
       [{ id := 8, kind, element := ⟨"Timer"⟩, scope := processRoot, occurrence := 7, attachedTo := some 5 },
         { id := 9, kind, element := ⟨"Timer"⟩, scope := processRoot, occurrence := 7 }] } := fun claimed => by
   have := claimed.attached { id := 8, kind, element := ⟨"Timer"⟩, scope := processRoot, occurrence := 7, attachedTo := some 5 }
-    (List.mem_cons_self ..) rfl { id := 9, kind, element := ⟨"Timer"⟩, scope := processRoot, occurrence := 7 }
+    (List.mem_cons_self ..) rfl ⟨reservation, by simp [armedState], rfl, rfl⟩
+    { id := 9, kind, element := ⟨"Timer"⟩, scope := processRoot, occurrence := 7 }
     (List.mem_cons_of_mem _ (List.mem_singleton.mpr rfl)) rfl
   simp at this
 

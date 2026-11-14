@@ -493,6 +493,9 @@ structure SubscriptionsOps (inv : State → Prop) : Prop where
   rekind : ∀ state (change : OpenItem → OpenItem), inv state →
     (∀ item, change item = { item with kind := (change item).kind }) → inv { state with openItems := state.openItems.map change }
   disarm : ∀ state host, inv state → inv (state.disarm host)
+  /-- An item opened for a begun occurrence that stands. -/
+  openItem : ∀ state kind occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    inv (state.openItem kind occurrence)
 
 private theorem ok_bind {α β ε : Type} {x : Except ε α} {f : α → Except ε β} {b : β} (ran : (x >>= f) = .ok b) :
     ∃ a, x = .ok a ∧ f a = .ok b := by
@@ -537,6 +540,38 @@ theorem evaluateItem_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {
   all_goals first
     | exact holds
     | exact ops.rekind _ _ holds fun open_ => by split <;> rfl
+
+/-- An item's evaluation at arming keeps `inv`. -/
+theorem armed_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {subscription : Subscription}
+    {item : OpenItem} {state after : State} {fires : Bool} (holds : inv state)
+    (ran : Feature.Subscriptions.armed ctx subscription item state = .ok (after, fires)) : inv after := by
+  unfold Feature.Subscriptions.armed at ran
+  split at ran
+  · exact evaluateItem_keeps ops holds ran
+  · cases ran
+    exact holds
+
+/-- `Hooks.arriveCatch` keeps `inv` for a begun occurrence that stands. -/
+theorem arriveCatch_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {header : Header}
+    {payload : EventPayload} {subscription : Subscription} {occurrence : Occurrence} {state after : State}
+    (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (ran : Feature.Subscriptions.arriveCatch ctx header payload subscription occurrence state = .ok after) :
+    inv after := by
+  unfold Feature.Subscriptions.arriveCatch at ran
+  obtain ⟨kind?, _, ran⟩ := ok_bind ran
+  split at ran
+  · have opened := ops.openItem state ‹_› occurrence holds member begun
+    dsimp only at ran
+    split at ran
+    · obtain ⟨⟨evaluated, fires⟩, evaluation, ran⟩ := ok_bind ran
+      have kept := armed_keeps ops opened evaluation
+      cases ran
+      split
+      · exact fireAll_keeps ops _ _ _ kept
+      · exact kept
+    · cases ran
+      exact opened
+  · cases ran
 
 /-- `Hooks.written` keeps `inv`. -/
 theorem offerWrites_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {writes : List WriteEvent}

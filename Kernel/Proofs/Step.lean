@@ -283,6 +283,7 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps Laws.State.WellFo
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
   rekind _ _ formed kept := Laws.State.rekind_wellFormed formed kept
   disarm _ host formed := Laws.State.disarm_wellFormed formed host
+  openItem _ kind _ formed member begun := Laws.State.openItem_wellFormed formed kind member begun
 
 /-- Disarming a host keeps the completion pipeline's frame and leaves nothing attached to the host. -/
 theorem disarm_frame (state : State) (host : Nat) : Laws.Step.PipelineFrame state (state.disarm host) ∧
@@ -303,6 +304,15 @@ theorem registered_leave : ∀ ctx occurrence state after, Laws.State.WellFormed
   obtain ⟨kept, disarmed⟩ := Laws.Subscriptions.leave_keeps subscriptionsOps formed ran
   subst disarmed
   exact ⟨kept, disarm_frame state occurrence.id⟩
+
+/-- `HookContract.arriveCatch` of the registered hooks. -/
+theorem registered_arriveCatch : ∀ ctx header payload subscription occurrence state after, Laws.State.WellFormed state →
+    occurrence ∈ state.occurrences → occurrence.begun = true →
+    Registry.hooks.arriveCatch ctx header payload subscription occurrence state = .ok after →
+    Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ _ formed member begun ran
+  rw [Laws.Registry.hooks_arriveCatch] at ran
+  exact Laws.Subscriptions.arriveCatch_keeps subscriptionsOps formed member begun ran
 
 /-- `HookContract.written` of the registered hooks. -/
 theorem registered_written : ∀ ctx writes state after, Laws.State.WellFormed state →

@@ -226,13 +226,13 @@ theorem rekind_wellFormed {s : State} (formed : WellFormed s) {change : OpenItem
     rw [keys]
     exact formed.occurrencesCounted
   case claimed =>
-    refine ⟨fun item member attached other inside same => ?_, fun request queued => ?_, formed.claimed.signalsApart,
-      formed.claimed.tokensApart, formed.claimed.queuesApart, formed.claimed.uncompleted⟩
+    refine ⟨fun item member attached reserved other inside same => ?_, fun request queued => ?_,
+      formed.claimed.signalsApart, formed.claimed.tokensApart, formed.claimed.queuesApart, formed.claimed.uncompleted⟩
     · obtain ⟨old, oldInside, rfl⟩ := back item member
       obtain ⟨oldOther, otherInside, rfl⟩ := back other inside
-      rw [kept old] at attached same
+      rw [kept old] at attached same reserved
       rw [kept oldOther] at same
-      rw [formed.claimed.attached old oldInside attached oldOther otherInside same]
+      rw [formed.claimed.attached old oldInside attached reserved oldOther otherInside same]
     · obtain ⟨nodup, beginnable⟩ := formed.claimed.named request queued
       refine ⟨nodup, fun id named => ?_⟩
       obtain ⟨below, facts⟩ := beginnable id named
@@ -390,6 +390,97 @@ theorem waited_unnamed {s : State} (formed : WellFormed s) {item : OpenItem} (me
     obtain ⟨occurrence, inside, same, _⟩ := formed.owned.itemOccurrences item member
     have := (((formed.claimed.named request queued).2 _ named).2 occurrence inside same).2.1 item member
     exact this.1 rfl
+
+/-- An item opened at the counter for a begun occurrence that stands keeps a state well-formed: it holds no
+reservation, so nothing queued begins what it waits for. -/
+theorem openItem_wellFormed {s : State} (formed : WellFormed s) (kind : OpenKind) {occurrence : Occurrence}
+    (member : occurrence ∈ s.occurrences) (begun : occurrence.begun = true) : WellFormed (s.openItem kind occurrence) := by
+  rw [openItem_eq]
+  have counted : WellFormed { s with nextIssue := s.nextIssue + 1 } := by
+    have := issue_wellFormed formed
+    rw [issue_eq] at this
+    exact this
+  generalize opened : ({
+      id := s.nextIssue
+      kind
+      element := occurrence.element
+      scope := occurrence.scope
+      occurrence := occurrence.id } : OpenItem) = item
+  have fresh : ∀ other ∈ s.openItems, other.id < item.id := fun other inside => by
+    rw [← opened]
+    exact formed.issued.items other inside
+  have waits : item.occurrence = occurrence.id := by rw [← opened]
+  have unattached : item.attachedTo = none := by rw [← opened]
+  have members : ∀ found ∈ s.openItems ++ [item], found ∈ s.openItems ∨ found = item := fun found inside => by
+    simpa using inside
+  have unnamed := begun_unnamed formed member begun
+  show WellFormed { s with nextIssue := s.nextIssue + 1, openItems := s.openItems ++ [item] }
+  have instances : ∀ x, State.instanceOf { s with nextIssue := s.nextIssue + 1, openItems := s.openItems ++ [item] } x =
+      s.instanceOf x := instanceOf_congr rfl rfl
+  have keys : key { s with nextIssue := s.nextIssue + 1, openItems := s.openItems ++ [item] } = key s :=
+    funext fun _ => key_congr (instances _)
+  refine ⟨?issued, ?distinct, counted.startedOnce, ⟨counted.activations.keys, counted.activations.positive⟩,
+    by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations, ?owned, ?rooted,
+    ⟨counted.variables.scopes, counted.variables.names⟩, counted.failure,
+    ⟨counted.queue.arm, counted.queue.armScope, counted.queue.armGateway, counted.queue.ends⟩, counted.counted,
+    by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted, counted.ownedBelow, ?claimed⟩
+  case issued =>
+    refine ⟨counted.issued.occurrences, fun found inside => ?_, counted.issued.scopes⟩
+    rcases members found inside with old | rfl
+    · exact counted.issued.items found old
+    · rw [← opened]
+      exact Nat.lt_succ_self _
+  case distinct =>
+    refine ⟨counted.distinct.occurrences, ?_, counted.distinct.scopes, keys ▸ formed.distinct.keys⟩
+    rw [List.map_append, List.nodup_append]
+    exact ⟨formed.distinct.items, by simp, fun a old b new same => by
+      obtain ⟨other, inside, rfl⟩ := List.mem_map.mp old
+      simp at new
+      have := fresh other inside
+      omega⟩
+  case owned =>
+    refine ⟨counted.owned.occurrenceScopes, fun found inside => ?_, fun found inside => ?_, fun found inside => ?_,
+      counted.owned.scopeOwners, counted.owned.variableScopes, counted.owned.tokenScopes⟩
+    · rcases members found inside with old | rfl
+      · exact formed.owned.itemScopes found old
+      · rw [← opened]
+        exact formed.owned.occurrenceScopes occurrence member
+    · rcases members found inside with old | rfl
+      · exact formed.owned.itemOccurrences found old
+      · rw [← opened]
+        exact ⟨occurrence, member, rfl, rfl, rfl⟩
+    · rcases members found inside with old | rfl
+      · exact formed.owned.attachments found old
+      · intro host hangs
+        simp [unattached] at hangs
+  case rooted =>
+    exact ⟨counted.rooted.1, counted.rooted.2.1, fun scope inside =>
+      Within.congr (s := s) (t := { s with nextIssue := s.nextIssue + 1, openItems := s.openItems ++ [item] }) rfl
+        (formed.rooted.2.2 scope inside)⟩
+  case claimed =>
+    refine ⟨fun found inside attached reserved other held same => ?_, fun request queued => ?_,
+      formed.claimed.signalsApart, formed.claimed.tokensApart, formed.claimed.queuesApart, formed.claimed.uncompleted⟩
+    · rcases members found inside with old | rfl
+      · rcases members other held with oldOther | rfl
+        · exact formed.claimed.attached found old attached reserved other oldOther same
+        · obtain ⟨reservation, present, named, unbegun⟩ := reserved
+          have := nodup_map_eq formed.distinct.occurrences present member (named.trans (same.symm.trans waits))
+          subst this
+          simp [begun] at unbegun
+      · simp [unattached] at attached
+    · obtain ⟨nodup, beginnable⟩ := formed.claimed.named request queued
+      refine ⟨nodup, fun id named => ?_⟩
+      obtain ⟨below, facts⟩ := beginnable id named
+      refine ⟨Nat.lt_succ_of_lt below, fun found present same => ?_⟩
+      obtain ⟨unbegun, free, instance_⟩ := facts found present same
+      refine ⟨unbegun, fun waiting inside => ?_, fun stands => by
+        rw [instances, instances]
+        exact instance_ stands⟩
+      rcases members waiting inside with old | rfl
+      · exact free waiting old
+      · refine ⟨fun equal => unnamed request queued ?_, by simp [unattached]⟩
+        rw [← waits, equal]
+        exact named
 
 private theorem pair_of_append_absent {α : Type} {a b : α} {l m : List α} (pair : [a, b].Sublist (l ++ m))
     (first : a ∉ m) (second : b ∉ m) : [a, b].Sublist l := by

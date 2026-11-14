@@ -266,6 +266,13 @@ theorem signal_eq (state : State) (signal : Signal) : state.signal signal = { st
 theorem issue_eq (state : State) : state.issue = ({ state with nextIssue := state.nextIssue + 1 }, state.nextIssue) := by
   simp only [State.issue]
 
+theorem openItem_eq (state : State) (kind : OpenKind) (occurrence : Occurrence) : state.openItem kind occurrence =
+    { state with
+        nextIssue := state.nextIssue + 1
+        openItems := state.openItems ++
+          [{ id := state.nextIssue, kind, element := occurrence.element, scope := occurrence.scope, occurrence := occurrence.id }] } := by
+  simp only [State.openItem, State.issue]
+
 theorem recordEnd_eq (state : State) (key : OccurrenceKey) (terminal : Terminal) :
     state.recordEnd key terminal = { state with draft := { state.draft with ended := state.draft.ended ++ [(key, terminal)] } } := by
   simp only [State.recordEnd]
