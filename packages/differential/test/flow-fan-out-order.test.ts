@@ -41,6 +41,10 @@ const refused: ReadonlyArray<readonly [string, string]> = [
   ["call-error-escapes", "flow.concurrentInterference"],
   ["handlers-together", "flow.concurrentWrite"],
   ["handlers-together-subjects-swapped", "flow.concurrentWrite"],
+  ["handlers-across-choice", "flow.concurrentWrite"],
+  ["handlers-reentered", "flow.concurrentWrite"],
+  ["handlers-returning", "flow.concurrentWrite"],
+  ["handlers-in-reentered-scope", "flow.concurrentWrite"],
   ["instances-woken-together", "multiInstance.concurrentInstances"],
 ];
 
@@ -51,7 +55,9 @@ for (const [name, code] of refused) {
   });
 }
 
-const controls = ["caught-error-in-branch", "single-catch", "interrupting-boundary-around-thrower", "call-error-caught-inside"];
+const controls = [
+  "caught-error-in-branch", "single-catch", "interrupting-boundary-around-thrower", "call-error-caught-inside", "handlers-in-sequence",
+];
 
 for (const name of controls) {
   test(`${name}: a fan-out no order can change is admitted`, async () => {

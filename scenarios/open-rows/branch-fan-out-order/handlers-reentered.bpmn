@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_HandlersReentered" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:handlers-reentered">
+  <process id="Process_HandlersReentered" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <parallelGateway id="Fork" />
+    <userTask id="Review" />
+    <userTask id="Book_A" />
+    <boundaryEvent id="Compensate_A" attachedToRef="Book_A" cancelActivity="false"><compensateEventDefinition /></boundaryEvent>
+    <userTask id="Book_B" />
+    <boundaryEvent id="Compensate_B" attachedToRef="Book_B" cancelActivity="false"><compensateEventDefinition /></boundaryEvent>
+    <subProcess id="Undo_A" isForCompensation="true">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">a</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="UndoStarted_A" />
+      <endEvent id="UndoEnded_A" />
+      <sequenceFlow id="Flow_UndoInner_A" sourceRef="UndoStarted_A" targetRef="UndoEnded_A" />
+    </subProcess>
+    <subProcess id="Undo_B" isForCompensation="true">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">b</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="UndoStarted_B" />
+      <endEvent id="UndoEnded_B" />
+      <sequenceFlow id="Flow_UndoInner_B" sourceRef="UndoStarted_B" targetRef="UndoEnded_B" />
+    </subProcess>
+    <userTask id="Wait" />
+    <intermediateThrowEvent id="Undo"><compensateEventDefinition /></intermediateThrowEvent>
+    <userTask id="Inspect" />
+    <endEvent id="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fork" />
+    <sequenceFlow id="Flow_ToA" sourceRef="Fork" targetRef="Book_A" />
+    <sequenceFlow id="Flow_ToReview" sourceRef="Fork" targetRef="Review" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Review" targetRef="Book_A" />
+    <sequenceFlow id="Flow_FromA" sourceRef="Book_A" targetRef="Book_B" />
+    <sequenceFlow id="Flow_FromB" sourceRef="Book_B" targetRef="Wait" />
+    <sequenceFlow id="Flow_Waited" sourceRef="Wait" targetRef="Undo" />
+    <sequenceFlow id="Flow_Undone" sourceRef="Undo" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="Finished" />
+    <association associationDirection="One" sourceRef="Compensate_A" targetRef="Undo_A" />
+    <association associationDirection="One" sourceRef="Compensate_B" targetRef="Undo_B" />
+  </process>
+</definitions>

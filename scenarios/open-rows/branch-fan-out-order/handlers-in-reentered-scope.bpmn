@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_HandlersInReenteredScope" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:handlers-in-reentered-scope">
+  <process id="Process_HandlersInReenteredScope" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <subProcess id="Order">
+      <startEvent id="OrderStarted" />
+      <subProcess id="Region">
+        <startEvent id="RegionStarted" />
+        <subProcess id="Book_A">
+          <startEvent id="BookStarted_A" />
+          <endEvent id="BookEnded_A" />
+          <sequenceFlow id="Flow_BookInner_A" sourceRef="BookStarted_A" targetRef="BookEnded_A" />
+          <subProcess id="Undo_A" triggeredByEvent="true">
+            <startEvent id="UndoStarted_A" isInterrupting="false"><compensateEventDefinition /></startEvent>
+            <subProcess id="Write_A">
+              <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">a</camunda:outputParameter></camunda:inputOutput></extensionElements>
+              <startEvent id="WriteStarted_A" />
+              <endEvent id="WriteEnded_A" />
+              <sequenceFlow id="Flow_WriteInner_A" sourceRef="WriteStarted_A" targetRef="WriteEnded_A" />
+            </subProcess>
+            <endEvent id="UndoEnded_A" />
+            <sequenceFlow id="Flow_UndoStarted_A" sourceRef="UndoStarted_A" targetRef="Write_A" />
+            <sequenceFlow id="Flow_UndoWrote_A" sourceRef="Write_A" targetRef="UndoEnded_A" />
+          </subProcess>
+        </subProcess>
+        <subProcess id="Book_B">
+          <startEvent id="BookStarted_B" />
+          <endEvent id="BookEnded_B" />
+          <sequenceFlow id="Flow_BookInner_B" sourceRef="BookStarted_B" targetRef="BookEnded_B" />
+          <subProcess id="Undo_B" triggeredByEvent="true">
+            <startEvent id="UndoStarted_B" isInterrupting="false"><compensateEventDefinition /></startEvent>
+            <subProcess id="Write_B">
+              <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">b</camunda:outputParameter></camunda:inputOutput></extensionElements>
+              <startEvent id="WriteStarted_B" />
+              <endEvent id="WriteEnded_B" />
+              <sequenceFlow id="Flow_WriteInner_B" sourceRef="WriteStarted_B" targetRef="WriteEnded_B" />
+            </subProcess>
+            <endEvent id="UndoEnded_B" />
+            <sequenceFlow id="Flow_UndoStarted_B" sourceRef="UndoStarted_B" targetRef="Write_B" />
+            <sequenceFlow id="Flow_UndoWrote_B" sourceRef="Write_B" targetRef="UndoEnded_B" />
+          </subProcess>
+        </subProcess>
+        <endEvent id="RegionEnded" />
+        <sequenceFlow id="Flow_RegionStarted" sourceRef="RegionStarted" targetRef="Book_A" />
+        <sequenceFlow id="Flow_FromA" sourceRef="Book_A" targetRef="Book_B" />
+        <sequenceFlow id="Flow_FromB" sourceRef="Book_B" targetRef="RegionEnded" />
+      </subProcess>
+      <subProcess id="Undo_Order" triggeredByEvent="true">
+        <startEvent id="UndoStarted_Order" isInterrupting="false"><compensateEventDefinition /></startEvent>
+        <subProcess id="Prepare_Order">
+          <startEvent id="PrepareStarted_Order" />
+          <endEvent id="PrepareEnded_Order" />
+          <sequenceFlow id="Flow_PrepareInner_Order" sourceRef="PrepareStarted_Order" targetRef="PrepareEnded_Order" />
+        </subProcess>
+        <intermediateThrowEvent id="Undo_Inner"><compensateEventDefinition /></intermediateThrowEvent>
+        <endEvent id="UndoEnded_Order" />
+        <sequenceFlow id="Flow_UndoStarted_Order" sourceRef="UndoStarted_Order" targetRef="Prepare_Order" />
+        <sequenceFlow id="Flow_Prepared_Order" sourceRef="Prepare_Order" targetRef="Undo_Inner" />
+        <sequenceFlow id="Flow_UndoInner_Order" sourceRef="Undo_Inner" targetRef="UndoEnded_Order" />
+      </subProcess>
+      <userTask id="Check" />
+      <boundaryEvent id="Retry" attachedToRef="Check"><timerEventDefinition><timeDuration>PT1H</timeDuration></timerEventDefinition></boundaryEvent>
+      <endEvent id="OrderEnded" />
+      <sequenceFlow id="Flow_OrderStarted" sourceRef="OrderStarted" targetRef="Region" />
+      <sequenceFlow id="Flow_FromRegion" sourceRef="Region" targetRef="Check" />
+      <sequenceFlow id="Flow_Retried" sourceRef="Retry" targetRef="Region" />
+      <sequenceFlow id="Flow_Checked" sourceRef="Check" targetRef="OrderEnded" />
+    </subProcess>
+    <intermediateThrowEvent id="Undo"><compensateEventDefinition /></intermediateThrowEvent>
+    <userTask id="Inspect" />
+    <endEvent id="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Order" />
+    <sequenceFlow id="Flow_Ordered" sourceRef="Order" targetRef="Undo" />
+    <sequenceFlow id="Flow_Undone" sourceRef="Undo" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="Finished" />
+  </process>
+</definitions>

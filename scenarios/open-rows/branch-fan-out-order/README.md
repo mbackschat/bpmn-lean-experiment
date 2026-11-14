@@ -19,11 +19,16 @@ Answer-free models for [PC-BASIC-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 | [call-error-escapes](call-error-escapes.bpmn) | Uncaught Error from a Call | A Parallel fork leads to the Call Activity *Check*, whose called Process ends at an Error End no catcher names, and to the User Task *Review*. |
 | [handlers-together](handlers-together.bpmn) | Compensation | Parallel branches complete the User Tasks *Book_A* and *Book_B*, whose compensation handlers *Undo_A* and *Undo_B* each write; after the join the Compensation throw *Undo* begins both. |
 | [handlers-together-subjects-swapped](handlers-together-subjects-swapped.bpmn) | Compensation | The same with *Book_B* declared before *Book_A*. |
+| [handlers-across-choice](handlers-across-choice.bpmn) | Compensation | The review's witness: a Parallel fork leads to *Book_A* and *Book_B*; *Book_A* goes on to the Exclusive Gateway *Choose*, whose conditioned flow leads to *Book_B* and whose default to the join, so a path leads from *Book_A* to *Book_B* while *Book_B* may complete first and *Book_A* after it. |
+| [handlers-reentered](handlers-reentered.bpmn) | Compensation | Every path to *Book_B* passes *Book_A*, but a Parallel fork sends a second token through the User Task *Review* to *Book_A*, which may complete it again after *Book_B*, before *Wait* leads to the throw. |
+| [handlers-returning](handlers-returning.bpmn) | Compensation | One token runs the Sub-Processes *Book_A* and *Book_B*, whose Compensation Event Sub-Processes write; the interrupting Timer boundary *Retry* of the User Task *Check* leads back to *Book_A*, a path through an Activity and a boundary that no Sequence Flow ordering follows. |
+| [handlers-in-reentered-scope](handlers-in-reentered-scope.bpmn) | Compensation | *Book_A* and *Book_B* run in the Sub-Process *Region*, which has no handler, inside *Order*; *Retry* on *Check* enters *Region* again, so *Order* gathers the records of two occurrences, which the throw in *Order*'s Compensation Event Sub-Process compensates in one run. |
 | [instances-woken-together](instances-woken-together.bpmn) | Signal broadcast to instances | A Parallel fork holds the parallel Multi-Instance Sub-Process *Each* over `items` = [a, b], completing once an instance's `item` is `a`, whose instances wait at the Signal catch *Heard*, beside *Fire*, after which *Throw* resumes every instance in one closure, which completes them in an order no input states. |
 | [caught-error-in-branch](caught-error-in-branch.bpmn) | Control | One branch's Error is caught by a boundary on its own Sub-Process; the other branch writes. |
 | [single-catch](single-catch.bpmn) | Control | *Throw* resumes one catch in the sibling branch, whose writer is the only one. |
 | [interrupting-boundary-around-thrower](interrupting-boundary-around-thrower.bpmn) | Control | *Throw* inside *Region* is caught by an interrupting boundary on *Region*, which removes the thrower's own continuation. |
 | [call-error-caught-inside](call-error-caught-inside.bpmn) | Control | The called Process of *Check* catches its own Error with a boundary on its Sub-Process *Attempt*. |
+| [handlers-in-sequence](handlers-in-sequence.bpmn) | Control | One token completes *Book_A* and then *Book_B*, so every record of *Book_A* precedes every one of *Book_B* and their handlers never begin together. |
 
 ## Schedules
 

@@ -1,0 +1,29 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-handlers-reentered-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-handlers-reentered",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/handlers-reentered.bpmn",
+    "sha256": "7c14db9ed5e954465821d1ef10e53ab5bacde6ff13cc3d5ed32e73078a0b9229",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §13.5.5"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

@@ -12,9 +12,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, append, base, boundary, callWork, catchEvent, definitionRef, end, errorTrigger, escalationTrigger,
-  eventSubProcess, flow, gateway, literalValue, loop, mapping, refusalOf, refusalTests, replace, scope, signal, start,
-  terminateThrow, text, userWork, withOptions,
+  activity, append, base, boundary, callWork, catchEvent, compensationTrigger, definitionRef, end, errorTrigger,
+  escalationTrigger, eventSubProcess, flow, gateway, literalValue, loop, mapping, refusalOf, refusalTests, replace, scope,
+  signal, simpleBoolean, start, terminateThrow, text, userWork, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -138,22 +138,91 @@ const conditionPair = (writes: boolean) => {
 };
 
 /**
+ * The User Task subject `id` with the compensation handler `H<id>`, a Sub-Process writing `value` into `name`, and the
+ * Compensation boundary `C<id>` the reader keeps beside it, which does not interrupt and has no outgoing flow.
+ */
+const boundaryHandled = (id: string, name: string, value: string): [Json[], Json[]] => {
+  const [undo, undoInner] = writer(`H${id}`, name, value, null, { forCompensation: true, incoming: [], outgoing: [] });
+  return [[activity(id, userWork(), { compensationHandlers: [`H${id}`],
+    boundaries: [boundary(`C${id}`, compensationTrigger, { interrupting: false })] }), ...undo], undoInner];
+};
+
+/**
  * Two subjects `A` and `B`, User Tasks of a root fork joined before the Compensation throw `X`, whose handler
  * Sub-Processes write `outcome` and `name`; with `sequential` `A` precedes `B` by Sequence Flow instead (review
  * change 3).
  */
 const handlersTogether = (name: string, sequential = false) => {
-  const [undoA, undoAInner] = writer("HA", "outcome", "a", null, { forCompensation: true, incoming: [], outgoing: [] });
-  const [undoB, undoBInner] = writer("HB", name, "b", null, { forCompensation: true, incoming: [], outgoing: [] });
-  const subjects = [
-    activity("A", userWork(), { compensationHandlers: ["HA"] }), activity("B", userWork(), { compensationHandlers: ["HB"] }),
-  ];
   const routed = sequential
     ? [flow("f1", "S", "A"), flow("ab", "A", "B"), flow("bx", "B", "X")]
     : [flow("f1", "S", "F"), flow("fa", "F", "A"), flow("fb", "F", "B"), flow("aj", "A", "J"), flow("bj", "B", "J"), flow("jx", "J", "X")];
-  return model([start("S"), ...(sequential ? [] : [gateway("F", "parallel"), gateway("J", "parallel")]), ...subjects,
-    throwing("X", compensateAll), activity("I", userWork()), end("E"), ...undoA, ...undoB],
-  [...routed, flow("x", "X", "I"), flow("i", "I", "E"), ...undoAInner, ...undoBInner]);
+  return model(...joinAll(boundaryHandled("A", "outcome", "a"), boundaryHandled("B", name, "b"),
+    [[start("S"), ...(sequential ? [] : [gateway("F", "parallel"), gateway("J", "parallel")]), throwing("X", compensateAll),
+      activity("I", userWork()), end("E")], [...routed, flow("x", "X", "I"), flow("i", "I", "E")]]));
+};
+
+/**
+ * The automatic Sub-Process subject `id` in `parent`, whose Compensation Event Sub-Process `id`K runs a writer of `value`
+ * into `name`: its handler sits inside it, so it adds no Compensation Activity to the subject's level.
+ */
+const selfHandled = (id: string, name: string, value: string, parent: string | null = null): [Json[], Json[]] => {
+  const [written, inner] = writer(`${id}W`, name, value, `${id}K`);
+  return [[scope(id, "embedded", {}, {}, parent), start(`${id}S`, null, [], id), end(`${id}E`, "none", id),
+    scope(`${id}K`, eventSubProcess(compensationTrigger, false), {}, {}, id), start(`${id}KS`, compensationTrigger, [], `${id}K`),
+    ...written, end(`${id}KE`, "none", `${id}K`)],
+  [flow(`${id}s`, `${id}S`, `${id}E`), flow(`${id}k`, `${id}KS`, `${id}W`), flow(`${id}w`, `${id}W`, `${id}KE`), ...inner]];
+};
+
+/** The tail `X → I → E`: the Compensation throw `X`, a User Task, an End. */
+const undoAll = (): [Json[], Json[]] =>
+  [[throwing("X", compensateAll), activity("I", userWork()), end("E")], [flow("x", "X", "I"), flow("i", "I", "E")]];
+
+/**
+ * The review's witness (change 1): a root fork into the subjects `A` and `B`; `A` goes on to the Exclusive Gateway `G`,
+ * whose conditioned flow leads to `B` and whose default to the join `J`, which `B` reaches too, before `X`. A path leads
+ * from `A` to `B`, yet `B` may complete first and `A` after it, and their handlers then begin together.
+ */
+const handlersAcrossChoice = (name: string) => model(...joinAll(boundaryHandled("A", "outcome", "a"), boundaryHandled("B", name, "b"),
+  [[start("S"), gateway("F", "parallel"), gateway("G", { exclusive: { candidates: ["gb"], default: "gj" } }), gateway("J", "parallel")],
+    [flow("f1", "S", "F"), flow("fa", "F", "A"), flow("fb", "F", "B"), flow("ag", "A", "G"), flow("gb", "G", "B", simpleBoolean()),
+      flow("gj", "G", "J"), flow("bj", "B", "J"), flow("jx", "J", "X")]], undoAll()));
+
+/**
+ * `A` precedes `B` by Sequence Flow and every path to `B` passes `A`, but a root fork sends a second token to `A` through
+ * the User Task `U`, which may complete `A` again after `B` completed, before `B`'s User Task `W` leads to `X`.
+ */
+const handlersReentered = (name: string) => model(...joinAll(boundaryHandled("A", "outcome", "a"), boundaryHandled("B", name, "b"),
+  [[start("S"), gateway("F", "parallel"), activity("U", userWork()), activity("W", userWork())],
+    [flow("f1", "S", "F"), flow("fa", "F", "A"), flow("fu", "F", "U"), flow("ua", "U", "A"), flow("ab", "A", "B"),
+      flow("bw", "B", "W"), flow("wx", "W", "X")]], undoAll()));
+
+/**
+ * `S → A → B → C → X`, one token, where the Sub-Processes `A` and `B` carry their handlers inside: the interrupting Signal
+ * boundary `CB` of the User Task `C` leads back to `A` when `returns`, else to its own End, so `A` may complete again after
+ * `B` along a path no `flowReaches` follows, which leaves the pair to their completion order.
+ */
+const handlersReturning = (returns: boolean) => {
+  const [caught, back] = returns ? [[], [flow("cb", "CB", "A")]] : [[end("CBE")], [flow("cb", "CB", "CBE")]];
+  return model(...joinAll(selfHandled("A", "outcome", "a"), selfHandled("B", "outcome", "b"),
+    [[start("S"), activity("C", userWork(), { boundaries: [boundary("CB", signal())] }), ...caught],
+      [flow("f1", "S", "A"), flow("ab", "A", "B"), flow("bc", "B", "C"), flow("cx", "C", "X"), ...back]], undoAll()));
+};
+
+/**
+ * The subjects `A → B` inside the Sub-Process `R`, which has no handler, so their records pass to its parent `P` when it
+ * completes; the interrupting Signal boundary `CB` of the User Task `C` after `R` enters `R` again when `reenters`. `P`'s
+ * handler `HP` throws compensation over every record `P` gathered once `X` compensates `P`.
+ */
+const handlersInReenteredScope = (reenters: boolean) => {
+  const [caught, back] = reenters ? [[], [flow("cb", "CB", "R")]] : [[end("CBE", "none", "P")], [flow("cb", "CB", "CBE")]];
+  return model(...joinAll(selfHandled("A", "outcome", "a", "R"), selfHandled("B", "outcome", "b", "R"),
+    [[start("S"), scope("P", "embedded", {}, { compensationHandlers: ["HP"] }), start("PS", null, [], "P"), scope("R", "embedded", {}, {}, "P"),
+      start("RS", null, [], "R"), end("RE", "none", "R"), activity("C", userWork(), { boundaries: [boundary("CB", signal())] }, "P"),
+      ...caught, end("PE", "none", "P"), scope("HP", "embedded", {}, { forCompensation: true, incoming: [], outgoing: [] }),
+      start("HPS", null, [], "HP"), throwing("HX", compensateAll, "HP"), end("HPE", "none", "HP")],
+    [flow("f1", "S", "P"), flow("ps", "PS", "R"), flow("rs", "RS", "A"), flow("ab", "A", "B"), flow("br", "B", "RE"),
+      flow("rc", "R", "C"), flow("cp", "C", "PE"), flow("px", "P", "X"), flow("hs", "HPS", "HX"), flow("hx", "HX", "HPE"), ...back]],
+    undoAll()));
 };
 
 /** A root Parallel fork into `first` and the User Task `B`, each to its own End. */
@@ -243,6 +312,30 @@ const rows: Row[] = [
     control: handlersTogether("other"),
   },
   {
+    code: "flow.concurrentWrite",
+    description: "handlers whose subjects a conditioned path joins while a fork may complete them in either order",
+    mutate: handlersAcrossChoice("outcome"),
+    control: handlersAcrossChoice("other"),
+  },
+  {
+    code: "flow.concurrentWrite",
+    description: "handlers whose first subject a second token may complete again after the other",
+    mutate: handlersReentered("outcome"),
+    control: handlersReentered("other"),
+  },
+  {
+    code: "flow.concurrentWrite",
+    description: "handlers whose first subject a boundary path through an Activity reaches again after the other",
+    mutate: handlersReturning(true),
+    control: handlersReturning(false),
+  },
+  {
+    code: "flow.concurrentWrite",
+    description: "handlers whose subjects lie in a Scope entered again, whose records its parent gathers",
+    mutate: handlersInReenteredScope(true),
+    control: handlersInReenteredScope(false),
+  },
+  {
     code: "flow.concurrentInterference",
     description: "an Error End no catcher takes beside a sibling branch",
     mutate: forkBeside([end("A", raiseError)], [], "A"),
@@ -301,6 +394,13 @@ test("flow fan-out: two interrupting Conditional boundaries of one host are one 
 
 test("flow fan-out: compensation handlers whose subjects a Sequence Flow orders do not begin together", () => {
   assert.equal(refusalOf(handlersTogether("outcome", true)(base())), null);
+  // Paths join the subjects both ways, so `precedes` orders every pair of their records by completion, beside a fork too.
+  const looping = model(...joinAll(boundaryHandled("A", "outcome", "a"), boundaryHandled("B", "outcome", "b"),
+    [[start("S"), gateway("F", "parallel"), activity("U", userWork()), end("UE"),
+      gateway("G", { exclusive: { candidates: ["ga"], default: "gx" } })],
+    [flow("f1", "S", "F"), flow("fa", "F", "A"), flow("fu", "F", "U"), flow("u", "U", "UE"), flow("ab", "A", "B"),
+      flow("bg", "B", "G"), flow("ga", "G", "A", simpleBoolean()), flow("gx", "G", "X")]], undoAll()));
+  assert.equal(refusalOf(looping(base())), null);
 });
 
 test("flow fan-out: a parallel Multi-Instance Call whose called process lets an Error escape is refused", () => {

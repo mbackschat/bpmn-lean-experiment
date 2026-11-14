@@ -1,0 +1,29 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-handlers-across-choice-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-handlers-across-choice",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/handlers-across-choice.bpmn",
+    "sha256": "07a0ee403bdc506de760ce4c82bb00eda0cdd9a9c4149e43d7f23d204f4538a2",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §13.5.5"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

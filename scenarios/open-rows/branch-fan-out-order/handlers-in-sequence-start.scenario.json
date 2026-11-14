@@ -1,0 +1,27 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-handlers-in-sequence-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-handlers-in-sequence",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/handlers-in-sequence.bpmn",
+    "sha256": "b76905d2718dffdf57671d20c31ec79a0f3566398f04adc5fbe3755599fcbe61",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §13.5.5"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

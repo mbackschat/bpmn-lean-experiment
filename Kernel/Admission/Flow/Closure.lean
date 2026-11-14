@@ -92,6 +92,25 @@ def ancestors (program : Program) : Nat → Option ElementId → List Element
     | some element => element :: ancestors program fuel element.header.parent
     | none => []
 
+/-- Whether a token leaving one of `sources`, elements or boundary Events, may reach `target` along Sequence Flows, Link
+pairs (`onward`) and the flows of the boundary Events of every element it reaches, through any element. Unlike
+`Kernel.flowReaches`, which ends a path at an Activity because its record carries the order on, this is every place the
+token can go next. A source's own boundary Events are left out: a token has left it. Each round visits only elements
+not visited before, so the element count bounds the walk. -/
+def reaches (program : Program) (sources : List ElementId) (target : ElementId) : Bool :=
+  let leaving (id : ElementId) : List FlowId :=
+    match program.element? id with
+    | some element => onward program element
+    | none => ((program.boundary? id).map (·.2.outgoing)).getD []
+  let around (id : ElementId) : List FlowId :=
+    leaving id ++ ((((program.element? id).bind (·.envelope?)).map (·.boundaries)).getD []).flatMap (·.outgoing)
+  let rec go : Nat → List ElementId → List ElementId → Bool
+    | 0, _, _ => false
+    | fuel + 1, seen, next =>
+      let fresh := (next.filter (!seen.contains ·)).eraseDups
+      next.contains target || (!fresh.isEmpty && go fuel (seen ++ fresh) ((fresh.flatMap around).filterMap program.target?))
+  go (program.elements.length + 1) [] ((sources.flatMap leaving).filterMap program.target?)
+
 /-- The Event Sub-Processes among `level` whose start `starts` takes. -/
 def startingSubProcesses (level : List Element) (starts : Subscription → Bool) : List Element :=
   level.filter fun element => ((element.scope?).bind fun (_, payload) => payload.kind.start?).any starts

@@ -53,9 +53,11 @@ import {
   closureWalk,
   conditional,
   conditionalCatches,
+  handler,
   handlersOf,
   interruption,
   onwardVisits,
+  reaches,
   removal,
   runs,
   signalled,
@@ -204,18 +206,21 @@ function anchorOf(program: Program, visit: Visit): Element | null {
  * Whether a level, the children of a Scope or the elements of a process level, may hold two tokens at once: two starts
  * or implicitly begun children, a split (a concurrent Gateway or any other element or boundary with several outgoing
  * flows), a boundary that does not interrupt, an Event Sub-Process that does not interrupt, or a compensation handler,
- * which a throw may begin beside others.
+ * which a throw may begin beside others. With `alongFlows` only tokens that move along the level's Sequence Flows count,
+ * so a handler, which has none (`compensation.handlerFlow`), and a boundary without an outgoing flow, such as a
+ * Compensation boundary, add none.
  */
-function concurrentLevel(reading: Reading, level: readonly Element[]): boolean {
+function concurrentLevel(reading: Reading, alongFlows: boolean, level: readonly Element[]): boolean {
   const starts = level.filter((element) => elementStart(element) !== null).length;
   return starts >= 2 || (starts === 0 && level.filter(elementBeginsImplicitly).length >= 2) || level.some((element) => {
     const gateway = elementGateway(element);
     const scope = elementScope(element);
-    return elementIsCompensationActivity(element) ||
+    return (!alongFlows && elementIsCompensationActivity(element)) ||
       (gateway !== null && routing(gateway[1]).concurrent && gateway[1].outgoing.length >= 2) ||
       (gateway === null && elementOutgoing(element).length >= 2) ||
-      (elementEnvelope(element)?.boundaries ?? []).some((attached) => !attached.interrupting || attached.outgoing.length >= 2) ||
-      (scope !== null && scopeKindStart(scope[1].kind) !== null && !reading.interrupts(element));
+      (elementEnvelope(element)?.boundaries ?? []).some((attached) =>
+        (!attached.interrupting && !(alongFlows && attached.outgoing.length === 0)) || attached.outgoing.length >= 2) ||
+      (scope !== null && scopeKindStart(scope[1].kind) !== null && !reading.interrupts(element) && !(alongFlows && handler(reading, element)));
   });
 }
 
@@ -227,9 +232,26 @@ function concurrentLevel(reading: Reading, level: readonly Element[]): boolean {
 function solitary(reading: Reading, program: Program, element: Element): boolean {
   const enclosing = ancestors(program, elementHeader(element).parent);
   const top = enclosing.at(-1) ?? element;
-  return !programInCalledProcess(program, elementHeader(top).id) && !concurrentLevel(reading, programSiblings(program, elementHeader(top))) &&
+  return !programInCalledProcess(program, elementHeader(top).id) && !concurrentLevel(reading, false, programSiblings(program, elementHeader(top))) &&
     enclosing.every((scope) => (elementEnvelope(scope)?.multiInstance ?? null) === null &&
-      !concurrentLevel(reading, programChildren(program, elementHeader(scope).id)));
+      !concurrentLevel(reading, false, programChildren(program, elementHeader(scope).id)));
+}
+
+/**
+ * Whether `element`'s level is entered once per process instance and moves one token at a time along its flows, so its
+ * occurrences complete one after another along that token's path: that level and every level around it move no two
+ * tokens at once along their flows (`concurrentLevel`), no Scope around it loops, is a compensation handler, begun once
+ * per record, or may be entered again (`reaches` from it or its boundary Events back to it), and its process is the root
+ * process, which no Call calls.
+ */
+function runsOnce(reading: Reading, program: Program, element: Element): boolean {
+  const enclosing = ancestors(program, elementHeader(element).parent);
+  const top = enclosing.at(-1) ?? element;
+  const boundariesOf = (scope: Element): ElementId[] => (elementEnvelope(scope)?.boundaries ?? []).map((attached) => attached.id);
+  return !programInCalledProcess(program, elementHeader(top).id) && !concurrentLevel(reading, true, programSiblings(program, elementHeader(top))) &&
+    enclosing.every((scope) => (elementEnvelope(scope)?.multiInstance ?? null) === null && !handler(reading, scope) &&
+      !reaches(program, [elementHeader(scope).id, ...boundariesOf(scope)], elementHeader(scope).id) &&
+      !concurrentLevel(reading, true, programChildren(program, elementHeader(scope).id)));
 }
 
 /**
@@ -449,12 +471,19 @@ function writeFanOut(reading: Reading, program: Program, element: Element): stri
 /**
  * Under `BranchSchedule.OrderInvariant`, the compensation handlers one Compensation throw or Cancel End may begin
  * together may not conflict: a handler's own run, without the resumption of the trigger once it completes, which comes
- * after every handler it races. `feature/compensation.ts` `precedes` orders two handlers by Sequence Flow from one
+ * after every handler it races. `feature/compensation.ts` `precedes` orders two records by Sequence Flow from one
  * subject or its boundary Events to the other's, by data or by one subject; handlers it leaves unordered begin together,
- * in declaration order, an order no input states (BPMN 2.0.2 §13.5.5; issue #81, review change 3). Statically a pair
- * counts as ordered only when a Sequence Flow path or one subject joins every pair of their subjects, in either
- * direction, as `precedes` orders them in the completion order such a path gives; a data dependency is not counted, a
- * conservative reading.
+ * in declaration order, an order no input states (BPMN 2.0.2 §13.5.5; issue #81). A pair of handlers counts as ordered
+ * only when `precedes` orders every pair of their records in every run (P1 track review, change 1), which holds for two
+ * subjects that are one, ordered by completion; or a path leads from one's boundary Events to the other, ordered
+ * whatever the completion; or a path leads from `a` to `b`, which orders every record of `a` before a later one of `b`,
+ * and a record of `a` after one of `b` is ordered too or cannot exist: a path leads back from `b` to `a`, so their
+ * completion orders that pair the same way, or `a` runs once along one token's path (`runsOnce`) and no way a token can
+ * go from `b` (`reaches`, which passes Activities and follows boundary flows, unlike `flowReaches`) returns to `a`.
+ * Without `runsOnce` a second token completes `a` after `b` (a conditioned path from `a` to `b` beside a fork, the
+ * review's witness; a fork sending a second token to `a`, though every path to `b` passes `a`); without `reaches` one
+ * token returns to `a` through an Activity or a boundary flow; and a Scope around `a` entered again hands its parent the
+ * records of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading.
  */
 function compensationFanOut(reading: Reading, program: Program, element: Element): string | null {
   if (!reading.compensates(element)) return null;
@@ -471,10 +500,16 @@ function compensationFanOut(reading: Reading, program: Program, element: Element
     const found = programElement(program, id);
     return (found === null ? [] : elementEnvelope(found)?.boundaries ?? []).map((attached) => attached.id);
   };
+  const follows = (first: ElementId, second: ElementId): boolean => {
+    const subject = programElement(program, first);
+    return flowReaches(program, [first], second) && (flowReaches(program, [second], first) ||
+      (!reaches(program, [second], first) && subject !== null && runsOnce(reading, program, subject)));
+  };
   const joinedBy = (first: ElementId, second: ElementId): boolean =>
-    first === second || flowReaches(program, [first], second) || flowReaches(program, boundariesOf(first), second);
+    flowReaches(program, boundariesOf(first), second) || follows(first, second);
   const ordered = (left: Element, right: Element): boolean =>
-    subjectsOf(program, left).every((first) => subjectsOf(program, right).every((second) => joinedBy(first, second) || joinedBy(second, first)));
+    subjectsOf(program, left).every((first) => subjectsOf(program, right).every((second) =>
+      first === second || joinedBy(first, second) || joinedBy(second, first)));
   const handlers = handlersOf(reading, program, element);
   for (const [index, handlerElement] of handlers.entries()) {
     const found = firstOf(handlers.slice(index + 1).filter((other) => !ordered(handlerElement, other)),

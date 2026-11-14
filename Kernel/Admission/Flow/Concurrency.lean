@@ -111,17 +111,20 @@ def anchorOf (program : Program) : Visit → Option Element
 /-- Whether a level, the children of a Scope or the elements of a process level, may hold two tokens at once: two
 starts or implicitly begun children, a split (a concurrent Gateway or any other element or boundary with several
 outgoing flows), a boundary that does not interrupt, an Event Sub-Process that does not interrupt, or a compensation
-handler, which a throw may begin beside others. -/
-def concurrentLevel (reading : Reading) (level : List Element) : Bool :=
+handler, which a throw may begin beside others. With `alongFlows` only tokens that move along the level's Sequence Flows
+count, so a handler, which has none (`compensation.handlerFlow`), and a boundary without an outgoing flow, such as a
+Compensation boundary, add none. -/
+def concurrentLevel (reading : Reading) (alongFlows : Bool) (level : List Element) : Bool :=
   (level.filter (·.start?.isSome)).length ≥ 2 ||
     (!level.any (·.start?.isSome) && (level.filter (·.beginsImplicitly)).length ≥ 2) ||
     level.any fun element =>
-      element.isCompensationActivity ||
+      (!alongFlows && element.isCompensationActivity) ||
       (element.gateway?.any fun (_, payload) => (routing payload).concurrent && payload.outgoing.length ≥ 2) ||
       (element.gateway?.isNone && element.outgoing.length ≥ 2) ||
       ((element.envelope?.map (·.boundaries)).getD []).any (fun boundary =>
-        !boundary.interrupting || boundary.outgoing.length ≥ 2) ||
-      (((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome && !reading.interrupts element)
+        (!boundary.interrupting && !(alongFlows && boundary.outgoing.isEmpty)) || boundary.outgoing.length ≥ 2) ||
+      (((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome && !reading.interrupts element &&
+        !(alongFlows && handler reading element))
 
 /-- Whether at most one token moves through `element`'s level at a time and the level is entered at most once at a
 time: that level and every level around it hold no concurrency (`concurrentLevel`), no Scope around it loops, and its
@@ -129,10 +132,25 @@ process is the root process, which no Call calls. -/
 def solitary (reading : Reading) (program : Program) (element : Element) : Bool :=
   let enclosing := ancestors program program.elements.length element.header.parent
   let top := (enclosing.getLast?).getD element
-  !program.inCalledProcess top.header.id && !concurrentLevel reading (program.siblings top.header) &&
+  !program.inCalledProcess top.header.id && !concurrentLevel reading false (program.siblings top.header) &&
     enclosing.all fun scope =>
       ((scope.envelope?).bind (·.multiInstance)).isNone &&
-        !concurrentLevel reading (program.children (some scope.header.id))
+        !concurrentLevel reading false (program.children (some scope.header.id))
+
+/-- Whether `element`'s level is entered once per process instance and moves one token at a time along its flows, so its
+occurrences complete one after another along that token's path: that level and every level around it move no two tokens
+at once along their flows (`concurrentLevel`), no Scope around it loops, is a compensation handler, begun once per
+record, or may be entered again (`reaches` from it or its boundary Events back to it), and its process is the root
+process, which no Call calls. -/
+def runsOnce (reading : Reading) (program : Program) (element : Element) : Bool :=
+  let enclosing := ancestors program program.elements.length element.header.parent
+  let top := (enclosing.getLast?).getD element
+  let boundariesOf (scope : Element) : List ElementId := ((scope.envelope?.map (·.boundaries)).getD []).map (·.id)
+  !program.inCalledProcess top.header.id && !concurrentLevel reading true (program.siblings top.header) &&
+    enclosing.all fun scope =>
+      ((scope.envelope?).bind (·.multiInstance)).isNone && !handler reading scope &&
+        !reaches program (scope.header.id :: boundariesOf scope) scope.header.id &&
+        !concurrentLevel reading true (program.children (some scope.header.id))
 
 /-- The elements whose occurrences tell apart two open occurrences of the subscription a resumption fires, which one
 throw or write may resume together: the Scope its anchor lies in, or at a called process's level its Calls; none for a
@@ -287,12 +305,19 @@ def writeFanOut (reading : Reading) (program : Program) (element : Element) : Op
 
 /-- Under `BranchSchedule.orderInvariant`, the compensation handlers one Compensation throw or Cancel End may begin
 together may not conflict: a handler's own run, without the resumption of the trigger once it completes, which comes
-after every handler it races. `Kernel.Feature.Compensation.precedes` orders two handlers by Sequence Flow from one
+after every handler it races. `Kernel.Feature.Compensation.precedes` orders two records by Sequence Flow from one
 subject or its boundary Events to the other's, by data or by one subject; handlers it leaves unordered begin together,
-in declaration order, an order no input states (BPMN 2.0.2 §13.5.5; issue #81, review change 3). Statically a pair
-counts as ordered only when a Sequence Flow path or one subject joins every pair of their subjects, in either direction,
-as `precedes` orders them in the completion order such a path gives; a data dependency is not counted, a conservative
-reading. -/
+in declaration order, an order no input states (BPMN 2.0.2 §13.5.5; issue #81). A pair of handlers counts as ordered
+only when `precedes` orders every pair of their records in every run (P1 track review, change 1), which holds for two
+subjects that are one, ordered by completion; or a path leads from one's boundary Events to the other, ordered whatever
+the completion; or a path leads from `a` to `b`, which orders every record of `a` before a later one of `b`, and a record
+of `a` after one of `b` is ordered too or cannot exist: a path leads back from `b` to `a`, so their completion orders
+that pair the same way, or `a` runs once along one token's path (`runsOnce`) and no way a token can go from `b`
+(`reaches`, which passes Activities and follows boundary flows, unlike `flowReaches`) returns to `a`. Without
+`runsOnce` a second token completes `a` after `b` (a conditioned path from `a` to `b` beside a fork, the review's
+witness; a fork sending a second token to `a`, though every path to `b` passes `a`); without `reaches` one token
+returns to `a` through an Activity or a boundary flow; and a Scope around `a` entered again hands its parent the records
+of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading. -/
 def compensationFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
   if !reading.compensates element then none
   else
@@ -307,11 +332,13 @@ def compensationFanOut (reading : Reading) (program : Program) (element : Elemen
                      completed := handler.header.id :: begun.completed }
     let boundariesOf (id : ElementId) : List ElementId :=
       (((program.element? id).bind (·.envelope?)).map (·.boundaries.map (·.id))).getD []
-    let joined (first second : ElementId) : Bool :=
-      first == second || flowReaches program [first] second || flowReaches program (boundariesOf first) second
+    let follows (first second : ElementId) : Bool :=
+      flowReaches program [first] second && (flowReaches program [second] first ||
+        (!reaches program [second] first && (program.element? first).any (runsOnce reading program)))
+    let joined (first second : ElementId) : Bool := flowReaches program (boundariesOf first) second || follows first second
     let ordered (left right : Element) : Bool :=
       (subjectsOf program left).all fun first => (subjectsOf program right).all fun second =>
-        joined first second || joined second first
+        first == second || joined first second || joined second first
     let rec pairs : List Element → Option String
       | [] => none
       | handler :: rest =>

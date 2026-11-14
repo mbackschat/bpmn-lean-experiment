@@ -24,6 +24,7 @@ import {
   programElement,
   programProcessOf,
   programSiblings,
+  programTarget,
   scopeKindStart,
   throwView,
   triggerCondition,
@@ -35,6 +36,7 @@ import {
   type DefinitionRef,
   type Element,
   type ElementId,
+  type FlowId,
   type Program,
   type Subscription,
 } from "../../il/types.js";
@@ -133,6 +135,40 @@ export function ancestors(program: Program, parent: ElementId | null): Element[]
   return found;
 }
 
+/**
+ * Whether a token leaving one of `sources`, elements or boundary Events, may reach `target` along Sequence Flows, Link
+ * pairs (`onward`) and the flows of the boundary Events of every element it reaches, through any element. Unlike
+ * `il/paths.ts` `flowReaches`, which ends a path at an Activity because its record carries the order on, this is every
+ * place the token can go next. A source's own boundary Events are left out: a token has left it. Each round visits only
+ * elements not visited before, so the element count bounds the walk.
+ */
+export function reaches(program: Program, sources: readonly ElementId[], target: ElementId): boolean {
+  const leavingFlows = (id: ElementId): readonly FlowId[] => {
+    const element = programElement(program, id);
+    if (element !== null) return onward(program, element);
+    return programBoundary(program, id)?.[1].outgoing ?? [];
+  };
+  const around = (id: ElementId): readonly FlowId[] => {
+    const element = programElement(program, id);
+    const attached = element === null ? [] : elementEnvelope(element)?.boundaries ?? [];
+    return [...leavingFlows(id), ...attached.flatMap((entry) => entry.outgoing)];
+  };
+  const targets = (flows: readonly FlowId[]): ElementId[] => flows.flatMap((flow) => {
+    const reached = programTarget(program, flow);
+    return reached === null ? [] : [reached];
+  });
+  const seen = new Set<ElementId>();
+  let next = targets(sources.flatMap(leavingFlows));
+  for (let fuel = program.elements.length + 1; fuel > 0; fuel -= 1) {
+    if (next.includes(target)) return true;
+    const fresh = [...new Set(next.filter((id) => !seen.has(id)))];
+    if (fresh.length === 0) return false;
+    for (const id of fresh) seen.add(id);
+    next = targets(fresh.flatMap(around));
+  }
+  return false;
+}
+
 const eventSubProcessStart = (element: Element): Subscription | null => {
   const scope = elementScope(element);
   return scope === null ? null : scopeKindStart(scope[1].kind);
@@ -179,7 +215,7 @@ export function catchers(reading: Reading, program: Program, element: Element, f
 }
 
 /** Whether an element is a compensation handler: a Compensation Activity (`elementIsCompensationActivity`) or a Compensation Event Sub-Process. */
-function handler(reading: Reading, element: Element): boolean {
+export function handler(reading: Reading, element: Element): boolean {
   const start = eventSubProcessStart(element);
   return elementIsCompensationActivity(element) || (start !== null && reading.compensationStart(start));
 }

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_HandlersAcrossChoice" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:handlers-across-choice" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_HandlersAcrossChoice" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <property id="again" name="again" />
+    <startEvent id="Started" />
+    <parallelGateway id="Fork" />
+    <userTask id="Book_A" />
+    <boundaryEvent id="Compensate_A" attachedToRef="Book_A" cancelActivity="false"><compensateEventDefinition /></boundaryEvent>
+    <exclusiveGateway id="Choose" default="Flow_ChooseJoin" />
+    <userTask id="Book_B" />
+    <boundaryEvent id="Compensate_B" attachedToRef="Book_B" cancelActivity="false"><compensateEventDefinition /></boundaryEvent>
+    <subProcess id="Undo_A" isForCompensation="true">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">a</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="UndoStarted_A" />
+      <endEvent id="UndoEnded_A" />
+      <sequenceFlow id="Flow_UndoInner_A" sourceRef="UndoStarted_A" targetRef="UndoEnded_A" />
+    </subProcess>
+    <subProcess id="Undo_B" isForCompensation="true">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">b</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="UndoStarted_B" />
+      <endEvent id="UndoEnded_B" />
+      <sequenceFlow id="Flow_UndoInner_B" sourceRef="UndoStarted_B" targetRef="UndoEnded_B" />
+    </subProcess>
+    <parallelGateway id="Join" />
+    <intermediateThrowEvent id="Undo"><compensateEventDefinition /></intermediateThrowEvent>
+    <userTask id="Inspect" />
+    <endEvent id="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fork" />
+    <sequenceFlow id="Flow_ToA" sourceRef="Fork" targetRef="Book_A" />
+    <sequenceFlow id="Flow_ToB" sourceRef="Fork" targetRef="Book_B" />
+    <sequenceFlow id="Flow_FromA" sourceRef="Book_A" targetRef="Choose" />
+    <sequenceFlow id="Flow_ChooseB" sourceRef="Choose" targetRef="Book_B">
+      <conditionExpression xsi:type="tFormalExpression">isPresent(again)</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ChooseJoin" sourceRef="Choose" targetRef="Join" />
+    <sequenceFlow id="Flow_FromB" sourceRef="Book_B" targetRef="Join" />
+    <sequenceFlow id="Flow_Joined" sourceRef="Join" targetRef="Undo" />
+    <sequenceFlow id="Flow_Undone" sourceRef="Undo" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="Finished" />
+    <association associationDirection="One" sourceRef="Compensate_A" targetRef="Undo_A" />
+    <association associationDirection="One" sourceRef="Compensate_B" targetRef="Undo_B" />
+  </process>
+</definitions>
