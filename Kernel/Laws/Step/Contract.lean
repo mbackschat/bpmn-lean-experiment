@@ -154,9 +154,6 @@ begun in the scope occurrence it names; a queued begin is
 `Admitted` once it leaves the queue, and a queued completion completes no reservation a queued begin names; and a queued
 instance end records a failure exactly when it fails. The state operations' obligations are `Laws.State`'s. -/
 structure Phases (inv : Program → State → Prop) : Prop where
-  /-- A start's fresh instance, with its root's Event Sub-Process starts queued for arming. -/
-  initial : ∀ program instanceId variables businessKey,
-    inv program ((State.initial instanceId variables businessKey).signal (.armScope State.root))
   /-- An input on a running instance starts from an empty journal and outbox. -/
   reset : ∀ program state, inv program state → inv program { state with journal := [], outbox := [], draft := {}, writes := [] }
   clock : ∀ program state atMs, inv program state → inv program { state with logicalTimeMs := atMs }

@@ -97,12 +97,16 @@ theorem endInstance_wellFormed {program : Program} {state : State} {status : Ins
 phases of `Step` (`Laws.Step.Phases`) keep `WellFormed` through every committed input. -/
 theorem stepKeepsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hooks WellFormed)
     (phases : Laws.Step.Phases WellFormed) : StepKeepsWellFormed hooks :=
-  fun _ _ _ _ formed ran => Laws.Step.step_keeps contract phases stateFacts
-    (fun _ given => Option.some.inj given ▸ formed) ran
+  fun _ _ _ _ formed ran => Laws.Step.running_keeps contract phases stateFacts formed ran
 
-/-- A committed start makes a well-formed state, from the same obligations. -/
+/-- A committed start makes a well-formed state, from the same obligations and a well-formed fresh instance with its
+root's Event Sub-Process starts queued for arming. -/
 theorem startIsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hooks WellFormed)
-    (phases : Laws.Step.Phases WellFormed) : StartIsWellFormed hooks :=
-  fun _ _ _ ran => Laws.Step.step_keeps contract phases stateFacts (fun _ given => by simp at given) ran
+    (phases : Laws.Step.Phases WellFormed)
+    (initial : ∀ program instanceId variables businessKey,
+      WellFormed program ((State.initial instanceId variables businessKey).signal (.armScope State.root))) :
+    StartIsWellFormed hooks :=
+  fun program _ _ ran => Laws.Step.step_keeps contract phases stateFacts (initial program)
+    (fun _ given => by simp at given) ran
 
 end Kernel.Proofs.State

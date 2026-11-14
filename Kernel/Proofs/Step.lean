@@ -122,7 +122,8 @@ end Contract
 
 `Laws.State.signal_queueSound` asks which signal a phase queues, which only `Signal`'s owners may tell. -/
 
-/-- A start's fresh instance, with its root's Event Sub-Process starts queued for arming (`Laws.Step.Phases.initial`). -/
+/-- A start's fresh instance, with its root's Event Sub-Process starts queued for arming (`Laws.Step.step_keeps`'s
+`initial`). -/
 theorem initial_wellFormed (program : Program) (instanceId : String) (variables : List (String × Value))
     (businessKey : Option String) :
     Laws.State.WellFormed program ((State.initial instanceId variables businessKey).signal (.armScope State.root)) :=
@@ -155,8 +156,7 @@ each state operation keeps. -/
 theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
   have mem : ∀ {state : State} {scope : ScopeOccurrenceId}, Laws.Step.ScopeStands state scope →
       scope ∈ Laws.State.scopeIds state := fun ⟨entry, inside, named⟩ => List.mem_map.mpr ⟨entry, inside, named⟩
-  { initial := initial_wellFormed
-    reset := fun _ _ formed => Laws.State.reset_wellFormed formed
+  { reset := fun _ _ formed => Laws.State.reset_wellFormed formed
     clock := fun _ _ atMs formed => Laws.State.clock_wellFormed formed atMs
     journal := fun _ _ _ formed started _ => Laws.State.journal_wellFormed formed started
     runOrder := fun _ _ formed => Laws.State.runOrder_wellFormed formed

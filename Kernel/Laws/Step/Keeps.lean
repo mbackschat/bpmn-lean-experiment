@@ -334,29 +334,49 @@ theorem settle_keeps (contract : HookContract hooks inv) (phases : Phases inv) (
       simp only [Except.ok.injEq] at ended
       exact ended ▸ phases.endInstance _ _ _ _ holds (by simp))
 
-/-- `Step.step` keeps `inv` of the program it runs for hooks that keep their contract, from a before-state that keeps
-it. -/
-theorem step_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts) {program : Program}
-    {before : Option State} {input : Input} {after : State} (entry : ∀ state, before = some state → inv program state)
-    (ran : step hooks program before input = .ok after) : inv program after := by
-  rcases step_ok ran with ⟨_, _, _, ⟨_, _, _, settled, clocked, stepped, settling, made⟩⟩ | ⟨_, _, runs, ran⟩
-  · have moved := microStep_keeps contract phases facts
-      (fun _ begun => begin_keeps contract phases facts (advanceClock_keeps phases (phases.initial _ _ _ _) clocked)
-        admitted_fresh begun)
-      stepped
-    have done := made ▸ phases.runOrder _ _ (settle_keeps contract phases facts _ _ _ _ moved settling)
-    rwa [inputCtx_program] at done
+/-- `Step.step` on a running instance keeps `inv` of the program it runs for hooks that keep their contract, from a
+before-state that keeps it. A start never runs here, so `inv` need not hold of a fresh instance. -/
+theorem running_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts)
+    {program : Program} {before : State} {input : Input} {after : State} (holds : inv program before)
+    (ran : step hooks program (some before) input = .ok after) : inv program after := by
+  rcases step_ok ran with ⟨_, _, fresh, _⟩ | ⟨_, _, runs, ran⟩
+  · simp at fresh
   · obtain ⟨state, start, moved, rest⟩ := onRunning_ok ran
     obtain ⟨settled, present, _, rest⟩ := rest
     obtain ⟨clocked, stepped, settling, made⟩ := rest
-    have entered : inv (inputCtx hooks program input).program state := by
+    obtain rfl := Option.some.inj present
+    have entered : inv (inputCtx hooks program input).program before := by
       rw [inputCtx_program]
-      exact entry state present
+      exact holds
     have started := advanceClock_keeps phases (phases.reset _ _ entered) clocked
     have movedHolds := microStep_keeps contract phases facts
       (fun _ transitioned => transition_keeps contract phases runs started transitioned) stepped
     have done := made ▸ phases.runOrder _ _ (settle_keeps contract phases facts _ _ _ _ movedHolds settling)
     rwa [inputCtx_program] at done
+
+/-- `Step.step` keeps `inv` of the program it runs for hooks that keep their contract, from a before-state that keeps
+it, or, for a start, when a fresh instance with its root's Event Sub-Process starts queued for arming keeps it. -/
+theorem step_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts) {program : Program}
+    (initial : ∀ instanceId variables businessKey,
+      inv program ((State.initial instanceId variables businessKey).signal (.armScope State.root)))
+    {before : Option State} {input : Input} {after : State} (entry : ∀ state, before = some state → inv program state)
+    (ran : step hooks program before input = .ok after) : inv program after := by
+  cases before with
+  | some state => exact running_keeps contract phases facts (entry state rfl) ran
+  | none =>
+    rcases step_ok ran with ⟨payload, rfl, _, ⟨_, _, _, settled, clocked, stepped, settling, made⟩⟩ | ⟨_, _, _, ran⟩
+    · have fresh : inv (inputCtx hooks program (.start payload)).program
+          ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root)) := by
+        rw [inputCtx_program]
+        exact initial _ _ _
+      have moved := microStep_keeps contract phases facts
+        (fun _ begun => begin_keeps contract phases facts (advanceClock_keeps phases fresh clocked) admitted_fresh begun)
+        stepped
+      have done := made ▸ phases.runOrder _ _ (settle_keeps contract phases facts _ _ _ _ moved settling)
+      rwa [inputCtx_program] at done
+    · obtain ⟨_, _, rest⟩ := onRunning_ok ran
+      obtain ⟨_, _, present, _⟩ := rest
+      simp at present
 
 end Keeps
 
