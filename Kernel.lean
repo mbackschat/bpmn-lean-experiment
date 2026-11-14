@@ -69,6 +69,7 @@ public import Kernel.Laws.State.Invariant
 public import Kernel.Laws.Step
 public import Kernel.Laws.Step.Contract
 public import Kernel.Laws.Step.Keeps
+public import Kernel.Laws.Step.Ran
 public import Kernel.Laws.Subscriptions
 public import Kernel.Laws.Work
 public import Kernel.Population

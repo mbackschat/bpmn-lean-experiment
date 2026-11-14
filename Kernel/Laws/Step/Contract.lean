@@ -7,7 +7,7 @@ public import Kernel.Step
 What `Step.step` needs of the hooks and of the state operations it applies for an invariant of the state to pass through
 it: one obligation per field of `Hooks` (`HookContract`) and one per phase `Step` runs itself (`Phases`), each from
 what `Step` establishes before it runs them, and what the state operations do to the fields `Step` and the hooks read,
-whatever the invariant (`StateFacts`). `Kernel.Laws.Step` and `Kernel.Laws.Step.Keeps` compose them.
+whatever the invariant (`StateFacts`). `Kernel.Laws.Step.Keeps` composes them.
 
 A feature proves the field of each hook it fills generically in the invariant, without importing `Laws.State` or this
 module: its `Laws` module states, in `Kernel.State`'s vocabulary, an operations record of what its hooks' bodies need of
