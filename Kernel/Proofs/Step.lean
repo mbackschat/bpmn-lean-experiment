@@ -3,6 +3,8 @@ module
 public import Kernel.Laws.Step
 public import Kernel.Laws.Registry
 public import Kernel.Laws.Flow
+public import Kernel.Laws.Scopes
+public import Kernel.Laws.Starts
 public import Kernel.Laws.Data
 public import Kernel.Laws.Hooks
 public import Kernel.Proofs.State
@@ -178,6 +180,74 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
         List.mem_map.mp (Laws.State.removeOccurrence_wellFormed formed member free).2⟩
     recordEnd := fun _ key terminal formed => Laws.State.recordEnd_wellFormed formed key terminal
     cancel := fun _ id formed => Laws.State.cancel_wellFormed formed id }
+
+/-! ## The registered hooks under `WellFormed`
+
+The fields of `Laws.Step.HookContract Registry.hooks Laws.State.WellFormed` proved so far, each from its feature's lemma
+and the operations record that feature states, filled here from `Laws.State`. -/
+
+/-- A begun occurrence's completion, queued, keeps `WellFormed`: no queued begin names a begun occurrence. -/
+theorem complete_wellFormed {state : State} (formed : Laws.State.WellFormed state) {occurrence : Occurrence}
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (leave : Leave)
+    (writes : List (String × Value)) (rule : WriteRule) :
+    Laws.State.WellFormed (state.signal (.complete occurrence.id leave writes rule)) :=
+  Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
+    (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) fun _ _ _ _ same => by
+      cases same
+      exact Laws.State.begun_unnamed formed member begun)
+
+/-- Flow's operations record (`Laws.Flow.FlowOps`) of `WellFormed`. -/
+theorem flowOps : Laws.Flow.FlowOps Laws.State.WellFormed where
+  emit _ flows _ formed stands := by
+    obtain ⟨entry, inside, named⟩ := stands
+    exact Laws.State.emit_wellFormed formed flows (List.mem_map.mpr ⟨entry, inside, named⟩)
+  complete _ _ leave writes rule formed member begun := complete_wellFormed formed member begun leave writes rule
+
+/-- Starts' operations record (`Laws.Starts.StartsOps`) of `WellFormed`. -/
+theorem startsOps : Laws.Starts.StartsOps Laws.State.WellFormed where
+  clock _ atMs formed := Laws.State.clock_wellFormed formed atMs
+  complete _ _ leave writes rule formed member begun := complete_wellFormed formed member begun leave writes rule
+
+/-- Scopes' operations record (`Laws.Scopes.ScopesOps`) of `WellFormed`. -/
+theorem scopesOps : Laws.Scopes.ScopesOps Laws.State.WellFormed where
+  owner _ scope _ formed member owned link := by
+    obtain ⟨found, inside, named, begunFlag⟩ := formed.owned.scopeOwners scope member _ link
+    rw [Laws.State.nodup_map_eq formed.distinct.occurrences inside owned named] at begunFlag
+    exact begunFlag
+  complete _ _ leave writes rule formed member begun := complete_wellFormed formed member begun leave writes rule
+
+/-- `HookContract.outflow` of the registered hooks. -/
+theorem registered_outflow : ∀ ctx occurrence leave state after, Laws.State.WellFormed state →
+    Laws.Step.ScopeStands state occurrence.scope → Registry.hooks.outflow ctx occurrence leave state = .ok after →
+    Laws.State.WellFormed after := by
+  intro _ _ _ _ _ formed stands ran
+  rw [Laws.Registry.hooks_outflow] at ran
+  exact Laws.Flow.outflow_keeps flowOps formed stands ran
+
+/-- `HookContract.arriveLink` of the registered hooks. -/
+theorem registered_arriveLink : ∀ ctx header payload occurrence state after, Laws.State.WellFormed state →
+    occurrence ∈ state.occurrences → occurrence.begun = true →
+    Registry.hooks.arriveLink ctx header payload occurrence state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ formed member begun ran
+  rw [Laws.Registry.hooks_arriveLink] at ran
+  exact Laws.Flow.arriveLink_keeps flowOps formed member begun ran
+
+/-- `HookContract.arriveStart` of the registered hooks. -/
+theorem registered_arriveStart : ∀ ctx header payload trigger occurrence state after, Laws.State.WellFormed state →
+    occurrence ∈ state.occurrences → occurrence.begun = true →
+    Registry.hooks.arriveStart ctx header payload trigger occurrence state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ _ formed member begun ran
+  rw [Laws.Registry.hooks_arriveStart] at ran
+  exact Laws.Starts.arriveStart_keeps startsOps formed member begun ran
+
+/-- `HookContract.completeScope` of the registered hooks. -/
+theorem registered_completeScope : ∀ ctx header payload scope occurrence state after, Laws.State.WellFormed state →
+    scope ∈ state.scopes → occurrence ∈ state.occurrences → scope.occurrence = some occurrence.id →
+    Registry.hooks.completeScope ctx header payload scope occurrence state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ _ formed member owned link ran
+  rw [Laws.Registry.hooks_completeScope] at ran
+  exact Laws.Scopes.completeScope_keeps scopesOps formed member owned link ran
 
 /-- Data's share of the state invariant, measured at P0 (P2's budget rests on it): the registered write and removal
 hooks keep `Laws.State.WellFormed`. -/

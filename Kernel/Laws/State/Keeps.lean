@@ -249,11 +249,12 @@ private theorem pair_of_append {α : Type} {a b c : α} {l : List α} (pair : [a
     exact absurd this.1 other
   | _ :: _ :: _, sub => have := sub.length_le; simp at this
 
-/-- Queuing a signal that is neither a begin nor a completion keeps the claims single. Which signal it is,
-`Kernel.Proofs.Step` tells. -/
+/-- Queuing a signal that is no begin, and if a completion, then of an occurrence no queued begin names, keeps the
+claims single. Which signal it is, `Kernel.Proofs.Step` tells. -/
 theorem signal_claimed {s : State} {signal : Signal} (formed : WellFormed s)
     (notBegin : ∀ request, signal ≠ .begin request)
-    (notComplete : ∀ id leave writes rule, signal ≠ .complete id leave writes rule) :
+    (completes : ∀ id leave writes rule, signal = .complete id leave writes rule →
+      ∀ request, Queued s request → id ∉ names request) :
     ReservationsClaimed (s.signal signal) := by
   rw [signal_eq]
   have old : ∀ request, Signal.begin request ∈ s.signals ++ [signal] → Signal.begin request ∈ s.signals :=
@@ -268,7 +269,63 @@ theorem signal_claimed {s : State} {signal : Signal} (formed : WellFormed s)
     fun first second queued token => formed.claimed.queuesApart first second (old first queued) token,
     fun request id leave writes rule queued named completed => formed.claimed.uncompleted request id leave writes rule
       (queuedOld request queued) named ((List.mem_append.mp completed).resolve_right fun new =>
-        notComplete id leave writes rule (List.mem_singleton.mp new).symm)⟩
+        completes id leave writes rule (List.mem_singleton.mp new).symm request (queuedOld request queued) named)⟩
+
+/-- No queued begin names a begun occurrence that stands: what a queued begin names is unbegun while it stands. -/
+theorem begun_unnamed {s : State} (formed : WellFormed s) {occurrence : Occurrence} (member : occurrence ∈ s.occurrences)
+    (begun : occurrence.begun = true) : ∀ request, Queued s request → occurrence.id ∉ names request :=
+  fun request queued named => by
+    have := ((formed.claimed.named request queued).2 _ named).2 occurrence member rfl
+    simp [begun] at this
+
+private theorem pair_of_append_absent {α : Type} {a b : α} {l m : List α} (pair : [a, b].Sublist (l ++ m))
+    (first : a ∉ m) (second : b ∉ m) : [a, b].Sublist l := by
+  obtain ⟨front, back, split, rest⟩ := List.sublist_append_iff.mp pair
+  obtain ⟨inFront, inBack⟩ := rest
+  match back, inBack with
+  | [], _ => rw [List.append_nil] at split; exact split ▸ inFront
+  | x :: _, sub =>
+    have inPair : x ∈ [a, b] := split ▸ List.mem_append_right _ (List.mem_cons_self ..)
+    have inM : x ∈ m := sub.subset (List.mem_cons_self ..)
+    rcases List.mem_cons.mp inPair with rfl | later
+    · exact absurd inM first
+    · exact absurd ((List.mem_singleton.mp later) ▸ inM) second
+
+/-- `State.emit` queues flow tokens in a scope occurrence that stands: no begin, so the claims stay as they were. -/
+theorem emit_wellFormed {s : State} (formed : WellFormed s) (flows : List FlowId) {scope : ScopeOccurrenceId}
+    (stands : scope ∈ scopeIds s) : WellFormed (s.emit flows scope) := by
+  rw [emit_eq]
+  have flowsOnly : ∀ request, Token.begin request ∉ flows.map (Token.flow · scope) := by simp
+  have old : ∀ request, Token.begin request ∈ s.tokens ++ flows.map (Token.flow · scope) →
+      Token.begin request ∈ s.tokens := fun request queued =>
+    (List.mem_append.mp queued).resolve_right (flowsOnly request)
+  have queuedOld : ∀ request, Queued { s with tokens := s.tokens ++ flows.map (Token.flow · scope) } request →
+      Queued s request := fun request queued => queued.elim .inl fun queued => .inr (old request queued)
+  have keys : key { s with tokens := s.tokens ++ flows.map (Token.flow · scope) } = key s :=
+    funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
+  refine ⟨⟨formed.issued.occurrences, formed.issued.items, formed.issued.scopes⟩,
+    ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩,
+    formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive⟩,
+    by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations,
+    ⟨formed.owned.occurrenceScopes, formed.owned.itemScopes, formed.owned.itemOccurrences, formed.owned.attachments,
+      formed.owned.scopeOwners, formed.owned.variableScopes, fun token member => ?_⟩,
+    ⟨formed.rooted.1, formed.rooted.2.1, fun x member => Within.congr (s := s)
+      (t := { s with tokens := s.tokens ++ flows.map (Token.flow · scope) }) rfl (formed.rooted.2.2 x member)⟩,
+    ⟨formed.variables.scopes, formed.variables.names⟩, formed.failure,
+    ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends⟩, formed.counted,
+    by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted, formed.ownedBelow,
+    ⟨formed.claimed.attached, fun request queued => (formed.claimed.named request (queuedOld request queued)).imp id
+      fun beginnable id named => (beginnable id named).congr rfl rfl rfl rfl (instanceOf_congr rfl rfl),
+    formed.claimed.signalsApart, fun first second pair => formed.claimed.tokensApart first second ?_,
+    fun first second signal token => formed.claimed.queuesApart first second signal (old second token),
+    fun request id leave writes rule queued named completed =>
+      formed.claimed.uncompleted request id leave writes rule (queuedOld request queued) named completed⟩⟩
+  · rcases List.mem_append.mp member with old | new
+    · exact formed.owned.tokenScopes token old
+    · obtain ⟨flow, _, rfl⟩ := List.mem_map.mp new
+      rw [busyScope_flow]
+      exact stands
+  · exact pair_of_append_absent pair (flowsOnly first) (flowsOnly second)
 
 /-! ## Beginning occurrences -/
 

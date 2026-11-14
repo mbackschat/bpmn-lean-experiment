@@ -21,6 +21,22 @@ open Kernel
 theorem hooks_arriveGateway : Registry.hooks.arriveGateway = Feature.Flow.arriveGateway := by
   simp only [Registry.hooks]
 
+/-- Flow queues every outgoing token. -/
+theorem hooks_outflow : Registry.hooks.outflow = Feature.Flow.outflow := by
+  simp only [Registry.hooks]
+
+/-- Flow arrives at every Link. -/
+theorem hooks_arriveLink : Registry.hooks.arriveLink = Feature.Flow.arriveLink := by
+  simp only [Registry.hooks]
+
+/-- Starts arrives at every start Event, with the registry's hooks for firing and payloads. -/
+theorem hooks_arriveStart : Registry.hooks.arriveStart = Feature.Starts.arriveStart Registry.startsHooks := by
+  simp only [Registry.hooks]
+
+/-- Scopes completes every idle Scope. -/
+theorem hooks_completeScope : Registry.hooks.completeScope = Feature.Scopes.completeScope := by
+  simp only [Registry.hooks]
+
 /-- Data applies every write. -/
 theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOutputs := by
   simp only [Registry.hooks]

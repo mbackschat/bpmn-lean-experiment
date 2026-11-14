@@ -145,18 +145,18 @@ theorem fireItem_keeps (contract : HookContract hooks inv) {ctx : Ctx} {item : O
 /-- A begun occurrence's dispatch to its element's hook keeps `inv`. -/
 theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}
     {trigger : StartTrigger} {state after : State} (holds : inv state) (member : occurrence ∈ state.occurrences)
-    (inner : ∀ id ∈ entry.inner.toList,
+    (begun : occurrence.begun = true) (inner : ∀ id ∈ entry.inner.toList,
       Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id)
     (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) : inv after := by
   cases dispatch_ok ran with
-  | atStart ran => exact contract.arriveStart _ _ _ _ _ _ _ holds member ran
-  | atActivity ran => exact contract.arriveActivity _ _ _ _ _ _ holds member ran
-  | atMultiInstance ran => exact contract.arriveMultiInstance _ _ _ _ _ _ _ holds member ran
-  | atScope ran => exact contract.arriveScope _ _ _ _ _ _ _ holds member inner ran
+  | atStart ran => exact contract.arriveStart _ _ _ _ _ _ _ holds member begun ran
+  | atActivity ran => exact contract.arriveActivity _ _ _ _ _ _ holds member begun ran
+  | atMultiInstance ran => exact contract.arriveMultiInstance _ _ _ _ _ _ _ holds member begun ran
+  | atScope ran => exact contract.arriveScope _ _ _ _ _ _ _ holds member begun inner ran
   | atGateway ran => exact contract.arriveGateway _ _ _ _ _ _ holds member ran
-  | atCatch ran => exact contract.arriveCatch _ _ _ _ _ _ _ holds member ran
-  | atThrow ran => exact contract.arriveThrow _ _ _ _ _ _ _ holds member ran
-  | atLink ran => exact contract.arriveLink _ _ _ _ _ _ holds member ran
+  | atCatch ran => exact contract.arriveCatch _ _ _ _ _ _ _ holds member begun ran
+  | atThrow ran => exact contract.arriveThrow _ _ _ _ _ _ _ holds member begun ran
+  | atLink ran => exact contract.arriveLink _ _ _ _ _ _ holds member begun ran
 
 /-- A begin keeps `inv`: it begins only in a scope occurrence that stands, and hands the begun occurrence on. -/
 theorem begin_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts) {ctx : Ctx}
@@ -166,7 +166,7 @@ theorem begin_keeps (contract : HookContract hooks inv) (phases : Phases inv) (f
   have begunHolds := phases.begin state request (roleOf ctx.program request) sourceType holds (begin_scope ran) admitted
   have begunMember := facts.begun state request (roleOf ctx.program request) sourceType
   simp only [made] at begunHolds begunMember
-  exact dispatch_keeps contract begunHolds.1 begunMember begunHolds.2 dispatched
+  exact dispatch_keeps contract begunHolds.1 begunMember.1 begunMember.2 begunHolds.2 dispatched
 
 /-- A request an arrival or a start makes names no reservation. -/
 theorem admitted_fresh {state : State} {element : ElementId} {scope : ScopeOccurrenceId} {incoming : Option FlowId}
@@ -216,11 +216,12 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : Phases inv) (
 theorem completeIdleScope_keeps (contract : HookContract hooks inv) (facts : StateFacts) {ctx : Ctx}
     {scope : ScopeOccurrence} {state after : State} (holds : inv state) (member : scope ∈ state.scopes)
     (ran : completeIdleScope hooks ctx scope state = .ok after) : inv after := by
-  obtain ⟨_, occurrence, _, ⟨found, completed⟩⟩ := completeIdleScope_ok ran
-  obtain ⟨owned, _⟩ := facts.found _ _ _ found
+  obtain ⟨_, occurrence, link, ⟨found, completed⟩⟩ := completeIdleScope_ok ran
+  obtain ⟨owned, named⟩ := facts.found _ _ _ found
+  rw [← named] at link
   rcases completed with ⟨_, _, ran⟩ | ⟨_, _, ran⟩ | ⟨_, _, _, ran⟩
-  · exact contract.completeScope _ _ _ _ _ _ _ holds member owned ran
-  · exact contract.completeCall _ _ _ _ _ _ _ holds member owned ran
+  · exact contract.completeScope _ _ _ _ _ _ _ holds member owned link ran
+  · exact contract.completeCall _ _ _ _ _ _ _ holds member owned link ran
   · exact contract.completeBody _ _ _ _ _ _ _ holds owned ran
 
 /-- A parked join offered again keeps `inv`: its gateway's hook ran on the state the closure reached, for an occurrence

@@ -217,9 +217,10 @@ theorem occurrence?_some {state : State} {id : Nat} {occurrence : Occurrence}
   unfold State.occurrence? at found
   exact ⟨List.mem_of_find?_eq_some found, by simpa using List.find?_some found⟩
 
-/-- `beginOccurrence` holds the occurrence it begins. -/
+/-- `beginOccurrence` holds the occurrence it begins, begun. -/
 theorem beginOccurrence_mem (state : State) (request : BeginRequest) (role : ActivationRole) (sourceType : String) :
-    (state.beginOccurrence request role sourceType).2 ∈ (state.beginOccurrence request role sourceType).1.occurrences := by
+    (state.beginOccurrence request role sourceType).2 ∈ (state.beginOccurrence request role sourceType).1.occurrences ∧
+      (state.beginOccurrence request role sourceType).2.begun = true := by
   simp only [State.beginOccurrence, State.recordStart]
   split <;> simp [State.activate, State.issue]
 
@@ -265,6 +266,14 @@ theorem signal_eq (state : State) (signal : Signal) : state.signal signal = { st
 theorem recordEnd_eq (state : State) (key : OccurrenceKey) (terminal : Terminal) :
     state.recordEnd key terminal = { state with draft := { state.draft with ended := state.draft.ended ++ [(key, terminal)] } } := by
   simp only [State.recordEnd]
+
+/-- A flow token keeps its own scope occurrence busy. -/
+theorem busyScope_flow (flow : FlowId) (scope : ScopeOccurrenceId) : (Token.flow flow scope).busyScope = scope := by
+  simp only [Token.busyScope]
+
+theorem emit_eq (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) :
+    state.emit flows scope = { state with tokens := state.tokens ++ flows.map (Token.flow · scope) } := by
+  simp only [State.emit]
 
 theorem closeOwnItems_eq (state : State) (id : Nat) :
     state.closeOwnItems id = { state with openItems := state.openItems.filter (·.occurrence != id) } := by

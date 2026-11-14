@@ -2,6 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Laws.State
+public import Kernel.Feature.Scopes
 import all Kernel.Feature.Scopes
 
 /-! # Laws of Scopes
@@ -95,6 +96,33 @@ def InterruptingStart (interrupting : Bool) (parent : ScopeOccurrenceId) (kept :
 def NonInterruptingStart (interrupting : Bool) (before after : State) : Prop :=
   interrupting = false →
     (∀ occurrence ∈ before.occurrences, occurrence ∈ after.occurrences) ∧ ∀ item ∈ before.openItems, item ∈ after.openItems
+
+/-! ## The state invariant under Scopes' hooks
+
+Scopes' share of the proof wave's state-invariant lane (P2), stated over `ScopesOps`, generic in `inv`;
+`Kernel.Proofs.Step` fills `ScopesOps` for `Laws.State.WellFormed`. An idle Scope completes its owning occurrence,
+which is begun. -/
+
+/-- What Scopes' hooks need of the state operations they apply, for an invariant `inv`. -/
+structure ScopesOps (inv : State → Prop) : Prop where
+  /-- The occurrence that owns a standing scope occurrence is begun. -/
+  owner : ∀ state scope occurrence, inv state → scope ∈ state.scopes → occurrence ∈ state.occurrences →
+    scope.occurrence = some occurrence.id → occurrence.begun = true
+  /-- The completion of a begun occurrence that stands. -/
+  complete : ∀ state occurrence leave writes rule, inv state → occurrence ∈ state.occurrences →
+    occurrence.begun = true → inv (state.signal (.complete occurrence.id leave writes rule))
+
+/-- `Hooks.completeScope` keeps `inv`: an idle Scope completes its owner. -/
+theorem completeScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {header : Header}
+    {payload : ScopePayload} {scope : ScopeOccurrence} {owner : Occurrence} {state after : State} (holds : inv state)
+    (member : scope ∈ state.scopes) (owned : owner ∈ state.occurrences) (link : scope.occurrence = some owner.id)
+    (ran : Feature.Scopes.completeScope ctx header payload scope owner state = .ok after) : inv after := by
+  unfold Feature.Scopes.completeScope at ran
+  simp only [bind, Except.bind] at ran
+  split at ran
+  · cases ran
+  · cases ran
+    exact ops.complete _ _ _ _ _ holds owned (ops.owner _ _ _ holds member owned link)
 
 /-! ## Non-vacuity
 

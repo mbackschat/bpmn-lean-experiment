@@ -47,34 +47,37 @@ structure PipelineFrame (before after : State) : Prop where
 
 /-- What each hook must keep of `inv`, given what `Step` establishes before it calls the hook: the occurrence it hands
 over stands (a begun occurrence, an idle scope occurrence's owner, a parked join's latest occurrence, the completing
-occurrence); the item it hands over is open; the scope occurrence and occurrence a queued signal names stand (`Step.stale`,
-`Step.gone`); a completed occurrence's continuation runs while its scope occurrence stands; an Event Sub-Process's start
-Event reservation (`ScopeEntry.inner`) is beginnable in the scope occurrence its occurrence began in, and claimed by
-nothing queued. The completion pipeline's hooks also keep its frame (`PipelineFrame`), and `Hooks.leave` leaves
-nothing hanging on the completing occurrence.
-`Hooks.delivered`, a query, picks an open item. Each feature's `Laws` module proves the fields of the hooks it fills. -/
+occurrence), and an arrival's is begun, as `Step.begin` hands it over, but a Gateway's, which a parked join's offer
+may reach; the item it hands over is open; the scope occurrence and occurrence a queued signal names stand
+(`Step.stale`, `Step.gone`); a completed occurrence's continuation runs while its scope occurrence stands; an Event
+Sub-Process's start Event reservation (`ScopeEntry.inner`) is beginnable in the scope occurrence its occurrence began
+in, and claimed by nothing queued. The completion pipeline's hooks also keep its frame (`PipelineFrame`), and
+`Hooks.leave` leaves nothing hanging on the completing occurrence. `Hooks.delivered`, a query, picks an open item. Each feature's `Laws` module proves the fields of the hooks it fills. -/
 structure HookContract (hooks : Hooks) (inv : State → Prop) : Prop where
   arriveStart : ∀ ctx header payload trigger occurrence state after, inv state → occurrence ∈ state.occurrences →
-    hooks.arriveStart ctx header payload trigger occurrence state = .ok after → inv after
+    occurrence.begun = true → hooks.arriveStart ctx header payload trigger occurrence state = .ok after → inv after
   arriveActivity : ∀ ctx header payload occurrence state after, inv state → occurrence ∈ state.occurrences →
-    hooks.arriveActivity ctx header payload occurrence state = .ok after → inv after
+    occurrence.begun = true → hooks.arriveActivity ctx header payload occurrence state = .ok after → inv after
   arriveMultiInstance : ∀ ctx header envelope loop occurrence state after, inv state → occurrence ∈ state.occurrences →
-    hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after → inv after
+    occurrence.begun = true → hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after → inv after
   arriveScope : ∀ ctx header payload occurrence entry state after, inv state → occurrence ∈ state.occurrences →
+    occurrence.begun = true →
     (∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id) →
     hooks.arriveScope ctx header payload occurrence entry state = .ok after → inv after
   arriveGateway : ∀ ctx header payload occurrence state after, inv state → occurrence ∈ state.occurrences →
     hooks.arriveGateway ctx header payload occurrence state = .ok after → inv after
   arriveCatch : ∀ ctx header payload subscription occurrence state after, inv state → occurrence ∈ state.occurrences →
-    hooks.arriveCatch ctx header payload subscription occurrence state = .ok after → inv after
+    occurrence.begun = true → hooks.arriveCatch ctx header payload subscription occurrence state = .ok after → inv after
   arriveThrow : ∀ ctx header payload thrown occurrence state after, inv state → occurrence ∈ state.occurrences →
-    hooks.arriveThrow ctx header payload thrown occurrence state = .ok after → inv after
+    occurrence.begun = true → hooks.arriveThrow ctx header payload thrown occurrence state = .ok after → inv after
   arriveLink : ∀ ctx header payload occurrence state after, inv state → occurrence ∈ state.occurrences →
-    hooks.arriveLink ctx header payload occurrence state = .ok after → inv after
+    occurrence.begun = true → hooks.arriveLink ctx header payload occurrence state = .ok after → inv after
   completeScope : ∀ ctx header payload scope occurrence state after, inv state → scope ∈ state.scopes →
-    occurrence ∈ state.occurrences → hooks.completeScope ctx header payload scope occurrence state = .ok after → inv after
+    occurrence ∈ state.occurrences → scope.occurrence = some occurrence.id →
+    hooks.completeScope ctx header payload scope occurrence state = .ok after → inv after
   completeCall : ∀ ctx header payload scope occurrence state after, inv state → scope ∈ state.scopes →
-    occurrence ∈ state.occurrences → hooks.completeCall ctx header payload scope occurrence state = .ok after → inv after
+    occurrence ∈ state.occurrences → scope.occurrence = some occurrence.id →
+    hooks.completeCall ctx header payload scope occurrence state = .ok after → inv after
   completeBody : ∀ ctx header envelope loop occurrence state after, inv state → occurrence ∈ state.occurrences →
     hooks.completeBody ctx header envelope loop occurrence state = .ok after → inv after
   completeUserTask : ∀ ctx header payload item values state after, inv state → item ∈ state.openItems →
@@ -193,7 +196,8 @@ structure StateFacts : Prop where
   found : ∀ (state : State) id occurrence, state.occurrence? id = some occurrence →
     occurrence ∈ state.occurrences ∧ occurrence.id = id
   begun : ∀ (state : State) request role sourceType,
-    (state.beginOccurrence request role sourceType).2 ∈ (state.beginOccurrence request role sourceType).1.occurrences
+    (state.beginOccurrence request role sourceType).2 ∈ (state.beginOccurrence request role sourceType).1.occurrences ∧
+    (state.beginOccurrence request role sourceType).2.begun = true
   startReserved : ∀ (state : State) occurrence sourceType, occurrence ∈ state.occurrences →
     (state.startReserved occurrence sourceType).2 ∈ (state.startReserved occurrence sourceType).1.occurrences ∧
     (state.startReserved occurrence sourceType).2.begun = true ∧

@@ -1,6 +1,8 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Feature.Starts
+import all Kernel.Feature.Starts
 
 /-! # Laws of root starts
 
@@ -18,7 +20,8 @@ The laws take a process's elements, their parents and their triggers as paramete
 Each law is followed by its non-vacuity witness: values that satisfy it and, where the law could otherwise hold of
 everything, values that violate it.
 
-Its laws read no body of `Kernel.Feature.Starts`, so the module does not open them (#92).
+Its laws read no body of `Kernel.Feature.Starts`; its share of the state-invariant lane, at the end, reads
+`Hooks.arriveStart`'s.
 -/
 
 @[expose] public section
@@ -241,5 +244,47 @@ theorem second_instance_rejected : ¬ BeginsOnce [some begun, some { begun with 
   | _ :: _, split =>
     have := absent (some begun) (by simp at split; simp [split.1])
     simp at this
+
+/-! ## The state invariant under Starts' hooks
+
+Starts' share of the proof wave's state-invariant lane (P2), stated over `StartsOps`, generic in `inv`;
+`Kernel.Proofs.Step` fills `StartsOps` for `Laws.State.WellFormed`. A start Event completes its own begun occurrence,
+after a timer start has moved the logical time. -/
+
+/-- What Starts' hooks need of the state operations they apply, for an invariant `inv`. -/
+structure StartsOps (inv : State → Prop) : Prop where
+  /-- The logical time moves. -/
+  clock : ∀ state atMs, inv state → inv { state with logicalTimeMs := atMs }
+  /-- The completion of a begun occurrence that stands. -/
+  complete : ∀ state occurrence leave writes rule, inv state → occurrence ∈ state.occurrences →
+    occurrence.begun = true → inv (state.signal (.complete occurrence.id leave writes rule))
+
+/-- `Hooks.arriveStart` keeps `inv`: a start Event completes its own begun occurrence. -/
+theorem arriveStart_keeps {inv : State → Prop} (ops : StartsOps inv) {hooks : Feature.Starts.StartsHooks} {ctx : Ctx}
+    {header : Header} {payload : StartPayload} {trigger : StartTrigger} {occurrence : Occurrence} {state after : State}
+    (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (ran : Feature.Starts.arriveStart hooks ctx header payload trigger occurrence state = .ok after) : inv after := by
+  unfold Feature.Starts.arriveStart at ran
+  split at ran
+  · simp only [bind, Except.bind] at ran
+    cases ran
+    exact ops.complete _ _ _ _ _ (ops.clock _ _ holds) member begun
+  · cases paid : Feature.Starts.startPayload hooks ctx state.logicalTimeMs ‹_› ‹_› with
+    | error failure => simp [paid, bind, Except.bind] at ran
+    | ok values =>
+      simp only [paid, bind, Except.bind] at ran
+      cases ran
+      exact ops.complete _ _ _ _ _ holds member begun
+  · split at ran
+    · simp [throw, throwThe, MonadExcept.throw, bind, Except.bind] at ran
+    · simp only [bind, Except.bind] at ran
+      split at ran
+      · cases ran
+      · cases ran
+        exact ops.complete _ _ _ _ _ holds member begun
+  all_goals
+    simp only [bind, Except.bind] at ran
+    cases ran
+    exact ops.complete _ _ _ _ _ holds member begun
 
 end Kernel.Laws.Starts

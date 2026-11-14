@@ -426,4 +426,51 @@ theorem held_link_rejected : ¬ LinkPassesThrough (· == ⟨"C"⟩) waitingAtC :
   have := passes atC (by simp [waitingAtC])
   simp [atC] at this
 
+/-! ## The state invariant under Flow's hooks
+
+Flow's share of the proof wave's state-invariant lane (P2), stated over `FlowOps`, generic in `inv`, so the proof reads
+no `Laws.State` law; `Kernel.Proofs.Step` fills `FlowOps` for `Laws.State.WellFormed`. `Hooks.outflow` queues flow
+tokens in the completing occurrence's scope occurrence, and a Link queues its own begun occurrence's completion. -/
+
+/-- What Flow's hooks need of the state operations they apply, for an invariant `inv`. -/
+structure FlowOps (inv : State → Prop) : Prop where
+  /-- Flow tokens queued in a scope occurrence that stands. -/
+  emit : ∀ state flows scope, inv state → (∃ entry ∈ state.scopes, entry.id = scope) → inv (state.emit flows scope)
+  /-- The completion of a begun occurrence that stands. -/
+  complete : ∀ state occurrence leave writes rule, inv state → occurrence ∈ state.occurrences →
+    occurrence.begun = true → inv (state.signal (.complete occurrence.id leave writes rule))
+
+/-- `Hooks.outflow` keeps `inv` from a scope occurrence that stands. -/
+theorem outflow_keeps {inv : State → Prop} (ops : FlowOps inv) {ctx : Ctx} {occurrence : Occurrence} {leave : Leave}
+    {state after : State} (holds : inv state) (stands : ∃ entry ∈ state.scopes, entry.id = occurrence.scope)
+    (ran : Feature.Flow.outflow ctx occurrence leave state = .ok after) : inv after := by
+  unfold Feature.Flow.outflow at ran
+  split at ran
+  · cases ran
+    exact ops.emit _ _ _ holds stands
+  · split at ran
+    · cases selected : Feature.Flow.ownFlows ctx ‹_› (state.evalContext ctx.program occurrence.scope) with
+      | error failure => simp [selected, bind, Except.bind] at ran
+      | ok flows =>
+        simp only [selected, bind, Except.bind] at ran
+        cases ran
+        exact ops.emit _ _ _ holds stands
+    · cases ran
+  · cases ran
+
+/-- `Hooks.arriveLink` keeps `inv`: a Link completes its own begun occurrence. -/
+theorem arriveLink_keeps {inv : State → Prop} (ops : FlowOps inv) {ctx : Ctx} {header : Header} {payload : EventPayload}
+    {occurrence : Occurrence} {state after : State} (holds : inv state) (member : occurrence ∈ state.occurrences)
+    (begun : occurrence.begun = true) (ran : Feature.Flow.arriveLink ctx header payload occurrence state = .ok after) :
+    inv after := by
+  unfold Feature.Flow.arriveLink Feature.Flow.signalComplete at ran
+  split at ran
+  · split at ran
+    · cases ran
+      exact ops.complete _ _ _ _ _ holds member begun
+    · cases ran
+    · cases ran
+  · cases ran
+    exact ops.complete _ _ _ _ _ holds member begun
+
 end Kernel.Laws.Flow
