@@ -97,4 +97,10 @@ theorem admitValues_error {values : List Value} {failure : Failure} (refused : a
   · cases refused
   · exact (Except.error.inj refused).symm
 
+/-- A List's members are its items and a String List's are its texts as Strings, in order. -/
+theorem collectionItems_lists {value : Value} {outputs : List Value}
+    (lists : value = .list outputs ∨ ∃ texts, value = .stringList texts ∧ texts.map .string = outputs) :
+    collectionItems value = some outputs := by
+  rcases lists with rfl | ⟨texts, rfl, rfl⟩ <;> rfl
+
 end Kernel.Laws.Hooks

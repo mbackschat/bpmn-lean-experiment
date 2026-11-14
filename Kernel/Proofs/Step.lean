@@ -538,7 +538,80 @@ theorem registered_countersEntered : MultiInstance.CountersEntered Registry.hook
 theorem registered_countersRead : MultiInstance.CountersRead Registry.hooks :=
   fun _ _ _ _ _ _ _ _ _ formed cib ran member owns looped slot => by
     rw [Laws.Registry.hooks_instanceCompleted] at ran
-    exact Laws.MultiInstance.instanceCompleted_countersHeld formed.keyed (formed.formed _ member).owned cib ran member
+    exact MultiInstance.instanceCompleted_countersHeld formed.keyed (formed.formed _ member).owned cib ran member
       owns looped slot
+
+/-! ## The Multi-Instance output collection
+
+What the registered `Hooks.completeBody` and `Hooks.instanceCompleted` queue is a body's completion writing what
+`Laws.MultiInstance.WritesCollection` allows (`Laws.MultiInstance.finish_spec`, `MultiInstance.instanceCompleted_queues`),
+the write of its counters, or the begins of its next instances; telling them apart is a `Signal` discrimination, made
+here. -/
+
+/-- What a completion writes under the output collection's name lists every slot's output in item order, when the loop
+names its output data item (`MultiInstance.OutputsNamed`) and the slots fit the loop. -/
+theorem collectsWritten {program : Program} {loop : MultiInstance} {run : MultiInstanceRun} {name : String}
+    {written : List (String × Value)} (writes : Laws.MultiInstance.WritesCollection program loop run written)
+    (named : MultiInstance.OutputsNamed program loop) (collection : loop.outputCollection = some name)
+    (fits : Laws.MultiInstance.OutputsFit run loop) (value : Value) (present : (name, value) ∈ written) :
+    ∃ outputs, collectionItems value = some outputs ∧ Laws.MultiInstance.Collects run (some outputs) := by
+  obtain ⟨aggregates, _, listed⟩ := writes name value present
+  obtain ⟨outputs, lists, collects⟩ := listed (named aggregates (by rw [collection]; rfl)) fits
+  exact ⟨outputs, Laws.Hooks.collectionItems_lists lists, collects⟩
+
+/-- A body's completion under the registered hooks writes the output collection listing every slot's output in item
+order. -/
+theorem registered_collectsOnCompletion : MultiInstance.CollectsOnCompletion Registry.hooks := by
+  refine ⟨fun ctx _ _ loop _ state _ run _ formed named looped member owns collection ran => ?_,
+    fun _ _ _ _ _ _ run loop _ formed named looped member owns collection ran => ?_⟩
+  · rw [Laws.Registry.hooks_completeBody] at ran
+    obtain ⟨found, located, finished⟩ := Laws.MultiInstance.completeBody_spec ran
+    have one := Laws.MultiInstance.runOf?_keyed formed.keyed located member owns
+    subst finished one
+    obtain ⟨written, same, writes⟩ := Laws.MultiInstance.finish_spec ctx loop found state
+    refine ⟨[.complete found.occurrence .outgoing written .outward],
+      by rw [same, Laws.State.signal_eq, Laws.State.Queues], ?_⟩
+    intro queued inside _ value present shape
+    have one := List.mem_singleton.mp inside
+    subst one
+    rcases shape with ⟨_, _, _, same⟩ | ⟨_, _, same⟩
+    · obtain ⟨-, -, listed, -⟩ := Signal.complete.inj same
+      subst listed
+      exact collectsWritten writes named collection ((formed.formed found member).shaped loop looped).2.2.1 value present
+    · cases same
+  · rw [Laws.Registry.hooks_instanceCompleted] at ran
+    obtain ⟨found, other, index, rest⟩ := MultiInstance.instanceCompleted_queues ran
+    obtain ⟨output, done, _, queues⟩ := rest
+    obtain ⟨new, queued, each⟩ := queues
+    refine ⟨new, queued, fun _ _ _ _ inside value present => ?_⟩
+    rcases each _ inside with ⟨_, _, _, same⟩ | ⟨_, same⟩ | ⟨_, same, writes, only⟩
+    · cases same
+    · cases same
+    · obtain ⟨-, -, listed, -⟩ := Signal.complete.inj same
+      have one := only run member owns
+      subst listed one
+      have looped' : other = loop := Option.some.inj ((done.looped : _ = some other).symm.trans looped)
+      subst looped'
+      have fits := ((formed.formed found (Laws.MultiInstance.found_mem done.found)).shaped other done.looped).2.2.1
+      exact collectsWritten writes named collection (MultiInstance.recorded_fits fits done.fits done.looped) value present
+
+/-- An instance's completion under the registered hooks that leaves a slot of its body unfilled queues no completion
+writing the output collection. -/
+theorem registered_stopsUncollected : MultiInstance.StopsUncollected Registry.hooks := by
+  intro _ _ _ _ _ _ run _ name ran member owns unfilled _ _
+  rw [Laws.Registry.hooks_instanceCompleted] at ran
+  obtain ⟨_, _, _, rest⟩ := MultiInstance.instanceCompleted_queues ran
+  obtain ⟨_, _, _, queues⟩ := rest
+  obtain ⟨new, queued, each⟩ := queues
+  refine ⟨new, queued, fun _ _ _ _ inside value present => ?_⟩
+  rcases each _ inside with ⟨_, _, _, same⟩ | ⟨_, same⟩ | ⟨_, same, writes, only⟩
+  · cases same
+  · cases same
+  · obtain ⟨-, -, listed, -⟩ := Signal.complete.inj same
+    have one := only run member owns
+    subst listed one
+    obtain ⟨slot, inside', open_⟩ := unfilled
+    obtain ⟨filled, is⟩ := (writes name value present).2.1 slot inside'
+    exact open_ filled is
 
 end Kernel.Proofs.Step

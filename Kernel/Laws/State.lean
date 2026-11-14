@@ -816,6 +816,9 @@ theorem leaveScope_slots (s : State) (scope : ScopeOccurrenceId) :
       (s.leaveScope scope).slots.compensation.runs = (s.clearInside scope).slots.compensation.runs := by
   simp [State.leaveScope]
 
+theorem leaveScope_signals (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope scope).signals = s.signals := by
+  simp [State.leaveScope, State.clearInside, State.recordCancelled]
+
 /-- `State.removeOccurrence` leaves the scope occurrences the occurrence owns after removing its record. -/
 theorem removeOccurrence_eq (s : State) (id : Nat) :
     s.removeOccurrence id =
