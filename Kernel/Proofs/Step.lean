@@ -113,13 +113,14 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
     resumable := fun _ _ _ _ _ _ _ _ formed head => Laws.State.resumable_signal formed head
     raisable := fun _ _ _ _ _ formed head => Laws.State.raisable_signal formed head
     housed := fun _ _ _ formed member => Laws.State.housed_wellFormed formed member
+    bodied := fun _ _ occurrence formed member => formed.bodyRoles occurrence member
     parkedBegun := fun _ _ waiting _ formed parked member named =>
       (formed.settled.parked waiting parked).2.1 _ member named
     endInstance := fun _ _ _ _ formed recorded => by
       rw [Laws.Step.endInstance_eq]
       exact Laws.State.endInstance_wellFormed formed recorded
-    begin := fun _ _ request role sourceType formed stands admitted roled =>
-      ⟨Laws.State.begin_wellFormed formed request role sourceType (mem stands) admitted.2.1 roled,
+    begin := fun _ _ request role sourceType formed stands admitted roled bodied =>
+      ⟨Laws.State.begin_wellFormed formed request role sourceType (mem stands) admitted.2.1 roled bodied,
         Laws.State.begin_entry formed request role sourceType admitted.1 admitted.2.1 admitted.2.2⟩
     reserve := fun _ _ element scope formed stands => Laws.State.reserve_wellFormed formed element scope (mem stands)
     cancel := fun _ _ id formed => Laws.State.cancel_wellFormed formed id }
@@ -182,8 +183,8 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
   enter _ element locals occurrence formed member begun :=
     ⟨Laws.State.enterScope_wellFormed formed element (formed.owned.occurrenceScopes occurrence member) locals
       fun _ named => ⟨occurrence, member, Option.some.inj named, begun, rfl⟩, by rw [Laws.State.enterScope_eq]⟩
-  openItem _ kind _ formed member begun unstarted :=
-    ⟨Laws.State.openItem_wellFormed formed kind member begun unstarted, by rw [Laws.State.openItem_eq]⟩
+  openItem _ kind _ formed member begun unstarted role :=
+    ⟨Laws.State.openItem_wellFormed formed kind member begun unstarted role, by rw [Laws.State.openItem_eq]⟩
   arm _ _ element formed member begun := queueArm_wellFormed formed member begun element
   enterCalled _ program _ variables definition formed member begun := by
     refine ⟨Laws.State.enterCalled_wellFormed formed program member begun variables definition, ?_, ?_⟩ <;>
@@ -303,7 +304,8 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
   terminate _ _ formed member begun :=
     have cleared := Laws.State.clearInside_inner formed member begun (inner := none) (by simp)
     ⟨cleared.1, cleared.2.1⟩
-  openItem _ kind _ formed member begun unstarted := Laws.State.openItem_wellFormed formed kind member begun unstarted
+  openItem _ kind _ formed member begun unstarted role :=
+    Laws.State.openItem_wellFormed formed kind member begun unstarted role
   signalOccurrences _ _ := by rw [Laws.State.signal_eq]
   begin _ _ _ formed stands := by
     obtain ⟨entry, inside, named⟩ := stands
@@ -333,7 +335,8 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
     (fun item member start => waits item (formed.typed item member start).2.2.2) fun item _ => waits item
   awaits := Laws.State.triggers_await
   disarm _ host formed := Laws.State.disarm_wellFormed formed host
-  openItem _ kind _ formed member begun unstarted := Laws.State.openItem_wellFormed formed kind member begun unstarted
+  openItem _ kind _ formed member begun unstarted role :=
+    Laws.State.openItem_wellFormed formed kind member begun unstarted role
   openSubscription _ kind element _ _ passive formed stands hangs waits := by
     obtain ⟨entry, inside, named⟩ := stands
     exact Laws.State.openSubscription_wellFormed formed kind element (List.mem_map.mpr ⟨entry, inside, named⟩) hangs passive

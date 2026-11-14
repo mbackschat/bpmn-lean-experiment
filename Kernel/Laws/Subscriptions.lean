@@ -503,9 +503,11 @@ structure SubscriptionsOps (program : Program) (inv : State → Prop) : Prop whe
   awaits : (∀ detail, AwaitsTrigger (.timer detail)) ∧ (∀ detail, AwaitsTrigger (.message detail)) ∧
     (∀ detail, AwaitsTrigger (.signal detail)) ∧ ∀ detail, AwaitsTrigger (.conditional detail)
   disarm : ∀ state host, inv state → inv (state.disarm host)
-  /-- An item opened for a begun occurrence that stands, of an element the program declares no start Event. -/
+  /-- An item opened for a begun occurrence that stands, of an element the program declares no start Event, numbered
+  under its element's counter. -/
   openItem : ∀ state kind occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
-    (program.element? occurrence.element).bind (·.start?) = none → inv (state.openItem kind occurrence)
+    (program.element? occurrence.element).bind (·.start?) = none → occurrence.role = .element →
+    inv (state.openItem kind occurrence)
   /-- A subscription opened in a scope occurrence that stands, hanging, if at all, on a begun occurrence there, waiting
   for a trigger. -/
   openSubscription : ∀ state kind element scope host passive, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
@@ -609,13 +611,13 @@ theorem armed_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) 
 theorem arriveCatch_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv) {header : Header}
     {payload : EventPayload} {subscription : Subscription} {occurrence : Occurrence} {state after : State}
     (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
-    (unstarted : (ctx.program.element? occurrence.element).bind (·.start?) = none)
+    (unstarted : (ctx.program.element? occurrence.element).bind (·.start?) = none) (role : occurrence.role = .element)
     (ran : Feature.Subscriptions.arriveCatch ctx header payload subscription occurrence state = .ok after) :
     inv after := by
   unfold Feature.Subscriptions.arriveCatch at ran
   obtain ⟨kind?, _, ran⟩ := ok_bind ran
   split at ran
-  · have opened := ops.openItem state ‹_› occurrence holds member begun unstarted
+  · have opened := ops.openItem state ‹_› occurrence holds member begun unstarted role
     dsimp only at ran
     split at ran
     · obtain ⟨⟨evaluated, fires⟩, evaluation, ran⟩ := ok_bind ran

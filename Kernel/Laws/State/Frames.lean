@@ -308,6 +308,41 @@ theorem EventRoles.shrink {program : Program} {before after : State} (roles : Ev
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences) : EventRoles program after :=
   roles.transport fun occurrence member => .inr ⟨occurrence, occurrences occurrence member, rfl, rfl⟩
 
+/-- A body keeps its element's Multi-Instance envelope through a change each of whose bodies is of an element with
+one, or carries the element and role of an occurrence before. -/
+theorem BodyRoles.transport {program : Program} {before after : State} (bodies : BodyRoles program before)
+    (occurrences : ∀ occurrence ∈ after.occurrences, occurrence.role = .multiInstanceBody →
+      (((program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true ∨
+      ∃ old ∈ before.occurrences, old.element = occurrence.element ∧ old.role = occurrence.role) :
+    BodyRoles program after := fun occurrence member body => by
+  rcases occurrences occurrence member body with loops | ⟨old, held, element, role⟩
+  · exact loops
+  · rw [← element]
+    exact bodies old held (role.trans body)
+
+theorem BodyRoles.shrink {program : Program} {before after : State} (bodies : BodyRoles program before)
+    (occurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences) : BodyRoles program after :=
+  bodies.transport fun occurrence member _ => .inr ⟨occurrence, occurrences occurrence member, rfl, rfl⟩
+
+/-- An item keeps waiting for an occurrence of the element role through a change each of whose items waits for what
+an item waited for before, and each of whose occurrences an item waits for carries the identity and role of one
+before. -/
+theorem ItemRoles.transport {before after : State} (roles : ItemRoles before)
+    (items : ∀ item ∈ after.openItems, ∃ old ∈ before.openItems, old.occurrence = item.occurrence)
+    (occurrences : ∀ item ∈ after.openItems, ∀ occurrence ∈ after.occurrences, occurrence.id = item.occurrence →
+      ∃ old ∈ before.occurrences, old.id = occurrence.id ∧ old.role = occurrence.role) : ItemRoles after :=
+  fun item member occurrence present named => by
+    obtain ⟨old, held, same, role⟩ := occurrences item member occurrence present named
+    obtain ⟨waiting, open_, waits⟩ := items item member
+    rw [← role]
+    exact roles waiting open_ old held (same.trans (named.trans waits.symm))
+
+theorem ItemRoles.shrink {before after : State} (roles : ItemRoles before)
+    (items : ∀ item ∈ after.openItems, item ∈ before.openItems)
+    (occurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences) : ItemRoles after :=
+  roles.transport (fun item member => ⟨item, items item member, rfl⟩)
+    fun _ _ occurrence present _ => ⟨occurrence, occurrences occurrence present, rfl, rfl⟩
+
 /-- The queued raises stay sound through a change that queues no raise, issues nothing back, keeps every issued scope
 occurrence that stands standing in its process instance, keeps every count and adds no unbegun occurrence. -/
 theorem RaisesSound.transport {program : Program} {before after : State} (raises : RaisesSound program before)
@@ -498,7 +533,9 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
     fun _ member => narrows.signals.subset member
   worked := formed.worked.shrink (fun _ member => items member) fun _ member _ => narrows.occurrences ▸ member
   roles := formed.roles.shrink fun _ member => narrows.occurrences ▸ member
-  raises := raises }
+  raises := raises
+  bodyRoles := formed.bodyRoles.shrink fun _ member => narrows.occurrences ▸ member
+  itemRoles := formed.itemRoles.shrink (fun _ member => items member) fun _ member => narrows.occurrences ▸ member }
 
 /-- A state that narrows a well-formed one with the same variable sets is well-formed when it starts no occurrence key
 twice. -/

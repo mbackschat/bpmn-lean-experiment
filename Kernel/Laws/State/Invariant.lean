@@ -7,8 +7,9 @@ public import Kernel.State
 The invariant every reachable `State` keeps, stated over the state's fields and independent of the operations that
 produce them: occurrence identity, ownership, the scope tree and the work a closure has queued. The invariant is relative
 to the program the instance runs (`WellFormed program s`), since which kind of item an element opens only the program
-says (`Typed`), and which elements are Events, whose occurrences a raise names by their key (`EventRoles`,
-`Raisable`); every other clause reads the state's fields alone. No instance migrates between programs: `Population`
+says (`Typed`), which elements are Events, whose occurrences a raise names by their key (`EventRoles`,
+`Raisable`), and which declare a Multi-Instance envelope, the only ones a body numbers under (`BodyRoles`); every
+other clause reads the state's fields alone. No instance migrates between programs: `Population`
 runs each under its deployment's. The transitions it permits are `Kernel.Laws.State.Transitions`'. Nothing executable
 imports this module; the proof wave proves `Step` preserves `WellFormed`
 ([kernel architecture](../../../docs/kernel/ARCHITECTURE-SPEC.md#lean-assurance-lane)).
@@ -402,6 +403,23 @@ def Raisable (program : Program) (s : State) (origin : Origin) : Prop :=
 def RaisesSound (program : Program) (s : State) : Prop :=
   ∀ raised origin, Signal.raise raised origin ∈ s.signals → Raisable program s origin
 
+/-- An occurrence numbered as a Multi-Instance body is of an element the program declares a Multi-Instance envelope:
+`Step.roleOf` numbers a body only for such an element, a reservation numbers under the element's own counter
+(`State.reserve`), and an occurrence keeps its role. So `Step.dispatch` hands every body to
+`Hooks.arriveMultiInstance` (`Step.bodyLoop?`), and every other hook an occurrence numbered under its element's
+counter. -/
+def BodyRoles (program : Program) (s : State) : Prop :=
+  ∀ occurrence ∈ s.occurrences, occurrence.role = .multiInstanceBody →
+    (((program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true
+
+/-- Every open item waits for an occurrence numbered under its element's own counter, never a Multi-Instance body:
+`State.openItem` opens an item only for the occurrence an Activity's or an intermediate Event's hook is handed, which
+is no body (`BodyRoles`), and `State.openSubscription` for a fresh reservation. So an item's public identity is that
+of an occurrence `Step.occurrenceOf?` finds, which takes only that role: a body and its first instance share their
+element and activation, since each role numbers under its own counter (R8). -/
+def ItemRoles (s : State) : Prop :=
+  ∀ item ∈ s.openItems, ∀ occurrence ∈ s.occurrences, occurrence.id = item.occurrence → occurrence.role = .element
+
 /-- The state invariants together: what holds of every committed state and between any two micro-steps of a closure,
 relative to the program the instance runs. -/
 structure WellFormed (program : Program) (s : State) : Prop where
@@ -425,6 +443,8 @@ structure WellFormed (program : Program) (s : State) : Prop where
   worked : Worked s
   roles : EventRoles program s
   raises : RaisesSound program s
+  bodyRoles : BodyRoles program s
+  itemRoles : ItemRoles s
 
 /-! ## The scope tree of a well-formed state
 
@@ -846,6 +866,14 @@ theorem reserved_raise_host_rejected (kind : OpenKind) :
   fun settled => by
     have := (settled.raised .cancel _ 7 (List.mem_singleton.mpr rfl) rfl).2.1 reservation (by simp [armedState]) rfl
     simp [reservation] at this
+
+/-- The root's task 5 numbered as a Multi-Instance body while its item 6 waits for it breaks `ItemRoles`: the item's
+public identity would be the body's, which shares its element and activation with the body's first instance. -/
+theorem body_item_rejected (kind : OpenKind) :
+    ¬ ItemRoles { sample kind with occurrences := [subProcess, innerTask, { outerTask with role := .multiInstanceBody }] } :=
+  fun roles => by
+    have := roles (outerItem kind) (by simp [sample]) { outerTask with role := .multiInstanceBody } (by simp) rfl
+    simp at this
 
 /-- A queued compensation in the Sub-Process's scope occurrence that releases the root as its group context breaks
 `SlotsSettled`. -/

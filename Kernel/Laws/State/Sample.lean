@@ -6,8 +6,8 @@ public import Kernel.Laws.State
 
 That the sample instance of `Kernel.Laws.State.Invariant` is well-formed, the witnesses of `ReservationsUnstarted`
 and `Rooted` that read its process instance or `State.root` (`Laws.State.root_eq`), and those of the clauses on what an
-item, a queued begin or a queued raise holds: `Typed`, `EventRoles` and `Raisable`, which read the program, `Worked`,
-`AttachedReserved` and `InnerPlaced`. It reads no body. Nothing executable imports this module.
+item, a queued begin or a queued raise holds: `Typed`, `EventRoles`, `BodyRoles` and `Raisable`, which read the
+program, `Worked`, `AttachedReserved` and `InnerPlaced`. It reads no body. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -83,6 +83,8 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
     simp only [EventRoles, sample, List.mem_cons, List.not_mem_nil, or_false]
     rintro occurrence (rfl | rfl | rfl) _ <;> rfl
   raises := by simp [RaisesSound, sample]
+  bodyRoles := by simp [BodyRoles, sample, subProcess, innerTask, outerTask]
+  itemRoles := by simp [ItemRoles, sample, subProcess, innerTask, outerTask]
 
 /-- A start fact carrying the armed reservation's key breaks `ReservationsUnstarted`. -/
 theorem early_start_rejected (kind : OpenKind) :
@@ -175,6 +177,15 @@ theorem body_event_rejected (kind : OpenKind) {program : Program}
   fun roles => by
     have := roles { outerTask with role := .multiInstanceBody } (by simp) (by simpa [outerTask] using event)
     simp at this
+
+/-- Under a program that declares `Outer` no Multi-Instance envelope, its occurrence numbered as a body breaks
+`BodyRoles`: `Step.dispatch` would hand it to `Outer`'s own hook as an instance of its element. -/
+theorem envelopeless_body_rejected (kind : OpenKind) {program : Program}
+    (single : (((program.element? ⟨"Outer"⟩).bind (·.envelope?)).bind (·.multiInstance)).isSome = false) :
+    ¬ BodyRoles program { sample kind with occurrences := [{ outerTask with role := .multiInstanceBody }] } :=
+  fun bodies => by
+    have := bodies { outerTask with role := .multiInstanceBody } (by simp) rfl
+    simp [outerTask, single] at this
 
 /-- Under a program that declares `Outer` an Event, a raise from its begun occurrence 5 is `Raisable`. -/
 theorem thrower_raisable (kind : OpenKind) {program : Program} :

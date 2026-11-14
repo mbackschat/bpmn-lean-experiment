@@ -20,13 +20,15 @@ open Kernel
 /-! ## Beginning occurrences -/
 
 /-- The begin of a request whose reservations are beginnable and unclaimed, in a scope occurrence that stands, under a
-role that is the element's for an Event. -/
+role that is the element's for an Event and a body's only for an element with a Multi-Instance envelope. -/
 theorem begin_wellFormed {state : State} (formed : WellFormed program state) (request : BeginRequest) (role : ActivationRole)
     (sourceType : String) (stands : request.scope ∈ scopeIds state)
     (admitted : ∀ id ∈ names request, Beginnable state request.scope id ∧ Unclaimed state id)
-    (roled : ((program.element? request.element).bind (·.event?)).isSome = true → role = .element) :
+    (roled : ((program.element? request.element).bind (·.event?)).isSome = true → role = .element)
+    (bodied : role = .multiInstanceBody →
+      (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true) :
     WellFormed program (state.beginOccurrence request role sourceType).1 :=
-  (beginOccurrence_begins formed.activations request role sourceType).wellFormed formed stands admitted roled
+  (beginOccurrence_begins formed.activations request role sourceType).wellFormed formed stands admitted roled bodied
 
 /-- An admitted request's start Event reservation stays beginnable, unclaimed and placed after its begin, in the
 scope occurrence the begun occurrence runs in. -/

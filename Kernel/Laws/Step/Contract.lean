@@ -50,7 +50,8 @@ structure PipelineFrame (before after : State) : Prop where
 over stands (a begun occurrence, an idle scope occurrence's owner, a parked join's latest occurrence, the completing
 occurrence), and an arrival's is begun, as `Step.begin` hands it over and as a parked join's offer finds it, and an
 activity's, catch's or throw's is of an element the program declares no start Event of (`Step.dispatch` sends those to
-`Hooks.arriveStart`), a throw's header naming its element (`Program.element?` finds it by that name); the item it hands
+`Hooks.arriveStart`) and numbered under its element's counter (it sends a Multi-Instance body to
+`Hooks.arriveMultiInstance`), a throw's header naming its element (`Program.element?` finds it by that name); the item it hands
 over is open; the scope occurrence and occurrence a queued signal names stand (`Step.stale`, `Step.gone`), an arming's
 host is begun in the scope occurrence the arming names, a compensation may end as it asks (`Laws.State.Resumable`),
 and a raise finds what its origin names and a settled host (`Laws.State.Raisable`); a completed occurrence's continuation runs while its scope occurrence stands;
@@ -66,7 +67,8 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     inv ctx.program after
   arriveActivity : ∀ ctx header payload occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     occurrence.begun = true → (ctx.program.element? occurrence.element).bind (·.start?) = none →
-    hooks.arriveActivity ctx header payload occurrence state = .ok after → inv ctx.program after
+    occurrence.role = .element → hooks.arriveActivity ctx header payload occurrence state = .ok after →
+    inv ctx.program after
   arriveMultiInstance : ∀ ctx header envelope loop occurrence state after, inv ctx.program state →
     occurrence ∈ state.occurrences →
     occurrence.begun = true → hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after →
@@ -83,11 +85,13 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
   arriveCatch : ∀ ctx header payload subscription occurrence state after, inv ctx.program state →
     occurrence ∈ state.occurrences →
     occurrence.begun = true → (ctx.program.element? occurrence.element).bind (·.start?) = none →
-    hooks.arriveCatch ctx header payload subscription occurrence state = .ok after → inv ctx.program after
+    occurrence.role = .element → hooks.arriveCatch ctx header payload subscription occurrence state = .ok after →
+    inv ctx.program after
   arriveThrow : ∀ ctx header payload thrown occurrence state after, inv ctx.program state →
     occurrence ∈ state.occurrences → occurrence.begun = true →
-    (ctx.program.element? occurrence.element).bind (·.start?) = none → header.id = occurrence.element →
-    hooks.arriveThrow ctx header payload thrown occurrence state = .ok after → inv ctx.program after
+    (ctx.program.element? occurrence.element).bind (·.start?) = none → occurrence.role = .element →
+    header.id = occurrence.element → hooks.arriveThrow ctx header payload thrown occurrence state = .ok after →
+    inv ctx.program after
   arriveLink : ∀ ctx header payload occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     occurrence.begun = true → hooks.arriveLink ctx header payload occurrence state = .ok after → inv ctx.program after
   completeScope : ∀ ctx header payload scope occurrence state after, inv ctx.program state → scope ∈ state.scopes →
@@ -213,6 +217,11 @@ structure Phases (inv : Program → State → Prop) : Prop where
   /-- An occurrence's scope occurrence stands. -/
   housed : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
     ScopeStands state occurrence.scope
+  /-- An occurrence numbered as a Multi-Instance body is of an element with a Multi-Instance envelope, so a dispatch
+  hands every other hook an occurrence of the element role (`Laws.Step.dispatch_unstarted`). -/
+  bodied : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
+    occurrence.role = .multiInstanceBody →
+      (((program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true
   /-- An occurrence parked at a join is begun while it stands, so a join offered again hands over a begun one. -/
   parkedBegun : ∀ program state waiting occurrence, inv program state → waiting ∈ state.slots.parked →
     occurrence ∈ state.occurrences →
@@ -222,9 +231,12 @@ structure Phases (inv : Program → State → Prop) : Prop where
     inv program (endInstance status failure state)
   /-- `State.beginOccurrence` of an admitted request, in a scope occurrence that stands (`Step.requireScope`); the
   request's start Event reservation stays beginnable, unclaimed and placed in the scope occurrence its begun occurrence
-  runs in. An Event's occurrence numbers under its element's counter (`Laws.Step.roleOf_event`). -/
+  runs in. An Event's occurrence numbers under its element's counter (`Laws.Step.roleOf_event`), and a body only an
+  element with a Multi-Instance envelope's (`Laws.Step.roleOf_body`). -/
   begin : ∀ program state request role sourceType, inv program state → ScopeStands state request.scope →
     Admitted state request → (((program.element? request.element).bind (·.event?)).isSome = true → role = .element) →
+    (role = .multiInstanceBody →
+      (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true) →
     inv program (state.beginOccurrence request role sourceType).1 ∧ ∀ id ∈ request.inner.toList,
       Laws.State.Beginnable (state.beginOccurrence request role sourceType).1
         (state.beginOccurrence request role sourceType).2.scope id ∧

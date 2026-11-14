@@ -276,7 +276,9 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
         · exact ⟨old, instances x old⟩
         · rw [List.mem_singleton.mp new, entryId] at low
           exact absurd low (Nat.lt_irrefl _))
-      (fun _ counted => (countedEq _).mpr counted) fun _ member _ => hOcc ▸ member⟩
+      (fun _ counted => (countedEq _).mpr counted) fun _ member _ => hOcc ▸ member,
+    formed.bodyRoles.shrink fun _ member => hOcc ▸ member,
+    formed.itemRoles.shrink (fun _ member => enters.openItems ▸ member) fun _ member => hOcc ▸ member⟩
 
 /-- Entering a scope occurrence below one that stands, owned, if at all, by a begun occurrence running there, keeps a
 state well-formed. -/
@@ -524,4 +526,6 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
   typed := formed.typed
   worked := formed.worked
   roles := formed.roles
+  bodyRoles := formed.bodyRoles
+  itemRoles := formed.itemRoles
   raises := formed.raises.same rfl rfl rfl (instanceOf_congr rfl rfl) rfl rfl }

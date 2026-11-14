@@ -154,6 +154,13 @@ theorem roleOf_event {program : Program} {request : BeginRequest}
   | some element => cases element <;> split <;> simp_all [Laws.IL.envelope?_event, Laws.IL.event?_activity,
       Laws.IL.event?_scope, Laws.IL.event?_gateway, Laws.IL.event?_start]
 
+/-- A body numbers apart only for an element with a Multi-Instance envelope. -/
+theorem roleOf_body {program : Program} {request : BeginRequest} (body : roleOf program request = .multiInstanceBody) :
+    (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true := by
+  unfold roleOf at body
+  dsimp only at body
+  split at body <;> (try split at body) <;> first | assumption | cases body
+
 /-- An occurrence of a Gateway goes to `Hooks.arriveGateway`: a Gateway has no envelope, so no loop wraps it. -/
 theorem dispatch_gateway {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}
     {trigger : StartTrigger} {state : State} {header : Header} {payload : GatewayPayload}
@@ -411,15 +418,16 @@ def Agrees (state s : State) : Prop :=
     s.instanceId = state.instanceId
 
 /-- What `Step.occurrenceOf?` finds is an occurrence of the state with the reference's element, activation and
-instance. -/
+instance, numbered under its element's counter, and begun or waited for by an open item. -/
 theorem occurrenceOf?_some {ctx : Ctx} {state : State} {ref : OccurrenceRef} {occurrence : Occurrence}
-    (found : occurrenceOf? ctx state ref = some occurrence) :
-    occurrence ∈ state.occurrences ∧ ctx.program.publicId occurrence.element = ref.element ∧
-      occurrence.activation = ref.activation ∧ state.instanceOf occurrence.scope = ref.processInstanceId := by
+    (found : occurrenceOf? ctx state ref = some occurrence) : occurrence ∈ state.occurrences ∧
+      (ctx.program.publicId occurrence.element = ref.element ∧ occurrence.activation = ref.activation ∧
+        state.instanceOf occurrence.scope = ref.processInstanceId) ∧ occurrence.role = .element ∧
+      (occurrence.begun = true ∨ ∃ item ∈ state.openItems, item.occurrence = occurrence.id) := by
   unfold occurrenceOf? at found
   have holds := List.find?_some found
-  simp only [Bool.and_eq_true, beq_iff_eq] at holds
-  exact ⟨List.mem_of_find?_eq_some found, holds.1.2, holds.1.1.2, holds.2⟩
+  simp only [Bool.and_eq_true, Bool.or_eq_true, beq_iff_eq, List.any_eq_true] at holds
+  exact ⟨List.mem_of_find?_eq_some found, ⟨holds.1.2, holds.1.1.2, holds.2⟩, holds.1.1.1.2, holds.1.1.1.1⟩
 
 theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : State} {transition : State → Outcome}
     (rejects : ∀ s : State, Agrees state s → ∃ code, transition s = .error (.rejected code)) :
@@ -553,38 +561,6 @@ theorem fireItem_ok {hooks : Hooks} {ctx : Ctx} {item : OpenItem} {fired : Fired
       hooks.trigger ctx item fired state = .ok after := by
   unfold fireItem at ran
   split at ran <;> first | exact .inl ⟨_, _, ‹_›, ran⟩ | exact .inr ran
-
-theorem dispatch_ok {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry} {trigger : StartTrigger}
-    {state after : State} (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) :
-    Arrives hooks ctx occurrence entry trigger state after := by
-  unfold dispatch at ran
-  dsimp only at ran
-  cases known : ctx.program.element? occurrence.element with
-  | none => simp [known] at ran
-  | some element =>
-    simp only [known] at ran
-    cases loop : bodyLoop? element occurrence with
-    | some pair =>
-      simp only [loop] at ran
-      exact .atMultiInstance ran
-    | none =>
-      simp only [loop] at ran
-      cases element with
-      | activity header payload => exact .atActivity ran
-      | scope header payload => exact .atScope ran
-      | gateway header payload => exact .atGateway ran
-      | start header payload =>
-        dsimp only at ran
-        split at ran
-        · simp at ran
-        · exact .atStart ran
-      | event header payload =>
-        dsimp only at ran
-        cases role : payload.role with
-        | «catch» subscription => simp only [role] at ran; exact .atCatch ran
-        | «throw» thrown => simp only [role] at ran; exact .atThrow (Laws.IL.element?_event known) ran
-        | linkCatch name => simp only [role] at ran; exact .atLink ran
-        | linkThrow name => simp only [role] at ran; exact .atLink ran
 
 /-- An idle scope occurrence completes through the hook of the occurrence that owns it: a Scope's, a Call's or a
 Multi-Instance body's. -/
@@ -842,20 +818,22 @@ theorem deliverEffectResult_ok {hooks : Hooks} {ctx : Ctx} {data : EffectInput} 
 
 The context `Step.step` builds runs the step's program, so an invariant relative to the program (`Laws.State.WellFormed`)
 passes through the closure; and an occurrence that a dispatch hands to an Activity's or an intermediate Event's hook is
-of an element the program declares no start Event, which `Laws.State.Typed` reads. -/
+of an element the program declares no start Event, which `Laws.State.Typed` reads, and is no body of an element with a
+Multi-Instance envelope, which with `Laws.State.BodyRoles` makes it one of the element role. -/
 
 theorem inputCtx_program {hooks : Hooks} {program : Program} {input : Input} :
     (inputCtx hooks program input).program = program := by
   simp only [inputCtx, context]
 
-/-- A committed dispatch ran a start Event's or a Multi-Instance body's hook, or its element is no start Event. -/
+/-- A committed dispatch ran a start Event's or a Multi-Instance body's hook, or the hook of its element (`Arrives`),
+which is no start Event and declares no Multi-Instance envelope if the occurrence is numbered as a body. -/
 theorem dispatch_unstarted {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}
     {trigger : StartTrigger} {state after : State} (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) :
     (∃ header payload, hooks.arriveStart ctx header payload trigger occurrence state = .ok after) ∨
       (∃ header envelope loop, hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after) ∨
-      ((ctx.program.element? occurrence.element).bind (·.start?) = none ∧
+      ((ctx.program.element? occurrence.element).bind (·.start?) = none ∧ (occurrence.role = .multiInstanceBody →
+        ((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance) = none) ∧
         Arrives hooks ctx occurrence entry trigger state after) := by
-  have arrives := dispatch_ok ran
   unfold dispatch at ran
   dsimp only at ran
   cases known : ctx.program.element? occurrence.element with
@@ -863,20 +841,28 @@ theorem dispatch_unstarted {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence}
   | some element =>
     simp only [known] at ran
     cases loop : bodyLoop? element occurrence with
-    | some pair =>
-      simp only [loop] at ran
-      exact .inr (.inl ⟨_, _, _, ran⟩)
+    | some pair => simp only [loop] at ran; exact .inr (.inl ⟨_, _, _, ran⟩)
     | none =>
       simp only [loop] at ran
+      have single : occurrence.role = .multiInstanceBody →
+          ((some element).bind (·.envelope?)).bind (·.multiInstance) = none := fun body => by
+        simpa [bodyLoop?, body] using loop
       cases element with
       | start header payload =>
         dsimp only at ran
         split at ran
         · simp at ran
         · exact .inl ⟨_, _, ran⟩
-      | activity header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_activity], arrives⟩)
-      | event header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_event], arrives⟩)
-      | scope header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_scope], arrives⟩)
-      | gateway header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_gateway], arrives⟩)
+      | activity header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_activity], single, .atActivity ran⟩)
+      | scope header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_scope], single, .atScope ran⟩)
+      | gateway header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_gateway], single, .atGateway ran⟩)
+      | event header payload =>
+        refine .inr (.inr ⟨by simp [Laws.IL.start?_event], single, ?_⟩)
+        dsimp only at ran
+        cases role : payload.role with
+        | «catch» subscription => simp only [role] at ran; exact .atCatch ran
+        | «throw» thrown => simp only [role] at ran; exact .atThrow (Laws.IL.element?_event known) ran
+        | linkCatch name => simp only [role] at ran; exact .atLink ran
+        | linkThrow name => simp only [role] at ran; exact .atLink ran
 
 end Kernel.Laws.Step

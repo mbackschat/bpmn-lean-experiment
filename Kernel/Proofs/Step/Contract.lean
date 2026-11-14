@@ -165,9 +165,9 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
   arriveStart _ _ _ _ _ _ _ holds member begun ran := by
     rw [Laws.Registry.hooks_arriveStart] at ran
     exact Laws.Starts.arriveStart_keeps (ops.starts _) holds member begun ran
-  arriveActivity _ _ _ _ _ _ holds member begun unstarted ran := by
+  arriveActivity _ _ _ _ _ _ holds member begun unstarted role ran := by
     rw [Laws.Registry.hooks_arriveActivity] at ran
-    exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted ran
+    exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted role ran
   arriveMultiInstance _ _ _ _ _ _ _ holds member begun ran := by
     rw [Laws.Registry.hooks_arriveMultiInstance] at ran
     exact Laws.MultiInstance.arriveMultiInstance_keeps (ops.multiInstance _) holds member begun ran
@@ -177,12 +177,12 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
   arriveGateway _ _ _ _ _ _ holds member begun ran := by
     rw [Laws.Registry.hooks_arriveGateway] at ran
     exact Laws.Flow.arriveGateway_keeps (ops.join _) holds member begun ran
-  arriveCatch _ _ _ _ _ _ _ holds member begun unstarted ran := by
+  arriveCatch _ _ _ _ _ _ _ holds member begun unstarted role ran := by
     rw [Laws.Registry.hooks_arriveCatch] at ran
-    exact Laws.Subscriptions.arriveCatch_keeps (ops.subscriptions _) holds member begun unstarted ran
-  arriveThrow _ _ _ _ _ _ _ holds member begun unstarted named ran := by
+    exact Laws.Subscriptions.arriveCatch_keeps (ops.subscriptions _) holds member begun unstarted role ran
+  arriveThrow _ _ _ _ _ _ _ holds member begun unstarted role named ran := by
     rw [Laws.Registry.hooks_arriveThrow] at ran
-    exact Laws.Propagation.arriveThrow_keeps (ops.propagation _) holds member begun unstarted named ran
+    exact Laws.Propagation.arriveThrow_keeps (ops.propagation _) holds member begun unstarted role named ran
   arriveLink _ _ _ _ _ _ holds member begun ran := by
     rw [Laws.Registry.hooks_arriveLink] at ran
     exact Laws.Flow.arriveLink_keeps (ops.flow _) holds member begun ran

@@ -42,10 +42,14 @@ def SubtreeRemoved (hooks : Hooks) : Prop :=
     (∀ occurrence ∈ after.occurrences, ¬ Within before occurrence.scope removed) ∧
     (∀ variables ∈ after.variables, ¬ Within before variables.scope removed)
 
-/-- The occurrence `occurrence` of `state` has the public identity `ref`. -/
+/-- The occurrence `occurrence` of `state` has the public identity `ref`: its element, activation and process instance
+are the reference's, it is numbered under its element's counter, and it has begun or an open item waits for it. The
+role matters because each role numbers under its own counter (R8), so a Multi-Instance body and its first instance
+share element and activation; a reservation no item waits for answers to no reference. -/
 def Designates (program : Program) (state : State) (ref : OccurrenceRef) (occurrence : Occurrence) : Prop :=
-  program.publicId occurrence.element = ref.element ∧ occurrence.activation = ref.activation ∧
-    state.instanceOf occurrence.scope = ref.processInstanceId
+  (program.publicId occurrence.element = ref.element ∧ occurrence.activation = ref.activation ∧
+    state.instanceOf occurrence.scope = ref.processInstanceId) ∧ occurrence.role = .element ∧
+    (occurrence.begun = true ∨ ∃ item ∈ state.openItems, item.occurrence = occurrence.id)
 
 /-- The input addresses the occurrence with public identity `ref`: a command, a timer firing or an effect result. -/
 def AddressedTo (input : Input) (ref : OccurrenceRef) : Prop :=
@@ -150,8 +154,9 @@ theorem queuedWorkInert {hooks : Hooks} : QueuedWorkInert hooks := by
 
 /-- An item an addressed lookup finds in a state with the before-state's occurrences, items, scope tree and instance
 identity waits for an occurrence of the before-state that the lookup's reference designates: `WellFormed` gives every
-open item an occurrence of its own element in its own scope occurrence (`Laws.State.Owned.itemOccurrences`), and the
-distinct identifiers make it the one the item's activation was read from. -/
+open item an occurrence of its own element in its own scope occurrence (`Laws.State.Owned.itemOccurrences`) numbered
+under its element's counter (`Laws.State.ItemRoles`), and the distinct identifiers make it the one the item's
+activation was read from. -/
 theorem item_designates {program : Program} {before s : State} {ref : OccurrenceRef} {item : OpenItem}
     (formed : WellFormed program before) (occurrences : s.occurrences = before.occurrences)
     (items : s.openItems = before.openItems) (sameInstance : s.instanceOf = before.instanceOf)
@@ -166,11 +171,12 @@ theorem item_designates {program : Program} {before s : State} {ref : Occurrence
   have same : found = owner :=
     Laws.State.nodup_map_eq formed.distinct.occurrences (occurrences ▸ foundMember) owned (foundId.trans ownerId.symm)
   subst same
-  exact ⟨found, owned, ownerElement ▸ named, foundActivation, ownerScope ▸ sameInstance ▸ instance_⟩
+  exact ⟨found, owned, ⟨⟨ownerElement ▸ named, foundActivation, ownerScope ▸ sameInstance ▸ instance_⟩,
+    formed.itemRoles item (items ▸ member) found owned ownerId, .inr ⟨item, items ▸ member, ownerId.symm⟩⟩⟩
 
 /-- `LateInputRejected`: an input addressed to an occurrence the before-state does not hold finds nothing to act on,
-neither the occurrence nor an open item of it, so `Step` rejects it before its transition commits anything
-(`Laws.Step.step_unknown`). -/
+neither the occurrence (`Laws.Step.occurrenceOf?_some` reads `Designates`' clauses) nor an open item of it
+(`item_designates`), so `Step` rejects it before its transition commits anything (`Laws.Step.step_unknown`). -/
 theorem lateInputRejected {hooks : Hooks} : LateInputRejected hooks := by
   intro program input before ref formed addressed undesignated
   refine Laws.Step.step_unknown addressed fun ctx s program_ occurrences items scopes named => ?_
@@ -178,8 +184,9 @@ theorem lateInputRejected {hooks : Hooks} : LateInputRejected hooks := by
   subst program_
   refine ⟨?_, fun detail => ?_⟩
   · refine Option.eq_none_iff_forall_ne_some.mpr fun occurrence found => ?_
-    obtain ⟨member, publicId, activation, instance_⟩ := Laws.Step.occurrenceOf?_some found
-    exact undesignated occurrence (occurrences ▸ member) ⟨publicId, activation, sameInstance ▸ instance_⟩
+    obtain ⟨member, ⟨publicId, activation, instance_⟩, role, held⟩ := Laws.Step.occurrenceOf?_some found
+    exact undesignated occurrence (occurrences ▸ member)
+      ⟨⟨publicId, activation, sameInstance ▸ instance_⟩, role, items ▸ held⟩
   · refine Option.eq_none_iff_forall_ne_some.mpr fun pair found => ?_
     obtain ⟨member, publicId, activation, instance_⟩ := Laws.Hooks.itemDetail?_some (item := pair.1) (value := pair.2) found
     obtain ⟨occurrence, owned, designated⟩ :=
@@ -434,14 +441,15 @@ theorem phases_alongside {rel : State → Prop} (phases : Laws.Step.Phases WellF
     phases.resumable _ _ scope activity trigger leave resume rest holds.1
   raisable _ _ raised origin rest holds := phases.raisable _ _ raised origin rest holds.1
   housed _ _ occurrence holds := phases.housed _ _ occurrence holds.1
+  bodied _ _ occurrence holds := phases.bodied _ _ occurrence holds.1
   parkedBegun _ _ waiting occurrence holds := phases.parkedBegun _ _ waiting occurrence holds.1
   endInstance _ s status failure holds recorded := by
     refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩
     rw [Laws.Step.endInstance_eq]
     exact side.frame (s.clearInside State.root) _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
       (side.clearInside _ s State.root [] holds.1 holds.1.rooted.1 (fun _ _ none => by cases none) holds.2)
-  begin _ s request role sourceType holds stands admitted roled :=
-    have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled
+  begin _ s request role sourceType holds stands admitted roled bodied :=
+    have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled bodied
     ⟨⟨begun.1, side.begin _ s request role sourceType holds.1 stands admitted holds.2⟩, begun.2⟩
   reserve _ s element scope holds stands :=
     have reserved := phases.reserve _ _ element scope holds.1 stands

@@ -443,6 +443,8 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
   typed := by simp [Typed, State.initial]
   worked := by simp [Worked, State.initial]
   roles := by simp [EventRoles, State.initial]
+  bodyRoles := by simp [BodyRoles, State.initial]
+  itemRoles := by simp [ItemRoles, State.initial]
   raises := by simp [RaisesSound, State.initial]
 
 /-- The fresh instance's root was issued. -/

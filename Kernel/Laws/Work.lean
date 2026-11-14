@@ -195,9 +195,11 @@ structure WorkOps (program : Program) (inv : State → Prop) : Prop where
   enter : ∀ state element locals occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
     inv (state.enterScope element occurrence.scope locals (some occurrence.id)).1 ∧
       (state.enterScope element occurrence.scope locals (some occurrence.id)).1.occurrences = state.occurrences
-  /-- An item for a begun occurrence of an element the program declares no start Event. -/
+  /-- An item for a begun occurrence of an element the program declares no start Event, numbered under its element's
+  counter. -/
   openItem : ∀ state kind occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
-    (program.element? occurrence.element).bind (·.start?) = none → inv (state.openItem kind occurrence) ∧ (state.openItem kind occurrence).occurrences = state.occurrences
+    (program.element? occurrence.element).bind (·.start?) = none → occurrence.role = .element →
+    inv (state.openItem kind occurrence) ∧ (state.openItem kind occurrence).occurrences = state.occurrences
   arm : ∀ state occurrence element, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
     inv (state.signal (.arm occurrence.id element occurrence.scope))
   /-- A begun Call's called root, entered below its scope occurrence. -/
@@ -346,9 +348,9 @@ theorem enterLocal_keeps {inv : State → Prop} (ops : WorkOps program inv) {hea
 theorem openWork_keeps {inv : State → Prop} (ops : WorkOps program inv) {kind : OpenKind} {header : Header}
     {payload : ActivityPayload} {occurrence : Occurrence} {state : State} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
-    (unstarted : (program.element? occurrence.element).bind (·.start?) = none) :
+    (unstarted : (program.element? occurrence.element).bind (·.start?) = none) (role : occurrence.role = .element) :
     inv (Feature.Work.openWork kind header payload occurrence state) := by
-  obtain ⟨opened, same⟩ := ops.openItem state kind occurrence holds member begun unstarted
+  obtain ⟨opened, same⟩ := ops.openItem state kind occurrence holds member begun unstarted role
   unfold Feature.Work.openWork
   split
   · exact opened
@@ -403,7 +405,7 @@ theorem invoke_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : C
 theorem arriveActivity_keeps {inv : State → Prop} {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
     (ops : WorkOps ctx.program inv) {header : Header} {payload : ActivityPayload} {occurrence : Occurrence}
     {state after : State} (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
-    (unstarted : (ctx.program.element? occurrence.element).bind (·.start?) = none)
+    (unstarted : (ctx.program.element? occurrence.element).bind (·.start?) = none) (role : occurrence.role = .element)
     (ran : Feature.Work.arriveActivity hooks ctx header payload occurrence state = .ok after) : inv after := by
   unfold Feature.Work.arriveActivity at ran
   simp only [bind, Except.bind] at ran
@@ -414,7 +416,7 @@ theorem arriveActivity_keeps {inv : State → Prop} {hooks : Feature.Work.WorkHo
     | (cases ran; exact ops.completeBegun _ _ _ _ _ (enterLocal_keeps ops holds member begun).1
         (enterLocal_keeps ops holds member begun).2 begun)
     | (cases ran; exact openWork_keeps ops (enterLocal_keeps ops holds member begun).1
-        (enterLocal_keeps ops holds member begun).2 begun unstarted)
+        (enterLocal_keeps ops holds member begun).2 begun unstarted role)
     | exact evaluateDecision_keeps ops (enterLocal_keeps ops holds member begun).1
         (enterLocal_keeps ops holds member begun).2 begun ran
     | exact invoke_keeps ops (enterLocal_keeps ops holds member begun).1

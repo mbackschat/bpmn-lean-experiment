@@ -179,12 +179,15 @@ private theorem Begins.idNew {before after : State} {request : BeginRequest} {ro
       omega
 
 /-- The begin of an admitted request in a scope occurrence that stands keeps a state well-formed, when a fresh
-occurrence of an Event numbers under the element role. -/
+occurrence of an Event numbers under the element role and a fresh body is of an element with a Multi-Instance
+envelope. -/
 theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role : ActivationRole}
     {sourceType : String} {begun : Occurrence} (formed : WellFormed program before)
     (begins : Begins before after request role sourceType begun) (stands : request.scope ∈ scopeIds before)
     (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id)
-    (roled : ((program.element? request.element).bind (·.event?)).isSome = true → role = .element) :
+    (roled : ((program.element? request.element).bind (·.event?)).isSome = true → role = .element)
+    (bodied : role = .multiInstanceBody →
+      (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true) :
     WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (begins.instances _)
   obtain ⟨keyNew, factNew, keyCounted⟩ := begins.keyNew formed stands admitted
@@ -238,7 +241,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     · exact formed.owned.occurrenceScopes occurrence old
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
-    ?worked, ?roles, ?raises⟩
+    ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles⟩
   case issued =>
     exact ⟨fun occurrence member => by
         rcases members occurrence member with rfl | ⟨old, _⟩
@@ -432,6 +435,20 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       · exact .inr ⟨reserved, reservation.member, reservation.element.symm, reservation.role.symm⟩
       · exact .inl fun event => fresh.roled.trans (roled (fresh.element ▸ event))
     · exact .inr ⟨found, old, rfl, rfl⟩
+  case bodyRoles =>
+    refine formed.bodyRoles.transport fun found inside body => ?_
+    rcases members found inside with rfl | ⟨old, _⟩
+    · rcases begins.source with ⟨reserved, reservation⟩ | fresh
+      · exact .inr ⟨reserved, reservation.member, reservation.element.symm, reservation.role.symm⟩
+      · rw [fresh.element]
+        exact .inl (bodied (fresh.roled.symm.trans body))
+    · exact .inr ⟨found, old, rfl, rfl⟩
+  -- No open item waits on the begun occurrence, as for `AttachedReserved`.
+  case itemRoles =>
+    intro item member found inside named
+    rcases members found inside with rfl | ⟨old, _⟩
+    · exact absurd named.symm (itemsFree item (begins.openItems ▸ member)).1
+    · exact formed.itemRoles item (begins.openItems ▸ member) found old named
   case raises =>
     refine formed.raises.transport (fun _ _ queued => begins.signals ▸ queued) issued
       (fun x present _ => ⟨by simpa [scopeIds, begins.scopes] using present, begins.instances x⟩) counters

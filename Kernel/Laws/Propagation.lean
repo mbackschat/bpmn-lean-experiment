@@ -356,9 +356,11 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
   terminate : ∀ state occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
     inv (state.clearInside occurrence.scope [occurrence.id]) ∧
       occurrence ∈ (state.clearInside occurrence.scope [occurrence.id]).occurrences
-  /-- An item for a begun occurrence of an element the program declares no start Event. -/
+  /-- An item for a begun occurrence of an element the program declares no start Event, numbered under its element's
+  counter. -/
   openItem : ∀ state kind occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
-    (program.element? occurrence.element).bind (·.start?) = none → inv (state.openItem kind occurrence)
+    (program.element? occurrence.element).bind (·.start?) = none → occurrence.role = .element →
+    inv (state.openItem kind occurrence)
   /-- A queued signal keeps the occurrences. -/
   signalOccurrences : ∀ (state : State) signal, (state.signal signal).occurrences = state.occurrences
   /-- A caught Event Sub-Process's begin, naming no reservation, in a scope occurrence that stands. -/
@@ -397,7 +399,8 @@ theorem fireAll_keeps {inv : State → Prop} (ops : PropagationOps program inv) 
 theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationOps ctx.program inv) {header : Header}
     {payload : EventPayload} {thrown : Throw} {occurrence : Occurrence} {state after : State} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
-    (unstarted : (ctx.program.element? occurrence.element).bind (·.start?) = none) (named : header.id = occurrence.element)
+    (unstarted : (ctx.program.element? occurrence.element).bind (·.start?) = none) (role : occurrence.role = .element)
+    (named : header.id = occurrence.element)
     (ran : Feature.Propagation.arriveThrow ctx header payload thrown occurrence state = .ok after) : inv after := by
   have complete := ops.complete state occurrence (Feature.Propagation.throwLeave payload) [] .outward holds member begun
   have left : occurrence ∈ (state.signal (.complete occurrence.id (Feature.Propagation.throwLeave payload) [] .outward)).occurrences := by
@@ -416,7 +419,7 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
     unfold Feature.Propagation.throwMessage
     split
     · exact complete
-    · exact ops.openItem _ _ _ holds member begun unstarted
+    · exact ops.openItem _ _ _ holds member begun unstarted role
   | signal record =>
     dsimp only at ran
     unfold Feature.Propagation.throwSignal at ran

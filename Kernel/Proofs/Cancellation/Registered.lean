@@ -109,8 +109,8 @@ theorem workOps_alongside (side : Alongside rel) {program : Program} (ops : Laws
   enter s element locals occurrence holds member begun :=
     have entered := ops.enter s element locals occurrence holds.1 member begun
     ⟨⟨entered.1, side.enterScope program s _ _ _ _ holds.1 holds.2⟩, entered.2⟩
-  openItem s kind occurrence holds member begun unstarted :=
-    have opened := ops.openItem s kind occurrence holds.1 member begun unstarted
+  openItem s kind occurrence holds member begun unstarted role :=
+    have opened := ops.openItem s kind occurrence holds.1 member begun unstarted role
     ⟨⟨opened.1, side.openItem holds.2 kind occurrence⟩, opened.2⟩
   arm s occurrence element holds member begun := ⟨ops.arm s occurrence element holds.1 member begun, side.signal holds.2 _⟩
   enterCalled s called call variables definition holds member begun :=
@@ -220,8 +220,8 @@ theorem propagationOps_alongside (side : Alongside rel) {program : Program}
     ⟨⟨cleared.1, side.clearInside program s _ _ holds.1 (holds.1.owned.occurrenceScopes occurrence member)
       (fun _ inside keeps strictly => strictly.2 (congrArg Occurrence.scope (Laws.State.nodup_map_eq
         holds.1.distinct.occurrences inside member (List.mem_singleton.mp keeps)))) holds.2⟩, cleared.2⟩
-  openItem s kind occurrence holds member begun unstarted :=
-    ⟨ops.openItem s kind occurrence holds.1 member begun unstarted, side.openItem holds.2 kind occurrence⟩
+  openItem s kind occurrence holds member begun unstarted role :=
+    ⟨ops.openItem s kind occurrence holds.1 member begun unstarted role, side.openItem holds.2 kind occurrence⟩
   signalOccurrences := ops.signalOccurrences
   begin s element scope holds stands := ⟨ops.begin s element scope holds.1 stands, side.signal holds.2 _⟩
   cancel s id holds := ⟨ops.cancel s id holds.1, side.signal holds.2 _⟩
@@ -273,8 +273,8 @@ theorem subscriptionsOps_alongside (side : Alongside rel) {program : Program}
     ⟨ops.rekind s change holds.1 kept waits, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
   awaits := ops.awaits
   disarm s host holds := ⟨ops.disarm s host holds.1, side.disarm program s host holds.1 holds.2⟩
-  openItem s kind occurrence holds member begun unstarted :=
-    ⟨ops.openItem s kind occurrence holds.1 member begun unstarted, side.openItem holds.2 kind occurrence⟩
+  openItem s kind occurrence holds member begun unstarted role :=
+    ⟨ops.openItem s kind occurrence holds.1 member begun unstarted role, side.openItem holds.2 kind occurrence⟩
   openSubscription s kind element scope host passive holds stands hangs waits :=
     ⟨ops.openSubscription s kind element scope host passive holds.1 stands hangs waits,
       side.openSubscription holds.1 holds.2 kind element scope host passive⟩
@@ -389,7 +389,7 @@ theorem subscriptionsOps_draft (program : Program)
   rekind _ _ same _ _ := same
   awaits := Laws.State.triggers_await
   disarm s host same := by rw [disarm_draft]; exact same
-  openItem s kind occurrence same _ _ _ := by
+  openItem s kind occurrence same _ _ _ _ := by
     rw [Laws.State.openItem_eq]
     exact same
   openSubscription s kind element scope host passive same _ _ _ :=

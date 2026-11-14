@@ -76,7 +76,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     omega
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
-    ?worked, ?roles, ?raises⟩
+    ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles⟩
   case issued =>
     exact ⟨fun occurrence member => by
         rcases members occurrence member with rfl | old
@@ -235,6 +235,16 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     rcases members found inside with rfl | old
     · exact .inl fun _ => reserves.role
     · exact .inr ⟨found, old, rfl, rfl⟩
+  case bodyRoles =>
+    refine formed.bodyRoles.transport fun found inside body => ?_
+    rcases members found inside with rfl | old
+    · cases reserves.role.symm.trans body
+    · exact .inr ⟨found, old, rfl, rfl⟩
+  case itemRoles =>
+    intro item member found inside named
+    rcases members found inside with rfl | old
+    · exact reserves.role
+    · exact formed.itemRoles item (reserves.openItems ▸ member) found old named
   -- A reservation numbered now takes an activation above every one its counter counted, a queued raise's origin's too.
   case raises =>
     intro raised origin queued event
@@ -305,7 +315,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     fun old held other same => other (by rw [nodup_map_eq formed.distinct.keys held member same])
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
-    ?worked, ?roles, ?raises⟩
+    ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles⟩
   case issued =>
     exact ⟨fun found inside => by
         rw [issued]
@@ -477,6 +487,16 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     rcases members found inside with rfl | ⟨old, _⟩
     · exact .inr ⟨occurrence, member, rfl, rfl⟩
     · exact .inr ⟨found, old, rfl, rfl⟩
+  case bodyRoles =>
+    refine formed.bodyRoles.transport fun found inside _ => ?_
+    rcases members found inside with rfl | ⟨old, _⟩
+    · exact .inr ⟨occurrence, member, rfl, rfl⟩
+    · exact .inr ⟨found, old, rfl, rfl⟩
+  case itemRoles =>
+    intro item held found inside named
+    rcases members found inside with rfl | ⟨old, _⟩
+    · exact absurd named.symm (waitless item (starts_.openItems ▸ held))
+    · exact formed.itemRoles item (starts_.openItems ▸ held) found old named
   case raises =>
     exact formed.raises.transport (fun _ _ queued => starts_.signals ▸ queued) (Nat.le_of_eq issued.symm)
       (fun x present _ => ⟨by simpa [scopeIds, starts_.scopes] using present, starts_.instances x⟩)
