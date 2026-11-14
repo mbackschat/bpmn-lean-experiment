@@ -60,6 +60,8 @@ public import Kernel.Laws.Flow.Walk
 public import Kernel.Laws.Hooks
 public import Kernel.Laws.IL
 public import Kernel.Laws.MultiInstance
+public import Kernel.Laws.MultiInstance.Rules
+public import Kernel.Laws.MultiInstance.Witnesses
 public import Kernel.Laws.Population
 public import Kernel.Laws.Population.Timers
 public import Kernel.Laws.Propagation
