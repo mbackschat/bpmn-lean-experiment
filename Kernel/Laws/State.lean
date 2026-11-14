@@ -662,6 +662,12 @@ theorem WellFormed.ofVariables {before after : State} (formed : WellFormed befor
   variables := keyed
   failure := by simpa [FailureRecorded, same.failure, same.status] using formed.failure
 
+/-- `WellFormed` reads no queued signal. -/
+theorem WellFormed.withSignals {s : State} (formed : WellFormed s) (signals : List Signal) :
+    WellFormed { s with signals } :=
+  formed.ofVariables ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ formed.owned.variableScopes
+    ⟨formed.variables.scopes, formed.variables.names⟩
+
 /-- `setVariable` keeps a state well-formed when the scope occurrence it writes to is present. -/
 theorem setVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {name : String} {value : Value}
     (formed : WellFormed state) (present : target ∈ scopeIds state) :
@@ -824,5 +830,12 @@ theorem removal_cancels_with_ends (state : State) :
   · rename_i occurrence _
     exact ((CancelsWithEnds.ofDraft (withdrawOccurrence_draft state id)).trans
       (removeOccurrence_cancels _ id)).trans (recordCancelled_cancels _ [occurrence])
+
+/-! ### Queued work whose target is gone -/
+
+/-- A queued cancellation of an occurrence that is gone changes nothing. -/
+theorem cancelOccurrence_absent {state : State} {id : Nat} (absent : state.occurrence? id = none) :
+    state.cancelOccurrence id = state := by
+  simp [State.cancelOccurrence, absent]
 
 end Kernel.Laws.State
