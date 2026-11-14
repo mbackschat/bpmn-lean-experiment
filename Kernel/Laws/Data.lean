@@ -2,6 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Laws.State
+public import Kernel.Feature.Data
 import all Kernel.Feature.Data
 
 /-! # Laws of Data
@@ -222,6 +223,55 @@ def FailedSource (dialect : MappingDialect) (code : String) (reading : Except Fa
   (dialect = .dataAssociation → reading = .ok none) ∧
   (dialect = .ioParameter → reading = .error (.rolledBack code)) ∧
   (dialect = .callVariable → reading = .ok (some .null))
+
+/-! ## The state invariant under Data's hooks
+
+Data's share of the proof wave's state-invariant lane (P2): `Hooks.removeVariables` keeps the whole invariant and
+`Hooks.writeOutputs` keeps variable sets keyed. That a write lands only in a present scope occurrence, the rest of
+`Owned` for `writeOutputs`, is not stated here: an `.own` write names its scope occurrence unchecked, and an outward
+write that finds no owner falls back to `State.root`, which `WellFormed` does not require to be present. -/
+
+/-- One write lands as one `setVariable`, wherever its rule sends it. -/
+theorem write_sets {ctx : Ctx} {rule : WriteRule} {scope : ScopeOccurrenceId} {state after : State}
+    {binding : String × Value} (ran : Feature.Data.write ctx rule scope state binding = .ok after) :
+    ∃ target, after = state.setVariable target binding.1 binding.2 := by
+  obtain ⟨name, value⟩ := binding
+  unfold Feature.Data.write at ran
+  dsimp only at ran
+  repeat' split at ran
+  all_goals first | exact ⟨_, (Except.ok.inj ran).symm⟩ | simp at ran
+
+/-- `Hooks.writeOutputs` of Data keeps every variable set keyed by name, and the sets keyed by scope occurrence. -/
+theorem writeOutputs_variablesKeyed {ctx : Ctx} {scope : ScopeOccurrenceId} {writes : List (String × Value)}
+    {rule : WriteRule} {state after : State} (keyed : Laws.State.VariablesKeyed state)
+    (ran : Feature.Data.writeOutputs ctx scope writes rule state = .ok after) : Laws.State.VariablesKeyed after := by
+  unfold Feature.Data.writeOutputs at ran
+  induction writes generalizing state with
+  | nil => simp only [List.foldlM_nil, pure, Except.pure] at ran; cases ran; exact keyed
+  | cons binding rest ih =>
+    simp only [List.foldlM_cons] at ran
+    cases wrote : Feature.Data.write ctx rule scope state binding with
+    | error failure => simp [wrote, bind, Except.bind] at ran
+    | ok next =>
+      simp only [wrote, bind, Except.bind] at ran
+      obtain ⟨target, made⟩ := write_sets wrote
+      subst made
+      exact ih (Laws.State.setVariable_variablesKeyed keyed) ran
+
+/-- `Hooks.removeVariables` of Data keeps a state well-formed. -/
+theorem removeVariables_wellFormed {ctx : Ctx} {scope : ScopeOccurrenceId} {names : List String}
+    {state after : State} (formed : Laws.State.WellFormed state)
+    (ran : Feature.Data.removeVariables ctx scope names state = .ok after) : Laws.State.WellFormed after := by
+  unfold Feature.Data.removeVariables at ran
+  cases ran
+  induction names generalizing state with
+  | nil => exact formed
+  | cons name rest ih =>
+    simp only [List.foldl_cons]
+    apply ih
+    split
+    · exact Laws.State.removeVariable_wellFormed formed
+    · exact formed
 
 /-! ## Non-vacuity
 

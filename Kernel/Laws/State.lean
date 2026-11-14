@@ -1,6 +1,7 @@
 module
 
 public import Kernel.State
+import all Kernel.State
 
 /-! # Laws of the kernel state
 
@@ -15,6 +16,9 @@ the `State` contract documents, since matching `Token` is `Step`'s
 
 Each law is followed by its non-vacuity witness: a small state that satisfies it and, where the law could otherwise hold
 of everything, one that violates it. The witnesses read only the law, never a `State` operation's body.
+
+The last section holds the lemmas about `Kernel.State`'s operations that the proof wave composes: this is the one module
+that sees their bodies ([module table](../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)).
 -/
 
 @[expose] public section
@@ -426,5 +430,202 @@ theorem counts_shrink_rejected (kind : OpenKind) :
     ¬ CountsGrow (sample kind) { sample kind with activations := [] } := fun grow => by
   have := grow { processInstance := "p", element := ⟨"Sub"⟩, role := .element, count := 1 } (by simp [sample])
   simp at this
+
+/-! ## Operations
+
+What `Kernel.State`'s operations do to the fields the laws read. -/
+
+/-- `Within` reads only the scope occurrences. -/
+theorem Within.congr {s t : State} (scopes : t.scopes = s.scopes) {inner outer : ScopeOccurrenceId}
+    (within : Within s inner outer) : Within t inner outer := by
+  induction within with
+  | refl scope => exact .refl scope
+  | parent child parent outer member link _ ih => exact .parent child parent outer (scopes ▸ member) link ih
+
+/-- A begin without a reservation issues an occurrence of the requested element, in the requested scope occurrence, on
+the requested flow, numbered under `role`. -/
+theorem beginOccurrence_fresh {state : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
+    (fresh : request.reserved = none) :
+    (state.beginOccurrence request role sourceType).2.element = request.element ∧
+      (state.beginOccurrence request role sourceType).2.scope = request.scope ∧
+      (state.beginOccurrence request role sourceType).2.incoming = request.incoming ∧
+      (state.beginOccurrence request role sourceType).2.role = role := by
+  simp [State.beginOccurrence, fresh]
+
+/-- What `WellFormed` reads besides the variable sets: `setVariable` and `removeVariable` keep all of it. -/
+structure SameButVariables (before after : State) : Prop where
+  scopes : after.scopes = before.scopes
+  occurrences : after.occurrences = before.occurrences
+  openItems : after.openItems = before.openItems
+  tokens : after.tokens = before.tokens
+  activations : after.activations = before.activations
+  nextIssue : after.nextIssue = before.nextIssue
+  journal : after.journal = before.journal
+  draft : after.draft = before.draft
+  status : after.status = before.status
+  failure : after.failure = before.failure
+
+/-- `setVariable` changes only the variable sets and the write log. -/
+theorem setVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
+    SameButVariables state (state.setVariable target name value) := by
+  unfold State.setVariable
+  dsimp only
+  split <;> split <;> exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+
+/-- The variable sets after `setVariable`: the target's set rebinds or appends the name, or a new set holds it. -/
+theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
+    (state.setVariable target name value).variables =
+      if state.variables.any (·.scope == target) then
+        state.variables.map fun vars => if vars.scope == target then
+          { vars with entries := if vars.entries.any (·.1 == name) then
+              vars.entries.map fun entry => if entry.1 == name then (name, value) else entry
+            else vars.entries ++ [(name, value)] } else vars
+      else state.variables ++ [{ scope := target, entries := [(name, value)] }] := by
+  unfold State.setVariable
+  dsimp only
+  split <;> split <;> rfl
+
+/-- Rebinding or appending a name keeps a set's names distinct. -/
+theorem names_after_set (entries : List (String × Value)) (name : String) (value : Value)
+    (nodup : (entries.map (·.1)).Nodup) :
+    ((if entries.any (·.1 == name) then entries.map fun entry => if entry.1 == name then (name, value) else entry
+      else entries ++ [(name, value)]).map (·.1)).Nodup := by
+  split
+  · rename_i present
+    have same : ((entries.map fun entry => if entry.1 == name then (name, value) else entry).map (·.1)) =
+        entries.map (·.1) := by
+      simp only [List.map_map]
+      apply List.map_congr_left
+      intro entry _
+      by_cases targeted : entry.1 = name <;> simp [targeted]
+    rw [same]; exact nodup
+  · rename_i absent
+    simp only [List.any_eq_true, beq_iff_eq, not_exists, not_and] at absent
+    rw [List.map_append, List.nodup_append]
+    refine ⟨nodup, by simp, ?_⟩
+    intro first member second other
+    simp only [List.map_cons, List.map_nil, List.mem_singleton] at other
+    obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
+    subst other; subst named
+    exact fun targeted => absent entry inside targeted
+
+/-- `setVariable` keeps the variable sets keyed, whichever scope occurrence it writes to. -/
+theorem setVariable_variablesKeyed {state : State} {target : ScopeOccurrenceId} {name : String} {value : Value}
+    (keyed : VariablesKeyed state) : VariablesKeyed (state.setVariable target name value) := by
+  constructor
+  · rw [setVariable_variables]
+    split
+    · rw [List.map_map]
+      have same : ((·.scope) ∘ fun (vars : ScopeVariables) => if vars.scope == target then
+          { vars with entries := if vars.entries.any (·.1 == name) then
+              vars.entries.map fun entry => if entry.1 == name then (name, value) else entry
+            else vars.entries ++ [(name, value)] } else vars) = (·.scope) := by
+        funext vars
+        by_cases targeted : vars.scope = target <;> simp [targeted]
+      rw [same]; exact keyed.scopes
+    · rename_i absent
+      simp only [List.any_eq_true, beq_iff_eq, not_exists, not_and] at absent
+      rw [List.map_append, List.nodup_append]
+      refine ⟨keyed.scopes, by simp, ?_⟩
+      intro first member second other
+      simp only [List.map_cons, List.map_nil, List.mem_singleton] at other
+      obtain ⟨vars, inside, located⟩ := List.mem_map.mp member
+      subst other; subst located
+      exact fun targeted => absent vars inside targeted
+  · intro vars member
+    rw [setVariable_variables] at member
+    split at member
+    · obtain ⟨old, inside, made⟩ := List.mem_map.mp member
+      subst made
+      by_cases targeted : old.scope = target
+      · simp only [targeted, beq_self_eq_true, ite_true]
+        exact names_after_set old.entries name value (keyed.names old inside)
+      · simp only [beq_iff_eq, targeted, ite_false]
+        exact keyed.names old inside
+    · rcases List.mem_append.mp member with old | fresh
+      · exact keyed.names vars old
+      · simp only [List.mem_singleton] at fresh
+        subst fresh
+        simp
+
+/-- A state that differs from a well-formed one only in its variable sets is well-formed when every set belongs to a
+present scope occurrence and the sets stay keyed. -/
+theorem WellFormed.ofVariables {before after : State} (formed : WellFormed before) (same : SameButVariables before after)
+    (located : ∀ variables ∈ after.variables, variables.scope ∈ scopeIds after) (keyed : VariablesKeyed after) :
+    WellFormed after where
+  issued := ⟨by simpa [same.occurrences, same.nextIssue] using formed.issued.occurrences,
+    by simpa [same.openItems, same.nextIssue] using formed.issued.items,
+    by simpa [same.scopes, same.nextIssue] using formed.issued.scopes⟩
+  distinct := ⟨by simpa [occurrenceIds, same.occurrences] using formed.distinct.occurrences,
+    by simpa [same.openItems] using formed.distinct.items, by simpa [scopeIds, same.scopes] using formed.distinct.scopes⟩
+  startedOnce := by simpa [StartedOnce, same.journal, same.draft] using formed.startedOnce
+  activations := ⟨by simpa [same.activations] using formed.activations.keys,
+    by simpa [same.activations] using formed.activations.positive⟩
+  reservations := by simpa [ReservationsUnstarted, same.occurrences, same.journal, same.draft] using formed.reservations
+  owned := {
+    occurrenceScopes := by simpa [scopeIds, same.occurrences, same.scopes] using formed.owned.occurrenceScopes
+    itemScopes := by simpa [scopeIds, same.openItems, same.scopes] using formed.owned.itemScopes
+    itemOccurrences := by simpa [same.openItems, same.occurrences] using formed.owned.itemOccurrences
+    attachments := by simpa [occurrenceIds, same.openItems, same.occurrences] using formed.owned.attachments
+    scopeOwners := by simpa [occurrenceIds, same.scopes, same.occurrences] using formed.owned.scopeOwners
+    variableScopes := located
+    tokenScopes := by simpa [scopeIds, same.tokens, same.scopes] using formed.owned.tokenScopes }
+  rooted := by
+    obtain ⟨root, present, parentless, reach⟩ := formed.rooted
+    refine ⟨root, by simpa [scopeIds, same.scopes] using present, by simpa [same.scopes] using parentless, ?_⟩
+    intro scope member
+    exact Within.congr same.scopes (reach scope (same.scopes ▸ member))
+  variables := keyed
+  failure := by simpa [FailureRecorded, same.failure, same.status] using formed.failure
+
+/-- `setVariable` keeps a state well-formed when the scope occurrence it writes to is present. -/
+theorem setVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {name : String} {value : Value}
+    (formed : WellFormed state) (present : target ∈ scopeIds state) :
+    WellFormed (state.setVariable target name value) := by
+  have same := setVariable_same state target name value
+  refine formed.ofVariables same ?_ (setVariable_variablesKeyed formed.variables)
+  intro vars member
+  rw [scopeIds, same.scopes]
+  rw [setVariable_variables] at member
+  split at member
+  · obtain ⟨old, inside, made⟩ := List.mem_map.mp member
+    subst made
+    have := formed.owned.variableScopes old inside
+    by_cases targeted : old.scope = target <;> simpa [targeted, scopeIds] using this
+  · rcases List.mem_append.mp member with old | fresh
+    · exact formed.owned.variableScopes vars old
+    · simp only [List.mem_singleton] at fresh
+      subst fresh
+      exact present
+
+/-- `removeVariable` changes only the variable sets and the write log. -/
+theorem removeVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) :
+    SameButVariables state (state.removeVariable target name) :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+
+/-- `removeVariable` keeps a state well-formed. -/
+theorem removeVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {name : String}
+    (formed : WellFormed state) : WellFormed (state.removeVariable target name) := by
+  refine formed.ofVariables (removeVariable_same state target name) ?_ ⟨?_, ?_⟩
+  · intro vars member
+    obtain ⟨old, inside, made⟩ := List.mem_map.mp member
+    subst made
+    have := formed.owned.variableScopes old inside
+    by_cases targeted : old.scope = target <;> simpa [State.removeVariable, targeted, scopeIds] using this
+  · have same : ((state.removeVariable target name).variables.map (·.scope)) = state.variables.map (·.scope) := by
+      simp only [State.removeVariable, List.map_map]
+      apply List.map_congr_left
+      intro vars _
+      by_cases targeted : vars.scope = target <;> simp [targeted]
+    rw [same]; exact formed.variables.scopes
+  · intro vars member
+    obtain ⟨old, inside, made⟩ := List.mem_map.mp member
+    subst made
+    have nodup := formed.variables.names old inside
+    by_cases targeted : old.scope = target
+    · simp only [targeted, beq_self_eq_true, ite_true]
+      exact nodup.sublist ((List.filter_sublist).map _)
+    · simp only [beq_iff_eq, targeted, ite_false]
+      exact nodup
 
 end Kernel.Laws.State

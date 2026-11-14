@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Feature.Flow
 import all Kernel.Feature.Flow
 
 /-! # Laws of flow: splits, joins and reach
@@ -152,6 +153,87 @@ structure InclusiveFires (flows : List Flow) (extra : ElementId → FlowId → P
 theorem ParallelFires.consumesAll {incoming : List FlowId} {scope : ScopeOccurrenceId} {before after consumed : List Parked}
     (fires : ParallelFires incoming scope before after consumed) : ∀ flow ∈ incoming, flow ∈ consumed.map (·.flow) :=
   fun flow member => fires.consumes.everyFilled flow member (fires.ready flow member)
+
+/-! ## Flow's hooks against the laws
+
+What `Kernel.Feature.Flow`'s hooks do, stated by the laws above, for `Kernel.Proofs` to compose with `Step`. -/
+
+/-- Whether a candidate's condition holds in `context`, as `Kernel.Feature.Flow` reads it: a failing evaluation
+holds for no candidate, since it rolls the command back before any flow is taken. -/
+def candidateHolds (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Bool :=
+  match Feature.Flow.condition ctx context candidate with
+  | .ok value => value
+  | .error _ => false
+
+theorem firstTrue_spec {ctx : Ctx} {context : EvalContext} :
+    ∀ {candidates : List FlowId} {chosen : Option FlowId},
+      Feature.Flow.firstTrue ctx context candidates = .ok chosen →
+      (∀ flow, chosen = some flow → ∃ earlier later, candidates = earlier ++ flow :: later ∧
+        (∀ other ∈ earlier, candidateHolds ctx context other = false) ∧ candidateHolds ctx context flow = true) ∧
+      (chosen = none → ∀ other ∈ candidates, candidateHolds ctx context other = false)
+  | [], chosen, ran => by
+    simp only [Feature.Flow.firstTrue] at ran
+    cases ran
+    exact ⟨fun _ found => by simp at found, fun _ _ member => by simp at member⟩
+  | candidate :: rest, chosen, ran => by
+    simp only [Feature.Flow.firstTrue] at ran
+    cases holds : Feature.Flow.condition ctx context candidate with
+    | error failure => simp [holds, bind, Except.bind] at ran
+    | ok value =>
+      simp only [holds, bind, Except.bind] at ran
+      cases value with
+      | true =>
+        simp only [ite_true] at ran
+        cases ran
+        refine ⟨fun flow found => ?_, fun absent => by simp at absent⟩
+        cases found
+        exact ⟨[], rest, by simp, by simp, by simp [candidateHolds, holds]⟩
+      | false =>
+        simp only [Bool.false_eq_true, ite_false] at ran
+        have false_ : candidateHolds ctx context candidate = false := by simp [candidateHolds, holds]
+        obtain ⟨found, absent⟩ := firstTrue_spec ran
+        refine ⟨fun flow chosen_ => ?_, fun none_ other member => ?_⟩
+        · obtain ⟨earlier, later, split_, ⟨before, here⟩⟩ := found flow chosen_
+          refine ⟨candidate :: earlier, later, by simp [split_], ?_, here⟩
+          intro other member
+          rcases List.mem_cons.mp member with same | inner
+          · subst same; exact false_
+          · exact before other inner
+        · rcases List.mem_cons.mp member with same | inner
+          · subst same; exact false_
+          · exact absent none_ other inner
+
+/-- `Hooks.arriveGateway` of Flow on an Exclusive Gateway enqueues the completion of the gateway's occurrence on the
+flows `ExclusiveTakes` allows, its conditions read in the state it arrived in; the conditions evaluated are exactly
+those up to the first true one. -/
+theorem arriveGateway_exclusive {ctx : Ctx} {header : Header} {payload : GatewayPayload} {occurrence : Occurrence}
+    {state after : State} {candidates : List FlowId} {default : Option FlowId}
+    (kind : payload.kind = .exclusive candidates default)
+    (ran : Feature.Flow.arriveGateway ctx header payload occurrence state = .ok after) :
+    ∃ taken evaluated, after = state.signal (.complete occurrence.id (.flows taken) [] .outward) ∧
+      ExclusiveTakes candidates default (candidateHolds ctx (state.evalContext ctx.program occurrence.scope)) evaluated
+        (some taken) := by
+  simp only [Feature.Flow.arriveGateway, kind, Feature.Flow.exclusive] at ran
+  cases first : Feature.Flow.firstTrue ctx (state.evalContext ctx.program occurrence.scope) candidates with
+  | error failure => simp [first, bind, Except.bind] at ran
+  | ok chosen =>
+    simp only [first, bind, Except.bind] at ran
+    obtain ⟨found, absent⟩ := firstTrue_spec first
+    cases chosen with
+    | some flow =>
+      simp only [HOrElse.hOrElse, OrElse.orElse, Option.orElse, Except.ok.injEq] at ran
+      subst ran
+      obtain ⟨earlier, later, split_, ⟨before, here⟩⟩ := found flow (by simp)
+      exact ⟨[flow], earlier ++ [flow], by simp [Feature.Flow.signalComplete],
+        .inl ⟨earlier, flow, later, split_, before, here, by simp, by simp⟩⟩
+    | none =>
+      cases default with
+      | none => simp [HOrElse.hOrElse, OrElse.orElse, Option.orElse] at ran
+      | some fallback =>
+        simp only [HOrElse.hOrElse, OrElse.orElse, Option.orElse, Except.ok.injEq] at ran
+        subst ran
+        exact ⟨[fallback], candidates, by simp [Feature.Flow.signalComplete],
+          .inr ⟨absent (by simp), by simp, fallback, by simp, by simp⟩⟩
 
 /-! ## Non-vacuity
 

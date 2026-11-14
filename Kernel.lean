@@ -56,9 +56,11 @@ public import Kernel.Laws.Flow
 public import Kernel.Laws.MultiInstance
 public import Kernel.Laws.Population
 public import Kernel.Laws.Propagation
+public import Kernel.Laws.Registry
 public import Kernel.Laws.Scopes
 public import Kernel.Laws.Starts
 public import Kernel.Laws.State
+public import Kernel.Laws.Step
 public import Kernel.Laws.Subscriptions
 public import Kernel.Laws.Work
 public import Kernel.Population
@@ -68,6 +70,13 @@ public import Kernel.Population.Deploy
 public import Kernel.Population.Messages
 public import Kernel.Population.Signals
 public import Kernel.Population.Timers
+public import Kernel.Proofs.Cancellation
+public import Kernel.Proofs.Compensation
+public import Kernel.Proofs.Concurrency
+public import Kernel.Proofs.Former
+public import Kernel.Proofs.MultiInstance
+public import Kernel.Proofs.State
+public import Kernel.Proofs.Step
 public import Kernel.Publish
 public import Kernel.Registry
 public import Kernel.Run.Fixture
