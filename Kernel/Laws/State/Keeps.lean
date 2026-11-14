@@ -200,7 +200,7 @@ theorem rekind_wellFormed {s : State} (formed : WellFormed s) {change : OpenItem
     ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends⟩, formed.counted,
     ?occurrencesCounted, formed.ownedBelow, ?claimed,
     formed.settled.transport (.same rfl) (Nat.le_refl _) (fun _ member _ => .inl member) (fun _ queued => queued)
-      (fun _ member => member)⟩
+      (fun _ member => member) (fun _ member => .inl member)⟩
   case issued =>
     refine ⟨formed.issued.occurrences, fun item member => ?_, formed.issued.scopes⟩
     obtain ⟨old, inside, rfl⟩ := back item member
@@ -285,7 +285,7 @@ theorem issue_wellFormed {s : State} (formed : WellFormed s) : WellFormed s.issu
   claimed := formed.claimed.shrink (fun _ member => member) (fun _ member => member) formed.owned.occurrenceScopes
     (fun _ member => member) (fun _ _ => by apply instanceOf_congr <;> rfl) later (.refl _) (.refl _)
   settled := formed.settled.transport (.same rfl) later (fun _ member _ => .inl member) (fun _ queued => queued)
-    (fun _ member => member) }
+    (fun _ member => member) (fun _ member => .inl member) }
 
 /-- Replacing the retained compensation records, and the runs by some of them, keeps a state well-formed: a run that
 stays completes what it completed. -/
@@ -337,7 +337,7 @@ theorem signal_settled {s : State} {signal : Signal} (formed : WellFormed s)
   refine ⟨fun waiting member => carry _ (formed.settled.parked waiting member),
     fun run member => carry _ (formed.settled.bodies run member),
     fun run member occurrence leave resume => carry _ (formed.settled.resumed run member occurrence leave resume),
-    fun scope activity trigger leave occurrence resume member => carry _ ?_⟩
+    fun scope activity trigger leave occurrence resume member => carry _ ?_, formed.settled.placed⟩
   rcases List.mem_append.mp member with old | new
   · exact formed.settled.queued scope activity trigger leave occurrence resume old
   · exact compensates scope activity trigger leave occurrence resume (List.mem_singleton.mp new).symm
@@ -460,7 +460,7 @@ theorem addItem_wellFormed {s : State} (formed : WellFormed s) {item : OpenItem}
     ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends⟩, formed.counted,
     by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted, formed.ownedBelow, ?claimed,
     formed.settled.transport (.same rfl) (Nat.le_refl _) (fun _ member _ => .inl member) (fun _ queued => queued)
-      (fun _ member => member)⟩
+      (fun _ member => member) (fun _ member => .inl member)⟩
   case issued =>
     refine ⟨formed.issued.occurrences, fun found inside => ?_, formed.issued.scopes⟩
     rcases members found inside with old | rfl
@@ -639,7 +639,7 @@ theorem emit_wellFormed {s : State} (formed : WellFormed s) (flows : List FlowId
       formed.claimed.uncompleted request id leave writes rule (queuedOld request queued) named completed,
     fun request queued => formed.claimed.scopesIssued request (queuedOld request queued)⟩,
     formed.settled.transport (.same rfl) (Nat.le_refl _) (fun _ member _ => .inl member) queuedOld
-      (fun _ member => member)⟩
+      (fun _ member => member) (fun _ member => .inl member)⟩
   · rcases List.mem_append.mp member with old | new
     · exact formed.owned.tokenScopes token old
     · obtain ⟨flow, _, rfl⟩ := List.mem_map.mp new

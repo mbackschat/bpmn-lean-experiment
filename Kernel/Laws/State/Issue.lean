@@ -396,7 +396,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
         · simp [begins.isBegun] at unbegun
         · exact .inl old)
       (fun _ queued => by simpa [Queued, begins.signals, begins.tokens] using queued)
-      (fun _ member => begins.signals ▸ member)
+      (fun _ member => begins.signals ▸ member) (fun _ member => .inl (begins.scopes ▸ member))
 
 /-! ## Reserving and starting where it stands -/
 
@@ -590,7 +590,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
         rcases members found inside with rfl | old
         · exact .inr (by omega)
         · exact .inl old)
-      queuedBefore (fun _ member => reserves.signals ▸ member)
+      queuedBefore (fun _ member => reserves.signals ▸ member) (fun _ member => .inl (reserves.scopes ▸ member))
 
 /-- What `State.startReserved` makes of `before` for an unbegun `occurrence`: it begins where it stands and its start
 is journalled under its key. Nothing else changes. -/
@@ -792,6 +792,6 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         rcases members found inside with rfl | ⟨old, _⟩
         · simp at unbegun
         · exact .inl old)
-      queuedBefore (fun _ member => starts_.signals ▸ member)
+      queuedBefore (fun _ member => starts_.signals ▸ member) (fun _ member => .inl (starts_.scopes ▸ member))
 
 end Kernel.Laws.State

@@ -466,7 +466,8 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
   claimed := ⟨by simp [State.initial], by simp [Queued, State.initial], by simp [Precedes, State.initial],
     by simp [Precedes, State.initial], by simp [State.initial], by simp [Queued, State.initial],
     by simp [Queued, State.initial]⟩
-  settled := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial]⟩
+  settled := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial],
+    by simp [State.initial]⟩
 
 /-- The fresh instance's root was issued. -/
 theorem initial_rootIssued (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :

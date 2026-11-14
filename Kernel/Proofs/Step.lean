@@ -255,7 +255,7 @@ theorem hold_wellFormed {state : State} (formed : Laws.State.WellFormed state) (
     Laws.State.WellFormed (state.hold held) := by
   rw [Laws.Hooks.hold_eq]
   exact Laws.State.slots_wellFormed formed
-    ⟨formed.settled.parked, formed.settled.bodies, formed.settled.resumed, formed.settled.queued⟩
+    ⟨formed.settled.parked, formed.settled.bodies, formed.settled.resumed, formed.settled.queued, formed.settled.placed⟩
 
 /-- The scope occurrence an occurrence runs in stands. -/
 theorem housed_of {state : State} (formed : Laws.State.WellFormed state) {occurrence : Occurrence}
@@ -320,14 +320,14 @@ theorem joinOps : Laws.Flow.JoinOps Laws.State.WellFormed Laws.State.Settled whe
   park state waiting formed waits := by
     obtain ⟨occurrence, member, named, begun⟩ := waits
     refine Laws.State.slots_wellFormed formed ⟨fun found inside => ?_, formed.settled.bodies, formed.settled.resumed,
-      formed.settled.queued⟩
+      formed.settled.queued, formed.settled.placed⟩
     rcases List.mem_append.mp inside with old | new
     · exact formed.settled.parked found old
     · rw [List.mem_singleton.mp new, ← named]
       exact Laws.State.begun_settled formed member begun
   unpark _ _ formed := Laws.State.slots_wellFormed formed ⟨fun found inside =>
     formed.settled.parked found (List.mem_filter.mp inside).1, formed.settled.bodies, formed.settled.resumed,
-    formed.settled.queued⟩
+    formed.settled.queued, formed.settled.placed⟩
   parked _ waiting formed member := formed.settled.parked waiting member
   begun _ _ formed member begun := Laws.State.begun_settled formed member begun
   reparked _ _ _ settled := settled
@@ -350,18 +350,24 @@ theorem joinOps : Laws.Flow.JoinOps Laws.State.WellFormed Laws.State.Settled whe
 /-- The Multi-Instance operations record (`Laws.MultiInstance.MultiInstanceOps`) of `WellFormed`. -/
 theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps Laws.State.WellFormed Laws.State.Settled where
   bodies _ run formed member := formed.settled.bodies run member
+  placed _ run formed member := formed.settled.placed run member
   complete _ _ leave writes rule formed settled := unnamed_wellFormed formed settled.2.2 leave writes rule
   begun _ _ formed member begun := Laws.State.begun_settled formed member begun
   housed _ occurrence formed member := formed.owned.occurrenceScopes occurrence member
   hold _ held formed := hold_wellFormed formed held
-  enter _ element _ locals _ formed stands owned := Laws.State.enterScope_wellFormed formed element stands locals owned
-  arm _ _ element formed member begun := queueArm_wellFormed formed member begun element
-  begin _ _ formed bare stands := bareBegin_wellFormed formed bare stands
-  defer _ _ formed bare := Laws.State.deferBegins_wellFormed formed bare
-  runs _ _ formed kept := Laws.State.slots_wellFormed formed ⟨formed.settled.parked, fun run member =>
-      (kept run member).elim (formed.settled.bodies run) fun ⟨_, inside, named, begun⟩ =>
-        named ▸ Laws.State.begun_settled formed inside begun,
-    formed.settled.resumed, formed.settled.queued⟩
+  enter _ element parent locals owner formed stands owned :=
+    ⟨Laws.State.enterScope_wellFormed formed element stands locals owned,
+      fun _ settled => settled.enter element parent locals owner, by
+        rw [Laws.State.enterScope_eq]
+        exact Laws.State.scopes_fresh formed⟩
+  arm _ _ element formed member begun :=
+    ⟨queueArm_wellFormed formed member begun element, fun _ settled => settled.signal fun _ same => by simp at same⟩
+  begin _ _ formed bare stands := ⟨bareBegin_wellFormed formed bare stands, fun _ settled => settled.begin bare⟩
+  defer _ _ formed bare := ⟨Laws.State.deferBegins_wellFormed formed bare,
+    fun _ settled => settled.defer fun request member => (bare request member).1⟩
+  runs _ _ formed kept := Laws.State.slots_wellFormed formed ⟨formed.settled.parked,
+    fun run member => (kept run member).elim (formed.settled.bodies run) (·.1), formed.settled.resumed,
+    formed.settled.queued, fun run member => (kept run member).elim (formed.settled.placed run) (·.2)⟩
 
 /-- Starts' operations record (`Laws.Starts.StartsOps`) of `WellFormed`. -/
 theorem startsOps : Laws.Starts.StartsOps Laws.State.WellFormed where

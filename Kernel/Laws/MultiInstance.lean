@@ -336,6 +336,7 @@ begin, which names no reservation, in its instance's scope occurrence. -/
 occurrence a body completes keeps, `settled`. -/
 structure MultiInstanceOps (inv : State → Prop) (settled : State → Nat → Prop) : Prop where
   bodies : ∀ state run, inv state → run ∈ state.slots.multiInstances → settled state run.occurrence
+  placed : ∀ state run, inv state → run ∈ state.slots.multiInstances → Laws.State.Placed state run
   complete : ∀ state id leave writes rule, inv state → settled state id →
     inv (state.signal (.complete id leave writes rule))
   begun : ∀ state occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
@@ -343,18 +344,22 @@ structure MultiInstanceOps (inv : State → Prop) (settled : State → Nat → P
   housed : ∀ state occurrence, inv state → occurrence ∈ state.occurrences →
     occurrence.scope ∈ Laws.State.scopeIds state
   hold : ∀ state held, inv state → inv (state.hold held)
+  /-- A scope occurrence entered below one that stands; it alone holds the identity entering issues. -/
   enter : ∀ state element parent locals owner, inv state → parent ∈ Laws.State.scopeIds state →
     (∀ id, owner = some id → ∃ occurrence ∈ state.occurrences, occurrence.id = id ∧ occurrence.begun = true ∧
-      occurrence.scope = parent) → inv (state.enterScope element parent locals owner).1
+      occurrence.scope = parent) → inv (state.enterScope element parent locals owner).1 ∧
+      (∀ id, settled state id → settled (state.enterScope element parent locals owner).1 id) ∧
+      ∀ entry ∈ state.scopes, entry.id ≠ (state.enterScope element parent locals owner).2
   arm : ∀ state occurrence element, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
-    inv (state.signal (.arm occurrence.id element occurrence.scope))
+    inv (state.signal (.arm occurrence.id element occurrence.scope)) ∧
+      ∀ id, settled state id → settled (state.signal (.arm occurrence.id element occurrence.scope)) id
   begin : ∀ state request, inv state → Laws.State.names request = [] → request.scope ∈ Laws.State.scopeIds state →
-    inv (state.signal (.begin request))
+    inv (state.signal (.begin request)) ∧ ∀ id, settled state id → settled (state.signal (.begin request)) id
   defer : ∀ state requests, inv state →
     (∀ request ∈ requests, Laws.State.names request = [] ∧ request.scope ∈ Laws.State.scopeIds state) →
-    inv (state.deferBegins requests)
+    inv (state.deferBegins requests) ∧ ∀ id, settled state id → settled (state.deferBegins requests) id
   runs : ∀ state runs, inv state → (∀ run ∈ runs, run ∈ state.slots.multiInstances ∨
-      ∃ occurrence ∈ state.occurrences, occurrence.id = run.occurrence ∧ occurrence.begun = true) →
+      settled state run.occurrence ∧ Laws.State.Placed state run) →
     inv { state with slots := { state.slots with multiInstances := runs } }
 
 /-- `Hooks.completeBody` keeps `inv`: an idle body completes its run's occurrence. -/
@@ -376,90 +381,123 @@ theorem foldl_keeps {α β : Type} (P : α → Prop) (f : α → β → α) :
   | b :: l, a, step, holds =>
     foldl_keeps P f l (f a b) (fun a' b' member => step a' b' (List.mem_cons_of_mem _ member)) (step a b (by simp) holds)
 
-/-- What a body's arrival keeps while it enters and queues its instances: `inv`, its own occurrence, the scope
-occurrences the instances enter below and those the queued begins name. -/
-def Entering (inv : State → Prop) (occurrence : Occurrence) (scope : ScopeOccurrenceId) (state : State)
-    (requests : List BeginRequest) : Prop :=
-  inv state ∧ occurrence ∈ state.occurrences ∧ scope ∈ Laws.State.scopeIds state ∧
+/-- What a body keeps while it enters and queues its instances, `instances` its slots so far: `inv`, that its
+occurrence has settled, its scope occurrence, its instances' placement and the scope occurrences the queued begins
+name. -/
+def Entering (inv : State → Prop) (settled : State → Nat → Prop) (run : MultiInstanceRun) (state : State)
+    (instances : List Iteration) (requests : List BeginRequest) : Prop :=
+  inv state ∧ settled state run.occurrence ∧ run.scope ∈ Laws.State.scopeIds state ∧
+    Laws.State.Placed state { run with instances } ∧
     ∀ request ∈ requests, Laws.State.names request = [] ∧ request.scope ∈ Laws.State.scopeIds state
 
-/-- Queuing the instances' begins keeps `inv` and the body's occurrence. -/
+/-- A change that keeps the scope occurrences and the counter keeps what a body keeps while it enters. -/
+theorem Entering.frame {inv : State → Prop} {settled : State → Nat → Prop} {run : MultiInstanceRun}
+    {state after : State} {instances : List Iteration} {requests : List BeginRequest}
+    (entering : Entering inv settled run state instances requests) (holds : inv after)
+    (carried : settled after run.occurrence) (scopes : after.scopes = state.scopes)
+    (issued : after.nextIssue = state.nextIssue) : Entering inv settled run after instances requests := by
+  obtain ⟨_, _, stands, rest⟩ := entering
+  obtain ⟨placed, queued⟩ := rest
+  have same : Laws.State.scopeIds after = Laws.State.scopeIds state := by simp [Laws.State.scopeIds, scopes]
+  exact ⟨holds, carried, same ▸ stands, placed.transport (Nat.le_of_eq issued.symm)
+    (fun _ member => .inl (scopes ▸ member)), fun request member => same ▸ queued request member⟩
+
+/-- Queuing the instances' begins keeps what a body keeps while it enters. -/
 theorem queueInstances_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : MultiInstanceOps inv settled)
-    {ctx : Ctx} {mode : MultiInstanceMode} {occurrence : Occurrence} {scope : ScopeOccurrenceId} {state : State}
-    {requests : List BeginRequest} (entering : Entering inv occurrence scope state requests) :
-    inv (Feature.MultiInstance.queueInstances ctx mode requests state) ∧
-      occurrence ∈ (Feature.MultiInstance.queueInstances ctx mode requests state).occurrences := by
-  have signalled : Entering inv occurrence scope
-      (requests.foldl (fun state request => state.signal (.begin request)) state) requests := by
-    refine foldl_keeps (fun state => Entering inv occurrence scope state requests) _ requests state
+    {ctx : Ctx} {mode : MultiInstanceMode} {run : MultiInstanceRun} {state : State} {instances : List Iteration}
+    {requests : List BeginRequest} (entering : Entering inv settled run state instances requests) :
+    Entering inv settled run (Feature.MultiInstance.queueInstances ctx mode requests state) instances [] := by
+  have empty : ∀ {current}, Entering inv settled run current instances requests →
+      Entering inv settled run current instances [] := fun held => ⟨held.1, held.2.1, held.2.2.1, held.2.2.2.1, by simp⟩
+  have signalled : Entering inv settled run
+      (requests.foldl (fun state request => state.signal (.begin request)) state) instances requests := by
+    refine foldl_keeps (fun state => Entering inv settled run state instances requests) _ requests state
       (fun current request member held => ?_) entering
-    obtain ⟨holds, present, stands, queued⟩ := held
-    have same : (current.signal (.begin request)).scopes = current.scopes := by rw [Laws.State.signal_eq]
-    refine ⟨ops.begin _ _ holds (queued request member).1 (queued request member).2,
-      by rw [Laws.State.signal_eq]; exact present, ?_, fun other inside => ⟨(queued other inside).1, ?_⟩⟩
-    · simpa [Laws.State.scopeIds, same] using stands
-    · simpa [Laws.State.scopeIds, same] using (queued other inside).2
+    obtain ⟨begun, carry⟩ := ops.begin _ _ held.1 (held.2.2.2.2 request member).1 (held.2.2.2.2 request member).2
+    exact held.frame begun (carry _ held.2.1) (by rw [Laws.State.signal_eq]) (by rw [Laws.State.signal_eq])
   unfold Feature.MultiInstance.queueInstances
   split
-  · exact ⟨signalled.1, signalled.2.1⟩
+  · exact empty signalled
   · split
-    · exact ⟨ops.defer _ _ entering.1 entering.2.2.2, by rw [Laws.State.deferBegins_eq]; exact entering.2.1⟩
-    · exact ⟨signalled.1, signalled.2.1⟩
+    · obtain ⟨deferred, carry⟩ := ops.defer _ _ entering.1 entering.2.2.2.2
+      exact empty (entering.frame deferred (carry _ entering.2.1) (by rw [Laws.State.deferBegins_eq])
+        (by rw [Laws.State.deferBegins_eq]))
+    · exact empty signalled
 
-/-- Entering one instance's scope occurrence below the body's keeps what the arrival keeps, its begin queued. -/
+/-- Entering one instance's scope occurrence below the body's keeps what the body keeps, its slot active there and its
+begin queued. -/
 theorem enterInstance_entering {inv : State → Prop} {settled : State → Nat → Prop} (ops : MultiInstanceOps inv settled)
-    {occurrence : Occurrence} {scope : ScopeOccurrenceId} {state : State} {requests : List BeginRequest}
-    (entering : Entering inv occurrence scope state requests) (element : ElementId) (locals : List (String × Value))
+    {run : MultiInstanceRun} {state : State} {instances : List Iteration} {requests : List BeginRequest}
+    (entering : Entering inv settled run state instances requests) (index : Nat) (locals : List (String × Value))
     (continuation : Continuation) :
-    Entering inv occurrence scope (state.enterScope element scope locals none).1
-      (requests ++ [{ element, scope := (state.enterScope element scope locals none).2, continuation }]) := by
-  obtain ⟨holds, present, stands, queued⟩ := entering
-  have entered := ops.enter state element scope locals none holds stands fun _ named => by cases named
-  rw [Laws.State.enterScope_eq] at entered ⊢
-  refine ⟨entered, present, by simp [Laws.State.scopeIds] at stands ⊢; exact .inl stands, fun request inside => ?_⟩
-  rcases List.mem_append.mp inside with old | new
-  · refine ⟨(queued request old).1, ?_⟩
-    have := (queued request old).2
-    simp [Laws.State.scopeIds] at this ⊢
-    exact .inl this
-  · rw [List.mem_singleton.mp new]
-    exact ⟨by simp [Laws.State.names], by simp [Laws.State.scopeIds]⟩
+    Entering inv settled run (state.enterScope run.element run.scope locals none).1
+      (instances.set index (.active (state.enterScope run.element run.scope locals none).2))
+      (requests ++ [{ element := run.element, continuation, scope := (state.enterScope run.element run.scope
+        locals none).2 }]) := by
+  obtain ⟨holds, carried, stands, rest⟩ := entering
+  obtain ⟨placed, queued⟩ := rest
+  obtain ⟨entered, carry, fresh⟩ := ops.enter state run.element run.scope locals none holds stands
+    fun _ named => by cases named
+  rw [Laws.State.enterScope_eq] at entered carry fresh ⊢
+  refine ⟨entered, carry _ carried, by simp [Laws.State.scopeIds] at stands ⊢; exact .inl stands,
+    fun scope active => ?_, fun request inside => ?_⟩
+  · rcases List.mem_or_eq_of_mem_set active with old | new
+    · obtain ⟨below, parent⟩ := placed scope old
+      refine ⟨Nat.lt_succ_of_lt below, fun entry member named => ?_⟩
+      rcases List.mem_append.mp member with present | added
+      · exact parent entry present named
+      · rw [List.mem_singleton.mp added] at named
+        rw [← named] at below
+        exact absurd below (Nat.lt_irrefl _)
+    · obtain rfl := Iteration.active.inj new
+      refine ⟨Nat.lt_succ_self _, fun entry member named => ?_⟩
+      rcases List.mem_append.mp member with present | added
+      · exact absurd named (fresh entry present)
+      · rw [List.mem_singleton.mp added]
+  · rcases List.mem_append.mp inside with old | new
+    · refine ⟨(queued request old).1, ?_⟩
+      have := (queued request old).2
+      simp [Laws.State.scopeIds] at this ⊢
+      exact .inl this
+    · rw [List.mem_singleton.mp new]
+      exact ⟨by simp [Laws.State.names], by simp [Laws.State.scopeIds]⟩
 
-/-- Entering and queuing a body's instances below its scope occurrence keeps `inv` and the body's occurrence. -/
+/-- Entering and queuing a body's instances below its scope occurrence keeps `inv`. -/
 theorem beginInstances_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : MultiInstanceOps inv settled)
-    {ctx : Ctx} {loop : MultiInstance} {items : List Value} {run : MultiInstanceRun} {occurrence : Occurrence}
-    {state : State} (entering : Entering inv occurrence run.scope state []) (begun : occurrence.begun = true)
-    (owner : run.occurrence = occurrence.id) :
+    {ctx : Ctx} {loop : MultiInstance} {items : List Value} {run : MultiInstanceRun} {state : State}
+    (entering : Entering inv settled run state run.instances []) :
     inv (Feature.MultiInstance.beginInstances ctx loop items run state) := by
   unfold Feature.MultiInstance.beginInstances
   split
   rename_i current instances requests folded
   have same := congrArg (fun acc : State × List Iteration × List BeginRequest =>
-    Entering inv occurrence run.scope acc.1 acc.2.2) folded
-  have done : Entering inv occurrence run.scope current requests :=
+    Entering inv settled run acc.1 acc.2.1 acc.2.2) folded
+  have done : Entering inv settled run current instances requests :=
     same.mp (foldl_keeps (fun acc : State × List Iteration × List BeginRequest =>
-      Entering inv occurrence run.scope acc.1 acc.2.2) _ _ _
-        (fun acc _ _ held => enterInstance_entering ops held _ _ _) entering)
-  obtain ⟨holds, present⟩ := queueInstances_keeps (ctx := ctx) (mode := loop.mode) ops done
+      Entering inv settled run acc.1 acc.2.1 acc.2.2) _ _ _
+        (fun acc index _ held => enterInstance_entering ops held index _ _) entering)
+  obtain ⟨holds, carried, _, rest⟩ := queueInstances_keeps (ctx := ctx) (mode := loop.mode) ops done
+  have placed := rest.1
   unfold Feature.MultiInstance.setRun
   refine ops.runs _ _ holds fun other inside => ?_
   dsimp only at inside
   split at inside
   · obtain ⟨found, kept, rfl⟩ := List.mem_map.mp inside
     split
-    · exact .inr ⟨occurrence, present, owner.symm, begun⟩
+    · exact .inr ⟨carried, placed⟩
     · exact .inl kept
   · rcases List.mem_append.mp inside with old | new
     · exact .inl old
     · rw [List.mem_singleton.mp new]
-      exact .inr ⟨occurrence, present, owner.symm, begun⟩
+      exact .inr ⟨carried, placed⟩
 
 /-- Entering the body's scope occurrence below a begun occurrence's own, which it owns, arming its boundaries or not, and
-beginning the instances below it keeps `inv`. -/
+beginning the instances below it, none active yet, keeps `inv`. -/
 theorem enterBody_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : MultiInstanceOps inv settled)
     {ctx : Ctx} {loop : MultiInstance} {items : List Value} {occurrence : Occurrence} {state : State} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (element : ElementId)
-    (locals : List (String × Value)) (unarmed : Bool) (collection : Value) (instances : List Iteration) :
+    (locals : List (String × Value)) (unarmed : Bool) (collection : Value) (instances : List Iteration)
+    (waiting : ∀ scope, Iteration.active scope ∉ instances) :
     inv (Feature.MultiInstance.beginInstances ctx loop items
       { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
         occurrence := occurrence.id, collection, instances }
@@ -467,17 +505,22 @@ theorem enterBody_keeps {inv : State → Prop} {settled : State → Nat → Prop
         else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id element occurrence.scope))) := by
   have stands := ops.housed _ _ holds member
-  have entered := ops.enter state element occurrence.scope locals (some occurrence.id) holds stands
+  obtain ⟨entered, carry, _⟩ := ops.enter state element occurrence.scope locals (some occurrence.id) holds stands
     fun id named => ⟨occurrence, member, Option.some.inj named, begun, rfl⟩
-  rw [Laws.State.enterScope_eq] at entered ⊢
-  refine beginInstances_keeps ops ?_ begun rfl
+  have carried := carry _ (ops.begun _ _ holds member begun)
+  rw [Laws.State.enterScope_eq] at entered carried ⊢
+  refine beginInstances_keeps ops ?_
+  have none : ∀ (current : State) (run : MultiInstanceRun), run.instances = instances →
+      Laws.State.Placed current { run with instances := run.instances } := fun _ run same scope active => by
+    rw [same] at active
+    exact absurd active (waiting scope)
   cases unarmed
-  · refine ⟨ops.arm _ occurrence element entered member begun, ?_, ?_, fun _ none => by cases none⟩
-    · rw [Laws.State.signal_eq]
-      exact member
-    · rw [Laws.State.signal_eq]
-      simp [Laws.State.scopeIds]
-  · exact ⟨entered, member, by simp [Laws.State.scopeIds], fun _ none => by cases none⟩
+  · have present : occurrence ∈ (_ : State).occurrences := member
+    obtain ⟨armed, carryArm⟩ := ops.arm _ occurrence element entered present begun
+    refine ⟨armed, carryArm _ carried, ?_, none _ _ rfl, fun _ none => by cases none⟩
+    rw [Laws.State.signal_eq]
+    simp [Laws.State.scopeIds]
+  · exact ⟨entered, carried, by simp [Laws.State.scopeIds], none _ _ rfl, fun _ none => by cases none⟩
 
 /-- `Hooks.arriveMultiInstance` keeps `inv`: an unavailable read holds the begun occurrence, an empty body completes
 it, and otherwise it enters the body's scope occurrence, which it owns, arms its boundaries and begins the instances. -/
@@ -497,6 +540,6 @@ theorem arriveMultiInstance_keeps {inv : State → Prop} {settled : State → Na
     · cases ran
       exact ops.complete _ _ _ _ _ holds (ops.begun _ _ holds member begun)
     · cases ran
-      exact enterBody_keeps ops holds member begun _ _ _ _ _
+      exact enterBody_keeps ops holds member begun _ _ _ _ _ fun _ active => by simp at active
 
 end Kernel.Laws.MultiInstance

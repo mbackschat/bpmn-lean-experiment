@@ -249,10 +249,17 @@ def Settled (s : State) (id : Nat) : Prop :=
   id < s.nextIssue ∧ (∀ occurrence ∈ s.occurrences, occurrence.id = id → occurrence.begun = true) ∧
     ∀ request, Queued s request → id ∉ names request
 
+/-- A Multi-Instance run's active instances were entered below its body's scope occurrence: each was issued, and while
+it stands its parent is the body's (`MultiInstance.beginInstances`), so the instance a completion leaves is never the
+root and leaving it keeps the body's scope occurrence standing. -/
+def Placed (s : State) (run : MultiInstanceRun) : Prop :=
+  ∀ scope, Iteration.active scope ∈ run.instances → scope.value < s.nextIssue ∧
+    ∀ entry ∈ s.scopes, entry.id = scope → entry.parent = some run.scope
+
 /-- What the feature slots and a queued compensation will complete has begun: the occurrences parked at a join
 (`Feature.Flow.join` completes them when it fires), a Multi-Instance body's occurrence (`MultiInstance.finish`), and
 the occurrence a compensation run, or a queued one, completes once it ends (`Compensation.advance`). Each arrived,
-entered or threw while begun, and an identity is never issued again (`IssuedBelow`). -/
+entered or threw while begun, and an identity is never issued again (`IssuedBelow`). A body's instances are `Placed`. -/
 structure SlotsSettled (s : State) : Prop where
   parked : ∀ waiting ∈ s.slots.parked, Settled s waiting.occurrence
   bodies : ∀ run ∈ s.slots.multiInstances, Settled s run.occurrence
@@ -260,6 +267,7 @@ structure SlotsSettled (s : State) : Prop where
     Settled s occurrence
   queued : ∀ scope activity trigger leave occurrence resume,
     Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ s.signals → Settled s occurrence
+  placed : ∀ run ∈ s.slots.multiInstances, Placed s run
 
 /-- The state invariants together: what holds of every committed state and between any two micro-steps of a closure. -/
 structure WellFormed (s : State) : Prop where
@@ -790,5 +798,24 @@ theorem parked_begun_settled (kind : OpenKind) :
   bodies := by simp
   resumed := by simp
   queued := by simp [armedState, sample]
+  placed := by simp
+
+/-- A body's run, in `body`, whose one instance is active in `subScope`. -/
+def instanceRun (body : ScopeOccurrenceId) : MultiInstanceRun :=
+  { scope := body, element := ⟨"Sub"⟩, occurrence := 1, collection := .null, instances := [.active subScope] }
+
+/-- An instance entered below the body's scope occurrence is placed. -/
+theorem nested_instance_placed (kind : OpenKind) : Placed (sample kind) (instanceRun processRoot) := by
+  intro scope active
+  simp only [instanceRun, List.mem_singleton, Iteration.active.injEq] at active
+  subst active
+  refine ⟨by simp [sample, subScope], fun entry member named => ?_⟩
+  simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl <;> simp_all [rootScope, childScope, processRoot, subScope, instanceRun]
+
+/-- An instance standing below another scope occurrence than the body's breaks `Placed`. -/
+theorem misplaced_instance_rejected (kind : OpenKind) : ¬ Placed (sample kind) (instanceRun subScope) := fun placed => by
+  have := (placed subScope (by simp [instanceRun])).2 childScope (by simp [sample]) rfl
+  simp [childScope, processRoot, subScope, instanceRun] at this
 
 end Kernel.Laws.State

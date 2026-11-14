@@ -84,19 +84,34 @@ theorem Settled.transport {before after : State} {id : Nat} (settled : Settled b
     · omega
   · rfl
 
-/-- The slots stay settled through such a change that adds no slot entry and queues no compensation. -/
+/-- A run stays placed through a change that issues nothing back and adds only scope occurrences it issues. -/
+theorem Placed.transport {before after : State} {run : MultiInstanceRun} (placed : Placed before run)
+    (issued : before.nextIssue ≤ after.nextIssue)
+    (scopes : ∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ before.nextIssue ≤ entry.id.value) : Placed after run :=
+  fun scope active => by
+    obtain ⟨below, parent⟩ := placed scope active
+    refine ⟨Nat.lt_of_lt_of_le below issued, fun entry member named => ?_⟩
+    rcases scopes entry member with old | fresh
+    · exact parent entry old named
+    · rw [named] at fresh
+      omega
+
+/-- The slots stay settled through such a change that adds no slot entry, queues no compensation and adds only scope
+occurrences it issues. -/
 theorem SlotsSettled.transport {before after : State} (settled : SlotsSettled before) (slots : SlotsWithin before after)
     (issued : before.nextIssue ≤ after.nextIssue)
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence.begun = false →
       occurrence ∈ before.occurrences ∨ before.nextIssue ≤ occurrence.id)
     (queued : ∀ request, Queued after request → Queued before request)
-    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) : SlotsSettled after where
+    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals)
+    (scopes : ∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ before.nextIssue ≤ entry.id.value) : SlotsSettled after where
   parked waiting member := (settled.parked waiting (slots.parked waiting member)).transport issued occurrences queued
   bodies run member := (settled.bodies run (slots.bodies run member)).transport issued occurrences queued
   resumed run member occurrence leave resume :=
     (settled.resumed run (slots.runs run member) occurrence leave resume).transport issued occurrences queued
   queued scope activity trigger leave occurrence resume member :=
     (settled.queued scope activity trigger leave occurrence resume (signals _ member)).transport issued occurrences queued
+  placed run member := (settled.placed run (slots.bodies run member)).transport issued scopes
 
 /-! ## Process instances
 
@@ -215,7 +230,7 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed before) (
   have items := narrows.openItems.subset
   have settled := formed.settled.transport narrows.slots (Nat.le_of_eq narrows.nextIssue.symm)
     (fun _ member _ => .inl (narrows.occurrences ▸ member)) (fun _ queued => queued.shrink narrows.signals narrows.tokens)
-    (fun _ member => narrows.signals.subset member)
+    (fun _ member => narrows.signals.subset member) (fun _ member => .inl (narrows.scopes ▸ member))
   exact {
   issued := ⟨by simpa [narrows.occurrences, narrows.nextIssue] using formed.issued.occurrences,
     fun item member => narrows.nextIssue ▸ formed.issued.items item (items member),
@@ -484,7 +499,7 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
   · exact formed.settled.transport cleared.slots (Nat.le_of_eq cleared.nextIssue.symm)
       (fun _ member _ => .inl (cleared.occurrencesSublist.subset member))
       (fun _ queued => queued.shrink (by rw [cleared.signals]; exact .refl _) cleared.tokensSublist)
-      (fun _ member => cleared.signals ▸ member)
+      (fun _ member => cleared.signals ▸ member) (fun _ member => .inl (cleared.scopesSublist.subset member))
 
 /-! ## Pruning occurrences and items -/
 
@@ -584,7 +599,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed before) (p
     exact formed.settled.transport (.same prunes.slots) (Nat.le_of_eq prunes.nextIssue.symm)
       (fun _ member _ => .inl (kept member))
       (fun _ queued => queued.shrink (by rw [prunes.signals]; exact .refl _) (by rw [prunes.tokens]; exact .refl _))
-      (fun _ member => prunes.signals ▸ member)
+      (fun _ member => prunes.signals ▸ member) (fun _ member => .inl (prunes.scopes ▸ member))
 
 /-- `s` without the occurrence record `id`: what `State.removeOccurrence` removes first. -/
 def withoutRecord (s : State) (id : Nat) : State := { s with occurrences := s.occurrences.filter (·.id != id) }
@@ -721,6 +736,6 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
   case settled =>
     exact formed.settled.transport left.slots (Nat.le_of_eq left.nextIssue.symm) (fun _ member _ => .inl (kept member))
       (fun _ queued => queued.shrink (by rw [left.signals]; exact .refl _) left.tokensSublist)
-      (fun _ member => left.signals ▸ member)
+      (fun _ member => left.signals ▸ member) (fun _ member => .inl (left.scopesSublist.subset member))
 
 end Kernel.Laws.State

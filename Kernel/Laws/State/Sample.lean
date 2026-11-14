@@ -68,7 +68,7 @@ theorem sample_wellFormed (kind : OpenKind) : WellFormed (sample kind) where
       simp_all [rootScope, childScope, subProcess, innerTask, outerTask]
   claimed := ⟨by simp [sample, innerItem, outerItem], by simp [Queued, sample], by simp [Precedes, sample],
     by simp [Precedes, sample], by simp [sample], by simp [Queued, sample], by simp [Queued, sample]⟩
-  settled := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample]⟩
+  settled := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample], by simp [sample]⟩
 
 /-- A start fact carrying the armed reservation's key breaks `ReservationsUnstarted`. -/
 theorem early_start_rejected (kind : OpenKind) :

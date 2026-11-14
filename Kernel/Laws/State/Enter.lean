@@ -253,7 +253,10 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       exact (countedEq _).mpr (formed.occurrencesCounted occurrence member),
     ownedBelow, claimed,
     formed.settled.transport enters.slots (by rw [hNext]; omega) (fun occurrence member _ => .inl (hOcc ▸ member))
-      (fun request queued => (queuedEq request).mp queued) (fun signal member => hSignals ▸ member)⟩
+      (fun request queued => (queuedEq request).mp queued) (fun signal member => hSignals ▸ member)
+      fun found member => (members found member).imp (fun old => old) fun same => by
+        rw [same, entryId]
+        exact Nat.le_refl _⟩
 
 /-- Entering a scope occurrence below one that stands, owned, if at all, by a begun occurrence running there, keeps a
 state well-formed. -/
@@ -297,9 +300,39 @@ theorem Settled.bare {s t : State} {id : Nat} (settled : Settled s id) (issued :
   · rw [bare] at inside
     simp at inside
 
-/-- The slots stay settled through such a change that keeps them and queues no compensation. -/
+/-- A bare begin, queued, keeps what has settled. -/
+theorem Settled.begin {s : State} {id : Nat} (settled : Settled s id) {request : BeginRequest}
+    (bare : names request = []) : Settled (s.signal (.begin request)) id := by
+  rw [signal_eq]
+  refine settled.bare (Nat.le_refl _) rfl fun other named => ?_
+  rcases named with signal | token
+  · rcases List.mem_append.mp signal with old | new
+    · exact .inl (.inl old)
+    · rw [Signal.begin.inj (List.mem_singleton.mp new)]
+      exact .inr bare
+  · exact .inl (.inr token)
+
+/-- Bare begins, deferred, keep what has settled. -/
+theorem Settled.defer {s : State} {id : Nat} (settled : Settled s id) {requests : List BeginRequest}
+    (bare : ∀ request ∈ requests, names request = []) : Settled (s.deferBegins requests) id := by
+  rw [deferBegins_eq]
+  refine settled.bare (Nat.le_refl _) rfl fun other named => ?_
+  rcases named with signal | token
+  · exact .inl (.inl signal)
+  · rcases List.mem_append.mp token with old | new
+    · exact .inl (.inr old)
+    · exact .inr (bare other (by simpa using new))
+
+/-- Entering a scope occurrence keeps what has settled: it issues afresh and queues nothing. -/
+theorem Settled.enter {s : State} {id : Nat} (settled : Settled s id) (element : ElementId) (parent : ScopeOccurrenceId)
+    (locals : List (String × Value)) (owner : Option Nat) : Settled (s.enterScope element parent locals owner).1 id := by
+  rw [enterScope_eq]
+  exact settled.transport (Nat.le_succ _) (fun _ member _ => .inl member) fun _ queued => queued
+
+/-- The slots stay settled through such a change that keeps them and the scope occurrences and queues no
+compensation. -/
 theorem SlotsSettled.bare {s t : State} (settled : SlotsSettled s) (slots : t.slots = s.slots)
-    (issued : s.nextIssue ≤ t.nextIssue) (occurrences : t.occurrences = s.occurrences)
+    (scopes : t.scopes = s.scopes) (issued : s.nextIssue ≤ t.nextIssue) (occurrences : t.occurrences = s.occurrences)
     (queued : ∀ request, Queued t request → Queued s request ∨ names request = [])
     (compensations : ∀ scope activity trigger leave occurrence resume,
       Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ t.signals →
@@ -312,6 +345,7 @@ theorem SlotsSettled.bare {s t : State} (settled : SlotsSettled s) (slots : t.sl
   queued scope activity trigger leave occurrence resume member :=
     (settled.queued scope activity trigger leave occurrence resume
       (compensations scope activity trigger leave occurrence resume member)).bare issued occurrences queued
+  placed run member := (settled.placed run (slots ▸ member)).transport issued fun _ inside => .inl (scopes ▸ inside)
 
 /-- Queuing a bare begin in a scope occurrence that stands keeps the claims single. That the begin is no completion,
 `Kernel.Proofs.Step` tells. -/
@@ -363,7 +397,7 @@ theorem signal_settled_begin {s : State} {request : BeginRequest} (formed : Well
       Signal.begin request ≠ .compensate scope activity trigger leave (some (.complete occurrence resume))) :
     SlotsSettled (s.signal (.begin request)) := by
   rw [signal_eq]
-  refine formed.settled.bare rfl (Nat.le_refl _) rfl (fun other named => ?_)
+  refine formed.settled.bare rfl rfl (Nat.le_refl _) rfl (fun other named => ?_)
     fun scope activity trigger leave occurrence resume member => ?_
   · rcases named with signal | token
     · rcases List.mem_append.mp signal with old | new
@@ -444,5 +478,5 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed s) {requests : L
   occurrencesCounted := by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted
   ownedBelow := formed.ownedBelow
   claimed := claimed
-  settled := formed.settled.bare rfl (Nat.le_refl _) rfl (fun request named =>
+  settled := formed.settled.bare rfl rfl (Nat.le_refl _) rfl (fun request named =>
     (queued request named).imp id fun new => (bare request new).1) fun _ _ _ _ _ _ member => member }
