@@ -129,7 +129,7 @@ Each row of the kernel status map's Row status table, in its order, with its ker
 | PC-QUALIFY-08 | integration | 0 | — | — | — |
 | PC-QUALIFY-09 | integration | 0 | — | — | — |
 | PC-QUALIFY-10 | integration | 1 | — | — | — |
-| PC-ACCEPT-01 | absent | 0 | — | — | — |
+| PC-ACCEPT-01 | integration | 0 | — | — | — |
 | PC-ACCEPT-02 | absent | 0 | — | — | — |
 
 ## Models

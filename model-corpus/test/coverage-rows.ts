@@ -63,14 +63,18 @@ export function parseTargetStates(markdown: string): ReadonlyMap<string, string>
   return states;
 }
 
-/** The task IDs of the coverage target's "Integrated qualification" table, whose acceptance is a hosted qualification. */
+/**
+ * The task IDs of the coverage target's "Integrated qualification" and "Final acceptance" tables, whose acceptance is
+ * hosted qualification runs or a record bound to them, never a kernel scenario.
+ */
 export function parseQualificationRows(markdown: string): ReadonlySet<string> {
   const lines = markdown.split("\n");
-  const start = lines.indexOf("### Integrated qualification");
-  if (start < 0) throw new Error("PRACTICAL-CIB7-COVERAGE-TARGET.md has no Integrated qualification section");
-  const end = lines.findIndex((line, index) => index > start && line.startsWith("#"));
-  return new Set(lines.slice(start, end < 0 ? undefined : end)
-    .flatMap((line) => /^\| `(PC-[A-Z]+-\d{2})` \|/.exec(line)?.[1] ?? []));
+  return new Set(["Integrated qualification", "Final acceptance"].flatMap((title) => {
+    const start = lines.indexOf(`### ${title}`);
+    if (start < 0) throw new Error(`PRACTICAL-CIB7-COVERAGE-TARGET.md has no ${title} section`);
+    const end = lines.findIndex((line, index) => index > start && line.startsWith("#"));
+    return lines.slice(start, end < 0 ? undefined : end).flatMap((line) => /^\| `(PC-[A-Z]+-\d{2})` \|/.exec(line)?.[1] ?? []);
+  }));
 }
 
 export type StatusMapSources = Readonly<{
