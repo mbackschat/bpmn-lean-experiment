@@ -17,7 +17,8 @@ A proof here composes `Laws.Step`'s, `Laws.Hooks`' and `Laws.State`'s lemmas and
 that no `Laws` module states yet is an explicit premise named as a pending lemma request, never a model or state premise
 of the lane statement; the root replaces it with the lemma once that lands. Subtree removal rests on the
 state-invariant lane's preservation of `WellFormed` and on the step keeping its before-state's scope occurrences
-(`StepKeepsScopes`), an invariant of the closure relative to the before-state. A removed occurrence's single end fact
+(`StepKeepsScopes`), an invariant of the closure relative to the before-state, which the state operations keep
+(`Alongside`) and `Kernel.Proofs.Cancellation.Registered` carries through the registered hooks. A removed occurrence's single end fact
 rests on the same lane's hook contract and phases and on each micro-step framing the end facts (`MicroStepsFrameEnds`),
 a relation between a micro-step's two states that no invariant of `Laws.Step.Phases` can carry. Nothing executable
 imports this module.
@@ -277,6 +278,179 @@ theorem subtreeRemoved_of_keeps {hooks : Hooks} (contract : ∀ before, Laws.Ste
   subtreeRemoved (fun _ _ before _ formed ran =>
     (Laws.Step.running_keeps (contract before) (phases before) facts (KeepsScopes.self formed) ran).1)
     (stepKeepsScopes contract phases facts)
+
+/-! ### What the state operations keep of the before-state's scope occurrences
+
+A hook or phase keeps `KeepsScopes before` when it keeps `WellFormed` (the state-invariant lane's records) and each
+state operation it applies keeps `ScopesKept before`: it adds only a scope occurrence issued at the counter, drops
+some, or leaves them, and never lowers the counter. The hooks' operations are gathered in `Alongside`, which any
+property carried beside `WellFormed` fills; `Kernel.Proofs.Cancellation.Registered` turns it into each feature's
+operations record and the registered hooks' contract. -/
+
+/-- `t` keeps the scope occurrences `before` held at `s`: those of `s` or ones issued at or above `s`'s counter, under
+a counter that has not moved back. -/
+theorem ScopesKept.grow {before s t : State} (kept : ScopesKept before s) (issued : s.nextIssue ≤ t.nextIssue)
+    (scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ s.nextIssue ≤ entry.id.value) : ScopesKept before t := by
+  refine ⟨fun old member => Nat.lt_of_lt_of_le (kept.1 old member) issued, fun entry member named => ?_⟩
+  rcases scopes entry member with old | fresh
+  · exact kept.2 entry old named
+  · obtain ⟨prior, inside, same⟩ := List.mem_map.mp named
+    have below := kept.1 prior inside
+    rw [same] at below
+    omega
+
+/-- `ScopesKept.grow` for an operation that drops scope occurrences and issues nothing. -/
+theorem ScopesKept.shrink {before s t : State} (kept : ScopesKept before s) (fewer : t.scopes.Sublist s.scopes)
+    (issued : t.nextIssue = s.nextIssue) : ScopesKept before t :=
+  kept.grow (Nat.le_of_eq issued.symm) fun _ member => .inl (fewer.subset member)
+
+/-- `ScopesKept.grow` for an operation that issues one identity and enters at most one scope occurrence, under it. -/
+theorem ScopesKept.enter {before s t : State} (kept : ScopesKept before s) (issued : t.nextIssue = s.nextIssue + 1)
+    (scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ entry.id = ⟨s.nextIssue⟩) : ScopesKept before t :=
+  kept.grow (by omega) fun entry member => (scopes entry member).imp_right fun same => by
+    rw [same]
+    exact Nat.le_refl _
+
+/-- Pending lemma request R13 (`Kernel.Laws.State`): the removal operations drop scope occurrences and issue no
+identity. -/
+structure PendingRemoval : Prop where
+  removal_shrinks : ∀ s : State,
+    (∀ scope keep, (s.clearInside scope keep).scopes.Sublist s.scopes ∧
+      (s.clearInside scope keep).nextIssue = s.nextIssue) ∧
+    (∀ scope, (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextIssue = s.nextIssue) ∧
+    (∀ id, (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextIssue = s.nextIssue) ∧
+    ∀ id, (s.cancelOccurrence id).scopes.Sublist s.scopes ∧ (s.cancelOccurrence id).nextIssue = s.nextIssue
+
+/-- `t` agrees with `s` on everything a property carried beside `WellFormed` may read: the scope occurrences, the
+occurrences, the issue and activation counters, the journal, the draft and the instance identity. -/
+structure Unmoved (s t : State) : Prop where
+  scopes : t.scopes = s.scopes
+  occurrences : t.occurrences = s.occurrences
+  nextIssue : t.nextIssue = s.nextIssue
+  activations : t.activations = s.activations
+  journal : t.journal = s.journal
+  draft : t.draft = s.draft
+  instanceId : t.instanceId = s.instanceId
+
+/-- What the state operations the hooks apply keep of a property `rel` carried beside `WellFormed`: an update of
+nothing `rel` may read (`Unmoved`), issuing an identity, entering a scope occurrence or a Call's called root,
+reserving an occurrence, leaving or clearing a scope occurrence, disarming a host and a variable write or removal. A feature's
+operations record of `WellFormed` and `rel` follows from its record of `WellFormed` and this one. -/
+structure Alongside (rel : State → Prop) : Prop where
+  frame : ∀ s t, Unmoved s t → rel s → rel t
+  issue : ∀ s, rel s → rel s.issue.1
+  enterScope : ∀ program s element parent locals owner, WellFormed program s → rel s →
+    rel (s.enterScope element parent locals owner).1
+  enterCalled : ∀ program s called call variables definition, WellFormed program s → rel s →
+    rel (s.enterCalled called call variables definition).1
+  reserve : ∀ program s element scope, WellFormed program s → rel s → rel (s.reserve element scope).1
+  leaveScope : ∀ program s scope, WellFormed program s → rel s → rel (s.leaveScope scope)
+  clearInside : ∀ program s scope keep, WellFormed program s → rel s → rel (s.clearInside scope keep)
+  disarm : ∀ program s host, WellFormed program s → rel s → rel (s.disarm host)
+  setVariable : ∀ program s target name value, WellFormed program s → rel s → rel (s.setVariable target name value)
+  removeVariable : ∀ program s target name, WellFormed program s → rel s → rel (s.removeVariable target name)
+
+/-- The state operations the hooks apply keep the scope occurrences of any before-state. -/
+theorem scopesKept_alongside (pending : PendingRemoval) (before : State) : Alongside (ScopesKept before) where
+  frame _ _ moved kept := kept.shrink (by rw [moved.scopes]; exact .refl _) moved.nextIssue
+  issue s kept := by
+    rw [Laws.State.issue_eq]
+    exact kept.enter rfl fun _ member => .inl member
+  enterScope _ s element parent locals owner _ kept := by
+    rw [Laws.State.enterScope_eq]
+    exact kept.enter rfl fun entry member => (List.mem_append.mp member).imp_right fun fresh => by
+      rw [List.mem_singleton.mp fresh]
+  enterCalled _ s called call variables definition formed kept := by
+    have fresh : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ := fun entry inside same => by
+      have below := formed.issued.scopes entry inside
+      rw [same] at below
+      exact Nat.lt_irrefl _ below
+    rw [Laws.State.enterCalled_eq _ _ _ _ _ fresh]
+    exact kept.enter rfl fun entry member => (List.mem_append.mp member).imp_right fun fresh => by
+      rw [List.mem_singleton.mp fresh]
+  reserve _ s element scope formed kept :=
+    have reserves := Laws.State.reserve_reserves formed.activations element scope
+    kept.enter reserves.nextIssue fun _ member => .inl (reserves.scopes ▸ member)
+  leaveScope _ s scope _ kept := kept.shrink ((pending.removal_shrinks s).2.1 scope).1 ((pending.removal_shrinks s).2.1 scope).2
+  clearInside _ s scope keep _ kept :=
+    kept.shrink ((pending.removal_shrinks s).1 scope keep).1 ((pending.removal_shrinks s).1 scope keep).2
+  disarm _ s host _ kept := by
+    rw [Laws.State.disarm_eq]
+    exact kept
+  setVariable _ s target name value _ kept :=
+    have same := Laws.State.setVariable_same s target name value
+    kept.shrink (by rw [same.scopes]; exact .refl _) same.nextIssue
+  removeVariable _ s target name _ kept :=
+    have same := Laws.State.removeVariable_same s target name
+    kept.shrink (by rw [same.scopes]; exact .refl _) same.nextIssue
+
+/-- A queued signal moves nothing `rel` reads. -/
+theorem Alongside.signal {rel : State → Prop} (side : Alongside rel) {s : State} (kept : rel s) (signal : Signal) :
+    rel (s.signal signal) := by
+  rw [Laws.State.signal_eq]
+  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ kept
+
+/-- `Step`'s phases keep `KeepsScopes before` where they keep `WellFormed`: they record, queue, begin, reserve and start
+occurrences, which keeps the scope occurrences and never lowers the counter, and remove occurrences and clear scope
+occurrences, which drops some (`PendingRemoval`). -/
+theorem keepsScopes_phases (phases : Laws.Step.Phases WellFormed) (pending : PendingRemoval) (before : State) :
+    Laws.Step.Phases (KeepsScopes before) where
+  reset _ _ holds := ⟨phases.reset _ _ holds.1, holds.2⟩
+  clock _ _ atMs holds := ⟨phases.clock _ _ atMs holds.1, holds.2⟩
+  journal _ _ transition holds started ended := ⟨phases.journal _ _ transition holds.1 started ended, holds.2⟩
+  runOrder _ _ holds := ⟨phases.runOrder _ _ holds.1, holds.2⟩
+  dequeue _ _ signals holds fewer := ⟨phases.dequeue _ _ signals holds.1 fewer, holds.2⟩
+  untoken _ _ tokens holds fewer := ⟨phases.untoken _ _ tokens holds.1 fewer, holds.2⟩
+  queueWrite _ _ scope writes rule holds :=
+    ⟨phases.queueWrite _ _ scope writes rule holds.1, (scopesKept_alongside pending before).signal holds.2 _⟩
+  queueRemove _ _ scope names holds :=
+    ⟨phases.queueRemove _ _ scope names holds.1, (scopesKept_alongside pending before).signal holds.2 _⟩
+  armIssued _ _ host element scope holds := phases.armIssued _ _ host element scope holds.1
+  armScopeIssued _ _ scope holds := phases.armScopeIssued _ _ scope holds.1
+  armGatewayIssued _ _ occurrence gateway scope holds :=
+    phases.armGatewayIssued _ _ occurrence gateway scope holds.1
+  endRecorded _ _ status failure holds := phases.endRecorded _ _ status failure holds.1
+  admittedSignal _ _ request rest holds := phases.admittedSignal _ _ request rest holds.1
+  admittedToken _ _ request rest holds := phases.admittedToken _ _ request rest holds.1
+  completeQueued _ _ id leave writes rule holds := phases.completeQueued _ _ id leave writes rule holds.1
+  resumable _ _ scope activity trigger leave resume rest holds :=
+    phases.resumable _ _ scope activity trigger leave resume rest holds.1
+  housed _ _ occurrence holds := phases.housed _ _ occurrence holds.1
+  parkedBegun _ _ waiting occurrence holds := phases.parkedBegun _ _ waiting occurrence holds.1
+  endInstance _ s status failure holds recorded := by
+    refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩
+    rw [Laws.Step.endInstance_eq]
+    exact holds.2.shrink ((pending.removal_shrinks s).1 State.root []).1 ((pending.removal_shrinks s).1 State.root []).2
+  begin _ s request role sourceType holds stands admitted :=
+    have begun := phases.begin _ _ request role sourceType holds.1 stands admitted
+    have begins := Laws.State.beginOccurrence_begins holds.1.activations request role sourceType
+    have issued : s.nextIssue ≤ (s.beginOccurrence request role sourceType).1.nextIssue := by
+      rcases begins.source with ⟨_, reserved⟩ | fresh
+      · exact Nat.le_of_eq reserved.nextIssue.symm
+      · rw [fresh.nextIssue]
+        exact Nat.le_succ _
+    ⟨⟨begun.1, holds.2.grow issued fun _ member => .inl (begins.scopes ▸ member)⟩, begun.2⟩
+  reserve _ s element scope holds stands :=
+    have reserved := phases.reserve _ _ element scope holds.1 stands
+    ⟨⟨reserved.1, (scopesKept_alongside pending before).reserve _ s element scope holds.1 holds.2⟩, reserved.2⟩
+  startReserved _ s occurrence sourceType holds member unnamed := by
+    refine ⟨phases.startReserved _ _ occurrence sourceType holds.1 member unnamed, ?_⟩
+    rw [Laws.State.closeOwnItems_eq]
+    show ScopesKept before (s.startReserved occurrence sourceType).1
+    cases begun : occurrence.begun
+    · have starts := Laws.State.startReserved_starts s sourceType begun
+      exact holds.2.shrink (by rw [starts.scopes]; exact .refl _) starts.nextIssue
+    · rw [Laws.State.startReserved_begun s sourceType begun]
+      exact holds.2
+  removeOccurrence _ s occurrence holds member free :=
+    have removed := phases.removeOccurrence _ _ occurrence holds.1 member free
+    ⟨⟨removed.1, holds.2.shrink ((pending.removal_shrinks s).2.2.1 occurrence.id).1
+      ((pending.removal_shrinks s).2.2.1 occurrence.id).2⟩, removed.2⟩
+  recordEnd _ _ key terminal holds := ⟨phases.recordEnd _ _ key terminal holds.1, by
+    rw [Laws.State.recordEnd_eq]
+    exact holds.2⟩
+  cancel _ s id holds := ⟨phases.cancel _ _ id holds.1,
+    holds.2.shrink ((pending.removal_shrinks s).2.2.2 id).1 ((pending.removal_shrinks s).2.2.2 id).2⟩
 
 /-! ## Every removed occurrence ends once
 

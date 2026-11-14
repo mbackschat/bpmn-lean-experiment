@@ -90,6 +90,7 @@ public import Kernel.Population.Messages
 public import Kernel.Population.Signals
 public import Kernel.Population.Timers
 public import Kernel.Proofs.Cancellation
+public import Kernel.Proofs.Cancellation.Registered
 public import Kernel.Proofs.Compensation
 public import Kernel.Proofs.Concurrency
 public import Kernel.Proofs.Former
