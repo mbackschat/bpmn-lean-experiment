@@ -71,7 +71,8 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
   · have := ((formed.claimed.named request (queuedBefore request queued)).2 _ named).1
     omega
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
-    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed⟩
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
+    ?worked, ?roles, ?raises⟩
   case issued =>
     exact ⟨fun occurrence member => by
         rcases members occurrence member with rfl | old
@@ -220,6 +221,28 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     first
       | exact formed.attachedReserved.shrink (fun _ member => reserves.openItems ▸ member) begun
       | exact formed.typed.shrink (fun _ member => reserves.openItems ▸ member) begun fun _ member => reserves.signals ▸ member
+  case worked =>
+    exact formed.worked.transport (fun _ member => reserves.openItems ▸ member) formed.waited fun found inside _ => by
+      rcases members found inside with rfl | old
+      · exact .inr (by omega)
+      · exact .inl old
+  case roles =>
+    refine formed.roles.transport fun found inside => ?_
+    rcases members found inside with rfl | old
+    · exact .inl fun _ => reserves.role
+    · exact .inr ⟨found, old, rfl, rfl⟩
+  -- A reservation numbered now takes an activation above every one its counter counted, a queued raise's origin's too.
+  case raises =>
+    intro raised origin queued event
+    obtain ⟨below, counted, begun⟩ := formed.raises raised origin (reserves.signals ▸ queued) event
+    refine ⟨by omega, fun present => ?_, fun found inside element placed activation => ?_⟩
+    · rw [reserves.instances]
+      exact reserves.activated.counted (counted (by simpa [scopeIds, reserves.scopes] using present))
+    · rcases members found inside with rfl | old
+      · refine absurd (counted (placed ▸ reserves.placed ▸ stands)) fun numbered => ?_
+        refine reserves.activated.fresh numbered ?_
+        rw [← placed, reserves.placed, ← element, reserves.kind, ← activation]
+      · exact begun found old element placed activation
 
 /-- What `State.startReserved` makes of `before` for an unbegun `occurrence`: it begins where it stands and its start
 is journalled under its key. Nothing else changes. -/
@@ -275,7 +298,8 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
   have keysOther : ∀ old ∈ before.occurrences, old.id ≠ occurrence.id → key before old ≠ key before occurrence :=
     fun old held other same => other (by rw [nodup_map_eq formed.distinct.keys held member same])
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
-    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed⟩
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
+    ?worked, ?roles, ?raises⟩
   case issued =>
     exact ⟨fun found inside => by
         rw [issued]
@@ -437,5 +461,22 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     first
       | exact formed.attachedReserved.transport (fun _ member => starts_.openItems ▸ member) waited
       | exact formed.typed.transport (fun _ member => starts_.openItems ▸ member) waited fun _ member => starts_.signals ▸ member
+  case worked =>
+    exact formed.worked.shrink (fun _ member => starts_.openItems ▸ member) fun found inside unbegun => by
+      rcases members found inside with rfl | ⟨old, _⟩
+      · simp at unbegun
+      · exact old
+  case roles =>
+    refine formed.roles.transport fun found inside => ?_
+    rcases members found inside with rfl | ⟨old, _⟩
+    · exact .inr ⟨occurrence, member, rfl, rfl⟩
+    · exact .inr ⟨found, old, rfl, rfl⟩
+  case raises =>
+    exact formed.raises.transport (fun _ _ queued => starts_.signals ▸ queued) (Nat.le_of_eq issued.symm)
+      (fun x present _ => ⟨by simpa [scopeIds, starts_.scopes] using present, starts_.instances x⟩)
+      (fun _ counted => counted.congr starts_.activations) fun found inside unbegun => by
+        rcases members found inside with rfl | ⟨old, _⟩
+        · simp at unbegun
+        · exact old
 
 end Kernel.Laws.State

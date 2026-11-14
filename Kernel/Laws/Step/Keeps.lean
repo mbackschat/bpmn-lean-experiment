@@ -158,7 +158,7 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
   | atScope ran => exact contract.arriveScope _ _ _ _ _ _ _ holds member begun inner ran
   | atGateway ran => exact contract.arriveGateway _ _ _ _ _ _ holds member begun ran
   | atCatch ran => exact contract.arriveCatch _ _ _ _ _ _ _ holds member begun unstarted ran
-  | atThrow ran => exact contract.arriveThrow _ _ _ _ _ _ _ holds member begun unstarted ran
+  | atThrow named ran => exact contract.arriveThrow _ _ _ _ _ _ _ holds member begun unstarted named ran
   | atLink ran => exact contract.arriveLink _ _ _ _ _ _ holds member begun ran
 
 /-- A begin keeps `inv`: it begins only in a scope occurrence that stands, and hands the begun occurrence on. -/
@@ -167,6 +167,7 @@ theorem begin_keeps (contract : HookContract hooks inv) (phases : Phases inv) (f
     (ran : begin hooks ctx request state = .ok after) : inv ctx.program after := by
   obtain ⟨sourceType, begun, occurrence, ⟨_, made, dispatched⟩⟩ := begin_ok ran
   have begunHolds := phases.begin _ state request (roleOf ctx.program request) sourceType holds (begin_scope ran) admitted
+    roleOf_event
   have begunMember := facts.begun state request (roleOf ctx.program request) sourceType
   simp only [made] at begunHolds begunMember
   exact dispatch_keeps contract begunHolds.1 begunMember.1 begunMember.2 begunHolds.2 dispatched
@@ -196,7 +197,9 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : Phases inv) (
   | onArmGateway occurrence scope ran =>
     obtain ⟨occurrenceIssued, scopeIssued, hosted⟩ := phases.armGatewayIssued _ _ _ _ _ holds head
     exact contract.armGateway _ _ _ _ _ _ popped (stands _ (occurrence occurrenceIssued)) (scope scopeIssued) hosted ran
-  | onRaise ran => exact contract.raise _ _ _ _ _ popped ran
+  | onRaise ran =>
+    obtain ⟨raisable, settled⟩ := phases.raisable _ _ _ _ _ holds heads
+    exact contract.raise _ _ _ _ _ popped raisable settled ran
   | onBegin ran => exact begin_keeps contract phases facts popped (phases.admittedSignal _ _ _ _ holds heads) ran
   | onComplete ran =>
     exact complete_keeps contract phases facts popped (fun request queued => phases.completeQueued _ _ _ _ _ _ holds head

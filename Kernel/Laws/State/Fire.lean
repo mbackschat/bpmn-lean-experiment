@@ -56,17 +56,18 @@ theorem closeItem_fired {s : State} (formed : WellFormed program s) {item : Open
     simp [unbegunWaited] at hostBegun
   · have settled : Settled s item.occurrence := by
       rcases completes with ⟨parked, inParked, same⟩ | ⟨run, inRuns, same⟩ | ⟨run, inRuns, leave, resume⟩ |
-        ⟨scope, activity, trigger, ⟨leave, resume, queued⟩⟩
+        ⟨scope, activity, trigger, ⟨leave, resume, queued⟩⟩ | ⟨raised, origin, queued, host⟩
       · exact same ▸ formed.settled.parked parked inParked
       · exact same ▸ formed.settled.bodies run inRuns
       · exact formed.settled.resumed run inRuns _ leave resume
       · exact formed.settled.queued scope activity trigger leave _ resume queued
+      · exact formed.settled.raised raised origin _ queued host
     have := settled.2.1 waited present named
     simp [unbegunWaited] at this
 
 /-- What a fired item leaves holds through a change that issues nothing back, keeps the scope occurrences and their
 process instances, adds only occurrences and items it issues, each new item hanging, if at all, on a begun occurrence,
-queues no begin, no completion of the item's occurrence and no compensation, and keeps the slots. -/
+queues no begin, no completion of the item's occurrence, no compensation and no raise, and keeps the slots. -/
 theorem Fired.transport {s t : State} {item : OpenItem} (fired : Fired program s item) (issued : s.nextIssue ≤ t.nextIssue)
     (scopes : t.scopes = s.scopes) (instances : ∀ x, t.instanceOf x = s.instanceOf x)
     (occurrences : ∀ found ∈ t.occurrences, found ∈ s.occurrences ∨ s.nextIssue ≤ found.id)
@@ -78,7 +79,8 @@ theorem Fired.transport {s t : State} {item : OpenItem} (fired : Fired program s
     (slots : SlotsWithin s t)
     (compensations : ∀ scope activity trigger leave occurrence resume,
       Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ t.signals →
-      Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ s.signals) :
+      Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ s.signals)
+    (raises : ∀ raised origin, Signal.raise raised origin ∈ t.signals → Signal.raise raised origin ∈ s.signals) :
     Fired program t item := by
   obtain ⟨stands, below, unnamed, ⟨unstarted, start⟩⟩ := fired
   have old : ∀ found ∈ t.occurrences, found.id = item.occurrence → found ∈ s.occurrences := fun found inside same =>
@@ -103,14 +105,16 @@ theorem Fired.transport {s t : State} {item : OpenItem} (fired : Fired program s
     · rw [instances, instances]
       exact instance_ (by simpa [scopeIds, scopes] using present)
   · refine unslotted ?_
-    rcases slotted with parked | bodies | runs | ⟨scope, activity, trigger, ⟨leave, resume, queued⟩⟩
+    rcases slotted with parked | bodies | runs | ⟨scope, activity, trigger, ⟨leave, resume, queued⟩⟩ | _
     · obtain ⟨waiting, inside, named⟩ := parked
       exact .inl ⟨waiting, slots.parked waiting inside, named⟩
     · obtain ⟨run, inside, named⟩ := bodies
       exact .inr (.inl ⟨run, slots.bodies run inside, named⟩)
     · obtain ⟨run, inside, rest⟩ := runs
       exact .inr (.inr (.inl ⟨run, slots.runs run inside, rest⟩))
-    · exact .inr (.inr (.inr ⟨scope, activity, trigger, leave, resume, compensations _ _ _ _ _ _ queued⟩))
+    · exact .inr (.inr (.inr (.inl ⟨scope, activity, trigger, leave, resume, compensations _ _ _ _ _ _ queued⟩)))
+    · obtain ⟨raised, origin, queued, host⟩ := ‹∃ raised origin, _›
+      exact .inr (.inr (.inr (.inr ⟨raised, origin, raises raised origin queued, host⟩)))
 
 /-- A change that only drops open items and occurrences keeps what a fired item leaves. -/
 theorem Fired.shrink {s t : State} {item : OpenItem} (fired : Fired program s item) (scopes : t.scopes = s.scopes)
@@ -120,7 +124,7 @@ theorem Fired.shrink {s t : State} {item : OpenItem} (fired : Fired program s it
   fired.transport (Nat.le_of_eq issued.symm) scopes (instanceOf_congr scopes named)
     (fun found inside => .inl (occurrences found inside)) (fun other inside => .inl (items other inside))
     (fun _ queued => by simpa [Queued, signals, tokens] using queued) (fun _ _ _ queued => signals ▸ queued)
-    (.same slots) fun _ _ _ _ _ _ queued => signals ▸ queued
+    (.same slots) (fun _ _ _ _ _ _ queued => signals ▸ queued) fun _ _ queued => signals ▸ queued
 
 /-- Withdrawing the items inside scope occurrences changes only the open items. -/
 theorem withdrawAll_frame : ∀ (scopes : List ScopeOccurrence) (t : State),
@@ -166,12 +170,13 @@ item leaves. Which signal it is, `Kernel.Proofs.Step` tells. -/
 theorem Fired.signal {s : State} {item : OpenItem} (fired : Fired program s item) {signal : Signal}
     (notBegin : ∀ request, signal ≠ .begin request)
     (notComplete : ∀ leave writes rule, signal ≠ .complete item.occurrence leave writes rule)
-    (notCompensate : ∀ scope activity trigger leave resume, signal ≠ .compensate scope activity trigger leave resume) :
+    (notCompensate : ∀ scope activity trigger leave resume, signal ≠ .compensate scope activity trigger leave resume)
+    (notRaise : ∀ raised origin, signal ≠ .raise raised origin) :
     Fired program (s.signal signal) item := by
   rw [signal_eq]
   refine fired.transport (Nat.le_refl _) rfl (instanceOf_congr rfl rfl) (fun found inside => .inl inside)
     (fun other inside => .inl inside) (fun request queued => ?_) (fun leave writes rule queued => ?_) (.same rfl)
-    fun scope activity trigger leave occurrence resume queued => ?_
+    (fun scope activity trigger leave occurrence resume queued => ?_) fun raised origin queued => ?_
   · rcases queued with signal_ | token
     · rcases List.mem_append.mp signal_ with old | new
       · exact .inl old
@@ -183,6 +188,9 @@ theorem Fired.signal {s : State} {item : OpenItem} (fired : Fired program s item
   · rcases List.mem_append.mp queued with old | new
     · exact old
     · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave _)
+  · rcases List.mem_append.mp queued with old | new
+    · exact old
+    · exact absurd (List.mem_singleton.mp new).symm (notRaise raised origin)
 
 /-- Reopening a cycle Timer's subscription, in a scope occurrence that stands and hanging, if at all, on a begun
 occurrence there, keeps a state well-formed and what a fired item leaves: its reservation and item are fresh. -/
@@ -190,8 +198,7 @@ theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item
     (kind : OpenKind) (element : ElementId) {scope : ScopeOccurrenceId} (stands : scope ∈ scopeIds s) {host : Option Nat}
     (hangs : ∀ id, host = some id → ∃ occurrence ∈ s.occurrences, occurrence.id = id ∧ occurrence.begun = true ∧
       occurrence.scope = scope) (passive : Bool)
-    (waits : ((program.element? element).bind (·.start?)).isSome = true → AwaitsTrigger kind) :
-    WellFormed program (s.openSubscription kind element scope host passive).1 ∧
+    (waits : AwaitsTrigger kind) : WellFormed program (s.openSubscription kind element scope host passive).1 ∧
       Fired program (s.openSubscription kind element scope host passive).1 item := by
   refine ⟨openSubscription_wellFormed formed kind element stands hangs passive waits, ?_⟩
   have reserves := reserve_reserves formed.activations element scope
@@ -202,7 +209,8 @@ theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item
   refine fired.transport (by show s.nextIssue ≤ t.nextIssue + 1; rw [reserves.nextIssue]; omega) reserves.scopes
     (fun x => by rw [← reserves.instances x]; apply instanceOf_congr <;> rfl) (fun found inside => ?_)
     (fun other inside => ?_) (fun _ queued => by simpa [Queued, reserves.signals, reserves.tokens] using queued)
-    (fun _ _ _ queued => reserves.signals ▸ queued) (.same reserves.slots) fun _ _ _ _ _ _ queued => reserves.signals ▸ queued
+    (fun _ _ _ queued => reserves.signals ▸ queued) (.same reserves.slots)
+    (fun _ _ _ _ _ _ queued => reserves.signals ▸ queued) fun _ _ queued => reserves.signals ▸ queued
   · rw [reserves.occurrences] at inside
     rcases List.mem_append.mp inside with old | new
     · exact .inl old

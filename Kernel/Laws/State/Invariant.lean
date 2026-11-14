@@ -7,7 +7,8 @@ public import Kernel.State
 The invariant every reachable `State` keeps, stated over the state's fields and independent of the operations that
 produce them: occurrence identity, ownership, the scope tree and the work a closure has queued. The invariant is relative
 to the program the instance runs (`WellFormed program s`), since which kind of item an element opens only the program
-says (`Typed`); every other clause reads the state's fields alone. No instance migrates between programs: `Population`
+says (`Typed`), and which elements are Events, whose occurrences a raise names by their key (`EventRoles`,
+`Raisable`); every other clause reads the state's fields alone. No instance migrates between programs: `Population`
 runs each under its deployment's. The transitions it permits are `Kernel.Laws.State.Transitions`'. Nothing executable
 imports this module; the proof wave proves `Step` preserves `WellFormed`
 ([kernel architecture](../../../docs/kernel/ARCHITECTURE-SPEC.md#lean-assurance-lane)).
@@ -18,7 +19,7 @@ the `State` contract documents, since matching `Token` is `Step`'s
 
 Besides the laws, it holds what follows from them over the fields alone: that a well-formed state's scope occurrences
 form a tree (`Depth`). The frames through which a change of the fields keeps `WellFormed` are
-`Kernel.Laws.State.Frames`' and `Kernel.Laws.State.Issue`'s. Each law is followed by
+`Kernel.Laws.State.Frames`', `Kernel.Laws.State.Clear`'s and `Kernel.Laws.State.Issue`'s. Each law is followed by
 its non-vacuity witness: a small state that satisfies it and, where the law could otherwise hold of everything, one that
 violates it. Nothing here reads a `State` operation's body, so this module sees none; the lemmas about the operations,
 and the witness that the sample instance is well-formed, which reads `State.root`'s value, are `Kernel.Laws.State`'s.
@@ -216,25 +217,28 @@ def Beginnable (s : State) (scope : ScopeOccurrenceId) (id : Nat) : Prop :=
     (∀ item ∈ s.openItems, item.occurrence ≠ id ∧ item.attachedTo ≠ some id) ∧
     (scope ∈ scopeIds s → s.instanceOf scope = s.instanceOf occurrence.scope)
 
-/-- A feature slot or a queued compensation will complete the occurrence `id`: a join parks it, a Multi-Instance body
-runs on it, or a compensation run resumes it once it ends (what `SlotsSettled` reads). -/
+/-- A feature slot, a queued compensation or a queued raise will complete the occurrence `id`: a join parks it, a
+Multi-Instance body runs on it, a compensation run resumes it once it ends, or it is the Activity a raise leaves once
+its search has decided (`Feature.Propagation.hostLeaves`; what `SlotsSettled` reads). -/
 def SlotCompletes (s : State) (id : Nat) : Prop :=
   (∃ waiting ∈ s.slots.parked, waiting.occurrence = id) ∨ (∃ run ∈ s.slots.multiInstances, run.occurrence = id) ∨
     (∃ run ∈ s.slots.compensation.runs, ∃ leave, run.resume = some (.complete id leave)) ∨
-    ∃ scope activity trigger leave resume,
-      Signal.compensate scope activity trigger leave (some (.complete id resume)) ∈ s.signals
+    (∃ scope activity trigger leave resume,
+      Signal.compensate scope activity trigger leave (some (.complete id resume)) ∈ s.signals) ∨
+    ∃ raised origin, Signal.raise raised origin ∈ s.signals ∧ origin.host = some id
 
 /-- What a slot completes in a state with the same slots and fewer queued signals, it completes in the other. -/
 theorem SlotCompletes.shrink {before after : State} (slots : after.slots = before.slots)
     (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) {id : Nat} (completes : SlotCompletes after id) :
     SlotCompletes before id := by
   rw [SlotCompletes, ← slots]
-  rcases completes with parked | bodies | runs | ⟨scope, activity, trigger, rest⟩
+  rcases completes with parked | bodies | runs | ⟨scope, activity, trigger, rest⟩ | ⟨raised, origin, member, host⟩
   · exact .inl parked
   · exact .inr (.inl bodies)
   · exact .inr (.inr (.inl runs))
   · obtain ⟨leave, resume, member⟩ := rest
-    exact .inr (.inr (.inr ⟨scope, activity, trigger, leave, resume, signals _ member⟩))
+    exact .inr (.inr (.inr (.inl ⟨scope, activity, trigger, leave, resume, signals _ member⟩)))
+  · exact .inr (.inr (.inr (.inr ⟨raised, origin, signals _ member, host⟩)))
 
 /-- Nothing claims the reservation `id`: no queued begin names it, and no queued completion or feature slot completes
 it. -/
@@ -307,9 +311,10 @@ def Resumable (s : State) (scope : ScopeOccurrenceId) (resume : Resume) : Prop :
 
 /-- What the feature slots and a queued compensation will complete has begun: the occurrences parked at a join
 (`Feature.Flow.join` completes them when it fires), a Multi-Instance body's occurrence (`MultiInstance.finish`), and
-the occurrence a compensation run, or a queued one, completes once it ends (`Compensation.advance`). Each arrived,
-entered or threw while begun, and an identity is never issued again (`IssuedBelow`). A body's instances are `Placed`,
-a compensation run's handler contexts `RunPlaced`. -/
+the occurrence a compensation run, or a queued one, completes once it ends (`Compensation.advance`), and the Activity a
+queued raise leaves once its search has decided (`Propagation.hostLeaves`), whose effect failed while it waited for it
+(`Worked`). Each arrived, entered, threw or worked while begun, and an identity is never issued again (`IssuedBelow`). A
+body's instances are `Placed`, a compensation run's handler contexts `RunPlaced`. -/
 structure SlotsSettled (s : State) : Prop where
   parked : ∀ waiting ∈ s.slots.parked, Settled s waiting.occurrence
   bodies : ∀ run ∈ s.slots.multiInstances, Settled s run.occurrence
@@ -323,17 +328,19 @@ structure SlotsSettled (s : State) : Prop where
   resumes a group. -/
   grouped : ∀ scope activity trigger leave outer context,
     Signal.compensate scope activity trigger leave (some (.group outer context)) ∈ s.signals → context = scope
+  raised : ∀ raised origin host, Signal.raise raised origin ∈ s.signals → origin.host = some host → Settled s host
 
 /-- What a slot completes no queued begin names. -/
 theorem SlotsSettled.free {s : State} (settled : SlotsSettled s) {request : BeginRequest} (queued : Queued s request)
     {id : Nat} (named : id ∈ names request) : ¬ SlotCompletes s id := by
   rintro (⟨waiting, member, rfl⟩ | ⟨run, member, rfl⟩ | ⟨run, member, leave, resume⟩ |
-    ⟨scope, activity, trigger, rest⟩)
+    ⟨scope, activity, trigger, rest⟩ | ⟨raised, origin, member, host⟩)
   · exact (settled.parked waiting member).2.2 request queued named
   · exact (settled.bodies run member).2.2 request queued named
   · exact (settled.resumed run member id leave resume).2.2 request queued named
   · obtain ⟨leave, resume, member⟩ := rest
     exact (settled.queued scope activity trigger leave id resume member).2.2 request queued named
+  · exact (settled.raised raised origin id member host).2.2 request queued named
 
 /-! ## What an open item waits on -/
 
@@ -356,12 +363,43 @@ reservation alone, which no queued completion completes, and waits for a trigger
 reads the program to tell such an item from a boundary's or a catch Event's, and begins the Event Sub-Process with the
 item's reservation (`ReservationsClaimed.named`), while an item for a begun occurrence (`State.openItem`) is opened only
 for an Activity or an intermediate Event, which `Step.dispatch` tells from a start Event by the same query, and only
-such an item is completed while it waits or given an effect or an incident (`Feature.Work`). The one clause that reads
-the program. -/
+such an item is completed while it waits or given an effect or an incident (`Feature.Work`). -/
 def Typed (program : Program) (s : State) : Prop :=
   ∀ item ∈ s.openItems, ((program.element? item.element).bind (·.start?)).isSome = true →
     Unbegun s item.occurrence ∧ (∀ other ∈ s.openItems, other.occurrence = item.occurrence → other = item) ∧
       (∀ leave writes rule, Signal.complete item.occurrence leave writes rule ∉ s.signals) ∧ AwaitsTrigger item.kind
+
+/-- An item that waits for work, an effect or an incident, waits on a begun occurrence: `State.openItem` opens it for
+one and `Feature.Work` turns only such an item into another of them, while a subscription's item, the one that holds a
+reservation (`State.openSubscription`), waits for a trigger. So the Activity whose effect failed, which its raise leaves
+once the search has decided, has begun (`SlotsSettled.raised`). -/
+def Worked (s : State) : Prop :=
+  ∀ item ∈ s.openItems, ¬ AwaitsTrigger item.kind → ∀ occurrence ∈ s.occurrences, occurrence.id = item.occurrence →
+    occurrence.begun = true
+
+/-- An occurrence of an element the program declares an Event numbers under the element's own counter: only a
+Multi-Instance Activity's body numbers apart (`Step.roleOf`), and an Event has no envelope. So two occurrences of one
+Event, scope occurrence and activation share a key (`Distinct.keys`). -/
+def EventRoles (program : Program) (s : State) : Prop :=
+  ∀ occurrence ∈ s.occurrences, ((program.element? occurrence.element).bind (·.event?)).isSome = true →
+    occurrence.role = .element
+
+/-- What a queued raise from an Event, a throw Event or a Message throw's effect, reads of the occurrences its origin
+names: `Feature.Propagation.throwerLeaves` completes the first standing occurrence of the origin's element, scope
+occurrence and activation, so every such occurrence has begun. A reservation numbered later never takes the origin's
+activation: the origin was issued in an issued scope occurrence, and while that stands the Event's counter there has
+reached the origin's activation (`Counted`), so a fresh reservation is numbered above it. -/
+def Raisable (program : Program) (s : State) (origin : Origin) : Prop :=
+  ((program.element? origin.element).bind (·.event?)).isSome = true →
+    origin.scope.value < s.nextIssue ∧
+    (origin.scope ∈ scopeIds s → Counted s
+      { processInstanceId := s.instanceOf origin.scope, element := origin.element, activation := origin.activation }) ∧
+    ∀ occurrence ∈ s.occurrences, occurrence.element = origin.element → occurrence.scope = origin.scope →
+      occurrence.activation = origin.activation → occurrence.begun = true
+
+/-- Every queued raise is `Raisable`. -/
+def RaisesSound (program : Program) (s : State) : Prop :=
+  ∀ raised origin, Signal.raise raised origin ∈ s.signals → Raisable program s origin
 
 /-- The state invariants together: what holds of every committed state and between any two micro-steps of a closure,
 relative to the program the instance runs. -/
@@ -383,6 +421,9 @@ structure WellFormed (program : Program) (s : State) : Prop where
   settled : SlotsSettled s
   attachedReserved : AttachedReserved s
   typed : Typed program s
+  worked : Worked s
+  roles : EventRoles program s
+  raises : RaisesSound program s
 
 /-! ## The scope tree of a well-formed state
 
@@ -686,6 +727,7 @@ theorem parked_begun_settled (kind : OpenKind) :
   placed := by simp
   runsPlaced := by simp
   grouped := by simp [armedState, sample]
+  raised := by simp [armedState, sample]
 
 /-- A body's run, in `body`, whose one instance is active in `subScope`. -/
 def instanceRun (body : ScopeOccurrenceId) : MultiInstanceRun :=

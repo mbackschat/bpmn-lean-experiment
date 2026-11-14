@@ -66,7 +66,9 @@ public import Kernel.Laws.Registry
 public import Kernel.Laws.Scopes
 public import Kernel.Laws.Starts
 public import Kernel.Laws.State
+public import Kernel.Laws.State.Begin
 public import Kernel.Laws.State.Claim
+public import Kernel.Laws.State.Clear
 public import Kernel.Laws.State.Enter
 public import Kernel.Laws.State.Fire
 public import Kernel.Laws.State.Frames

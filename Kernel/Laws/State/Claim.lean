@@ -42,12 +42,13 @@ theorem SlotCompletes.within {before after : State} (slots : SlotsWithin before 
     (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) {id : Nat} (completes : SlotCompletes after id) :
     SlotCompletes before id := by
   rcases completes with ⟨waiting, member, named⟩ | ⟨run, member, named⟩ | ⟨run, member, rest⟩ |
-    ⟨scope, activity, trigger, rest⟩
+    ⟨scope, activity, trigger, rest⟩ | ⟨raised, origin, member, host⟩
   · exact .inl ⟨waiting, slots.parked waiting member, named⟩
   · exact .inr (.inl ⟨run, slots.bodies run member, named⟩)
   · exact .inr (.inr (.inl ⟨run, slots.runs run member, rest⟩))
   · obtain ⟨leave, resume, member⟩ := rest
-    exact .inr (.inr (.inr ⟨scope, activity, trigger, leave, resume, signals _ member⟩))
+    exact .inr (.inr (.inr (.inl ⟨scope, activity, trigger, leave, resume, signals _ member⟩)))
+  · exact .inr (.inr (.inr (.inr ⟨raised, origin, signals _ member, host⟩)))
 
 /-- A scope occurrence that calls no instance lies in its parent's process instance. -/
 theorem instanceOf_child {s : State} (formed : WellFormed program s) {entry : ScopeOccurrence} (member : entry ∈ s.scopes)
@@ -121,7 +122,8 @@ theorem signal_claimed_named {s : State} {request : BeginRequest} (formed : Well
 theorem signal_settled_named {s : State} {request : BeginRequest} (formed : WellFormed program s)
     (admitted : ∀ id ∈ names request, Unclaimed s id)
     (notCompensate : ∀ scope activity trigger leave resume,
-      Signal.begin request ≠ .compensate scope activity trigger leave resume) :
+      Signal.begin request ≠ .compensate scope activity trigger leave resume)
+    (notRaise : ∀ raised origin, Signal.begin request ≠ .raise raised origin) :
     SlotsSettled (s.signal (.begin request)) := by
   rw [signal_eq]
   have queued : ∀ other, Queued { s with signals := s.signals ++ [.begin request] } other →
@@ -145,14 +147,18 @@ theorem signal_settled_named {s : State} {request : BeginRequest} (formed : Well
     fun scope activity trigger leave occurrence resume member => ?_,
     fun run member => (formed.settled.placed run member).transport (Nat.le_refl _) fun _ inside => .inl inside,
     fun run member => (formed.settled.runsPlaced run member).transport (Nat.le_refl _) fun _ inside => .inl inside,
-    fun scope activity trigger leave outer context member => ?_⟩
+    fun scope activity trigger leave outer context member => ?_, fun raised origin host member named => ?_⟩
   · rcases List.mem_append.mp member with old | new
     · exact carry _ (formed.settled.queued scope activity trigger leave occurrence resume old)
-        (.inr (.inr (.inr ⟨scope, activity, trigger, leave, resume, old⟩)))
+        (.inr (.inr (.inr (.inl ⟨scope, activity, trigger, leave, resume, old⟩))))
     · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave _)
   · rcases List.mem_append.mp member with old | new
     · exact formed.settled.grouped scope activity trigger leave outer context old
     · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave _)
+  · rcases List.mem_append.mp member with old | new
+    · exact carry _ (formed.settled.raised raised origin host old named)
+        (.inr (.inr (.inr (.inr ⟨raised, origin, old, named⟩))))
+    · exact absurd (List.mem_singleton.mp new).symm (notRaise raised origin)
 
 /-- Queuing such a begin keeps a state well-formed. -/
 theorem signal_named_wellFormed {s : State} {request : BeginRequest} (formed : WellFormed program s)
@@ -161,11 +167,13 @@ theorem signal_named_wellFormed {s : State} {request : BeginRequest} (formed : W
     (queue : QueueSound (s.signal (.begin request)))
     (notComplete : ∀ id leave writes rule, Signal.begin request ≠ .complete id leave writes rule)
     (notCompensate : ∀ scope activity trigger leave resume,
-      Signal.begin request ≠ .compensate scope activity trigger leave resume) :
+      Signal.begin request ≠ .compensate scope activity trigger leave resume)
+    (notRaise : ∀ raised origin, Signal.begin request ≠ .raise raised origin) :
     WellFormed program (s.signal (.begin request)) :=
   signal_wellFormed formed queue (signal_claimed_named formed stands nodup admitted placed notComplete)
-    (signal_settled_named formed (fun id named => (admitted id named).2) notCompensate)
-    fun id leave writes rule same => absurd same (notComplete id leave writes rule)
+    (signal_settled_named formed (fun id named => (admitted id named).2) notCompensate notRaise)
+    (fun id leave writes rule same => absurd same (notComplete id leave writes rule))
+    fun raised origin same => absurd same (notRaise raised origin)
 
 /-! ## An Event Sub-Process's start Event reservation through its entry -/
 
@@ -174,7 +182,8 @@ theorem Claimable.signal {s : State} {scope : ScopeOccurrenceId} {inner : Option
     {signal : Signal} (notBegin : ∀ request, signal ≠ .begin request)
     (notComplete : ∀ id leave writes rule, signal ≠ .complete id leave writes rule)
     (notCompensate : ∀ scope activity trigger leave occurrence resume,
-      signal ≠ .compensate scope activity trigger leave (some (.complete occurrence resume))) :
+      signal ≠ .compensate scope activity trigger leave (some (.complete occurrence resume)))
+    (notRaise : ∀ raised origin, signal ≠ .raise raised origin) :
     Claimable (s.signal signal) scope inner := by
   rw [signal_eq]
   intro id inside
@@ -189,14 +198,17 @@ theorem Claimable.signal {s : State} {scope : ScopeOccurrenceId} {inner : Option
   · rcases List.mem_append.mp completed with old | new
     · exact uncompleted leave writes rule old
     · exact absurd (List.mem_singleton.mp new).symm (notComplete id leave writes rule)
-  · rcases completes with parked | bodies | runs | ⟨scope, activity, trigger, rest⟩
+  · rcases completes with parked | bodies | runs | ⟨scope, activity, trigger, rest⟩ | ⟨raised, origin, member, host⟩
     · exact .inl parked
     · exact .inr (.inl bodies)
     · exact .inr (.inr (.inl runs))
     · obtain ⟨leave, resume, member⟩ := rest
       rcases List.mem_append.mp member with old | new
-      · exact .inr (.inr (.inr ⟨scope, activity, trigger, leave, resume, old⟩))
+      · exact .inr (.inr (.inr (.inl ⟨scope, activity, trigger, leave, resume, old⟩)))
       · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave id resume)
+    · rcases List.mem_append.mp member with old | new
+      · exact .inr (.inr (.inr (.inr ⟨raised, origin, old, host⟩)))
+      · exact absurd (List.mem_singleton.mp new).symm (notRaise raised origin)
 
 /-- An interrupting Event Sub-Process's clearing of the scope occurrence its begun occurrence runs in, keeping that
 occurrence and its start Event's reservation, which lies there, keeps a state well-formed, the occurrence standing and

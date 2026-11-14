@@ -158,12 +158,19 @@ structure WorkOps (program : Program) (inv : State → Prop) : Prop where
   completeOwner : ∀ state scope occurrence leave writes rule, inv state → scope ∈ state.scopes →
     occurrence ∈ state.occurrences → scope.occurrence = some occurrence.id →
     inv (state.signal (.complete occurrence.id leave writes rule))
-  raise : ∀ state event origin, inv state → inv (state.signal (.raise event origin))
+  /-- A business Error raised from the occurrence an effect item waits for, in the item's scope occurrence and at its
+  occurrence's activation. -/
+  raise : ∀ state item event patch, inv state → item ∈ state.openItems → item.kind.view.effect.isSome = true →
+    inv (state.signal (.raise event
+      { element := item.element, scope := item.scope, host := some item.occurrence, patch := patch,
+        activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }))
   cancel : ∀ state, inv state → inv (state.signal (.endInstance .cancelled none))
-  /-- What open items wait for replaced, each keeping everything else, and a start Event's item kept. -/
+  /-- What open items wait for replaced, each keeping everything else, only for an item that waits for an effect or an
+  incident. -/
   rekind : ∀ state (change : OpenItem → OpenItem), inv state →
     (∀ item, change item = { item with kind := (change item).kind }) →
-    (∀ item ∈ state.openItems, ((program.element? item.element).bind (·.start?)).isSome = true → change item = item) →
+    (∀ item ∈ state.openItems, change item ≠ item →
+      item.kind.view.effect.isSome = true ∨ item.kind.view.incident.isSome = true) →
     inv { state with openItems := state.openItems.map change }
   /-- An item that waits for an effect or an incident, or of an Activity, is no start Event's; open items differ in
   identity. -/
@@ -205,16 +212,17 @@ structure WorkOps (program : Program) (inv : State → Prop) : Prop where
   begin : ∀ state element scope, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
     inv (state.signal (.begin { element, scope }))
 
-/-- `reopen` replaces only what an open item of no start Event waits for. -/
+/-- `reopen` replaces only what an open item that waits for an effect or an incident waits for. -/
 theorem reopen_keeps {inv : State → Prop} (ops : WorkOps program inv) {state : State} (holds : inv state)
-    {item : OpenItem} (member : item ∈ state.openItems) (unstarted : (program.element? item.element).bind (·.start?) = none)
+    {item : OpenItem} (member : item ∈ state.openItems)
+    (waits : item.kind.view.effect.isSome = true ∨ item.kind.view.incident.isSome = true)
     (kind : OpenKind) : inv (Feature.Work.reopen state item.id kind) :=
-  ops.rekind state _ holds (fun item => by split <;> rfl) fun other inside start => by
-    split
+  ops.rekind state _ holds (fun item => by split <;> rfl) fun other inside changed => by
+    split at changed
     · rename_i same
-      rw [ops.distinct state holds other inside item member (beq_iff_eq.mp same), unstarted] at start
-      cases start
-    · rfl
+      rw [ops.distinct state holds other inside item member (beq_iff_eq.mp same)]
+      exact waits
+    · exact absurd rfl changed
 
 /-- A completion of the item's occurrence after a write. -/
 theorem installed_keeps {inv : State → Prop} (ops : WorkOps program inv) {state : State} {item : OpenItem}
@@ -252,8 +260,8 @@ theorem effectResult_keeps {inv : State → Prop} (ops : WorkOps program inv) {c
   all_goals first
     | exact installed_keeps ops holds member unstarted _ _ _ _ _ _
     | exact ops.complete _ _ _ _ _ holds member unstarted
-    | exact ops.raise _ _ _ holds
-    | exact reopen_keeps ops holds member unstarted _
+    | exact ops.raise _ _ _ _ holds member effect
+    | exact reopen_keeps ops holds member (.inl effect) _
 
 /-- `Hooks.retryIncident` keeps `inv`. -/
 theorem retryIncident_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {item : OpenItem}
@@ -264,7 +272,7 @@ theorem retryIncident_keeps {inv : State → Prop} (ops : WorkOps program inv) {
   split at ran
   · cases ran
   · cases ran
-    exact reopen_keeps ops holds member (ops.workKind _ _ holds member (.inr (by rw [waits]; rfl))) _
+    exact reopen_keeps ops holds member (.inr (by rw [waits]; rfl)) _
 
 /-- `Hooks.cancelIncidentProcess` keeps `inv`. -/
 theorem cancelIncidentProcess_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {incident : IncidentDetail}
@@ -274,6 +282,26 @@ theorem cancelIncidentProcess_keeps {inv : State → Prop} (ops : WorkOps progra
   repeat' split at ran
   all_goals cases ran
   exact ops.cancel _ holds
+
+/-- A raising Activity's Error-path leave (`Feature.Work.mappedErrorOutputs`) writes through `write`, outward only, and
+then queues the Activity's raised completion: whatever those keep, it keeps. -/
+theorem mappedErrorOutputs_keeps {motive : State → Prop}
+    {write : Ctx → ScopeOccurrenceId → List (String × Value) → WriteRule → State → Outcome} {ctx : Ctx} {origin : Origin}
+    {installed : List (String × Value)} {state after : State}
+    (writes : ∀ scope values state after, motive state → write ctx scope values .outward state = .ok after → motive after)
+    (complete : ∀ state host, origin.host = some host → motive state →
+      motive (state.signal (.complete host .raised [] .outward)))
+    (holds : motive state) (ran : Feature.Work.mappedErrorOutputs write ctx origin installed state = .ok after) :
+    motive after := by
+  unfold Feature.Work.mappedErrorOutputs at ran
+  cases hosted : origin.host with
+  | none => simp [hosted] at ran
+  | some host =>
+    simp only [hosted, bind, Except.bind] at ran
+    repeat' split at ran
+    all_goals first | (simp at ran; done) | cases ran
+    all_goals first | exact complete _ _ hosted (writes _ _ _ _ holds ‹_›) |
+      exact complete _ _ hosted (writes _ _ _ _ (writes _ _ _ _ holds ‹_›) ‹_›)
 
 /-- `Hooks.triggerActivity` keeps `inv` for an open item: a delivery completes the Receive Task its item waits for. -/
 theorem triggerActivity_keeps {inv : State → Prop} (ops : WorkOps program inv) {hooks : Feature.Work.WorkHooks} {ctx : Ctx}

@@ -420,14 +420,15 @@ theorem keepsScopes_phases (phases : Laws.Step.Phases WellFormed) (pending : Pen
   completeQueued _ _ id leave writes rule holds := phases.completeQueued _ _ id leave writes rule holds.1
   resumable _ _ scope activity trigger leave resume rest holds :=
     phases.resumable _ _ scope activity trigger leave resume rest holds.1
+  raisable _ _ raised origin rest holds := phases.raisable _ _ raised origin rest holds.1
   housed _ _ occurrence holds := phases.housed _ _ occurrence holds.1
   parkedBegun _ _ waiting occurrence holds := phases.parkedBegun _ _ waiting occurrence holds.1
   endInstance _ s status failure holds recorded := by
     refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩
     rw [Laws.Step.endInstance_eq]
     exact holds.2.shrink ((pending.removal_shrinks s).1 State.root []).1 ((pending.removal_shrinks s).1 State.root []).2
-  begin _ s request role sourceType holds stands admitted :=
-    have begun := phases.begin _ _ request role sourceType holds.1 stands admitted
+  begin _ s request role sourceType holds stands admitted roled :=
+    have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled
     have begins := Laws.State.beginOccurrence_begins holds.1.activations request role sourceType
     have issued : s.nextIssue ≤ (s.beginOccurrence request role sourceType).1.nextIssue := by
       rcases begins.source with ⟨_, reserved⟩ | fresh

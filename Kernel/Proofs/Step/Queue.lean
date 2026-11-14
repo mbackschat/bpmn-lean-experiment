@@ -21,7 +21,8 @@ open Kernel
 scope occurrence it names, a begin names no reservation and a scope occurrence that stands (one that names a reservation
 goes through `Laws.State.signal_named_wellFormed`), a completion completes an issued occurrence, no reservation a
 queued begin names and none a start Event's item of `program` waits on, an instance end records a failure exactly when
-it fails, and a compensation may end as it asks. -/
+it fails, a compensation may end as it asks, and a raise names an origin it finds (`Laws.State.Raisable`) and a
+settled host. -/
 def Queueable (program : Program) (s : State) : Signal → Prop
   | .arm host _ scope => host < s.nextIssue ∧ scope.value < s.nextIssue ∧
     ∀ occurrence ∈ s.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope
@@ -33,7 +34,8 @@ def Queueable (program : Program) (s : State) : Signal → Prop
     ∀ item ∈ s.openItems, ((program.element? item.element).bind (·.start?)).isSome = true → item.occurrence ≠ id
   | .endInstance status failure => failure.isSome = true ↔ status = .failed
   | .compensate scope _ _ _ resume => ∀ next, resume = some next → Laws.State.Resumable s scope next
-  | .raise _ _ | .write _ _ _ | .remove _ _ | .occur _ _ _ _ _ | .cancel _ | .fire _ _
+  | .raise _ origin => Laws.State.Raisable program s origin ∧ ∀ host, origin.host = some host → Laws.State.Settled s host
+  | .write _ _ _ | .remove _ _ | .occur _ _ _ _ _ | .cancel _ | .fire _ _
   | .compensationFailed _ _ _ _ => True
 
 /-- Queuing a signal a well-formed state is ready for keeps it well-formed. -/
@@ -45,16 +47,19 @@ theorem queue_wellFormed {state : State} (formed : Laws.State.WellFormed program
         (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same)
         (fun _ _ _ _ same => by simp at same))
       (Laws.State.signal_claimed_begin formed ready.1 ready.2 fun _ _ _ _ same => by simp at same)
-      (Laws.State.signal_settled_begin formed ready.1 fun _ _ _ _ _ same => by simp at same)
-      fun _ _ _ _ same => by simp at same
+      (Laws.State.signal_settled_begin formed ready.1 (fun _ _ _ _ _ same => by simp at same) fun _ _ same => by
+        simp at same)
+      (fun _ _ _ _ same => by simp at same) fun _ _ same => by simp at same
   all_goals
     refine Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => ?_)
         (fun _ same => ?_) (fun _ _ _ same => ?_) (fun _ _ same => ?_) (fun _ _ _ _ same => ?_))
       (Laws.State.signal_claimed formed (fun _ same => by simp at same) fun _ _ _ _ same => ?_)
-      (Laws.State.signal_settled formed (fun _ same => by simp at same) fun _ _ _ _ _ same => ?_)
-      (fun _ _ _ _ same => ?_) <;>
+      (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ same => ?_)
+        fun _ _ _ same named => ?_)
+      (fun _ _ _ _ same => ?_) (fun _ _ same => ?_) <;>
     first | (simp at same; done) | (cases same; exact ready) | (cases same; exact ready _ rfl) |
-      (cases same; exact ready.1) | (cases same; exact ready.2.1) | (cases same; exact ready.2.2)
+      (cases same; exact ready.1) | (cases same; exact ready.2.1) | (cases same; exact ready.2.2) |
+      (cases same; exact ready.2 _ named)
 
 /-- A variable command queues its write (`Laws.Step.Phases.queueWrite`). -/
 theorem queueWrite_wellFormed {state : State} (formed : Laws.State.WellFormed program state) (scope : ScopeOccurrenceId)
@@ -124,13 +129,56 @@ theorem bareBegin_wellFormed {state : State} (formed : Laws.State.WellFormed pro
     Laws.State.WellFormed program (state.signal (.begin request)) :=
   queue_wellFormed formed ⟨bare, stands⟩
 
+/-- A raise from a begun occurrence that stands, at its element, scope occurrence and activation, hosted, if at all, by
+the occurrence itself, queued, keeps `WellFormed`: the occurrence is the settled host, and an Event's occurrences of one
+scope occurrence and activation share a key (`Laws.State.EventRoles`), so it is the only one the origin names. -/
+theorem raiseFrom_wellFormed {state : State} (formed : Laws.State.WellFormed program state) {occurrence : Occurrence}
+    (present : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (event : Raised) {host : Option Nat}
+    (hosted : ∀ id, host = some id → id = occurrence.id) (patch : List (String × Value)) :
+    Laws.State.WellFormed program (state.signal (.raise event
+      { element := occurrence.element, scope := occurrence.scope, activation := occurrence.activation, host, patch })) := by
+  refine queue_wellFormed formed ⟨fun isEvent => ?_, fun id same => ?_⟩
+  · have role := formed.roles occurrence present isEvent
+    obtain ⟨entry, inside, entryNamed⟩ := List.mem_map.mp (formed.owned.occurrenceScopes occurrence present)
+    refine ⟨entryNamed ▸ formed.issued.scopes entry inside, fun _ => ?_, fun other inside otherElement otherScope
+      otherActivation => ?_⟩
+    · have counted := formed.occurrencesCounted occurrence present
+      simp only [Laws.State.key, role] at counted
+      exact counted
+    · have otherRole := formed.roles other inside (by rw [otherElement]; exact isEvent)
+      have same : Laws.State.key state other = Laws.State.key state occurrence := by
+        simp only [Laws.State.key, otherElement, otherScope, otherActivation, otherRole, role]
+      rw [Laws.State.nodup_map_eq formed.distinct.keys inside present same]
+      exact begun
+  · rw [hosted id same]
+    exact Laws.State.begun_settled formed present begun
+
+/-- A business Error raised from an effect item's occurrence, queued, keeps `WellFormed`: the item waits for work, so its
+occurrence has begun (`Laws.State.Worked`), and the item lies in its occurrence's scope occurrence. -/
+theorem effectRaise_wellFormed {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
+    (member : item ∈ state.openItems) (effect : item.kind.view.effect.isSome = true) (event : Raised)
+    (patch : List (String × Value)) : Laws.State.WellFormed program (state.signal (.raise event
+      { element := item.element, scope := item.scope, host := some item.occurrence, patch := patch,
+        activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 })) := by
+  obtain ⟨occurrence, present, named, placed⟩ := formed.owned.itemOccurrences item member
+  have begun := formed.worked item member (fun waits => by rw [waits.1] at effect; cases effect) occurrence present named
+  have activation : ((state.occurrence? item.occurrence).map (·.activation)).getD 0 = occurrence.activation := by
+    cases found : state.occurrence? item.occurrence with
+    | none => exact absurd named (Laws.State.occurrence?_none found occurrence present)
+    | some other =>
+      obtain ⟨inside, same⟩ := Laws.State.occurrence?_some found
+      rw [Laws.State.nodup_map_eq formed.distinct.occurrences inside present (same.trans named.symm)]
+      rfl
+  rw [activation, ← placed.1, ← placed.2]
+  exact raiseFrom_wellFormed formed present begun event (fun _ same => by cases same; exact named.symm) patch
+
 /-- Holding an occurrence keeps `WellFormed`: no clause reads the held occurrences. -/
 theorem hold_wellFormed {state : State} (formed : Laws.State.WellFormed program state) (held : Held) :
     Laws.State.WellFormed program (state.hold held) := by
   rw [Laws.Hooks.hold_eq]
   exact Laws.State.slots_wellFormed formed
     ⟨formed.settled.parked, formed.settled.bodies, formed.settled.resumed, formed.settled.queued, formed.settled.placed,
-      formed.settled.runsPlaced, formed.settled.grouped⟩
+      formed.settled.runsPlaced, formed.settled.grouped, formed.settled.raised⟩
 
 /-- The scope occurrence an occurrence runs in stands. -/
 theorem housed_of {state : State} (formed : Laws.State.WellFormed program state) {occurrence : Occurrence}
@@ -176,6 +224,6 @@ theorem fired_begin {state : State} (formed : Laws.State.WellFormed program stat
       exact placed found inside (same.trans named))
     (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same) (fun _ same => by simp at same)
       (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
-    (fun _ _ _ _ same => by simp at same) (fun _ _ _ _ _ same => by simp at same)
+    (fun _ _ _ _ same => by simp at same) (fun _ _ _ _ _ same => by simp at same) fun _ _ same => by simp at same
 
 end Kernel.Proofs.Step

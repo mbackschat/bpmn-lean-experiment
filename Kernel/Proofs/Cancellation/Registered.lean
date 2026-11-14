@@ -10,11 +10,10 @@ The registered hooks keep a property carried beside `Laws.State.WellFormed` when
 it (`Alongside`): each feature's operations record of `WellFormed` and the property follows from its record of
 `WellFormed` (`Kernel.Proofs.Step`) and `Alongside`, and the registered hooks' contract follows from the feature
 records (`Proofs.Step.registered_contract`). The cancellation lane instantiates it at the before-state's scope
-occurrences (`KeepsScopes`), which closes `SubtreeRemoved Registry.hooks` up to the `raise` hook, whose feature lemma
-the state-invariant lane has not stated yet (`PendingHooks`), and one `Laws.State` request (`PendingRemoval`), and at
-an input's end facts from its start (`Laws.Step.EndsKept`), which closes `RemovedEndOnce Registry.hooks` up to the same
-hook, the `Laws.State` facts of the operations' bodies (`Laws.Step.PendingStateEnds`) and the walk with the completion
-pipeline as a premise (`PendingWalk`). Nothing executable imports this module.
+occurrences (`KeepsScopes`), which closes `SubtreeRemoved Registry.hooks` up to one `Laws.State` request
+(`PendingRemoval`), and at an input's end facts from its start (`Laws.Step.EndsKept`), which closes
+`RemovedEndOnce Registry.hooks` up to the `Laws.State` facts of the operations' bodies (`Laws.Step.PendingStateEnds`) and
+the walk with the completion pipeline as a premise (`PendingWalk`). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -91,7 +90,8 @@ theorem workOps_alongside (side : Alongside rel) {program : Program} (ops : Laws
     ⟨ops.complete s item leave writes rule holds.1 open_ unstarted, side.signal holds.2 _⟩
   completeOwner s scope occurrence leave writes rule holds member owned link :=
     ⟨ops.completeOwner s scope occurrence leave writes rule holds.1 member owned link, side.signal holds.2 _⟩
-  raise s event origin holds := ⟨ops.raise s event origin holds.1, side.signal holds.2 _⟩
+  raise s item event patch holds member effect :=
+    ⟨ops.raise s item event patch holds.1 member effect, side.signal holds.2 _⟩
   cancel s holds := ⟨ops.cancel s holds.1, side.signal holds.2 _⟩
   rekind s change holds kept keep :=
     ⟨ops.rekind s change holds.1 kept keep, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
@@ -207,7 +207,8 @@ theorem propagationOps_alongside (side : Alongside rel) {program : Program}
     Laws.Propagation.PropagationOps program fun s => WellFormed program s ∧ rel s where
   complete s occurrence leave writes rule holds member begun :=
     ⟨ops.complete s occurrence leave writes rule holds.1 member begun, side.signal holds.2 _⟩
-  raise s raised origin holds := ⟨ops.raise s raised origin holds.1, side.signal holds.2 _⟩
+  raise s raised occurrence holds member begun :=
+    ⟨ops.raise s raised occurrence holds.1 member begun, side.signal holds.2 _⟩
   fire s item fired holds := ⟨ops.fire s item fired holds.1, side.signal holds.2 _⟩
   outbox s outbox holds := ⟨ops.outbox s outbox holds.1, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
   compensate s occurrence scope activity trigger leave holds member begun :=
@@ -220,6 +221,20 @@ theorem propagationOps_alongside (side : Alongside rel) {program : Program}
   openItem s kind occurrence holds member begun unstarted :=
     ⟨ops.openItem s kind occurrence holds.1 member begun unstarted, side.openItem holds.2 kind occurrence⟩
   signalOccurrences := ops.signalOccurrences
+  begin s element scope holds stands := ⟨ops.begin s element scope holds.1 stands, side.signal holds.2 _⟩
+  cancel s id holds := ⟨ops.cancel s id holds.1, side.signal holds.2 _⟩
+  occur s element scope leave writes rule holds :=
+    ⟨ops.occur s element scope leave writes rule holds.1, side.signal holds.2 _⟩
+  write s scope writes rule holds := ⟨ops.write s scope writes rule holds.1, side.signal holds.2 _⟩
+  failCompensation s handler code message origin holds :=
+    ⟨ops.failCompensation s handler code message origin holds.1, side.signal holds.2 _⟩
+  fail s failure holds := ⟨ops.fail s failure holds.1, side.signal holds.2 _⟩
+  disarm s host holds :=
+    have disarmed := ops.disarm s host holds.1
+    ⟨⟨disarmed.1, side.disarm program s host holds.1 holds.2⟩, disarmed.2⟩
+  rollBack s scope trigger leave element parent flows holds stands :=
+    ⟨ops.rollBack s scope trigger leave element parent flows holds.1 stands, side.signal (side.clearInside program s scope []
+      holds.1 (List.mem_map.mpr stands) (fun _ _ none => by simp at none) holds.2) _⟩
 
 theorem runsOps_alongside (side : Alongside rel) {program : Program}
     (ops : Laws.Compensation.RunsOps (WellFormed program) Laws.State.Settled) :
@@ -314,35 +329,27 @@ theorem registeredOps_alongside {rel : State → Prop} (ops : Proofs.Step.Regist
   propagation _ := propagationOps_alongside side (ops.propagation _)
   runs _ := runsOps_alongside side (ops.runs _)
 
-/-- The field of `Laws.Step.HookContract Registry.hooks inv` whose feature lemma the state-invariant lane has not
-stated yet: pending until it lands, then it comes from its feature's record as the others do. -/
-structure PendingHooks (inv : Program → State → Prop) : Prop where
-  raise : ∀ ctx event origin state after, inv ctx.program state →
-    Registry.hooks.raise ctx event origin state = .ok after → inv ctx.program after
-
 /-! ## Subtree removal of the registered hooks -/
 
 /-- The registered hooks keep the scope occurrences of any before-state beside `WellFormed`. -/
-theorem keepsScopes_contract (removal : PendingRemoval) (pending : ∀ before, PendingHooks (KeepsScopes before))
-    (before : State) : Laws.Step.HookContract Registry.hooks (KeepsScopes before) :=
+theorem keepsScopes_contract (removal : PendingRemoval) (before : State) :
+    Laws.Step.HookContract Registry.hooks (KeepsScopes before) :=
   Proofs.Step.registered_contract (registeredOps_alongside Proofs.Step.registeredOps_wellFormed
-    (scopesKept_alongside removal before)) Proofs.State.stateFacts (pending before).raise
+    (scopesKept_alongside removal before)) Proofs.State.stateFacts
 
-/-- `SubtreeRemoved` of the registered hooks, up to the pending hook fields and `Laws.State` request. -/
-theorem subtreeRemoved_registered (removal : PendingRemoval) (pending : ∀ before, PendingHooks (KeepsScopes before)) :
-    SubtreeRemoved Registry.hooks :=
-  subtreeRemoved_of_keeps (keepsScopes_contract removal pending) (keepsScopes_phases Proofs.Step.phases removal)
+/-- `SubtreeRemoved` of the registered hooks, up to the pending `Laws.State` request. -/
+theorem subtreeRemoved_registered (removal : PendingRemoval) : SubtreeRemoved Registry.hooks :=
+  subtreeRemoved_of_keeps (keepsScopes_contract removal) (keepsScopes_phases Proofs.Step.phases removal)
     Proofs.State.stateFacts
 
 /-! ## End facts of the registered hooks -/
 
 /-- The registered hooks keep an input's end facts from its start beside `WellFormed`, under any exemption
 (`Laws.Step.EndsInv`), the hook contract `Laws.Step.complete_ends` and `MicroStepsKeepEnds` rest on. -/
-theorem endsInv_contract (ends : Laws.Step.PendingStateEnds)
-    (pending : ∀ b x, PendingHooks (Laws.Step.EndsInv b x)) (b : State) (x : Option (Nat × OccurrenceKey)) :
+theorem endsInv_contract (ends : Laws.Step.PendingStateEnds) (b : State) (x : Option (Nat × OccurrenceKey)) :
     Laws.Step.HookContract Registry.hooks (Laws.Step.EndsInv b x) :=
   Proofs.Step.registered_contract (registeredOps_alongside Proofs.Step.registeredOps_wellFormed
-    (endsKept_alongside ends b x)) Proofs.State.stateFacts (pending b x).raise
+    (endsKept_alongside ends b x)) Proofs.State.stateFacts
 
 /-! ## The draft the registered hooks leave -/
 
@@ -420,13 +427,13 @@ theorem registered_quiet (ends : Laws.Step.PendingStateEnds) :
     exact Laws.Subscriptions.offerWrites_keeps (subscriptionsOps_draft ends ctx.program []) empty ran⟩
 
 /-- `MicroStepsKeepEnds` of the registered hooks, up to the pending requests: the `Laws.State` facts of the operations'
-bodies (`Laws.Step.PendingStateEnds`, R15), the walk with the completion pipeline as a premise (`PendingWalk`, R14) and
-the `raise` hook the state-invariant lane has not proved (`PendingHooks`); `removedEndOnce` then gives `RemovedEndOnce`. -/
-theorem microStepsKeepEnds_registered (ends : Laws.Step.PendingStateEnds) (walk : PendingWalk)
-    (pending : ∀ b x, PendingHooks (Laws.Step.EndsInv b x)) : MicroStepsKeepEnds Registry.hooks := by
-  have kept := fun b => walk.walk Registry.hooks (Laws.Step.EndsKept b none) (endsInv_contract ends pending b none)
+bodies (`Laws.Step.PendingStateEnds`, R15) and the walk with the completion pipeline as a premise (`PendingWalk`, R14);
+`removedEndOnce` then gives `RemovedEndOnce`. -/
+theorem microStepsKeepEnds_registered (ends : Laws.Step.PendingStateEnds) (walk : PendingWalk) :
+    MicroStepsKeepEnds Registry.hooks := by
+  have kept := fun b => walk.walk Registry.hooks (Laws.Step.EndsKept b none) (endsInv_contract ends b none)
     Proofs.Step.phases (endsKept_stepAlongside ends b) Proofs.State.stateFacts
-    (Laws.Step.complete_ends (endsInv_contract ends pending b) Proofs.Step.phases Proofs.State.stateFacts ends)
+    (Laws.Step.complete_ends (endsInv_contract ends b) Proofs.Step.phases Proofs.State.stateFacts ends)
   obtain ⟨cancelled, written⟩ := registered_quiet ends
   refine ⟨fun ctx cause transition b state after runs holds ran =>
     ⟨(kept b).1 ctx cause transition state after runs holds ran, Laws.Step.microStep_drafts cancelled written ran⟩,
@@ -435,8 +442,8 @@ theorem microStepsKeepEnds_registered (ends : Laws.Step.PendingStateEnds) (walk 
   exact Laws.Step.microStep_drafts cancelled written ran
 
 /-- `RemovedEndOnce` of the registered hooks, up to the pending requests `microStepsKeepEnds_registered` names. -/
-theorem removedEndOnce_registered (ends : Laws.Step.PendingStateEnds) (walk : PendingWalk)
-    (pending : ∀ b x, PendingHooks (Laws.Step.EndsInv b x)) : RemovedEndOnce Registry.hooks :=
-  removedEndOnce (microStepsKeepEnds_registered ends walk pending)
+theorem removedEndOnce_registered (ends : Laws.Step.PendingStateEnds) (walk : PendingWalk) :
+    RemovedEndOnce Registry.hooks :=
+  removedEndOnce (microStepsKeepEnds_registered ends walk)
 
 end Kernel.Proofs.Cancellation

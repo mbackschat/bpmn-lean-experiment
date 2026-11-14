@@ -255,10 +255,11 @@ structure StateOps (inv : State → Prop) : Prop where
   instanceRoot : ∀ (state : State) scope,
     state.instanceRoot scope = State.root ∨ ∃ entry ∈ state.scopes, entry.id = state.instanceRoot scope
 
-/-- One write lands as one `setVariable` on a scope occurrence that stands. -/
+/-- One write lands as one `setVariable` on a scope occurrence that stands: an outward write on an owner or an instance
+root, whether or not the scope occurrence it writes from stands. -/
 private theorem write_lands {inv : State → Prop} (ops : StateOps inv) {ctx : Ctx} {rule : WriteRule}
     {scope : ScopeOccurrenceId} {state after : State} {binding : String × Value} (holds : inv state)
-    (stands : ∃ entry ∈ state.scopes, entry.id = scope) (ran : Feature.Data.write ctx rule scope state binding = .ok after) :
+    (stands : rule = .own → ∃ entry ∈ state.scopes, entry.id = scope) (ran : Feature.Data.write ctx rule scope state binding = .ok after) :
     ∃ target, (∃ entry ∈ state.scopes, entry.id = target) ∧ after = state.setVariable target binding.1 binding.2 := by
   obtain ⟨name, value⟩ := binding
   have root : ∃ entry ∈ state.scopes, entry.id = state.instanceRoot scope := by
@@ -268,7 +269,7 @@ private theorem write_lands {inv : State → Prop} (ops : StateOps inv) {ctx : C
   unfold Feature.Data.write at ran
   dsimp only at ran
   split at ran
-  · exact ⟨scope, stands, (Except.ok.inj ran).symm⟩
+  · exact ⟨scope, stands rfl, (Except.ok.inj ran).symm⟩
   · cases item : Feature.Data.itemOwner? ctx state scope name with
     | some owner =>
       simp only [item] at ran
@@ -287,11 +288,11 @@ private theorem write_lands {inv : State → Prop} (ops : StateOps inv) {ctx : C
         repeat' split at ran
         all_goals first | exact ⟨_, root, (Except.ok.inj ran).symm⟩ | (simp at ran; done) | (simp_all; done)
 
-/-- `Hooks.writeOutputs` of Data keeps `inv` from a scope occurrence that stands, and changes no scope occurrence,
-occurrence or open item. -/
+/-- `Hooks.writeOutputs` of Data keeps `inv` from a scope occurrence that stands, or outward from any, and changes no
+scope occurrence, occurrence or open item. -/
 theorem writeOutputs_keeps {inv : State → Prop} (ops : StateOps inv) {ctx : Ctx} {scope : ScopeOccurrenceId}
     {writes : List (String × Value)} {rule : WriteRule} {state after : State} (holds : inv state)
-    (stands : ∃ entry ∈ state.scopes, entry.id = scope)
+    (stands : rule = .own → ∃ entry ∈ state.scopes, entry.id = scope)
     (ran : Feature.Data.writeOutputs ctx scope writes rule state = .ok after) :
     inv after ∧ after.scopes = state.scopes ∧ after.occurrences = state.occurrences ∧ after.openItems = state.openItems := by
   unfold Feature.Data.writeOutputs at ran
@@ -307,8 +308,28 @@ theorem writeOutputs_keeps {inv : State → Prop} (ops : StateOps inv) {ctx : Ct
       subst made
       obtain ⟨scopes, occurrences, items⟩ := ops.setFrame state target binding.1 binding.2
       obtain ⟨kept, scopes', occurrences', items'⟩ :=
-        ih (ops.set _ _ _ _ holds present) (scopes ▸ stands) ran
+        ih (ops.set _ _ _ _ holds present) (fun own => scopes ▸ stands own) ran
       exact ⟨kept, scopes'.trans scopes, occurrences'.trans occurrences, items'.trans items⟩
+
+/-- Whatever every variable write keeps, `Hooks.writeOutputs` of Data keeps: it applies only `State.setVariable`. -/
+theorem writeOutputs_induction {ctx : Ctx} {scope : ScopeOccurrenceId} {writes : List (String × Value)}
+    {rule : WriteRule} {state after : State} (motive : State → Prop)
+    (set : ∀ s target name value, motive s → motive (s.setVariable target name value)) (holds : motive state)
+    (ran : Feature.Data.writeOutputs ctx scope writes rule state = .ok after) : motive after := by
+  unfold Feature.Data.writeOutputs at ran
+  induction writes generalizing state with
+  | nil => simp only [List.foldlM_nil, pure, Except.pure] at ran; cases ran; exact holds
+  | cons binding rest ih =>
+    simp only [List.foldlM_cons] at ran
+    cases wrote : Feature.Data.write ctx rule scope state binding with
+    | error failure => simp [wrote, bind, Except.bind] at ran
+    | ok next =>
+      simp only [wrote, bind, Except.bind] at ran
+      refine ih ?_ ran
+      unfold Feature.Data.write at wrote
+      dsimp only at wrote
+      repeat' split at wrote
+      all_goals first | (simp at wrote; done) | (cases wrote; exact set _ _ _ _ holds)
 
 /-- `Hooks.removeVariables` of Data keeps `inv`. -/
 theorem removeVariables_keeps {inv : State → Prop} (ops : StateOps inv) {ctx : Ctx} {scope : ScopeOccurrenceId}

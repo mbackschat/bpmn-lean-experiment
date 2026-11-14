@@ -105,7 +105,8 @@ theorem registered_writeOutputs (ops : Operations inv) (facts : StateFacts) :
         PipelineFrame state after := by
   intro ctx scope writes rule state after holds stands ran
   rw [Laws.Registry.hooks_writeOutputs] at ran
-  obtain ⟨kept, scopes, occurrences, items⟩ := Laws.Data.writeOutputs_keeps (dataOps ops facts ctx.program) holds stands ran
+  obtain ⟨kept, scopes, occurrences, items⟩ := Laws.Data.writeOutputs_keeps (dataOps ops facts ctx.program) holds (fun _ => stands)
+    ran
   exact ⟨kept, scopes, fun occurrence member _ => occurrences ▸ member, fun item member => items ▸ member⟩
 
 /-- `HookContract.removeVariables` of the registered hooks. -/
@@ -150,14 +151,15 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
     admittedToken := fun _ _ _ _ formed taken => Laws.State.admitted_token formed taken
     completeQueued := fun _ _ _ _ _ _ formed completed => Laws.State.complete_unnamed formed completed
     resumable := fun _ _ _ _ _ _ _ _ formed head => Laws.State.resumable_signal formed head
+    raisable := fun _ _ _ _ _ formed head => Laws.State.raisable_signal formed head
     housed := fun _ _ _ formed member => Laws.State.housed_wellFormed formed member
     parkedBegun := fun _ _ waiting _ formed parked member named =>
       (formed.settled.parked waiting parked).2.1 _ member named
     endInstance := fun _ _ _ _ formed recorded => by
       rw [Laws.Step.endInstance_eq]
       exact Laws.State.endInstance_wellFormed formed recorded
-    begin := fun _ _ request role sourceType formed stands admitted =>
-      ⟨Laws.State.begin_wellFormed formed request role sourceType (mem stands) admitted.2.1,
+    begin := fun _ _ request role sourceType formed stands admitted roled =>
+      ⟨Laws.State.begin_wellFormed formed request role sourceType (mem stands) admitted.2.1 roled,
         Laws.State.begin_entry formed request role sourceType admitted.1 admitted.2.1 admitted.2.2⟩
     reserve := fun _ _ element scope formed stands => Laws.State.reserve_wellFormed formed element scope (mem stands)
     startReserved := fun _ _ _ sourceType formed member unnamed =>
@@ -179,11 +181,16 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
   complete _ _ leave writes rule formed member unstarted := waited_wellFormed formed member unstarted leave writes rule
   completeOwner _ _ _ leave writes rule formed member owned link :=
     complete_wellFormed formed owned (owner_begun formed member owned link) leave writes rule
-  raise _ _ _ formed := queue_wellFormed formed trivial
+  raise _ _ event patch formed member effect := effectRaise_wellFormed formed member effect event patch
   cancel _ formed := queue_wellFormed formed (by simp [Queueable])
-  rekind _ _ formed kept keep := Laws.State.rekind_wellFormed formed kept fun item member start => by
-    rw [keep item member start]
-    exact (formed.typed item member start).2.2.2
+  rekind _ change formed kept only := by
+    have still : ∀ item ∈ _, Laws.State.AwaitsTrigger item.kind → Laws.State.AwaitsTrigger (change item).kind :=
+      fun item member waits => by
+        by_cases same : change item = item
+        · rw [same]; exact waits
+        · rcases only item member same with work | work <;> simp [waits.1, waits.2] at work
+    exact Laws.State.rekind_wellFormed formed kept (fun item member start =>
+      still item member (formed.typed item member start).2.2.2) still
   workKind _ item formed member waits := by
     cases start : (program.element? item.element).bind (·.start?) with
     | none => rfl
@@ -236,14 +243,15 @@ theorem joinOps : Laws.Flow.JoinOps (Laws.State.WellFormed program) Laws.State.S
   park state waiting formed waits := by
     obtain ⟨occurrence, member, named, begun⟩ := waits
     refine Laws.State.slots_wellFormed formed ⟨fun found inside => ?_, formed.settled.bodies, formed.settled.resumed,
-      formed.settled.queued, formed.settled.placed, formed.settled.runsPlaced, formed.settled.grouped⟩
+      formed.settled.queued, formed.settled.placed, formed.settled.runsPlaced, formed.settled.grouped,
+      formed.settled.raised⟩
     rcases List.mem_append.mp inside with old | new
     · exact formed.settled.parked found old
     · rw [List.mem_singleton.mp new, ← named]
       exact Laws.State.begun_settled formed member begun
   unpark _ _ formed := Laws.State.slots_wellFormed formed ⟨fun found inside =>
     formed.settled.parked found (List.mem_filter.mp inside).1, formed.settled.bodies, formed.settled.resumed,
-    formed.settled.queued, formed.settled.placed, formed.settled.runsPlaced, formed.settled.grouped⟩
+    formed.settled.queued, formed.settled.placed, formed.settled.runsPlaced, formed.settled.grouped, formed.settled.raised⟩
   parked _ waiting formed member := formed.settled.parked waiting member
   begun _ _ formed member begun := Laws.State.begun_settled formed member begun
   reparked _ _ _ settled := settled
@@ -277,7 +285,7 @@ theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps (Laws.State.WellF
   runs _ _ formed kept := ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked,
     fun run member => (kept run member).elim (formed.settled.bodies run) (·.1), formed.settled.resumed,
     formed.settled.queued, fun run member => (kept run member).elim (formed.settled.placed run) (·.2),
-    formed.settled.runsPlaced, formed.settled.grouped⟩,
+    formed.settled.runsPlaced, formed.settled.grouped, formed.settled.raised⟩,
     fun _ settled => settled⟩
   leave _ run _ formed member active stands := by
     obtain ⟨below, parentOf⟩ := formed.settled.placed run member _ active
@@ -310,17 +318,19 @@ theorem scopesOps : Laws.Scopes.ScopesOps (Laws.State.WellFormed program) where
     Laws.State.signal_named_wellFormed formed stands nodup admitted (by simp [Laws.State.InnerPlaced, inner])
       (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same) (fun _ same => by simp at same)
         (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
-      (fun _ _ _ _ same => by simp at same) (fun _ _ _ _ _ same => by simp at same)
+      (fun _ _ _ _ same => by simp at same) (fun _ _ _ _ _ same => by simp at same) fun _ _ same => by simp at same
   armed _ _ _ _ _ _ ready := ⟨by rw [Laws.State.signal_eq], Laws.State.Claimable.signal ready
-    (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same)⟩
+    (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same)
+    fun _ _ same => by simp at same⟩
   scopeArmed _ _ _ _ ready := ⟨by rw [Laws.State.signal_eq], Laws.State.Claimable.signal ready
-    (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same)⟩
+    (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same)
+    fun _ _ same => by simp at same⟩
   signalScopes _ _ := by rw [Laws.State.signal_eq]
 
 /-- Propagation's operations record (`Laws.Propagation.PropagationOps`) of `WellFormed`. -/
 theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.WellFormed program) where
   complete _ _ leave writes rule formed member begun := complete_wellFormed formed member begun leave writes rule
-  raise _ _ _ formed := queue_wellFormed formed trivial
+  raise _ event _ formed member begun := raiseFrom_wellFormed formed member begun event (fun _ same => by cases same) []
   fire _ _ _ formed := queue_wellFormed formed trivial
   outbox _ _ formed := formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply Laws.State.instanceOf_congr <;> rfl, id,
     .refl _, .refl _, .refl _, fun _ => id, .same rfl⟩ rfl formed.startedOnce
@@ -332,6 +342,19 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
     ⟨cleared.1, cleared.2.1⟩
   openItem _ kind _ formed member begun unstarted := Laws.State.openItem_wellFormed formed kind member begun unstarted
   signalOccurrences _ _ := by rw [Laws.State.signal_eq]
+  begin _ _ _ formed stands := by
+    obtain ⟨entry, inside, named⟩ := stands
+    exact bareBegin_wellFormed formed (by simp [Laws.State.names]) (List.mem_map.mpr ⟨entry, inside, named⟩)
+  cancel _ _ formed := queue_wellFormed formed trivial
+  occur _ _ _ _ _ _ formed := queue_wellFormed formed trivial
+  write _ _ _ _ formed := queue_wellFormed formed trivial
+  failCompensation _ _ _ _ _ formed := queue_wellFormed formed trivial
+  fail _ _ formed := queue_wellFormed formed (by simp [Queueable])
+  disarm _ host formed := ⟨Laws.State.disarm_wellFormed formed host, by rw [Laws.State.disarm_eq]⟩
+  rollBack _ _ _ _ _ _ _ formed stands := queue_wellFormed
+    (Laws.State.clearAll_wellFormed formed (List.mem_map.mpr stands)) fun _ same => by
+      cases same
+      exact ⟨fun _ _ wrong => (by cases wrong), fun _ _ wrong => by cases wrong⟩
 
 /-- A fired item's scope occurrence stands, and so does its host, if any, begun there. -/
 theorem fired_hangs {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
@@ -343,8 +366,8 @@ theorem fired_hangs {state : State} (formed : Laws.State.WellFormed program stat
 /-- The subscription hooks' operations record (`Laws.Subscriptions.SubscriptionsOps`) of `WellFormed`. -/
 theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.State.WellFormed program) where
   fire _ _ _ formed := queue_wellFormed formed trivial
-  rekind _ _ formed kept waits := Laws.State.rekind_wellFormed formed kept fun item member start =>
-    waits item (formed.typed item member start).2.2.2
+  rekind _ _ formed kept waits := Laws.State.rekind_wellFormed formed kept
+    (fun item member start => waits item (formed.typed item member start).2.2.2) fun item _ => waits item
   awaits := Laws.State.triggers_await
   disarm _ host formed := Laws.State.disarm_wellFormed formed host
   openItem _ kind _ formed member begun unstarted := Laws.State.openItem_wellFormed formed kind member begun unstarted
@@ -370,7 +393,7 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
       exact List.mem_filter.mpr ⟨present, by simp [begun]⟩
     refine fired_complete (named ▸ complete_wellFormed disarmed kept begun _ _ _)
       ((Laws.State.disarm_fired fired gateway).signal (fun _ same => by simp at same) (fun _ _ _ same => ?_)
-        fun _ _ _ _ _ same => by simp at same) leave writes .outward
+        (fun _ _ _ _ _ same => by simp at same) fun _ _ same => by simp at same) leave writes .outward
     obtain ⟨rfl, -⟩ := Signal.complete.inj same
     have := formed.attachedReserved item member (by rw [attached]; rfl) host present named
     rw [begun] at this
@@ -379,11 +402,12 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
     obtain ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
     obtain ⟨withdrawn, kept⟩ := Laws.State.withdrawOccurrence_fired closed fired host
     exact fired_complete (queue_wellFormed (signal := .cancel host) withdrawn trivial) (kept.signal (fun _ same => by simp at same)
-      (fun _ _ _ same => by simp at same) fun _ _ _ _ _ same => by simp at same) leave writes .outward
+      (fun _ _ _ same => by simp at same) (fun _ _ _ _ _ same => by simp at same) fun _ _ same => by simp at same) leave
+      writes .outward
   reopenComplete _ item detail leave writes formed member := by
     obtain ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
     obtain ⟨reopened, kept⟩ := Laws.State.openSubscription_fired closed fired (.timer detail) item.element fired.1
-      (fired_hangs formed member) item.passive fun _ => Laws.State.triggers_await.1 detail
+      (fired_hangs formed member) item.passive (Laws.State.triggers_await.1 detail)
     exact fired_complete reopened kept leave writes .outward
   occur _ _ _ _ _ formed _ := queue_wellFormed formed trivial
   insideBegin _ item element locals formed member start := by
@@ -396,7 +420,7 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
   reopenBegin _ item detail element locals formed member start := by
     obtain ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
     obtain ⟨reopened, kept⟩ := Laws.State.openSubscription_fired closed fired (.timer detail) item.element fired.1
-      (fired_hangs formed member) item.passive fun _ => Laws.State.triggers_await.1 detail
+      (fired_hangs formed member) item.passive (Laws.State.triggers_await.1 detail)
     exact fired_begin reopened kept start element locals
   bareBegin _ item _ _ formed member := bareBegin_wellFormed formed rfl (formed.owned.itemScopes item member)
 
@@ -433,7 +457,7 @@ theorem runsOps : Laws.Compensation.RunsOps (Laws.State.WellFormed program) Laws
   store _ _ formed kept := ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked, formed.settled.bodies,
     fun run member => (kept run member).elim (formed.settled.resumed run) (·.1), formed.settled.queued,
     formed.settled.placed, fun run member => (kept run member).elim (formed.settled.runsPlaced run) (·.2),
-    formed.settled.grouped⟩, fun _ settled => settled⟩
+    formed.settled.grouped, formed.settled.raised⟩, fun _ settled => settled⟩
   enter _ element parent locals formed stands := ⟨Laws.State.enterScope_wellFormed formed element stands locals
     (fun _ same => by cases same), fun _ settled => settled.enter element parent locals none⟩
   entered _ _ _ _ := by rw [Laws.State.enterScope_eq]; exact ⟨rfl, rfl, rfl, rfl⟩
@@ -482,9 +506,9 @@ theorem registeredRemovals_wellFormed {ctx : Ctx} {scope : ScopeOccurrenceId} {n
 
 The registered hooks keep any invariant every feature's operations record is filled for, one field per hook from its
 feature's lemma, which is generic in the invariant (`registered_contract`); the records of `WellFormed` are filled
-above, so every field of `Laws.Step.HookContract Registry.hooks Laws.State.WellFormed` but `raise` is proved, and the
-lane's statements follow from the contract and `phases` once `raise` is. The cancellation lane fills the records of
-properties carried beside `WellFormed` (`Kernel.Proofs.Cancellation.Registered`). -/
+above, so `Laws.Step.HookContract Registry.hooks Laws.State.WellFormed` is proved, and the lane's statements follow from
+the contract and `phases`. The cancellation lane fills the records of properties carried beside `WellFormed`
+(`Kernel.Proofs.Cancellation.Registered`). -/
 
 /-- The operations records of every feature the registered hooks run, of one invariant. -/
 structure RegisteredOps (inv : Program → State → Prop) : Prop where
@@ -514,15 +538,56 @@ theorem registeredOps_wellFormed : RegisteredOps Laws.State.WellFormed where
   propagation _ := propagationOps
   runs _ := runsOps
 
-/-- `HookContract.raise` of the registered hooks under `WellFormed`. -/
-def RaiseKeepsWellFormed : Prop :=
-  ∀ ctx event origin state after, Laws.State.WellFormed ctx.program state →
-    Registry.hooks.raise ctx event origin state = .ok after → Laws.State.WellFormed ctx.program after
+/-- What a variable write changes, it changes alone, so a raise's search reads the same. -/
+theorem steady_of_same {before after : State} (same : Laws.State.SameButVariables before after) :
+    Laws.Propagation.Steady before after :=
+  ⟨same.occurrences, same.scopes, Nat.le_of_eq same.nextIssue.symm, fun _ named => by
+    unfold Laws.State.Queued at named ⊢
+    rwa [same.signals, same.tokens] at named⟩
+
+/-- The hooks the registered raise's search takes keep `inv` and what the search reads
+(`Laws.Propagation.SearchHooks`): Data's writes change only variables, Work's Error-path leave then completes its
+settled host, and Compensation's drop changes only the runs. -/
+theorem registeredSearch (ops : RegisteredOps inv) (facts : Laws.Step.StateFacts) (ctx : Ctx)
+    {propagation : Feature.Propagation.PropagationHooks}
+    (mapped : propagation.mappedErrorOutputs = Feature.Work.mappedErrorOutputs Feature.Data.writeOutputs)
+    (caught : ∀ ctx scope writes,
+      propagation.writeCaught ctx scope writes = Feature.Data.writeOutputs ctx scope writes .outward)
+    (call : ∀ ctx root state, propagation.callOutputs ctx root state = do
+      let (scope, writes) ← Feature.Work.Call.raisedOutputs ctx root state
+      Feature.Data.writeOutputs ctx scope writes .outward state)
+    (drop : propagation.dropRuns = Feature.Compensation.dropWithin) :
+    Laws.Propagation.SearchHooks ctx (inv ctx.program) propagation :=
+  have outward : ∀ scope writes state after, inv ctx.program state →
+      Feature.Data.writeOutputs ctx scope writes .outward state = .ok after →
+      inv ctx.program after ∧ Laws.Propagation.Steady state after := fun _ _ state _ holds ran =>
+    ⟨(Laws.Data.writeOutputs_keeps (dataOps ops.operations facts ctx.program) holds (fun same => by cases same) ran).1,
+      Laws.Data.writeOutputs_induction (Laws.Propagation.Steady state)
+        (fun _ _ _ _ steady => steady.trans (steady_of_same (Laws.State.setVariable_same _ _ _ _))) (.refl _) ran⟩
+  { mappedErrorOutputs := fun origin _ state _ holds settled ran => by
+      rw [mapped] at ran
+      refine Laws.Work.mappedErrorOutputs_keeps (motive := fun s => inv ctx.program s ∧ Laws.Propagation.Steady state s)
+        (fun _ _ _ _ ⟨kept, steady⟩ wrote => ?_) (fun _ host named ⟨kept, steady⟩ => ?_) ⟨holds, .refl _⟩ ran
+      · obtain ⟨written, more⟩ := outward _ _ _ _ kept wrote
+        exact ⟨written, steady.trans more⟩
+      · refine ⟨(ops.join _).complete _ _ _ _ _ kept ((settled.steady steady) host named), steady.trans ?_⟩
+        rw [Laws.State.signal_eq]
+        exact ⟨rfl, rfl, Nat.le_refl _, fun request named => named.elim (fun named =>
+          .inl ((List.mem_append.mp named).resolve_right (by simp))) .inr⟩
+    writeCaught := fun _ _ _ _ holds ran => outward _ _ _ _ holds (caught _ _ _ ▸ ran)
+    callOutputs := fun _ _ _ holds ran => by
+      rw [call] at ran
+      obtain ⟨⟨scope, writes⟩, _, ran⟩ := Laws.Step.bind_ok ran
+      exact outward _ _ _ _ holds ran
+    dropRuns := fun scope _ holds => by
+      rw [drop]
+      obtain ⟨kept, _, same⟩ := Laws.Compensation.dropWithin_keeps (ops.compensation _) ctx scope holds
+      refine ⟨kept, ?_⟩
+      rw [same]
+      exact ⟨rfl, rfl, Nat.le_refl _, fun _ queued => queued⟩ }
 
 /-- The registered hooks keep any invariant every feature's record is filled for, given its `raise` field. -/
-theorem registered_contract {inv : Program → State → Prop} (ops : RegisteredOps inv) (facts : Laws.Step.StateFacts)
-    (raise : ∀ ctx event origin state after, inv ctx.program state →
-      Registry.hooks.raise ctx event origin state = .ok after → inv ctx.program after) :
+theorem registered_contract {inv : Program → State → Prop} (ops : RegisteredOps inv) (facts : Laws.Step.StateFacts) :
     Laws.Step.HookContract Registry.hooks inv where
   arriveStart _ _ _ _ _ _ _ holds member begun ran := by
     rw [Laws.Registry.hooks_arriveStart] at ran
@@ -542,9 +607,9 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
   arriveCatch _ _ _ _ _ _ _ holds member begun unstarted ran := by
     rw [Laws.Registry.hooks_arriveCatch] at ran
     exact Laws.Subscriptions.arriveCatch_keeps (ops.subscriptions _) holds member begun unstarted ran
-  arriveThrow _ _ _ _ _ _ _ holds member begun unstarted ran := by
+  arriveThrow _ _ _ _ _ _ _ holds member begun unstarted named ran := by
     rw [Laws.Registry.hooks_arriveThrow] at ran
-    exact Laws.Propagation.arriveThrow_keeps (ops.propagation _) holds member begun unstarted ran
+    exact Laws.Propagation.arriveThrow_keeps (ops.propagation _) holds member begun unstarted named ran
   arriveLink _ _ _ _ _ _ holds member begun ran := by
     rw [Laws.Registry.hooks_arriveLink] at ran
     exact Laws.Flow.arriveLink_keeps (ops.flow _) holds member begun ran
@@ -584,7 +649,11 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
   armGateway _ _ _ _ _ _ holds stands placed hosted ran := by
     rw [Laws.Registry.hooks_armGateway] at ran
     exact Laws.Subscriptions.armGateway_keeps (ops.subscriptions _) holds (hosted_of stands placed hosted) ran
-  raise := raise
+  raise ctx _ _ _ _ holds raisable settled ran := by
+    rw [Laws.Registry.hooks_raise] at ran
+    exact Laws.Propagation.raise_keeps (ops.propagation _) (registeredSearch ops facts ctx (by simp only)
+      (fun _ _ _ => by simp only) (fun _ _ _ => by simp only) (by simp only)) holds settled (fun event => (raisable event).2.2)
+      ran
   compensate _ _ _ _ _ _ _ _ holds stands resumable ran := by
     rw [Laws.Registry.hooks_compensate] at ran
     obtain ⟨entry, inside, named⟩ := stands
@@ -628,13 +697,13 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
     exact Laws.Subscriptions.offerWrites_keeps (ops.subscriptions _) holds ran
   delivered := registered_delivered
 
-/-- A committed input keeps the registered hooks' state well-formed, given `raise`. -/
-theorem registered_stepKeeps (raise : RaiseKeepsWellFormed) : Proofs.State.StepKeepsWellFormed Registry.hooks :=
-  Proofs.State.stepKeepsWellFormed (registered_contract registeredOps_wellFormed Proofs.State.stateFacts raise) phases
+/-- A committed input keeps the registered hooks' state well-formed. -/
+theorem registered_stepKeeps : Proofs.State.StepKeepsWellFormed Registry.hooks :=
+  Proofs.State.stepKeepsWellFormed (registered_contract registeredOps_wellFormed Proofs.State.stateFacts) phases
 
-/-- A committed start makes a well-formed state under the registered hooks, given `raise`. -/
-theorem registered_startIs (raise : RaiseKeepsWellFormed) : Proofs.State.StartIsWellFormed Registry.hooks :=
-  Proofs.State.startIsWellFormed (registered_contract registeredOps_wellFormed Proofs.State.stateFacts raise) phases
+/-- A committed start makes a well-formed state under the registered hooks. -/
+theorem registered_startIs : Proofs.State.StartIsWellFormed Registry.hooks :=
+  Proofs.State.startIsWellFormed (registered_contract registeredOps_wellFormed Proofs.State.stateFacts) phases
     initial_wellFormed
 
 end Kernel.Proofs.Step

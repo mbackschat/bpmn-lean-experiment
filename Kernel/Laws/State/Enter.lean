@@ -266,7 +266,17 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
         exact Nat.le_refl _,
     formed.attachedReserved.shrink (fun _ member => enters.openItems ▸ member) fun _ member _ => hOcc ▸ member,
     formed.typed.shrink (fun _ member => enters.openItems ▸ member) (fun _ member _ => hOcc ▸ member)
-      fun _ member => hSignals ▸ member⟩
+      fun _ member => hSignals ▸ member,
+    formed.worked.shrink (fun _ member => enters.openItems ▸ member) (fun _ member _ => hOcc ▸ member),
+    formed.roles.shrink fun _ member => hOcc ▸ member,
+    formed.raises.transport (fun _ _ queued => hSignals ▸ queued) (by rw [hNext]; omega)
+      (fun x present low => by
+        rw [ids] at present
+        rcases List.mem_append.mp present with old | new
+        · exact ⟨old, instances x old⟩
+        · rw [List.mem_singleton.mp new, entryId] at low
+          exact absurd low (Nat.lt_irrefl _))
+      (fun _ counted => (countedEq _).mpr counted) fun _ member _ => hOcc ▸ member⟩
 
 /-- Entering a scope occurrence below one that stands, owned, if at all, by a begun occurrence running there, keeps a
 state well-formed. -/
@@ -345,7 +355,8 @@ theorem SlotsSettled.bare {s t : State} (settled : SlotsSettled s) (slots : t.sl
     (scopes : t.scopes = s.scopes) (issued : s.nextIssue ≤ t.nextIssue) (occurrences : t.occurrences = s.occurrences)
     (queued : ∀ request, Queued t request → Queued s request ∨ names request = [])
     (compensations : ∀ scope activity trigger leave resume, Signal.compensate scope activity trigger leave resume ∈ t.signals →
-      Signal.compensate scope activity trigger leave resume ∈ s.signals) :
+      Signal.compensate scope activity trigger leave resume ∈ s.signals)
+    (raises : ∀ raised origin, Signal.raise raised origin ∈ t.signals → Signal.raise raised origin ∈ s.signals) :
     SlotsSettled t where
   parked waiting member := (settled.parked waiting (slots ▸ member)).bare issued occurrences queued
   bodies run member := (settled.bodies run (slots ▸ member)).bare issued occurrences queued
@@ -359,6 +370,8 @@ theorem SlotsSettled.bare {s t : State} (settled : SlotsSettled s) (slots : t.sl
     (settled.runsPlaced run (slots ▸ member)).transport issued fun _ inside => .inl (scopes ▸ inside)
   grouped scope activity trigger leave outer context member :=
     settled.grouped scope activity trigger leave outer context (compensations scope activity trigger leave _ member)
+  raised raised origin host member named :=
+    (settled.raised raised origin host (raises raised origin member) named).bare issued occurrences queued
 
 /-- Queuing a bare begin in a scope occurrence that stands keeps the claims single. That the begin is no completion,
 `Kernel.Proofs.Step` tells. -/
@@ -412,11 +425,12 @@ theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : Well
 `Kernel.Proofs.Step` tells. -/
 theorem signal_settled_begin {s : State} {request : BeginRequest} (formed : WellFormed program s) (bare : names request = [])
     (notCompensate : ∀ scope activity trigger leave resume,
-      Signal.begin request ≠ .compensate scope activity trigger leave resume) :
+      Signal.begin request ≠ .compensate scope activity trigger leave resume)
+    (notRaise : ∀ raised origin, Signal.begin request ≠ .raise raised origin) :
     SlotsSettled (s.signal (.begin request)) := by
   rw [signal_eq]
   refine formed.settled.bare rfl rfl (Nat.le_refl _) rfl (fun other named => ?_)
-    fun scope activity trigger leave resume member => ?_
+    (fun scope activity trigger leave resume member => ?_) fun raised origin member => ?_
   · rcases named with signal | token
     · rcases List.mem_append.mp signal with old | new
       · exact .inl (.inl old)
@@ -426,6 +440,9 @@ theorem signal_settled_begin {s : State} {request : BeginRequest} (formed : Well
   · rcases List.mem_append.mp member with old | new
     · exact old
     · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave resume)
+  · rcases List.mem_append.mp member with old | new
+    · exact old
+    · exact absurd (List.mem_singleton.mp new).symm (notRaise raised origin)
 
 /-- Deferring bare begins, each in a scope occurrence that stands, keeps a state well-formed. -/
 theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requests : List BeginRequest}
@@ -501,6 +518,10 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
   ownedBelow := formed.ownedBelow
   claimed := claimed
   settled := formed.settled.bare rfl rfl (Nat.le_refl _) rfl (fun request named =>
-    (queued request named).imp id fun new => (bare request new).1) fun _ _ _ _ _ member => member
+    (queued request named).imp id fun new => (bare request new).1) (fun _ _ _ _ _ member => member)
+    fun _ _ member => member
   attachedReserved := formed.attachedReserved
-  typed := formed.typed }
+  typed := formed.typed
+  worked := formed.worked
+  roles := formed.roles
+  raises := formed.raises.same rfl rfl rfl (instanceOf_congr rfl rfl) rfl rfl }

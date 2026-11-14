@@ -433,6 +433,13 @@ theorem completed_keeps {inv : State → Prop} (ops : CompensationOps inv) {ctx 
       obtain ⟨scopes, occurrences, items, slots⟩ := issued
       exact ⟨ops.store _ _ kept fun _ member => slots ▸ member, scopes, occurrences, items⟩
 
+/-- Dropping the runs inside a scope occurrence an interrupting catcher decided on (`Feature.Compensation.dropWithin`)
+keeps `inv` and changes only the compensation slot. -/
+theorem dropWithin_keeps {inv : State → Prop} (ops : CompensationOps inv) (ctx : Ctx) (scope : ScopeOccurrenceId)
+    {state : State} (holds : inv state) : inv (Feature.Compensation.dropWithin ctx scope state) ∧
+      ∃ compensation, Feature.Compensation.dropWithin ctx scope state = { state with slots := { state.slots with compensation } } :=
+  ⟨ops.store _ _ holds fun _ member => (List.mem_filter.mp member).1, _, rfl⟩
+
 /-- `Hooks.failCompensation` keeps `inv`. -/
 theorem failCompensation_keeps {inv : State → Prop} (ops : CompensationOps inv) {ctx : Ctx} {handler : ScopeOccurrenceId}
     {code : String} {message : Option String} {origin : Origin} {state after : State} (holds : inv state)

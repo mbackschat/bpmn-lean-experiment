@@ -22,6 +22,32 @@ theorem envelope?_gateway (header : Header) (payload : GatewayPayload) :
     (Element.gateway header payload).envelope? = none := by
   simp only [Element.envelope?]
 
+/-- An Event carries no envelope, so no Multi-Instance body numbers its occurrences apart. -/
+theorem envelope?_event (header : Header) (payload : EventPayload) : (Element.event header payload).envelope? = none := by
+  simp only [Element.envelope?]
+
+/-! ## Events
+
+Which elements are Events, for `Laws.State.EventRoles`, which a raise reads to find its thrower. -/
+
+/-- The Event `Program.element?` finds carries the identity it was asked for, which its throw raises from. -/
+theorem element?_event {program : Program} {id : ElementId} {header : Header} {payload : EventPayload}
+    (found : program.element? id = some (.event header payload)) : header.id = id := by
+  unfold Program.element? at found
+  simpa [Element.header] using List.find?_some found
+
+theorem event?_activity (header : Header) (payload : ActivityPayload) : (Element.activity header payload).event? = none := by
+  simp only [Element.event?]
+
+theorem event?_scope (header : Header) (payload : ScopePayload) : (Element.scope header payload).event? = none := by
+  simp only [Element.event?]
+
+theorem event?_gateway (header : Header) (payload : GatewayPayload) : (Element.gateway header payload).event? = none := by
+  simp only [Element.event?]
+
+theorem event?_start (header : Header) (payload : StartPayload) : (Element.start header payload).event? = none := by
+  simp only [Element.event?]
+
 /-! ## Start Events
 
 Which elements are start Events, for `Laws.State.Typed`, which tells an Event Sub-Process start's item from an

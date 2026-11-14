@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.State.Frames
+public import Kernel.Laws.State.Clear
 
 /-! # Laws of the kernel state: issuing and beginning occurrences
 
@@ -176,11 +176,14 @@ private theorem Begins.idNew {before after : State} {request : BeginRequest} {ro
     · have := ((formed.claimed.named other queued).2 _ named).1
       omega
 
-/-- The begin of an admitted request in a scope occurrence that stands keeps a state well-formed. -/
+/-- The begin of an admitted request in a scope occurrence that stands keeps a state well-formed, when a fresh
+occurrence of an Event numbers under the element role. -/
 theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role : ActivationRole}
     {sourceType : String} {begun : Occurrence} (formed : WellFormed program before)
     (begins : Begins before after request role sourceType begun) (stands : request.scope ∈ scopeIds before)
-    (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id) : WellFormed program after := by
+    (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id)
+    (roled : ((program.element? request.element).bind (·.event?)).isSome = true → role = .element) :
+    WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (begins.instances _)
   obtain ⟨keyNew, factNew, keyCounted⟩ := begins.keyNew formed stands admitted
   obtain ⟨itemsFree, unbegunOnly, unclaimed, issued⟩ := begins.idNew formed admitted
@@ -232,7 +235,8 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     · exact begins.scope ▸ stands
     · exact formed.owned.occurrenceScopes occurrence old
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
-    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed⟩
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
+    ?worked, ?roles, ?raises⟩
   case issued =>
     exact ⟨fun occurrence member => by
         rcases members occurrence member with rfl | ⟨old, _⟩
@@ -414,5 +418,24 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     first
       | exact formed.attachedReserved.transport (fun _ member => begins.openItems ▸ member) waited
       | exact formed.typed.transport (fun _ member => begins.openItems ▸ member) waited fun _ member => begins.signals ▸ member
+  case worked =>
+    exact formed.worked.shrink (fun _ member => begins.openItems ▸ member) fun found inside unbegun => by
+      rcases members found inside with rfl | ⟨old, _⟩
+      · simp [begins.isBegun] at unbegun
+      · exact old
+  case roles =>
+    refine formed.roles.transport fun found inside => ?_
+    rcases members found inside with rfl | ⟨old, _⟩
+    · rcases begins.source with ⟨reserved, reservation⟩ | fresh
+      · exact .inr ⟨reserved, reservation.member, reservation.element.symm, reservation.role.symm⟩
+      · exact .inl fun event => fresh.roled.trans (roled (fresh.element ▸ event))
+    · exact .inr ⟨found, old, rfl, rfl⟩
+  case raises =>
+    refine formed.raises.transport (fun _ _ queued => begins.signals ▸ queued) issued
+      (fun x present _ => ⟨by simpa [scopeIds, begins.scopes] using present, begins.instances x⟩) counters
+      fun found inside unbegun => ?_
+    rcases members found inside with rfl | ⟨old, _⟩
+    · simp [begins.isBegun] at unbegun
+    · exact old
 
 end Kernel.Laws.State

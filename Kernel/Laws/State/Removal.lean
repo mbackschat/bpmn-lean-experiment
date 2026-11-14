@@ -6,7 +6,7 @@ public import Kernel.Laws.State.Keeps
 
 That `State.removeOccurrence` and `State.cancelOccurrence` keep `WellFormed` under the conditions their callers
 establish, composed from what `Kernel.Laws.State` shows each step does to the fields and the frames of
-`Kernel.Laws.State.Frames`; it reads no body. `State.removeOccurrence` removes the record first and then leaves the
+`Kernel.Laws.State.Clear`; it reads no body. `State.removeOccurrence` removes the record first and then leaves the
 scope occurrences the occurrence owns, a state in between that owns scope occurrences by a missing occurrence; the proof
 leaves them first and removes the record last, which ends in the same state since the record lies outside each of them.
 Nothing executable imports this module.

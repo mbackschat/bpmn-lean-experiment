@@ -50,9 +50,10 @@ structure PipelineFrame (before after : State) : Prop where
 over stands (a begun occurrence, an idle scope occurrence's owner, a parked join's latest occurrence, the completing
 occurrence), and an arrival's is begun, as `Step.begin` hands it over and as a parked join's offer finds it, and an
 activity's, catch's or throw's is of an element the program declares no start Event of (`Step.dispatch` sends those to
-`Hooks.arriveStart`); the item it hands over is open; the scope occurrence and occurrence a queued signal names stand
-(`Step.stale`, `Step.gone`), an arming's host is begun in the scope occurrence the arming names, and a compensation may
-end as it asks (`Laws.State.Resumable`); a completed occurrence's continuation runs while its scope occurrence stands;
+`Hooks.arriveStart`), a throw's header naming its element (`Program.element?` finds it by that name); the item it hands
+over is open; the scope occurrence and occurrence a queued signal names stand (`Step.stale`, `Step.gone`), an arming's
+host is begun in the scope occurrence the arming names, a compensation may end as it asks (`Laws.State.Resumable`),
+and a raise finds what its origin names and a settled host (`Laws.State.Raisable`); a completed occurrence's continuation runs while its scope occurrence stands;
 an Event Sub-Process's start Event reservation (`ScopeEntry.inner`) is beginnable in, and lies in, the scope occurrence
 its occurrence began in, and nothing claims it. The completion pipeline's hooks also keep its frame (`PipelineFrame`),
 and `Hooks.leave` leaves nothing hanging on the completing occurrence. `Hooks.delivered`, a query, picks an open item.
@@ -84,8 +85,8 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     occurrence.begun = true → (ctx.program.element? occurrence.element).bind (·.start?) = none →
     hooks.arriveCatch ctx header payload subscription occurrence state = .ok after → inv ctx.program after
   arriveThrow : ∀ ctx header payload thrown occurrence state after, inv ctx.program state →
-    occurrence ∈ state.occurrences →
-    occurrence.begun = true → (ctx.program.element? occurrence.element).bind (·.start?) = none →
+    occurrence ∈ state.occurrences → occurrence.begun = true →
+    (ctx.program.element? occurrence.element).bind (·.start?) = none → header.id = occurrence.element →
     hooks.arriveThrow ctx header payload thrown occurrence state = .ok after → inv ctx.program after
   arriveLink : ∀ ctx header payload occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     occurrence.begun = true → hooks.arriveLink ctx header payload occurrence state = .ok after → inv ctx.program after
@@ -122,7 +123,9 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     ScopeStands state scope →
     (∀ found ∈ state.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope) →
     hooks.armGateway ctx occurrence gateway scope state = .ok after → inv ctx.program after
-  raise : ∀ ctx event origin state after, inv ctx.program state → hooks.raise ctx event origin state = .ok after →
+  /-- A raise finds what its origin names and a settled host, as the closure takes it off the queue. -/
+  raise : ∀ ctx event origin state after, inv ctx.program state → Laws.State.Raisable ctx.program state origin →
+    (∀ host, origin.host = some host → Laws.State.Settled state host) → hooks.raise ctx event origin state = .ok after →
     inv ctx.program after
   compensate : ∀ ctx scope activity trigger leave resume state after, inv ctx.program state → ScopeStands state scope →
     (∀ next, resume = some next → Laws.State.Resumable state scope next) →
@@ -202,6 +205,10 @@ structure Phases (inv : Program → State → Prop) : Prop where
   resumable : ∀ program state scope activity trigger leave resume rest, inv program state →
     state.signals = .compensate scope activity trigger leave (some resume) :: rest →
     Laws.State.Resumable { state with signals := rest } scope resume
+  /-- The closure's next signal, a raise, finds what its origin names and a settled host once it leaves the queue. -/
+  raisable : ∀ program state raised origin rest, inv program state → state.signals = .raise raised origin :: rest →
+    Laws.State.Raisable program { state with signals := rest } origin ∧
+      ∀ host, origin.host = some host → Laws.State.Settled { state with signals := rest } host
   /-- An occurrence's scope occurrence stands. -/
   housed : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
     ScopeStands state occurrence.scope
@@ -214,9 +221,9 @@ structure Phases (inv : Program → State → Prop) : Prop where
     inv program (endInstance status failure state)
   /-- `State.beginOccurrence` of an admitted request, in a scope occurrence that stands (`Step.requireScope`); the
   request's start Event reservation stays beginnable, unclaimed and placed in the scope occurrence its begun occurrence
-  runs in. -/
+  runs in. An Event's occurrence numbers under its element's counter (`Laws.Step.roleOf_event`). -/
   begin : ∀ program state request role sourceType, inv program state → ScopeStands state request.scope →
-    Admitted state request →
+    Admitted state request → (((program.element? request.element).bind (·.event?)).isSome = true → role = .element) →
     inv program (state.beginOccurrence request role sourceType).1 ∧ ∀ id ∈ request.inner.toList,
       Laws.State.Beginnable (state.beginOccurrence request role sourceType).1
         (state.beginOccurrence request role sourceType).2.scope id ∧

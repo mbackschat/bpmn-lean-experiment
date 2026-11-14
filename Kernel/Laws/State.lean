@@ -11,10 +11,11 @@ import all Kernel.State.Wait
 /-! # Laws of the kernel state: the operations
 
 The lemmas about `Kernel.State`'s operations that the proof wave composes: what each does to the fields the invariant
-(`Kernel.Laws.State.Invariant`) reads, as the frames of `Kernel.Laws.State.Frames` and `Kernel.Laws.State.Issue` state
-it; `Kernel.Laws.State.Keeps` composes them into what each keeps of `WellFormed`. This is the one module that sees
-their bodies ([module table](../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)), so the witness that the
-sample instance is well-formed, which reads `State.root`'s value, is here too. Nothing executable imports this module.
+(`Kernel.Laws.State.Invariant`) reads, as the frames of `Kernel.Laws.State.Frames`, `Kernel.Laws.State.Clear` and
+`Kernel.Laws.State.Issue` state it; `Kernel.Laws.State.Keeps` composes them into what each keeps of `WellFormed`. This is
+the one module that sees their bodies ([module table](../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)),
+so the witness that the sample instance is well-formed, which reads `State.root`'s value, is here too. Nothing executable
+imports this module.
 -/
 
 @[expose] public section
@@ -220,6 +221,11 @@ theorem occurrence?_some {state : State} {id : Nat} {occurrence : Occurrence}
     (found : state.occurrence? id = some occurrence) : occurrence ∈ state.occurrences ∧ occurrence.id = id := by
   unfold State.occurrence? at found
   exact ⟨List.mem_of_find?_eq_some found, by simpa using List.find?_some found⟩
+
+theorem occurrence?_none {state : State} {id : Nat} (absent : state.occurrence? id = none) :
+    ∀ occurrence ∈ state.occurrences, occurrence.id ≠ id := fun occurrence member same => by
+  unfold State.occurrence? at absent
+  simpa [same] using List.find?_eq_none.mp absent occurrence member
 
 /-- `beginOccurrence` holds the occurrence it begins, begun. -/
 theorem beginOccurrence_mem (state : State) (request : BeginRequest) (role : ActivationRole) (sourceType : String) :
@@ -452,14 +458,8 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
   startedOnce := by simp [StartedOnce, starts, State.initial]
   activations := ⟨by simp [State.initial], by simp [State.initial]⟩
   reservations := by simp [ReservationsUnstarted, State.initial]
-  owned := {
-    occurrenceScopes := by simp [State.initial]
-    itemScopes := by simp [State.initial]
-    itemOccurrences := by simp [State.initial]
-    attachments := by simp [State.initial]
-    scopeOwners := by simp [State.initial]
-    variableScopes := by simp [scopeIds, State.initial]
-    tokenScopes := by simp [State.initial] }
+  owned := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial],
+    by simp [State.initial], by simp [scopeIds, State.initial], by simp [State.initial]⟩
   rooted := ⟨by simp [scopeIds, State.initial], by simp [State.initial], by
     simp only [State.initial, List.mem_singleton]
     rintro scope rfl
@@ -478,9 +478,12 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
     by simp [Precedes, State.initial], by simp [State.initial], by simp [Queued, State.initial],
     by simp [Queued, State.initial], by simp [Queued, State.initial]⟩
   settled := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial],
-    by simp [State.initial], by simp [State.initial], by simp [State.initial]⟩
+    by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial]⟩
   attachedReserved := by simp [AttachedReserved, State.initial]
   typed := by simp [Typed, State.initial]
+  worked := by simp [Worked, State.initial]
+  roles := by simp [EventRoles, State.initial]
+  raises := by simp [RaisesSound, State.initial]
 
 /-- The fresh instance's root was issued. -/
 theorem initial_rootIssued (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :

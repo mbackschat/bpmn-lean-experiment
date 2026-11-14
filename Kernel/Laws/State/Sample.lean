@@ -6,8 +6,8 @@ public import Kernel.Laws.State
 
 That the sample instance of `Kernel.Laws.State.Invariant` is well-formed, the witnesses of `ReservationsUnstarted`
 and `Rooted` that read its process instance or `State.root` (`Laws.State.root_eq`), and those of the clauses on what an
-item or a queued begin holds: `Typed`, which reads the program, `AttachedReserved` and `InnerPlaced`. It reads no body.
-Nothing executable imports this module.
+item, a queued begin or a queued raise holds: `Typed`, `EventRoles` and `Raisable`, which read the program, `Worked`,
+`AttachedReserved` and `InnerPlaced`. It reads no body. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -73,9 +73,16 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
     by simp [Precedes, sample], by simp [sample], by simp [Queued, sample], by simp [Queued, sample],
     by simp [Queued, sample]⟩
   settled := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample], by simp [sample],
-    by simp [sample], by simp [sample]⟩
+    by simp [sample], by simp [sample], by simp [sample]⟩
   attachedReserved := by simp [AttachedReserved, sample, innerItem, outerItem]
   typed := fun item member started => by simp [unstarted item member] at started
+  worked := by
+    simp only [Worked, sample, List.mem_cons, List.not_mem_nil, or_false]
+    rintro item _ _ occurrence (rfl | rfl | rfl) _ <;> rfl
+  roles := by
+    simp only [EventRoles, sample, List.mem_cons, List.not_mem_nil, or_false]
+    rintro occurrence (rfl | rfl | rfl) _ <;> rfl
+  raises := by simp [RaisesSound, sample]
 
 /-- A start fact carrying the armed reservation's key breaks `ReservationsUnstarted`. -/
 theorem early_start_rejected (kind : OpenKind) :
@@ -149,6 +156,43 @@ theorem working_start_rejected (kind : OpenKind) {program : Program}
   fun typed => by
     have : kind.view.effect = none := (typed (startItem kind) (by simp) (by simpa [startItem] using outer)).2.2.2.1
     simp [this] at work
+
+/-- An item that waits for an effect on the reservation 7 breaks `Worked`: no effect result completes a reservation,
+and a raise from its occurrence would leave an unbegun host. -/
+theorem working_reservation_rejected (kind : OpenKind) (work : kind.view.effect.isSome = true) :
+    ¬ Worked { armedState kind with openItems := [{ outerItem kind with occurrence := 7 }] } := fun worked => by
+  have := worked { outerItem kind with occurrence := 7 } (by simp) (fun waits => by
+    simp only [outerItem] at waits
+    rw [waits.1] at work
+    cases work) reservation (by simp [armedState]) rfl
+  simp [reservation] at this
+
+/-- Under a program that declares `Outer` an Event, its occurrence numbered as a Multi-Instance body breaks
+`EventRoles`: a raise names the thrower by its element's counter. -/
+theorem body_event_rejected (kind : OpenKind) {program : Program}
+    (event : ((program.element? ⟨"Outer"⟩).bind (·.event?)).isSome = true) :
+    ¬ EventRoles program { sample kind with occurrences := [{ outerTask with role := .multiInstanceBody }] } :=
+  fun roles => by
+    have := roles { outerTask with role := .multiInstanceBody } (by simp) (by simpa [outerTask] using event)
+    simp at this
+
+/-- Under a program that declares `Outer` an Event, a raise from its begun occurrence 5 is `Raisable`. -/
+theorem thrower_raisable (kind : OpenKind) {program : Program} :
+    Raisable program (sample kind) { element := ⟨"Outer"⟩, scope := processRoot, activation := 1 } := fun _ => by
+  obtain ⟨root, _⟩ := sample_instance kind
+  refine ⟨by simp [sample, processRoot], fun _ => ⟨_, List.mem_cons_of_mem _ (List.mem_cons_of_mem _
+    (List.mem_singleton_self _)), by simp [root], rfl, rfl, Nat.le_refl _⟩, ?_⟩
+  simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
+  rintro occurrence (rfl | rfl | rfl) <;> simp [subProcess, innerTask, outerTask]
+
+/-- Under a program that declares `Timer` an Event, a raise whose origin names the reservation 7 breaks `Raisable`:
+`throwerLeaves` would complete an unbegun occurrence. -/
+theorem reservation_raise_rejected (kind : OpenKind) {program : Program}
+    (event : ((program.element? ⟨"Timer"⟩).bind (·.event?)).isSome = true) :
+    ¬ Raisable program (armedState kind) { element := ⟨"Timer"⟩, scope := processRoot, activation := 1 } :=
+  fun raisable => by
+    have := (raisable event).2.2 reservation (by simp [armedState]) rfl rfl rfl
+    simp [reservation] at this
 
 /-- An item attached to the root's task 5 holding the reservation 7 is reserved; one waiting for the begun occurrence 5
 itself breaks `AttachedReserved`. -/

@@ -507,11 +507,10 @@ structure SubscriptionsOps (program : Program) (inv : State → Prop) : Prop whe
   openItem : ∀ state kind occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
     (program.element? occurrence.element).bind (·.start?) = none → inv (state.openItem kind occurrence)
   /-- A subscription opened in a scope occurrence that stands, hanging, if at all, on a begun occurrence there, waiting
-  for a trigger if it is a start Event's. -/
+  for a trigger. -/
   openSubscription : ∀ state kind element scope host passive, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
     (∀ id, host = some id → ∃ occurrence ∈ state.occurrences, occurrence.id = id ∧ occurrence.begun = true ∧
-      occurrence.scope = scope) → (((program.element? element).bind (·.start?)).isSome = true → AwaitsTrigger kind) →
-    inv (state.openSubscription kind element scope host passive).1
+      occurrence.scope = scope) → AwaitsTrigger kind → inv (state.openSubscription kind element scope host passive).1
   /-- Opening a subscription keeps the scope occurrences and every occurrence. -/
   subscribed : ∀ state kind element scope host passive, inv state →
     (state.openSubscription kind element scope host passive).1.scopes = state.scopes ∧
@@ -699,7 +698,7 @@ theorem subscribe_keeps {inv : State → Prop} (ops : SubscriptionsOps program i
   · cases ran
     exact ⟨holds, hosted⟩
   · have opened := ops.openSubscription state ‹_› element scope host passive holds hosted.1 hosted.2
-      fun _ => waitKind_awaits ops ‹_›
+      (waitKind_awaits ops ‹_›)
     obtain ⟨scopes, occurrences⟩ := ops.subscribed state ‹_› element scope host passive holds
     have kept := hosted.congr scopes occurrences
     dsimp only at ran

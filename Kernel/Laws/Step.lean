@@ -128,9 +128,7 @@ theorem arrive_ok {hooks : Hooks} {ctx : Ctx} {flow : FlowId} {scope : ScopeOccu
     ∃ target, ctx.program.target? flow = some target ∧
       begin hooks ctx { element := target, scope, incoming := some flow } state = .ok next := by
   unfold arrive at ran
-  split at ran
-  · simp at ran
-  · exact ⟨_, by assumption, ran⟩
+  split at ran <;> first | simp at ran; done | exact ⟨_, by assumption, ran⟩
 
 /-- A committed begin issued the occurrence `State.beginOccurrence` makes, numbered under `Step.roleOf`, and dispatched
 it to its element's hook. -/
@@ -146,6 +144,15 @@ theorem begin_ok {hooks : Hooks} {ctx : Ctx} {request : BeginRequest} {state nex
     obtain ⟨_, _, ran⟩ := bind_ok ran
     exact ⟨sourceType, _, _, known, by simp, deferred_ok ran⟩
   · simp at ran
+
+/-- An Event's occurrence numbers under its element's counter: an Event has no envelope, so no Multi-Instance body. -/
+theorem roleOf_event {program : Program} {request : BeginRequest}
+    (event : ((program.element? request.element).bind (·.event?)).isSome = true) : roleOf program request = .element := by
+  unfold roleOf
+  cases found : program.element? request.element with
+  | none => simp [found] at event
+  | some element => cases element <;> split <;> simp_all [Laws.IL.envelope?_event, Laws.IL.event?_activity,
+      Laws.IL.event?_scope, Laws.IL.event?_gateway, Laws.IL.event?_start]
 
 /-- An occurrence of a Gateway goes to `Hooks.arriveGateway`: a Gateway has no envelope, so no loop wraps it. -/
 theorem dispatch_gateway {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}
@@ -212,12 +219,9 @@ theorem effectContinuation_ok {ctx : Ctx} {data : EffectInput} {run : EffectInpu
 /-- The journal put in run order. -/
 theorem orderJournal_ok {outcome : Outcome} {after : State} (ran : orderJournal outcome = .ok after) :
     ∃ settled, outcome = .ok settled ∧ after = { settled with journal := settled.journal.reverse } := by
-  unfold orderJournal at ran
   cases outcome with
-  | error failure => simp [Except.map] at ran
-  | ok settled =>
-    simp only [Except.map, Except.ok.injEq] at ran
-    exact ⟨settled, by simp, ran.symm⟩
+  | error failure => simp [orderJournal, Except.map] at ran
+  | ok settled => exact ⟨settled, rfl, (Except.ok.inj ran).symm⟩
 
 /-- A committed input on a running instance ran its transition as one micro-step, from the instance's state with an
 empty journal and outbox and the clock advanced to the input's time; then the closure settled, and the journal was put
@@ -578,7 +582,7 @@ theorem dispatch_ok {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {entry
         dsimp only at ran
         cases role : payload.role with
         | «catch» subscription => simp only [role] at ran; exact .atCatch ran
-        | «throw» thrown => simp only [role] at ran; exact .atThrow ran
+        | «throw» thrown => simp only [role] at ran; exact .atThrow (Laws.IL.element?_event known) ran
         | linkCatch name => simp only [role] at ran; exact .atLink ran
         | linkThrow name => simp only [role] at ran; exact .atLink ran
 

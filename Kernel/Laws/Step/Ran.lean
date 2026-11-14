@@ -111,7 +111,7 @@ inductive Arrives (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (entry :
   | atCatch {header : Header} {payload : EventPayload} {subscription : Subscription} :
       hooks.arriveCatch ctx header payload subscription occurrence state = .ok after →
       Arrives hooks ctx occurrence entry trigger state after
-  | atThrow {header : Header} {payload : EventPayload} {thrown : Throw} :
+  | atThrow {header : Header} {payload : EventPayload} {thrown : Throw} : header.id = occurrence.element →
       hooks.arriveThrow ctx header payload thrown occurrence state = .ok after →
       Arrives hooks ctx occurrence entry trigger state after
   | atLink {header : Header} {payload : EventPayload} :
