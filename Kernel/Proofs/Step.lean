@@ -9,6 +9,7 @@ public import Kernel.Laws.Subscriptions
 public import Kernel.Laws.Data
 public import Kernel.Laws.Work
 public import Kernel.Laws.Compensation
+public import Kernel.Laws.Propagation
 public import Kernel.Laws.MultiInstance
 public import Kernel.Laws.Hooks
 public import Kernel.Proofs.State
@@ -439,6 +440,52 @@ theorem registered_completeScope : ∀ ctx header payload scope occurrence state
   intro _ _ _ _ _ _ _ formed member owned link ran
   rw [Laws.Registry.hooks_completeScope] at ran
   exact Laws.Scopes.completeScope_keeps scopesOps formed member owned link ran
+
+/-- A begun occurrence is settled: it completes no reservation a queued begin names. -/
+theorem begun_settled {state : State} (formed : Laws.State.WellFormed program state) {occurrence : Occurrence}
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) :
+    Laws.State.Settled state occurrence.id :=
+  ⟨formed.issued.occurrences occurrence member, fun found inside same => by
+    rw [Laws.State.nodup_map_eq formed.distinct.occurrences inside member same]
+    exact begun, Laws.State.begun_unnamed formed member begun⟩
+
+/-- Propagation's operations record (`Laws.Propagation.PropagationOps`) of `WellFormed`. -/
+theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.WellFormed program) where
+  complete _ _ leave writes rule formed member begun := complete_wellFormed formed member begun leave writes rule
+  raise _ _ _ formed := Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed
+      (fun _ _ _ same => by simp at same) (fun _ same => by simp at same) (fun _ _ _ same => by simp at same)
+      (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
+  fire _ _ _ formed := Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed
+      (fun _ _ _ same => by simp at same) (fun _ same => by simp at same) (fun _ _ _ same => by simp at same)
+      (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
+  outbox _ _ formed := formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply Laws.State.instanceOf_congr <;> rfl, id,
+    .refl _, .refl _, .refl _, fun _ => id, .same rfl⟩ rfl formed.startedOnce
+  compensate _ _ _ _ _ _ formed member begun := Laws.State.signal_wellFormed formed
+    (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same) (fun _ same => by simp at same)
+      (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) fun _ _ _ _ _ _ same => by
+      cases same
+      exact begun_settled formed member begun)
+  terminate _ _ formed member begun :=
+    have cleared := Laws.State.clearInside_inner formed member begun (inner := none) (by simp)
+    ⟨cleared.1, cleared.2.1⟩
+  openItem _ kind _ formed member begun unstarted := Laws.State.openItem_wellFormed formed kind member begun unstarted
+  signalOccurrences _ _ := by rw [Laws.State.signal_eq]
+
+/-- `HookContract.arriveThrow` of the registered hooks. -/
+theorem registered_arriveThrow : ∀ ctx header payload thrown occurrence state after,
+    Laws.State.WellFormed ctx.program state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    (ctx.program.element? occurrence.element).bind (·.start?) = none →
+    Registry.hooks.arriveThrow ctx header payload thrown occurrence state = .ok after →
+    Laws.State.WellFormed ctx.program after := by
+  intro _ _ _ _ _ _ _ formed member begun unstarted ran
+  rw [Laws.Registry.hooks_arriveThrow] at ran
+  exact Laws.Propagation.arriveThrow_keeps propagationOps formed member begun unstarted ran
 
 /-- `HookContract.arriveScope` of the registered hooks. -/
 theorem registered_arriveScope : ∀ ctx header payload occurrence entry state after,

@@ -33,6 +33,10 @@ theorem hooks_arriveLink : Registry.hooks.arriveLink = Feature.Flow.arriveLink :
 theorem hooks_arriveStart : Registry.hooks.arriveStart = Feature.Starts.arriveStart Registry.startsHooks := by
   simp only [Registry.hooks]
 
+/-- Propagation arrives at every throw Event. -/
+theorem hooks_arriveThrow : Registry.hooks.arriveThrow = Feature.Propagation.arriveThrow := by
+  simp only [Registry.hooks]
+
 /-- Scopes arrives at every Scope. -/
 theorem hooks_arriveScope : Registry.hooks.arriveScope = Feature.Scopes.arriveScope := by
   simp only [Registry.hooks]

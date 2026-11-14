@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Feature.Propagation
 import all Kernel.Feature.Propagation
 
 /-! # Laws of propagation
@@ -275,5 +276,87 @@ theorem cancel_uncaught_refused : CancelAdmission true 0 (some "throw.cancel.unc
 /-- Admitting a Cancel throw whose Transaction has no Cancel boundary is rejected. -/
 theorem cancel_uncaught_admitted_rejected : ¬ CancelAdmission true 0 none := fun law =>
   absurd law.caught (Nat.lt_irrefl 0)
+
+/-! ## The state invariant under Propagation's throws
+
+Propagation's share of the proof wave's state-invariant lane (P2) for `Hooks.arriveThrow`, stated over
+`PropagationOps`, generic in `inv`; `Kernel.Proofs.Step` fills `PropagationOps` for `Laws.State.WellFormed`. A throw
+completes its own begun occurrence, raises from it, fires the receivers of a Signal, opens a Message throw's effect
+item or queues the compensation that completes it; a Terminate End first clears its scope occurrence, keeping itself. -/
+
+/-- What Propagation's throws need of the state operations they apply, for an invariant `inv`. -/
+structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
+  /-- The completion of a begun occurrence that stands. -/
+  complete : ∀ state occurrence leave writes rule, inv state → occurrence ∈ state.occurrences →
+    occurrence.begun = true → inv (state.signal (.complete occurrence.id leave writes rule))
+  /-- A raised event. -/
+  raise : ∀ state raised origin, inv state → inv (state.signal (.raise raised origin))
+  /-- An item's firing. -/
+  fire : ∀ state item fired, inv state → inv (state.signal (.fire item fired))
+  /-- A Signal throw's broadcast intent. -/
+  outbox : ∀ state outbox, inv state → inv { state with outbox }
+  /-- The compensation a begun occurrence's throw queues, which completes it once it ends. -/
+  compensate : ∀ state occurrence scope activity trigger leave, inv state → occurrence ∈ state.occurrences →
+    occurrence.begun = true →
+    inv (state.signal (.compensate scope activity trigger none (some (.complete occurrence.id leave))))
+  /-- A Terminate End's clearing of its scope occurrence, keeping its own begun occurrence. -/
+  terminate : ∀ state occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    inv (state.clearInside occurrence.scope [occurrence.id]) ∧
+      occurrence ∈ (state.clearInside occurrence.scope [occurrence.id]).occurrences
+  /-- An item for a begun occurrence of an element the program declares no start Event. -/
+  openItem : ∀ state kind occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    (program.element? occurrence.element).bind (·.start?) = none → inv (state.openItem kind occurrence)
+  /-- A queued signal keeps the occurrences. -/
+  signalOccurrences : ∀ (state : State) signal, (state.signal signal).occurrences = state.occurrences
+
+/-- Firing each of a Signal throw's receivers keeps `inv` and the occurrences. -/
+theorem fireAll_keeps {inv : State → Prop} (ops : PropagationOps program inv) (fired : State → OpenItem → Fired) :
+    ∀ (receivers : List OpenItem) (state : State), inv state →
+      inv (receivers.foldl (fun state item => state.signal (.fire item.id (fired state item))) state) ∧
+      (receivers.foldl (fun state item => state.signal (.fire item.id (fired state item))) state).occurrences =
+        state.occurrences
+  | [], _, holds => ⟨holds, rfl⟩
+  | item :: rest, state, holds => by
+    obtain ⟨kept, same⟩ := fireAll_keeps ops fired rest _ (ops.fire state item.id (fired state item) holds)
+    exact ⟨kept, same.trans (ops.signalOccurrences _ _)⟩
+
+/-- `Hooks.arriveThrow` keeps `inv`. -/
+theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationOps ctx.program inv) {header : Header}
+    {payload : EventPayload} {thrown : Throw} {occurrence : Occurrence} {state after : State} (holds : inv state)
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (unstarted : (ctx.program.element? occurrence.element).bind (·.start?) = none)
+    (ran : Feature.Propagation.arriveThrow ctx header payload thrown occurrence state = .ok after) : inv after := by
+  have complete := ops.complete state occurrence (Feature.Propagation.throwLeave payload) [] .outward holds member begun
+  unfold Feature.Propagation.arriveThrow at ran
+  cases thrown with
+  | none => cases ran; exact complete
+  | terminate =>
+    cases ran
+    obtain ⟨cleared, stays⟩ := ops.terminate state occurrence holds member begun
+    exact ops.complete _ _ _ _ _ cleared stays begun
+  | error record => cases ran; exact ops.raise _ _ _ complete
+  | escalation record => cases ran; exact ops.raise _ _ _ holds
+  | message record =>
+    cases ran
+    unfold Feature.Propagation.throwMessage
+    split
+    · exact complete
+    · exact ops.openItem _ _ _ holds member begun unstarted
+  | signal record =>
+    dsimp only at ran
+    unfold Feature.Propagation.throwSignal at ran
+    simp only [bind, Except.bind] at ran
+    repeat' split at ran
+    all_goals try cases ran
+    obtain ⟨fired, same⟩ := fireAll_keeps ops _ (Feature.Propagation.ownReceivers state _) state holds
+    exact ops.complete _ _ _ _ _ (ops.outbox _ _ fired) (same ▸ member) begun
+  | compensation record =>
+    dsimp only at ran
+    unfold Feature.Propagation.throwCompensation at ran
+    split at ran
+    · cases ran
+    · cases ran
+      exact ops.compensate _ _ _ _ _ _ holds member begun
+  | cancel => cases ran; exact ops.raise _ _ _ complete
 
 end Kernel.Laws.Propagation
