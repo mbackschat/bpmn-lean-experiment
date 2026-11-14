@@ -31,7 +31,8 @@ open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds occurrenceIds)
 
 /-- After a committed input, nothing lies in the subtree, in the before-state, of a scope occurrence the input
-removed: no token, open item, occurrence or variable set (BPMN 2.0.2 §13.5.3, §10.5.6; `Laws.State.ClearsInside`). -/
+removed: no token, open item, occurrence or variable set (BPMN 2.0.2 §13.5.3, §10.5.6; `Laws.State.ClearsInside`). The
+feature slots' entries there (parked joins, Multi-Instance runs, compensation runs) are not stated. -/
 def SubtreeRemoved (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before after : State) (removed : ScopeOccurrenceId),
     WellFormed program before → Step.step hooks program (some before) input = .ok after →
@@ -61,7 +62,10 @@ def LateInputRejected (hooks : Hooks) : Prop :=
 
 /-- The queued signal acts in the scope occurrence `scope`: it arms, begins, writes, removes, occurs or compensates
 there, or its handler context is `scope`. Read by equality on the constructors that carry a scope occurrence, never
-by a match, which only `Kernel.Step` and its `Laws` and `Proofs` modules make. -/
+by a match, which only `Kernel.Step` and its `Laws` and `Proofs` modules make. A queued raise (`Signal.raise`) is not
+among them, so `QueuedWorkInert` states nothing of it: its search starts at its origin's scope occurrence and fails the
+micro-step if that is gone (`raise-from-missing-scope`, `Feature.Propagation.searchScopes`), but a raising Activity's
+own catching boundary fires before any search reads the scope tree (`Feature.Propagation.raise`). -/
 def ActsIn (signal : Signal) (scope : ScopeOccurrenceId) : Prop :=
   (∃ host element, signal = .arm host element scope) ∨ signal = .armScope scope ∨
     (∃ occurrence gateway, signal = .armGateway occurrence gateway scope) ∨
@@ -89,9 +93,10 @@ structure Inert (before after : State) : Prop where
   outbox : after.outbox = before.outbox
 
 /-- Queued work naming a scope occurrence that was issued and has since been removed has no effect: the closure
-micro-step that runs it either fails the input or changes nothing but the journal (`Kernel/Step/Stale.lean`). It is
-stated of any closure state: such work keeps `WellFormed`, which asks only that what queued work names was issued
-(`Laws.State.QueueSound`). -/
+micro-step that runs it either fails the input or changes nothing but the journal (`Kernel/Step/Stale.lean`). Under
+`Step` it never commits (`queuedWorkInert`): the micro-step fails and the input with it, so "no effect" is that
+failure and `Inert` holds vacuously. It is stated of any closure state: such work keeps `WellFormed`, which asks only
+that what queued work names was issued (`Laws.State.QueueSound`). -/
 def QueuedWorkInert (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (state after : State) (next : Signal) (rest : List Signal) (scope : ScopeOccurrenceId),
     state.signals = next :: rest → ActsIn next scope → scope.value < state.nextIssue → scope ∉ scopeIds state →
@@ -102,7 +107,9 @@ def QueuedWorkInert (hooks : Hooks) : Prop :=
 /-- Every begun occurrence a committed input removes ends exactly once in the input's journal, which is when `Step`
 hands a cancelled one to `Hooks.cancelled`, the owning features' notice: the journal's cancelled facts and their end
 facts are made together (`Laws.State.removal_cancels_with_ends` of `State.clearInside` and `State.cancelOccurrence`);
-the input's other end facts come from `State.recordEnd`. -/
+the input's other end facts come from `State.recordEnd`. It covers every removed begun occurrence, a completed one as
+much as a cancelled one; under the registered hooks `Hooks.cancelled` does nothing (`Laws.Registry.hooks_cancelled`),
+so the single end fact is the whole notice. -/
 def RemovedEndOnce (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before after : State) (occurrence : Occurrence),
     WellFormed program before → Step.step hooks program (some before) input = .ok after →

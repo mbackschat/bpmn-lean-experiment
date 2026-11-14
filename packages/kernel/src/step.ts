@@ -522,7 +522,8 @@ function advanceClock(atMs: number | null, state: State): Outcome {
  * Run an input's transition on a running instance at its logical time `atMs`, then settle. A Timer firing without its own
  * time happens at the deadline it names; a host that wakes later states the later time. The input starts from an empty
  * per-input record (journal, outbox, draft and write log); a committed state holds no draft or write log, since every
- * micro-step's `conclude` empties them, so emptying them here changes no run.
+ * micro-step's `conclude` empties them and the registered `cancelled` and `written` hooks it then runs refill neither,
+ * so emptying them here changes no run.
  */
 function onRunning(
   hooks: Hooks, ctx: Ctx, tag: InputTag, atMs: number | null, before: State | null, transition: (state: State) => Outcome,

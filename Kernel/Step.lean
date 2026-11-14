@@ -401,8 +401,10 @@ def deliverEffectResult (hooks : Hooks) (ctx : Ctx) (input : EffectInput) (state
 
 /-- Run an input's transition on a running instance, then settle. The input starts from an empty per-input record
 (journal, outbox, draft and write log). A committed state holds no draft or write log, since every micro-step's
-`conclude` empties them, so emptying them here changes no run; it makes the input's journal its own by the step's
-construction rather than by a property of every state a step is given. -/
+`conclude` empties them and the registered `Hooks.cancelled` and `Hooks.written` it then runs refill neither (the
+cancellation lane proves it of the draft's end facts, `Proofs.Cancellation.registered_quiet`), so emptying them here
+changes no run; it makes the input's journal its own by the step's construction rather than by a property of every
+state a step is given. -/
 def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State) (transition : State → Outcome) : Outcome :=
   match before with
   | none => .error (.rejected "instance-not-started")
