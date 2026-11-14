@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_ImplicitBegins" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:implicit-begins">
+  <process id="Process_ImplicitBegins" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <subProcess id="Holder">
+      <task id="A" />
+      <subProcess id="WriteA">
+        <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">a</camunda:outputParameter></camunda:inputOutput></extensionElements>
+        <startEvent id="WriteA_S" />
+        <endEvent id="WriteA_E" />
+        <sequenceFlow id="WriteA_F" sourceRef="WriteA_S" targetRef="WriteA_E" />
+      </subProcess>
+      <endEvent id="EndA" />
+      <sequenceFlow id="Flow_A" sourceRef="A" targetRef="WriteA" />
+      <sequenceFlow id="Flow_WA" sourceRef="WriteA" targetRef="EndA" />
+      <task id="B" />
+      <subProcess id="WriteB">
+        <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">b</camunda:outputParameter></camunda:inputOutput></extensionElements>
+        <startEvent id="WriteB_S" />
+        <endEvent id="WriteB_E" />
+        <sequenceFlow id="WriteB_F" sourceRef="WriteB_S" targetRef="WriteB_E" />
+      </subProcess>
+      <endEvent id="EndB" />
+      <sequenceFlow id="Flow_B" sourceRef="B" targetRef="WriteB" />
+      <sequenceFlow id="Flow_WB" sourceRef="WriteB" targetRef="EndB" />
+    </subProcess>
+    <endEvent id="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Holder" />
+    <sequenceFlow id="Flow_Held" sourceRef="Holder" targetRef="Finished" />
+  </process>
+</definitions>

@@ -260,12 +260,11 @@ def Leaving (program : Program) (source : ElementId) (flow : FlowId) : Prop :=
     (program.element? source = none ∧
       ∃ host boundary, program.boundary? source = some (host, boundary) ∧ flow ∈ boundary.outgoing)
 
-/-- A split's two branches, and the resumptions each leaves open, which a later broadcast starts together in the order
-this closure opened them. -/
-inductive BranchPair (program : Program) (own other : FlowId) : Account → Account → Prop where
-  | branches : BranchPair program own other ((branch program own).account program) ((branch program other).account program)
-  | wakes : BranchPair program own other ((wake program (branch program own)).account program)
-      ((wake program (branch program other)).account program)
+/-- Two paths one closure begins together, a split's branches or a Scope's entered children, and the resumptions each
+leaves open, which a later broadcast starts together in the order this closure opened them. -/
+inductive PathPair (program : Program) (own other : WorkUnit) : Account → Account → Prop where
+  | paths : PathPair program own other (own.account program) (other.account program)
+  | wakes : PathPair program own other ((wake program own).account program) ((wake program other).account program)
 
 /-- A parallel body's instance against another, in the closure that begins them and in the one where a broadcast
 resumes them. -/
@@ -348,7 +347,15 @@ inductive Concurrent (program : Program) : Account → Account → Prop where
   /-- A split's branches: BPMN 2.0.2 §13.3.1 and Table 13.1 let them interleave in any order; `flow.concurrentWrite`
   and `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.concurrentBranches`). -/
   | split {flow : Flow} {other : FlowId} {left right : Account} : flow ∈ program.flows → Forks program flow.source →
-      Leaving program flow.source other → other ≠ flow.id → BranchPair program flow.id other left right →
+      Leaving program flow.source other → other ≠ flow.id →
+      PathPair program (branch program flow.id) (branch program other) left right → Concurrent program left right
+  /-- The children a Scope's entry begins together, without a start Event its implicitly begun ones: §13.3.4 begins
+  them all, in no order (P1 census, G1); `flow.concurrentWrite` and `flow.concurrentInterference`
+  (`Kernel.Admission.Flow.Concurrency.implicitFanOut`). -/
+  | entered {scope first second : Element} {header : Header} {payload : ScopePayload} {left right : Account} :
+      scope ∈ program.elements → scope.scope? = some (header, payload) → EnteredChildren program header.id first →
+      EnteredChildren program header.id second → first.header.id ≠ second.header.id →
+      PathPair program (pathFrom (· = .enters first)) (pathFrom (· = .enters second)) left right →
       Concurrent program left right
   /-- A parallel Multi-Instance body's instances: §13.3.7 orders them not at all, completion included;
   `multiInstance.concurrentInstances` (`Kernel.Admission.MultiInstance.concurrentInstances`). -/
@@ -396,6 +403,7 @@ theorem quiet_apart : Apart quiet := by
   exfalso
   cases concurrent with
   | split member => simp [quiet] at member
+  | entered member => simp [quiet] at member
   | instances member => simp [quiet] at member
   | signalled member => simp [quiet] at member
   | escalated member => simp [quiet] at member
@@ -407,7 +415,7 @@ theorem split_race_not_apart {program : Program} {flow : Flow} {other : FlowId} 
     (distinct : other ≠ flow.id) (toLeft : Targets program flow.id left) (toRight : Targets program other right)
     (runsLeft : ¬ Stops branchWalk left) (runsRight : ¬ Stops branchWalk right)
     (race : (runFootprint program left).races (runFootprint program right) = true) : ¬ Apart program := fun apart =>
-  (apart _ _ (.split member forks leaving distinct .branches)).1
+  (apart _ _ (.split member forks leaving distinct .paths)).1
     ⟨_, _, ⟨.enters left, .start ⟨left, toLeft, rfl⟩, .inr ⟨runsLeft, rfl⟩⟩,
       ⟨.enters right, .start ⟨right, toRight, rfl⟩, .inr ⟨runsRight, rfl⟩⟩, race⟩
 

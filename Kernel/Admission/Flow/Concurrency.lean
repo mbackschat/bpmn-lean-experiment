@@ -59,6 +59,15 @@ def conflict (program : Program) (own other : Closure) : Option String :=
   else if interferes program own other || interferes program other own then some "flow.concurrentInterference"
   else none
 
+/-- The first conflict (`conflict`) of `own` with one of `others`, branches one closure begins together, in that closure
+or in the one a later Signal broadcast starts by resuming a subscription each left open, which it resumes in the order
+this closure opened them. -/
+def branchesAgainst (reading : Reading) (program : Program) (own : Closure) (others : List Closure) : Option String :=
+  let woken (closure : Closure) : Option Closure :=
+    if closure.wakes.isEmpty then none else some (wakeClosure reading program closure.wakes)
+  others.findSome? (conflict program own) <|>
+    (woken own).bind fun ownWake => (others.filterMap woken).findSome? (conflict program ownWake)
+
 /-- Under `BranchSchedule.orderInvariant`, the branches of a split may not conflict (`conflict`) in the closure that
 begins them, nor in the one a later Signal broadcast starts by resuming a subscription each branch left open, which it
 resumes in the order this closure opened them: BPMN 2.0.2 lets concurrent branches interleave in any order (Table 13.1,
@@ -80,11 +89,7 @@ def concurrentBranches (reading : Reading) (program : Program) (flow : Flow) : O
       (routing payload).concurrent
     let own := branchClosure reading program flow.id
     let others := ((leaving program flow.source).filter (· != flow.id)).map (branchClosure reading program)
-    let woken (closure : Closure) : Option Closure :=
-      if closure.wakes.isEmpty then none else some (wakeClosure reading program closure.wakes)
-    if !concurrent then none
-    else others.findSome? (conflict program own) <|>
-      (woken own).bind fun ownWake => (others.filterMap woken).findSome? (conflict program ownWake)
+    if !concurrent then none else branchesAgainst reading program own others
 
 /-! ## Fan-outs of one element's run
 
@@ -346,13 +351,25 @@ def compensationFanOut (reading : Reading) (program : Program) (element : Elemen
           pairs rest
     pairs (handlersOf reading program element)
 
-/-- The fan-outs of one element's run besides a split's and a loop's, under `BranchSchedule.orderInvariant`. -/
+/-- Under `BranchSchedule.orderInvariant`, the children the entry of a Scope begins together may not conflict, compared
+as a split's branches (`branchesAgainst`): without a start Event every child that begins implicitly begins, one `begin`
+signal each (`Kernel.Feature.Scopes.implicitStart`), and BPMN 2.0.2 §13.3.4 gives them no order, while each child's
+tokens join the closure's queue in an order no input states (issue #81; P1 census, G1). -/
+def implicitFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
+  let rec pairs : List Element → Option String
+    | [] => none
+    | child :: rest => branchesAgainst reading program (pathOf reading program [.enters child])
+        (rest.map fun other => pathOf reading program [.enters other]) <|> pairs rest
+  ((element.scope?).map fun (header, _) => pairs (enteredChildren program header.id)).getD none
+
+/-- The fan-outs of one element's run or entry besides a split's and a loop's, under `BranchSchedule.orderInvariant`. -/
 def fanOutConflict (reading : Reading) (program : Program) (element : Element) : Option String :=
   match program.options.branchSchedule with
   | .declarationDepthFirst => none
   | .orderInvariant =>
     signalFanOut reading program element <|> escalationFanOut reading program element <|>
-      writeFanOut reading program element <|> compensationFanOut reading program element
+      writeFanOut reading program element <|> compensationFanOut reading program element <|>
+      implicitFanOut reading program element
 
 /-- What the instances of a looping `element` do in the closure that begins them, which
 `Kernel.Admission.MultiInstance.concurrentInstances` reads. -/

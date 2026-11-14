@@ -126,6 +126,18 @@ function conflict(program: Program, own: Closure, other: Closure): string | null
 }
 
 /**
+ * The first conflict (`conflict`) of `own` with one of `others`, branches one closure begins together, in that closure
+ * or in the one a later Signal broadcast starts by resuming a subscription each left open, which it resumes in the order
+ * this closure opened them.
+ */
+function branchesAgainst(reading: Reading, program: Program, own: Closure, others: readonly Closure[]): string | null {
+  const found = firstOf(others, (other) => conflict(program, own, other));
+  if (found !== null || own.wakes.length === 0) return found;
+  const ownWake = wakeClosure(reading, program, own.wakes);
+  return firstOf(others.filter((other) => other.wakes.length > 0), (other) => conflict(program, ownWake, wakeClosure(reading, program, other.wakes)));
+}
+
+/**
  * Under `BranchSchedule.orderInvariant`, the branches of a split may not conflict (`conflict`) in the closure that
  * begins them, nor in the one a later Signal broadcast starts by resuming a subscription each branch left open, which it
  * resumes in the order this closure opened them: BPMN 2.0.2 lets concurrent branches interleave in any order (Table
@@ -150,18 +162,7 @@ export function concurrentBranches(reading: Reading, program: Program, flow: Flo
       if (gateway !== null && !routing(gateway[1]).concurrent) return null;
       const own = branchClosure(reading, program, flow.id);
       const others = leaving(program, flow.source).filter((other) => other !== flow.id).map((other) => branchClosure(reading, program, other));
-      for (const other of others) {
-        const found = conflict(program, own, other);
-        if (found !== null) return found;
-      }
-      if (own.wakes.length === 0) return null;
-      const ownWake = wakeClosure(reading, program, own.wakes);
-      for (const other of others) {
-        if (other.wakes.length === 0) continue;
-        const found = conflict(program, ownWake, wakeClosure(reading, program, other.wakes));
-        if (found !== null) return found;
-      }
-      return null;
+      return branchesAgainst(reading, program, own, others);
     }
   }
   return assertNever(program.options.branchSchedule);
@@ -519,14 +520,32 @@ function compensationFanOut(reading: Reading, program: Program, element: Element
   return null;
 }
 
-/** The fan-outs of one element's run besides a split's and a loop's, under `BranchSchedule.OrderInvariant`. */
+/**
+ * Under `BranchSchedule.OrderInvariant`, the children the entry of a Scope begins together may not conflict, compared as
+ * a split's branches (`branchesAgainst`): without a start Event every child that begins implicitly begins, one `begin`
+ * signal each (`feature/scopes.ts` `implicitStart`), and BPMN 2.0.2 §13.3.4 gives them no order, while each child's
+ * tokens join the closure's queue in an order no input states (issue #81; P1 census, G1).
+ */
+function implicitFanOut(reading: Reading, program: Program, element: Element): string | null {
+  const scope = elementScope(element);
+  if (scope === null) return null;
+  const paths = enteredChildren(program, scope[0].id).map((child) => pathOf(reading, program, [toEnter(child)]));
+  for (const [index, own] of paths.entries()) {
+    const found = branchesAgainst(reading, program, own, paths.slice(index + 1));
+    if (found !== null) return found;
+  }
+  return null;
+}
+
+/** The fan-outs of one element's run or entry besides a split's and a loop's, under `BranchSchedule.OrderInvariant`. */
 export function fanOutConflict(reading: Reading, program: Program, element: Element): string | null {
   switch (program.options.branchSchedule) {
     case BranchSchedule.DeclarationDepthFirst:
       return null;
     case BranchSchedule.OrderInvariant:
       return signalFanOut(reading, program, element) ?? escalationFanOut(reading, program, element) ??
-        writeFanOut(reading, program, element) ?? compensationFanOut(reading, program, element);
+        writeFanOut(reading, program, element) ?? compensationFanOut(reading, program, element) ??
+        implicitFanOut(reading, program, element);
   }
   return assertNever(program.options.branchSchedule);
 }

@@ -1,0 +1,28 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-implicit-begins-swapped-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-implicit-begins-swapped",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/implicit-begins-swapped.bpmn",
+    "sha256": "8a4d70f5f8adad6c4b466e6e03cdcc4b14d8281c792d5f08285e607881f2fd2e",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

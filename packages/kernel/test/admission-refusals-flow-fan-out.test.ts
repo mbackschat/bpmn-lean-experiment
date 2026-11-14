@@ -250,6 +250,17 @@ const callBeside = (caughtInside: boolean) => (program: Json): Json => {
     [flow("c", "C", "CE"), ...calledFlows], "C")(program));
 };
 
+/**
+ * `S → R → E`: the Sub-Process `R` has no start Event, so its entry begins its children, the writers `A` of `outcome` and
+ * `B` of `name`, together (P1 census, G1).
+ */
+const implicitPair = (name: string) => {
+  const [first, firstInner] = writer("A", "outcome", "a", "R");
+  const [second, secondInner] = writer("B", name, "b", "R");
+  return model([start("S"), scope("R", "embedded"), ...first, ...second, end("E")],
+    [flow("f1", "S", "R"), flow("r", "R", "E"), ...firstInner, ...secondInner]);
+};
+
 const rows: Row[] = [
   {
     code: "flow.concurrentWrite",
@@ -346,6 +357,12 @@ const rows: Row[] = [
     description: "a Call whose called process lets an Error escape beside a sibling branch",
     mutate: callBeside(false),
     control: callBeside(true),
+  },
+  {
+    code: "flow.concurrentWrite",
+    description: "two children a Scope without a start Event begins together, writing the same name",
+    mutate: implicitPair("outcome"),
+    control: implicitPair("other"),
   },
 ];
 

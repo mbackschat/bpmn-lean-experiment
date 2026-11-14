@@ -21,8 +21,8 @@ removing a region that holds it, resuming a subscription it opens or compensatin
 those of the mechanisms that queue more than one work item, one case each: a split's emission (BPMN 2.0.2 §13.3.1,
 Table 13.1), a parallel body's instances (§13.3.7), a Signal throw's firings beside its continuation (§10.5.1: a Signal
 reaches every catcher), a non-interrupting catch beside its thrower, which goes on (§10.5.1), the Conditional firings
-one write offers (`Feature.Subscriptions.offerWrites`), and the handlers one Compensation throw begins (§13.5.5); an
-Error no catcher takes ends every unit (Table 10.88). `Laws.Flow.Concurrent`'s cases are exactly the cases of P6's
+one write offers (`Feature.Subscriptions.offerWrites`), the handlers one Compensation throw begins (§13.5.5), and the
+children a Scope's entry begins without a start Event (§13.3.4); an Error no catcher takes ends every unit (Table 10.88). `Laws.Flow.Concurrent`'s cases are exactly the cases of P6's
 provenance lemma, that two items queued together at a reachable closure state lie in distinct units of one case, and
 they must match the mechanisms `Admission.Flow.Concurrency.concurrentLevel` counts as making a level concurrent. That
 admission enforces `Apart` stays scenario evidence (`scenarios/open-rows/split-branch-order`,
@@ -48,7 +48,8 @@ and one contiguous block of Signal firings, the receivers one Signal throw queue
 signal in place, the ones before the block included.
 
 It does not vary the `begin` signals of a parallel body's instances (under `orderInvariant` no begin is deferred onto
-the tokens), the begins of the handlers one Compensation throw starts, or the order of idle scope completions, which
+the tokens), of a Scope's implicitly begun children, whose tokens `tokens` reorders, the begins of the handlers one
+Compensation throw starts, or the order of idle scope completions, which
 `Step.settle` fixes: that those orders are immaterial rests on admission alone (`multiInstance.concurrentInstances`,
 which counts an instance completing where the instances begin or where a broadcast resumes them, the compensation pairs
 of `flow.concurrentWrite` and `flow.concurrentInterference`, a Scope's completion followed as its thrower's
