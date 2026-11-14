@@ -4,6 +4,7 @@ public import Kernel.Step
 public import Kernel.Laws.IL
 import all Kernel.Step
 import all Kernel.Step.Jobs
+import all Kernel.Step.Stale
 
 /-! # Laws of the step function
 
@@ -198,5 +199,34 @@ theorem dispatch_gateway {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {
     (element : ctx.program.element? occurrence.element = some (.gateway header payload)) :
     dispatch hooks ctx occurrence entry trigger state = hooks.arriveGateway ctx header payload occurrence state := by
   simp [dispatch, element, bodyLoop?, Laws.IL.envelope?_gateway]
+
+/-! ## Queued work whose scope occurrence is gone -/
+
+/-! A queued write, removal, compensation or compensation failure whose scope occurrence is absent fails the input as an
+invariant failure, whatever its hooks would do there (#121): no write reaches the instance root or leaves a variable set
+for a removed scope occurrence. -/
+
+theorem write_scope_gone {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrenceId} {writes : List (String × Value)}
+    {rule : WriteRule} {state : State} (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
+    (signalWork hooks ctx (.write scope writes rule)).perform state = .error (.semanticFailure "queued-work-scope-gone") := by
+  simp_all [signalWork, SignalWork.perform, stale, gone]
+
+theorem remove_scope_gone {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrenceId} {names : List String} {state : State}
+    (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
+    (signalWork hooks ctx (.remove scope names)).perform state = .error (.semanticFailure "queued-work-scope-gone") := by
+  simp_all [signalWork, SignalWork.perform, stale, gone]
+
+theorem compensate_scope_gone {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
+    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {state : State}
+    (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
+    (signalWork hooks ctx (.compensate scope activity trigger leave resume)).perform state =
+      .error (.semanticFailure "queued-work-scope-gone") := by
+  simp_all [signalWork, SignalWork.perform, stale, gone]
+
+theorem compensationFailed_scope_gone {hooks : Hooks} {ctx : Ctx} {handler : ScopeOccurrenceId} {code : String}
+    {message : Option String} {origin : Origin} {state : State} (absent : ∀ entry ∈ state.scopes, entry.id ≠ handler) :
+    (signalWork hooks ctx (.compensationFailed handler code message origin)).perform state =
+      .error (.semanticFailure "queued-work-scope-gone") := by
+  simp_all [signalWork, SignalWork.perform, stale, gone]
 
 end Kernel.Laws.Step

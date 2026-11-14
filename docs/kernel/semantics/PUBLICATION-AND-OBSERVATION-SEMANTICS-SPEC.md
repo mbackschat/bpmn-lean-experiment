@@ -83,6 +83,7 @@ None: publication and observation are project contracts, and CIB-visible facts e
 | `unknown-occurrence`, `unknown-user-task`, `unknown-timer`, `unknown-message-subscription`, `unknown-effect`, `unknown-incident` (rejected) | an input naming what the state lacks | command admission |
 | `instance-not-started`, `instance-already-started`, `instance-not-running` (rejected) | an input against the wrong lifecycle | command admission |
 | `closure-bound` (unsupported, dynamic-only) | a closure longer than the bound, or one whose micro-steps together run over more state entries than the work bound | its length and size depend on the run |
+| `queued-work-scope-gone` (semanticFailure) | a queued write, removal, compensation or compensation failure whose scope occurrence is absent when it runs | an invariant failure no admitted schedule reaches: the closure order runs each before its scope occurrence's removal, as CIB writes an output before it destroys the execution (`ExecutionEntity.java:518-528`); never a write at the instance root, a drop or `unsupported` ([`Step.gone`](../../../Kernel/Step/Stale.lean), [#121](https://github.com/mbackschat/bpmn-lean-experiment/issues/121)) |
 
 ## Open rows
 

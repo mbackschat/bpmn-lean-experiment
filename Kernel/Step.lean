@@ -180,8 +180,8 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
   | .raise event origin => { run := hooks.raise ctx event origin }
   | .begin request => { scopes := [request.scope], run := begin hooks ctx request }
   | .complete occurrence leave writes rule => { run := complete hooks ctx occurrence leave writes rule }
-  | .write scope writes rule => { run := hooks.writeOutputs ctx scope writes rule }
-  | .remove scope names => { run := hooks.removeVariables ctx scope names }
+  | .write scope writes rule => { requires := [scope], run := hooks.writeOutputs ctx scope writes rule }
+  | .remove scope names => { requires := [scope], run := hooks.removeVariables ctx scope names }
   | .occur element scope leave writes rule => { scopes := [scope], run := fun state => do
     requireScope state scope
     let (state, occurrence) := state.reserve element scope
@@ -193,9 +193,9 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
     | none => .ok state }
   | .endInstance status failure => { run := fun state => .ok (endInstance status failure state) }
   | .compensate scope activity trigger leave resume =>
-    { run := hooks.compensate ctx scope activity trigger leave resume }
+    { requires := [scope], run := hooks.compensate ctx scope activity trigger leave resume }
   | .compensationFailed handler code message origin =>
-    { run := hooks.failCompensation ctx handler code message origin }
+    { requires := [handler], run := hooks.failCompensation ctx handler code message origin }
 
 /-- Run a queued signal, refused when what it names is gone (`SignalWork.perform`). -/
 def dispatchSignal (hooks : Hooks) (ctx : Ctx) (signal : Signal) (state : State) : Outcome :=

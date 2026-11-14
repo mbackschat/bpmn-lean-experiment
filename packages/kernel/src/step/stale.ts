@@ -15,11 +15,13 @@ export function requireScope(state: State, scope: ScopeOccurrenceId): Outcome | 
 }
 
 /**
- * A signal's transition, whether it is a completion, the one kind `absorb` runs inside the micro-step, and the scope
- * occurrences and occurrences it works in or on (`stale`): Lean's `SignalWork`.
+ * A signal's transition, whether it is a completion, the one kind `absorb` runs inside the micro-step, the scope
+ * occurrences and occurrences it works in or on (`stale`), and the scope occurrences it acts from (`gone`): Lean's
+ * `SignalWork`.
  */
 export type SignalRun = Readonly<{
   completion: boolean; run: (state: State) => Outcome; scopes: readonly ScopeOccurrenceId[]; occurrences: readonly number[];
+  requires: readonly ScopeOccurrenceId[];
 }>;
 
 /**
@@ -35,11 +37,24 @@ function stale(state: State, work: SignalRun): boolean {
 }
 
 /**
+ * `Kernel.Step.gone`: whether a scope occurrence a write, a removal, a compensation or a compensation's failure acts
+ * from is absent. The closure order runs each before its scope occurrence's removal (#121), as CIB writes an output
+ * before it destroys the execution (`ExecutionEntity.java:518-528`), so one that runs after it, or names a scope
+ * occurrence never issued, is a kernel defect: never a write at the instance root or in a removed scope occurrence's
+ * variable set, never dropped, and never `unsupported`, which would claim CIB-LIM-0055.
+ */
+function gone(state: State, work: SignalRun): boolean {
+  return work.requires.some((scope) => !state.scopes.some((entry) => entry.id === scope));
+}
+
+/**
  * `Kernel.Step.SignalWork.perform`: run a queued signal's work, unless an interruption removed what it names first
  * (`stale`): then work an earlier firing of the input started never reaches its first wait, where CIB runs it there
- * before the interruption (CIB-LIM-0055), so the input is `unsupported` rather than committed without that work.
+ * before the interruption (CIB-LIM-0055), so the input is `unsupported` rather than committed without that work. Work
+ * whose scope occurrence is absent is an invariant failure (`gone`).
  */
 export function perform(work: SignalRun, state: State): Outcome {
   // dynamic-only: whether an interruption overtakes queued work depends on the run's data and order
-  return stale(state, work) ? failed(FailureTag.Unsupported, "interrupted-before-wait") : work.run(state);
+  if (stale(state, work)) return failed(FailureTag.Unsupported, "interrupted-before-wait");
+  return gone(state, work) ? failed(FailureTag.SemanticFailure, "queued-work-scope-gone") : work.run(state);
 }

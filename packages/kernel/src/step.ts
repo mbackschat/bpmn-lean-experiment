@@ -195,8 +195,10 @@ function endInstance(status: InstanceStatus, failure: InstanceFailure | null, st
   return { ...clearInside(state, root), status, failure };
 }
 
-const other = (run: (state: State) => Outcome, scopes: readonly ScopeOccurrenceId[] = [], occurrences: readonly number[] = []): SignalRun =>
-  ({ completion: false, run, scopes, occurrences });
+const other = (
+  run: (state: State) => Outcome, scopes: readonly ScopeOccurrenceId[] = [], occurrences: readonly number[] = [],
+  requires: readonly ScopeOccurrenceId[] = [],
+): SignalRun => ({ completion: false, run, scopes, occurrences, requires });
 
 /** `Kernel.Step.signalWork`: what a queued signal does and the targets it names (`step/stale.ts`). */
 function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
@@ -214,12 +216,12 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
     case SignalTag.Complete:
       return {
         completion: true, run: (state) => complete(hooks, ctx, next.occurrence, next.leave, next.writes, next.rule, state), scopes: [],
-        occurrences: [],
+        occurrences: [], requires: [],
       };
     case SignalTag.Write:
-      return other((state) => hooks.writeOutputs(ctx, next.scope, next.writes, next.rule, state));
+      return other((state) => hooks.writeOutputs(ctx, next.scope, next.writes, next.rule, state), [], [], [next.scope]);
     case SignalTag.Remove:
-      return other((state) => hooks.removeVariables(ctx, next.scope, next.names, state));
+      return other((state) => hooks.removeVariables(ctx, next.scope, next.names, state), [], [], [next.scope]);
     case SignalTag.Occur:
       return other((state) => {
         const missing = requireScope(state, next.scope);
@@ -237,9 +239,11 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
     case SignalTag.EndInstance:
       return other((state) => committed(endInstance(next.status, next.failure, state)));
     case SignalTag.Compensate:
-      return other((state) => hooks.compensate(ctx, next.scope, next.activity, next.trigger, next.leave, next.resume, state));
+      return other((state) => hooks.compensate(ctx, next.scope, next.activity, next.trigger, next.leave, next.resume, state), [], [],
+        [next.scope]);
     case SignalTag.CompensationFailed:
-      return other((state) => hooks.failCompensation(ctx, next.handler, next.code, next.message, next.origin, state));
+      return other((state) => hooks.failCompensation(ctx, next.handler, next.code, next.message, next.origin, state), [], [],
+        [next.handler]);
   }
   return assertNever(next);
 }
