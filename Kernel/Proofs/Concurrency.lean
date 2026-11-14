@@ -2,7 +2,7 @@ module
 
 public import Kernel.Laws.Step
 public import Kernel.Laws.Data
-public import Kernel.IL.Footprint
+public import Kernel.Laws.Flow.Concurrent
 
 /-! # Proofs: concurrency (P6)
 
@@ -13,23 +13,21 @@ canonical-result observation boundary: `Step.settle`'s fixed order is immaterial
 the input's ranking decides it by design. Stated over a hooks parameter; the lane closes when `Kernel.Proofs.Step`
 proves it of `Registry.hooks`.
 
-Model premises: the profile option `branchSchedule = .orderInvariant`, and `apart`, the order-invariance condition
-admission enforces with `flow.concurrentWrite`, `flow.concurrentInterference` and `multiInstance.concurrentInstances`
-(#81): two units of work one closure may hold together neither race on a name, by the read and write account of
-`Kernel.IL.Footprint`, nor act on each other's work, by removing a region that holds it, resuming a subscription it
-opens or compensating a record it leaves. The units are those of the mechanisms that queue more than one work item, one
-case each: a split's emission (BPMN 2.0.2 §13.3.1, Table 13.1), a parallel body's instances (§13.3.7), a Signal throw's
-firings beside its continuation (§10.5.1: a Signal reaches every catcher), a non-interrupting catch beside its thrower,
-which goes on (§10.5.1), the Conditional firings one write offers (`Feature.Subscriptions.offerWrites`), and the handlers
-one Compensation throw begins (§13.5.5); an Error no catcher takes ends every unit (Table 10.88). P6's provenance lemma,
-that two items queued together at a reachable closure state lie in distinct units of one such fan-out, has exactly
-these cases, and they must match the levels `Admission.Flow.Concurrency.concurrentLevel` counts as concurrent.
-
-`apart` is a parameter: a `Laws` module may not import the admission's closure walk, and a `Proofs` module neither the
-registry nor an admission, so its declarative statement, `Laws.Flow.Concurrent` over an inductive unit reach, is P6's
-to write beside the provenance lemma, which reads the same cases. That admission enforces it stays scenario evidence
-(`scenarios/open-rows/split-branch-order`, `scenarios/open-rows/branch-fan-out-order`). `Laws.Data` is this module's
-path to `Laws.State`, whose importers are all feature `Laws` modules. Nothing executable imports this module.
+Model premises: the profile option `branchSchedule = .orderInvariant`, and `Laws.Flow.Apart`, the order-invariance
+condition admission enforces with `flow.concurrentWrite`, `flow.concurrentInterference` and
+`multiInstance.concurrentInstances` (#81): two units of work one closure may hold together (`Laws.Flow.Concurrent`)
+neither race on a name, by the read and write account of `Kernel.IL.Footprint`, nor act on each other's work, by
+removing a region that holds it, resuming a subscription it opens or compensating a record it leaves. The units are
+those of the mechanisms that queue more than one work item, one case each: a split's emission (BPMN 2.0.2 §13.3.1,
+Table 13.1), a parallel body's instances (§13.3.7), a Signal throw's firings beside its continuation (§10.5.1: a Signal
+reaches every catcher), a non-interrupting catch beside its thrower, which goes on (§10.5.1), the Conditional firings
+one write offers (`Feature.Subscriptions.offerWrites`), and the handlers one Compensation throw begins (§13.5.5); an
+Error no catcher takes ends every unit (Table 10.88). `Laws.Flow.Concurrent`'s cases are exactly the cases of P6's
+provenance lemma, that two items queued together at a reachable closure state lie in distinct units of one case, and
+they must match the mechanisms `Admission.Flow.Concurrency.concurrentLevel` counts as making a level concurrent. That
+admission enforces `Apart` stays scenario evidence (`scenarios/open-rows/split-branch-order`,
+`scenarios/open-rows/branch-fan-out-order`), since a law may not name the admission evaluator. `Laws.Data` is this
+module's path to `Laws.State`, whose importers are all feature `Laws` modules. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -52,8 +50,9 @@ signal in place, the ones before the block included.
 It does not vary the `begin` signals of a parallel body's instances (under `orderInvariant` no begin is deferred onto
 the tokens), the begins of the handlers one Compensation throw starts, or the order of idle scope completions, which
 `Step.settle` fixes: that those orders are immaterial rests on admission alone (`multiInstance.concurrentInstances`,
-the compensation pairs of `flow.concurrentWrite` and `flow.concurrentInterference`, a Scope's completion followed as
-its thrower's continuation). The Conditional firings one write offers stay in place too: admission refuses a write
+which counts an instance completing where the instances begin or where a broadcast resumes them, the compensation pairs
+of `flow.concurrentWrite` and `flow.concurrentInterference`, a Scope's completion followed as its thrower's
+continuation), restated in `Laws.Flow.Concurrent`'s `instances`, `compensating` and `continuationOf`. The Conditional firings one write offers stay in place too: admission refuses a write
 whose firings race a sibling unit, and an uncontested firing's effects reach the other units only through the tokens it
 emits, which `tokens` reorders. -/
 structure Reordered (left right : State) : Prop where
@@ -101,9 +100,9 @@ structure Alike (ids : Nat → Nat) (keys : OccurrenceKey → OccurrenceKey) (le
 
 /-- P6: from a closure state reached from a well-formed state, any two schedules of its enabled work that both settle
 commit results alike up to a bijection of the identities and activations issued from that state on. -/
-def SchedulesAgree (hooks : Hooks) (apart : Program → Prop) : Prop :=
+def SchedulesAgree (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (start state reordered left right : State) (fuel work fuel' work' : Nat),
-    ctx.program.options.branchSchedule = .orderInvariant → apart ctx.program →
+    ctx.program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart ctx.program →
     WellFormed start → Reaches hooks ctx start state → Reordered state reordered →
     Step.settle hooks ctx fuel work state = .ok left → Step.settle hooks ctx fuel' work' reordered = .ok right →
     ∃ ids keys, Issued ids state.nextIssue ∧ Activations state keys ∧ Alike ids keys left right
