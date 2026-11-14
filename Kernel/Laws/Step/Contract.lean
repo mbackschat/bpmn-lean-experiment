@@ -6,9 +6,15 @@ public import Kernel.Step
 
 What `Step.step` needs of the hooks and of the state operations it applies for an invariant of the state to pass through
 it: one obligation per field of `Hooks` (`HookContract`) and one per phase `Step` runs itself (`Phases`), each from
-what `Step` establishes before it runs them, and what the state operations do to the fields `Step` reads, whatever the
-invariant (`StateFacts`). `Kernel.Laws.Step` and `Kernel.Laws.Step.Keeps` compose them; each feature's `Laws` module
-proves the fields of the hooks it fills, and `Laws.State` the state operations'. Nothing executable imports this module.
+what `Step` establishes before it runs them, and what the state operations do to the fields `Step` and the hooks read,
+whatever the invariant (`StateFacts`). `Kernel.Laws.Step` and `Kernel.Laws.Step.Keeps` compose them.
+
+A feature proves the field of each hook it fills generically in the invariant, without importing `Laws.State` or this
+module: its `Laws` module states, in `Kernel.State`'s vocabulary, an operations record of what its hooks' bodies need of
+the state operations they apply (that each keeps the invariant under the conditions the hook establishes, and the
+invariant-free facts it reads), and proves one lemma per hook from it. `Kernel.Proofs.Step` fills each feature's record
+from `Operations` and `StateFacts` and assembles the registered hooks' contract; `Laws.State` proves `Operations` and
+`Phases` of `Laws.State.WellFormed` and `StateFacts`. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -168,5 +174,30 @@ structure StateFacts : Prop where
   closeOwnItems : ∀ (state : State) id,
     PipelineFrame state (state.closeOwnItems id) ∧ ∀ item ∈ (state.closeOwnItems id).openItems, item.occurrence ≠ id
   recordEnd : ∀ (state : State) key terminal, (state.recordEnd key terminal).scopes = state.scopes
+  /-- A variable write or removal changes no scope occurrence, occurrence or open item. -/
+  setVariable : ∀ (state : State) target name value, (state.setVariable target name value).scopes = state.scopes ∧
+    (state.setVariable target name value).occurrences = state.occurrences ∧
+    (state.setVariable target name value).openItems = state.openItems
+  removeVariable : ∀ (state : State) target name, (state.removeVariable target name).scopes = state.scopes ∧
+    (state.removeVariable target name).occurrences = state.occurrences ∧
+    (state.removeVariable target name).openItems = state.openItems
+  /-- A scope occurrence a lookup finds stands, or, for `State.owner?`, holds a variable set. -/
+  declaring : ∀ (state : State) scope element found, state.declaring? scope element = some found → ScopeStands state found
+  owner : ∀ (state : State) scope name found, state.owner? scope name = some found →
+    ∃ variables ∈ state.variables, variables.scope = found
+  /-- An instance root is the process root or a scope occurrence that stands. -/
+  instanceRoot : ∀ (state : State) scope, state.instanceRoot scope = State.root ∨ ScopeStands state (state.instanceRoot scope)
+
+/-- What the state operations the hooks' bodies apply must keep of `inv`, under the conditions a hook establishes, and
+what `inv` tells a hook of the state it runs on: the obligations each feature's operations record draws on (see the
+module documentation). An operation enters when a feature proof first needs it. -/
+structure Operations (inv : State → Prop) : Prop where
+  /-- Every variable set belongs to a scope occurrence that stands. -/
+  variablesHoused : ∀ state, inv state → ∀ variables ∈ state.variables, ScopeStands state variables.scope
+  /-- The process root stands. -/
+  rootStands : ∀ state, inv state → ScopeStands state State.root
+  /-- A write to a scope occurrence that stands. -/
+  setVariable : ∀ state target name value, inv state → ScopeStands state target → inv (state.setVariable target name value)
+  removeVariable : ∀ state target name, inv state → inv (state.removeVariable target name)
 
 end Kernel.Laws.Step

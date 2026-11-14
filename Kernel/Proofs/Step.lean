@@ -5,6 +5,7 @@ public import Kernel.Laws.Registry
 public import Kernel.Laws.Flow
 public import Kernel.Laws.Data
 public import Kernel.Laws.Hooks
+public import Kernel.Proofs.State
 
 /-! # Proofs: composition over the registered hooks
 
@@ -12,7 +13,9 @@ The proof wave's composition module ([PLAN, proof wave](../../docs/PLAN.md#proof
 `Step`-generic facts of `Kernel.Laws.Step` with the registered hooks of `Kernel.Laws.Registry` and the feature lemmas
 of each `Kernel.Laws.<F>`, and opens no body. Each lane's statement is stated over a hooks parameter at the head of its
 own `Kernel.Proofs.<Lane>` module and proved there from hook contracts; a lane closes when this module proves its
-statement of `Registry.hooks`. Nothing executable imports this module.
+statement of `Registry.hooks`. The registered hooks' contract (`Laws.Step.HookContract`) is assembled here, one field
+per hook, from each feature's lemma and the operations record the feature states, which this module fills from
+`Laws.Step.Operations` and `Laws.Step.StateFacts`. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -67,18 +70,56 @@ theorem exclusiveArrival : ExclusiveArrival := by
   exact ⟨next, sourceType, begun, occurrence, taken, evaluated, arrived, made, isGateway, inScope, onFlow, signalled,
     takes⟩
 
-/-- Data's share of the state invariant, measured at P0 (P2's budget rests on it): the registered removal hook keeps
-`Laws.State.WellFormed`, and the registered write hook keeps the variable sets keyed. -/
-theorem registeredRemovals_wellFormed {ctx : Ctx} {scope : ScopeOccurrenceId} {names : List String} {state after : State}
-    (formed : Laws.State.WellFormed state) (ran : Registry.hooks.removeVariables ctx scope names state = .ok after) :
-    Laws.State.WellFormed after := by
-  rw [Laws.Registry.hooks_removeVariables] at ran
-  exact Laws.Data.removeVariables_wellFormed formed ran
+/-! ## The registered hooks' contract -/
 
-theorem registeredWrites_variablesKeyed {ctx : Ctx} {scope : ScopeOccurrenceId} {writes : List (String × Value)}
-    {rule : WriteRule} {state after : State} (keyed : Laws.State.VariablesKeyed state)
-    (ran : Registry.hooks.writeOutputs ctx scope writes rule state = .ok after) : Laws.State.VariablesKeyed after := by
+section Contract
+
+open Kernel.Laws.Step (Operations StateFacts ScopeStands PipelineFrame)
+
+variable {inv : State → Prop}
+
+/-- Data's operations record (`Laws.Data.StateOps`), from the root's. -/
+theorem dataOps (ops : Operations inv) (facts : StateFacts) : Laws.Data.StateOps inv where
+  housed := ops.variablesHoused
+  rooted := ops.rootStands
+  set := ops.setVariable
+  remove := ops.removeVariable
+  setFrame := facts.setVariable
+  removeFrame := facts.removeVariable
+  declaring := facts.declaring
+  owner := facts.owner
+  instanceRoot := facts.instanceRoot
+
+/-- `HookContract.writeOutputs` of the registered hooks. -/
+theorem registered_writeOutputs (ops : Operations inv) (facts : StateFacts) :
+    ∀ ctx scope writes rule state after, inv state → ScopeStands state scope →
+      Registry.hooks.writeOutputs ctx scope writes rule state = .ok after → inv after ∧ PipelineFrame state after := by
+  intro ctx scope writes rule state after holds stands ran
   rw [Laws.Registry.hooks_writeOutputs] at ran
-  exact Laws.Data.writeOutputs_variablesKeyed keyed ran
+  obtain ⟨kept, scopes, occurrences, items⟩ := Laws.Data.writeOutputs_keeps (dataOps ops facts) holds stands ran
+  exact ⟨kept, scopes, fun occurrence member _ => occurrences ▸ member, fun item member => items ▸ member⟩
+
+/-- `HookContract.removeVariables` of the registered hooks. -/
+theorem registered_removeVariables (ops : Operations inv) (facts : StateFacts) :
+    ∀ ctx scope names state after, inv state → ScopeStands state scope →
+      Registry.hooks.removeVariables ctx scope names state = .ok after → inv after := by
+  intro ctx scope names state after holds _ ran
+  rw [Laws.Registry.hooks_removeVariables] at ran
+  exact Laws.Data.removeVariables_keeps (dataOps ops facts) holds ran
+
+end Contract
+
+/-- Data's share of the state invariant, measured at P0 (P2's budget rests on it): the registered write and removal
+hooks keep `Laws.State.WellFormed`. -/
+theorem registeredWrites_wellFormed {ctx : Ctx} {scope : ScopeOccurrenceId} {writes : List (String × Value)}
+    {rule : WriteRule} {state after : State} (formed : Laws.State.WellFormed state)
+    (stands : Laws.Step.ScopeStands state scope)
+    (ran : Registry.hooks.writeOutputs ctx scope writes rule state = .ok after) : Laws.State.WellFormed after :=
+  (registered_writeOutputs Proofs.State.operations Proofs.State.stateFacts _ _ _ _ _ _ formed stands ran).1
+
+theorem registeredRemovals_wellFormed {ctx : Ctx} {scope : ScopeOccurrenceId} {names : List String} {state after : State}
+    (formed : Laws.State.WellFormed state) (stands : Laws.Step.ScopeStands state scope)
+    (ran : Registry.hooks.removeVariables ctx scope names state = .ok after) : Laws.State.WellFormed after :=
+  registered_removeVariables Proofs.State.operations Proofs.State.stateFacts _ _ _ _ _ formed stands ran
 
 end Kernel.Proofs.Step

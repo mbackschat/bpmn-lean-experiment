@@ -65,6 +65,7 @@ public import Kernel.Laws.Registry
 public import Kernel.Laws.Scopes
 public import Kernel.Laws.Starts
 public import Kernel.Laws.State
+public import Kernel.Laws.State.Invariant
 public import Kernel.Laws.Step
 public import Kernel.Laws.Step.Contract
 public import Kernel.Laws.Step.Keeps

@@ -226,53 +226,104 @@ def FailedSource (dialect : MappingDialect) (code : String) (reading : Except Fa
 
 /-! ## The state invariant under Data's hooks
 
-Data's share of the proof wave's state-invariant lane (P2): `Hooks.removeVariables` keeps the whole invariant and
-`Hooks.writeOutputs` keeps variable sets keyed. An outward write lands in a present scope occurrence, since one that
-finds no owner falls back to `State.root`, which `WellFormed` requires present (`Laws.State.Rooted`). That every write
-does, the rest of `Owned` for `writeOutputs`, is not stated here: an `.own` write names its scope occurrence unchecked,
-and a queued one can name a scope occurrence an interruption removed first (#121's class). -/
+Data's share of the proof wave's state-invariant lane (P2): `Hooks.writeOutputs` and `Hooks.removeVariables` keep any
+invariant `inv` that the variable operations keep, stated over `StateOps`, generic in `inv`, so the proof reads no
+`Laws.State` law and no `Kernel.State` body; `Kernel.Proofs.Step` fills `StateOps` from `Laws.Step.Operations` and
+`Laws.Step.StateFacts`. A write lands in a scope occurrence that stands: the writing scope occurrence for an `.own`
+write, a declaring occurrence or owner a lookup found, or the instance root, the process root at worst (#121 refuses
+queued work whose scope occurrence is gone). -/
 
-/-- One write lands as one `setVariable`, wherever its rule sends it. -/
-private theorem write_sets {ctx : Ctx} {rule : WriteRule} {scope : ScopeOccurrenceId} {state after : State}
-    {binding : String × Value} (ran : Feature.Data.write ctx rule scope state binding = .ok after) :
-    ∃ target, after = state.setVariable target binding.1 binding.2 := by
+/-- What Data's hooks need of the state operations they apply, for an invariant `inv`: what `inv` gives (every variable
+set is housed, the process root stands), that a write to a standing scope occurrence and a removal keep `inv`, and the
+invariant-free facts of the variable operations and the lookups the hooks read. -/
+structure StateOps (inv : State → Prop) : Prop where
+  housed : ∀ state, inv state → ∀ variables ∈ state.variables, ∃ entry ∈ state.scopes, entry.id = variables.scope
+  rooted : ∀ state, inv state → ∃ entry ∈ state.scopes, entry.id = State.root
+  set : ∀ state target name value, inv state → (∃ entry ∈ state.scopes, entry.id = target) →
+    inv (state.setVariable target name value)
+  remove : ∀ state target name, inv state → inv (state.removeVariable target name)
+  setFrame : ∀ (state : State) target name value, (state.setVariable target name value).scopes = state.scopes ∧
+    (state.setVariable target name value).occurrences = state.occurrences ∧
+    (state.setVariable target name value).openItems = state.openItems
+  removeFrame : ∀ (state : State) target name, (state.removeVariable target name).scopes = state.scopes ∧
+    (state.removeVariable target name).occurrences = state.occurrences ∧
+    (state.removeVariable target name).openItems = state.openItems
+  declaring : ∀ (state : State) scope element found, state.declaring? scope element = some found →
+    ∃ entry ∈ state.scopes, entry.id = found
+  owner : ∀ (state : State) scope name found, state.owner? scope name = some found →
+    ∃ variables ∈ state.variables, variables.scope = found
+  instanceRoot : ∀ (state : State) scope,
+    state.instanceRoot scope = State.root ∨ ∃ entry ∈ state.scopes, entry.id = state.instanceRoot scope
+
+/-- One write lands as one `setVariable` on a scope occurrence that stands. -/
+private theorem write_lands {inv : State → Prop} (ops : StateOps inv) {ctx : Ctx} {rule : WriteRule}
+    {scope : ScopeOccurrenceId} {state after : State} {binding : String × Value} (holds : inv state)
+    (stands : ∃ entry ∈ state.scopes, entry.id = scope) (ran : Feature.Data.write ctx rule scope state binding = .ok after) :
+    ∃ target, (∃ entry ∈ state.scopes, entry.id = target) ∧ after = state.setVariable target binding.1 binding.2 := by
   obtain ⟨name, value⟩ := binding
+  have root : ∃ entry ∈ state.scopes, entry.id = state.instanceRoot scope := by
+    rcases ops.instanceRoot state scope with same | standing
+    · rw [same]; exact ops.rooted state holds
+    · exact standing
   unfold Feature.Data.write at ran
   dsimp only at ran
-  repeat' split at ran
-  all_goals first | exact ⟨_, (Except.ok.inj ran).symm⟩ | simp at ran
+  split at ran
+  · exact ⟨scope, stands, (Except.ok.inj ran).symm⟩
+  · cases item : Feature.Data.itemOwner? ctx state scope name with
+    | some owner =>
+      simp only [item] at ran
+      unfold Feature.Data.itemOwner? at item
+      obtain ⟨_, _, declared⟩ := Option.bind_eq_some_iff.mp item
+      exact ⟨owner, ops.declaring _ _ _ _ declared, (Except.ok.inj ran).symm⟩
+    | none =>
+      simp only [item] at ran
+      cases nearest : state.owner? scope name with
+      | some owner =>
+        simp only [nearest] at ran
+        obtain ⟨variables, member, same⟩ := ops.owner _ _ _ _ nearest
+        exact ⟨owner, same ▸ ops.housed state holds variables member, (Except.ok.inj ran).symm⟩
+      | none =>
+        simp only [nearest] at ran
+        repeat' split at ran
+        all_goals first | exact ⟨_, root, (Except.ok.inj ran).symm⟩ | (simp at ran; done) | (simp_all; done)
 
-/-- `Hooks.writeOutputs` of Data keeps every variable set keyed by name, and the sets keyed by scope occurrence. -/
-theorem writeOutputs_variablesKeyed {ctx : Ctx} {scope : ScopeOccurrenceId} {writes : List (String × Value)}
-    {rule : WriteRule} {state after : State} (keyed : Laws.State.VariablesKeyed state)
-    (ran : Feature.Data.writeOutputs ctx scope writes rule state = .ok after) : Laws.State.VariablesKeyed after := by
+/-- `Hooks.writeOutputs` of Data keeps `inv` from a scope occurrence that stands, and changes no scope occurrence,
+occurrence or open item. -/
+theorem writeOutputs_keeps {inv : State → Prop} (ops : StateOps inv) {ctx : Ctx} {scope : ScopeOccurrenceId}
+    {writes : List (String × Value)} {rule : WriteRule} {state after : State} (holds : inv state)
+    (stands : ∃ entry ∈ state.scopes, entry.id = scope)
+    (ran : Feature.Data.writeOutputs ctx scope writes rule state = .ok after) :
+    inv after ∧ after.scopes = state.scopes ∧ after.occurrences = state.occurrences ∧ after.openItems = state.openItems := by
   unfold Feature.Data.writeOutputs at ran
   induction writes generalizing state with
-  | nil => simp only [List.foldlM_nil, pure, Except.pure] at ran; cases ran; exact keyed
+  | nil => simp only [List.foldlM_nil, pure, Except.pure] at ran; cases ran; exact ⟨holds, rfl, rfl, rfl⟩
   | cons binding rest ih =>
     simp only [List.foldlM_cons] at ran
     cases wrote : Feature.Data.write ctx rule scope state binding with
     | error failure => simp [wrote, bind, Except.bind] at ran
     | ok next =>
       simp only [wrote, bind, Except.bind] at ran
-      obtain ⟨target, made⟩ := write_sets wrote
+      obtain ⟨target, present, made⟩ := write_lands ops holds stands wrote
       subst made
-      exact ih (Laws.State.setVariable_variablesKeyed keyed) ran
+      obtain ⟨scopes, occurrences, items⟩ := ops.setFrame state target binding.1 binding.2
+      obtain ⟨kept, scopes', occurrences', items'⟩ :=
+        ih (ops.set _ _ _ _ holds present) (scopes ▸ stands) ran
+      exact ⟨kept, scopes'.trans scopes, occurrences'.trans occurrences, items'.trans items⟩
 
-/-- `Hooks.removeVariables` of Data keeps a state well-formed. -/
-theorem removeVariables_wellFormed {ctx : Ctx} {scope : ScopeOccurrenceId} {names : List String}
-    {state after : State} (formed : Laws.State.WellFormed state)
-    (ran : Feature.Data.removeVariables ctx scope names state = .ok after) : Laws.State.WellFormed after := by
+/-- `Hooks.removeVariables` of Data keeps `inv`. -/
+theorem removeVariables_keeps {inv : State → Prop} (ops : StateOps inv) {ctx : Ctx} {scope : ScopeOccurrenceId}
+    {names : List String} {state after : State} (holds : inv state)
+    (ran : Feature.Data.removeVariables ctx scope names state = .ok after) : inv after := by
   unfold Feature.Data.removeVariables at ran
   cases ran
   induction names generalizing state with
-  | nil => exact formed
+  | nil => exact holds
   | cons name rest ih =>
     simp only [List.foldl_cons]
     apply ih
     split
-    · exact Laws.State.removeVariable_wellFormed formed
-    · exact formed
+    · exact ops.remove _ _ _ holds
+    · exact holds
 
 /-! ## Non-vacuity
 

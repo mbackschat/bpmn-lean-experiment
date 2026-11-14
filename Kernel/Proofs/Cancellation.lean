@@ -84,7 +84,8 @@ structure Inert (before after : State) : Prop where
 
 /-- Queued work naming a scope occurrence that was issued and has since been removed has no effect: the closure
 micro-step that runs it either fails the input or changes nothing but the journal (`Kernel/Step/Stale.lean`). It is
-stated of any closure state, since the closure breaks `WellFormed` exactly here. -/
+stated of any closure state: such work keeps `WellFormed`, which asks only that what queued work names was issued
+(`Laws.State.QueueSound`). -/
 def QueuedWorkInert (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (state after : State) (next : Signal) (rest : List Signal) (scope : ScopeOccurrenceId),
     state.signals = next :: rest → ActsIn next scope → scope.value < state.nextIssue → scope ∉ scopeIds state →
