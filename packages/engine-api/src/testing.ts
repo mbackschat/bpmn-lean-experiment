@@ -29,7 +29,8 @@ export interface MemoryScheduleHost extends ScheduleHost {
   readonly deleted: readonly string[];
   /**
    * Takes the Schedule's action at the host clock, which must have reached its action instant: the firing Workflow,
-   * named as Temporal names it, submits the occurrence's `timerStart` and keeps the population's answer.
+   * named as Temporal names it, submits the occurrence's `timerStart` and keeps the population's answer. A refusal
+   * before acceptance fails it, as it fails the firing Workflow.
    */
   fire(scheduleId: string): Promise<CommandAnswer>;
   stored: (request: OneShotScheduleRequest) => StoredSchedule | null;
@@ -126,6 +127,7 @@ function memoryScheduleHost(taskQueue: string, population: PopulationHost, now: 
       const workflowId = firingWorkflowId(request);
       const answer = await population.command("timerStart",
         { commandId: workflowId, deploymentId: firing.deploymentId, startEvent: firing.startEvent, dueMs: firing.dueMs });
+      if ("refused" in answer) throw new Error(`the population refused the firing of ${scheduleId} (${answer.refused})`);
       answers.set(workflowId, answer);
       return answer;
     },

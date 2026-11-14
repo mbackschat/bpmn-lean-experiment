@@ -20,8 +20,6 @@ const { Scheduling } = await import(new URL("../dist/protocol.js", import.meta.u
 const { canonicalBytes, chainCapacity } = await import(new URL("../dist/capacity.js", import.meta.url).href) as
   typeof import("../src/capacity.ts");
 const { planHost } = await import(new URL("../dist/host-machine.js", import.meta.url).href) as typeof import("../src/host-machine.ts");
-const { PopulationRefused } = await import(new URL("../dist/population-contract.js", import.meta.url).href) as
-  typeof import("../src/population-contract.ts");
 
 const durable: HostConfig = { scheduling: Scheduling.Durable, effectStartToCloseMs: 1_000, historyEventBudget: null };
 const external: HostConfig = { scheduling: Scheduling.External, effectStartToCloseMs: 1_000, historyEventBudget: null };
@@ -298,9 +296,9 @@ test("a population refuses a deployment program or a command past its byte bound
   const top = chainCapacity.stimulusBytes - canonicalBytes(broadcast(15_000, 0));
   assert.equal(canonicalBytes(broadcast(15_000, top)), chainCapacity.stimulusBytes);
   const answer = await population.command("broadcast", broadcast(15_000, top) as never);
-  assert.equal(answer.commandId, "b", "taken at the bound");
-  await assert.rejects(population.command("broadcast", { ...broadcast(15_000, top + 1), commandId: "b2" } as never),
-    (error: unknown) => error instanceof PopulationRefused && error.code === "host.capacity.stimulus");
+  assert.equal("commandId" in answer && answer.commandId, "b", "taken at the bound");
+  assert.deepEqual(await population.command("broadcast", { ...broadcast(15_000, top + 1), commandId: "b2" } as never),
+    { refused: "host.capacity.stimulus" });
 });
 
 // #138: the ingress defers a hand-off it cannot hold, and the emitter carries it, so the overflow lands on the emitter's
@@ -364,8 +362,8 @@ async function handoffHost(emitter: "watcher" | "ticker") {
 test("behind a deferred hand-off a population command is refused, and an input that throws no Signal still commits", async () => {
   const { host, population } = await handoffHost("watcher");
   assert.equal((await host.command(workflowId, fx.emitterCompletion(1, 20_000))).outcome, "committed");
-  await assert.rejects(population.command("broadcast", { kind: "broadcast", commandId: "b", address: { kind: "named", name: "go" }, variables: [] } as never),
-    (error: unknown) => error instanceof PopulationRefused && error.code === "host.capacity.continuation");
+  assert.deepEqual(await population.command("broadcast", { kind: "broadcast", commandId: "b", address: { kind: "named", name: "go" }, variables: [] } as never),
+    { refused: "host.capacity.continuation" });
   assert.equal((await host.deliver(workflowId, fx.watchDelivery)).outcome, "committed", "the watcher's Message closes its wait");
   assert.ok((await host.hostView("R")).view?.openWaits.some((wait) => wait.id.elementId === "Catch"), "no hand-off was delivered");
   assert.equal((await host.deliver("F", fx.fillerDelivery)).outcome, "committed");

@@ -139,8 +139,11 @@ async function replay(relativePath: string, document: PopulationScenarioDocument
         }
         break;
       }
-      default:
-        resolutions.push((await population.command(step["kind"] as string, withoutTime(step) as JsonValue & { commandId: string })).resolution);
+      default: {
+        const answer = await population.command(step["kind"] as string, withoutTime(step) as JsonValue & { commandId: string });
+        assert.ok(!("refused" in answer), `${relativePath}: ${String(step["commandId"])} refused before acceptance`);
+        resolutions.push(answer.resolution);
+      }
     }
     await quiet(population);
   }
@@ -216,6 +219,7 @@ test("a population start onto a directly started chain of its instance identity 
   await new Promise((resolve) => setTimeout(resolve, Math.max(0, dueMs - Date.now()) + 250));
   const answer = await population.command("timerStart",
     { commandId: `fire-${name}`, deploymentId: deployed.deploymentId, startEvent, dueMs });
+  assert.ok(!("refused" in answer), `refused before acceptance: ${JSON.stringify(answer)}`);
   assert.deepEqual(answer.resolution, {
     kind: "fanOut",
     entries: [{ kind: "failed", target: { kind: "start", deploymentId: deployed.deploymentId, startEvent }, outcome: "rejected",

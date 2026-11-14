@@ -23,7 +23,6 @@ import {
 } from "./population-address.js";
 import { PopulationClient } from "./population-client.js";
 import {
-  PopulationRefused,
   deploymentWorkflowType,
   type Answer,
   type DeploymentArgs,
@@ -241,17 +240,14 @@ export function createPopulationActivities(): PopulationActivities {
     fireTimerStart: async (request) => {
       const { client, info } = Context.current();
       const population = new PopulationClient(client, info.taskQueue, request.population, request.config);
-      try {
-        return await population.command("timerStart", {
-          commandId: request.commandId, deploymentId: request.deploymentId, startEvent: request.startEvent, dueMs: request.dueMs,
-        });
-      } catch (error) {
-        // A full queue drains, so its refusal is retried; any other refusal before acceptance answers every retry alike.
-        if (error instanceof PopulationRefused && error.code !== queueFullCode) {
-          throw ApplicationFailure.nonRetryable(error.code, "PopulationRefused");
-        }
-        throw error;
-      }
+      const answer = await population.command("timerStart", {
+        commandId: request.commandId, deploymentId: request.deploymentId, startEvent: request.startEvent, dueMs: request.dueMs,
+      });
+      if (!("refused" in answer)) return answer;
+      // A full queue drains, so its refusal is retried; any other refusal before acceptance answers every retry alike.
+      throw ApplicationFailure.create({
+        message: answer.refused, type: "PopulationRefused", nonRetryable: answer.refused !== queueFullCode,
+      });
     },
   });
 }

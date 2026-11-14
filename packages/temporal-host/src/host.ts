@@ -20,10 +20,10 @@ export {
 export { canonicalJson } from "./canonical-json.js";
 export { CapacityBound, canonicalBytes, capacityCode, chainCapacity } from "./capacity.js";
 export {
-  PopulationRefused,
   timerFiringWorkflowType,
   type CommandAnswer,
   type DeploymentAnswer,
+  type PopulationRefusal,
   type PopulationResult,
   type PopulationScope,
   type RegisteredDeployment,

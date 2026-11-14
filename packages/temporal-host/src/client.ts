@@ -59,7 +59,7 @@ export type { HostView, JsonValue, OccurrenceId, Requirements, WaitView } from "
 export type { PopulationHost, ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";
 export { ScheduleClient } from "./schedule-client.js";
 export { PopulationClient } from "./population-client.js";
-export { PopulationRefused, type PopulationResult } from "./population-contract.js";
+export type { PopulationRefusal, PopulationResult } from "./population-contract.js";
 export { processInstanceWorkflowId, timerFiringWorkflowId } from "./population-address.js";
 
 type ProcessWorkflow = (args: RunProcessArgs) => Promise<ProcessResult>;

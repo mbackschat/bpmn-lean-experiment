@@ -9,6 +9,7 @@ import type {
   CommandAnswer,
   DeploymentAnswer,
   DeploymentRequest,
+  PopulationRefusal,
   PopulationResult,
   PopulationScope,
   RegisteredDeployment,
@@ -51,20 +52,27 @@ export interface ProcessHost {
 }
 
 /**
- * One population's ingress as its caller uses it, under the chain configuration the caller gave: a caller with another
- * configuration than the running ingress's is refused (`PopulationRefused`, `host.population.configurationConflict`),
- * as is a command the full queue cannot take.
+ * One population's ingress as its caller uses it, under the chain configuration the caller gave: a registration or
+ * command under another configuration than the running ingress's is refused (`host.population.configurationConflict`),
+ * as is a command the full queue cannot take. Such a refusal before acceptance is answered as `{ refused }`; a thrown
+ * error is the infrastructure's. Readings take no configuration, as the ingress's Queries do.
  */
 export interface PopulationHost {
   readonly population: string;
-  /** Registers a deployment; the same request identifier answers as before, with another digest it is refused. */
+  /**
+   * Registers a deployment; the same request identifier answers as before, with another digest it is refused. A refusal
+   * before acceptance answers in the same `{ refused }` form, unrecorded.
+   */
   registerDeployment(request: Omit<DeploymentRequest, "config">): Promise<DeploymentAnswer>;
   /** The answer a deployment request received, `null` when it was never registered. */
   deployment(deploymentRequestId: string): Promise<DeploymentAnswer | null>;
   /** Every registered deployment with its program, in deploy order; none before the first registration. */
   deployments(): Promise<readonly RegisteredDeployment[]>;
-  /** Submits a command in the population scenario contract's form, `kind` its step kind; its answer once it settled. */
-  command(kind: string, command: JsonValue & { readonly commandId: string }): Promise<CommandAnswer>;
+  /**
+   * Submits a command in the population scenario contract's form, `kind` its step kind; its answer once it settled, or
+   * the ingress's refusal before acceptance.
+   */
+  command(kind: string, command: JsonValue & { readonly commandId: string }): Promise<CommandAnswer | PopulationRefusal>;
   /** A command's recorded answer; `unknown` when never submitted, no longer in the ledger, or before the first call. */
   result(commandId: string): Promise<PopulationResult>;
 }

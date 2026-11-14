@@ -3,7 +3,8 @@
  * open wait whose criteria, business key and address match at delivery time among the selected deployments' instances,
  * or, outside executions-only, starts the one Message start candidate; none is `noMatch`, several `ambiguous`. A
  * repeated command identifier answers the recorded result, other content under it is an identity conflict, and every
- * settled publication is read back by its command identifier.
+ * settled publication is read back by its command identifier. A population that refuses a request before accepting it
+ * answers the typed refusal, never a host error.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -12,6 +13,7 @@ import {
   EngineDefinitionCompilationStatus,
   EngineDefinitionStartStatus,
   EngineMessagePublicationMode,
+  EngineDeploymentStatus,
   EngineMessagePublicationStatus,
   EnginePopulationResolutionKind,
   EnginePopulationResultStatus,
@@ -22,12 +24,16 @@ import {
   observeEnginePopulationResult,
   observeEngineProcessExecution,
   publishEngineMessage,
+  registerEngineDeployment,
   startBpmnDefinitionVersion,
   type EngineBinding,
   type EngineDefinitionIdentity,
+  type EngineHost,
   type EngineMessagePublicationRequest,
   type EngineProfile,
+  type EngineValue,
 } from "@bpmn-lean/engine-api";
+import { Scheduling } from "@bpmn-lean/temporal-host/host";
 
 import { cibProfile, deployed, limits, scenarioBytes, servesEverything, sha256, testHost, testPopulation, type TestHost } from "./support.ts";
 
@@ -255,4 +261,45 @@ test("a publication to an undeployed version, or to a deployment that serves no 
     status: EngineMessagePublicationStatus.Refused,
     failure: { code: "host.messages", evidence: "The deployment does not serve Messages." },
   });
+});
+
+test("a payload the value codec cannot read is refused before acceptance with a typed answer, and the population records nothing", async () => {
+  const host = await waitingOrders();
+  const published = await publishEngineMessage(request(host, {
+    criteria: onOrder("A-1"), payload: { kind: "date", value: "2026-11-14" } as unknown as EngineValue,
+  }));
+  assert.equal(published.status, EngineMessagePublicationStatus.Refused);
+  if (published.status !== EngineMessagePublicationStatus.Refused) return;
+  assert.match(published.failure.code, /^malformed-command: /u);
+  assert.equal(published.failure.evidence, `The population refused the publication before accepting it (${published.failure.code}).`);
+  assert.deepEqual(await observeEnginePopulationResult({ host, commandId: "publication-1" }), { status: EnginePopulationResultStatus.Unknown });
+  const retried = await publishEngineMessage(request(host, { criteria: onOrder("A-1") }));
+  assert.equal(retried.status === EngineMessagePublicationStatus.Resolved && retried.result.resolution.kind,
+    EnginePopulationResolutionKind.Committed, "the same command identifier, now readable, reaches the still open wait");
+});
+
+test("a population running under another chain configuration refuses a registration and a publication with typed answers", async () => {
+  const host = await waitingOrders();
+  const conflicting: EngineHost = {
+    ...host,
+    population: host.processes.population(testPopulation, { scheduling: Scheduling.Durable, effectStartToCloseMs: 2_000, historyEventBudget: null }),
+  };
+  const code = "host.population.configurationConflict";
+  const bytes = await scenarioBytes(intake.path);
+  assert.deepEqual(await registerEngineDeployment({
+    host: conflicting, bytes, sourceId: intake.sourceId, expectedSha256: await sha256(bytes), profile: intake.profile,
+    expectedProcessId: intake.processId, version: 1, limits,
+  }), {
+    status: EngineDeploymentStatus.Refused,
+    failure: { code, evidence: `The population refused the deployment (${code}).` },
+  });
+  assert.deepEqual(await publishEngineMessage(request(host, { host: conflicting, criteria: onOrder("A-1") })), {
+    status: EngineMessagePublicationStatus.Refused,
+    failure: { code, evidence: `The population refused the publication before accepting it (${code}).` },
+  });
+  assert.deepEqual(await observeEnginePopulationResult({ host: conflicting, commandId: "publication-1" }),
+    { status: EnginePopulationResultStatus.Unknown }, "a reading takes no configuration, as the ingress's Query does");
+  const published = await publishEngineMessage(request(host, { criteria: onOrder("A-1") }));
+  assert.equal(published.status === EngineMessagePublicationStatus.Resolved && published.result.resolution.kind,
+    EnginePopulationResolutionKind.Committed, "the refused requests left the population unchanged");
 });

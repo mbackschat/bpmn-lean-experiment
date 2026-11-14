@@ -22,7 +22,7 @@ import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import type { Worker } from "@temporalio/worker";
 
 import {
-  PopulationClient, PopulationRefused, ProcessClient, ResultKind, Scheduling, type HostConfig, type HostSnapshot, type JsonValue,
+  PopulationClient, ProcessClient, ResultKind, Scheduling, type HostConfig, type HostSnapshot, type JsonValue,
 } from "@bpmn-lean/temporal-host/client";
 import { canonicalBytes, chainCapacity } from "@bpmn-lean/temporal-host/host";
 import { createMemoryProcessHost } from "@bpmn-lean/temporal-host/memory-host";
@@ -336,8 +336,8 @@ test("start barrier: a start whose Signal the full ingress defers answers after 
     population: { population, deploymentId: deployed.deploymentId },
     start: { kind: "start", commandId: `start-${"x".repeat(20_000)}`, instanceId: "Thrower_2", variables: [] } }));
   assert.equal(started.outcome, "committed");
-  await assert.rejects(ingress.command("broadcast", { kind: "broadcast", commandId: "after-start", address: { kind: "named", name: "go" }, variables: [] } as never),
-    (error: unknown) => error instanceof PopulationRefused && error.code === "host.capacity.continuation", "the caller's next command waits behind the start's Signal");
+  assert.deepEqual(await ingress.command("broadcast", { kind: "broadcast", commandId: "after-start", address: { kind: "named", name: "go" }, variables: [] } as never),
+    { refused: "host.capacity.continuation" }, "the caller's next command waits behind the start's Signal");
   assert.equal((await client.deliver(chains.filler, fx.fillerDelivery)).outcome, "committed");
   await until("the start's hand-off settled", () => ingress.backlog(), (backlog) => backlog === 0);
 });

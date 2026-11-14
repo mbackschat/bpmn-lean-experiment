@@ -2,8 +2,8 @@
  * A population's client: it registers deployments with the population ingress and submits population commands to it,
  * each by Update-with-Start, so the first call starts the ingress and every later one reaches the running one. Every
  * call names the chain configuration it expects, and an ingress running with another refuses it
- * (`host.population.configurationConflict`). A command answered `pending` (the ingress continued as new before it
- * settled) is read back from `populationResult`.
+ * (`host.population.configurationConflict`). A refusal before acceptance is answered as `{ refused }`. A command answered
+ * `pending` (the ingress continued as new before it settled) is read back from `populationResult`.
  */
 import {
   ApplicationFailure,
@@ -21,12 +21,12 @@ import {
   populationIngressWorkflowId,
 } from "./population-address.js";
 import {
-  PopulationRefused,
   populationIngressWorkflowType,
   type CommandAnswer,
   type DeploymentAnswer,
   type DeploymentRequest,
   type PopulationIngressArgs,
+  type PopulationRefusal,
   type PopulationResult,
   type RegisteredDeployment,
 } from "./population-contract.js";
@@ -45,13 +45,14 @@ import {
 
 type Ingress = (args: PopulationIngressArgs) => Promise<void>;
 
-async function refusing<T>(call: () => Promise<T>): Promise<T> {
+/** The Update's answer, or the refusal the ingress's validator or handler raised before it took the request. */
+async function refusing<T>(call: () => Promise<T>): Promise<T | PopulationRefusal> {
   try {
     return await call();
   } catch (error) {
     if (error instanceof WorkflowUpdateFailedError && error.cause instanceof ApplicationFailure &&
         error.cause.type === rejectionType) {
-      throw new PopulationRefused(error.cause.message);
+      return { refused: error.cause.message };
     }
     throw error;
   }
@@ -106,13 +107,14 @@ export class PopulationClient implements PopulationHost {
   }
 
   /** Submit a command in the population scenario contract's form, `kind` its step kind; its answer once it settled. */
-  async command(kind: string, command: JsonValue & { readonly commandId: string }): Promise<CommandAnswer> {
+  async command(kind: string, command: JsonValue & { readonly commandId: string }): Promise<CommandAnswer | PopulationRefusal> {
     const request = {
       commandId: command.commandId, kind, command, digest: populationCommandDigest(kind, command), config: this.config,
     };
     const outcome = await refusing(() => this.client.workflow.executeUpdateWithStart(populationCommandUpdate, {
       args: [request], updateId: populationCommandUpdateId(request), startWorkflowOperation: this.start(),
     }));
+    if ("refused" in outcome) return outcome;
     if (outcome.kind === "answered") return outcome.answer;
     for (;;) {
       const recorded = await this.result(command.commandId);

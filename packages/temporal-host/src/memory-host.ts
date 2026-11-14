@@ -30,13 +30,13 @@ import {
 import { applyInput, assertNever, clockStimulus, hostOwnsLogicalTime } from "./host-machine.js";
 import { kernelPort } from "./kernel-port.js";
 import { populationCommandDigest, processInstanceWorkflowId } from "./population-address.js";
-import {
-  PopulationRefused,
-  type CommandAnswer,
-  type DeploymentAnswer,
-  type PopulationResult,
-  type PopulationScope,
-  type RegisteredDeployment,
+import type {
+  CommandAnswer,
+  DeploymentAnswer,
+  PopulationRefusal,
+  PopulationResult,
+  PopulationScope,
+  RegisteredDeployment,
 } from "./population-contract.js";
 import { MemoryPopulation, type PopulationChain, type PopulationChains } from "./population-memory.js";
 import { populationPort } from "./population-port.js";
@@ -156,17 +156,19 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
   }
 
   population(name: string, config: HostConfig): PopulationHost {
-    const checked = (): HeldPopulation<P, S, M> => {
+    /** The population a request reaches, or the ingress validator's refusal of a caller under another configuration. */
+    const checked = (): HeldPopulation<P, S, M> | PopulationRefusal => {
       const held = this.#population(name, config);
       const conflict = configurationConflict(held.config, config);
-      if (conflict !== null) throw new PopulationRefused(conflict);
-      return held;
+      return conflict === null ? held : { refused: conflict };
     };
-    const driver = (): MemoryPopulation<P, S, M> => checked().driver;
+    /** A reading takes no configuration, as the ingress's Queries do, and before the first request finds no ingress. */
+    const ingress = (): MemoryPopulation<P, S, M>["ingress"] | null => this.#populations.get(name)?.driver.ingress ?? null;
     return {
       population: name,
       registerDeployment: async (request) => {
         const held = checked();
+        if ("refused" in held) return held;
         if (canonicalBytes(request.program) > chainCapacity.programBytes) return { refused: capacityCode(CapacityBound.Program) };
         const program = this.port.decodeProgram(request.program);
         const refusal = this.port.admit(program);
@@ -175,26 +177,31 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
         if ("deploymentId" in answer) held.programs.set(answer.deploymentId, request.program);
         return answer;
       },
-      deployment: async (deploymentRequestId): Promise<DeploymentAnswer | null> =>
-        deploymentOf(driver().ingress, deploymentRequestId),
+      deployment: async (deploymentRequestId): Promise<DeploymentAnswer | null> => {
+        const held = ingress();
+        return held === null ? null : deploymentOf(held, deploymentRequestId);
+      },
       deployments: async (): Promise<readonly RegisteredDeployment[]> => {
-        const held = checked();
-        return registeredDeploymentIds(held.driver.ingress).map((deploymentId) =>
+        const held = this.#populations.get(name);
+        return held === undefined ? [] : registeredDeploymentIds(held.driver.ingress).map((deploymentId) =>
           ({ deploymentId, program: held.programs.get(deploymentId) as JsonValue }));
       },
-      command: async (kind, command): Promise<CommandAnswer> => {
-        const population = driver();
+      command: async (kind, command): Promise<CommandAnswer | PopulationRefusal> => {
+        const held = checked();
+        if ("refused" in held) return held;
         try {
           this.populationPort.decodeCommand(kind, command);
         } catch (error) {
           // The ingress's validator: a command the kernel's codec cannot read is refused before acceptance.
-          throw new PopulationRefused(`malformed-command: ${error instanceof Error ? error.message : String(error)}`);
+          return { refused: `malformed-command: ${error instanceof Error ? error.message : String(error)}` };
         }
-        const answered = population.command(command.commandId, kind, command, populationCommandDigest(kind, command), this.now());
-        if ("refused" in answered) throw new PopulationRefused(answered.refused);
-        return answered.answer as unknown as CommandAnswer;
+        const answered = held.driver.command(command.commandId, kind, command, populationCommandDigest(kind, command), this.now());
+        return "refused" in answered ? { refused: answered.refused } : answered.answer as unknown as CommandAnswer;
       },
-      result: async (commandId) => populationResult(driver().ingress, commandId) as unknown as PopulationResult,
+      result: async (commandId): Promise<PopulationResult> => {
+        const held = ingress();
+        return held === null ? { kind: "unknown" } : populationResult(held, commandId) as unknown as PopulationResult;
+      },
     };
   }
 

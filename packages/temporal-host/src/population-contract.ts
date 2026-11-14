@@ -86,13 +86,12 @@ export type PopulationResult =
   | { readonly kind: "settled"; readonly answer: CommandAnswer }
   | { readonly kind: "pending" | "unknown" };
 
-/** A request the ingress refused before acceptance: a full queue, a malformed request or a configuration conflict. */
-export class PopulationRefused extends Error {
-  constructor(readonly code: string) {
-    super(code);
-    this.name = "PopulationRefused";
-  }
-}
+/**
+ * A request the ingress refused before acceptance, with its code: a full queue, a capacity bound, a malformed request
+ * or a configuration conflict. It is an answer, never an error, so a caller tells it from a transport failure; it took
+ * no effect and recorded nothing, and a full queue or held room may take the same request later.
+ */
+export type PopulationRefusal = { readonly refused: string };
 
 /** One delivery to a chain; `deliveryId` is its Update ID and its key in the chain's delivery ledger. */
 export interface PopulationDelivery {

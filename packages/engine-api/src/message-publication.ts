@@ -84,7 +84,11 @@ export enum EngineMessagePublicationStatus {
   Resolved = "resolved",
   /** The command identifier already settled a publication with other content. */
   IdentityConflict = "identityConflict",
-  /** The deployment does not serve Messages, or the selected definition version is not deployed; nothing was submitted. */
+  /**
+   * The deployment does not serve Messages or the selected definition version is not deployed, so nothing was submitted;
+   * or the population refused the publication before accepting it (a full queue, a capacity bound, content its value
+   * codec cannot read, a configuration conflict), so it took no effect and its command identifier stays unrecorded.
+   */
   Refused = "refused",
 }
 
@@ -120,6 +124,12 @@ export async function publishEngineMessage(request: EngineMessagePublicationRequ
     ...(request.businessKey === null ? {} : { businessKey: requireWireString(request.businessKey, "businessKey") }),
     mode: request.mode,
   });
+  if ("refused" in answer) {
+    return {
+      status: EngineMessagePublicationStatus.Refused,
+      failure: { code: answer.refused, evidence: `The population refused the publication before accepting it (${answer.refused}).` },
+    };
+  }
   const result = populationCommandResult(request.host, answer);
   const resolution = result.resolution;
   if (resolution.kind === EnginePopulationResolutionKind.Rejected && resolution.code === contentMismatchCode) {
