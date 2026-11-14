@@ -78,6 +78,7 @@ public import Kernel.Laws.State.Sample
 public import Kernel.Laws.State.Variables
 public import Kernel.Laws.Step
 public import Kernel.Laws.Step.Contract
+public import Kernel.Laws.Step.Ends
 public import Kernel.Laws.Step.Keeps
 public import Kernel.Laws.Step.Ran
 public import Kernel.Laws.Subscriptions
