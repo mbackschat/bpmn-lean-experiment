@@ -4,6 +4,8 @@ public import Kernel.Hooks
 public import Kernel.Laws.State.Invariant
 public import Kernel.IL.Timer
 import all Kernel.Feature.Subscriptions
+public import Kernel.Feature.Subscriptions.Delivery
+import all Kernel.Feature.Subscriptions.Delivery
 
 /-! # Laws of subscriptions
 
@@ -72,6 +74,22 @@ structure ArmWins (before after : State) (gateway : Nat) (winner : OpenItem) : P
   losersGone : ∀ loser ∈ before.openItems, loser.attachedTo = some gateway → loser.id ≠ winner.id →
     loser.occurrence ∉ occurrenceIds after
   completed : gateway ∉ occurrenceIds after
+
+/-! ## The state invariant under Subscriptions' hooks
+
+Subscriptions' share of the proof wave's state-invariant lane (P2): `Hooks.delivered`, a query, picks the open item a
+delivery names. -/
+
+/-- `Hooks.delivered` finds the item through `item?`, by the Message channel or the Signal its delivery carries. -/
+theorem delivered_found {ctx : Ctx} {data : DeliveryInput} {state : State} {item : OpenItem} {fired : Fired}
+    (ran : Feature.Subscriptions.delivered ctx data state = .ok (item, fired)) :
+    item? ctx state data.occurrence (·.channel) = some item ∨ item? ctx state data.occurrence (·.signal) = some item := by
+  unfold Feature.Subscriptions.delivered at ran
+  dsimp only at ran
+  repeat' split at ran
+  all_goals cases ran
+  · exact .inl ‹_›
+  · exact .inr ‹_›
 
 /-! ## Non-vacuity
 

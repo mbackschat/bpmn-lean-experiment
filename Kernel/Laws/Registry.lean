@@ -37,6 +37,15 @@ theorem hooks_arriveStart : Registry.hooks.arriveStart = Feature.Starts.arriveSt
 theorem hooks_completeScope : Registry.hooks.completeScope = Feature.Scopes.completeScope := by
   simp only [Registry.hooks]
 
+/-- No feature is told of a cancelled occurrence: the registry keeps the hook's default. -/
+theorem hooks_cancelled (ctx : Ctx) (occurrence : Occurrence) (state : State) :
+    Registry.hooks.cancelled ctx occurrence state = .ok state := by
+  simp only [Registry.hooks]
+
+/-- Subscriptions finds the item every delivery fires. -/
+theorem hooks_delivered : Registry.hooks.delivered = Feature.Subscriptions.delivered := by
+  simp only [Registry.hooks]
+
 /-- Data applies every write. -/
 theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOutputs := by
   simp only [Registry.hooks]

@@ -5,6 +5,7 @@ public import Kernel.Laws.Registry
 public import Kernel.Laws.Flow
 public import Kernel.Laws.Scopes
 public import Kernel.Laws.Starts
+public import Kernel.Laws.Subscriptions
 public import Kernel.Laws.Data
 public import Kernel.Laws.Hooks
 public import Kernel.Proofs.State
@@ -248,6 +249,23 @@ theorem registered_completeScope : ∀ ctx header payload scope occurrence state
   intro _ _ _ _ _ _ _ formed member owned link ran
   rw [Laws.Registry.hooks_completeScope] at ran
   exact Laws.Scopes.completeScope_keeps scopesOps formed member owned link ran
+
+/-- `HookContract.cancelled` of the registered hooks: no feature is told, so nothing changes. -/
+theorem registered_cancelled : ∀ ctx occurrence state after, Laws.State.WellFormed state →
+    Registry.hooks.cancelled ctx occurrence state = .ok after → Laws.State.WellFormed after := by
+  intro ctx occurrence state _ formed ran
+  rw [Laws.Registry.hooks_cancelled] at ran
+  cases ran
+  exact formed
+
+/-- `HookContract.delivered` of the registered hooks: the item a delivery fires is open. -/
+theorem registered_delivered : ∀ ctx data state item fired,
+    Registry.hooks.delivered ctx data state = .ok (item, fired) → item ∈ state.openItems := by
+  intro _ _ _ _ _ ran
+  rw [Laws.Registry.hooks_delivered] at ran
+  rcases Laws.Subscriptions.delivered_found ran with found | found
+  · exact Laws.Hooks.item?_mem found
+  · exact Laws.Hooks.item?_mem found
 
 /-- Data's share of the state invariant, measured at P0 (P2's budget rests on it): the registered write and removal
 hooks keep `Laws.State.WellFormed`. -/
