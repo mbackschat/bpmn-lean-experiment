@@ -238,9 +238,11 @@ def caughtWithin (reading : Reading) (program : Program) (element : Element) (co
 work's (`Reading.errorCode`), and for a Call what its called processes let escape, an Error raised at any depth there
 that no catcher of that process's level surely takes (`caughtWithin`). A called process already on the path (`seen`)
 adds nothing a first visit does not, since its codes are only filtered further on the way back. -/
-def raisedCodes (reading : Reading) (program : Program) : Nat → List DefinitionRef → Element → List (Option String)
-  | 0, _, _ => [none]
-  | fuel + 1, seen, element =>
+def raisedCodes (reading : Reading) (program : Program) (fuel : Nat) (seen : List DefinitionRef) (element : Element) :
+    List (Option String) :=
+  match fuel with
+  | 0 => [none]
+  | fuel + 1 =>
     match element.activity?.bind fun (_, payload) => payload.work.call? with
     | some work =>
       let called := program.calledProcessFor program.options.calledElementResolution
