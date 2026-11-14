@@ -1,0 +1,43 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-arming-pair-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-arming-pair",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/arming-pair.bpmn",
+    "sha256": "bdc8c5af6b8da78c4a8aadcd994cdb4ac101a2423d3d8c6e05c9198799ad2562",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "a",
+          "value": {
+            "kind": "string",
+            "value": "x"
+          }
+        },
+        {
+          "name": "b",
+          "value": {
+            "kind": "string",
+            "value": "y"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.4.4",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 §13.3.1"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

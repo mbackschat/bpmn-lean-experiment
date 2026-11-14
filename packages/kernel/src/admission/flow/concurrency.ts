@@ -12,6 +12,7 @@ import {
   ConditionalRetrigger,
   assertNever,
   definitionRefEquals,
+  elementActivity,
   elementBeginsImplicitly,
   elementEnvelope,
   elementEvent,
@@ -24,9 +25,12 @@ import {
   eventPayloadThrow,
   firstOf,
   programBoundary,
+  programCalledProcessFor,
+  programCallerDeployment,
   programChildren,
   programElement,
   programInCalledProcess,
+  programProcessChildren,
   programProcessOf,
   programSiblings,
   scopeKindStart,
@@ -39,6 +43,7 @@ import {
   type FlowId,
   type Header,
   type Program,
+  workCall,
 } from "../../il/types.js";
 import { expressionReads, joined, meets, races, type NameSet } from "../../il/footprint.js";
 import { flowReaches } from "../../il/paths.js";
@@ -61,6 +66,7 @@ import {
   removal,
   runs,
   signalled,
+  startingSubProcesses,
   subjectsOf,
   toEnter,
   visitKey,
@@ -421,6 +427,61 @@ function contested(reading: Reading, program: Program, left: Visit, right: Visit
 }
 
 /**
+ * What the arming on entering `element` evaluates, and what that entry begins beside it. The arming's Conditional
+ * resumptions: the element's Conditional boundaries and the Conditional Event Sub-Process starts of the level its entry
+ * opens, a Scope's children or a Call's called processes' (`feature/subscriptions.ts` `armScope`, which evaluates both as
+ * one), or for a start Event of the root process the root's own starts (`step.ts` `step`'s `armScope`). What the entry
+ * begins: a Scope's entered children, a Call's called none starts, the start Event itself.
+ */
+function armedOn(program: Program, element: Element): readonly [Visit[], readonly Element[]] {
+  const boundaries = (elementEnvelope(element)?.boundaries ?? []).filter((attached) => conditional(attached.subscription))
+    .map((attached): Visit => ({ tag: VisitTag.Fires, boundary: attached }));
+  const starts = (level: readonly Element[]): Visit[] => startingSubProcesses(level, conditional).map(toEnter);
+  const activity = elementActivity(element);
+  const work = activity === null ? null : workCall(activity[1].work);
+  const called = work === null ? [] : programCalledProcessFor(program, program.options.calledElementResolution,
+    programCallerDeployment(program, elementHeader(element)), work).flatMap((process) => programProcessChildren(program, process));
+  const scope = elementScope(element);
+  if (scope !== null) return [[...boundaries, ...starts(programChildren(program, scope[0].id))], enteredChildren(program, scope[0].id)];
+  const header = elementHeader(element);
+  if (elementStart(element) !== null && header.parent === null && !programInCalledProcess(program, header.id)) {
+    return [starts(programSiblings(program, header)), [element]];
+  }
+  return [[...boundaries, ...starts(called)], called.filter((child) => {
+    const start = elementStart(child);
+    return start !== null && start[1].subscription === null;
+  })];
+}
+
+/**
+ * Under `BranchSchedule.OrderInvariant`, the Conditional items one arming finds true may not conflict with the work the
+ * entry that armed them begins (`armedOn`), nor with each other: `feature/subscriptions.ts` `subscribeAll` queues their
+ * firings after the entry's `begin` signals, each contest at its first member's place in evaluation order, so the
+ * firings' tokens and the entry's join one queue in an order no input states (BPMN 2.0.2 §13.4.4 gives simultaneous
+ * triggers no order; issue #81; P1 census, G2). A firing whose first visit removes every element the entry begins
+ * (`firstWithdrawals`), an interrupting boundary of the Scope or an interrupting Event Sub-Process start in it, is not
+ * held against the entry: that removal is a queued signal, which runs before any token the entry emits. Two firings that
+ * are one contest (`contested`) are ordered by the input's ranking.
+ */
+function armingFanOut(reading: Reading, program: Program, element: Element): string | null {
+  const [fired, begun] = armedOn(program, element);
+  const paths = fired.map((visit) => [visit, pathOf(reading, program, [visit])] as const);
+  const clears = (visit: Visit): boolean => firstWithdrawals(reading, program, visit).some((withdrawal) =>
+    begun.every((child) => removesElement(program, withdrawal, program.elements.length + 1, elementHeader(child).id)));
+  if (begun.length > 0) {
+    const entry = pathOf(reading, program, begun.map(toEnter));
+    const found = firstOf(paths.filter(([visit]) => !clears(visit)), ([, path]) => conflict(program, path, entry));
+    if (found !== null) return found;
+  }
+  for (const [index, [visit, path]] of paths.entries()) {
+    const found = firstOf(paths.slice(index + 1).filter(([other]) => !contested(reading, program, visit, other)),
+      ([, other]) => conflict(program, path, other));
+    if (found !== null) return found;
+  }
+  return null;
+}
+
+/**
  * Under `BranchSchedule.OrderInvariant`, a write's Conditional firings may not conflict with the writer's continuation
  * nor with each other: `feature/subscriptions/conditions.ts` `offerWrites` queues the firings of the items one write
  * makes true after the writer's completion, each contest at its first member's place in evaluation order, an order no
@@ -545,7 +606,7 @@ export function fanOutConflict(reading: Reading, program: Program, element: Elem
     case BranchSchedule.OrderInvariant:
       return signalFanOut(reading, program, element) ?? escalationFanOut(reading, program, element) ??
         writeFanOut(reading, program, element) ?? compensationFanOut(reading, program, element) ??
-        implicitFanOut(reading, program, element);
+        implicitFanOut(reading, program, element) ?? armingFanOut(reading, program, element);
   }
   return assertNever(program.options.branchSchedule);
 }

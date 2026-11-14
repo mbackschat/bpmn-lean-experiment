@@ -1,7 +1,7 @@
 /**
  * PC-BASIC-03 beyond a split's own branches: one closure that queues several units of work through a Signal broadcast,
- * a non-interrupting catch beside its thrower, a Conditional firing, an uncaught Error, a Compensation throw or a Scope's
- * implicitly begun children leaves an order BPMN does not fix (§13.3.1, Table 13.1), so `BranchSchedule.orderInvariant` refuses the model when that order
+ * a non-interrupting catch beside its thrower, a Conditional firing, an uncaught Error, a Compensation throw, a Scope's
+ * implicitly begun children or the Conditional items one arming finds true leaves an order BPMN does not fix (§13.3.1, Table 13.1), so `BranchSchedule.orderInvariant` refuses the model when that order
  * could change a write or remove another unit's work (#81); so does a broadcast that completes the instances of a
  * parallel Multi-Instance body together (§13.3.7). The witnesses are `scenarios/open-rows/branch-fan-out-order`;
  * its controls, whose fan-out is caught, single or removed with the thrower, stay admitted.
@@ -48,6 +48,9 @@ const refused: ReadonlyArray<readonly [string, string]> = [
   ["instances-woken-together", "multiInstance.concurrentInstances"],
   ["implicit-begins", "flow.concurrentWrite"],
   ["implicit-begins-swapped", "flow.concurrentWrite"],
+  ["entry-condition", "flow.concurrentWrite"],
+  ["arming-pair", "flow.concurrentWrite"],
+  ["arming-pair-swapped", "flow.concurrentWrite"],
 ];
 
 for (const [name, code] of refused) {

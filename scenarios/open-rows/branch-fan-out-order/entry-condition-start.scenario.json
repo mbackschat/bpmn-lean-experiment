@@ -1,0 +1,28 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-entry-condition-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-entry-condition",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/entry-condition.bpmn",
+    "sha256": "c3900f14d4396604f7f2971cc76483ec669fde0da4953513f182f1abbb967489",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.4.4",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 §13.3.1"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_ArmingPairSwapped" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:arming-pair-swapped" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_ArmingPairSwapped" isExecutable="true">
+    <property id="outcome" name="outcome" /><property id="a" name="a" /><property id="b" name="b" />
+    <startEvent id="Started" />
+    <userTask id="H" />
+    <boundaryEvent id="M" attachedToRef="H" cancelActivity="false"><conditionalEventDefinition><condition xsi:type="tFormalExpression">isPresent(b)</condition></conditionalEventDefinition></boundaryEvent>
+    <boundaryEvent id="N" attachedToRef="H" cancelActivity="false"><conditionalEventDefinition><condition xsi:type="tFormalExpression">isPresent(a)</condition></conditionalEventDefinition></boundaryEvent>
+    <subProcess id="WriteN">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">n</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="WriteN_S" /><endEvent id="WriteN_E" />
+      <sequenceFlow id="WriteN_F" sourceRef="WriteN_S" targetRef="WriteN_E" />
+    </subProcess>
+    <subProcess id="WriteM">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">m</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="WriteM_S" /><endEvent id="WriteM_E" />
+      <sequenceFlow id="WriteM_F" sourceRef="WriteM_S" targetRef="WriteM_E" />
+    </subProcess>
+    <endEvent id="HE" /><endEvent id="NE" /><endEvent id="ME" />
+    <sequenceFlow id="f1" sourceRef="Started" targetRef="H" />
+    <sequenceFlow id="h" sourceRef="H" targetRef="HE" />
+    <sequenceFlow id="n" sourceRef="N" targetRef="WriteN" /><sequenceFlow id="nw" sourceRef="WriteN" targetRef="NE" />
+    <sequenceFlow id="m" sourceRef="M" targetRef="WriteM" /><sequenceFlow id="mw" sourceRef="WriteM" targetRef="ME" />
+  </process>
+</definitions>

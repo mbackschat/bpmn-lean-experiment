@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_EntryCondition" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:entry-condition" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_EntryCondition" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <property id="flag" name="flag" />
+    <startEvent id="Started" />
+    <subProcess id="SetFlag">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="flag">set</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="SetFlag_S" />
+      <endEvent id="SetFlag_E" />
+      <sequenceFlow id="SetFlag_F" sourceRef="SetFlag_S" targetRef="SetFlag_E" />
+    </subProcess>
+    <userTask id="Enter" />
+    <subProcess id="Host">
+      <startEvent id="HostStarted" />
+      <subProcess id="WriteMain">
+        <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">main</camunda:outputParameter></camunda:inputOutput></extensionElements>
+        <startEvent id="WriteMain_S" />
+        <endEvent id="WriteMain_E" />
+        <sequenceFlow id="WriteMain_F" sourceRef="WriteMain_S" targetRef="WriteMain_E" />
+      </subProcess>
+      <endEvent id="HostEnded" />
+      <sequenceFlow id="Flow_HostStarted" sourceRef="HostStarted" targetRef="WriteMain" />
+      <sequenceFlow id="Flow_MainWrote" sourceRef="WriteMain" targetRef="HostEnded" />
+    </subProcess>
+    <boundaryEvent id="Noticed" attachedToRef="Host" cancelActivity="false">
+      <conditionalEventDefinition><condition xsi:type="tFormalExpression">isPresent(flag)</condition></conditionalEventDefinition>
+    </boundaryEvent>
+    <subProcess id="WriteNoticed">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">noticed</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="WriteNoticed_S" />
+      <endEvent id="WriteNoticed_E" />
+      <sequenceFlow id="WriteNoticed_F" sourceRef="WriteNoticed_S" targetRef="WriteNoticed_E" />
+    </subProcess>
+    <endEvent id="NoticedEnded" />
+    <endEvent id="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="SetFlag" />
+    <sequenceFlow id="Flow_FlagSet" sourceRef="SetFlag" targetRef="Enter" />
+    <sequenceFlow id="Flow_Entered" sourceRef="Enter" targetRef="Host" />
+    <sequenceFlow id="Flow_Hosted" sourceRef="Host" targetRef="Finished" />
+    <sequenceFlow id="Flow_Noticed" sourceRef="Noticed" targetRef="WriteNoticed" />
+    <sequenceFlow id="Flow_NoticedWrote" sourceRef="WriteNoticed" targetRef="NoticedEnded" />
+  </process>
+</definitions>

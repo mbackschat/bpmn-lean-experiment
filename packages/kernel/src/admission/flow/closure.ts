@@ -175,7 +175,7 @@ const eventSubProcessStart = (element: Element): Subscription | null => {
 };
 
 /** The Event Sub-Processes among `level` whose start `starts` takes. */
-const startingSubProcesses = (level: readonly Element[], starts: (subscription: Subscription) => boolean): Element[] =>
+export const startingSubProcesses = (level: readonly Element[], starts: (subscription: Subscription) => boolean): Element[] =>
   level.filter((element) => {
     const start = eventSubProcessStart(element);
     return start !== null && starts(start);

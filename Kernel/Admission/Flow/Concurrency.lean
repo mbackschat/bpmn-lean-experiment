@@ -266,6 +266,49 @@ def contested (reading : Reading) (program : Program) (left right : Visit) : Boo
     (anchors program left).any fun id => (anchors program right).contains id &&
       (program.element? id).any (·.gateway?.any fun (_, payload) => (routing payload).waits)
 
+/-- What the arming on entering `element` evaluates, and what that entry begins beside it. The arming's Conditional
+resumptions: the element's Conditional boundaries and the Conditional Event Sub-Process starts of the level its entry
+opens, a Scope's children or a Call's called processes' (`Kernel.Feature.Subscriptions.armScope`, which evaluates both as
+one), or for a start Event of the root process the root's own starts (`Kernel.Step.step`'s `armScope`). What the entry
+begins: a Scope's entered children, a Call's called none starts, the start Event itself. -/
+def armedOn (program : Program) (element : Element) : List Visit × List Element :=
+  let boundaries := (((element.envelope?.map (·.boundaries)).getD []).filter (conditional ·.subscription)).map Visit.fires
+  let starts (level : List Element) : List Visit := (startingSubProcesses level conditional).map Visit.enters
+  let called : List Element := ((element.activity?.bind fun (_, payload) => payload.work.call?).map fun work =>
+    (program.calledProcessFor program.options.calledElementResolution (program.callerDeployment element.header)
+      work).flatMap program.processChildren).getD []
+  match element.scope? with
+  | some (header, _) => (boundaries ++ starts (program.children (some header.id)), enteredChildren program header.id)
+  | none =>
+    if element.start?.isSome && element.header.parent.isNone && !program.inCalledProcess element.header.id then
+      (starts (program.siblings element.header), [element])
+    else
+      (boundaries ++ starts called,
+        called.filter fun child => child.start?.any fun (_, payload) => payload.subscription.isNone)
+
+/-- Under `BranchSchedule.orderInvariant`, the Conditional items one arming finds true may not conflict with the work the
+entry that armed them begins (`armedOn`), nor with each other: `Kernel.Feature.Subscriptions.subscribeAll` queues their
+firings after the entry's `begin` signals, each contest at its first member's place in evaluation order, so the firings'
+tokens and the entry's join one queue in an order no input states (BPMN 2.0.2 §13.4.4 gives simultaneous triggers no
+order; issue #81; P1 census, G2). A firing whose first visit removes every element the entry begins
+(`firstWithdrawals`), an interrupting boundary of the Scope or an interrupting Event Sub-Process start in it, is not held
+against the entry: that removal is a queued signal, which runs before any token the entry emits. Two firings that are
+one contest (`contested`) are ordered by the input's ranking. -/
+def armingFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
+  let (fired, begun) := armedOn program element
+  let paths := fired.map fun visit => (visit, pathOf reading program [visit])
+  let entry := pathOf reading program (begun.map Visit.enters)
+  let clears (visit : Visit) : Bool := (firstWithdrawals reading program visit).any fun withdrawal =>
+    begun.all fun child => removesElement program withdrawal (program.elements.length + 1) child.header.id
+  let rec rivals : List (Visit × Closure) → Option String
+    | [] => none
+    | (visit, path) :: rest =>
+      (rest.filter fun (other, _) => !contested reading program visit other).findSome? (fun (_, other) =>
+        conflict program path other) <|> rivals rest
+  (if begun.isEmpty then none
+    else (paths.filter fun (visit, _) => !clears visit).findSome? fun (_, path) => conflict program path entry) <|>
+    rivals paths
+
 /-- Under `BranchSchedule.orderInvariant`, a write's Conditional firings may not conflict with the writer's continuation
 nor with each other: `Kernel.Feature.Subscriptions.offerWrites` queues the firings of the items one write makes true
 after the writer's completion, each contest at its first member's place in evaluation order, an order no input states
@@ -369,7 +412,7 @@ def fanOutConflict (reading : Reading) (program : Program) (element : Element) :
   | .orderInvariant =>
     signalFanOut reading program element <|> escalationFanOut reading program element <|>
       writeFanOut reading program element <|> compensationFanOut reading program element <|>
-      implicitFanOut reading program element
+      implicitFanOut reading program element <|> armingFanOut reading program element
 
 /-- What the instances of a looping `element` do in the closure that begins them, which
 `Kernel.Admission.MultiInstance.concurrentInstances` reads. -/

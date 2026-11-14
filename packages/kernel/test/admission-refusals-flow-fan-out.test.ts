@@ -261,6 +261,48 @@ const implicitPair = (name: string) => {
     [flow("f1", "S", "R"), flow("r", "R", "E"), ...firstInner, ...secondInner]);
 };
 
+/**
+ * `S → R → E`: entering the Sub-Process `R` arms its Conditional boundary `N` on `flag`, whose path writes `outcome`,
+ * while its start leads to a writer of `outcome` when `writes`, else to the User Task `RU`; with `interrupting` `N`
+ * removes `R` before any token of the entry moves (P1 census, G2).
+ */
+const entryCondition = (writes: boolean, interrupting = false) => {
+  const [inside, insideInner] = writes ? writer("W", "outcome", "inside", "R") : [[activity("W", userWork(), {}, "R")], []];
+  const [caught, caughtInner] = writer("NW", "outcome", "noticed");
+  return model([start("S"), scope("R", "embedded", {}, { boundaries: [boundary("N", whenPresent("flag"), { interrupting })] }),
+    start("RS", null, [], "R"), ...inside, end("RE", "none", "R"), ...caught, end("NE"), end("E")],
+  [flow("f1", "S", "R"), flow("rs", "RS", "W"), flow("w", "W", "RE"), flow("r", "R", "E"), flow("n", "N", "NW"),
+    flow("nw", "NW", "NE"), ...insideInner, ...caughtInner]);
+};
+
+/**
+ * The User Task `H` carries the non-interrupting Conditional boundaries `N` on `a` and `M` on `b`, which one arming may
+ * find true together though no single write makes both true; `N`'s path writes `outcome`, `M`'s too when `writes`, else
+ * waits at the User Task `MW` (P1 census, G2).
+ */
+const armingPair = (writes: boolean) => {
+  const [first, firstInner] = writer("NW", "outcome", "first");
+  const [second, secondInner] = writes ? writer("MW", "outcome", "second") : [[activity("MW", userWork())], []];
+  return model([start("S"), activity("H", userWork(), { boundaries: [
+    boundary("N", whenPresent("a"), { interrupting: false }), boundary("M", whenPresent("b"), { interrupting: false }),
+  ] }), end("HE"), ...first, end("NE"), ...second, end("ME")],
+  [flow("f1", "S", "H"), flow("h", "H", "HE"), flow("n", "N", "NW"), flow("nw", "NW", "NE"), flow("m", "M", "MW"),
+    flow("mw", "MW", "ME"), ...firstInner, ...secondInner]);
+};
+
+/**
+ * The root's non-interrupting Conditional Event Sub-Process `K` on `a`, armed as the instance starts, runs a writer of
+ * `outcome` beside the start's path, which writes `outcome` when `writes`, else waits at the User Task `W` (P1 census,
+ * G2).
+ */
+const rootArming = (writes: boolean) => {
+  const [main, mainInner] = writes ? writer("W", "outcome", "main") : [[activity("W", userWork())], []];
+  const [noticed, noticedInner] = writer("KW", "outcome", "noticed", "K");
+  return model([start("S"), ...main, end("E"), scope("K", eventSubProcess(whenPresent("a"), false)),
+    start("KS", whenPresent("a"), [], "K"), ...noticed, end("KE", "none", "K")],
+  [flow("f1", "S", "W"), flow("w", "W", "E"), flow("k1", "KS", "KW"), flow("k2", "KW", "KE"), ...mainInner, ...noticedInner]);
+};
+
 const rows: Row[] = [
   {
     code: "flow.concurrentWrite",
@@ -364,6 +406,24 @@ const rows: Row[] = [
     mutate: implicitPair("outcome"),
     control: implicitPair("other"),
   },
+  {
+    code: "flow.concurrentWrite",
+    description: "a Conditional boundary an entry's arming finds true beside the entry's begun work writing the same name",
+    mutate: entryCondition(true),
+    control: entryCondition(false),
+  },
+  {
+    code: "flow.concurrentWrite",
+    description: "two Conditional boundaries one arming finds true in distinct contests, writing the same name",
+    mutate: armingPair(true),
+    control: armingPair(false),
+  },
+  {
+    code: "flow.concurrentWrite",
+    description: "a root Conditional Event Sub-Process armed at the start beside the start's path writing the same name",
+    mutate: rootArming(true),
+    control: rootArming(false),
+  },
 ];
 
 refusalTests("flow fan-out", rows);
@@ -439,4 +499,9 @@ test("flow fan-out: an uncaught Error ends the instance only under the profile t
   const ends = (shape: (program: Json) => Json) => (program: Json): Json => withOptions(shape(program), { unhandledError: "endsThrowingPath" });
   assert.equal(refusalOf(ends(forkBeside([end("A", raiseError)], [], "A"))(base())), null);
   assert.equal(refusalOf(ends(callBeside(false))(base())), null);
+});
+
+test("flow fan-out: an arming's interrupting firing that removes the entry's begun work first is not held against it", () => {
+  // The firing is a queued signal, which removes the Sub-Process before any token its start emits moves.
+  assert.equal(refusalOf(entryCondition(true, true)(base())), null);
 });

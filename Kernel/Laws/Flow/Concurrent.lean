@@ -339,6 +339,52 @@ inductive WritePair (program : Program) (writer : Element) : Account → Account
       Together program visit other →
       WritePair program writer ((pathFrom (· = visit)).account program) ((pathFrom (· = other)).account program)
 
+/-- The level the entry of `element` opens: a Scope's children, or a called process's for a Call. -/
+def OpensLevel (program : Program) (element : Element) (level : List Element) : Prop :=
+  (∃ header payload, element.scope? = some (header, payload) ∧ level = program.children (some header.id)) ∨
+    ∃ header payload work process, element.activity? = some (header, payload) ∧ payload.work.call? = some work ∧
+      process ∈ program.calledProcessFor program.options.calledElementResolution (program.callerDeployment element.header)
+        work ∧ level = program.processChildren process
+
+/-- A start Event of the root process, whose start arms the root's Event Sub-Process starts. -/
+def RootStart (program : Program) (element : Element) : Prop :=
+  element.start?.isSome = true ∧ element.header.parent = none ∧ program.inCalledProcess element.header.id = false
+
+/-- The Conditional resumptions the arming on entering `element` evaluates together
+(`Kernel.Feature.Subscriptions.subscribeAll`): its Conditional boundaries and the Conditional Event Sub-Process starts of
+the level its entry opens, or for a root start Event the root's own. -/
+inductive Armed (program : Program) (element : Element) : Visit → Prop where
+  | boundary {envelope : Envelope} {boundary : Boundary} : element.envelope? = some envelope →
+      boundary ∈ envelope.boundaries → Conditional boundary.subscription → Armed program element (.fires boundary)
+  | start {level : List Element} {start : Element} {subscription : Subscription} : OpensLevel program element level →
+      start ∈ level → EventSubProcessStart start subscription → Conditional subscription → Armed program element (.enters start)
+  | root {start : Element} {subscription : Subscription} : RootStart program element → start ∈ program.siblings element.header →
+      EventSubProcessStart start subscription → Conditional subscription → Armed program element (.enters start)
+
+/-- What the entry of `element` begins beside its arming: a Scope's entered children, a called none start, a root start
+Event itself. -/
+inductive Opening (program : Program) (element : Element) : Element → Prop where
+  | child {header : Header} {payload : ScopePayload} {child : Element} : element.scope? = some (header, payload) →
+      EnteredChildren program header.id child → Opening program element child
+  | called {level : List Element} {child : Element} {header : Header} {payload : StartPayload} :
+      OpensLevel program element level → child ∈ level → child.start? = some (header, payload) →
+      payload.subscription = none → Opening program element child
+  | root : RootStart program element → Opening program element element
+
+/-- An arming's firing whose first visit removes everything the entry begins, before any of its tokens moves. -/
+def Clears (program : Program) (element : Element) (visit : Visit) : Prop :=
+  ∃ region, FirstWithdrawal program visit region ∧ ∀ begun, Opening program element begun → Removes program region begun.header.id
+
+/-- The units an arming starts together: each firing against the entry's begun work unless it clears it, and two
+firings in distinct contests. -/
+inductive ArmPair (program : Program) (element : Element) : Account → Account → Prop where
+  | entry {visit : Visit} : Armed program element visit → ¬ Clears program element visit →
+      ArmPair program element ((pathFrom (· = visit)).account program)
+        ((pathFrom fun begun => ∃ child, Opening program element child ∧ begun = .enters child).account program)
+  | rivals {visit other : Visit} : Armed program element visit → Armed program element other → visit ≠ other →
+      ¬ Contested program visit other →
+      ArmPair program element ((pathFrom (· = visit)).account program) ((pathFrom (· = other)).account program)
+
 /-- Two units of work one closure may hold together, in an order no input states, one constructor per mechanism that
 queues more than one work item. P6's provenance lemma, that two items queued together at a reachable closure state lie
 in distinct units of one case, has exactly these cases; the mechanisms that make a level hold two tokens at once
@@ -381,6 +427,11 @@ inductive Concurrent (program : Program) : Account → Account → Prop where
   | compensating {thrower first second : Element} : thrower ∈ program.elements → Compensates thrower →
       HandlersOf program thrower first → HandlersOf program thrower second → first.header.id ≠ second.header.id →
       ¬ Ordered program first second → Concurrent program (handlerAccount program first) (handlerAccount program second)
+  /-- The Conditional items one arming finds true, beside the work the entry that armed them begins and beside each
+  other: §13.4.4 gives simultaneous triggers no order (P1 census, G2); `flow.concurrentWrite` and
+  `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.armingFanOut`). -/
+  | armed {element : Element} {left right : Account} : element ∈ program.elements → ArmPair program element left right →
+      Concurrent program left right
 
 /-- P6's order-invariance premise: no two units one closure may hold together race on a name or act on each other's
 work, so the order `Step.settle` runs them in is immaterial. An Error no catcher takes ends every unit (Table 10.88),
@@ -409,6 +460,7 @@ theorem quiet_apart : Apart quiet := by
   | escalated member => simp [quiet] at member
   | writes member => simp [quiet] at member
   | compensating member => simp [quiet] at member
+  | armed member => simp [quiet] at member
 
 theorem split_race_not_apart {program : Program} {flow : Flow} {other : FlowId} {left right : Element}
     (member : flow ∈ program.flows) (forks : Forks program flow.source) (leaving : Leaving program flow.source other)
