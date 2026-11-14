@@ -124,9 +124,10 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
     (bodied : occurrence.role = .multiInstanceBody →
       (((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true)
     (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) : inv ctx.program after := by
-  rcases dispatch_unstarted ran with ⟨_, _, ran⟩ | ⟨_, _, _, ran⟩ | ⟨unstarted, single, arrives⟩
+  rcases dispatch_unstarted ran with ⟨_, _, ran⟩ | ⟨_, _, _, body⟩ | ⟨unstarted, single, arrives⟩
   · exact contract.arriveStart _ _ _ _ _ _ _ holds member begun ran
-  · exact contract.arriveMultiInstance _ _ _ _ _ _ _ holds member begun ran
+  · obtain ⟨body, named, looped, ran⟩ := body
+    exact contract.arriveMultiInstance _ _ _ _ _ _ _ holds member begun body named looped ran
   have role : occurrence.role = .element := by
     cases body : occurrence.role
     · rfl
@@ -134,7 +135,6 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
   cases arrives with
   | atStart ran => exact contract.arriveStart _ _ _ _ _ _ _ holds member begun ran
   | atActivity ran => exact contract.arriveActivity _ _ _ _ _ _ holds member begun unstarted role ran
-  | atMultiInstance ran => exact contract.arriveMultiInstance _ _ _ _ _ _ _ holds member begun ran
   | atScope ran => exact contract.arriveScope _ _ _ _ _ _ _ holds member begun inner ran
   | atGateway ran => exact contract.arriveGateway _ _ _ _ _ _ holds member begun ran
   | atCatch ran => exact contract.arriveCatch _ _ _ _ _ _ _ holds member begun unstarted role ran

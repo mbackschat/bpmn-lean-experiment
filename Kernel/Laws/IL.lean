@@ -42,6 +42,13 @@ theorem element?_event {program : Program} {id : ElementId} {header : Header} {p
   unfold Program.element? at found
   simpa [Element.header] using List.find?_some found
 
+/-- The element `Program.element?` finds carries the identity it was asked for, which a Multi-Instance body's slot
+record names as its element. -/
+theorem element?_header {program : Program} {id : ElementId} {element : Element}
+    (found : program.element? id = some element) : element.header.id = id := by
+  unfold Program.element? at found
+  simpa using List.find?_some found
+
 theorem event?_activity (header : Header) (payload : ActivityPayload) : (Element.activity header payload).event? = none := by
   simp only [Element.event?]
 

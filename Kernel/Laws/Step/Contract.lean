@@ -51,8 +51,8 @@ over stands (a begun occurrence, an idle scope occurrence's owner, a parked join
 occurrence), and an arrival's is begun, as `Step.begin` hands it over and as a parked join's offer finds it, and an
 activity's, catch's or throw's is of an element the program declares no start Event of (`Step.dispatch` sends those to
 `Hooks.arriveStart`) and numbered under its element's counter (it sends a Multi-Instance body to
-`Hooks.arriveMultiInstance`), a throw's header naming its element (`Program.element?` finds it by that name); the item it hands
-over is open; the scope occurrence and occurrence a queued signal names stand (`Step.stale`, `Step.gone`), an arming's
+`Hooks.arriveMultiInstance`, with the header naming the body's element and the loop its envelope carries), a throw's
+header naming its element (`Program.element?` finds it by that name); the item it hands over is open; the scope occurrence and occurrence a queued signal names stand (`Step.stale`, `Step.gone`), an arming's
 host is begun in the scope occurrence the arming names, a compensation may end as it asks (`Laws.State.Resumable`),
 and a raise finds what its origin names and a settled host (`Laws.State.Raisable`); a completed occurrence's continuation runs while its scope occurrence stands;
 an Event Sub-Process's start Event reservation (`ScopeEntry.inner`) is beginnable in, and lies in, the scope occurrence
@@ -69,10 +69,12 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     occurrence.begun = true → (ctx.program.element? occurrence.element).bind (·.start?) = none →
     occurrence.role = .element → hooks.arriveActivity ctx header payload occurrence state = .ok after →
     inv ctx.program after
+  /-- A body occurrence arrives with the loop its element's envelope carries (`Step.bodyLoop?`). -/
   arriveMultiInstance : ∀ ctx header envelope loop occurrence state after, inv ctx.program state →
-    occurrence ∈ state.occurrences →
-    occurrence.begun = true → hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after →
-    inv ctx.program after
+    occurrence ∈ state.occurrences → occurrence.begun = true → occurrence.role = .multiInstanceBody →
+    header.id = occurrence.element →
+    ((ctx.program.element? header.id).bind (·.envelope?)).bind (·.multiInstance) = some loop →
+    hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after → inv ctx.program after
   arriveScope : ∀ ctx header payload occurrence entry state after, inv ctx.program state →
     occurrence ∈ state.occurrences →
     occurrence.begun = true →

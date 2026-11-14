@@ -7,9 +7,10 @@ public import Kernel.Laws.Step.Contract
 The shapes `Kernel.Laws.Step`'s decomposition states of `Kernel.Step`'s bodies, one constructor or alternative per
 hook or state operation a committed body can have run: a closure's micro-step (`ClosureStep`), a start and a running
 input's transition (`StartRan`, `RunsTransition`), the end of the completion pipeline (`Finishes`), a begun
-occurrence's dispatch (`Arrives`), a queued signal's work (`Performed`) and a command (`Commands`). They name bodies
-without reading them, so they sit below `Kernel.Laws.Step`, which proves them of the bodies, and keep that module to
-its body equations. Nothing executable imports this module.
+occurrence's dispatch (`Arrives`, `BodyArrives`), a queued signal's work (`Performed`) and a command (`Commands`).
+They name bodies without reading them, so they sit below `Kernel.Laws.Step`, which proves them of the bodies, and keep
+that module to its body equations; so does the decomposition of a committed bind (`bind_ok`). Nothing executable
+imports this module.
 -/
 
 @[expose] public section
@@ -17,6 +18,13 @@ its body equations. Nothing executable imports this module.
 namespace Kernel.Laws.Step
 
 open Kernel Kernel.Step
+
+/-- A committed bind committed both its parts, whatever the body it binds. -/
+theorem bind_ok {α β ε : Type} {x : Except ε α} {f : α → Except ε β} {b : β} (ran : (x >>= f) = .ok b) :
+    ∃ a, x = .ok a ∧ f a = .ok b := by
+  cases x with
+  | error failure => exact absurd ran (by simp [bind, Except.bind])
+  | ok a => exact ⟨a, by simp, by simpa [bind, Except.bind] using ran⟩
 
 /-- `ClosureStep hooks ctx before after`: `after` is what one micro-step of `Step.settle` commits from `before`, in the
 order `settle` picks it: the next queued signal; else the next token (`Step.nextToken`); else an idle scope occurrence
@@ -90,7 +98,14 @@ inductive Finishes (hooks : Hooks) (ctx : Ctx) (id : Nat) (occurrence : Occurren
       Finishes hooks ctx id occurrence writes leave state (continued.recordEnd (state.keyOf occurrence) .completed)
 
 
-/-- The element hook a begun occurrence's dispatch ran (`Step.dispatch`). -/
+/-- The Multi-Instance hook a begun body occurrence's dispatch ran (`Step.dispatch`, `Step.bodyLoop?`): the occurrence
+is numbered as a body, and the header handed over names its element, whose envelope carries the loop handed over. -/
+def BodyArrives (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (state after : State) : Prop :=
+  ∃ header envelope loop, occurrence.role = .multiInstanceBody ∧ header.id = occurrence.element ∧
+    ((ctx.program.element? header.id).bind (·.envelope?)).bind (·.multiInstance) = some loop ∧
+    hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after
+
+/-- The element hook a begun occurrence's dispatch ran (`Step.dispatch`) when it is no Multi-Instance body's. -/
 inductive Arrives (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (entry : ScopeEntry) (trigger : StartTrigger)
     (state after : State) : Prop where
   | atStart {header : Header} {payload : StartPayload} :
@@ -98,9 +113,6 @@ inductive Arrives (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (entry :
       Arrives hooks ctx occurrence entry trigger state after
   | atActivity {header : Header} {payload : ActivityPayload} :
       hooks.arriveActivity ctx header payload occurrence state = .ok after →
-      Arrives hooks ctx occurrence entry trigger state after
-  | atMultiInstance {header : Header} {envelope : Envelope} {loop : MultiInstance} :
-      hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after →
       Arrives hooks ctx occurrence entry trigger state after
   | atScope {header : Header} {payload : ScopePayload} :
       hooks.arriveScope ctx header payload occurrence entry state = .ok after →

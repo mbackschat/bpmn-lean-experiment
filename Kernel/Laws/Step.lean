@@ -33,13 +33,6 @@ open Kernel Kernel.Step
 
 /-! ## Outcomes -/
 
-/-- A committed bind committed both its parts. -/
-theorem bind_ok {α β ε : Type} {x : Except ε α} {f : α → Except ε β} {b : β} (ran : (x >>= f) = .ok b) :
-    ∃ a, x = .ok a ∧ f a = .ok b := by
-  cases x with
-  | error failure => exact absurd ran (by simp [bind, Except.bind])
-  | ok a => exact ⟨a, by simp, by simpa [bind, Except.bind] using ran⟩
-
 /-- A transaction boundary changes only a failure: a committed outcome passes through it. -/
 private theorem deferred_ok {program : Program} {state after : State} {outcome : Outcome}
     (ran : deferred program state outcome = .ok after) : outcome = .ok after := by
@@ -830,7 +823,7 @@ which is no start Event and declares no Multi-Instance envelope if the occurrenc
 theorem dispatch_unstarted {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}
     {trigger : StartTrigger} {state after : State} (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) :
     (∃ header payload, hooks.arriveStart ctx header payload trigger occurrence state = .ok after) ∨
-      (∃ header envelope loop, hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after) ∨
+      BodyArrives hooks ctx occurrence state after ∨
       ((ctx.program.element? occurrence.element).bind (·.start?) = none ∧ (occurrence.role = .multiInstanceBody →
         ((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance) = none) ∧
         Arrives hooks ctx occurrence entry trigger state after) := by
@@ -841,7 +834,13 @@ theorem dispatch_unstarted {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence}
   | some element =>
     simp only [known] at ran
     cases loop : bodyLoop? element occurrence with
-    | some pair => simp only [loop] at ran; exact .inr (.inl ⟨_, _, _, ran⟩)
+    | some pair =>
+      simp only [loop] at ran; unfold bodyLoop? at loop; split at loop
+      · obtain ⟨_, found, picked⟩ := Option.bind_eq_some_iff.mp loop
+        obtain ⟨_, carried, rfl⟩ := Option.map_eq_some_iff.mp picked
+        have named := Laws.IL.element?_header known
+        exact .inr (.inl ⟨_, _, _, beq_iff_eq.mp ‹_›, named, by simp [named, known, found, carried], ran⟩)
+      · cases loop
     | none =>
       simp only [loop] at ran
       have single : occurrence.role = .multiInstanceBody →

@@ -168,7 +168,7 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
   arriveActivity _ _ _ _ _ _ holds member begun unstarted role ran := by
     rw [Laws.Registry.hooks_arriveActivity] at ran
     exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted role ran
-  arriveMultiInstance _ _ _ _ _ _ _ holds member begun ran := by
+  arriveMultiInstance _ _ _ _ _ _ _ holds member begun _ _ _ ran := by
     rw [Laws.Registry.hooks_arriveMultiInstance] at ran
     exact Proofs.MultiInstance.arriveMultiInstance_keeps (ops.multiInstance _) holds member begun ran
   arriveScope _ _ _ _ _ _ _ holds member begun ready ran := by
