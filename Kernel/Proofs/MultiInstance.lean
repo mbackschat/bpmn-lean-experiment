@@ -31,7 +31,7 @@ namespace Kernel.Proofs.MultiInstance
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds occurrenceIds Queues)
 open Kernel.Laws.MultiInstance (LoopOf Generated SnapshotFixed Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed
-  NumberedInOrder SlotsCounted CountersHeld BeginsInOrder SequentialSlots ParallelSlots OutputsFit Collects)
+  NumberedInOrder InstancesPlaced SlotsCounted CountersHeld BeginsInOrder SequentialSlots ParallelSlots OutputsFit Collects)
 
 /-- A running body's slots shaped by its loop's mode, its filled slots holding what its instances submitted, and its
 instances numbered in item order (`PMI-*`, `SMI-*`; the numbering of
@@ -49,7 +49,9 @@ def Apart (s : State) (run : MultiInstanceRun) : Prop :=
 
 /-- What the lane keeps of one running body: it is `Owned` whatever the loop, `Shaped` by its loop, its instances lie
 `Apart`, its scope occurrence is its body occurrence's (`BodyOwns`), and each active instance's scope occurrence belongs to
-no occurrence (`InstancesUnowned`) and is no compensation handler's context (`InstancesUnheld`). -/
+no occurrence (`InstancesUnowned`), is no compensation handler's context (`InstancesUnheld`) and hosts only its instance
+(`InstancesPlaced`), so that `Shaped`'s numbering of the instances numbers every occurrence of the Activity in them
+(`Laws.MultiInstance.numbered_of_placed`; root decision E1, 2026-11-15). -/
 structure RunFormed (program : Program) (s : State) (run : MultiInstanceRun) : Prop where
   owned : Owned s run
   shaped : ∀ loop, LoopOf program run.element loop → Shaped s run loop
@@ -57,6 +59,7 @@ structure RunFormed (program : Program) (s : State) (run : MultiInstanceRun) : P
   bodyOwns : BodyOwns s run
   unowned : InstancesUnowned s run
   unheld : InstancesUnheld s run
+  placed : InstancesPlaced s run
 
 /-- The lane's slot invariant: one running body per body occurrence (`RunsKeyed`), each `RunFormed`. It is a lane
 premise beside `WellFormed`, not a clause of it, since feature slot entries are each feature's own laws; the lane

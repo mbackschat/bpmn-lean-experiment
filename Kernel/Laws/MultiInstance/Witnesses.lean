@@ -29,8 +29,10 @@ def running : MultiInstanceRun :=
     instances := [.active firstScope, .active secondScope] }
 
 def bodyOccurrence : Occurrence := { id := 1, element := review, scope := root, activation := 1, role := .multiInstanceBody }
-def firstInstance : Occurrence := { id := 5, element := review, scope := firstScope, activation := 1 }
-def secondInstance : Occurrence := { id := 6, element := review, scope := secondScope, activation := 2 }
+def firstInstance : Occurrence :=
+  { id := 5, element := review, scope := firstScope, activation := 1, continuation := .multiInstance 1 }
+def secondInstance : Occurrence :=
+  { id := 6, element := review, scope := secondScope, activation := 2, continuation := .multiInstance 1 }
 
 def firstOwned : ScopeOccurrence := { id := firstScope, element := some review, parent := some bodyScope }
 def secondOwned : ScopeOccurrence := { id := secondScope, element := some review, parent := some bodyScope }
@@ -114,7 +116,9 @@ theorem twice_keyed_rejected : ¬ RunsKeyed { entered with slots := { multiInsta
   simp [RunsKeyed]
 
 theorem entered_numbered : NumberedInOrder entered running := by
-  intro first second one two lower inFirst inSecond earlier earlierMember later laterMember atFirst atSecond _ _ _ _
+  intro first second one two lower inFirst inSecond earlier earlierMember later laterMember atFirst atSecond continued
+    continued'
+  clear continued continued'
   match first, second with
   | 0, 1 =>
     simp [running] at inFirst inSecond
@@ -130,7 +134,9 @@ theorem entered_numbered : NumberedInOrder entered running := by
 theorem gapped_numbered :
     NumberedInOrder { entered with occurrences := [bodyOccurrence, firstInstance, { secondInstance with activation := 4 }] }
       running := by
-  intro first second one two lower inFirst inSecond earlier earlierMember later laterMember atFirst atSecond _ _ _ _
+  intro first second one two lower inFirst inSecond earlier earlierMember later laterMember atFirst atSecond continued
+    continued'
+  clear continued continued'
   match first, second with
   | 0, 1 =>
     simp [running] at inFirst inSecond
@@ -146,8 +152,27 @@ theorem gapped_numbered :
 theorem reversed_numbering_rejected :
     ¬ NumberedInOrder entered { running with instances := [.active secondScope, .active firstScope] } := fun numbered => by
   have := numbered 0 1 secondScope firstScope (by omega) (by simp) (by simp) secondInstance (by simp [entered])
-    firstInstance (by simp [entered]) rfl rfl rfl rfl rfl rfl
+    firstInstance (by simp [entered]) rfl rfl rfl rfl
   simp [secondInstance, firstInstance] at this
+
+theorem instances_placed : InstancesPlaced entered running := by
+  intro scope active o member at_
+  simp only [entered, List.mem_cons, List.not_mem_nil, or_false] at member
+  simp only [running, List.mem_cons, List.not_mem_nil, or_false] at active
+  rcases member with rfl | rfl | rfl
+  · rcases active with same | same <;> obtain rfl := Iteration.active.inj same
+    · simp [bodyOccurrence, root, firstScope] at at_
+    · simp [bodyOccurrence, root, secondScope] at at_
+  · exact ⟨rfl, rfl, rfl⟩
+  · exact ⟨rfl, rfl, rfl⟩
+
+/-- An occurrence of another element in an instance's scope occurrence breaks `InstancesPlaced`. -/
+theorem stray_occurrence_rejected :
+    ¬ InstancesPlaced
+      { entered with occurrences := [{ id := 7, element := ⟨"Other"⟩, scope := firstScope, activation := 1 }] } running :=
+    fun placed => by
+  have := (placed firstScope (by simp [running]) _ (List.mem_singleton_self _) rfl).1
+  simp [running, review] at this
 
 theorem slots_counted : SlotsCounted { entered with nextIssue := 3 } entered := by
   intro run member index scope slot _

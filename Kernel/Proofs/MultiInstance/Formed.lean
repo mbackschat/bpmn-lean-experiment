@@ -31,7 +31,7 @@ namespace Kernel.Proofs.MultiInstance
 open Kernel
 open Kernel.Laws.State (WellFormed Within StrictlyWithin scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
-  SequentialSlots ParallelSlots OutputsFit)
+  InstancesPlaced SequentialSlots ParallelSlots OutputsFit)
 open Kernel.Proofs.Cancellation (FrameAlongside StepAlongside Unmoved LeavesOwned StoresHeldOrFresh RunningContext
   ActiveInstance phases_alongside featureOps_frame)
 
@@ -73,15 +73,15 @@ theorem RunsFormed.framed {program : Program} {s : State} (formed : RunsFormed p
     ⟨each.owned, fun loop looped => ⟨(each.shaped loop looped).1, (each.shaped loop looped).2.1,
       (each.shaped loop looped).2.2.1⟩, each.bodyOwns, each.unowned, each.unheld⟩⟩
 
-/-- The lane's slot invariant of a well-formed state from its part without numbering and the numbering of each running
-body. -/
+/-- The lane's slot invariant of a well-formed state from its part without numbering and the numbering and isolation of
+each running body's instances. -/
 theorem RunsFramed.formed {program : Program} {s : State} (well : WellFormed program s) (framed : RunsFramed program s)
-    (numbered : ∀ run ∈ s.slots.multiInstances, NumberedInOrder s run) : RunsFormed program s :=
+    (numbered : ∀ run ∈ s.slots.multiInstances, NumberedInOrder s run ∧ InstancesPlaced s run) : RunsFormed program s :=
   ⟨framed.keyed, fun run member =>
     have each := framed.framed run member
     ⟨each.owned, fun loop looped => ⟨(each.shaped loop looped).1, (each.shaped loop looped).2.1,
-      (each.shaped loop looped).2.2, numbered run member⟩, owned_apart well each.owned, each.bodyOwns, each.unowned,
-      each.unheld⟩⟩
+      (each.shaped loop looped).2.2, (numbered run member).1⟩, owned_apart well each.owned, each.bodyOwns, each.unowned,
+      each.unheld, (numbered run member).2⟩⟩
 
 /-! ## Carrying the invariant -/
 
@@ -397,12 +397,14 @@ def Framed (program : Program) (s : State) : Prop :=
   WellFormed program s ∧ RunsFramed program s
 
 /-- What the numbering lane supplies: every running body after a committed input from a well-formed state that keeps
-the slot invariant, and after a committed start, numbers its instances in item order. -/
+the slot invariant, and after a committed start, numbers its instances in item order and hosts only its instance in each
+instance's scope occurrence. -/
 structure NumberingKept (hooks : Hooks) : Prop where
   step : ∀ program input before after, WellFormed program before → RunsFormed program before →
-    Step.step hooks program (some before) input = .ok after → ∀ run ∈ after.slots.multiInstances, NumberedInOrder after run
+    Step.step hooks program (some before) input = .ok after → ∀ run ∈ after.slots.multiInstances,
+      NumberedInOrder after run ∧ InstancesPlaced after run
   start : ∀ program input after, Step.step hooks program none input = .ok after →
-    ∀ run ∈ after.slots.multiInstances, NumberedInOrder after run
+    ∀ run ∈ after.slots.multiInstances, NumberedInOrder after run ∧ InstancesPlaced after run
 
 /-- The registered hooks keep `Framed` where the Multi-Instance hooks do. -/
 theorem framed_contract (multiInstance : Proofs.Step.MultiInstanceKeeps Framed) :

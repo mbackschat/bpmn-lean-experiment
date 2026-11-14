@@ -79,18 +79,43 @@ def InstancesUnheld (s : State) (run : MultiInstanceRun) : Prop :=
 def RunsKeyed (s : State) : Prop :=
   (s.slots.multiInstances.map (·.occurrence)).Nodup
 
-/-- The instances of one body are numbered in item order: of two active slots, the occurrence of the Activity in the
-earlier slot's scope occurrence has the lower activation. The activation counter runs across the whole Process instance,
-so an instance's activation is `offset + index + 1` only while no other body of the element begins instances in between,
-and only the order within a body is its own: two concurrent bodies interleave their numbers
-([Multi-Instance, entry and generation](../../docs/kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md#entry-and-generation),
+/-- The instances of one body are numbered in item order: of two active slots, the instance in the earlier slot's scope
+occurrence has the lower activation. An instance is an occurrence carrying the continuation `.multiInstance` of the
+body occurrence, which its begin carries (`MultiInstance.beginInstances`); that no other occurrence stands in an instance's
+scope occurrence is instance isolation (`InstancesPlaced`), and the two together number every occurrence of the
+Activity in the slots' scope occurrences (`numbered_of_placed`). The activation counter runs across the whole Process
+instance, so an instance's activation is `offset + index + 1` only while no other body of the element begins instances
+in between, and only the order within a body is its own: two concurrent bodies interleave their numbers
+([Multi-Instance, entry and generation](../../../docs/kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md#entry-and-generation),
 the instance activation item, and its witness `multi-instance-nesting/parallel-sequential-sites-in-order`). -/
 def NumberedInOrder (s : State) (run : MultiInstanceRun) : Prop :=
   ∀ (first second : Nat) (firstScope secondScope : ScopeOccurrenceId), first < second →
     run.instances[first]? = some (.active firstScope) → run.instances[second]? = some (.active secondScope) →
     ∀ earlier ∈ s.occurrences, ∀ later ∈ s.occurrences, earlier.scope = firstScope → later.scope = secondScope →
-      earlier.element = run.element → later.element = run.element → earlier.role = .element → later.role = .element →
+      earlier.continuation = .multiInstance run.occurrence → later.continuation = .multiInstance run.occurrence →
       earlier.activation < later.activation
+
+/-- Instance isolation: an active instance's scope occurrence hosts only its instance, an occurrence of the body's
+element under the element role that continues into the body (§13.3.7; CIB runs each instance in an execution of its
+own below the body's). What an instance runs inside, such as a Sub-Process's inner nodes, stands in scope occurrences
+below it. -/
+def InstancesPlaced (s : State) (run : MultiInstanceRun) : Prop :=
+  ∀ scope, Iteration.active scope ∈ run.instances → ∀ o ∈ s.occurrences, o.scope = scope →
+    o.element = run.element ∧ o.role = .element ∧ o.continuation = .multiInstance run.occurrence
+
+/-- Numbered and isolated instances number every occurrence of the body's element under the element role in the
+slots' scope occurrences in item order. -/
+theorem numbered_of_placed {s : State} {run : MultiInstanceRun} (numbered : NumberedInOrder s run)
+    (placed : InstancesPlaced s run) :
+    ∀ (first second : Nat) (firstScope secondScope : ScopeOccurrenceId), first < second →
+      run.instances[first]? = some (.active firstScope) → run.instances[second]? = some (.active secondScope) →
+      ∀ earlier ∈ s.occurrences, ∀ later ∈ s.occurrences, earlier.scope = firstScope → later.scope = secondScope →
+        earlier.element = run.element → later.element = run.element → earlier.role = .element →
+        later.role = .element → earlier.activation < later.activation :=
+  fun first second firstScope secondScope lower one two earlier earlierIn later laterIn atFirst atSecond _ _ _ _ =>
+    numbered first second firstScope secondScope lower one two earlier earlierIn later laterIn atFirst atSecond
+      (placed firstScope (List.mem_of_getElem? one) earlier earlierIn atFirst).2.2
+      (placed secondScope (List.mem_of_getElem? two) later laterIn atSecond).2.2
 
 /-- Under `MultiInstanceCounters.cibLocals` each instance's scope occurrence is entered holding `loopCounter`, its
 zero-based index (CIB-INT-0018, `MultiInstanceActivityBehavior:76-78`): every active slot of `after` whose scope
