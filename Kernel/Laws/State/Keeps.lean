@@ -374,7 +374,7 @@ theorem signal_queueSound {s : State} {signal : Signal} (formed : WellFormed s)
     · exact ends status failure (List.mem_singleton.mp new).symm }
 
 /-- A pair of a list with one entry appended lies in the list, unless its second entry is the appended one. -/
-private theorem pair_of_append {α : Type} {a b c : α} {l : List α} (pair : [a, b].Sublist (l ++ [c])) (other : b ≠ c) :
+theorem pair_of_append {α : Type} {a b c : α} {l : List α} (pair : [a, b].Sublist (l ++ [c])) (other : b ≠ c) :
     [a, b].Sublist l := by
   obtain ⟨first, second, split, rest⟩ := List.sublist_append_iff.mp pair
   obtain ⟨inFirst, inSecond⟩ := rest
@@ -594,7 +594,8 @@ theorem slots_wellFormed {s : State} (formed : WellFormed s) {slots : FeatureSlo
     (fun _ member => member) (fun _ _ => by apply instanceOf_congr <;> rfl) (Nat.le_refl _) (.refl _) (.refl _)
   settled := settled }
 
-private theorem pair_of_append_absent {α : Type} {a b : α} {l m : List α} (pair : [a, b].Sublist (l ++ m))
+/-- A pair of a list with entries appended lies in the list when neither of its entries is appended. -/
+theorem pair_of_append_absent {α : Type} {a b : α} {l m : List α} (pair : [a, b].Sublist (l ++ m))
     (first : a ∉ m) (second : b ∉ m) : [a, b].Sublist l := by
   obtain ⟨front, back, split, rest⟩ := List.sublist_append_iff.mp pair
   obtain ⟨inFront, inBack⟩ := rest

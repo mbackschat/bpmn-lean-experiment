@@ -106,6 +106,10 @@ theorem hooks_completeCall : Registry.hooks.completeCall = Feature.Work.complete
 theorem hooks_completeBody : Registry.hooks.completeBody = Feature.MultiInstance.completeBody := by
   simp only [Registry.hooks]
 
+/-- Multi-Instance enters every body that arrives. -/
+theorem hooks_arriveMultiInstance : Registry.hooks.arriveMultiInstance = Feature.MultiInstance.arriveMultiInstance := by
+  simp only [Registry.hooks]
+
 /-- Data applies every write. -/
 theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOutputs := by
   simp only [Registry.hooks]

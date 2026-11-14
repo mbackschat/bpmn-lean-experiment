@@ -307,6 +307,14 @@ theorem recordEnd_eq (state : State) (key : OccurrenceKey) (terminal : Terminal)
 theorem busyScope_flow (flow : FlowId) (scope : ScopeOccurrenceId) : (Token.flow flow scope).busyScope = scope := by
   simp only [Token.busyScope]
 
+/-- A deferred begin keeps the scope occurrence it begins in busy. -/
+theorem busyScope_begin (request : BeginRequest) : (Token.begin request).busyScope = request.scope := by
+  simp only [Token.busyScope]
+
+theorem deferBegins_eq (state : State) (requests : List BeginRequest) :
+    state.deferBegins requests = { state with tokens := state.tokens ++ (requests.map Token.begin).reverse } := by
+  simp only [State.deferBegins]
+
 theorem emit_eq (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) :
     state.emit flows scope = { state with tokens := state.tokens ++ flows.map (Token.flow · scope) } := by
   simp only [State.emit]

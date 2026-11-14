@@ -21,6 +21,11 @@ theorem evalContext_eq (state : State) (program : Program) (scope : ScopeOccurre
     state.evalContext program scope = { variables := state.visible program scope, nowMs := state.logicalTimeMs } := by
   simp only [State.evalContext]
 
+/-- A held occurrence joins `FeatureSlots.held`; nothing else changes. -/
+theorem hold_eq (state : State) (held : Held) :
+    state.hold held = { state with slots := { state.slots with held := state.slots.held ++ [held] } } := by
+  simp only [State.hold]
+
 /-- The item an input addresses is one of the state's open items. -/
 theorem itemDetail?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef}
     {detail : WaitView → Option α} {item : OpenItem} {value : α}

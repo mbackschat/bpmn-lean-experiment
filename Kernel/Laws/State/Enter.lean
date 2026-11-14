@@ -2,12 +2,14 @@ module
 
 public import Kernel.Laws.State.Keeps
 
-/-! # Laws of the kernel state: what entering a scope occurrence keeps
+/-! # Laws of the kernel state: entering a scope occurrence and queuing bare begins
 
 That `State.enterScope` keeps `WellFormed` when it enters below a scope occurrence that stands, owned, if at all, by a
 begun occurrence running there, composed from `Kernel.Laws.State.enterScope_eq`; it reads no body. The new scope
 occurrence takes the counter's identity, so nothing standing or queued names it, and what stood keeps its process
-instance, since its parent chain is unchanged (`Laws.State.instanceOf_kept`). Nothing executable imports this module.
+instance, since its parent chain is unchanged (`Laws.State.instanceOf_kept`). A bare begin, which names no
+reservation, queued as a signal or deferred onto the work stack in a scope occurrence that stands, claims nothing, so
+it keeps the claims single and what has settled settled. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -244,3 +246,167 @@ theorem enterScope_wellFormed {s : State} (formed : WellFormed s) (element : Ele
     ownedBelow, claimed,
     formed.settled.transport (SlotsWithin.same hSlots) (by rw [hNext]; omega) (fun occurrence member _ => .inl (hOcc ▸ member))
       (fun request queued => (queuedEq request).mp queued) (fun signal member => hSignals ▸ member)⟩
+
+/-! ## Bare begins -/
+
+/-- What has settled stays settled through a change that issues nothing back, keeps the occurrences and queues only
+begins naming no reservation. -/
+theorem Settled.bare {s t : State} {id : Nat} (settled : Settled s id) (issued : s.nextIssue ≤ t.nextIssue)
+    (occurrences : t.occurrences = s.occurrences)
+    (queued : ∀ request, Queued t request → Queued s request ∨ names request = []) : Settled t id := by
+  obtain ⟨below, begun, unnamed⟩ := settled
+  refine ⟨Nat.lt_of_lt_of_le below issued, occurrences ▸ begun, fun request named inside => ?_⟩
+  rcases queued request named with old | bare
+  · exact unnamed request old inside
+  · rw [bare] at inside
+    simp at inside
+
+/-- The slots stay settled through such a change that keeps them and queues no compensation. -/
+theorem SlotsSettled.bare {s t : State} (settled : SlotsSettled s) (slots : t.slots = s.slots)
+    (issued : s.nextIssue ≤ t.nextIssue) (occurrences : t.occurrences = s.occurrences)
+    (queued : ∀ request, Queued t request → Queued s request ∨ names request = [])
+    (compensations : ∀ scope activity trigger leave occurrence resume,
+      Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ t.signals →
+        Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ s.signals) :
+    SlotsSettled t where
+  parked waiting member := (settled.parked waiting (slots ▸ member)).bare issued occurrences queued
+  bodies run member := (settled.bodies run (slots ▸ member)).bare issued occurrences queued
+  resumed run member occurrence leave resume :=
+    (settled.resumed run (slots ▸ member) occurrence leave resume).bare issued occurrences queued
+  queued scope activity trigger leave occurrence resume member :=
+    (settled.queued scope activity trigger leave occurrence resume
+      (compensations scope activity trigger leave occurrence resume member)).bare issued occurrences queued
+
+/-- Queuing a bare begin in a scope occurrence that stands keeps the claims single. That the begin is no completion,
+`Kernel.Proofs.Step` tells. -/
+theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : WellFormed s) (bare : names request = [])
+    (stands : request.scope ∈ scopeIds s)
+    (notComplete : ∀ id leave writes rule, Signal.begin request ≠ .complete id leave writes rule) :
+    ReservationsClaimed (s.signal (.begin request)) := by
+  rw [signal_eq]
+  have queued : ∀ other, Queued { s with signals := s.signals ++ [.begin request] } other →
+      Queued s other ∨ other = request := fun other named => by
+    rcases named with signal | token
+    · rcases List.mem_append.mp signal with old | new
+      · exact .inl (.inl old)
+      · exact .inr (Signal.begin.inj (List.mem_singleton.mp new))
+    · exact .inl (.inr token)
+  have named : ∀ other, Queued { s with signals := s.signals ++ [.begin request] } other → ∀ id ∈ names other,
+      Queued s other := fun other queuedOther id inside => (queued other queuedOther).resolve_right fun same => by
+    rw [same, bare] at inside
+    simp at inside
+  refine ⟨formed.claimed.attached, fun other queuedOther => ?_, fun first second pair id inside => ?_,
+    formed.claimed.tokensApart, fun first second signal token id inside => ?_,
+    fun other id leave writes rule queuedOther inside completed => ?_, fun other queuedOther => ?_⟩
+  · rcases queued other queuedOther with old | rfl
+    · exact (formed.claimed.named other old).imp id fun beginnable id inside =>
+        (beginnable id inside).congr rfl rfl rfl rfl fun _ => by apply instanceOf_congr <;> rfl
+    · rw [bare]
+      exact ⟨List.nodup_nil, fun _ inside => by simp at inside⟩
+  · by_cases same : second = request
+    · rw [same, bare]
+      exact List.not_mem_nil
+    · exact formed.claimed.signalsApart first second (pair_of_append pair fun equal => same (Signal.begin.inj equal))
+        id inside
+  · rcases List.mem_append.mp signal with old | new
+    · exact formed.claimed.queuesApart first second old token id inside
+    · rw [Signal.begin.inj (List.mem_singleton.mp new), bare] at inside
+      simp at inside
+  · rcases List.mem_append.mp completed with old | new
+    · exact formed.claimed.uncompleted other id leave writes rule (named other queuedOther id inside) inside old
+    · exact notComplete id leave writes rule (List.mem_singleton.mp new).symm
+  · rcases queued other queuedOther with old | rfl
+    · exact formed.claimed.scopesIssued other old
+    · obtain ⟨entry, member, named⟩ := List.mem_map.mp stands
+      exact named ▸ formed.issued.scopes entry member
+
+/-- Queuing a bare begin keeps the slots settled: it claims nothing. That the begin is no compensation,
+`Kernel.Proofs.Step` tells. -/
+theorem signal_settled_begin {s : State} {request : BeginRequest} (formed : WellFormed s) (bare : names request = [])
+    (notCompensate : ∀ scope activity trigger leave occurrence resume,
+      Signal.begin request ≠ .compensate scope activity trigger leave (some (.complete occurrence resume))) :
+    SlotsSettled (s.signal (.begin request)) := by
+  rw [signal_eq]
+  refine formed.settled.bare rfl (Nat.le_refl _) rfl (fun other named => ?_)
+    fun scope activity trigger leave occurrence resume member => ?_
+  · rcases named with signal | token
+    · rcases List.mem_append.mp signal with old | new
+      · exact .inl (.inl old)
+      · rw [Signal.begin.inj (List.mem_singleton.mp new)]
+        exact .inr bare
+    · exact .inl (.inr token)
+  · rcases List.mem_append.mp member with old | new
+    · exact old
+    · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave occurrence resume)
+
+/-- Deferring bare begins, each in a scope occurrence that stands, keeps a state well-formed. -/
+theorem deferBegins_wellFormed {s : State} (formed : WellFormed s) {requests : List BeginRequest}
+    (bare : ∀ request ∈ requests, names request = [] ∧ request.scope ∈ scopeIds s) :
+    WellFormed (s.deferBegins requests) := by
+  rw [deferBegins_eq]
+  have fresh : ∀ request, Token.begin request ∈ (requests.map Token.begin).reverse → request ∈ requests :=
+    fun request member => by simpa using member
+  have housed : ∀ token ∈ (requests.map Token.begin).reverse, token.busyScope ∈ scopeIds s := fun token member => by
+    obtain ⟨request, inside, rfl⟩ := List.mem_map.mp (List.mem_reverse.mp member)
+    rw [busyScope_begin]
+    exact (bare request inside).2
+  generalize (requests.map Token.begin).reverse = added at fresh housed
+  have queued : ∀ request, Queued { s with tokens := s.tokens ++ added } request →
+      Queued s request ∨ request ∈ requests := fun request named => by
+    rcases named with signal | token
+    · exact .inl (.inl signal)
+    · rcases List.mem_append.mp token with old | new
+      · exact .inl (.inr old)
+      · exact .inr (fresh request new)
+  have nameless : ∀ request ∈ requests, ∀ id, id ∉ names request := fun request inside id named => by
+    rw [(bare request inside).1] at named
+    simp at named
+  have keys : key { s with tokens := s.tokens ++ added } = key s :=
+    funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
+  have claimed : ReservationsClaimed { s with tokens := s.tokens ++ added } := ⟨formed.claimed.attached,
+    fun request named => by
+      rcases queued request named with old | new
+      · exact (formed.claimed.named request old).imp id fun beginnable id inside =>
+          (beginnable id inside).congr rfl rfl rfl rfl fun _ => by apply instanceOf_congr <;> rfl
+      · rw [(bare request new).1]
+        exact ⟨List.nodup_nil, fun _ inside => by simp at inside⟩,
+    formed.claimed.signalsApart,
+    fun first second pair id inside => by
+      by_cases late : second ∈ requests
+      · exact nameless second late id
+      · have early : first ∉ requests := fun named => nameless first named id inside
+        exact formed.claimed.tokensApart first second (pair_of_append_absent pair (fun member => early (fresh _ member))
+          fun member => late (fresh _ member)) id inside,
+    fun first second signal token id inside => by
+      rcases List.mem_append.mp token with old | new
+      · exact formed.claimed.queuesApart first second signal old id inside
+      · exact nameless second (fresh second new) id,
+    fun request id leave writes rule named inside => by
+      rcases queued request named with old | new
+      · exact formed.claimed.uncompleted request id leave writes rule old inside
+      · exact absurd inside (nameless request new id),
+    fun request named => by
+      rcases queued request named with old | new
+      · exact formed.claimed.scopesIssued request old
+      · obtain ⟨entry, member, same⟩ := List.mem_map.mp (bare request new).2
+        exact same ▸ formed.issued.scopes entry member⟩
+  exact {
+  issued := ⟨formed.issued.occurrences, formed.issued.items, formed.issued.scopes⟩
+  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩
+  startedOnce := formed.startedOnce
+  activations := ⟨formed.activations.keys, formed.activations.positive⟩
+  reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations
+  owned := ⟨formed.owned.occurrenceScopes, formed.owned.itemScopes, formed.owned.itemOccurrences,
+    formed.owned.attachments, formed.owned.scopeOwners, formed.owned.variableScopes, fun token member =>
+      (List.mem_append.mp member).elim (formed.owned.tokenScopes token) (housed token)⟩
+  rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
+    Within.congr (s := s) (t := { s with tokens := s.tokens ++ added }) rfl (formed.rooted.2.2 scope member)⟩
+  variables := ⟨formed.variables.scopes, formed.variables.names⟩
+  failure := formed.failure
+  queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends⟩
+  counted := formed.counted
+  occurrencesCounted := by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted
+  ownedBelow := formed.ownedBelow
+  claimed := claimed
+  settled := formed.settled.bare rfl (Nat.le_refl _) rfl (fun request named =>
+    (queued request named).imp id fun new => (bare request new).1) fun _ _ _ _ _ _ member => member }
