@@ -473,6 +473,29 @@ def MicroStepsKeepEnds (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (b state after : State), Laws.Step.EndsInv b none ctx.program state →
     Laws.Step.ClosureStep hooks ctx state after → Laws.Step.EndsInv b none ctx.program after ∧ after.draft.ended = []
 
+/-- The state operations the hooks apply keep an input's end facts from its start under any exemption, once each
+frames them (`Laws.Step.PendingHookFrames`): the hooks then keep `Laws.Step.EndsInv` by their feature lemmas
+(`Kernel.Proofs.Cancellation.Registered`). -/
+theorem endsKept_alongside (frames : Laws.Step.PendingHookFrames) (b : State) (x : Option (Nat × OccurrenceKey)) :
+    Alongside (Laws.Step.EndsKept b x) where
+  frame _ _ moved kept := kept.unmoved moved.occurrences moved.activations ⟨moved.scopes, moved.instanceId⟩
+    (Nat.le_of_eq moved.nextIssue.symm) (by simp only [Laws.Step.endKeys, moved.journal, moved.draft])
+  issue _ kept := by
+    rw [Laws.State.issue_eq]
+    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_succ _) rfl
+  enterScope program s element parent locals owner formed kept :=
+    kept.step formed (frames.enterScope_frame program s element parent locals owner formed)
+  enterCalled program s called call variables definition formed kept :=
+    kept.step formed (frames.enterCalled_frame program s called call variables definition formed)
+  reserve program s element scope formed kept := kept.step formed (frames.reserve_frame program s element scope formed)
+  leaveScope program s scope formed kept := kept.step formed (frames.leaveScope_frame program s scope formed)
+  clearInside program s scope keep formed kept := kept.step formed (frames.clearInside_frame program s scope keep formed)
+  disarm program s host formed kept := kept.step formed (frames.disarm_frame program s host formed)
+  setVariable program s target name value formed kept :=
+    kept.step formed (frames.setVariable_frame program s target name value formed)
+  removeVariable program s target name formed kept :=
+    kept.step formed (frames.removeVariable_frame program s target name formed)
+
 /-- A list whose keys are distinct holds the key `key` once if at all. -/
 theorem once_of_nodup {α β : Type} {facts : List (α × β)} {key : α} (distinct : (facts.map (·.1)).Nodup)
     (member : key ∈ facts.map (·.1)) :

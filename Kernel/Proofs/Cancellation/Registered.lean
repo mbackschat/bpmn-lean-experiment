@@ -397,4 +397,14 @@ theorem subtreeRemoved_registered (removal : PendingRemoval) (pending : ∀ befo
   subtreeRemoved_of_keeps (keepsScopes_contract removal pending) (keepsScopes_phases Proofs.Step.phases removal)
     Proofs.State.stateFacts
 
+/-! ## End facts of the registered hooks -/
+
+/-- The registered hooks keep an input's end facts from its start beside `WellFormed`, under any exemption
+(`Laws.Step.EndsInv`), the hook contract `Laws.Step.complete_ends` and `MicroStepsKeepEnds` rest on. -/
+theorem endsInv_contract (frames : Laws.Step.PendingHookFrames)
+    (pending : ∀ b x, PendingHooks (Laws.Step.EndsInv b x)) (b : State) (x : Option (Nat × OccurrenceKey)) :
+    Laws.Step.HookContract Registry.hooks (Laws.Step.EndsInv b x) :=
+  registered_contract (registeredOps_wellFormed.alongside (endsKept_alongside frames b x)) Proofs.State.stateFacts
+    (pending b x)
+
 end Kernel.Proofs.Cancellation
