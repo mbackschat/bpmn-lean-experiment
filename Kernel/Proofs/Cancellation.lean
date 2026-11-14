@@ -13,8 +13,8 @@ occurrence has no effect; every owning feature is notified once. Each is stated 
 `State.cancelOccurrence`) and reads no IL.
 
 A proof here composes `Laws.Step`'s, `Laws.Hooks`' and `Laws.State`'s lemmas and opens no body. A `Step` fact it needs
-that no `Laws` module states yet is an explicit premise named as a pending lemma request (`PendingStale`, `PendingLate`),
-never a model or state premise of the lane statement; the root replaces it with the lemma once that lands. Subtree
+that no `Laws` module states yet is an explicit premise named as a pending lemma request, never a model or state premise
+of the lane statement; the root replaces it with the lemma once that lands. Subtree
 removal rests on the state-invariant lane's preservation of `WellFormed` and on the step keeping its before-state's
 scope occurrences (`StepKeepsScopes`), an invariant of the closure relative to the before-state. Nothing executable
 imports this module.
@@ -107,64 +107,13 @@ def RemovedEndOnce (hooks : Hooks) : Prop :=
     ∃ earlier terminal later, after.journal.flatMap (·.ended) = earlier ++ (before.keyOf occurrence, terminal) :: later ∧
       ∀ fact ∈ earlier ++ later, fact.1 ≠ before.keyOf occurrence
 
-/-! ## Pending lemma requests
-
-`Kernel.Laws.Step` facts the proofs below use, stated exactly as requested of its owner; each field becomes the lemma of
-the same name, and the premise goes, once it lands. -/
-
-/-- A queued arming, begin or `occur` whose scope occurrence was issued and is gone fails the input as
-`interrupted-before-wait` (`Step.stale`), as `Laws.Step.write_scope_gone` and its siblings state of the work that acts
-from a scope occurrence (`Step.gone`). -/
-structure PendingStale : Prop where
-  arm_scope_stale : ∀ (hooks : Hooks) (ctx : Ctx) (host : Nat) (element : ElementId) (scope : ScopeOccurrenceId)
-    (state : State), scope.value < state.nextIssue → (∀ entry ∈ state.scopes, entry.id ≠ scope) →
-    (Step.signalWork hooks ctx (.arm host element scope)).perform state = .error (.unsupported "interrupted-before-wait")
-  armScope_stale : ∀ (hooks : Hooks) (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State),
-    scope.value < state.nextIssue → (∀ entry ∈ state.scopes, entry.id ≠ scope) →
-    (Step.signalWork hooks ctx (.armScope scope)).perform state = .error (.unsupported "interrupted-before-wait")
-  armGateway_scope_stale : ∀ (hooks : Hooks) (ctx : Ctx) (occurrence : Nat) (gateway : ElementId)
-    (scope : ScopeOccurrenceId) (state : State), scope.value < state.nextIssue → (∀ entry ∈ state.scopes, entry.id ≠ scope) →
-    (Step.signalWork hooks ctx (.armGateway occurrence gateway scope)).perform state =
-      .error (.unsupported "interrupted-before-wait")
-  begin_scope_stale : ∀ (hooks : Hooks) (ctx : Ctx) (request : BeginRequest) (state : State),
-    request.scope.value < state.nextIssue → (∀ entry ∈ state.scopes, entry.id ≠ request.scope) →
-    (Step.signalWork hooks ctx (.begin request)).perform state = .error (.unsupported "interrupted-before-wait")
-  occur_scope_stale : ∀ (hooks : Hooks) (ctx : Ctx) (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave)
-    (writes : List (String × Value)) (rule : WriteRule) (state : State), scope.value < state.nextIssue →
-    (∀ entry ∈ state.scopes, entry.id ≠ scope) →
-    (Step.signalWork hooks ctx (.occur element scope leave writes rule)).perform state =
-      .error (.unsupported "interrupted-before-wait")
-
-/-- An input addressed to an occurrence no lookup finds is rejected (`Laws.Step`), what the lookups read
-(`Laws.Step`, `Laws.Hooks`), and that the instance an occurrence belongs to is read from the scope tree and the
-instance identity alone (`Laws.State`). -/
-structure PendingLate : Prop where
-  step_unknown : ∀ (hooks : Hooks) (program : Program) (state : State) (input : Input) (ref : OccurrenceRef),
-    ((∃ data : CommandInput, input = .command data ∧ data.occurrence = ref) ∨
-      (∃ data : TimerInput, input = .timerFire data ∧ data.occurrence = ref) ∨
-      ∃ data : EffectInput, input = .effectResult data ∧ data.occurrence = ref) →
-    (∀ (ctx : Ctx) (s : State), ctx.program = program → s.occurrences = state.occurrences →
-      s.openItems = state.openItems → s.scopes = state.scopes → s.instanceId = state.instanceId →
-      Step.occurrenceOf? ctx s ref = none ∧ ∀ {α : Type} (detail : WaitView → Option α), itemDetail? ctx s ref detail = none) →
-    ∃ code, Step.step hooks program (some state) input = .error (.rejected code)
-  occurrenceOf?_some : ∀ (ctx : Ctx) (state : State) (ref : OccurrenceRef) (occurrence : Occurrence),
-    Step.occurrenceOf? ctx state ref = some occurrence →
-    occurrence ∈ state.occurrences ∧ ctx.program.publicId occurrence.element = ref.element ∧
-      occurrence.activation = ref.activation ∧ state.instanceOf occurrence.scope = ref.processInstanceId
-  itemDetail?_some : ∀ {α : Type} (ctx : Ctx) (state : State) (ref : OccurrenceRef) (detail : WaitView → Option α)
-    (item : OpenItem) (value : α), itemDetail? ctx state ref detail = some (item, value) →
-    item ∈ state.openItems ∧ ctx.program.publicId item.element = ref.element ∧
-      (state.occurrence? item.occurrence).map (·.activation) = some ref.activation ∧
-      state.instanceOf item.scope = ref.processInstanceId
-  instanceOf_congr : ∀ (s t : State), t.scopes = s.scopes → t.instanceId = s.instanceId → t.instanceOf = s.instanceOf
-
 /-! ## Queued work naming a removed scope occurrence -/
 
 /-- `QueuedWorkInert` holds vacuously: the micro-step never commits. Work that does something in a removed scope
-occurrence (an arming, a begin, an `occur`) is stale (`PendingStale`), and work that acts from one (a write, a removal, a
-compensation, a compensation's failure) is gone (`Laws.Step.write_scope_gone` and its siblings, #121); either fails the
-micro-step's body, which a committed micro-step ran (`Laws.Step.microStep_ok`). -/
-theorem queuedWorkInert {hooks : Hooks} (pending : PendingStale) : QueuedWorkInert hooks := by
+occurrence (an arming, a begin, an `occur`) is stale (`Laws.Step.scope_stale`), and work that acts from one (a write, a
+removal, a compensation, a compensation's failure) is gone (`Laws.Step.write_scope_gone` and its siblings, #121); either
+fails the micro-step's body, which a committed micro-step ran (`Laws.Step.microStep_ok`). -/
+theorem queuedWorkInert {hooks : Hooks} : QueuedWorkInert hooks := by
   intro ctx state after next rest scope _ acts issued removed ran
   obtain ⟨_, _, body, _⟩ := Laws.Step.microStep_ok ran
   rw [Laws.Step.dispatchSignal_eq] at body
@@ -173,16 +122,17 @@ theorem queuedWorkInert {hooks : Hooks} (pending : PendingStale) : QueuedWorkIne
     subst popped
     exact fun entry member same => removed (List.mem_map.mpr ⟨entry, member, same⟩)
   replace issued : scope.value < queue.nextIssue := by subst popped; exact issued
+  have stale := fun names => Laws.Step.scope_stale (hooks := hooks) (ctx := ctx) (signal := next) names issued absent
   rcases acts with ⟨host, element, rfl⟩ | rfl | ⟨occurrence, gateway, rfl⟩ | ⟨request, rfl, rfl⟩ |
       ⟨writes, rule, rfl⟩ | ⟨names, rfl⟩ | ⟨element, leave, ⟨writes, rule, rfl⟩⟩ |
       ⟨activity, trigger, ⟨leave, resume, rfl⟩⟩ | ⟨code, message, origin, rfl⟩
-  · rw [pending.arm_scope_stale hooks ctx host element _ queue issued absent] at body; cases body
-  · rw [pending.armScope_stale hooks ctx _ queue issued absent] at body; cases body
-  · rw [pending.armGateway_scope_stale hooks ctx occurrence gateway _ queue issued absent] at body; cases body
-  · rw [pending.begin_scope_stale hooks ctx request queue issued absent] at body; cases body
+  · rw [stale (.inl ⟨host, element, rfl⟩)] at body; cases body
+  · rw [stale (.inr (.inl rfl))] at body; cases body
+  · rw [stale (.inr (.inr (.inl ⟨occurrence, gateway, rfl⟩)))] at body; cases body
+  · rw [stale (.inr (.inr (.inr (.inl ⟨request, rfl, rfl⟩))))] at body; cases body
   · rw [Laws.Step.write_scope_gone absent] at body; cases body
   · rw [Laws.Step.remove_scope_gone absent] at body; cases body
-  · rw [pending.occur_scope_stale hooks ctx element _ leave writes rule queue issued absent] at body; cases body
+  · rw [stale (.inr (.inr (.inr (.inr ⟨element, leave, writes, rule, rfl⟩))))] at body; cases body
   · rw [Laws.Step.compensate_scope_gone absent] at body; cases body
   · rw [Laws.Step.compensationFailed_scope_gone absent] at body; cases body
 
@@ -210,19 +160,18 @@ theorem item_designates {program : Program} {before s : State} {ref : Occurrence
 
 /-- `LateInputRejected`: an input addressed to an occurrence the before-state does not hold finds nothing to act on,
 neither the occurrence nor an open item of it, so `Step` rejects it before its transition commits anything
-(`PendingLate.step_unknown`). -/
-theorem lateInputRejected {hooks : Hooks} (pending : PendingLate) : LateInputRejected hooks := by
+(`Laws.Step.step_unknown`). -/
+theorem lateInputRejected {hooks : Hooks} : LateInputRejected hooks := by
   intro program input before ref formed addressed undesignated
-  refine pending.step_unknown hooks program before input ref addressed
-    fun ctx s program_ occurrences items scopes named => ?_
-  have sameInstance : s.instanceOf = before.instanceOf := pending.instanceOf_congr before s scopes named
+  refine Laws.Step.step_unknown addressed fun ctx s program_ occurrences items scopes named => ?_
+  have sameInstance : s.instanceOf = before.instanceOf := funext (Laws.State.instanceOf_congr scopes named)
   subst program_
   refine ⟨?_, fun detail => ?_⟩
   · refine Option.eq_none_iff_forall_ne_some.mpr fun occurrence found => ?_
-    obtain ⟨member, publicId, activation, instance_⟩ := pending.occurrenceOf?_some ctx s ref occurrence found
+    obtain ⟨member, publicId, activation, instance_⟩ := Laws.Step.occurrenceOf?_some found
     exact undesignated occurrence (occurrences ▸ member) ⟨publicId, activation, sameInstance ▸ instance_⟩
   · refine Option.eq_none_iff_forall_ne_some.mpr fun pair found => ?_
-    obtain ⟨member, publicId, activation, instance_⟩ := pending.itemDetail?_some ctx s ref detail pair.1 pair.2 found
+    obtain ⟨member, publicId, activation, instance_⟩ := Laws.Hooks.itemDetail?_some (item := pair.1) (value := pair.2) found
     obtain ⟨occurrence, owned, designated⟩ :=
       item_designates formed occurrences items sameInstance member publicId activation instance_
     exact undesignated occurrence owned designated
