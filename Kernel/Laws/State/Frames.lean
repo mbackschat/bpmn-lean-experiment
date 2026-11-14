@@ -344,6 +344,68 @@ theorem Within.closed_mem {s : State} {scope x : ScopeOccurrenceId} {set : List 
   | refl => exact start
   | parent child parent _ member link _ ih => exact closed parent (ih start) child member link
 
+/-- What `State.subtree`'s breadth-first search keeps, from `scope`: everything it met is a present scope occurrence
+within `scope`, met once, `scope` itself or a child of one it expanded; every child of one it expanded was met. -/
+structure Search (s : State) (scope : ScopeOccurrenceId) (seen frontier : List ScopeOccurrenceId) : Prop where
+  present : ∀ x ∈ seen ++ frontier, x ∈ scopeIds s
+  nodup : (seen ++ frontier).Nodup
+  within : ∀ x ∈ seen ++ frontier, Within s x scope
+  closed : ∀ p ∈ seen, ∀ child ∈ s.scopes, child.parent = some p → child.id ∈ seen ++ frontier
+  reached : ∀ x ∈ seen ++ frontier, x = scope ∨ ∃ p ∈ seen, ∃ child ∈ s.scopes, child.id = x ∧ child.parent = some p
+
+theorem search_step {s : State} (formed : WellFormed program s) {scope next : ScopeOccurrenceId}
+    {seen rest : List ScopeOccurrenceId} (search : Search s scope seen (next :: rest)) :
+    Search s scope (seen ++ [next]) (rest ++ (s.scopes.filter (·.parent == some next)).map (·.id)) := by
+  have perm : ((seen ++ [next]) ++ (rest ++ (s.scopes.filter (·.parent == some next)).map (·.id))).Perm
+      ((seen ++ next :: rest) ++ (s.scopes.filter (·.parent == some next)).map (·.id)) := by
+    simp only [List.append_assoc, List.cons_append]
+    exact List.Perm.refl _
+  have nextWithin := search.within next (by simp)
+  have child_mem : ∀ x, x ∈ (s.scopes.filter (·.parent == some next)).map (·.id) →
+      ∃ child ∈ s.scopes, child.id = x ∧ child.parent = some next := fun x member => by
+    obtain ⟨child, inside, same⟩ := List.mem_map.mp member
+    obtain ⟨inside, linked⟩ := List.mem_filter.mp inside
+    exact ⟨child, inside, same, by simpa using linked⟩
+  constructor
+  · intro x member
+    rcases List.mem_append.mp (perm.mem_iff.mp member) with old | new
+    · exact search.present x old
+    · obtain ⟨child, inside, same, _⟩ := child_mem x new
+      exact List.mem_map.mpr ⟨child, inside, same⟩
+  · refine perm.nodup_iff.mpr (List.nodup_append.mpr ⟨search.nodup, ?_, ?_⟩)
+    · exact (formed.distinct.scopes.sublist ((List.filter_sublist).map _))
+    · intro x old y new same
+      subst same
+      obtain ⟨child, inside, named, linked⟩ := child_mem x new
+      rcases search.reached x old with first | ⟨p, seenP, found⟩
+      · subst first
+        exact parent_not_within formed inside linked (named ▸ nextWithin)
+      · obtain ⟨other, otherInside, otherNamed, otherLinked⟩ := found
+        have := scope_unique formed.distinct otherInside inside (otherNamed.trans named.symm)
+        subst this
+        rw [linked] at otherLinked
+        cases otherLinked
+        exact (List.nodup_append.mp search.nodup).2.2 _ seenP _ (by simp) rfl
+  · intro x member
+    rcases List.mem_append.mp (perm.mem_iff.mp member) with old | new
+    · exact search.within x old
+    · obtain ⟨child, inside, same, linked⟩ := child_mem x new
+      exact same ▸ .parent child next scope inside linked nextWithin
+  · intro p seenP child inside linked
+    refine perm.mem_iff.mpr ?_
+    rcases List.mem_append.mp seenP with old | new
+    · exact List.mem_append_left _ (search.closed p old child inside linked)
+    · simp only [List.mem_singleton] at new
+      subst new
+      exact List.mem_append_right _ (List.mem_map.mpr ⟨child, List.mem_filter.mpr ⟨inside, by simp [linked]⟩, rfl⟩)
+  · intro x member
+    rcases List.mem_append.mp (perm.mem_iff.mp member) with old | new
+    · rcases search.reached x old with first | ⟨p, seenP, rest⟩
+      · exact .inl first
+      · exact .inr ⟨p, List.mem_append_left _ seenP, rest⟩
+    · obtain ⟨child, inside, same, linked⟩ := child_mem x new
+      exact .inr ⟨next, by simp, child, inside, same, linked⟩
+
 /-! ## Narrowing -/
 
 /-- `after` holds what `before` holds, with no more open items, tokens, queued signals or start facts of the input in

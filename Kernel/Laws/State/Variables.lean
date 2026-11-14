@@ -128,4 +128,19 @@ theorem removeVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {
     · simp only [beq_iff_eq, targeted, ite_false]
       exact nodup
 
+/-- `setVariable` changes no scope occurrence, occurrence or open item. -/
+theorem setVariable_frame (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
+    (state.setVariable target name value).scopes = state.scopes ∧
+      (state.setVariable target name value).occurrences = state.occurrences ∧
+      (state.setVariable target name value).openItems = state.openItems :=
+  let same := setVariable_same state target name value
+  ⟨same.scopes, same.occurrences, same.openItems⟩
+
+theorem removeVariable_frame (state : State) (target : ScopeOccurrenceId) (name : String) :
+    (state.removeVariable target name).scopes = state.scopes ∧
+      (state.removeVariable target name).occurrences = state.occurrences ∧
+      (state.removeVariable target name).openItems = state.openItems :=
+  let same := removeVariable_same state target name
+  ⟨same.scopes, same.occurrences, same.openItems⟩
+
 end Kernel.Laws.State

@@ -87,7 +87,7 @@ theorem leaveChild_wellFormed {s : State} (formed : WellFormed program s) {child
     ⟨inside, fun within => parent_not_within formed member link (named ▸ within)⟩, named⟩, left⟩
 
 /-- Two scope occurrences below one parent lie outside each other. -/
-private theorem sibling_outside {s : State} (formed : WellFormed program s) {first second : ScopeOccurrence}
+theorem sibling_outside {s : State} (formed : WellFormed program s) {first second : ScopeOccurrence}
     {parent : ScopeOccurrenceId} (one : first ∈ s.scopes) (two : second ∈ s.scopes) (firstLink : first.parent = some parent)
     (secondLink : second.parent = some parent) (other : second.id ≠ first.id) : ¬ Within s second.id first.id := by
   intro within
@@ -281,5 +281,52 @@ theorem cancel_wellFormed {s : State} (formed : WellFormed program s) (id : Nat)
       exact ⟨by simpa using own, by simpa using unattached⟩
     rw [cancels]
     exact draftEnds_wellFormed (removeOccurrence_wellFormed withdrawn stays free).1 ended cancelled
+
+/-! ## What removal shrinks -/
+
+private theorem leaveScope_shrinks (s : State) (scope : ScopeOccurrenceId) :
+    (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextIssue = s.nextIssue := by
+  obtain ⟨fewer, same⟩ := clearInside_shrinks s scope []
+  rw [(leaveScope_eq s scope).1]
+  exact ⟨List.filter_sublist.trans fewer, same⟩
+
+private theorem leaveAll_shrinks : ∀ (scopes : List ScopeOccurrence) (t : State),
+    (scopes.foldl (fun t entry => t.leaveScope entry.id) t).scopes.Sublist t.scopes ∧
+      (scopes.foldl (fun t entry => t.leaveScope entry.id) t).nextIssue = t.nextIssue
+  | [], _ => ⟨.refl _, rfl⟩
+  | entry :: rest, t => by
+    obtain ⟨fewer, same⟩ := leaveAll_shrinks rest (t.leaveScope entry.id)
+    obtain ⟨fewer', same'⟩ := leaveScope_shrinks t entry.id
+    exact ⟨fewer.trans fewer', same.trans same'⟩
+
+private theorem removeOccurrence_shrinks (s : State) (id : Nat) :
+    (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextIssue = s.nextIssue := by
+  rw [removeOccurrence_eq]
+  exact leaveAll_shrinks _ (withoutRecord s id)
+
+private theorem withdrawAll_shrinks : ∀ (scopes : List ScopeOccurrence) (t : State),
+    (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).scopes = t.scopes ∧
+      (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).nextIssue = t.nextIssue
+  | [], _ => ⟨rfl, rfl⟩
+  | entry :: rest, t => by
+    obtain ⟨scopes, issued⟩ := withdrawAll_shrinks rest (t.withdrawInside entry.id)
+    exact ⟨scopes.trans (by simp [withdrawInside_eq]), issued.trans (by simp [withdrawInside_eq])⟩
+
+/-- The removal operations drop scope occurrences and issue no identity. -/
+theorem removal_shrinks (s : State) :
+    (∀ scope keep, (s.clearInside scope keep).scopes.Sublist s.scopes ∧ (s.clearInside scope keep).nextIssue = s.nextIssue) ∧
+    (∀ scope, (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextIssue = s.nextIssue) ∧
+    (∀ id, (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextIssue = s.nextIssue) ∧
+    ∀ id, (s.cancelOccurrence id).scopes.Sublist s.scopes ∧ (s.cancelOccurrence id).nextIssue = s.nextIssue := by
+  refine ⟨clearInside_shrinks s, leaveScope_shrinks s, removeOccurrence_shrinks s, fun id => ?_⟩
+  cases found : s.occurrence? id with
+  | none => rw [cancelOccurrence_absent found]; exact ⟨.refl _, rfl⟩
+  | some occurrence =>
+    obtain ⟨_, _, cancels⟩ := cancelOccurrence_some found
+    obtain ⟨fewer, same⟩ := removeOccurrence_shrinks (s.withdrawOccurrence id) id
+    obtain ⟨scopes, issued⟩ := withdrawAll_shrinks _ ((s.closeOwnItems id).disarm id)
+    rw [← withdrawOccurrence_eq, disarm_eq, closeOwnItems_eq] at scopes issued
+    rw [cancels]
+    exact ⟨fewer.trans (scopes ▸ .refl _), same.trans issued⟩
 
 end Kernel.Laws.State

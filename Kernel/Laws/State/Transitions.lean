@@ -84,6 +84,23 @@ fact to `Hooks.cancelled` once, so the owning features hear of a removal exactly
 def CancelsWithEnds (before after : State) : Prop :=
   ∃ (begun : List Occurrence) (keys : List OccurrenceKey), CancelledWith before after begun keys
 
+theorem CancelsWithEnds.trans {first second third : State} (one : CancelsWithEnds first second)
+    (two : CancelsWithEnds second third) : CancelsWithEnds first third := by
+  obtain ⟨begun, keys, facts⟩ := one
+  obtain ⟨cancelled, ended, length, flagged⟩ := facts
+  obtain ⟨begun', keys', facts'⟩ := two
+  obtain ⟨cancelled', ended', length', flagged'⟩ := facts'
+  refine ⟨begun ++ begun', keys ++ keys', by simp [cancelled', cancelled], by simp [ended', ended], by simp [length,
+    length'], ?_⟩
+  intro occurrence member
+  rcases List.mem_append.mp member with old | new
+  · exact flagged occurrence old
+  · exact flagged' occurrence new
+
+theorem CancelsWithEnds.ofDraft {before after : State} (same : after.draft = before.draft) :
+    CancelsWithEnds before after :=
+  ⟨[], [], by simp [same], by simp [same], rfl, by simp⟩
+
 /-! ## Non-vacuity -/
 
 def cleared (kind : OpenKind) : State :=

@@ -72,6 +72,16 @@ theorem closeOwnItems_wellFormed {s : State} (formed : WellFormed program s) (oc
   closeOwnItems_eq s occurrence ▸ formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, List.filter_sublist, .refl _, .refl _, fun _ => id, .same rfl⟩ rfl
     formed.startedOnce
 
+/-- `closeOwnItems` keeps the scope occurrences and the occurrences, and leaves only items that wait for another
+occurrence. -/
+theorem closeOwnItems_facts (state : State) (id : Nat) :
+    (state.closeOwnItems id).scopes = state.scopes ∧ (state.closeOwnItems id).occurrences = state.occurrences ∧
+      (∀ item ∈ (state.closeOwnItems id).openItems, item ∈ state.openItems) ∧
+      ∀ item ∈ (state.closeOwnItems id).openItems, item.occurrence ≠ id := by
+  rw [closeOwnItems_eq]
+  refine ⟨rfl, rfl, fun item member => (List.mem_filter.mp member).1, fun item member => ?_⟩
+  simpa using (List.mem_filter.mp member).2
+
 /-- Replacing what open items wait for, each keeping its identity, element, scope occurrence, occurrence and
 attachment, keeps a state well-formed when a start Event's item still waits for a trigger and an item that waited for a
 trigger still does: no other clause reads what an item waits for. -/
