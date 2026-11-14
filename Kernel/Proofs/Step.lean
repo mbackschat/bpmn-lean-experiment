@@ -120,6 +120,7 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
   Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
     (fun _ same => by cases same; exact Laws.State.initial_rootIssued instanceId variables businessKey)
     (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
 
 /-- A variable command queues its write (`Laws.Step.Phases.queueWrite`). -/
 theorem queueWrite_wellFormed {state : State} (formed : Laws.State.WellFormed state) (scope : ScopeOccurrenceId)
@@ -127,12 +128,14 @@ theorem queueWrite_wellFormed {state : State} (formed : Laws.State.WellFormed st
     Laws.State.WellFormed (state.signal (.write scope writes rule)) :=
   Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
     (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
 
 /-- A variable command queues its removal (`Laws.Step.Phases.queueRemove`). -/
 theorem queueRemove_wellFormed {state : State} (formed : Laws.State.WellFormed state) (scope : ScopeOccurrenceId)
     (names : List String) : Laws.State.WellFormed (state.signal (.remove scope names)) :=
   Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
     (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
 
 /-- Data's share of the state invariant, measured at P0 (P2's budget rests on it): the registered write and removal
 hooks keep `Laws.State.WellFormed`. -/

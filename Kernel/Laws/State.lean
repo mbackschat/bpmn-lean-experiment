@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.State.Invariant
+public import Kernel.Laws.State.Issue
 public import Kernel.State.Removal
 import all Kernel.State
 import all Kernel.State.Removal
@@ -8,10 +8,10 @@ import all Kernel.State.Removal
 /-! # Laws of the kernel state: the operations
 
 The lemmas about `Kernel.State`'s operations that the proof wave composes: what each does to the fields the invariant
-(`Kernel.Laws.State.Invariant`) reads, and that each keeps `WellFormed` under the conditions its callers establish. This
-is the one module that sees their bodies ([module table](../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)),
-so the witness that the sample instance is well-formed, which reads `State.root`'s value, is here too. Nothing
-executable imports this module.
+(`Kernel.Laws.State.Invariant`) reads, as the frames of `Kernel.Laws.State.Frames` and `Kernel.Laws.State.Issue` state
+it; `Kernel.Laws.State.Keeps` composes them into what each keeps of `WellFormed`. This is the one module that sees
+their bodies ([module table](../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)), so the witness that the
+sample instance is well-formed, which reads `State.root`'s value, is here too. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -19,54 +19,6 @@ executable imports this module.
 namespace Kernel.Laws.State
 
 open Kernel
-
-/-! ## Witnesses that read `State.root` -/
-
-/-- The sample instance is well-formed. -/
-theorem sample_wellFormed (kind : OpenKind) : WellFormed (sample kind) where
-  issued := ⟨by simp [sample, subProcess, innerTask, outerTask], by simp [sample, innerItem, outerItem],
-    by simp [sample, rootScope, childScope, processRoot, subScope]⟩
-  distinct := ⟨by simp [occurrenceIds, sample, subProcess, innerTask, outerTask], by simp [sample, innerItem, outerItem],
-    by simp [scopeIds, sample, rootScope, childScope, processRoot, subScope]⟩
-  startedOnce := by simp [StartedOnce, sample]
-  activations := ⟨by simp [sample], by simp [sample]⟩
-  reservations := by simp [ReservationsUnstarted, sample, subProcess, innerTask, outerTask]
-  owned := {
-    occurrenceScopes := by simp [sample, scopeIds, subProcess, innerTask, outerTask, rootScope, childScope]
-    itemScopes := by simp [sample, scopeIds, innerItem, outerItem, rootScope, childScope]
-    itemOccurrences := by simp [sample, innerItem, outerItem, subProcess, innerTask, outerTask]
-    attachments := by simp [sample, innerItem, outerItem]
-    scopeOwners := by simp [sample, occurrenceIds, rootScope, childScope, subProcess, innerTask, outerTask]
-    variableScopes := by simp [sample, scopeIds, rootScope, childScope]
-    tokenScopes := by simp [sample] }
-  rooted := ⟨by simp [scopeIds, sample, rootScope, processRoot, State.root],
-    by simp [sample, rootScope, childScope, processRoot, subScope, State.root], by
-      simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
-      rintro scope (rfl | rfl)
-      · exact .refl _
-      · exact sub_within⟩
-  variables := ⟨by simp [sample, processRoot, subScope], by simp [sample]⟩
-  failure := by simp [FailureRecorded, sample]
-
-  queue := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample]⟩
-  counted := by simp [StartsCounted, sample]
-  ownedBelow := by
-    simp only [OwnedBelow, sample, List.mem_cons, List.not_mem_nil, or_false]
-    rintro scope (rfl | rfl) occurrence (rfl | rfl | rfl) owner <;>
-      simp_all [rootScope, childScope, subProcess, innerTask, outerTask]
-
-/-- A second parentless scope breaks `Rooted`. -/
-theorem forest_rejected (kind : OpenKind) :
-    ¬ Rooted { sample kind with scopes := [rootScope, { childScope with parent := none }] } := by
-  rintro ⟨_, parentless, _⟩
-  have second := (parentless { childScope with parent := none } (by simp)).mp rfl
-  simp [childScope, subScope, State.root] at second
-
-/-- A lone parentless scope occurrence other than `State.root` breaks `Rooted`. -/
-theorem foreign_root_rejected (kind : OpenKind) : ¬ Rooted { sample kind with scopes := [{ rootScope with id := ⟨7⟩ }] } := by
-  rintro ⟨present, _, _⟩
-  simp [scopeIds, State.root] at present
-
 
 /-! ## Operations
 
@@ -109,29 +61,26 @@ theorem visible_congr {s t : State} (scopes : t.scopes = s.scopes) (variables : 
       | some id => simp [State.visible.go, shows, called, scopes, variables, ih]
   simp only [State.visible, go, scopes]
 
-/-- What `WellFormed` reads besides the variable sets: `setVariable` and `removeVariable` keep all of it. -/
-structure SameButVariables (before after : State) : Prop where
-  scopes : after.scopes = before.scopes
-  occurrences : after.occurrences = before.occurrences
-  openItems : after.openItems = before.openItems
-  tokens : after.tokens = before.tokens
-  activations : after.activations = before.activations
-  nextIssue : after.nextIssue = before.nextIssue
-  journal : after.journal = before.journal
-  draft : after.draft = before.draft
-  status : after.status = before.status
-  failure : after.failure = before.failure
-  signals : after.signals = before.signals
+/-- `State.instanceOf` reads only the scope occurrences and the instance identifier. -/
+theorem instanceOf_congr {s t : State} (scopes : t.scopes = s.scopes) (named : t.instanceId = s.instanceId)
+    (x : ScopeOccurrenceId) : t.instanceOf x = s.instanceOf x := by
+  have called : t.calledRoot = s.calledRoot := by funext id; simp [State.calledRoot, scopes]
+  have go : ∀ fuel x, State.instanceRoot.go t fuel x = State.instanceRoot.go s fuel x := by
+    intro fuel
+    induction fuel with
+    | zero => intro x; simp [State.instanceRoot.go]
+    | succ fuel ih => intro x; simp [State.instanceRoot.go, called, scopes, ih]
+  simp [State.instanceOf, State.instanceRoot, go, scopes, named]
 
 /-- `setVariable` changes only the variable sets and the write log. -/
-private theorem setVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
+theorem setVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
     SameButVariables state (state.setVariable target name value) := by
   unfold State.setVariable
   dsimp only
-  split <;> split <;> exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  split <;> split <;> exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl⟩
 
 /-- The variable sets after `setVariable`: the target's set rebinds or appends the name, or a new set holds it. -/
-private theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
+theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
     (state.setVariable target name value).variables =
       if state.variables.any (·.scope == target) then
         state.variables.map fun vars => if vars.scope == target then
@@ -143,155 +92,10 @@ private theorem setVariable_variables (state : State) (target : ScopeOccurrenceI
   dsimp only
   split <;> split <;> rfl
 
-/-- Rebinding or appending a name keeps a set's names distinct. -/
-private theorem names_after_set (entries : List (String × Value)) (name : String) (value : Value)
-    (nodup : (entries.map (·.1)).Nodup) :
-    ((if entries.any (·.1 == name) then entries.map fun entry => if entry.1 == name then (name, value) else entry
-      else entries ++ [(name, value)]).map (·.1)).Nodup := by
-  split
-  · rename_i present
-    have same : ((entries.map fun entry => if entry.1 == name then (name, value) else entry).map (·.1)) =
-        entries.map (·.1) := by
-      simp only [List.map_map]
-      apply List.map_congr_left
-      intro entry _
-      by_cases targeted : entry.1 = name <;> simp [targeted]
-    rw [same]; exact nodup
-  · rename_i absent
-    simp only [List.any_eq_true, beq_iff_eq, not_exists, not_and] at absent
-    rw [List.map_append, List.nodup_append]
-    refine ⟨nodup, by simp, ?_⟩
-    intro first member second other
-    simp only [List.map_cons, List.map_nil, List.mem_singleton] at other
-    obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
-    subst other; subst named
-    exact fun targeted => absent entry inside targeted
-
-/-- `setVariable` keeps the variable sets keyed, whichever scope occurrence it writes to. -/
-theorem setVariable_variablesKeyed {state : State} {target : ScopeOccurrenceId} {name : String} {value : Value}
-    (keyed : VariablesKeyed state) : VariablesKeyed (state.setVariable target name value) := by
-  constructor
-  · rw [setVariable_variables]
-    split
-    · rw [List.map_map]
-      have same : ((·.scope) ∘ fun (vars : ScopeVariables) => if vars.scope == target then
-          { vars with entries := if vars.entries.any (·.1 == name) then
-              vars.entries.map fun entry => if entry.1 == name then (name, value) else entry
-            else vars.entries ++ [(name, value)] } else vars) = (·.scope) := by
-        funext vars
-        by_cases targeted : vars.scope = target <;> simp [targeted]
-      rw [same]; exact keyed.scopes
-    · rename_i absent
-      simp only [List.any_eq_true, beq_iff_eq, not_exists, not_and] at absent
-      rw [List.map_append, List.nodup_append]
-      refine ⟨keyed.scopes, by simp, ?_⟩
-      intro first member second other
-      simp only [List.map_cons, List.map_nil, List.mem_singleton] at other
-      obtain ⟨vars, inside, located⟩ := List.mem_map.mp member
-      subst other; subst located
-      exact fun targeted => absent vars inside targeted
-  · intro vars member
-    rw [setVariable_variables] at member
-    split at member
-    · obtain ⟨old, inside, made⟩ := List.mem_map.mp member
-      subst made
-      by_cases targeted : old.scope = target
-      · simp only [targeted, beq_self_eq_true, ite_true]
-        exact names_after_set old.entries name value (keyed.names old inside)
-      · simp only [beq_iff_eq, targeted, ite_false]
-        exact keyed.names old inside
-    · rcases List.mem_append.mp member with old | fresh
-      · exact keyed.names vars old
-      · simp only [List.mem_singleton] at fresh
-        subst fresh
-        simp
-
-/-- A state that differs from a well-formed one only in its variable sets is well-formed when every set belongs to a
-present scope occurrence and the sets stay keyed. -/
-theorem WellFormed.ofVariables {before after : State} (formed : WellFormed before) (same : SameButVariables before after)
-    (located : ∀ variables ∈ after.variables, variables.scope ∈ scopeIds after) (keyed : VariablesKeyed after) :
-    WellFormed after where
-  issued := ⟨by simpa [same.occurrences, same.nextIssue] using formed.issued.occurrences,
-    by simpa [same.openItems, same.nextIssue] using formed.issued.items,
-    by simpa [same.scopes, same.nextIssue] using formed.issued.scopes⟩
-  distinct := ⟨by simpa [occurrenceIds, same.occurrences] using formed.distinct.occurrences,
-    by simpa [same.openItems] using formed.distinct.items, by simpa [scopeIds, same.scopes] using formed.distinct.scopes⟩
-  startedOnce := by simpa [StartedOnce, same.journal, same.draft] using formed.startedOnce
-  activations := ⟨by simpa [same.activations] using formed.activations.keys,
-    by simpa [same.activations] using formed.activations.positive⟩
-  reservations := by simpa [ReservationsUnstarted, same.occurrences, same.journal, same.draft] using formed.reservations
-  owned := {
-    occurrenceScopes := by simpa [scopeIds, same.occurrences, same.scopes] using formed.owned.occurrenceScopes
-    itemScopes := by simpa [scopeIds, same.openItems, same.scopes] using formed.owned.itemScopes
-    itemOccurrences := by simpa [same.openItems, same.occurrences] using formed.owned.itemOccurrences
-    attachments := by simpa [occurrenceIds, same.openItems, same.occurrences] using formed.owned.attachments
-    scopeOwners := by simpa [occurrenceIds, same.scopes, same.occurrences] using formed.owned.scopeOwners
-    variableScopes := located
-    tokenScopes := by simpa [scopeIds, same.tokens, same.scopes] using formed.owned.tokenScopes }
-  rooted := by
-    obtain ⟨present, parentless, reach⟩ := formed.rooted
-    refine ⟨by simpa [scopeIds, same.scopes] using present, by simpa [same.scopes] using parentless, ?_⟩
-    intro scope member
-    exact Within.congr same.scopes (reach scope (same.scopes ▸ member))
-  variables := keyed
-  failure := by simpa [FailureRecorded, same.failure, same.status] using formed.failure
-  queue := by
-    obtain ⟨arm, armScope, armGateway, ends⟩ := formed.queue
-    exact ⟨by simpa [same.signals, same.nextIssue] using arm, by simpa [same.signals, same.nextIssue] using armScope,
-      by simpa [same.signals, same.nextIssue] using armGateway, by simpa [same.signals] using ends⟩
-  counted := by simpa [StartsCounted, same.journal, same.draft, same.activations] using formed.counted
-  ownedBelow := by simpa [OwnedBelow, same.scopes, same.occurrences] using formed.ownedBelow
-
-
-/-- `setVariable` keeps a state well-formed when the scope occurrence it writes to is present. -/
-theorem setVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {name : String} {value : Value}
-    (formed : WellFormed state) (present : target ∈ scopeIds state) :
-    WellFormed (state.setVariable target name value) := by
-  have same := setVariable_same state target name value
-  refine formed.ofVariables same ?_ (setVariable_variablesKeyed formed.variables)
-  intro vars member
-  rw [scopeIds, same.scopes]
-  rw [setVariable_variables] at member
-  split at member
-  · obtain ⟨old, inside, made⟩ := List.mem_map.mp member
-    subst made
-    have := formed.owned.variableScopes old inside
-    by_cases targeted : old.scope = target <;> simpa [targeted, scopeIds] using this
-  · rcases List.mem_append.mp member with old | fresh
-    · exact formed.owned.variableScopes vars old
-    · simp only [List.mem_singleton] at fresh
-      subst fresh
-      exact present
-
 /-- `removeVariable` changes only the variable sets and the write log. -/
-private theorem removeVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) :
+theorem removeVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) :
     SameButVariables state (state.removeVariable target name) :=
-  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
-
-/-- `removeVariable` keeps a state well-formed. -/
-theorem removeVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {name : String}
-    (formed : WellFormed state) : WellFormed (state.removeVariable target name) := by
-  refine formed.ofVariables (removeVariable_same state target name) ?_ ⟨?_, ?_⟩
-  · intro vars member
-    obtain ⟨old, inside, made⟩ := List.mem_map.mp member
-    subst made
-    have := formed.owned.variableScopes old inside
-    by_cases targeted : old.scope = target <;> simpa [State.removeVariable, targeted, scopeIds] using this
-  · have same : ((state.removeVariable target name).variables.map (·.scope)) = state.variables.map (·.scope) := by
-      simp only [State.removeVariable, List.map_map]
-      apply List.map_congr_left
-      intro vars _
-      by_cases targeted : vars.scope = target <;> simp [targeted]
-    rw [same]; exact formed.variables.scopes
-  · intro vars member
-    obtain ⟨old, inside, made⟩ := List.mem_map.mp member
-    subst made
-    have nodup := formed.variables.names old inside
-    by_cases targeted : old.scope = target
-    · simp only [targeted, beq_self_eq_true, ite_true]
-      exact nodup.sublist ((List.filter_sublist).map _)
-    · simp only [beq_iff_eq, targeted, ite_false]
-      exact nodup
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl⟩
 
 /-- `keyed` binds each name at most once, whatever bindings it was given. -/
 theorem keyed_names (bindings : List (String × Value)) : ((keyed bindings).map (·.1)).Nodup := by
@@ -454,6 +258,23 @@ theorem recordEnd_scopes (state : State) (key : OccurrenceKey) (terminal : Termi
     (state.recordEnd key terminal).scopes = state.scopes := by
   simp only [State.recordEnd]
 
+/-- The operations that only append to or filter one field. -/
+theorem signal_eq (state : State) (signal : Signal) : state.signal signal = { state with signals := state.signals ++ [signal] } := by
+  simp only [State.signal]
+
+theorem recordEnd_eq (state : State) (key : OccurrenceKey) (terminal : Terminal) :
+    state.recordEnd key terminal = { state with draft := { state.draft with ended := state.draft.ended ++ [(key, terminal)] } } := by
+  simp only [State.recordEnd]
+
+theorem closeOwnItems_eq (state : State) (id : Nat) :
+    state.closeOwnItems id = { state with openItems := state.openItems.filter (·.occurrence != id) } := by
+  simp only [State.closeOwnItems]
+
+theorem removeVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) :
+    (state.removeVariable target name).variables = state.variables.map fun vars =>
+      if vars.scope == target then { vars with entries := vars.entries.filter (·.1 != name) } else vars := by
+  simp only [State.removeVariable]
+
 /-! ### What the hooks read of the operations they apply -/
 
 /-- `setVariable` changes no scope occurrence, occurrence or open item. -/
@@ -535,110 +356,14 @@ theorem instanceRoot_stands (state : State) (scope : ScopeOccurrenceId) :
       · exact ih _
       · exact .inl rfl
 
-/-! ## The phases of `Step`
-
-That each phase `Step` runs itself keeps `WellFormed` (`Laws.Step.Phases`, which `Kernel.Proofs.State` assembles). -/
-
-/-- `Step.onRunning` starts an input from an empty journal and outbox. -/
-theorem reset_wellFormed {s : State} (formed : WellFormed s) : WellFormed { s with journal := [], outbox := [] } :=
-  formed.narrow ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, .refl _, fun _ => id, fun _ => id, fun fact member => by
-      simp only [starts, List.flatMap_nil, List.nil_append] at member; exact List.mem_append_right _ member⟩
-    (formed.startedOnce.sublist ((List.sublist_append_right _ _).map _))
-
-/-- `Step.advanceClock` moves the logical time. -/
-theorem clock_wellFormed {s : State} (formed : WellFormed s) (atMs : Nat) : WellFormed { s with logicalTimeMs := atMs } :=
-  formed.narrow ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, .refl _, fun _ => id, fun _ => id, fun _ => id⟩ formed.startedOnce
-
-/-- `Step.orderJournal` puts the journal in run order. -/
-theorem runOrder_wellFormed {s : State} (formed : WellFormed s) : WellFormed { s with journal := s.journal.reverse } :=
-  have perm : (starts { s with journal := s.journal.reverse }).Perm (starts s) :=
-    ((List.reverse_perm _).flatMap_right _).append_right _
-  formed.permuted ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, .refl _, fun _ => id, fun _ => id, fun _ => perm.mem_iff.mp⟩ perm
-
-/-- `Step.conclude` journals the draft, whose start facts the transition carries, and empties it and the write log. -/
-theorem journal_wellFormed {s : State} (formed : WellFormed s) {transition : Transition}
-    (started : transition.started = s.draft.started) :
-    WellFormed { s with journal := transition :: s.journal, draft := {}, writes := [] } :=
-  have perm : (starts { s with journal := transition :: s.journal, draft := {}, writes := [] }).Perm (starts s) := by
-    simp only [starts, List.flatMap_cons, started, List.append_nil]
-    exact List.perm_append_comm
-  formed.permuted ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, .refl _, fun _ => id, fun _ => id, fun _ => perm.mem_iff.mp⟩ perm
-
-/-- `State.recordEnd` journals an end fact. -/
-theorem recordEnd_wellFormed {s : State} (formed : WellFormed s) (key : OccurrenceKey) (terminal : Terminal) :
-    WellFormed (s.recordEnd key terminal) :=
-  formed.narrow ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, .refl _, fun _ => id, fun _ => id, fun _ => id⟩ formed.startedOnce
-
-/-- The closure takes queued signals off the queue. -/
-theorem dequeue_wellFormed {s : State} (formed : WellFormed s) {signals : List Signal} (fewer : signals.Sublist s.signals) :
-    WellFormed { s with signals } :=
-  formed.narrow ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, .refl _, fun _ => id, fun _ member => fewer.subset member, fun _ => id⟩
-    formed.startedOnce
-
-/-- The closure takes its next token off the work stack. -/
-theorem untoken_wellFormed {s : State} (formed : WellFormed s) {tokens : List Token} (fewer : tokens.Sublist s.tokens) :
-    WellFormed { s with tokens } :=
-  formed.narrow ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, .refl _, fun _ member => fewer.subset member, fun _ => id, fun _ => id⟩
-    formed.startedOnce
-
-/-- `State.closeOwnItems` closes the items waiting for an occurrence. -/
-theorem closeOwnItems_wellFormed {s : State} (formed : WellFormed s) (occurrence : Nat) :
-    WellFormed (s.closeOwnItems occurrence) :=
-  formed.narrow ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, List.filter_sublist, fun _ => id, fun _ => id, fun _ => id⟩
-    formed.startedOnce
-
-/-- Queuing a signal keeps a state well-formed when the queue stays sound. -/
-theorem signal_wellFormed {s : State} {signal : Signal} (formed : WellFormed s) (queue : QueueSound (s.signal signal)) :
-    WellFormed (s.signal signal) where
-  issued := ⟨formed.issued.occurrences, formed.issued.items, formed.issued.scopes⟩
-  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes⟩
-  startedOnce := formed.startedOnce
-  activations := ⟨formed.activations.keys, formed.activations.positive⟩
-  reservations := formed.reservations
-  owned := ⟨formed.owned.occurrenceScopes, formed.owned.itemScopes, formed.owned.itemOccurrences,
-    formed.owned.attachments, formed.owned.scopeOwners, formed.owned.variableScopes, formed.owned.tokenScopes⟩
-  rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member => Within.congr (s := s) (t := s.signal signal) rfl (formed.rooted.2.2 scope member)⟩
-  variables := ⟨formed.variables.scopes, formed.variables.names⟩
-  failure := formed.failure
-  queue := queue
-  counted := formed.counted
-  ownedBelow := formed.ownedBelow
-
-/-- A queued signal keeps the queue sound when, should it be an arming, what it names was issued, and, should it be an
-instance end, it records a failure exactly when it fails. Which signal it is, `Kernel.Proofs.Step` tells, since only
-`Signal`'s owners may tell its constructors apart. -/
-theorem signal_queueSound {s : State} {signal : Signal} (formed : WellFormed s)
-    (arm : ∀ host element scope, signal = .arm host element scope → host < s.nextIssue ∧ scope.value < s.nextIssue)
-    (armScope : ∀ scope, signal = .armScope scope → scope.value < s.nextIssue)
-    (armGateway : ∀ occurrence gateway scope, signal = .armGateway occurrence gateway scope →
-      occurrence < s.nextIssue ∧ scope.value < s.nextIssue)
-    (ends : ∀ status failure, signal = .endInstance status failure → (failure.isSome = true ↔ status = .failed)) :
-    QueueSound (s.signal signal) where
-  arm host element scope queued := by
-    rcases List.mem_append.mp queued with old | new
-    · exact formed.queue.arm host element scope old
-    · exact arm host element scope (List.mem_singleton.mp new).symm
-  armScope scope queued := by
-    rcases List.mem_append.mp queued with old | new
-    · exact formed.queue.armScope scope old
-    · exact armScope scope (List.mem_singleton.mp new).symm
-  armGateway occurrence gateway scope queued := by
-    rcases List.mem_append.mp queued with old | new
-    · exact formed.queue.armGateway occurrence gateway scope old
-    · exact armGateway occurrence gateway scope (List.mem_singleton.mp new).symm
-  ends status failure queued := by
-    rcases List.mem_append.mp queued with old | new
-    · exact formed.queue.ends status failure old
-    · exact ends status failure (List.mem_singleton.mp new).symm
-
 /-- A start's fresh instance; `Kernel.Proofs.Step` queues its root's arming (`signal_queueSound`). -/
 theorem initial_wellFormed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     WellFormed (State.initial instanceId variables businessKey) where
   issued := ⟨by simp [State.initial], by simp [State.initial],
     by simp [State.initial, State.root]⟩
   distinct := ⟨by simp [occurrenceIds, State.initial], by simp [State.initial],
-    by simp [scopeIds, State.initial]⟩
-  startedOnce := by simp [StartedOnce, State.initial]
+    by simp [scopeIds, State.initial], by simp [State.initial]⟩
+  startedOnce := by simp [StartedOnce, starts, State.initial]
   activations := ⟨by simp [State.initial], by simp [State.initial]⟩
   reservations := by simp [ReservationsUnstarted, State.initial]
   owned := {
@@ -659,18 +384,16 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
     exact keyed_names variables⟩
   failure := by simp [FailureRecorded, State.initial]
   queue := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial]⟩
-  counted := by simp [StartsCounted, State.initial]
+  counted := by simp [StartsCounted, starts, State.initial]
+  occurrencesCounted := by simp [OccurrencesCounted, State.initial]
   ownedBelow := by simp [OwnedBelow, State.initial]
+  claimed := ⟨by simp [State.initial], by simp [Queued, State.initial], by simp [Precedes, State.initial],
+    by simp [Precedes, State.initial], by simp [State.initial], by simp [Queued, State.initial]⟩
 
 /-- The fresh instance's root was issued. -/
 theorem initial_rootIssued (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     State.root.value < (State.initial instanceId variables businessKey).nextIssue := by
   simp [State.initial, State.root]
-
-/-- An occurrence's scope occurrence stands. -/
-theorem housed_wellFormed {s : State} (formed : WellFormed s) {occurrence : Occurrence}
-    (member : occurrence ∈ s.occurrences) : ∃ entry ∈ s.scopes, entry.id = occurrence.scope :=
-  List.mem_map.mp (formed.owned.occurrenceScopes occurrence member)
 
 /-! ## The subtree of a scope occurrence -/
 
@@ -688,7 +411,7 @@ private theorem search_step {s : State} (formed : WellFormed s) {scope next : Sc
     Search s scope (seen ++ [next]) (rest ++ (s.scopes.filter (·.parent == some next)).map (·.id)) := by
   have perm : ((seen ++ [next]) ++ (rest ++ (s.scopes.filter (·.parent == some next)).map (·.id))).Perm
       ((seen ++ next :: rest) ++ (s.scopes.filter (·.parent == some next)).map (·.id)) := by
-    simp only [List.append_assoc, List.singleton_append, List.cons_append]
+    simp only [List.append_assoc, List.cons_append]
     exact List.Perm.refl _
   have nextWithin := search.within next (by simp)
   have child_mem : ∀ x, x ∈ (s.scopes.filter (·.parent == some next)).map (·.id) →
@@ -780,38 +503,283 @@ theorem subtree_iff {s : State} (formed : WellFormed s) {scope : ScopeOccurrence
   obtain ⟨met, within, closed⟩ := search_go formed (s.scopes.length + 1) [] [scope] initial (by simp)
   exact ⟨within x, fun inside => inside.closed_mem (met scope (by simp)) closed⟩
 
+/-! ## Process instances -/
+
+/-- `State.keyOf` is the key the laws read. -/
+theorem keyOf_eq (state : State) (occurrence : Occurrence) : state.keyOf occurrence = key state occurrence := by
+  simp only [State.keyOf, key]
+
+private theorem find_entry {s : State} (nodup : (scopeIds s).Nodup) {entry : ScopeOccurrence} (member : entry ∈ s.scopes) :
+    s.scopes.find? (·.id == entry.id) = some entry := by
+  cases found : s.scopes.find? (·.id == entry.id) with
+  | none => have := List.find?_eq_none.mp found entry member; simp at this
+  | some other =>
+    have same : other.id = entry.id := by simpa using List.find?_some found
+    exact congrArg some (nodup_map_eq nodup (List.mem_of_find?_eq_some found) member same)
+
+/-- `State.instanceOf` reads the process instance `InstanceIn` states, in a state whose scope identifiers are distinct
+and whose parentless scope occurrences are the root: its search's fuel, one step per scope occurrence, outlasts the
+chain. -/
+theorem instanceOf_eq {s : State} (nodup : (scopeIds s).Nodup)
+    (parentless : ∀ entry ∈ s.scopes, entry.parent = none → entry.id = State.root) {x : ScopeOccurrenceId}
+    {name : String} {chain : List ScopeOccurrence} (reading : InstanceIn s x name chain)
+    (distinct : (chain.map (·.id)).Nodup) : s.instanceOf x = name := by
+  have bound : chain.length ≤ s.scopes.length := by
+    have := distinct.length_le_of_subset (l₂ := scopeIds s) fun id member => by
+      obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
+      exact List.mem_map.mpr ⟨entry, reading.mem entry inside, named⟩
+    simpa [scopeIds] using this
+  have go : ∀ fuel, chain.length ≤ fuel →
+      ((s.scopes.find? (·.id == State.instanceRoot.go s fuel x)).bind (·.calledInstance)).getD s.instanceId = name := by
+    clear bound distinct
+    induction reading with
+    | called entry name member called =>
+      intro fuel enough
+      obtain ⟨fuel, rfl⟩ : ∃ k, fuel = k + 1 := ⟨fuel - 1, by simp at enough; omega⟩
+      simp [State.instanceRoot.go, State.calledRoot, find_entry nodup member, called]
+    | up entry parent name chain member uncalled link _ ih =>
+      intro fuel enough
+      obtain ⟨fuel, rfl⟩ : ∃ k, fuel = k + 1 := ⟨fuel - 1, by simp at enough; omega⟩
+      simp only [State.instanceRoot.go, State.calledRoot, find_entry nodup member, Option.bind_some, uncalled,
+        Option.isSome_none, Bool.false_eq_true, ite_false, link]
+      exact ih fuel (by simp at enough; omega)
+    | root entry member uncalled orphan =>
+      intro fuel enough
+      obtain ⟨fuel, rfl⟩ : ∃ k, fuel = k + 1 := ⟨fuel - 1, by simp at enough; omega⟩
+      have named := parentless entry member orphan
+      simp only [State.instanceRoot.go, State.calledRoot, find_entry nodup member, Option.bind_some, uncalled,
+        Option.isSome_none, Bool.false_eq_true, ite_false, orphan, ← named]
+      simp
+  exact go _ bound
+
+/-- A scope occurrence keeps its process instance through a change that keeps the instance identifier and the scope
+occurrences it lies within, into a state whose scope identifiers are distinct and whose parentless scope occurrences
+are the root. -/
+theorem instanceOf_kept {s t : State} (formed : WellFormed s) (nodup : (scopeIds t).Nodup)
+    (parentless : ∀ entry ∈ t.scopes, entry.parent = none → entry.id = State.root) (same : t.instanceId = s.instanceId)
+    {x : ScopeOccurrenceId} (present : x ∈ scopeIds s) (above : ∀ entry ∈ s.scopes, Within s x entry.id → entry ∈ t.scopes) :
+    t.instanceOf x = s.instanceOf x := by
+  obtain ⟨name, chain, reading, rest⟩ := instanceIn_exists formed present
+  obtain ⟨distinct, within⟩ := rest
+  have parentlessBefore : ∀ entry ∈ s.scopes, entry.parent = none → entry.id = State.root := fun entry member orphan =>
+    (formed.rooted.2.1 entry member).mp orphan
+  rw [instanceOf_eq formed.distinct.scopes parentlessBefore reading distinct,
+    instanceOf_eq nodup parentless (reading.transport (fun entry inside => above entry (reading.mem entry inside)
+      (within entry inside)) same) distinct]
+
+/-! ## Issuing and beginning occurrences -/
+
+/-- `State.activate` steps the counter of its key above every count that counter had. -/
+theorem activate_activated {state : State} (keyed : ActivationsKeyed state) (inst : String) (element : ElementId)
+    (role : ActivationRole) :
+    Activated state (state.activate inst element role).1 inst element role (state.activate inst element role).2 := by
+  refine ⟨by simp [State.activate], fun count member named same roled => ?_, by simp [State.activate]⟩
+  have found : state.activations.find?
+      (fun entry => entry.processInstance == inst && entry.element == element && entry.role == role) = some count := by
+    cases lookup : state.activations.find?
+        (fun entry => entry.processInstance == inst && entry.element == element && entry.role == role) with
+    | none =>
+      have := List.find?_eq_none.mp lookup count member
+      simp [named, same, roled] at this
+    | some other =>
+      have hit := List.find?_some lookup
+      simp only [Bool.and_eq_true, beq_iff_eq] at hit
+      refine congrArg some (nodup_map_eq keyed.keys (List.mem_of_find?_eq_some lookup) member ?_)
+      simp [hit.1.1, hit.1.2, hit.2, named, same, roled]
+  simp [State.activate, found]
+
+/-- `State.reserve` in a state whose counters are keyed. -/
+theorem reserve_reserves {state : State} (keyed : ActivationsKeyed state) (element : ElementId)
+    (scope : ScopeOccurrenceId) :
+    Reserves state (state.reserve element scope).1 element scope (state.reserve element scope).2 := by
+  have activated := activate_activated keyed (state.instanceOf scope) element .element
+  have instances : ∀ x, (state.reserve element scope).1.instanceOf x = state.instanceOf x :=
+    instanceOf_congr (by simp [State.reserve, State.activate, State.issue])
+      (by simp [State.reserve, State.activate, State.issue])
+  refine ⟨by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
+    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve], by simp [State.reserve],
+    by simp [State.reserve], by simp [State.reserve], ?_, by simp [State.reserve, State.activate, State.issue],
+    instances, by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
+    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
+    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
+    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue]⟩
+  obtain ⟨activations, above, positive⟩ := activated
+  exact ⟨by simpa [State.reserve, State.issue] using activations, by simpa [State.reserve, State.issue] using above,
+    by simpa [State.reserve] using positive⟩
+
+/-- `State.recordStart` journals the start under the key its result reads. -/
+private theorem recordStart_started (state : State) (occurrence : Occurrence) (sourceType : String) :
+    (State.recordStart state occurrence sourceType).draft.started = state.draft.started ++ [{
+      occurrence := key (State.recordStart state occurrence sourceType) occurrence, owner := occurrence.scope, sourceType }] := by
+  have same : key (State.recordStart state occurrence sourceType) occurrence = key state occurrence :=
+    key_congr (instanceOf_congr (by simp [State.recordStart]) (by simp [State.recordStart]) _)
+  rw [same]
+  simp only [State.recordStart, keyOf_eq]
+
+/-- `State.startReserved` of an unbegun occurrence. -/
+theorem startReserved_starts (state : State) {occurrence : Occurrence} (sourceType : String)
+    (unbegun : occurrence.begun = false) :
+    StartsReserved state (state.startReserved occurrence sourceType).1 occurrence sourceType := by
+  have instances : ∀ x, (state.startReserved occurrence sourceType).1.instanceOf x = state.instanceOf x :=
+    instanceOf_congr (by simp [State.startReserved, unbegun, State.recordStart])
+      (by simp [State.startReserved, unbegun, State.recordStart])
+  revert instances
+  simp only [State.startReserved, unbegun, Bool.false_eq_true, ite_false]
+  intro instances
+  refine ⟨by simp [State.recordStart], ?_, by simp [State.recordStart], instances, by simp [State.recordStart],
+    by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
+    by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart]⟩
+  rw [recordStart_started]
+  simp [key]
+
+/-- `State.startReserved` of a begun occurrence changes nothing. -/
+theorem startReserved_begun (state : State) {occurrence : Occurrence} (sourceType : String)
+    (begun : occurrence.begun = true) : state.startReserved occurrence sourceType = (state, occurrence) := by
+  simp [State.startReserved, begun]
+
+/-- `State.beginOccurrence` in a state whose counters are keyed. -/
+theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) (request : BeginRequest)
+    (role : ActivationRole) (sourceType : String) :
+    Begins state (state.beginOccurrence request role sourceType).1 request role sourceType
+      (state.beginOccurrence request role sourceType).2 := by
+  have activated := activate_activated keyed (state.instanceOf request.scope) request.element role
+  have instances : ∀ x, (state.beginOccurrence request role sourceType).1.instanceOf x = state.instanceOf x :=
+    instanceOf_congr (beginOccurrence_keeps state request role sourceType).1 (by
+      simp only [State.beginOccurrence, State.recordStart]
+      split <;> simp [State.activate, State.issue])
+  have keeps := beginOccurrence_keeps state request role sourceType
+  revert instances keeps
+  simp only [State.beginOccurrence]
+  split
+  · rename_i reserved found
+    obtain ⟨id, named, lookup⟩ := Option.bind_eq_some_iff.mp found
+    obtain ⟨member, same⟩ := occurrence?_some lookup
+    intro instances keeps
+    refine ⟨by simp [State.recordStart], by rw [recordStart_started], rfl, rfl,
+      .inl ⟨reserved, member, same ▸ named, rfl, rfl, rfl, rfl, by simp [State.recordStart], by simp [State.recordStart]⟩,
+      keeps.1, instances, by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
+      keeps.2.1, by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart]⟩
+  · rename_i found
+    have shape : (state.activate (state.instanceOf request.scope) request.element role).1 =
+        { state with activations := (state.activate (state.instanceOf request.scope) request.element role).1.activations } := by
+      simp [State.activate]
+    generalize state.activate (state.instanceOf request.scope) request.element role = counted at activated shape ⊢
+    obtain ⟨counter, activation⟩ := counted
+    simp only at shape activated
+    rw [shape]
+    intro instances keeps
+    have absent : ∀ id, request.reserved = some id → ∀ occurrence ∈ state.occurrences, occurrence.id ≠ id :=
+      fun id named occurrence member same => by
+        have := Option.bind_eq_none_iff.mp found id named
+        have := List.find?_eq_none.mp this occurrence member
+        simp [same] at this
+    refine ⟨by simp [State.recordStart, State.issue], by rw [recordStart_started]; simp [State.recordStart, State.issue],
+      rfl, rfl, .inr ⟨absent, by simp [State.issue], by simp [State.recordStart, State.issue], rfl, rfl, ?_⟩,
+      keeps.1, instances, by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue],
+      by simp [State.recordStart, State.issue], keeps.2.1, by simp [State.recordStart, State.issue],
+      by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue]⟩
+    exact ⟨by simpa [State.recordStart, State.issue] using activated.activations, activated.above, activated.positive⟩
+
 /-! ## Clearing a scope occurrence -/
 
 /-- `State.clearInside` of a present scope occurrence of a well-formed state is `Cleared`. -/
 theorem clearInside_cleared {s : State} (formed : WellFormed s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
     (keep : List Nat) : Cleared s (s.clearInside scope keep) scope keep := by
   have mem := subtree_iff formed present
-  refine ⟨fun entry => ?_, fun occurrence => ?_, fun item => ?_, fun token => ?_, fun variables => ?_,
-    List.filter_sublist, List.filter_sublist, List.filter_sublist, List.filter_sublist, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  have scopes : ∀ entry, entry ∈ (s.clearInside scope keep).scopes ↔ entry ∈ s.scopes ∧ ¬ StrictlyWithin s entry.id scope := by
+    intro entry
+    simp [State.clearInside, State.recordCancelled, mem, StrictlyWithin]
+  have fewer : (s.clearInside scope keep).scopes.Sublist s.scopes := List.filter_sublist
+  refine ⟨scopes, fun occurrence => ?_, fun item => ?_, fun token => ?_, fun variables => ?_,
+    fewer, List.filter_sublist, List.filter_sublist, List.filter_sublist, List.filter_sublist, fun x member => ?_,
+    rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  rotate_left 4
+  · obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
+    obtain ⟨old, outside⟩ := (scopes entry).mp inside
+    refine named ▸ instanceOf_kept formed (formed.distinct.scopes.sublist (fewer.map _))
+      (fun entry member orphan => (formed.rooted.2.1 entry (fewer.subset member)).mp orphan) rfl
+      (List.mem_map.mpr ⟨entry, old, rfl⟩) fun above upper within => (scopes above).mpr ⟨upper, fun ⟨inner, other⟩ => ?_⟩
+    have entryInside : Within s entry.id scope := within.trans inner
+    refine outside ⟨entryInside, fun same => other ?_⟩
+    rw [same] at within
+    exact Within.antisymm formed (List.mem_map.mpr ⟨above, upper, rfl⟩) inner within
   all_goals simp [State.clearInside, State.recordCancelled, mem, StrictlyWithin]
 
-/-- Clearing a present scope occurrence keeps a state well-formed under `Cleared.wellFormed`'s conditions on what it
-keeps and what it leaves hanging. -/
-theorem clearInside_wellFormed {s : State} (formed : WellFormed s) {scope : ScopeOccurrenceId} {keep : List Nat}
-    (present : scope ∈ scopeIds s)
-    (kept : ∀ occurrence ∈ s.occurrences, occurrence.id ∈ keep → ¬ StrictlyWithin s occurrence.scope scope)
-    (attached : ∀ item ∈ s.openItems, (¬ Within s item.scope scope ∨ item.occurrence ∈ keep) → ∀ host,
-      item.attachedTo = some host → ∀ occurrence ∈ s.occurrences, occurrence.id = host →
-        ¬ Within s occurrence.scope scope ∨ host ∈ keep) :
-    WellFormed (s.clearInside scope keep) :=
-  (clearInside_cleared formed present keep).wellFormed formed present kept attached
+/-! ## Witnesses that read `State.root` -/
 
-/-- `Step.endInstance`: the instance root cleared, with a failure exactly when the instance fails. Every scope
-occurrence lies within the root, so nothing is kept and nothing is left hanging. -/
-theorem endInstance_wellFormed {s : State} (formed : WellFormed s) {status : InstanceStatus}
-    {failure : Option InstanceFailure} (recorded : failure.isSome = true ↔ status = .failed) :
-    WellFormed { s.clearInside State.root with status, failure } := by
-  obtain ⟨rootPresent, _, reach⟩ := formed.rooted
-  refine (clearInside_wellFormed formed rootPresent (fun _ _ none => by simp at none) ?_).withStatus recorded
-  intro item member left
-  obtain ⟨entry, inside, named⟩ := List.mem_map.mp (formed.owned.itemScopes item member)
-  rcases left with outside | none
-  · exact absurd (named ▸ reach entry inside) outside
-  · simp at none
+/-- The sample's scope occurrences read the instance `p`. -/
+private theorem sample_instance (kind : OpenKind) :
+    (sample kind).instanceOf processRoot = "p" ∧ (sample kind).instanceOf subScope = "p" := by
+  have nodup : (scopeIds (sample kind)).Nodup := by simp [scopeIds, sample, rootScope, childScope, processRoot, subScope]
+  have parentless : ∀ entry ∈ (sample kind).scopes, entry.parent = none → entry.id = State.root := by
+    simp [sample, rootScope, childScope, processRoot, State.root]
+  have root : InstanceIn (sample kind) processRoot (sample kind).instanceId [rootScope] :=
+    .root rootScope (by simp [sample]) rfl rfl
+  have sub : InstanceIn (sample kind) subScope (sample kind).instanceId [childScope, rootScope] :=
+    .up childScope processRoot _ [rootScope] (by simp [sample]) rfl rfl root
+  exact ⟨instanceOf_eq nodup parentless root (by simp), instanceOf_eq nodup parentless sub
+    (by simp [rootScope, childScope, processRoot, subScope])⟩
+
+/-- The sample instance is well-formed. -/
+theorem sample_wellFormed (kind : OpenKind) : WellFormed (sample kind) where
+  issued := ⟨by simp [sample, subProcess, innerTask, outerTask], by simp [sample, innerItem, outerItem],
+    by simp [sample, rootScope, childScope, processRoot, subScope]⟩
+  distinct := ⟨by simp [occurrenceIds, sample, subProcess, innerTask, outerTask], by simp [sample, innerItem, outerItem],
+    by simp [scopeIds, sample, rootScope, childScope, processRoot, subScope],
+    by simp [key, sample, subProcess, innerTask, outerTask]⟩
+  startedOnce := by simp [StartedOnce, starts, sample]
+  activations := ⟨by simp [sample], by simp [sample]⟩
+  reservations := by simp [ReservationsUnstarted, sample, subProcess, innerTask, outerTask]
+  owned := {
+    occurrenceScopes := by simp [sample, scopeIds, subProcess, innerTask, outerTask, rootScope, childScope]
+    itemScopes := by simp [sample, scopeIds, innerItem, outerItem, rootScope, childScope]
+    itemOccurrences := by simp [sample, innerItem, outerItem, subProcess, innerTask, outerTask]
+    attachments := by simp [sample, innerItem, outerItem]
+    scopeOwners := by simp [sample, rootScope, childScope, subProcess, innerTask, outerTask]
+    variableScopes := by simp [sample, scopeIds, rootScope, childScope]
+    tokenScopes := by simp [sample] }
+  rooted := ⟨by simp [scopeIds, sample, rootScope, processRoot, State.root],
+    by simp [sample, rootScope, childScope, processRoot, subScope, State.root], by
+      simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
+      rintro scope (rfl | rfl)
+      · exact .refl _
+      · exact sub_within⟩
+  variables := ⟨by simp [sample, processRoot, subScope], by simp [sample]⟩
+  failure := by simp [FailureRecorded, sample]
+  queue := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample]⟩
+  counted := by simp [StartsCounted, starts, sample]
+  occurrencesCounted := by
+    obtain ⟨root, sub⟩ := sample_instance kind
+    intro occurrence member
+    simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
+    rcases member with rfl | rfl | rfl <;> simp only [Counted, key, subProcess, innerTask, outerTask, root, sub] <;>
+      simp [sample]
+  ownedBelow := by
+    simp only [OwnedBelow, sample, List.mem_cons, List.not_mem_nil, or_false]
+    rintro scope (rfl | rfl) occurrence (rfl | rfl | rfl) owner <;>
+      simp_all [rootScope, childScope, subProcess, innerTask, outerTask]
+  claimed := ⟨by simp [sample, innerItem, outerItem], by simp [Queued, sample], by simp [Precedes, sample],
+    by simp [Precedes, sample], by simp [sample], by simp [Queued, sample]⟩
+
+/-- A start fact carrying the armed reservation's key breaks `ReservationsUnstarted`. -/
+theorem early_start_rejected (kind : OpenKind) :
+    ¬ ReservationsUnstarted { armedState kind with draft := { started := [startFact reservation] } } := fun unstarted => by
+  have := unstarted reservation (by simp [armedState]) rfl (startFact reservation) (by simp [starts])
+  simp [key, startFact, reservation] at this
+  have same : ∀ t : State, t.scopes = (sample kind).scopes → t.instanceId = (sample kind).instanceId →
+      t.instanceOf processRoot = "p" := fun _ scopes named => (instanceOf_congr scopes named processRoot).trans (sample_instance kind).1
+  exact this (same _ rfl rfl).symm
+
+/-- A second parentless scope breaks `Rooted`. -/
+theorem forest_rejected (kind : OpenKind) :
+    ¬ Rooted { sample kind with scopes := [rootScope, { childScope with parent := none }] } := by
+  rintro ⟨_, parentless, _⟩
+  have second := (parentless { childScope with parent := none } (by simp)).mp rfl
+  simp [childScope, subScope, State.root] at second
+
+/-- A lone parentless scope occurrence other than `State.root` breaks `Rooted`. -/
+theorem foreign_root_rejected (kind : OpenKind) : ¬ Rooted { sample kind with scopes := [{ rootScope with id := ⟨7⟩ }] } := by
+  rintro ⟨present, _, _⟩
+  simp [scopeIds, State.root] at present
 
 end Kernel.Laws.State

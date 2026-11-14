@@ -1,7 +1,7 @@
 module
 
 public import Kernel.Hooks
-public import Kernel.Laws.State
+public import Kernel.Laws.State.Invariant
 public import Kernel.IL.Timer
 import all Kernel.Feature.Subscriptions
 

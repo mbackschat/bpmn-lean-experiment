@@ -515,6 +515,25 @@ theorem nextToken_rest {ctx : Ctx} {state : State} {token : Token} {rest : List 
       rw [← same]
       exact List.dropLast_sublist _
 
+/-- The closure takes the oldest token or the newest. -/
+theorem nextToken_shape {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
+    (next : nextToken ctx state = some (token, rest)) : state.tokens = token :: rest ∨ state.tokens = rest ++ [token] := by
+  unfold nextToken at next
+  dsimp only at next
+  split at next
+  · split at next
+    · simp at next
+    · rename_i head tail queued
+      obtain ⟨first, same⟩ := Prod.mk.inj (Option.some.inj next)
+      exact .inl (by rw [queued, first, same])
+  · split at next
+    · simp at next
+    · obtain ⟨last, found, made⟩ := Option.map_eq_some_iff.mp next
+      obtain ⟨first, same⟩ := Prod.mk.inj made
+      subst first same
+      obtain ⟨front, split⟩ := List.getLast?_eq_some_iff.mp found
+      exact .inr (by rw [split, List.dropLast_concat])
+
 theorem idleScope_mem {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
     (idle : idleScope? ctx state = some scope) : scope ∈ state.scopes := by
   unfold idleScope? at idle

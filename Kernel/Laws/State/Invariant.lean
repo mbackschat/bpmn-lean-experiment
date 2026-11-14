@@ -15,7 +15,8 @@ the `State` contract documents, since matching `Token` is `Step`'s
 ([module table](../../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)).
 
 Besides the laws, it holds what follows from them over the fields alone: that a well-formed state's scope occurrences
-form a tree (`Depth`), and the frames through which a change of the fields keeps `WellFormed`. Each law is followed by
+form a tree (`Depth`). The frames through which a change of the fields keeps `WellFormed` are
+`Kernel.Laws.State.Frames`' and `Kernel.Laws.State.Issue`'s. Each law is followed by
 its non-vacuity witness: a small state that satisfies it and, where the law could otherwise hold of everything, one that
 violates it. Nothing here reads a `State` operation's body, so this module sees none; the lemmas about the operations,
 and the witness that the sample instance is well-formed, which reads `State.root`'s value, are `Kernel.Laws.State`'s.
@@ -64,6 +65,15 @@ theorem Within.congr {s t : State} (scopes : t.scopes = s.scopes) {inner outer :
 
 /-! ## Identity -/
 
+/-- The key an occurrence publishes: the process instance of its scope occurrence, its element, activation and role,
+which `State.keyOf` computes (`Laws.State.keyOf_eq`) and the journal records. -/
+def key (s : State) (occurrence : Occurrence) : OccurrenceKey :=
+  { processInstanceId := s.instanceOf occurrence.scope, element := occurrence.element,
+    activation := occurrence.activation, role := occurrence.role }
+
+/-- The start facts of the input in progress. -/
+def starts (s : State) : List StartedFact := s.journal.flatMap (·.started) ++ s.draft.started
+
 /-- Every identifier the state holds was issued before `nextIssue`, so the counter names only fresh identities: an
 occurrence's identity is never reused ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
 structure IssuedBelow (s : State) : Prop where
@@ -71,44 +81,54 @@ structure IssuedBelow (s : State) : Prop where
   items : ∀ item ∈ s.openItems, item.id < s.nextIssue
   scopes : ∀ scope ∈ s.scopes, scope.id.value < s.nextIssue
 
-/-- No two occurrences, open items or scope occurrences share an identifier. -/
+/-- No two occurrences, open items or scope occurrences share an identifier, and no two occurrences a key: each
+activation numbers one occurrence. -/
 structure Distinct (s : State) : Prop where
   occurrences : (occurrenceIds s).Nodup
   items : (s.openItems.map (·.id)).Nodup
   scopes : (scopeIds s).Nodup
+  keys : (s.occurrences.map (key s)).Nodup
 
 /-- Within one input's journal no occurrence key starts twice: re-entry and repetition give a new activation, never a
 reused one ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
 def StartedOnce (s : State) : Prop :=
-  ((s.journal.flatMap (·.started) ++ s.draft.started).map (·.occurrence)).Nodup
+  ((starts s).map (·.occurrence)).Nodup
 
 /-- One activation counter per process instance, element and role (R8), each at least 1 once recorded. -/
 structure ActivationsKeyed (s : State) : Prop where
   keys : (s.activations.map fun count => (count.processInstance, count.element, count.role)).Nodup
   positive : ∀ count ∈ s.activations, 0 < count.count
 
+/-- The activation of `key` was issued by its counter: the counter of its process instance, element and role has
+reached it. -/
+def Counted (s : State) (key : OccurrenceKey) : Prop :=
+  ∃ count ∈ s.activations, count.processInstance = key.processInstanceId ∧ count.element = key.element ∧
+    count.role = key.role ∧ key.activation ≤ count.count
+
 /-- An unbegun reservation keeps no start fact: a subscription's flow node runs only when its trigger arrives
-([scopes, Event Sub-Processes](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#event-sub-processes)). -/
+([scopes, Event Sub-Processes](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#event-sub-processes)). The
+journal records an occurrence by its key (`State.keyOf`), so a fact names a reservation exactly when it carries the
+reservation's key. -/
 def ReservationsUnstarted (s : State) : Prop :=
-  ∀ occurrence ∈ s.occurrences, occurrence.begun = false →
-    ∀ fact ∈ s.journal.flatMap (·.started) ++ s.draft.started,
-      ¬ (fact.owner = occurrence.scope ∧ fact.occurrence.element = occurrence.element ∧
-          fact.occurrence.activation = occurrence.activation ∧ fact.occurrence.role = occurrence.role)
+  ∀ occurrence ∈ s.occurrences, occurrence.begun = false → ∀ fact ∈ starts s, fact.occurrence ≠ key s occurrence
 
 /-! ## Ownership -/
 
 /-- Every reference resolves inside the state: each occurrence, open item, variable set and work-stack entry belongs to
 a present scope occurrence; each open item waits for a present occurrence of its own element in its own scope
 occurrence, which makes the item's public identity that occurrence's (`State.openItem` and `State.openSubscription`
-give the item its occurrence's scope); a subscription hangs on a present occurrence; a scope occurrence's owning
-occurrence is present. -/
+give the item its occurrence's scope); a subscription hangs on a present begun occurrence and lies in its scope
+occurrence, as every arming opens it in its host's scope; a scope occurrence's owning occurrence is present and begun,
+since only a begun occurrence enters a scope. -/
 structure Owned (s : State) : Prop where
   occurrenceScopes : ∀ occurrence ∈ s.occurrences, occurrence.scope ∈ scopeIds s
   itemScopes : ∀ item ∈ s.openItems, item.scope ∈ scopeIds s
   itemOccurrences : ∀ item ∈ s.openItems, ∃ occurrence ∈ s.occurrences,
     occurrence.id = item.occurrence ∧ occurrence.element = item.element ∧ occurrence.scope = item.scope
-  attachments : ∀ item ∈ s.openItems, ∀ host, item.attachedTo = some host → host ∈ occurrenceIds s
-  scopeOwners : ∀ scope ∈ s.scopes, ∀ owner, scope.occurrence = some owner → owner ∈ occurrenceIds s
+  attachments : ∀ item ∈ s.openItems, ∀ host, item.attachedTo = some host → ∃ occurrence ∈ s.occurrences,
+    occurrence.id = host ∧ occurrence.begun = true ∧ occurrence.scope = item.scope
+  scopeOwners : ∀ scope ∈ s.scopes, ∀ owner, scope.occurrence = some owner → ∃ occurrence ∈ s.occurrences,
+    occurrence.id = owner ∧ occurrence.begun = true
   variableScopes : ∀ variables ∈ s.variables, variables.scope ∈ scopeIds s
   tokenScopes : ∀ token ∈ s.tokens, token.busyScope ∈ scopeIds s
 
@@ -135,23 +155,29 @@ def FailureRecorded (s : State) : Prop :=
 /-! ## Queued work and counters -/
 
 /-- Every arming queued names an occurrence and a scope occurrence that were issued, so one that `Step.stale` lets run
-finds them standing; every queued instance end records a failure exactly when it fails (`FailureRecorded`). The other
-queued work checks what it names itself (`Step.requireScope`, `Step.gone`) or does nothing to what is gone. Queued work
-naming a scope occurrence an interruption removed (`Kernel/Step/Stale.lean`) keeps this clause: what it names was
-issued. -/
+finds them standing, and its host, while it stands, is begun and runs in the named scope occurrence, as every arming is
+queued in its host's scope (`Scopes.enter`, `Work`, `Call.invoke`, `MultiInstance`, `Flow`'s Event-Based Gateway);
+every queued instance end records a failure exactly when it fails (`FailureRecorded`). The other queued work checks
+what it names itself (`Step.requireScope`, `Step.gone`) or does nothing to what is gone. Queued work naming a scope
+occurrence an interruption removed (`Kernel/Step/Stale.lean`) keeps this clause: what it names was issued. -/
 structure QueueSound (s : State) : Prop where
-  arm : ∀ host element scope, Signal.arm host element scope ∈ s.signals → host < s.nextIssue ∧ scope.value < s.nextIssue
+  arm : ∀ host element scope, Signal.arm host element scope ∈ s.signals → host < s.nextIssue ∧ scope.value < s.nextIssue ∧
+    ∀ occurrence ∈ s.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope
   armScope : ∀ scope, Signal.armScope scope ∈ s.signals → scope.value < s.nextIssue
   armGateway : ∀ occurrence gateway scope, Signal.armGateway occurrence gateway scope ∈ s.signals →
-    occurrence < s.nextIssue ∧ scope.value < s.nextIssue
+    occurrence < s.nextIssue ∧ scope.value < s.nextIssue ∧
+      ∀ found ∈ s.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
   ends : ∀ status failure, Signal.endInstance status failure ∈ s.signals → (failure.isSome = true ↔ status = .failed)
 
 /-- Every start fact of the input in progress counts an activation its counter has issued, so a fresh activation never
 repeats one (`StartedOnce`, R8). -/
 def StartsCounted (s : State) : Prop :=
-  ∀ fact ∈ s.journal.flatMap (·.started) ++ s.draft.started, ∃ count ∈ s.activations,
-    count.processInstance = fact.occurrence.processInstanceId ∧ count.element = fact.occurrence.element ∧
-    count.role = fact.occurrence.role ∧ fact.occurrence.activation ≤ count.count
+  ∀ fact ∈ starts s, Counted s fact.occurrence
+
+/-- Every occurrence, a reservation included, counts an activation its counter has issued, so a fresh activation never
+takes an occurrence's key (`Distinct.keys`, `ReservationsUnstarted`, R8). -/
+def OccurrencesCounted (s : State) : Prop :=
+  ∀ occurrence ∈ s.occurrences, Counted s (key s occurrence)
 
 /-- A scope occurrence an occurrence owns lies directly below the scope occurrence that occurrence runs in, as every
 caller of `State.enterScope` enters it, so removing an occurrence with what it owns leaves the scope occurrence it ran
@@ -159,6 +185,57 @@ in standing. -/
 def OwnedBelow (s : State) : Prop :=
   ∀ scope ∈ s.scopes, ∀ occurrence ∈ s.occurrences, scope.occurrence = some occurrence.id →
     scope.parent = some occurrence.scope
+
+/-! ## Reservations -/
+
+/-- The reservations a begin request names: the one it begins (`reserved`) and an Event Sub-Process's start Event's
+(`inner`). -/
+def names (request : BeginRequest) : List Nat := request.reserved.toList ++ request.inner.toList
+
+/-- A begin request is queued: as a `begin` signal or as a deferred begin on the work stack. -/
+def Queued (s : State) (request : BeginRequest) : Prop :=
+  Signal.begin request ∈ s.signals ∨ Token.begin request ∈ s.tokens
+
+/-- A queued request of a state with fewer queued entries was queued before. -/
+theorem Queued.shrink {before after : State} (signals : after.signals.Sublist before.signals)
+    (tokens : after.tokens.Sublist before.tokens) {request : BeginRequest} (queued : Queued after request) :
+    Queued before request := by
+  rcases queued with signal | token
+  · exact .inl (signals.subset signal)
+  · exact .inr (tokens.subset token)
+
+/-- The reservation `id` may begin in the scope occurrence `scope`: it was issued, and while it stands it is unbegun, no
+item waits for it or hangs on it, and it lies in `scope`'s process instance, so its key is the one its begin journals
+(`State.beginOccurrence` places a reservation in the request's scope occurrence). -/
+def Beginnable (s : State) (scope : ScopeOccurrenceId) (id : Nat) : Prop :=
+  id < s.nextIssue ∧ ∀ occurrence ∈ s.occurrences, occurrence.id = id → occurrence.begun = false ∧
+    (∀ item ∈ s.openItems, item.occurrence ≠ id ∧ item.attachedTo ≠ some id) ∧
+    (scope ∈ scopeIds s → s.instanceOf scope = s.instanceOf occurrence.scope)
+
+/-- No queued begin names the reservation `id` and no queued completion completes it. -/
+def Unclaimed (s : State) (id : Nat) : Prop :=
+  (∀ request, Queued s request → id ∉ names request) ∧
+    ∀ leave writes rule, Signal.complete id leave writes rule ∉ s.signals
+
+/-- `first` occurs in `l` before `second`. -/
+def Precedes {α : Type} (l : List α) (first second : α) : Prop := [first, second].Sublist l
+
+/-- Each reservation has one claimant, so it begins once: an item attached to a host holds its reservation alone, as
+`State.openSubscription` reserves afresh for each subscription; a queued begin names distinct beginnable reservations,
+which no other queued begin or completion names, as a firing that queues a begin closes the item that held its
+reservation (`Subscriptions.fireBoundary`, `fireEventStart`). -/
+structure ReservationsClaimed (s : State) : Prop where
+  attached : ∀ item ∈ s.openItems, item.attachedTo.isSome = true → ∀ other ∈ s.openItems,
+    other.occurrence = item.occurrence → other = item
+  named : ∀ request, Queued s request → (names request).Nodup ∧ ∀ id ∈ names request, Beginnable s request.scope id
+  signalsApart : ∀ first second, Precedes s.signals (.begin first) (.begin second) →
+    ∀ id ∈ names first, id ∉ names second
+  tokensApart : ∀ first second, Precedes s.tokens (.begin first) (.begin second) →
+    ∀ id ∈ names first, id ∉ names second
+  queuesApart : ∀ first second, Signal.begin first ∈ s.signals → Token.begin second ∈ s.tokens →
+    ∀ id ∈ names first, id ∉ names second
+  uncompleted : ∀ request id leave writes rule, Queued s request → id ∈ names request →
+    Signal.complete id leave writes rule ∉ s.signals
 
 /-- The state invariants together: what holds of every committed state and between any two micro-steps of a closure. -/
 structure WellFormed (s : State) : Prop where
@@ -173,7 +250,9 @@ structure WellFormed (s : State) : Prop where
   failure : FailureRecorded s
   queue : QueueSound s
   counted : StartsCounted s
+  occurrencesCounted : OccurrencesCounted s
   ownedBelow : OwnedBelow s
+  claimed : ReservationsClaimed s
 
 /-! ## The scope tree of a well-formed state
 
@@ -282,238 +361,6 @@ theorem Within.antisymm {s : State} (formed : WellFormed s) {first second : Scop
   · have := (down.deeper formed firstDepth secondDepth).2 same
     have := (up.deeper formed secondDepth firstDepth).1
     omega
-
-/-! ## Frames
-
-What `WellFormed` keeps through a change of the fields it reads, stated over the fields alone: the phases of `Step` that
-only drop or reorder entries (`Narrows`), a change of status and failure, and the clearing of a scope occurrence
-(`Cleared`), which `Kernel.Laws.State` shows `State.clearInside` makes. -/
-
-/-- The start facts of the input in progress, which `StartedOnce`, `ReservationsUnstarted` and `StartsCounted` read. -/
-def starts (s : State) : List StartedFact := s.journal.flatMap (·.started) ++ s.draft.started
-
-/-- `after` holds what `before` holds, with no more open items, tokens, queued signals or start facts of the input in
-progress, and no new identifier: the phases that only drop or reorder entries. -/
-structure Narrows (before after : State) : Prop where
-  scopes : after.scopes = before.scopes
-  occurrences : after.occurrences = before.occurrences
-  variables : after.variables = before.variables
-  activations : after.activations = before.activations
-  nextIssue : after.nextIssue = before.nextIssue
-  status : after.status = before.status
-  failure : after.failure = before.failure
-  openItems : after.openItems.Sublist before.openItems
-  tokens : ∀ token ∈ after.tokens, token ∈ before.tokens
-  signals : ∀ signal ∈ after.signals, signal ∈ before.signals
-  starts : ∀ fact ∈ starts after, fact ∈ starts before
-
-/-- A state that narrows a well-formed one is well-formed when it starts no occurrence key twice. -/
-theorem WellFormed.narrow {before after : State} (formed : WellFormed before) (narrows : Narrows before after)
-    (once : StartedOnce after) : WellFormed after where
-  issued := ⟨by simpa [narrows.occurrences, narrows.nextIssue] using formed.issued.occurrences,
-    fun item member => narrows.nextIssue ▸ formed.issued.items item (narrows.openItems.subset member),
-    by simpa [narrows.scopes, narrows.nextIssue] using formed.issued.scopes⟩
-  distinct := ⟨by simpa [occurrenceIds, narrows.occurrences] using formed.distinct.occurrences,
-    formed.distinct.items.sublist (narrows.openItems.map _), by simpa [scopeIds, narrows.scopes] using formed.distinct.scopes⟩
-  startedOnce := once
-  activations := ⟨by simpa [narrows.activations] using formed.activations.keys,
-    by simpa [narrows.activations] using formed.activations.positive⟩
-  reservations occurrence member unbegun fact started :=
-    formed.reservations occurrence (narrows.occurrences ▸ member) unbegun fact (narrows.starts fact started)
-  owned := {
-    occurrenceScopes := by simpa [scopeIds, narrows.occurrences, narrows.scopes] using formed.owned.occurrenceScopes
-    itemScopes := fun item member => by
-      simpa [scopeIds, narrows.scopes] using formed.owned.itemScopes item (narrows.openItems.subset member)
-    itemOccurrences := fun item member => by
-      simpa [narrows.occurrences] using formed.owned.itemOccurrences item (narrows.openItems.subset member)
-    attachments := fun item member => by
-      simpa [occurrenceIds, narrows.occurrences] using formed.owned.attachments item (narrows.openItems.subset member)
-    scopeOwners := by simpa [occurrenceIds, narrows.scopes, narrows.occurrences] using formed.owned.scopeOwners
-    variableScopes := by simpa [scopeIds, narrows.variables, narrows.scopes] using formed.owned.variableScopes
-    tokenScopes := fun token member => by
-      simpa [scopeIds, narrows.scopes] using formed.owned.tokenScopes token (narrows.tokens token member) }
-  rooted := by
-    obtain ⟨present, parentless, reach⟩ := formed.rooted
-    refine ⟨by simpa [scopeIds, narrows.scopes] using present, by simpa [narrows.scopes] using parentless, ?_⟩
-    intro scope member
-    exact Within.congr narrows.scopes (reach scope (narrows.scopes ▸ member))
-  variables := ⟨by simpa [narrows.variables] using formed.variables.scopes,
-    by simpa [narrows.variables] using formed.variables.names⟩
-  failure := by simpa [FailureRecorded, narrows.failure, narrows.status] using formed.failure
-  queue := {
-    arm := fun host element scope queued => narrows.nextIssue ▸ formed.queue.arm host element scope (narrows.signals _ queued)
-    armScope := fun scope queued => narrows.nextIssue ▸ formed.queue.armScope scope (narrows.signals _ queued)
-    armGateway := fun occurrence gateway scope queued =>
-      narrows.nextIssue ▸ formed.queue.armGateway occurrence gateway scope (narrows.signals _ queued)
-    ends := fun status failure queued => formed.queue.ends status failure (narrows.signals _ queued) }
-  counted fact started := by simpa [narrows.activations] using formed.counted fact (narrows.starts fact started)
-  ownedBelow := by simpa [OwnedBelow, narrows.scopes, narrows.occurrences] using formed.ownedBelow
-
-/-- Start facts that are a permutation of a well-formed state's, with nothing else but the journal and the draft
-changed, keep it well-formed. -/
-theorem WellFormed.permuted {before after : State} (formed : WellFormed before) (narrows : Narrows before after)
-    (perm : (starts after).Perm (starts before)) : WellFormed after :=
-  formed.narrow narrows ((perm.map _).nodup_iff.mpr formed.startedOnce)
-
-/-- A well-formed state with its status and failure changed together stays well-formed. -/
-theorem WellFormed.withStatus {s : State} (formed : WellFormed s) {status : InstanceStatus}
-    {failure : Option InstanceFailure} (recorded : failure.isSome = true ↔ status = .failed) :
-    WellFormed { s with status, failure } where
-  issued := ⟨formed.issued.occurrences, formed.issued.items, formed.issued.scopes⟩
-  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes⟩
-  startedOnce := formed.startedOnce
-  activations := ⟨formed.activations.keys, formed.activations.positive⟩
-  reservations := formed.reservations
-  owned := ⟨formed.owned.occurrenceScopes, formed.owned.itemScopes, formed.owned.itemOccurrences,
-    formed.owned.attachments, formed.owned.scopeOwners, formed.owned.variableScopes, formed.owned.tokenScopes⟩
-  rooted := ⟨formed.rooted.1, formed.rooted.2.1,
-    fun scope member => Within.congr (s := s) (t := { s with status, failure }) rfl (formed.rooted.2.2 scope member)⟩
-  variables := ⟨formed.variables.scopes, formed.variables.names⟩
-  failure := recorded
-  queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends⟩
-  counted := formed.counted
-  ownedBelow := formed.ownedBelow
-
-/-- What `State.clearInside before scope keep` leaves of `before`, read through the scope tree: the scope occurrences
-and variable sets not strictly within `scope`, the occurrences, open items and tokens not within it but those of the
-kept occurrences, and everything else as it was but the draft's end and cancelled facts. P3's cancellation lane and the
-phases that clear (`Step.endInstance`, `State.leaveScope`) build on it. -/
-structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : List Nat) : Prop where
-  scopes : ∀ entry, entry ∈ after.scopes ↔ entry ∈ before.scopes ∧ ¬ StrictlyWithin before entry.id scope
-  occurrences : ∀ occurrence, occurrence ∈ after.occurrences ↔
-    occurrence ∈ before.occurrences ∧ (¬ Within before occurrence.scope scope ∨ occurrence.id ∈ keep)
-  openItems : ∀ item, item ∈ after.openItems ↔
-    item ∈ before.openItems ∧ (¬ Within before item.scope scope ∨ item.occurrence ∈ keep)
-  tokens : ∀ token, token ∈ after.tokens ↔ token ∈ before.tokens ∧ ¬ Within before token.busyScope scope
-  variables : ∀ variables, variables ∈ after.variables ↔
-    variables ∈ before.variables ∧ ¬ StrictlyWithin before variables.scope scope
-  scopesSublist : after.scopes.Sublist before.scopes
-  occurrencesSublist : after.occurrences.Sublist before.occurrences
-  openItemsSublist : after.openItems.Sublist before.openItems
-  variablesSublist : after.variables.Sublist before.variables
-  activations : after.activations = before.activations
-  nextIssue : after.nextIssue = before.nextIssue
-  signals : after.signals = before.signals
-  status : after.status = before.status
-  failure : after.failure = before.failure
-  journal : after.journal = before.journal
-  started : after.draft.started = before.draft.started
-
-/-- A scope occurrence that lies within `State.root` and not strictly within a cleared `scope` still does after the
-clearing: nothing on its way up lies strictly within `scope`, or it would itself. -/
-private theorem Cleared.reaches {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat}
-    (formed : WellFormed before) (cleared : Cleared before after scope keep) {x : ScopeOccurrenceId}
-    (within : Within before x State.root) : ¬ StrictlyWithin before x scope → Within after x State.root := by
-  generalize rooted : State.root = root at within
-  induction within with
-  | refl => intro _; subst rooted; exact .refl _
-  | parent child parent _ member link _ ih =>
-    intro outside
-    refine .parent child parent _ ((cleared.scopes child).mpr ⟨member, outside⟩) link (ih rooted fun ⟨inside, other⟩ => ?_)
-    have childInside : Within before child.id scope := .parent child parent scope member link inside
-    have same : child.id = scope := Classical.byContradiction fun distinct => outside ⟨childInside, distinct⟩
-    exact parent_not_within formed member link (same ▸ inside)
-
-/-- A cleared well-formed state is well-formed when every occurrence the clearing keeps lies in no scope occurrence
-strictly within the cleared one, and every open item the clearing leaves hangs on an occurrence it leaves. -/
-theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat} (formed : WellFormed before)
-    (cleared : Cleared before after scope keep) (present : scope ∈ scopeIds before)
-    (kept : ∀ occurrence ∈ before.occurrences, occurrence.id ∈ keep → ¬ StrictlyWithin before occurrence.scope scope)
-    (attached : ∀ item ∈ before.openItems, (¬ Within before item.scope scope ∨ item.occurrence ∈ keep) → ∀ host,
-      item.attachedTo = some host → ∀ occurrence ∈ before.occurrences, occurrence.id = host →
-        ¬ Within before occurrence.scope scope ∨ host ∈ keep) :
-    WellFormed after := by
-  have sameStarts : starts after = starts before := by simp [starts, cleared.journal, cleared.started]
-  -- A scope occurrence of `before` that is no strict descendant of `scope` stands after the clearing.
-  have stays : ∀ id, id ∈ scopeIds before → ¬ StrictlyWithin before id scope → id ∈ scopeIds after := fun id member outside => by
-    obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
-    exact List.mem_map.mpr ⟨entry, (cleared.scopes entry).mpr ⟨inside, named ▸ outside⟩, named⟩
-  have notStrict : ∀ id, ¬ Within before id scope → ¬ StrictlyWithin before id scope := fun _ outside strict =>
-    outside strict.1
-  -- An occurrence of `before` that the clearing leaves lies in a scope occurrence that stands.
-  have occurrenceStays : ∀ occurrence ∈ before.occurrences, (¬ Within before occurrence.scope scope ∨ occurrence.id ∈ keep) →
-      occurrence.scope ∈ scopeIds after := fun occurrence member left => by
-    refine stays _ (formed.owned.occurrenceScopes occurrence member) ?_
-    rcases left with outside | keeps
-    · exact notStrict _ outside
-    · exact kept occurrence member keeps
-  constructor
-  · exact ⟨fun occurrence member => cleared.nextIssue ▸ formed.issued.occurrences occurrence
-        (cleared.occurrencesSublist.subset member),
-      fun item member => cleared.nextIssue ▸ formed.issued.items item (cleared.openItemsSublist.subset member),
-      fun entry member => cleared.nextIssue ▸ formed.issued.scopes entry (cleared.scopesSublist.subset member)⟩
-  · exact ⟨formed.distinct.occurrences.sublist (cleared.occurrencesSublist.map _),
-      formed.distinct.items.sublist (cleared.openItemsSublist.map _),
-      formed.distinct.scopes.sublist (cleared.scopesSublist.map _)⟩
-  · have once := formed.startedOnce
-    unfold StartedOnce at once ⊢
-    rw [show after.journal.flatMap (·.started) ++ after.draft.started = starts after from rfl, sameStarts]
-    exact once
-  · exact ⟨cleared.activations ▸ formed.activations.keys, cleared.activations ▸ formed.activations.positive⟩
-  · intro occurrence member unbegun fact started
-    exact formed.reservations occurrence (cleared.occurrencesSublist.subset member) unbegun fact
-      (show fact ∈ starts before from sameStarts ▸ started)
-  · constructor
-    · intro occurrence member
-      obtain ⟨old, left⟩ := (cleared.occurrences occurrence).mp member
-      exact occurrenceStays occurrence old left
-    · intro item member
-      obtain ⟨old, left⟩ := (cleared.openItems item).mp member
-      obtain ⟨occurrence, inside, facts⟩ := formed.owned.itemOccurrences item old
-      obtain ⟨named, _, placed⟩ := facts
-      rw [← placed]
-      refine occurrenceStays occurrence inside ?_
-      rcases left with outside | keeps
-      · exact .inl (placed ▸ outside)
-      · exact .inr (named ▸ keeps)
-    · intro item member
-      obtain ⟨old, left⟩ := (cleared.openItems item).mp member
-      obtain ⟨occurrence, inside, facts⟩ := formed.owned.itemOccurrences item old
-      obtain ⟨named, element, placed⟩ := facts
-      refine ⟨occurrence, (cleared.occurrences occurrence).mpr ⟨inside, ?_⟩, named, element, placed⟩
-      rcases left with outside | keeps
-      · exact .inl (placed ▸ outside)
-      · exact .inr (named ▸ keeps)
-    · intro item member host link
-      obtain ⟨old, left⟩ := (cleared.openItems item).mp member
-      obtain ⟨occurrence, inside, named⟩ := List.mem_map.mp (formed.owned.attachments item old host link)
-      exact List.mem_map.mpr ⟨occurrence, (cleared.occurrences occurrence).mpr
-        ⟨inside, named ▸ attached item old left host link occurrence inside named⟩, named⟩
-    · intro entry member owner owned
-      obtain ⟨old, outside⟩ := (cleared.scopes entry).mp member
-      obtain ⟨occurrence, inside, named⟩ := List.mem_map.mp (formed.owned.scopeOwners entry old owner owned)
-      refine List.mem_map.mpr ⟨occurrence, (cleared.occurrences occurrence).mpr ⟨inside, ?_⟩, named⟩
-      by_cases keeps : occurrence.id ∈ keep
-      · exact .inr keeps
-      · refine .inl fun within => ?_
-        have link := formed.ownedBelow entry old occurrence inside (named ▸ owned)
-        have entryInside : Within before entry.id scope := .parent entry occurrence.scope scope old link within
-        have same : entry.id = scope := Classical.byContradiction fun distinct => outside ⟨entryInside, distinct⟩
-        exact parent_not_within formed old link (same ▸ within)
-    · intro variables member
-      obtain ⟨old, outside⟩ := (cleared.variables variables).mp member
-      exact stays _ (formed.owned.variableScopes variables old) outside
-    · intro token member
-      obtain ⟨old, outside⟩ := (cleared.tokens token).mp member
-      exact stays _ (formed.owned.tokenScopes token old) (notStrict _ outside)
-  · obtain ⟨rootPresent, parentless, reach⟩ := formed.rooted
-    obtain ⟨scopeEntry, scopeInside, scopeNamed⟩ := List.mem_map.mp present
-    refine ⟨stays _ rootPresent fun ⟨inside, distinct⟩ => distinct (Within.antisymm formed rootPresent inside
-      (scopeNamed ▸ reach scopeEntry scopeInside)), fun entry member => parentless entry
-      (cleared.scopesSublist.subset member), fun entry member => ?_⟩
-    obtain ⟨old, outside⟩ := (cleared.scopes entry).mp member
-    exact cleared.reaches formed (reach entry old) outside
-  · exact ⟨formed.variables.scopes.sublist (cleared.variablesSublist.map _),
-      fun variables member => formed.variables.names variables (cleared.variablesSublist.subset member)⟩
-  · simpa [FailureRecorded, cleared.status, cleared.failure] using formed.failure
-  · obtain ⟨arm, armScope, armGateway, ends⟩ := formed.queue
-    exact ⟨by simpa [cleared.signals, cleared.nextIssue] using arm, by simpa [cleared.signals, cleared.nextIssue] using armScope,
-      by simpa [cleared.signals, cleared.nextIssue] using armGateway, by simpa [cleared.signals] using ends⟩
-  · intro fact started
-    simpa [cleared.activations] using formed.counted fact (show fact ∈ starts before from sameStarts ▸ started)
-  · intro entry member occurrence inside owned
-    exact formed.ownedBelow entry (cleared.scopesSublist.subset member) occurrence
-      (cleared.occurrencesSublist.subset inside) owned
 
 /-! ## Permitted transitions -/
 
@@ -746,19 +593,14 @@ def armedState (kind : OpenKind) : State :=
     draft := { started := [startFact innerTask, startFact outerTask] } }
 
 theorem armed_unstarted (kind : OpenKind) : ReservationsUnstarted (armedState kind) := by
-  simp [ReservationsUnstarted, armedState, sample, subProcess, innerTask, outerTask, reservation, startFact]
+  simp [ReservationsUnstarted, starts, key, armedState, sample, subProcess, innerTask, outerTask, reservation, startFact]
 
 theorem armed_started_once (kind : OpenKind) : StartedOnce (armedState kind) := by
-  simp [StartedOnce, armedState, sample, startFact, innerTask, outerTask]
-
-theorem early_start_rejected (kind : OpenKind) :
-    ¬ ReservationsUnstarted { armedState kind with draft := { started := [startFact reservation] } } := fun unstarted => by
-  have := unstarted reservation (by simp [armedState]) rfl (startFact reservation) (by simp)
-  simp [startFact, reservation] at this
+  simp [StartedOnce, starts, armedState, sample, startFact, innerTask, outerTask]
 
 theorem restart_rejected (kind : OpenKind) :
     ¬ StartedOnce { armedState kind with draft := { started := [startFact innerTask, startFact innerTask] } } := by
-  simp [StartedOnce, armedState, sample]
+  simp [StartedOnce, starts, armedState, sample]
 
 /-- An item waiting for an occurrence that is gone breaks `Owned`. -/
 theorem dangling_item_rejected (kind : OpenKind) :
@@ -831,7 +673,7 @@ theorem cancel_without_end_rejected (kind : OpenKind) :
 theorem uncounted_start_rejected (kind : OpenKind) :
     ¬ StartsCounted { sample kind with draft := { started := [startFact innerTask] }, activations := [] } :=
   fun counted => by
-    obtain ⟨_, member, _⟩ := counted (startFact innerTask) (by simp)
+    obtain ⟨_, member, _⟩ := counted (startFact innerTask) (by simp [starts])
     simp at member
 
 /-- A Sub-Process scope owned by an occurrence of another scope occurrence breaks `OwnedBelow`. -/
@@ -846,5 +688,60 @@ occurrence that is gone, never one that was never issued. -/
 theorem unissued_arming (kind : OpenKind) : ¬ WellFormed { sample kind with signals := [.armScope ⟨9⟩] } := fun formed => by
   have := formed.queue.armScope ⟨9⟩ (by simp)
   simp [sample] at this
+
+/-- A boundary item filed in the Sub-Process scope but attached to the root's task 5 breaks `Owned`: an arming opens
+its items in its host's scope occurrence. -/
+theorem misattached_rejected (kind : OpenKind) :
+    ¬ Owned { sample kind with openItems := [{ innerItem kind with attachedTo := some 5 }] } := fun owned => by
+  obtain ⟨occurrence, member, named, rest⟩ := owned.attachments { innerItem kind with attachedTo := some 5 } (by simp) 5 rfl
+  have placed := rest.2
+  simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl | rfl <;> simp [subProcess, innerTask, outerTask, innerItem, processRoot, subScope] at named placed
+
+/-- A scope occurrence owned by the unbegun reservation 7 breaks `Owned`: only a begun occurrence enters a scope. -/
+theorem reservation_owner_rejected (kind : OpenKind) :
+    ¬ Owned { armedState kind with scopes := [rootScope, { childScope with occurrence := some 7 }] } := fun owned => by
+  obtain ⟨occurrence, member, named, begun⟩ := owned.scopeOwners { childScope with occurrence := some 7 } (by simp) 7 rfl
+  simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl | rfl | rfl <;> simp [subProcess, innerTask, outerTask, reservation] at named begun
+
+/-- An occurrence the counters never numbered breaks `OccurrencesCounted`, so a fresh activation could repeat it. -/
+theorem uncounted_occurrence_rejected (kind : OpenKind) :
+    ¬ OccurrencesCounted { sample kind with activations := [] } := fun counted => by
+  obtain ⟨_, member, _⟩ := counted subProcess (by simp [sample])
+  simp at member
+
+/-- Two occurrences of one key break `Distinct`. -/
+theorem rekeyed_rejected (kind : OpenKind) :
+    ¬ Distinct { sample kind with occurrences := [subProcess, { subProcess with id := 9 }] } := fun distinct => by
+  have := distinct.keys
+  simp [key] at this
+
+/-- A queued begin naming the begun occurrence 5 breaks `ReservationsClaimed`: it would start it twice. -/
+theorem rebegin_rejected (kind : OpenKind) :
+    ¬ ReservationsClaimed { sample kind with signals := [.begin { element := ⟨"Outer"⟩, scope := processRoot, reserved := some 5 }] } :=
+  fun claimed => by
+    obtain ⟨_, beginnable⟩ := claimed.named _ (.inl (List.mem_singleton.mpr rfl))
+    have := (beginnable 5 (by simp [names, Option.toList])).2 outerTask (by simp [sample]) rfl
+    simp [outerTask] at this
+
+/-- Two queued begins naming the reservation 7 break `ReservationsClaimed`. -/
+theorem claimed_twice_rejected (kind : OpenKind) :
+    ¬ ReservationsClaimed { armedState kind with signals :=
+      [.begin { element := ⟨"Timer"⟩, scope := processRoot, reserved := some 7 },
+        .begin { element := ⟨"Timer"⟩, scope := processRoot, reserved := some 7 }] } := fun claimed => by
+  have := claimed.signalsApart _ _ (List.Sublist.refl _) 7 (by simp [names])
+  simp [names] at this
+
+/-- A second item holding the reservation 7 an attached item holds breaks `ReservationsClaimed`: disarming the host
+would remove the reservation under it. -/
+theorem shared_reservation_rejected (kind : OpenKind) :
+    ¬ ReservationsClaimed { armedState kind with openItems :=
+      [{ id := 8, kind, element := ⟨"Timer"⟩, scope := processRoot, occurrence := 7, attachedTo := some 5 },
+        { id := 9, kind, element := ⟨"Timer"⟩, scope := processRoot, occurrence := 7 }] } := fun claimed => by
+  have := claimed.attached { id := 8, kind, element := ⟨"Timer"⟩, scope := processRoot, occurrence := 7, attachedTo := some 5 }
+    (List.mem_cons_self ..) rfl { id := 9, kind, element := ⟨"Timer"⟩, scope := processRoot, occurrence := 7 }
+    (List.mem_cons_of_mem _ (List.mem_singleton.mpr rfl)) rfl
+  simp at this
 
 end Kernel.Laws.State

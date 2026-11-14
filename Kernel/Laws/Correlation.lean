@@ -2,7 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.State.Criteria
-public import Kernel.Laws.State
+public import Kernel.Laws.State.Invariant
 import all Kernel.Feature.Correlation
 
 /-! # Laws of API correlation criteria

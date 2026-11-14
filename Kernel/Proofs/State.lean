@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.Step.Keeps
+public import Kernel.Laws.State.Keeps
 public import Kernel.Laws.Data
 public import Kernel.Laws.Population
 

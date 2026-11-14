@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Step
+public import Kernel.Laws.State.Invariant
 
 /-! # Laws of the step function: the preservation contract
 
@@ -29,6 +30,13 @@ def ScopeStands (state : State) (scope : ScopeOccurrenceId) : Prop := ∃ entry 
 /-- The occurrence `id` stands in `state`. -/
 def OccurrenceStands (state : State) (id : Nat) : Prop := ∃ occurrence ∈ state.occurrences, occurrence.id = id
 
+/-- A begin request `Step` may begin in `state`: the reservations it names are distinct, each beginnable in the
+request's scope occurrence and claimed by nothing queued (`Laws.State.ReservationsClaimed`). A request an arrival or a
+start makes names none. -/
+def Admitted (state : State) (request : BeginRequest) : Prop :=
+  (Laws.State.names request).Nodup ∧ ∀ id ∈ Laws.State.names request,
+    Laws.State.Beginnable state request.scope id ∧ Laws.State.Unclaimed state id
+
 /-- What the completion pipeline needs of each phase it runs between closing the completing occurrence's own items and
 removing its record (`Step.complete`): the scope occurrences and the begun occurrences stay, and no open item is added,
 so the record goes with nothing left waiting for it or hanging on it. -/
@@ -40,8 +48,10 @@ structure PipelineFrame (before after : State) : Prop where
 /-- What each hook must keep of `inv`, given what `Step` establishes before it calls the hook: the occurrence it hands
 over stands (a begun occurrence, an idle scope occurrence's owner, a parked join's latest occurrence, the completing
 occurrence); the item it hands over is open; the scope occurrence and occurrence a queued signal names stand (`Step.stale`,
-`Step.gone`); a completed occurrence's continuation runs while its scope occurrence stands. The completion pipeline's
-hooks also keep its frame (`PipelineFrame`), and `Hooks.leave` leaves nothing hanging on the completing occurrence.
+`Step.gone`); a completed occurrence's continuation runs while its scope occurrence stands; an Event Sub-Process's start
+Event reservation (`ScopeEntry.inner`) is beginnable in the scope occurrence its occurrence began in, and claimed by
+nothing queued. The completion pipeline's hooks also keep its frame (`PipelineFrame`), and `Hooks.leave` leaves
+nothing hanging on the completing occurrence.
 `Hooks.delivered`, a query, picks an open item. Each feature's `Laws` module proves the fields of the hooks it fills. -/
 structure HookContract (hooks : Hooks) (inv : State → Prop) : Prop where
   arriveStart : ∀ ctx header payload trigger occurrence state after, inv state → occurrence ∈ state.occurrences →
@@ -51,6 +61,7 @@ structure HookContract (hooks : Hooks) (inv : State → Prop) : Prop where
   arriveMultiInstance : ∀ ctx header envelope loop occurrence state after, inv state → occurrence ∈ state.occurrences →
     hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after → inv after
   arriveScope : ∀ ctx header payload occurrence entry state after, inv state → occurrence ∈ state.occurrences →
+    (∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id) →
     hooks.arriveScope ctx header payload occurrence entry state = .ok after → inv after
   arriveGateway : ∀ ctx header payload occurrence state after, inv state → occurrence ∈ state.occurrences →
     hooks.arriveGateway ctx header payload occurrence state = .ok after → inv after
@@ -111,8 +122,9 @@ structure HookContract (hooks : Hooks) (inv : State → Prop) : Prop where
   delivered : ∀ ctx data state item fired, hooks.delivered ctx data state = .ok (item, fired) → item ∈ state.openItems
 
 /-- What each phase `Step` runs itself must keep of `inv`, and what the closure reads of `inv`: the arming a queued
-signal asks for names issued identities, so one that `Step.stale` lets run finds them standing, and a queued instance
-end records a failure exactly when it fails. The state operations' obligations are `Laws.State`'s. -/
+signal asks for names issued identities, so one that `Step.stale` lets run finds them standing; a queued begin is
+`Admitted` once it leaves the queue, and a queued completion completes no reservation a queued begin names; and a queued
+instance end records a failure exactly when it fails. The state operations' obligations are `Laws.State`'s. -/
 structure Phases (inv : State → Prop) : Prop where
   /-- A start's fresh instance, with its root's Event Sub-Process starts queued for arming. -/
   initial : ∀ instanceId variables businessKey,
@@ -139,17 +151,34 @@ structure Phases (inv : State → Prop) : Prop where
     occurrence < state.nextIssue ∧ scope.value < state.nextIssue
   endRecorded : ∀ state status failure, inv state → Signal.endInstance status failure ∈ state.signals →
     (failure.isSome = true ↔ status = .failed)
+  /-- The closure's next signal or token, a begin, may begin once it leaves the queue. -/
+  admittedSignal : ∀ state request rest, inv state → state.signals = .begin request :: rest →
+    Admitted { state with signals := rest } request
+  admittedToken : ∀ state request rest, inv state →
+    (state.tokens = .begin request :: rest ∨ state.tokens = rest ++ [.begin request]) →
+    Admitted { state with tokens := rest } request
+  completeQueued : ∀ state id leave writes rule, inv state → Signal.complete id leave writes rule ∈ state.signals →
+    ∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request
   /-- An occurrence's scope occurrence stands. -/
   housed : ∀ state occurrence, inv state → occurrence ∈ state.occurrences → ScopeStands state occurrence.scope
   /-- `Step.endInstance`, with a failure exactly when the instance fails. -/
   endInstance : ∀ state status failure, inv state → (failure.isSome = true ↔ status = .failed) →
     inv (endInstance status failure state)
-  /-- `State.beginOccurrence`, in a scope occurrence that stands (`Step.requireScope`). -/
-  begin : ∀ state request role sourceType, inv state → ScopeStands state request.scope →
-    inv (state.beginOccurrence request role sourceType).1
-  /-- `State.reserve` for `Signal.occur`, in a scope occurrence that stands. -/
-  reserve : ∀ state element scope, inv state → ScopeStands state scope → inv (state.reserve element scope).1
+  /-- `State.beginOccurrence` of an admitted request, in a scope occurrence that stands (`Step.requireScope`); the
+  request's start Event reservation stays beginnable and unclaimed in the scope occurrence its begun occurrence runs
+  in. -/
+  begin : ∀ state request role sourceType, inv state → ScopeStands state request.scope → Admitted state request →
+    inv (state.beginOccurrence request role sourceType).1 ∧ ∀ id ∈ request.inner.toList,
+      Laws.State.Beginnable (state.beginOccurrence request role sourceType).1
+        (state.beginOccurrence request role sourceType).2.scope id ∧
+      Laws.State.Unclaimed (state.beginOccurrence request role sourceType).1 id
+  /-- `State.reserve` for `Signal.occur`, in a scope occurrence that stands; nothing queued names the reservation. -/
+  reserve : ∀ state element scope, inv state → ScopeStands state scope → inv (state.reserve element scope).1 ∧
+    ∀ request, Laws.State.Queued (state.reserve element scope).1 request →
+      (state.reserve element scope).2.id ∉ Laws.State.names request
+  /-- `State.startReserved` of an occurrence no queued begin names, which the completion pipeline starts. -/
   startReserved : ∀ state occurrence sourceType, inv state → occurrence ∈ state.occurrences →
+    (∀ request, Laws.State.Queued state request → occurrence.id ∉ Laws.State.names request) →
     inv (state.startReserved occurrence sourceType).1
   closeOwnItems : ∀ state id, inv state → inv (state.closeOwnItems id)
   /-- `State.removeOccurrence` of an occurrence on which nothing waits or hangs; its scope occurrence stays. -/
