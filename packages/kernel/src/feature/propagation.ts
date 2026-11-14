@@ -14,7 +14,9 @@
  * the same level (CIB `ErrorEventDefinition#getPrecedence`) but never over a nearer catcher. The search never passes
  * the scope occurrence of a compensation handler: what reaches it uncaught is the handler's outcome. A Multi-Instance
  * instance's scope occurrence offers no boundaries of its own: they belong to the body, whose scope occurrence is the
- * next one out (`BpmnParse:3291-3295`, BPMN 2.0.2 §13.5.3).
+ * next one out (`BpmnParse:3291-3295`, BPMN 2.0.2 §13.5.3). A Sub-Process's Event Sub-Processes are offered once, in its
+ * instance's scope occurrence, never again in a Multi-Instance instance's or body's or a compensation context that wraps
+ * it (`wrapsOwnScope`).
  *
  * A boundary that catches begins its occurrence and leaves on its flows. A Compensation throw and a caught Cancel hand
  * their scope occurrence to `feature/compensation.ts` through `Signal.compensate`, with what follows once its handlers
@@ -188,6 +190,20 @@ function heldOnChain(state: State, visited: ScopeOccurrenceId, start: ScopeOccur
 }
 
 /**
+ * Whether `occurrence` only wraps `held`, the scope occurrence directly inside it on the raise's chain, of its own
+ * element: a Multi-Instance body's scope occurrence around an instance's, an instance's around the Sub-Process
+ * instance's, or a compensation handler's context around the handler Sub-Process's. Its element's Event Sub-Processes
+ * belong to the innermost one, the Sub-Process instance, whose `enter` armed them and where the search offered them, or
+ * passed the one the raise runs in, already: BPMN 2.0.2 §10.3.5 gives each Sub-Process instance its Event
+ * Sub-Processes, and CIB's finders visit each flow scope once, the Multi-Instance body `#multiInstanceBody` declaring
+ * none (#158). A called root wraps nothing: its Event Sub-Processes are its called process's, and a recursive Call's
+ * root holds a root of the same Call.
+ */
+function wrapsOwnScope(state: State, occurrence: ScopeOccurrence, held: ScopeOccurrence | null): boolean {
+  return held !== null && held.element === occurrence.element && !calledRoot(state, occurrence.id);
+}
+
+/**
  * The Event Sub-Processes of `occurrence` that may catch a raise from `origin` (PC-ERROR-02). One the raise originates
  * inside is no candidate, so a rethrow passes the handler that runs it, or that an interrupting handler's completion is
  * disposing of, to the host's boundaries and outward (BPMN 2.0.2 §13.5.4: "control passes to the boundary Event";
@@ -196,11 +212,13 @@ function heldOnChain(state: State, visited: ScopeOccurrenceId, start: ScopeOccur
  * with that handler again; and a raise from an interrupting handler that another Event Sub-Process of the same scope
  * would catch (`rethrow-caught-by-sibling-handler`), which CIB starts (CIB-DEV-0003). Both are restrictions of the
  * `bpmn-2.0.2` meaning, never that meaning: §13.5.4 passes the running handler at any depth and starts no new handler
- * while the parent is Failing or Terminating, so both raises would go on outward.
+ * while the parent is Failing or Terminating, so both raises would go on outward. A scope occurrence that only wraps one
+ * of its own element offers none (`wrapsOwnScope`).
  */
 function handlerCandidates(ctx: Ctx, raised: Raised, origin: Origin, state: State, occurrence: ScopeOccurrence): Result<readonly Handler[]> {
-  const handlers = eventSubProcesses(ctx, state, occurrence);
   const held = heldOnChain(state, occurrence.id, origin.scope);
+  if (wrapsOwnScope(state, occurrence, held)) return { ok: true, value: [] };
+  const handlers = eventSubProcesses(ctx, state, occurrence);
   const running = held === null ? undefined : handlers.find(([element]) => element === held.element);
   if (held === null || running === undefined) return { ok: true, value: handlers };
   const [element, start, interrupting] = running;

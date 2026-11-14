@@ -1,6 +1,6 @@
 # Escalation on Multi-Instance hosts
 
-This directory serves [PC-ESCALATION-02](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) and the Multi-Instance part of [PC-ESCALATION-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list): Escalations raised inside Multi-Instance Call Activities and Sub-Processes and caught by a boundary of the host or by an Event Sub-Process (ESP) of an enclosing Sub-Process. Both models are project-authored MIT source for the `cibseven-2.2.0` profile; every schedule is answer-free and CIB Seven `2.2.0` supplies the retained answer. Every Multi-Instance Activity here uses a loop cardinality of 2.
+This directory serves [PC-ESCALATION-02](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) and the Multi-Instance part of [PC-ESCALATION-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list): Escalations raised inside Multi-Instance Call Activities and Sub-Processes and caught by a boundary of the host or by an Event Sub-Process (ESP) of an enclosing Sub-Process. The models are project-authored MIT source for the `cibseven-2.2.0` profile, the standards relay model for the [`bpmn-2.0.2` profile](../../../profiles/bpmn-2.0.2/README.md); every schedule is answer-free and CIB Seven `2.2.0` supplies the retained answer for the `cibseven-2.2.0` ones. Every Multi-Instance Activity here runs two instances.
 
 The [call model](review-items.bpmn) forks into two Call Activities of the Process `Process_ItemCheck`, whose children run the Human Task `Inspect`, an Intermediate throw `FLAGGED` and the Human Task `Finish`. `ReviewParallel` is parallel with an interrupting exact `FLAGGED` boundary on the host; `ReviewSequential` is sequential with a non-interrupting exact `FLAGGED` boundary on the host. Children are addressed by the kernel's derived called-instance identifier, whose activation counts the instances of the Call Activity.
 
@@ -13,6 +13,8 @@ The [Sub-Process model](review-batches.bpmn) forks into four Multi-Instance regi
 | parallel User Task `Approve` | the Human Task itself, which raises nothing | non-interrupting exact `HELP` boundary on the host |
 | Sub-Process `Campaign` ⊃ parallel Sub-Process `Wave` | `Step`, Intermediate throw `STALLED`, `FinishStep` | non-interrupting exact `STALLED` ESP in `Campaign` |
 
+The [relay model](relay-audits.bpmn) runs the parallel Sub-Process `Audit` (cardinality 2), whose instances run `Check`, an Intermediate throw `OVERDUE` and `FinishCheck`, and then the Human Task `CloseAudits`. `Audit` declares the non-interrupting exact `OVERDUE` ESP `Handler_Audit_Overdue`, which throws `OVERDUE` again (`Relay_Overdue`) and then waits at `Acknowledge`; the Process declares the non-interrupting exact `OVERDUE` ESP `Handler_Process_Overdue`, leading to `Reschedule`. The [standards relay model](relay-audits-standards.bpmn) is the same graph looping over the Process Property `sites` through Data Associations ([#158](https://github.com/mbackschat/bpmn-lean-experiment/issues/158)).
+
 | Scenario | Model | Case it exercises |
 |---|---|---|
 | [parallel-interrupting](parallel-interrupting.scenario.json) | call | The second of two concurrent children raises, then the first child's task is addressed after that. |
@@ -21,5 +23,7 @@ The [Sub-Process model](review-batches.bpmn) forks into four Multi-Instance regi
 | [sequential-subprocess-non-interrupting](sequential-subprocess-non-interrupting.scenario.json) | Sub-Process | The first instance raises and completes in turn, so the next instance starts and raises again. |
 | [user-task-wrapper-declared](user-task-wrapper-declared.scenario.json) | Sub-Process | A Multi-Instance User Task host with a boundary that is declared and never raised: both instances complete. |
 | [instances-throw-to-enclosing-handler](instances-throw-to-enclosing-handler.scenario.json) | Sub-Process | Both instances of the inner Multi-Instance Sub-Process raise toward the ESP of the enclosing Sub-Process. |
+| [parallel-subprocess-handler-relays](parallel-subprocess-handler-relays.scenario.json) | relay | Each instance's `Check` raises; does each instance run its own handler once, and does the handler's relay pass the instance and the body to the Process's handler? Then both handlers and both checks finish. |
+| [standards-subprocess-handler-relays](standards-subprocess-handler-relays.scenario.json) | standards relay | The same schedule under the `bpmn-2.0.2` profile, with the sites `north` and `south`; it selects no CIB oracle. |
 
 The schedules carry no expected route or Process state; the retained CIB evidence is the answer.

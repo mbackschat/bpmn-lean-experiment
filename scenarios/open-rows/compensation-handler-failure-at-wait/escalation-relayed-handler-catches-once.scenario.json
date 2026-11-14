@@ -1,0 +1,132 @@
+{
+  "kind": "scenario",
+  "id": "compensation-handler-failure-at-wait-escalation-relayed-handler-catches-once",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "compensation-handler-failure-at-wait-escalation-relayed",
+    "relativePath": "scenarios/open-rows/compensation-handler-failure-at-wait/escalation-relayed.bpmn",
+    "sha256": "8aef47cc39521bf87dd83e999da411e13c9f6355bafaf890f083b0c198fe129e",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s01-complete-UserTask_Work-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_UndoReview-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoReview",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_Note-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Note",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_UndoConfirm-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoConfirm",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-UserTask_After-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_After",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-UserTask_Caught-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Caught",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-UserTask_Settle-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Settle",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.2",
+      "BPMN 2.0.2 §10.7.3",
+      "BPMN 2.0.2 §13.3.2",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §13.5.6",
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/CompensationUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/CompensationEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ErrorEndEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowEscalationEventActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensateEventTest.java"
+    ]
+  }
+}

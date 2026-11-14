@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_RelayAudits"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-multi-instance:relay">
+  <bpmn:escalation id="Escalation_Overdue" name="Overdue" escalationCode="OVERDUE" />
+  <bpmn:process id="Process_RelayAudits" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_AuditsPlanned" />
+
+    <bpmn:subProcess id="Audit" name="Audit a site">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopCardinality>2</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="StartEvent_Audit" />
+      <bpmn:userTask id="Check" name="Check the site" />
+      <bpmn:intermediateThrowEvent id="Raise_Overdue">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Overdue" escalationRef="Escalation_Overdue" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="FinishCheck" name="Finish the check" />
+      <bpmn:endEvent id="EndEvent_Audit" />
+      <bpmn:sequenceFlow id="Flow_Audit_Start_Check" sourceRef="StartEvent_Audit" targetRef="Check" />
+      <bpmn:sequenceFlow id="Flow_Audit_Check_Raise" sourceRef="Check" targetRef="Raise_Overdue" />
+      <bpmn:sequenceFlow id="Flow_Audit_Raise_Finish" sourceRef="Raise_Overdue" targetRef="FinishCheck" />
+      <bpmn:sequenceFlow id="Flow_Audit_Finish_End" sourceRef="FinishCheck" targetRef="EndEvent_Audit" />
+
+      <bpmn:subProcess id="Handler_Audit_Overdue" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Audit_Overdue" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Audit_Overdue" escalationRef="Escalation_Overdue" />
+        </bpmn:startEvent>
+        <bpmn:intermediateThrowEvent id="Relay_Overdue">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Relay_Overdue" escalationRef="Escalation_Overdue" />
+        </bpmn:intermediateThrowEvent>
+        <bpmn:userTask id="Acknowledge" name="Acknowledge the overdue site" />
+        <bpmn:endEvent id="End_Audit_Overdue" />
+        <bpmn:sequenceFlow id="Flow_Audit_Overdue_Relay" sourceRef="Start_Audit_Overdue" targetRef="Relay_Overdue" />
+        <bpmn:sequenceFlow id="Flow_Audit_Overdue_Acknowledge" sourceRef="Relay_Overdue" targetRef="Acknowledge" />
+        <bpmn:sequenceFlow id="Flow_Audit_Overdue_End" sourceRef="Acknowledge" targetRef="End_Audit_Overdue" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:userTask id="CloseAudits" name="Close the audits" />
+    <bpmn:endEvent id="EndEvent_AuditsClosed" />
+
+    <bpmn:subProcess id="Handler_Process_Overdue" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Process_Overdue" isInterrupting="false">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Process_Overdue" escalationRef="Escalation_Overdue" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Reschedule" name="Reschedule the overdue audit" />
+      <bpmn:endEvent id="End_Process_Overdue" />
+      <bpmn:sequenceFlow id="Flow_Process_Overdue_Reschedule" sourceRef="Start_Process_Overdue" targetRef="Reschedule" />
+      <bpmn:sequenceFlow id="Flow_Process_Overdue_End" sourceRef="Reschedule" targetRef="End_Process_Overdue" />
+    </bpmn:subProcess>
+
+    <bpmn:sequenceFlow id="Flow_Start_Audit" sourceRef="StartEvent_AuditsPlanned" targetRef="Audit" />
+    <bpmn:sequenceFlow id="Flow_Audit_Close" sourceRef="Audit" targetRef="CloseAudits" />
+    <bpmn:sequenceFlow id="Flow_Close_End" sourceRef="CloseAudits" targetRef="EndEvent_AuditsClosed" />
+  </bpmn:process>
+</bpmn:definitions>

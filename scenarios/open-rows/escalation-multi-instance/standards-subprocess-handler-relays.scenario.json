@@ -1,0 +1,118 @@
+{
+  "kind": "scenario",
+  "id": "escalation-multi-instance-standards-subprocess-handler-relays",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "escalation-multi-instance-relay-audits-standards",
+    "relativePath": "scenarios/open-rows/escalation-multi-instance/relay-audits-standards.bpmn",
+    "sha256": "ff96caeccf927864d209b5068ff1b623aeaeedeec0042ab8108efb179111a93a",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "sites",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "north",
+              "south"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-check-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Check",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-check-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Check",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-acknowledge-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Acknowledge",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-acknowledge-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Acknowledge",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-finish-check-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FinishCheck",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-finish-check-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FinishCheck",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

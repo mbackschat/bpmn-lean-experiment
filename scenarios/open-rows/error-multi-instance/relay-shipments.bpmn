@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_RelayShipments"
+  targetNamespace="urn:bpmn-lean:scenarios:error-multi-instance:relay">
+  <bpmn:error id="Error_Damaged" name="Damaged" errorCode="DAMAGED" />
+  <bpmn:process id="Process_RelayShipments" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ShipmentsReady" />
+
+    <bpmn:subProcess id="Ship" name="Ship a parcel">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopCardinality>2</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="StartEvent_Ship" />
+      <bpmn:userTask id="Pack" name="Pack the parcel" />
+      <bpmn:endEvent id="Raise_Damaged">
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_Raise_Damaged" errorRef="Error_Damaged" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Ship_Start_Pack" sourceRef="StartEvent_Ship" targetRef="Pack" />
+      <bpmn:sequenceFlow id="Flow_Ship_Pack_Raise" sourceRef="Pack" targetRef="Raise_Damaged" />
+
+      <bpmn:subProcess id="Handler_Ship_Damaged" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Ship_Damaged" isInterrupting="true">
+          <bpmn:errorEventDefinition id="ErrorEventDefinition_Ship_Damaged" errorRef="Error_Damaged" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="InspectDamage" name="Inspect the damage" />
+        <bpmn:endEvent id="Relay_Damaged">
+          <bpmn:errorEventDefinition id="ErrorEventDefinition_Relay_Damaged" errorRef="Error_Damaged" />
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_Ship_Damaged_Inspect" sourceRef="Start_Ship_Damaged" targetRef="InspectDamage" />
+        <bpmn:sequenceFlow id="Flow_Ship_Damaged_Relay" sourceRef="InspectDamage" targetRef="Relay_Damaged" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Ship_Damaged" attachedToRef="Ship" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Boundary_Ship_Damaged" errorRef="Error_Damaged" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ConfirmShipments" name="Confirm the shipments" />
+    <bpmn:userTask id="ResolveDamage" name="Resolve the damaged shipment" />
+    <bpmn:endEvent id="EndEvent_ShipmentsConfirmed" />
+    <bpmn:endEvent id="EndEvent_DamageResolved" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Ship" sourceRef="StartEvent_ShipmentsReady" targetRef="Ship" />
+    <bpmn:sequenceFlow id="Flow_Ship_Confirm" sourceRef="Ship" targetRef="ConfirmShipments" />
+    <bpmn:sequenceFlow id="Flow_Confirm_End" sourceRef="ConfirmShipments" targetRef="EndEvent_ShipmentsConfirmed" />
+    <bpmn:sequenceFlow id="Flow_Damaged_Resolve" sourceRef="Boundary_Ship_Damaged" targetRef="ResolveDamage" />
+    <bpmn:sequenceFlow id="Flow_Resolve_End" sourceRef="ResolveDamage" targetRef="EndEvent_DamageResolved" />
+  </bpmn:process>
+</bpmn:definitions>

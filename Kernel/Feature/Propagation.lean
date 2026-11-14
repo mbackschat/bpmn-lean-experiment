@@ -17,7 +17,9 @@ candidate sets the catch trigger with the lowest `Ctx.catches` precedence wins, 
 exact code is preferred over a catch-all at the same level (CIB `ErrorEventDefinition#getPrecedence`) but never over a
 nearer catcher. The search never passes the scope occurrence of a compensation handler: what reaches it uncaught is
 the handler's outcome. A Multi-Instance instance's scope occurrence offers no boundaries of its own: they belong to the
-body, whose scope occurrence is the next one out (`BpmnParse:3291-3295`, BPMN 2.0.2 §13.5.3).
+body, whose scope occurrence is the next one out (`BpmnParse:3291-3295`, BPMN 2.0.2 §13.5.3). A Sub-Process's Event
+Sub-Processes are offered once, in its instance's scope occurrence, never again in a Multi-Instance instance's or body's
+or a compensation context that wraps it (`wrapsOwnScope`).
 
 A boundary that catches begins its occurrence and leaves on its flows. A Compensation throw and a caught Cancel hand
 their scope occurrence to `Kernel.Feature.Compensation` through `Signal.compensate`, with what follows once its
@@ -90,6 +92,17 @@ def heldOnChain (state : State) (visited : ScopeOccurrenceId) : Nat → ScopeOcc
       if occurrence.parent == some visited then some occurrence
       else occurrence.parent.bind (heldOnChain state visited fuel)
 
+/-- Whether `occurrence` only wraps `held`, the scope occurrence directly inside it on the raise's chain, of its own
+element: a Multi-Instance body's scope occurrence around an instance's, an instance's around the Sub-Process instance's,
+or a compensation handler's context around the handler Sub-Process's. Its element's Event Sub-Processes belong to the
+innermost one, the Sub-Process instance, whose `Scopes.enter` armed them and where the search offered them, or passed
+the one the raise runs in, already: BPMN 2.0.2 §10.3.5 gives each Sub-Process instance its Event Sub-Processes, and CIB's
+finders visit each flow scope once, the Multi-Instance body `#multiInstanceBody` declaring none (#158). A called root
+wraps nothing: its Event Sub-Processes are its called process's, and a recursive Call's root holds a root of the same
+Call. -/
+def wrapsOwnScope (state : State) (occurrence : ScopeOccurrence) (held : Option ScopeOccurrence) : Bool :=
+  held.any (·.element == occurrence.element) && !state.calledRoot occurrence.id
+
 /-- The Event Sub-Processes of `occurrence` that may catch a raise from `origin` (PC-ERROR-02). One the raise
 originates inside is no candidate, so a rethrow passes the handler that runs it, or that an interrupting handler's
 completion is disposing of, to the host's boundaries and outward (BPMN 2.0.2 §13.5.4: "control passes to the boundary
@@ -98,11 +111,13 @@ an Escalation from deeper inside a handler that matches it (`escalation-rethrow-
 with that handler again; and a raise from an interrupting handler that another Event Sub-Process of the same scope would
 catch (`rethrow-caught-by-sibling-handler`), which CIB starts (CIB-DEV-0003). Both are restrictions of the `bpmn-2.0.2`
 meaning, never that meaning: §13.5.4 passes the running handler at any depth and starts no new handler while the parent
-is Failing or Terminating, so both raises would go on outward. -/
+is Failing or Terminating, so both raises would go on outward. A scope occurrence that only wraps one of its own element
+offers none (`wrapsOwnScope`). -/
 def handlerCandidates (ctx : Ctx) (raised : Raised) (origin : Origin) (state : State) (occurrence : ScopeOccurrence) :
     Except Failure (List (ElementId × Subscription × Bool)) :=
-  let handlers := eventSubProcesses ctx state occurrence
   let held := heldOnChain state occurrence.id (state.scopes.length + 1) origin.scope
+  if wrapsOwnScope state occurrence held then .ok [] else
+  let handlers := eventSubProcesses ctx state occurrence
   match held.bind fun held => (handlers.find? (some ·.1 == held.element)).map (held, ·) with
   | none => .ok handlers
   | some (held, (element, start, interrupting)) =>

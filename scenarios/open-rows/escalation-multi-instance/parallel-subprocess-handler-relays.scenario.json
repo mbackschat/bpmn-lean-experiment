@@ -1,0 +1,112 @@
+{
+  "kind": "scenario",
+  "id": "escalation-multi-instance-parallel-subprocess-handler-relays",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "escalation-multi-instance-relay-audits",
+    "relativePath": "scenarios/open-rows/escalation-multi-instance/relay-audits.bpmn",
+    "sha256": "b5a03165eb6888785bd250144dd3840525c3a12603e7b370958b3fd914bea065",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-check-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Check",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-check-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Check",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-acknowledge-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Acknowledge",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-acknowledge-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Acknowledge",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-finish-check-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FinishCheck",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-finish-check-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FinishCheck",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationEventDefinitionFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowEscalationEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

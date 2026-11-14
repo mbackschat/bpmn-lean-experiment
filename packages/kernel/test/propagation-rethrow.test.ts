@@ -5,7 +5,10 @@
  * directly inside it (`EscalationEventDefinitionFinder.java:58-61`), and a deeper Escalation, which CIB would catch
  * with the same handler again, is refused; so is a raise from an interrupting handler that a sibling handler would
  * catch (§13.5.4: "new Event Handlers MUST NOT be started"; CIB-DEV-0003). The host is the Sub-Process `T`, whose
- * boundary `B` leads to the User Task `W`; each program runs to its first wait on `start`.
+ * boundary `B` leads to the User Task `W`; each program runs to its first wait on `start`. A Multi-Instance `T` offers its
+ * handlers once per instance, in the Sub-Process instance's scope occurrence, never again in the instance's or the
+ * body's that wrap it, and a compensation handler Sub-Process offers its own once, never again in the compensation
+ * context that wraps it (#158).
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -13,10 +16,11 @@ import { test } from "node:test";
 import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
 
 import {
-  activity, append, base, boundary, end, errorTrigger, escalationTrigger, eventSubProcess, flow, scope, start, task, userWork, withFlows,
-  withOptions, wired,
+  activity, append, base, boundary, end, errorTrigger, escalationTrigger, eventSubProcess, flow, literalValue, loop, scope, start, task,
+  userWork, withFlows, withOptions, wired,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
+import { chain, compensateAll, complete, drive, handlerScope, parts, userTask, waiting } from "./compensation-support.ts";
 
 const raiseError = (code: string): Json => ({ error: { payload: { code, message: null } } });
 const raiseEscalation = (code: string): Json => ({ escalation: { payload: { code } } });
@@ -36,11 +40,12 @@ const handler = (id: string, trigger: Json, interrupting: boolean): Json[] => [
 ];
 
 /**
- * `T` runs `PS -> body` and carries the boundary `B` on `caught`; `elements` and `flows` add its handlers. Interrupting
- * Event Sub-Processes are an abnormal scope end, which the profile completing normally admits.
+ * `T` runs `PS -> body` and carries the boundary `B` on `caught`; `elements` and `flows` add its handlers, `multiInstance`
+ * its loop and `boundaryOver` the boundary's fields. Interrupting Event Sub-Processes are an abnormal scope end, which the
+ * profile completing normally admits.
  */
-function hosted(caught: Json, body: Json, elements: Json[], flows: Json[]): Json {
-  const host = scope("T", "embedded", {}, { boundaries: [boundary("B", caught)] });
+function hosted(caught: Json, body: Json, elements: Json[], flows: Json[], multiInstance: Json | null = null, boundaryOver: Json = {}): Json {
+  const host = scope("T", "embedded", {}, { boundaries: [boundary("B", caught, boundaryOver)], multiInstance });
   const json = append(task(host)(base()), start("PS", null, [], "T"), body, activity("W", userWork()), ...elements);
   return withOptions(withFlows(json, flow("fb", "B", "W"), flow("fw", "W", "E"), ...flows), { abnormalScopeEnd: "completesNormally" });
 }
@@ -55,6 +60,21 @@ function run(json: Json) {
   const decoded = decodeProgram(wired(json));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   return step(decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }));
+}
+
+/** The open items, by element, after `start` and then the completion of each User Task activation in `completions`. */
+function openAfterCompleting(json: Json, completions: ReadonlyArray<readonly [string, number]>): string[] {
+  const decoded = decodeProgram(wired(json));
+  assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
+  let outcome = step(decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }));
+  for (const [elementId, activation] of completions) {
+    assert.ok(outcome.ok, JSON.stringify(outcome));
+    outcome = step(decoded.value, outcome.value, stimulus({
+      kind: "command", occurrence: { processInstanceId: "I", elementId, activation }, action: { kind: "completeUserTask", values: [] },
+    }));
+  }
+  assert.ok(outcome.ok, JSON.stringify(outcome));
+  return outcome.value.openItems.map((item) => item.element).sort();
 }
 
 function openAfter(json: Json): string[] {
@@ -122,4 +142,38 @@ test("an Escalation raised deeper inside a handler that matches it is refused", 
   ];
   const flows = [flow("h1", "HS", "HN"), flow("h2", "HN", "HE"), flow("hn1", "HNS", "HNE")];
   assert.equal(refusedWith(escalatingHost(elements, flows)), "escalation-rethrow-reenters-handler");
+});
+
+/** A parallel loop of two instances, counted by its cardinality. */
+const twice = loop({ count: { cardinality: { count: literalValue({ kind: "integer", value: 2 }) } }, inputDataItem: null, outputDataItem: null });
+
+test("an Error an instance's handler rethrows passes the Multi-Instance scope occurrences to the host's boundary", () => {
+  const elements = [...handler("H", raw, true), activity("HW", userWork(), {}, "H"), end("HE", raiseError("RAW"), "H")];
+  const json = hosted(raw, failing, elements, [intoFailing, flow("h1", "HS", "HW"), flow("h2", "HW", "HE")], twice);
+  assert.deepEqual(openAfterCompleting(json, []), ["HW", "HW"]);
+  assert.deepEqual(openAfterCompleting(json, [["HW", 1]]), ["W"]);
+});
+
+test("an Escalation an instance's non-interrupting handler rethrows runs that handler once per instance", () => {
+  const elements = [
+    ...handler("H", overrun, false), throwing("HX", raiseEscalation("X"), "H"), activity("HW", userWork(), {}, "H"), end("HE", "none", "H"),
+  ];
+  const flows = [flow("h1", "HS", "HX"), flow("h2", "HX", "HW"), flow("h3", "HW", "HE")];
+  const [first, ...rest] = escalating;
+  const json = hosted(overrun, first, [...rest, ...elements], [...escalatingFlows, ...flows], twice, { interrupting: false });
+  assert.deepEqual(openAfterCompleting(json, []), ["HW", "HW", "PW", "PW", "W", "W"]);
+});
+
+test("an Escalation a compensation handler Sub-Process's own handler relays passes the handler's context once", () => {
+  const relay = parts({
+    elements: [
+      scope("HL", eventSubProcess(overrun, false), {}, {}, "H"), start("HLS", overrun, [], "HL"),
+      throwing("HLX", raiseEscalation("X"), "HL"), userTask("HLN", null, "HL"), end("HLE", "none", "HL"),
+      scope("R", eventSubProcess(overrun, false)), start("RS", overrun, [], "R"), userTask("RW", null, "R"), end("RE", "none", "R"),
+    ],
+    flows: [flow("hl1", "HLS", "HLX"), flow("hl2", "HLX", "HLN"), flow("hl3", "HLN", "HLE"), flow("r1", "RS", "RW"), flow("r2", "RW", "RE")],
+  });
+  const undo = handlerScope("H", [userTask("HR", null, "H"), throwing("HX", raiseEscalation("X"), "H"), userTask("HC", null, "H")]);
+  const program = chain([userTask("U", "H")], compensateAll, parts(undo, relay), { compensationHandlerFailure: "propagatesFromTrigger" });
+  assert.deepEqual(waiting(drive(program, complete("U"), complete("HR"))), ["HC", "HLN", "RW"]);
 });
