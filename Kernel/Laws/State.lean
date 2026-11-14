@@ -423,7 +423,8 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
   occurrencesCounted := by simp [OccurrencesCounted, State.initial]
   ownedBelow := by simp [OwnedBelow, State.initial]
   claimed := ⟨by simp [State.initial], by simp [Queued, State.initial], by simp [Precedes, State.initial],
-    by simp [Precedes, State.initial], by simp [State.initial], by simp [Queued, State.initial]⟩
+    by simp [Precedes, State.initial], by simp [State.initial], by simp [Queued, State.initial],
+    by simp [Queued, State.initial]⟩
   settled := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial]⟩
 
 /-- The fresh instance's root was issued. -/

@@ -376,7 +376,14 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       signalsApart := by simpa [begins.signals] using formed.claimed.signalsApart
       tokensApart := by simpa [begins.tokens] using formed.claimed.tokensApart
       queuesApart := by simpa [begins.signals, begins.tokens] using formed.claimed.queuesApart
-      uncompleted := by simpa [Queued, begins.signals, begins.tokens] using formed.claimed.uncompleted }
+      uncompleted := by simpa [Queued, begins.signals, begins.tokens] using formed.claimed.uncompleted
+      scopesIssued := fun other queued => by
+        have := formed.claimed.scopesIssued other (by simpa [Queued, begins.signals, begins.tokens] using queued)
+        rcases begins.source with ⟨_, reservation⟩ | fresh
+        · have := reservation.nextIssue
+          omega
+        · have := fresh.nextIssue
+          omega }
   case settled =>
     have later : before.nextIssue ≤ after.nextIssue := by
       rcases begins.source with ⟨_, reservation⟩ | fresh
@@ -605,7 +612,10 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       tokensApart := by simpa [reserves.tokens] using formed.claimed.tokensApart
       queuesApart := by simpa [reserves.signals, reserves.tokens] using formed.claimed.queuesApart
       uncompleted := fun request id leave writes rule queued =>
-        reserves.signals ▸ formed.claimed.uncompleted request id leave writes rule (queuedBefore request queued) }
+        reserves.signals ▸ formed.claimed.uncompleted request id leave writes rule (queuedBefore request queued)
+      scopesIssued := fun request queued => by
+        have := formed.claimed.scopesIssued request (queuedBefore request queued)
+        omega }
   case settled =>
     exact formed.settled.transport (.same reserves.slots) (by omega)
       (fun found inside _ => by
@@ -806,7 +816,8 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
       tokensApart := by simpa [starts_.tokens] using formed.claimed.tokensApart
       queuesApart := by simpa [starts_.signals, starts_.tokens] using formed.claimed.queuesApart
       uncompleted := fun request id leave writes rule queued =>
-        starts_.signals ▸ formed.claimed.uncompleted request id leave writes rule (queuedBefore request queued) }
+        starts_.signals ▸ formed.claimed.uncompleted request id leave writes rule (queuedBefore request queued)
+      scopesIssued := fun request queued => issued ▸ formed.claimed.scopesIssued request (queuedBefore request queued) }
   case settled =>
     exact formed.settled.transport (.same starts_.slots) (Nat.le_of_eq issued.symm)
       (fun found inside unbegun => by

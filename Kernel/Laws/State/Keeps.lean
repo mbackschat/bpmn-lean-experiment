@@ -232,7 +232,8 @@ theorem rekind_wellFormed {s : State} (formed : WellFormed s) {change : OpenItem
     exact formed.occurrencesCounted
   case claimed =>
     refine ⟨fun item member attached reserved other inside same => ?_, fun request queued => ?_,
-      formed.claimed.signalsApart, formed.claimed.tokensApart, formed.claimed.queuesApart, formed.claimed.uncompleted⟩
+      formed.claimed.signalsApart, formed.claimed.tokensApart, formed.claimed.queuesApart, formed.claimed.uncompleted,
+      formed.claimed.scopesIssued⟩
     · obtain ⟨old, oldInside, rfl⟩ := back item member
       obtain ⟨oldOther, otherInside, rfl⟩ := back other inside
       rw [kept old] at attached same reserved
@@ -406,7 +407,8 @@ theorem signal_claimed {s : State} {signal : Signal} (formed : WellFormed s)
     fun first second queued token => formed.claimed.queuesApart first second (old first queued) token,
     fun request id leave writes rule queued named completed => formed.claimed.uncompleted request id leave writes rule
       (queuedOld request queued) named ((List.mem_append.mp completed).resolve_right fun new =>
-        completes id leave writes rule (List.mem_singleton.mp new).symm request (queuedOld request queued) named)⟩
+        completes id leave writes rule (List.mem_singleton.mp new).symm request (queuedOld request queued) named),
+    fun request queued => formed.claimed.scopesIssued request (queuedOld request queued)⟩
 
 /-- No queued begin names a begun occurrence that stands: what a queued begin names is unbegun while it stands. -/
 theorem begun_unnamed {s : State} (formed : WellFormed s) {occurrence : Occurrence} (member : occurrence ∈ s.occurrences)
@@ -490,7 +492,8 @@ theorem addItem_wellFormed {s : State} (formed : WellFormed s) {item : OpenItem}
       Within.congr (s := s) (t := { s with openItems := s.openItems ++ [item] }) rfl (formed.rooted.2.2 scope inside)⟩
   case claimed =>
     refine ⟨fun found inside attached reserved other held same => ?_, fun request queued => ?_,
-      formed.claimed.signalsApart, formed.claimed.tokensApart, formed.claimed.queuesApart, formed.claimed.uncompleted⟩
+      formed.claimed.signalsApart, formed.claimed.tokensApart, formed.claimed.queuesApart, formed.claimed.uncompleted,
+      formed.claimed.scopesIssued⟩
     · obtain ⟨occurrence, present, named, unbegun⟩ := reserved
       exact Classical.byContradiction fun differ =>
         shared found inside other held (Ne.symm differ) same.symm occurrence present named unbegun attached
@@ -632,7 +635,8 @@ theorem emit_wellFormed {s : State} (formed : WellFormed s) (flows : List FlowId
     formed.claimed.signalsApart, fun first second pair => formed.claimed.tokensApart first second ?_,
     fun first second signal token => formed.claimed.queuesApart first second signal (old second token),
     fun request id leave writes rule queued named completed =>
-      formed.claimed.uncompleted request id leave writes rule (queuedOld request queued) named completed⟩,
+      formed.claimed.uncompleted request id leave writes rule (queuedOld request queued) named completed,
+    fun request queued => formed.claimed.scopesIssued request (queuedOld request queued)⟩,
     formed.settled.transport (.same rfl) (Nat.le_refl _) (fun _ member _ => .inl member) queuedOld
       (fun _ member => member)⟩
   · rcases List.mem_append.mp member with old | new

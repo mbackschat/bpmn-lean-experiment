@@ -57,6 +57,7 @@ theorem ReservationsClaimed.shrink {before after : State} (claimed : Reservation
     claimed.queuesApart first second (signals.subset signal) (tokens.subset token)
   uncompleted request id leave writes rule queued named completed :=
     claimed.uncompleted request id leave writes rule (queued.shrink signals tokens) named (signals.subset completed)
+  scopesIssued request queued := Nat.lt_of_lt_of_le (claimed.scopesIssued request (queued.shrink signals tokens)) issued
 
 /-- `after`'s slots hold no join wait, Multi-Instance body or compensation run `before`'s do not. -/
 structure SlotsWithin (before after : State) : Prop where

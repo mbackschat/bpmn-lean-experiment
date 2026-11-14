@@ -67,7 +67,7 @@ theorem sample_wellFormed (kind : OpenKind) : WellFormed (sample kind) where
     rintro scope (rfl | rfl) occurrence (rfl | rfl | rfl) owner <;>
       simp_all [rootScope, childScope, subProcess, innerTask, outerTask]
   claimed := ⟨by simp [sample, innerItem, outerItem], by simp [Queued, sample], by simp [Precedes, sample],
-    by simp [Precedes, sample], by simp [sample], by simp [Queued, sample]⟩
+    by simp [Precedes, sample], by simp [sample], by simp [Queued, sample], by simp [Queued, sample]⟩
   settled := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample]⟩
 
 /-- A start fact carrying the armed reservation's key breaks `ReservationsUnstarted`. -/

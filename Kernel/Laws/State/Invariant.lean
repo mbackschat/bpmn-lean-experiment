@@ -237,6 +237,9 @@ structure ReservationsClaimed (s : State) : Prop where
     ∀ id ∈ names first, id ∉ names second
   uncompleted : ∀ request id leave writes rule, Queued s request → id ∈ names request →
     Signal.complete id leave writes rule ∉ s.signals
+  /-- A queued begin names an issued scope occurrence, so a scope occurrence entered later is never the one it
+  begins in. -/
+  scopesIssued : ∀ request, Queued s request → request.scope.value < s.nextIssue
 
 /-! ## What the slots complete -/
 
