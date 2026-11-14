@@ -104,6 +104,7 @@ public import Kernel.Proofs.Compensation
 public import Kernel.Proofs.Concurrency
 public import Kernel.Proofs.Former
 public import Kernel.Proofs.MultiInstance
+public import Kernel.Proofs.MultiInstance.Hooks
 public import Kernel.Proofs.State
 public import Kernel.Proofs.Step
 public import Kernel.Proofs.Step.Contract

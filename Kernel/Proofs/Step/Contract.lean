@@ -10,7 +10,7 @@ public import Kernel.Laws.Data
 public import Kernel.Laws.Work
 public import Kernel.Laws.Compensation
 public import Kernel.Laws.Propagation
-public import Kernel.Laws.MultiInstance
+public import Kernel.Proofs.MultiInstance.Hooks
 
 /-! # Proofs: the registered hooks' contract
 
@@ -170,7 +170,7 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
     exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted role ran
   arriveMultiInstance _ _ _ _ _ _ _ holds member begun ran := by
     rw [Laws.Registry.hooks_arriveMultiInstance] at ran
-    exact Laws.MultiInstance.arriveMultiInstance_keeps (ops.multiInstance _) holds member begun ran
+    exact Proofs.MultiInstance.arriveMultiInstance_keeps (ops.multiInstance _) holds member begun ran
   arriveScope _ _ _ _ _ _ _ holds member begun ready ran := by
     rw [Laws.Registry.hooks_arriveScope] at ran
     exact Laws.Scopes.arriveScope_keeps (ops.scopes _) holds member begun ready ran
@@ -251,8 +251,8 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
   instanceCompleted _ _ _ _ _ _ holds stands ran := by
     rw [Laws.Registry.hooks_instanceCompleted] at ran
     obtain ⟨entry, inside, named⟩ := stands
-    exact Laws.MultiInstance.instanceCompleted_keeps (ops.multiInstance _) holds (List.mem_map.mpr ⟨entry, inside, named⟩)
-      ran
+    exact Proofs.MultiInstance.instanceCompleted_keeps (ops.multiInstance _) holds
+      (List.mem_map.mpr ⟨entry, inside, named⟩) ran
   handlerCompleted _ _ _ _ _ holds stands ran := by
     rw [Laws.Registry.hooks_handlerCompleted] at ran
     obtain ⟨entry, inside, named⟩ := stands

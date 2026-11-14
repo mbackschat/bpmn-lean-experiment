@@ -139,14 +139,18 @@ def OutputsNamed (program : Program) (loop : MultiInstance) : Prop :=
 `loopCounter` (CIB-INT-0018, `MultiInstanceActivityBehavior:76-78`): stated of `Hooks.arriveMultiInstance`, which
 enters a body's first instances, and of `Hooks.instanceCompleted`, which enters a sequential body's next one or, under
 `declarationDepthFirst`, a parallel body's next deferred one, for every slot whose scope occurrence the hook issued
-(`SlotsCounted`). It replaces a state clause, which a write admission cannot see breaks (`CountersRead`). -/
+(`SlotsCounted`). It replaces a state clause, which a write admission cannot see breaks (`CountersRead`). Each hook
+is taken where `Step` calls it (`Laws.Step.HookContract`): on a begun occurrence of the state, and for an instance whose
+scope occurrence stands. -/
 def CountersEntered (hooks : Hooks) : Prop :=
   (∀ (ctx : Ctx) (header : Header) (envelope : Envelope) (loop : MultiInstance) (occurrence : Occurrence)
       (state after : State),
-      WellFormed ctx.program state → ctx.program.options.multiInstanceCounters = .cibLocals → ItemApart loop →
+      WellFormed ctx.program state → occurrence ∈ state.occurrences → occurrence.begun = true →
+      ctx.program.options.multiInstanceCounters = .cibLocals → ItemApart loop →
       hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after → SlotsCounted state after) ∧
     ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State),
-      WellFormed ctx.program state → ctx.program.options.multiInstanceCounters = .cibLocals →
+      WellFormed ctx.program state → occurrence.scope ∈ scopeIds state →
+      ctx.program.options.multiInstanceCounters = .cibLocals →
       (∀ element loop, LoopOf ctx.program element loop → ItemApart loop) →
       hooks.instanceCompleted ctx body occurrence writes state = .ok after → SlotsCounted state after
 

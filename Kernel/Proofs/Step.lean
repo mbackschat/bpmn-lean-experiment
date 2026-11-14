@@ -16,6 +16,7 @@ public import Kernel.Proofs.State
 public import Kernel.Proofs.Step.Queue
 public import Kernel.Proofs.Step.Contract
 public import Kernel.Proofs.Cancellation.Registered
+public import Kernel.Proofs.MultiInstance
 
 /-! # Proofs: composition over the registered hooks
 
@@ -511,5 +512,33 @@ theorem registered_subtreeRemoved : Cancellation.SubtreeRemoved Registry.hooks :
 journal. -/
 theorem registered_removedEndOnce : Cancellation.RemovedEndOnce Registry.hooks :=
   Cancellation.removedEndOnce_registered registeredOps_wellFormed phases pipelinePhases
+
+/-! ## The Multi-Instance lane
+
+`Kernel.Proofs.MultiInstance.Hooks` proves what the lane's hooks enter through `Laws.MultiInstance.MultiInstanceOps`,
+which this module fills for `Laws.State.WellFormed`. -/
+
+/-- Under `cibLocals` the registered hooks enter each instance holding its `loopCounter`. -/
+theorem registered_countersEntered : MultiInstance.CountersEntered Registry.hooks := by
+  refine ⟨fun ctx _ _ loop _ state _ formed member begun cib apart ran => ?_,
+    fun ctx _ _ _ state _ formed stands cib apart ran => ?_⟩
+  · rw [Laws.Registry.hooks_arriveMultiInstance] at ran
+    rcases MultiInstance.arriveMultiInstance_counted multiInstanceOps formed member begun cib
+      (Laws.MultiInstance.itemName_ne apart.1 apart.2.1 apart.2.2) ran with ⟨held, same⟩ | counted
+    · subst same
+      exact MultiInstance.nothingCounted multiInstanceOps (multiInstanceOps.hold _ _ formed)
+        (by rw [Laws.Hooks.hold_eq]; exact Nat.le_refl _)
+    · exact counted
+  · rw [Laws.Registry.hooks_instanceCompleted] at ran
+    exact MultiInstance.instanceCompleted_counted multiInstanceOps formed stands cib
+      (fun _ _ looped => Laws.MultiInstance.itemName_ne (apart _ _ looped).1 (apart _ _ looped).2.1
+        (apart _ _ looped).2.2) ran
+
+/-- A committed registered instance completion found CIB's counters held under `cibLocals`. -/
+theorem registered_countersRead : MultiInstance.CountersRead Registry.hooks :=
+  fun _ _ _ _ _ _ _ _ _ formed cib ran member owns looped slot => by
+    rw [Laws.Registry.hooks_instanceCompleted] at ran
+    exact Laws.MultiInstance.instanceCompleted_countersHeld formed.keyed (formed.formed _ member).owned cib ran member
+      owns looped slot
 
 end Kernel.Proofs.Step
