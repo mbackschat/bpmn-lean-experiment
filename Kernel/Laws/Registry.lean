@@ -114,6 +114,10 @@ theorem hooks_arriveActivity : Registry.hooks.arriveActivity = Feature.Work.arri
 theorem hooks_arriveMultiInstance : Registry.hooks.arriveMultiInstance = Feature.MultiInstance.arriveMultiInstance := by
   simp only [Registry.hooks]
 
+/-- Multi-Instance records every instance's completion. -/
+theorem hooks_instanceCompleted : Registry.hooks.instanceCompleted = Feature.MultiInstance.instanceCompleted := by
+  simp only [Registry.hooks]
+
 /-- Data applies every write. -/
 theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOutputs := by
   simp only [Registry.hooks]

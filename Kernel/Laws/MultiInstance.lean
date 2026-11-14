@@ -360,7 +360,14 @@ structure MultiInstanceOps (inv : State → Prop) (settled : State → Nat → P
     inv (state.deferBegins requests) ∧ ∀ id, settled state id → settled (state.deferBegins requests) id
   runs : ∀ state runs, inv state → (∀ run ∈ runs, run ∈ state.slots.multiInstances ∨
       settled state run.occurrence ∧ Laws.State.Placed state run) →
-    inv { state with slots := { state.slots with multiInstances := runs } }
+    inv { state with slots := { state.slots with multiInstances := runs } } ∧
+      ∀ id, settled state id → settled { state with slots := { state.slots with multiInstances := runs } } id
+  /-- An instance's scope occurrence left, which keeps the body's standing. -/
+  leave : ∀ state run scope, inv state → run ∈ state.slots.multiInstances → Iteration.active scope ∈ run.instances →
+    scope ∈ Laws.State.scopeIds state → inv (state.leaveScope scope) ∧ settled (state.leaveScope scope) run.occurrence ∧
+      run.scope ∈ Laws.State.scopeIds (state.leaveScope scope) ∧ Laws.State.Placed (state.leaveScope scope) run
+  write : ∀ state scope writes rule, inv state → inv (state.signal (.write scope writes rule)) ∧
+    ∀ id, settled state id → settled (state.signal (.write scope writes rule)) id
 
 /-- `Hooks.completeBody` keeps `inv`: an idle body completes its run's occurrence. -/
 theorem completeBody_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : MultiInstanceOps inv settled)
@@ -479,7 +486,7 @@ theorem beginInstances_keeps {inv : State → Prop} {settled : State → Nat →
   obtain ⟨holds, carried, _, rest⟩ := queueInstances_keeps (ctx := ctx) (mode := loop.mode) ops done
   have placed := rest.1
   unfold Feature.MultiInstance.setRun
-  refine ops.runs _ _ holds fun other inside => ?_
+  refine (ops.runs _ _ holds fun other inside => ?_).1
   dsimp only at inside
   split at inside
   · obtain ⟨found, kept, rfl⟩ := List.mem_map.mp inside
@@ -541,5 +548,95 @@ theorem arriveMultiInstance_keeps {inv : State → Prop} {settled : State → Na
       exact ops.complete _ _ _ _ _ holds (ops.begun _ _ holds member begun)
     · cases ran
       exact enterBody_keeps ops holds member begun _ _ _ _ _ fun _ active => by simp at active
+
+/-- An instance's completion, leaving its scope occurrence and recording its slot, keeps what the body keeps while it
+enters, whatever its slot now records. -/
+theorem left_entering {inv : State → Prop} {settled : State → Nat → Prop} (ops : MultiInstanceOps inv settled)
+    {run next : MultiInstanceRun} {scope : ScopeOccurrenceId} {state : State} (holds : inv state)
+    (member : run ∈ state.slots.multiInstances) (active : Iteration.active scope ∈ run.instances)
+    (stands : scope ∈ Laws.State.scopeIds state) (occurrence : next.occurrence = run.occurrence)
+    (body : next.scope = run.scope) (fewer : ∀ inner, Iteration.active inner ∈ next.instances →
+      Iteration.active inner ∈ run.instances) :
+    Entering inv settled next (Feature.MultiInstance.setRun (state.leaveScope scope) next) next.instances [] := by
+  obtain ⟨left, carried, standing, placed⟩ := ops.leave state run scope holds member active stands
+  have placedNext : Laws.State.Placed (state.leaveScope scope) next := fun inner inside => by
+    rw [body]
+    exact placed inner (fewer inner inside)
+  obtain ⟨recorded, carry⟩ := ops.runs (state.leaveScope scope)
+    (Feature.MultiInstance.setRun (state.leaveScope scope) next).slots.multiInstances left fun other inside => by
+      unfold Feature.MultiInstance.setRun at inside
+      dsimp only at inside
+      split at inside
+      · obtain ⟨found, kept, rfl⟩ := List.mem_map.mp inside
+        split
+        · exact .inr ⟨occurrence ▸ carried, placedNext⟩
+        · exact .inl kept
+      · rcases List.mem_append.mp inside with old | new
+        · exact .inl old
+        · rw [List.mem_singleton.mp new]
+          exact .inr ⟨occurrence ▸ carried, placedNext⟩
+  exact ⟨recorded, carry _ (occurrence ▸ carried), body ▸ standing, placedNext, fun _ none => by cases none⟩
+
+/-- Writing the body's counters keeps what the body keeps while it enters. -/
+theorem written_entering {inv : State → Prop} {settled : State → Nat → Prop} (ops : MultiInstanceOps inv settled)
+    {run : MultiInstanceRun} {state : State} (entering : Entering inv settled run state run.instances [])
+    (scope : ScopeOccurrenceId) (writes : List (String × Value)) (rule : WriteRule) :
+    Entering inv settled run (state.signal (.write scope writes rule)) run.instances [] := by
+  obtain ⟨written, carry⟩ := ops.write state scope writes rule entering.1
+  exact entering.frame written (carry _ entering.2.1) (by rw [Laws.State.signal_eq]) (by rw [Laws.State.signal_eq])
+
+/-- A body whose instances are done completes its occurrence. -/
+theorem finish_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : MultiInstanceOps inv settled)
+    {ctx : Ctx} {loop : MultiInstance} {run : MultiInstanceRun} {state : State}
+    (entering : Entering inv settled run state run.instances []) :
+    inv (Feature.MultiInstance.finish ctx loop run state) := by
+  unfold Feature.MultiInstance.finish
+  exact ops.complete _ _ _ _ _ entering.1 entering.2.1
+
+/-- `Hooks.instanceCompleted` keeps `inv` for an instance in a scope occurrence that stands: it leaves the instance's
+scope occurrence and records its slot, then completes the body or begins the next instances. -/
+theorem instanceCompleted_keeps {inv : State → Prop} {settled : State → Nat → Prop}
+    (ops : MultiInstanceOps inv settled) {ctx : Ctx} {body : Nat} {occurrence : Occurrence}
+    {writes : List (String × Value)} {state after : State} (holds : inv state)
+    (stands : occurrence.scope ∈ Laws.State.scopeIds state)
+    (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) : inv after := by
+  unfold Feature.MultiInstance.instanceCompleted at ran
+  simp only [bind, Except.bind] at ran
+  cases found : Feature.MultiInstance.runOf? state body with
+  | none => rw [found] at ran; cases ran
+  | some run =>
+  rw [found] at ran
+  dsimp only at ran
+  have member : run ∈ state.slots.multiInstances := by
+    unfold Feature.MultiInstance.runOf? at found
+    exact List.mem_of_find?_eq_some found
+  cases looped : Feature.MultiInstance.loopOf? ctx run with
+  | none => rw [looped] at ran; cases ran
+  | some loop =>
+  rw [looped] at ran
+  dsimp only at ran
+  split at ran
+  rotate_left
+  · cases ran
+  rename_i index indexed
+  have active : Iteration.active occurrence.scope ∈ run.instances := by
+    obtain ⟨bound, matched, _⟩ := List.findIdx?_eq_some_iff_getElem.mp indexed
+    have inside := List.getElem_mem bound
+    generalize run.instances[index] = slot at matched inside
+    cases slot <;> simp_all
+  have recorded : ∀ {next : MultiInstanceRun}, next.occurrence = run.occurrence → next.scope = run.scope →
+      (∀ inner, Iteration.active inner ∈ next.instances → Iteration.active inner ∈ run.instances) →
+      Entering inv settled next (Feature.MultiInstance.setRun (state.leaveScope occurrence.scope) next) next.instances [] :=
+    fun occurrence body fewer => left_entering ops holds member active stands occurrence body fewer
+  have fewer : ∀ (output : Option Value) inner, Iteration.active inner ∈ run.instances.set index (.completed output) →
+      Iteration.active inner ∈ run.instances := fun _ _ inside =>
+    (List.mem_or_eq_of_mem_set inside).resolve_right (by simp)
+  repeat' split at ran
+  all_goals first
+    | (cases ran; done)
+    | (cases ran; exact finish_keeps ops (recorded (by rfl) (by rfl) (fewer _)))
+    | (cases ran; exact finish_keeps ops (written_entering ops (recorded (by rfl) (by rfl) (fewer _)) _ _ _))
+    | (cases ran; exact beginInstances_keeps ops (recorded (by rfl) (by rfl) (fewer _)))
+    | (cases ran; exact beginInstances_keeps ops (written_entering ops (recorded (by rfl) (by rfl) (fewer _)) _ _ _))
 
 end Kernel.Laws.MultiInstance

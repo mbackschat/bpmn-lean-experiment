@@ -63,6 +63,29 @@ theorem leaveScope_left {s : State} (formed : WellFormed s) {scope : ScopeOccurr
       (List.mem_map.mpr ⟨entry, old, rfl⟩) fun above upper within => (scopes above).mpr ⟨upper, fun inner => ?_⟩
     exact outside (within.trans inner)
 
+/-- A scope occurrence with a depth stands. -/
+theorem Depth.present {s : State} (formed : WellFormed s) {scope : ScopeOccurrenceId} {n : Nat} (depth : Depth s scope n) :
+    scope ∈ scopeIds s := by
+  cases depth with
+  | root => exact formed.rooted.1
+  | child child _ _ member => exact List.mem_map.mpr ⟨child, member, rfl⟩
+
+/-- Leaving a scope occurrence that has a parent keeps a state well-formed and its parent standing. -/
+theorem leaveChild_wellFormed {s : State} (formed : WellFormed s) {child : ScopeOccurrence} (member : child ∈ s.scopes)
+    {parent : ScopeOccurrenceId} (link : child.parent = some parent) :
+    WellFormed (s.leaveScope child.id) ∧ parent ∈ scopeIds (s.leaveScope child.id) ∧
+      Left s (s.leaveScope child.id) child.id := by
+  have present : child.id ∈ scopeIds s := List.mem_map.mpr ⟨child, member, rfl⟩
+  have notRoot : child.id ≠ State.root := fun same => by
+    have := (formed.rooted.2.1 child member).mpr same
+    simp [this] at link
+  have left := leaveScope_left formed present
+  obtain ⟨n, depth⟩ := (formed.rooted.2.2 child member).depth
+  obtain ⟨_, _, parentDepth⟩ := Depth.parent formed member link depth
+  obtain ⟨entry, inside, named⟩ := List.mem_map.mp (parentDepth.present formed)
+  refine ⟨left.wellFormed formed present notRoot, List.mem_map.mpr ⟨entry, (left.scopes entry).mpr
+    ⟨inside, fun within => parent_not_within formed member link (named ▸ within)⟩, named⟩, left⟩
+
 /-- Two scope occurrences below one parent lie outside each other. -/
 private theorem sibling_outside {s : State} (formed : WellFormed s) {first second : ScopeOccurrence}
     {parent : ScopeOccurrenceId} (one : first ∈ s.scopes) (two : second ∈ s.scopes) (firstLink : first.parent = some parent)

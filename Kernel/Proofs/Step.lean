@@ -365,9 +365,22 @@ theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps Laws.State.WellFo
   begin _ _ formed bare stands := ⟨bareBegin_wellFormed formed bare stands, fun _ settled => settled.begin bare⟩
   defer _ _ formed bare := ⟨Laws.State.deferBegins_wellFormed formed bare,
     fun _ settled => settled.defer fun request member => (bare request member).1⟩
-  runs _ _ formed kept := Laws.State.slots_wellFormed formed ⟨formed.settled.parked,
+  runs _ _ formed kept := ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked,
     fun run member => (kept run member).elim (formed.settled.bodies run) (·.1), formed.settled.resumed,
-    formed.settled.queued, fun run member => (kept run member).elim (formed.settled.placed run) (·.2)⟩
+    formed.settled.queued, fun run member => (kept run member).elim (formed.settled.placed run) (·.2)⟩,
+    fun _ settled => settled⟩
+  leave _ run _ formed member active stands := by
+    obtain ⟨below, parentOf⟩ := formed.settled.placed run member _ active
+    obtain ⟨entry, inside, named⟩ := List.mem_map.mp stands
+    subst named
+    obtain ⟨left, standing, frame⟩ := Laws.State.leaveChild_wellFormed formed inside (parentOf entry inside rfl)
+    exact ⟨left, (formed.settled.bodies run member).transport (Nat.le_of_eq frame.nextIssue.symm)
+      (fun _ present _ => .inl (frame.occurrencesSublist.subset present))
+      (fun _ queued => queued.shrink (by rw [frame.signals]; exact .refl _) frame.tokensSublist), standing,
+      (formed.settled.placed run member).transport (Nat.le_of_eq frame.nextIssue.symm)
+        fun _ present => .inl (frame.scopesSublist.subset present)⟩
+  write _ scope writes rule formed :=
+    ⟨queueWrite_wellFormed formed scope writes rule, fun _ settled => settled.signal fun _ same => by simp at same⟩
 
 /-- Starts' operations record (`Laws.Starts.StartsOps`) of `WellFormed`. -/
 theorem startsOps : Laws.Starts.StartsOps Laws.State.WellFormed where
@@ -607,6 +620,15 @@ theorem registered_arriveMultiInstance : ∀ ctx header envelope loop occurrence
   intro _ _ _ _ _ _ _ formed member begun ran
   rw [Laws.Registry.hooks_arriveMultiInstance] at ran
   exact Laws.MultiInstance.arriveMultiInstance_keeps multiInstanceOps formed member begun ran
+
+/-- `HookContract.instanceCompleted` of the registered hooks. -/
+theorem registered_instanceCompleted : ∀ ctx body occurrence writes state after, Laws.State.WellFormed state →
+    Laws.Step.ScopeStands state occurrence.scope →
+    Registry.hooks.instanceCompleted ctx body occurrence writes state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ formed stands ran
+  rw [Laws.Registry.hooks_instanceCompleted] at ran
+  obtain ⟨entry, inside, named⟩ := stands
+  exact Laws.MultiInstance.instanceCompleted_keeps multiInstanceOps formed (List.mem_map.mpr ⟨entry, inside, named⟩) ran
 
 /-- `HookContract.completeBody` of the registered hooks. -/
 theorem registered_completeBody : ∀ ctx header envelope loop occurrence state after, Laws.State.WellFormed state →
