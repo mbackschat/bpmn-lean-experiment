@@ -2,6 +2,7 @@ module
 
 public import Kernel.Laws.Step
 public import Kernel.Laws.Step.Keeps
+public import Kernel.Laws.Step.Ends
 public import Kernel.Laws.Scopes
 
 /-! # Proofs: cancellation (P3)
@@ -18,10 +19,10 @@ that no `Laws` module states yet is an explicit premise named as a pending lemma
 of the lane statement; the root replaces it with the lemma once that lands. Subtree removal rests on the
 state-invariant lane's preservation of `WellFormed` and on the step keeping its before-state's scope occurrences
 (`StepKeepsScopes`), an invariant of the closure relative to the before-state, which the state operations keep
-(`Alongside`) and `Kernel.Proofs.Cancellation.Registered` carries through the registered hooks. A removed occurrence's single end fact
-rests on the same lane's hook contract and phases and on each micro-step framing the end facts (`MicroStepsFrameEnds`),
-a relation between a micro-step's two states that no invariant of `Laws.Step.Phases` can carry. Nothing executable
-imports this module.
+(`Alongside`) and `Kernel.Proofs.Cancellation.Registered` carries through the registered hooks. A removed occurrence's
+single end fact rests on each micro-step keeping the input's end facts from its start (`MicroStepsKeepEnds`,
+`Laws.Step.EndsKept`), which the completion pipeline keeps only as a unit (`Laws.Step.complete_ends`). Nothing
+executable imports this module.
 -/
 
 @[expose] public section
@@ -454,103 +455,23 @@ theorem keepsScopes_phases (phases : Laws.Step.Phases WellFormed) (pending : Pen
 
 /-! ## Every removed occurrence ends once
 
-A committed input ends each begun occurrence it removes exactly once in its journal because each of its micro-steps
-frames the end facts (`EndsFrame`): it ends every begun occurrence it removes, each once, and nothing the input ended
-before, and an occurrence a micro-step removed never returns, since identifiers are never reused. Frames compose
-(`EndsFrame.trans`), so the closure's induction (`Laws.Step.settle_induction`) carries one from the input's start, whose
-journal and draft are empty, to its last micro-step. What a micro-step does to the end facts is its hooks' and
-`Step`'s (`MicroStepsFrameEnds`). -/
+A committed input ends each begun occurrence it removes exactly once in its journal because it keeps, from its start
+(the before-state with an empty journal and draft), what `Laws.Step.EndsKept` says of its end facts: they are distinct,
+and each begun occurrence of the start that is gone has ended under its key there. Each micro-step keeps it and leaves
+no end fact in the draft (`MicroStepsKeepEnds`), the hooks through their contract of `Laws.Step.EndsInv` and the
+completion pipeline as a unit (`Laws.Step.complete_ends`). The invariant is indexed by the input's start, not by each
+micro-step's: `WellFormed` says nothing of the end facts an input has journalled, so a micro-step from a well-formed
+state whose journal already ends an occurrence it holds would end that occurrence twice. -/
 
-/-- The keys of the end facts of the input in progress: its journal's and its draft's. -/
-def endKeys (s : State) : List OccurrenceKey := (s.journal.flatMap (·.ended) ++ s.draft.ended).map (·.1)
-
-/-- From `s` to `t` the input ended the keys `added`, each once and none it had ended before, among them the key of every
-begun occurrence of `s` that `t` no longer holds; a begun occurrence `t` still holds is still begun with its key; and an
-occurrence `t` holds that `s` did not has an identifier issued at or above `s`'s counter. -/
-structure EndsFrame (s t : State) : Prop where
-  issued : s.nextIssue ≤ t.nextIssue
-  fresh : ∀ id ∈ occurrenceIds t, id ∉ occurrenceIds s → s.nextIssue ≤ id
-  stable : ∀ occurrence ∈ s.occurrences, occurrence.begun = true → ∀ kept ∈ t.occurrences, kept.id = occurrence.id →
-    kept.begun = true ∧ Laws.State.key t kept = Laws.State.key s occurrence
-  ends : ∃ added : List OccurrenceKey, (endKeys t).Perm (endKeys s ++ added) ∧ added.Nodup ∧
-    (∀ key ∈ added, key ∉ endKeys s) ∧ ∀ occurrence ∈ s.occurrences, occurrence.begun = true →
-      occurrence.id ∉ occurrenceIds t → Laws.State.key s occurrence ∈ added
-
-/-- Each committed micro-step of an input on a running instance, from a well-formed state, frames the end facts and
+/-- Each committed micro-step of an input on a running instance keeps the input's end facts from its start `b` and
 leaves none in the draft: the input's own transition and every closure micro-step (`Laws.Step.ClosureStep`). -/
-def MicroStepsFrameEnds (hooks : Hooks) : Prop :=
-  (∀ (ctx : Ctx) (cause : Cause) (transition : State → Outcome) (state after : State),
-    Laws.Step.RunsTransition hooks ctx transition → WellFormed ctx.program state →
+def MicroStepsKeepEnds (hooks : Hooks) : Prop :=
+  (∀ (ctx : Ctx) (cause : Cause) (transition : State → Outcome) (b state after : State),
+    Laws.Step.RunsTransition hooks ctx transition → Laws.Step.EndsInv b none ctx.program state →
     Step.microStep hooks ctx cause none State.root transition state = .ok after →
-    EndsFrame state after ∧ after.draft.ended = []) ∧
-  ∀ (ctx : Ctx) (state after : State), WellFormed ctx.program state → Laws.Step.ClosureStep hooks ctx state after →
-    EndsFrame state after ∧ after.draft.ended = []
-
-/-- An occurrence identifier issued below `s`'s counter that `t` no longer holds, `u` does not hold either. -/
-theorem EndsFrame.gone {s t u : State} (first : EndsFrame s t) (second : EndsFrame t u) {id : Nat}
-    (below : id < s.nextIssue) (absent : id ∉ occurrenceIds t) : id ∉ occurrenceIds u := fun held => by
-  have := second.fresh id held absent
-  have := first.issued
-  omega
-
-/-- Frames compose from a state whose occurrence identifiers were issued below its counter. -/
-theorem EndsFrame.trans {s t u : State} (below : ∀ occurrence ∈ s.occurrences, occurrence.id < s.nextIssue)
-    (first : EndsFrame s t) (second : EndsFrame t u) : EndsFrame s u where
-  issued := Nat.le_trans first.issued second.issued
-  fresh id held new := by
-    by_cases middle : id ∈ occurrenceIds t
-    · exact first.fresh id middle new
-    · exact Nat.le_trans first.issued (second.fresh id held middle)
-  stable occurrence member begun kept held same := by
-    have middle : occurrence.id ∈ occurrenceIds t := Classical.byContradiction fun absent =>
-      first.gone second (below occurrence member) absent (List.mem_map.mpr ⟨kept, held, same⟩)
-    obtain ⟨between, inside, named⟩ := List.mem_map.mp middle
-    obtain ⟨betweenBegun, betweenKey⟩ := first.stable occurrence member begun between inside named
-    obtain ⟨keptBegun, keptKey⟩ := second.stable between inside betweenBegun kept held (same.trans named.symm)
-    exact ⟨keptBegun, keptKey.trans betweenKey⟩
-  ends := by
-    obtain ⟨early, earlyPerm, earlyNodup, earlyRest⟩ := first.ends
-    obtain ⟨earlyFresh, earlyRemoved⟩ := earlyRest
-    obtain ⟨late, latePerm, lateNodup, lateRest⟩ := second.ends
-    obtain ⟨lateFresh, lateRemoved⟩ := lateRest
-    have ended : ∀ key, key ∈ endKeys s ++ early → key ∈ endKeys t := fun _ member => earlyPerm.mem_iff.mpr member
-    refine ⟨early ++ late, latePerm.trans ((earlyPerm.append_right late).trans (by rw [List.append_assoc])),
-      List.nodup_append.mpr ⟨earlyNodup, lateNodup, fun key inEarly other inLate same =>
-        lateFresh other inLate (same ▸ ended key (List.mem_append_right _ inEarly))⟩, fun key member old => ?_,
-      fun occurrence member begun absent => ?_⟩
-    · rcases List.mem_append.mp member with inEarly | inLate
-      · exact earlyFresh key inEarly old
-      · exact lateFresh key inLate (ended key (List.mem_append_left _ old))
-    · by_cases middle : occurrence.id ∈ occurrenceIds t
-      · obtain ⟨between, inside, named⟩ := List.mem_map.mp middle
-        obtain ⟨betweenBegun, betweenKey⟩ := first.stable occurrence member begun between inside named
-        exact List.mem_append_right _
-          (betweenKey ▸ lateRemoved between inside betweenBegun (named ▸ absent))
-      · exact List.mem_append_left _ (earlyRemoved occurrence member begun middle)
-
-/-- A closure micro-step keeps an invariant that the hooks and `Step`'s phases keep (`Laws.Step.settle_keeps`, one
-micro-step at a time). -/
-theorem closureStep_keeps {hooks : Hooks} {inv : Program → State → Prop} (contract : Laws.Step.HookContract hooks inv)
-    (phases : Laws.Step.Phases inv) (facts : Laws.Step.StateFacts) {ctx : Ctx} {state after : State}
-    (holds : inv ctx.program state) (stepped : Laws.Step.ClosureStep hooks ctx state after) : inv ctx.program after := by
-  cases stepped with
-  | signal _ queued ran =>
-    exact Laws.Step.microStep_keeps contract phases facts
-      (fun _ dispatched => Laws.Step.signal_keeps contract phases facts holds queued dispatched) ran
-  | token _ _ next ran =>
-    exact Laws.Step.moveToken_keeps contract phases facts (phases.untoken _ _ _ holds (Laws.Step.nextToken_rest next))
-      (fun request same => phases.admittedToken _ _ _ _ holds (same ▸ Laws.Step.nextToken_shape next)) ran
-  | idle _ _ _ idle ran =>
-    exact Laws.Step.microStep_keeps contract phases facts (fun _ completed =>
-      Laws.Step.completeIdleScope_keeps contract facts holds (Laws.Step.idleScope_mem idle) completed) ran
-  | reoffer _ _ _ _ offered ran =>
-    refine Laws.Step.microStep_keeps contract phases facts (fun next made => ?_) ran
-    simp only [Except.ok.injEq] at made
-    exact made ▸ Laws.Step.reoffer_keeps contract phases facts holds offered
-  | finish _ _ _ _ _ _ ran =>
-    refine Laws.Step.microStep_keeps contract phases facts (fun next ended => ?_) ran
-    simp only [Except.ok.injEq] at ended
-    exact ended ▸ phases.endInstance _ _ _ _ holds (by simp)
+    Laws.Step.EndsInv b none ctx.program after ∧ after.draft.ended = []) ∧
+  ∀ (ctx : Ctx) (b state after : State), Laws.Step.EndsInv b none ctx.program state →
+    Laws.Step.ClosureStep hooks ctx state after → Laws.Step.EndsInv b none ctx.program after ∧ after.draft.ended = []
 
 /-- A list whose keys are distinct holds the key `key` once if at all. -/
 theorem once_of_nodup {α β : Type} {facts : List (α × β)} {key : α} (distinct : (facts.map (·.1)).Nodup)
@@ -565,14 +486,10 @@ theorem once_of_nodup {α β : Type} {facts : List (α × β)} {key : α} (disti
   · exact apart.2.2 _ (List.mem_map_of_mem inEarlier) _ (List.mem_cons_self) same
   · exact (List.nodup_cons.mp apart.2.1).1 (same ▸ List.mem_map_of_mem inLater)
 
-/-- `RemovedEndOnce`, from the state-invariant lane's hook contract and phases of `WellFormed` (which keep it through
-each micro-step, `closureStep_keeps`) and `MicroStepsFrameEnds`: the input's start has ended nothing, its micro-steps'
-frames compose into one from the start to the settled closure, whose draft holds no end fact, and the journal put in run
-order is a permutation of the settled one, so the removed occurrence's key, among the frame's distinct added keys,
-ends once. -/
-theorem removedEndOnce {hooks : Hooks} (contract : Laws.Step.HookContract hooks WellFormed)
-    (phases : Laws.Step.Phases WellFormed) (facts : Laws.Step.StateFacts) (framed : MicroStepsFrameEnds hooks) :
-    RemovedEndOnce hooks := by
+/-- `RemovedEndOnce` from `MicroStepsKeepEnds`: the input's start is well-formed and has ended nothing, so it keeps its
+own end facts (`Laws.Step.EndsKept.start`); its micro-steps carry them to the settled closure, whose draft is empty, so
+the removed occurrence's key, among distinct end keys, ends once in the journal, which run order only permutes. -/
+theorem removedEndOnce {hooks : Hooks} (kept : MicroStepsKeepEnds hooks) : RemovedEndOnce hooks := by
   intro program input before after occurrence formed ran member begun gone
   rcases Laws.Step.step_ok ran with ⟨_, _, fresh, _⟩ | ⟨_, transition, runs, ran⟩
   · simp at fresh
@@ -583,33 +500,28 @@ theorem removedEndOnce {hooks : Hooks} (contract : Laws.Step.HookContract hooks 
   have entered : WellFormed (Laws.Step.inputCtx hooks program input).program before := by
     rw [Laws.Step.inputCtx_program]
     exact formed
-  have startFormed := Laws.Step.advanceClock_keeps phases (phases.reset _ _ entered) clocked
-  have movedFormed := Laws.Step.microStep_keeps contract phases facts
-    (fun _ transitioned => Laws.Step.transition_keeps contract phases runs startFormed transitioned) stepped
-  have below : ∀ occurrence ∈ start.occurrences, occurrence.id < start.nextIssue := startFormed.issued.occurrences
-  obtain ⟨_, settledFrame, settledDraft⟩ := Laws.Step.settle_induction
-    (fun s => WellFormed (Laws.Step.inputCtx hooks program input).program s ∧ EndsFrame start s ∧ s.draft.ended = [])
-    (fun s s' ⟨holds, frame, _⟩ closure => by
-      obtain ⟨frame', draft'⟩ := framed.2 _ s s' holds closure
-      exact ⟨closureStep_keeps contract phases facts holds closure, frame.trans below frame', draft'⟩)
-    _ _ moved settled ⟨movedFormed, framed.1 _ _ _ start moved runs startFormed stepped⟩ settling
-  obtain ⟨added, perm, distinct, rest⟩ := settledFrame.ends
-  have removed := rest.2
-  have startEmpty : endKeys start = [] := by
+  have startFormed : WellFormed (Laws.Step.inputCtx hooks program input).program start := by
+    rcases Laws.Step.advanceClock_ok clocked with rfl | ⟨_, rfl⟩
+    · exact Laws.State.reset_wellFormed entered
+    · exact Laws.State.clock_wellFormed (Laws.State.reset_wellFormed entered) _
+  have startEmpty : Laws.Step.endKeys start = [] := by
     rcases Laws.Step.advanceClock_ok clocked with rfl | ⟨_, rfl⟩ <;> rfl
   have sameInstance : ∀ scope, start.instanceOf scope = before.instanceOf scope := by
     rcases Laws.Step.advanceClock_ok clocked with rfl | ⟨_, rfl⟩ <;> exact Laws.State.instanceOf_congr rfl rfl
   have startMember : occurrence ∈ start.occurrences := by
     rcases Laws.Step.advanceClock_ok clocked with rfl | ⟨_, rfl⟩ <;> exact member
+  obtain ⟨movedHolds, movedDraft⟩ :=
+    kept.1 _ _ _ start start moved runs ⟨startFormed, Laws.Step.EndsKept.start startFormed startEmpty⟩ stepped
+  obtain ⟨⟨_, settledKept⟩, settledDraft⟩ := Laws.Step.settle_induction
+    (fun s => Laws.Step.EndsInv start none (Laws.Step.inputCtx hooks program input).program s ∧ s.draft.ended = [])
+    (fun s s' holds closure => kept.2 _ start s s' holds.1 closure) _ _ moved settled ⟨movedHolds, movedDraft⟩ settling
   subst made
-  have key : before.keyOf occurrence ∈ added := by
-    have ended := removed occurrence startMember begun gone
+  have key : before.keyOf occurrence ∈ Laws.Step.endKeys settled := by
+    have ended := settledKept.removed occurrence startMember begun gone fun _ none => by cases none
     rwa [Laws.State.keyOf_eq, Laws.State.key, ← sameInstance]
-  rw [startEmpty, List.nil_append] at perm
-  have reordered : ((settled.journal.reverse.flatMap (·.ended)).map (·.1)).Perm added := by
-    refine List.Perm.trans ?_ perm
-    simp only [endKeys, settledDraft, List.append_nil]
+  have reordered : ((settled.journal.reverse.flatMap (·.ended)).map (·.1)).Perm (Laws.Step.endKeys settled) := by
+    simp only [Laws.Step.endKeys, settledDraft, List.append_nil]
     exact ((List.reverse_perm settled.journal).flatMap_right _).map _
-  exact once_of_nodup (reordered.nodup_iff.mpr distinct) (reordered.mem_iff.mpr key)
+  exact once_of_nodup (reordered.nodup_iff.mpr settledKept.nodup) (reordered.mem_iff.mpr key)
 
 end Kernel.Proofs.Cancellation
