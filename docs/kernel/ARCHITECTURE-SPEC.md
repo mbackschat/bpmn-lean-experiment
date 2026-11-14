@@ -232,7 +232,7 @@ Dispatch owners per guarded type:
 | throw kind | `Kernel.Feature.Propagation` |
 | Multi-Instance mode | `Kernel.Feature.MultiInstance` |
 | JUEL node, binary and unary operator, call target, listed method | `Kernel.Feature.Data` (its `Juel` evaluator) |
-| any of them, in proofs | `Kernel.Proofs.Step`; each owner's own `Laws` module for the owner's types (`Laws.F` beside `Kernel.Feature.F`, `Laws.Step` beside `Kernel.Step`); and the defining module's own `Laws` module for the types it defines, since it sees that module's matches (`Laws.IL` for the IL's) |
+| any of them, in proofs | `Kernel.Proofs.Step`; and each owner's own `Laws` module for the owner's types (`Laws.F` beside `Kernel.Feature.F`, `Laws.Step` beside `Kernel.Step`); a `Laws` module's compiler-generated equation, unfolding and splitter lemmas of a body it sees are not its matches, while a hand-written match there, in `Laws.IL`, `Laws.State` and `Laws.Hooks` included, is |
 | any of them, at a boundary | one module per package: the host's input mapper, the CIB runner's trigger mapper, the platform's presentation module shared by the history, start and work views |
 
 Codecs and each type's own `Admission` module may also match it.

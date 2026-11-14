@@ -113,7 +113,8 @@ function cleanBuild(lean: Lean, label: string): string[] {
 }
 
 /** Guard 23: the dispatch scan rejects a match on a guarded type in a module that does not own it, a `Laws` module
- * matching another family's type included. */
+ * matching another family's type included, and a hand-written match in the `Laws` module of the type's defining
+ * module, whose exemption covers only the lemmas the compiler generates there. */
 function proveDispatchScan(lean: Lean, directory: string): string[] {
   const file = path.join(directory, "Kernel", "Feature", "Data.lean");
   // Fully qualified: the seed lands outside the module's namespace, where an unqualified `Element` auto-binds.
@@ -121,8 +122,11 @@ function proveDispatchScan(lean: Lean, directory: string): string[] {
   // A `Laws` module matches only its own family's guarded types: Flow's laws may match `GatewayKind`, never `ScopeKind`.
   const lawsFile = path.join(directory, "Kernel", "Laws", "Flow.lean");
   const seededLaws = "def seededLawsDispatchViolation : Kernel.ScopeKind → Nat\n  | .embedded => 1\n  | .transaction _ => 2\n  | .eventSubProcess _ _ => 3";
+  // The IL defines `ScopeKind`, yet its `Laws` module may not match it by hand.
+  const ilLawsFile = path.join(directory, "Kernel", "Laws", "IL.lean");
+  const seededIlLaws = "def seededIlLawsDispatchViolation : Kernel.ScopeKind → Nat\n  | .embedded => 1\n  | .transaction _ => 2\n  | .eventSubProcess _ _ => 3";
   let findings: string[] = [];
-  edited(file, seeded, () => edited(lawsFile, seededLaws, () => {
+  edited(file, seeded, () => edited(lawsFile, seededLaws, () => edited(ilLawsFile, seededIlLaws, () => {
     const build = lean(kernelTargets);
     if (build.status !== 0) {
       findings = [`G23: the seeded dispatch violation did not compile\n${build.output}`];
@@ -133,7 +137,10 @@ function proveDispatchScan(lean: Lean, directory: string): string[] {
     if (!/Kernel\.Laws\.Flow \S+: matches guarded Kernel\.ScopeKind/u.test(scan.output)) {
       findings.push(`G23: kernel-dispatch.lean did not reject the seeded Laws violation\n${scan.output}`);
     }
-  }));
+    if (!/Kernel\.Laws\.IL \S+: matches guarded Kernel\.ScopeKind/u.test(scan.output)) {
+      findings.push(`G23: kernel-dispatch.lean did not reject the seeded IL Laws violation\n${scan.output}`);
+    }
+  })));
   return findings;
 }
 

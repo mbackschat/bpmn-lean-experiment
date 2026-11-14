@@ -6,9 +6,9 @@ closed dispatch and no catch-all, read from the built environment because only t
 type a `match`, `if let` or `matches` discriminates and which alternatives cover which constructors.
 
 - Closed dispatch: a guarded type is matched (`match`, `casesOn`, `rec`, `ctorIdx`) only in its owner module, the
-  module that defines it, `Kernel.IL.Codec`, the owner's own `Admission` and `Laws` modules, the defining module's own
-  `Laws` module (`Kernel.Laws.IL` for the IL's types), which sees the defining module's matches, and `Kernel.Proofs.Step`;
-  `Element` and `EventRole` also in `Kernel.AdmissionRegistry`. Nothing compares one with `==` or
+  module that defines it, `Kernel.IL.Codec`, the owner's own `Admission` and `Laws` modules, and `Kernel.Proofs.Step`;
+  `Element` and `EventRole` also in `Kernel.AdmissionRegistry`. A `Laws` module's compiler-generated lemmas about a
+  body it sees (`generatedFromSeen`) are not its matches. Nothing compares one with `==` or
   `decide`: no guarded type has a `DecidableEq` or `BEq` instance outside its defining module.
 - No catch-all: no match alternative binds a guarded-type discriminant to a variable, so every alternative names
   the constructors it covers and a new constructor fails to compile at every dispatch site.
@@ -49,18 +49,36 @@ def owners : List (Name × List Name) := [
 
 def guarded (type : Name) : Bool := owners.any (·.1 == type)
 
-/-- The `Laws` module that sees the bodies of the executable module `defining`: `Kernel.Laws.X` for
-`Kernel.Feature.X`, `Kernel.X` and their submodules. -/
-def ownLaws (defining : Name) : Option Name :=
-  match defining.components.map (·.toString) with
-  | "Kernel" :: "Feature" :: family :: _ => some (.str `Kernel.Laws family)
-  | "Kernel" :: family :: _ => some (.str `Kernel.Laws family)
-  | _ => none
-
 def allowed (env : Environment) (type module : Name) : Bool :=
   let defining := (env.getModuleIdxFor? type).bind fun idx => env.header.moduleNames[idx.toNat]?
-  defining == some module || module == `Kernel.IL.Codec || (defining.bind ownLaws) == some module ||
+  defining == some module || module == `Kernel.IL.Codec ||
     ((owners.find? (·.1 == type)).map (·.2.any (·.isPrefixOf module))).getD false
+
+/-- The modules whose bodies the `Laws` module `laws` sees through `import all`: `Kernel.X`, `Kernel.Feature.X` and
+their submodules for `Kernel.Laws.X`; none for any other module. -/
+def seenBy (env : Environment) (laws : Name) : List Name :=
+  match laws with
+  | .str `Kernel.Laws own => env.header.moduleNames.toList.filter fun module =>
+    (Name.str `Kernel own).isPrefixOf module || (Name.str `Kernel.Feature own).isPrefixOf module
+  | _ => []
+
+/-- Whether `declaration` of the `Laws` module `laws` is a lemma the compiler generated when a proof there unfolded a
+body `laws` sees: the equation or splitter lemma of a matcher (the shape `Lean.Meta.Match`'s reserved-name predicate
+accepts, `eq_<n>` or `splitter` on a matcher), or the equation or unfolding lemma of a definition
+(`Lean.Meta.declFromEqLikeName`), in either case of a declaration a seen module defines. Lean names such a lemma
+after its source with the generating module's private prefix, so the source is the user name, public or private to
+a seen module. A hand-written declaration has no such name and stays scanned. -/
+def generatedFromSeen (env : Environment) (laws declaration : Name) : Bool :=
+  match declaration with
+  | .str parent suffix =>
+    let seen := seenBy env laws
+    let user := privateToUserName parent
+    let definedInSeen (source : Name) : Bool :=
+      ((env.getModuleIdxFor? source).bind fun idx => env.header.moduleNames[idx.toNat]?).any seen.contains
+    let sources := (user :: seen.map (mkPrivateNameCore · user)).filter definedInSeen
+    ((isEqnReservedNameSuffix suffix || suffix == "splitter") && sources.any (isMatcherCore env)) ||
+      sources.any fun source => (declFromEqLikeName env (.str source suffix)).isSome
+  | _ => false
 
 /-- The guarded type a constant inspects directly, other than through a matcher. -/
 def directUse (env : Environment) (constant : Name) : Option Name :=
@@ -110,6 +128,7 @@ def scan (env : Environment) : MetaM (List Finding × Bool) := do
     let some module := env.header.moduleNames[idx.toNat]? | continue
     unless (`Kernel).isPrefixOf module do continue
     if (Match.Extension.getMatcherInfo? env declaration).isSome then continue
+    if generatedFromSeen env module declaration then continue
     let some value := info.value? (allowOpaque := true) | continue
     for used in value.getUsedConstants do
       if let some type := directUse env used then
