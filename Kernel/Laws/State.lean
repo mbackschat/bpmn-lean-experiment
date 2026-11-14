@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.State.Reserve
+public import Kernel.Laws.State.Transitions
 public import Kernel.State.Removal
 import all Kernel.State
 import all Kernel.State.Removal
