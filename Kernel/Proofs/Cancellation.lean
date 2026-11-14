@@ -251,6 +251,33 @@ theorem subtreeRemoved {hooks : Hooks}
     fun occurrence member => outside (formedAfter.owned.occurrenceScopes occurrence member),
     fun variables member => outside (formedAfter.owned.variableScopes variables member)⟩
 
+/-- Well-formed, with the scope occurrences of `before` kept: the invariant a committed input carries from its
+before-state through every hook and phase. -/
+def KeepsScopes (before : State) (program : Program) (s : State) : Prop :=
+  WellFormed program s ∧ ScopesKept before s
+
+/-- A well-formed state keeps its own scope occurrences, issued below its counter. -/
+theorem KeepsScopes.self {program : Program} {before : State} (formed : WellFormed program before) :
+    KeepsScopes before program before :=
+  ⟨formed, fun old member => formed.issued.scopes old member, fun _ member _ => member⟩
+
+/-- `StepKeepsScopes` from the hooks' contract and `Step`'s phases of `KeepsScopes` of every before-state, through
+`Laws.Step.running_keeps` from `KeepsScopes.self`. A fresh instance need not keep `KeepsScopes`, since a running input
+never starts one. -/
+theorem stepKeepsScopes {hooks : Hooks} (contract : ∀ before, Laws.Step.HookContract hooks (KeepsScopes before))
+    (phases : ∀ before, Laws.Step.Phases (KeepsScopes before)) (facts : Laws.Step.StateFacts) :
+    StepKeepsScopes hooks := fun _ _ before _ formed ran =>
+  (Laws.Step.running_keeps (contract before) (phases before) facts (KeepsScopes.self formed) ran).2
+
+/-- `SubtreeRemoved` from the hooks' contract and `Step`'s phases of `KeepsScopes` of every before-state alone: its
+`WellFormed` half is the state-invariant lane's preservation, and its scope half `StepKeepsScopes`. -/
+theorem subtreeRemoved_of_keeps {hooks : Hooks} (contract : ∀ before, Laws.Step.HookContract hooks (KeepsScopes before))
+    (phases : ∀ before, Laws.Step.Phases (KeepsScopes before)) (facts : Laws.Step.StateFacts) :
+    SubtreeRemoved hooks :=
+  subtreeRemoved (fun _ _ before _ formed ran =>
+    (Laws.Step.running_keeps (contract before) (phases before) facts (KeepsScopes.self formed) ran).1)
+    (stepKeepsScopes contract phases facts)
+
 /-! ## Every removed occurrence ends once
 
 A committed input ends each begun occurrence it removes exactly once in its journal because each of its micro-steps
