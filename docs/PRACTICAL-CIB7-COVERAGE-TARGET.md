@@ -2,7 +2,7 @@
 
 ## Status
 
-Adopted delivery target, selected by the owner. The inventory boundary and its partition into 115 delivery rows were independently approved on 2026-10-11 ([approval record](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#status)); the partition specifies required practical depth, not implemented support. Since the kernel rewrite (W0.4) this document keeps only the target, its bounded contract decisions, the rows and their dependencies. [PLAN](PLAN.md#mechanism-tracks-then-rows) assigns every row to its mechanism track and owns sequencing; the [kernel status map](kernel/KERNEL-STATUS-MAP.md#row-status) records what the kernel implements per row; the [architecture specification](kernel/ARCHITECTURE-SPEC.md#definition-of-done-for-a-row) owns the definition of done.
+Adopted delivery target, selected by the owner. The inventory boundary and its partition into 115 delivery rows were independently approved on 2026-10-11 ([approval record](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#status)); the partition specifies required practical depth, not implemented support. Since the kernel rewrite (W0.4) this document keeps only the target, its bounded contract decisions, the rows and their dependencies. [PLAN](PLAN.md#mechanism-tracks-then-rows) assigns every row to its mechanism track and owns sequencing; the [kernel status map](kernel/KERNEL-STATUS-MAP.md#row-status) records what the kernel implements per row; the [architecture specification](kernel/ARCHITECTURE-SPEC.md#definition-of-done-for-a-row) owns the definition of done. The owner accepted the target as reached on 2026-11-14, within the disclosed limits of the [PC-ACCEPT-01 approval record](#pc-accept-01-approval-record) ([acceptance record](#pc-accept-02-acceptance-record)).
 
 ## Objective and boundary
 
@@ -260,7 +260,7 @@ Run these gates at meaningful integration, reusing unchanged evidence; they do n
 | ID | Concrete outcome and decisive acceptance | Prerequisite contracts | State |
 |---|---|---|---|
 | `PC-ACCEPT-01` | Obtain independent final reconciliation of every task, exact scope/binding, public journey, restriction, assurance/resource hold and integrated qualification. No unowned required behavior, stale evidence, unreviewed material change or undisclosed failed gate remains. Record an immutable target-bound approval in this owner. | Every preceding required task | done; final reconciliation approved 2026-11-14 at `c94478b75` ([approval record](#pc-accept-01-approval-record)) |
-| `PC-ACCEPT-02` | Record the owner's explicit acceptance of Practical CIB7 Coverage for that exact evidence-closed target and disclosed limits. Only then state “Practical CIB7 Coverage is reached.” Version/tag, separate MUE acceptance, production-history compatibility and production scale remain outside this decision. | PC-ACCEPT-01 | open |
+| `PC-ACCEPT-02` | Record the owner's explicit acceptance of Practical CIB7 Coverage for that exact evidence-closed target and disclosed limits. Only then state “Practical CIB7 Coverage is reached.” Version/tag, separate MUE acceptance, production-history compatibility and production scale remain outside this decision. | PC-ACCEPT-01 | done; owner acceptance, 2026-11-14 ([acceptance record](#pc-accept-02-acceptance-record)) |
 
 #### PC-ACCEPT-01 approval record
 
@@ -285,6 +285,10 @@ Disclosed limits, the fixed list PC-ACCEPT-02 accepts:
 11. Outside this decision, per PC-ACCEPT-02: version and tag, the separate MUE acceptance, production-history compatibility, production scale and throughput, and A12 adoption; PC-QUALIFY-10 closes correctness capacity only.
 
 Open issues at approval: every behavioral one is named in the limits above (#75, #77, #81, #83, #89, #91, #94, #98, #100, #105, #106, #114, #119, #120, #121, #123, #124, #125, #126, #127, #128, #129, #130, #131, #132, #133, #134, #136, #137, #142); the rest are engineering and guard debt that changes no behavior claim (#67, #92, #93, #101, #107, #110, #112, #115).
+
+#### PC-ACCEPT-02 acceptance record
+
+The owner explicitly accepted Practical CIB7 Coverage on 2026-11-14 for the evidence-closed target that the [PC-ACCEPT-01 approval record](#pc-accept-01-approval-record) binds to code head `c94478b75` (main `e22cf8ccb`), with its eleven disclosed limits and its list of open issues. Practical CIB7 Coverage is reached within those limits. Version and tag, the separate MUE acceptance, production-history compatibility and production scale stay outside this acceptance; no tag was requested.
 
 ## Optional integrations and exclusions
 
