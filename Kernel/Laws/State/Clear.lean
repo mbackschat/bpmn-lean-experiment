@@ -45,6 +45,8 @@ structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : Lis
   journal : after.journal = before.journal
   started : after.draft.started = before.draft.started
   slots : SlotsWithin before after
+  /-- The Multi-Instance bodies that stay are those whose scope occurrence does not lie within `scope`. -/
+  bodies : after.slots.multiInstances = before.slots.multiInstances.filter (!(before.subtree scope).contains ·.scope)
 
 /-- A scope occurrence that lies within `State.root` and not strictly within a cleared `scope` still does after the
 clearing: nothing on its way up lies strictly within `scope`, or it would itself. -/

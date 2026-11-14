@@ -443,8 +443,7 @@ theorem instanceRoot_stands (state : State) (scope : ScopeOccurrenceId) :
 /-- A start's fresh instance; `Kernel.Proofs.Step` queues its root's arming (`signal_queueSound`). -/
 theorem initial_wellFormed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     WellFormed program (State.initial instanceId variables businessKey) where
-  issued := ⟨by simp [State.initial], by simp [State.initial],
-    by simp [State.initial, State.root]⟩
+  issued := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial, State.root]⟩
   distinct := ⟨by simp [occurrenceIds, State.initial], by simp [State.initial],
     by simp [scopeIds, State.initial], by simp [State.initial]⟩
   startedOnce := by simp [StartedOnce, starts, State.initial]
@@ -453,9 +452,7 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
   owned := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial],
     by simp [State.initial], by simp [scopeIds, State.initial], by simp [State.initial]⟩
   rooted := ⟨by simp [scopeIds, State.initial], by simp [State.initial], by
-    simp only [State.initial, List.mem_singleton]
-    rintro scope rfl
-    exact .refl _⟩
+    simp only [State.initial, List.mem_singleton]; rintro scope rfl; exact .refl _⟩
   variables := ⟨by simp [State.initial], fun vars member => by
     simp only [State.initial, List.mem_singleton] at member
     subst member
@@ -483,6 +480,10 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
 theorem initial_rootIssued (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     State.root.value < (State.initial instanceId variables businessKey).nextIssue := by
   simp [State.initial, State.root]
+
+/-- The fresh instance runs no Multi-Instance body. -/
+theorem initial_bodies (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
+    (State.initial instanceId variables businessKey).slots.multiInstances = [] := by simp [State.initial]
 
 /-! ## The subtree of a scope occurrence -/
 
@@ -716,7 +717,7 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
   have fewer : (s.clearInside scope keep).scopes.Sublist s.scopes := List.filter_sublist
   refine ⟨scopes, fun occurrence => ?_, fun item => ?_, fun token => ?_, fun variables => ?_,
     fewer, List.filter_sublist, List.filter_sublist, List.filter_sublist, List.filter_sublist, fun x member => ?_,
-    rfl, rfl, rfl, rfl, rfl, rfl, rfl, ⟨fun _ member => ?_, fun _ member => ?_, fun _ member => ?_⟩⟩
+    rfl, rfl, rfl, rfl, rfl, rfl, rfl, ⟨fun _ member => ?_, fun _ member => ?_, fun _ member => ?_⟩, rfl⟩
   rotate_left 4
   · obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
     obtain ⟨old, outside⟩ := (scopes entry).mp inside

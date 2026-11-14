@@ -456,6 +456,78 @@ theorem FrameAlongside.signal {rel : State → Prop} (side : FrameAlongside rel)
   rw [Laws.State.signal_eq]
   exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ kept
 
+/-- Removing an occurrence of a well-formed state keeps what the state operations keep and dropping a record that owns
+no scope occurrence keeps: `State.removeOccurrence` drops the record and then leaves the scope occurrences it owns,
+which ends where leaving them first, each owned and from a well-formed state, and dropping the record last ends, since
+the record lies outside each of them (`Laws.State.leaveScope_withoutRecord`); with no record, nothing owns one. -/
+theorem FrameAlongside.removeOccurrence {rel : State → Prop} (side : FrameAlongside rel)
+    (without : ∀ t id, (∀ entry ∈ t.scopes, entry.occurrence ≠ some id) → rel t → rel (Laws.State.withoutRecord t id))
+    {program : Program} {s : State} {id : Nat} (formed : WellFormed program s) (kept : rel s) :
+    rel (s.removeOccurrence id) := by
+  by_cases absent : id ∉ occurrenceIds s
+  · have unowned : ∀ entry ∈ s.scopes, entry.occurrence ≠ some id := fun entry inside owns => by
+      obtain ⟨owner, present, named, _⟩ := formed.owned.scopeOwners entry inside id owns
+      exact absent (List.mem_map.mpr ⟨owner, present, named⟩)
+    rw [Laws.State.removeOccurrence_eq,
+      List.filter_eq_nil_iff.mpr fun entry inside owns => unowned entry inside (by simpa using owns)]
+    exact without s id unowned kept
+  obtain ⟨record, member, rfl⟩ := List.mem_map.mp (Classical.not_not.mp absent)
+  have leaves : ∀ (owned : List ScopeOccurrence) (t : State), WellFormed program t → record ∈ t.occurrences →
+      owned.Nodup → (∀ entry ∈ owned, entry ∈ t.scopes ∧ entry.parent = some record.scope ∧
+        entry.occurrence = some record.id) → (∀ entry ∈ t.scopes, entry.occurrence = some record.id → entry ∈ owned) →
+      rel t → owned.foldl (fun state entry => state.leaveScope entry.id) (Laws.State.withoutRecord t record.id) =
+        Laws.State.withoutRecord (owned.foldl (fun state entry => state.leaveScope entry.id) t) record.id ∧
+        rel (owned.foldl (fun state entry => state.leaveScope entry.id) t) ∧
+        ∀ entry ∈ (owned.foldl (fun state entry => state.leaveScope entry.id) t).scopes,
+          entry.occurrence ≠ some record.id := by
+    intro owned
+    induction owned with
+    | nil =>
+      intro t _ _ _ _ unowned kept
+      exact ⟨rfl, kept, fun entry inside owns => by simpa using unowned entry inside owns⟩
+    | cons first rest ih =>
+      intro t formed member nodup placed unowned kept
+      obtain ⟨firstMember, firstLink, firstOwned⟩ := placed first (List.mem_cons_self ..)
+      have present : first.id ∈ scopeIds t := List.mem_map.mpr ⟨first, firstMember, rfl⟩
+      have notRoot : first.id ≠ State.root := fun same => by
+        simp [(formed.rooted.2.1 first firstMember).mpr same] at firstLink
+      have left := Laws.State.leaveScope_left formed present
+      have outside : ¬ Within t record.scope first.id := Laws.State.parent_not_within formed firstMember firstLink
+      have apart : ∀ occurrence ∈ t.occurrences, occurrence.id = record.id → occurrence.scope ∉ t.subtree first.id :=
+        fun occurrence inside same within => by
+          rw [Laws.State.nodup_map_eq formed.distinct.occurrences inside member same] at within
+          exact outside ((Laws.State.subtree_iff formed present _).mp within)
+      have restPlaced : ∀ entry ∈ rest, entry ∈ (t.leaveScope first.id).scopes ∧ entry.parent = some record.scope ∧
+          entry.occurrence = some record.id := fun entry inside => by
+        obtain ⟨entryMember, entryLink, entryOwned⟩ := placed entry (List.mem_cons_of_mem _ inside)
+        have other : entry.id ≠ first.id := fun same =>
+          (List.nodup_cons.mp nodup).1 (Laws.State.scope_unique formed.distinct entryMember firstMember same ▸ inside)
+        exact ⟨(left.scopes entry).mpr ⟨entryMember,
+          Laws.State.sibling_outside formed firstMember entryMember firstLink entryLink other⟩, entryLink, entryOwned⟩
+      have restUnowned : ∀ entry ∈ (t.leaveScope first.id).scopes, entry.occurrence = some record.id → entry ∈ rest :=
+        fun entry inside owns => by
+          obtain ⟨old, away⟩ := (left.scopes entry).mp inside
+          rcases List.mem_cons.mp (unowned entry old owns) with rfl | later
+          · exact absurd (.refl _) away
+          · exact later
+      obtain ⟨commutes, kept, none⟩ := ih (t.leaveScope first.id) (left.wellFormed formed present notRoot)
+        ((left.occurrences record).mpr ⟨member, outside⟩) (List.nodup_cons.mp nodup).2 restPlaced restUnowned
+        (side.leaveScope _ t first.id formed present (.inl ⟨first, firstMember, rfl, record.id, firstOwned⟩) kept)
+      simp only [List.foldl_cons]
+      rw [Laws.State.leaveScope_withoutRecord t record.id first.id apart]
+      exact ⟨commutes, kept, none⟩
+  have scopesNodup : s.scopes.Nodup :=
+    List.Pairwise.of_map (R := (· ≠ ·)) (S := (· ≠ ·)) (·.id) (fun _ _ apart same => apart (congrArg _ same))
+      formed.distinct.scopes
+  obtain ⟨commutes, kept, none⟩ := leaves (s.scopes.filter (·.occurrence == some record.id)) s formed member
+    (scopesNodup.sublist List.filter_sublist) (fun entry inside => by
+      obtain ⟨entryMember, owns⟩ := List.mem_filter.mp inside
+      have owned : entry.occurrence = some record.id := by simpa using owns
+      exact ⟨entryMember, formed.ownedBelow entry entryMember record member owned, owned⟩)
+    (fun entry inside owns => List.mem_filter.mpr ⟨inside, by simpa using owns⟩) kept
+  rw [Laws.State.removeOccurrence_eq, commutes]
+  exact without _ _ none kept
+
 /-- What `Step`'s own phases keep of a property `rel` carried beside `WellFormed`, besides the hooks' state operations
 (`FrameAlongside`): journalling the draft, ordering the journal, beginning an admitted request in a scope occurrence
 that stands and cancelling an occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
