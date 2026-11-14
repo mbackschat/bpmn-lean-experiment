@@ -531,11 +531,12 @@ def Solitary (program : Program) (element : Element) : Prop :=
       ¬ ConcurrentLevel false (program.children (some scope.header.id))
 
 /-- The element a resumption's subscription hangs on: a catch, a boundary's host, an Event Sub-Process. -/
-def AnchorOf (program : Program) : Visit → Element → Prop
-  | .completes caught, anchor => anchor = caught
-  | .fires boundary, anchor => ∃ record, program.boundary? boundary.id = some (anchor, record)
-  | .enters started, anchor => anchor = started
-  | .passes _, _ => False
+def AnchorOf (program : Program) (visit : Visit) (anchor : Element) : Prop :=
+  match visit with
+  | .completes caught => anchor = caught
+  | .fires boundary => ∃ record, program.boundary? boundary.id = some (anchor, record)
+  | .enters started => anchor = started
+  | .passes _ => False
 
 /-- An element telling apart two open occurrences of the subscription `visit` resumes: the Scope its anchor lies in,
 or at a called process's level a Call of it; none for a solitary anchor. -/
