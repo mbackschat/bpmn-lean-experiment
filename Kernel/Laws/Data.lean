@@ -227,12 +227,13 @@ def FailedSource (dialect : MappingDialect) (code : String) (reading : Except Fa
 /-! ## The state invariant under Data's hooks
 
 Data's share of the proof wave's state-invariant lane (P2): `Hooks.removeVariables` keeps the whole invariant and
-`Hooks.writeOutputs` keeps variable sets keyed. That a write lands only in a present scope occurrence, the rest of
-`Owned` for `writeOutputs`, is not stated here: an `.own` write names its scope occurrence unchecked, and an outward
-write that finds no owner falls back to `State.root`, which `WellFormed` does not require to be present. -/
+`Hooks.writeOutputs` keeps variable sets keyed. An outward write lands in a present scope occurrence, since one that
+finds no owner falls back to `State.root`, which `WellFormed` requires present (`Laws.State.Rooted`). That every write
+does, the rest of `Owned` for `writeOutputs`, is not stated here: an `.own` write names its scope occurrence unchecked,
+and a queued one can name a scope occurrence an interruption removed first (#121's class). -/
 
 /-- One write lands as one `setVariable`, wherever its rule sends it. -/
-theorem write_sets {ctx : Ctx} {rule : WriteRule} {scope : ScopeOccurrenceId} {state after : State}
+private theorem write_sets {ctx : Ctx} {rule : WriteRule} {scope : ScopeOccurrenceId} {state after : State}
     {binding : String × Value} (ran : Feature.Data.write ctx rule scope state binding = .ok after) :
     ∃ target, after = state.setVariable target binding.1 binding.2 := by
   obtain ⟨name, value⟩ := binding

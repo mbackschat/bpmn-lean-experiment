@@ -1,7 +1,9 @@
 module
 
 public import Kernel.State
+public import Kernel.State.Removal
 import all Kernel.State
+import all Kernel.State.Removal
 
 /-! # Laws of the kernel state
 
@@ -91,14 +93,15 @@ def ReservationsUnstarted (s : State) : Prop :=
 /-! ## Ownership -/
 
 /-- Every reference resolves inside the state: each occurrence, open item, variable set and work-stack entry belongs to
-a present scope occurrence; each open item waits for a present occurrence of its own element, which makes the item's
-public identity that occurrence's; a subscription hangs on a present occurrence; a scope occurrence's owning occurrence
-is present. -/
+a present scope occurrence; each open item waits for a present occurrence of its own element in its own scope
+occurrence, which makes the item's public identity that occurrence's (`State.openItem` and `State.openSubscription`
+give the item its occurrence's scope); a subscription hangs on a present occurrence; a scope occurrence's owning
+occurrence is present. -/
 structure Owned (s : State) : Prop where
   occurrenceScopes : ∀ occurrence ∈ s.occurrences, occurrence.scope ∈ scopeIds s
   itemScopes : ∀ item ∈ s.openItems, item.scope ∈ scopeIds s
   itemOccurrences : ∀ item ∈ s.openItems, ∃ occurrence ∈ s.occurrences,
-    occurrence.id = item.occurrence ∧ occurrence.element = item.element
+    occurrence.id = item.occurrence ∧ occurrence.element = item.element ∧ occurrence.scope = item.scope
   attachments : ∀ item ∈ s.openItems, ∀ host, item.attachedTo = some host → host ∈ occurrenceIds s
   scopeOwners : ∀ scope ∈ s.scopes, ∀ owner, scope.occurrence = some owner → owner ∈ occurrenceIds s
   variableScopes : ∀ variables ∈ s.variables, variables.scope ∈ scopeIds s
@@ -186,6 +189,23 @@ structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep 
   noNewVariables : ∀ variables ∈ after.variables, variables ∈ before.variables
   noIssue : after.nextIssue = before.nextIssue
   instanceKept : after.instanceId = before.instanceId
+
+/-- A transition queued exactly the signals `new` after those already queued, and removed none: what a hook statement
+says of the work it leaves to `Step`. -/
+def Queues (before after : State) (new : List Signal) : Prop :=
+  after.signals = before.signals ++ new
+
+/-- `after`'s draft adds the cancelled facts `begun` and the cancelled end facts `keys`, one each, to `before`'s. -/
+def CancelledWith (before after : State) (begun : List Occurrence) (keys : List OccurrenceKey) : Prop :=
+  after.draft.cancelled = before.draft.cancelled ++ begun ∧
+    after.draft.ended = before.draft.ended ++ keys.map (·, Terminal.cancelled) ∧ keys.length = begun.length ∧
+    ∀ occurrence ∈ begun, occurrence.begun = true
+
+/-- A transition journalled begun occurrences cancelled, after those already cancelled, together with one cancelled
+end fact each (`CancelledWith`); the input's other end facts come from `State.recordEnd`. `Step` hands each cancelled
+fact to `Hooks.cancelled` once, so the owning features hear of a removal exactly when its end is journalled. -/
+def CancelsWithEnds (before after : State) : Prop :=
+  ∃ (begun : List Occurrence) (keys : List OccurrenceKey), CancelledWith before after begun keys
 
 /-! ## Non-vacuity
 
@@ -408,6 +428,14 @@ theorem dangling_item_rejected (kind : OpenKind) :
   simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl | rfl <;> simp [subProcess, innerTask, outerTask] at same
 
+/-- An item filed in another scope occurrence than its occurrence's breaks `Owned`. -/
+theorem misfiled_item_rejected (kind : OpenKind) :
+    ¬ Owned { sample kind with openItems := [{ innerItem kind with scope := processRoot }] } := fun owned => by
+  obtain ⟨occurrence, member, same, facts⟩ := owned.itemOccurrences { innerItem kind with scope := processRoot } (by simp)
+  obtain ⟨_, scope⟩ := facts
+  simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl | rfl <;> simp [subProcess, innerTask, outerTask, innerItem, processRoot, subScope] at same scope
+
 /-- A name bound twice in one variable set breaks `VariablesKeyed`. -/
 theorem repeated_name_rejected (kind : OpenKind) :
     ¬ VariablesKeyed { sample kind with variables := [{ scope := processRoot, entries := [("a", .int 1), ("a", .int 2)] }] } :=
@@ -435,6 +463,30 @@ theorem counts_shrink_rejected (kind : OpenKind) :
     ¬ CountsGrow (sample kind) { sample kind with activations := [] } := fun grow => by
   have := grow { processInstance := "p", element := ⟨"Sub"⟩, role := .element, count := 1 } (by simp [sample])
   simp at this
+
+/-- A hook that queues one signal `Queues` it; dropping a queued signal does not. -/
+theorem queues_one (kind : OpenKind) :
+    Queues (sample kind) { sample kind with signals := [.armScope processRoot] } [.armScope processRoot] := by
+  simp [Queues, sample]
+
+theorem dropped_signal_rejected (kind : OpenKind) :
+    ¬ Queues { sample kind with signals := [.armScope processRoot] } (sample kind) [] := by
+  simp [Queues, sample]
+
+/-- Cancelling the begun occurrence 3 with its end fact is a `CancelsWithEnds` transition; a cancelled fact without
+its end is not. -/
+theorem cancels_with_end (kind : OpenKind) :
+    CancelsWithEnds (sample kind)
+      { sample kind with draft := { cancelled := [innerTask], ended := [((sample kind).keyOf innerTask, .cancelled)] } } :=
+  ⟨[innerTask], [(sample kind).keyOf innerTask], by simp [sample], by simp [sample], rfl, by simp [innerTask]⟩
+
+theorem cancel_without_end_rejected (kind : OpenKind) :
+    ¬ CancelsWithEnds (sample kind) { sample kind with draft := { cancelled := [innerTask] } } := by
+  rintro ⟨begun, keys, facts⟩
+  obtain ⟨cancelled, ended, length, _⟩ := facts
+  simp [sample] at cancelled ended
+  subst cancelled
+  simp [ended] at length
 
 /-! ## Operations
 
@@ -498,14 +550,14 @@ structure SameButVariables (before after : State) : Prop where
   failure : after.failure = before.failure
 
 /-- `setVariable` changes only the variable sets and the write log. -/
-theorem setVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
+private theorem setVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
     SameButVariables state (state.setVariable target name value) := by
   unfold State.setVariable
   dsimp only
   split <;> split <;> exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- The variable sets after `setVariable`: the target's set rebinds or appends the name, or a new set holds it. -/
-theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
+private theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
     (state.setVariable target name value).variables =
       if state.variables.any (·.scope == target) then
         state.variables.map fun vars => if vars.scope == target then
@@ -518,7 +570,7 @@ theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name
   split <;> split <;> rfl
 
 /-- Rebinding or appending a name keeps a set's names distinct. -/
-theorem names_after_set (entries : List (String × Value)) (name : String) (value : Value)
+private theorem names_after_set (entries : List (String × Value)) (name : String) (value : Value)
     (nodup : (entries.map (·.1)).Nodup) :
     ((if entries.any (·.1 == name) then entries.map fun entry => if entry.1 == name then (name, value) else entry
       else entries ++ [(name, value)]).map (·.1)).Nodup := by
@@ -631,7 +683,7 @@ theorem setVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {nam
       exact present
 
 /-- `removeVariable` changes only the variable sets and the write log. -/
-theorem removeVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) :
+private theorem removeVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) :
     SameButVariables state (state.removeVariable target name) :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
@@ -659,5 +711,81 @@ theorem removeVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {
       exact nodup.sublist ((List.filter_sublist).map _)
     · simp only [beq_iff_eq, targeted, ite_false]
       exact nodup
+
+/-! ### Cancellation facts -/
+
+private theorem CancelsWithEnds.trans {first second third : State} (one : CancelsWithEnds first second)
+    (two : CancelsWithEnds second third) : CancelsWithEnds first third := by
+  obtain ⟨begun, keys, facts⟩ := one
+  obtain ⟨cancelled, ended, length, flagged⟩ := facts
+  obtain ⟨begun', keys', facts'⟩ := two
+  obtain ⟨cancelled', ended', length', flagged'⟩ := facts'
+  refine ⟨begun ++ begun', keys ++ keys', by simp [cancelled', cancelled], by simp [ended', ended], by simp [length,
+    length'], ?_⟩
+  intro occurrence member
+  rcases List.mem_append.mp member with old | new
+  · exact flagged occurrence old
+  · exact flagged' occurrence new
+
+private theorem CancelsWithEnds.ofDraft {before after : State} (same : after.draft = before.draft) :
+    CancelsWithEnds before after :=
+  ⟨[], [], by simp [same], by simp [same], rfl, by simp⟩
+
+private theorem recordCancelled_cancels (state : State) (occurrences : List Occurrence) :
+    CancelsWithEnds state (State.recordCancelled state occurrences) := by
+  refine ⟨occurrences.filter (·.begun), (occurrences.filter (·.begun)).map state.keyOf, ?_, ?_, by simp, ?_⟩
+  · simp [State.recordCancelled]
+  · simp [State.recordCancelled, List.map_map, Function.comp_def]
+  · intro occurrence member
+    simpa using (List.mem_filter.mp member).2
+
+private theorem clearInside_cancels (state : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
+    CancelsWithEnds state (state.clearInside scope keep) := by
+  obtain ⟨begun, keys, facts⟩ := recordCancelled_cancels state
+    ((state.subtree scope).reverse.flatMap fun current =>
+      state.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id)
+  obtain ⟨cancelled, ended, length, flagged⟩ := facts
+  exact ⟨begun, keys, by simpa [State.clearInside] using cancelled, by simpa [State.clearInside] using ended, length,
+    flagged⟩
+
+private theorem removeOccurrence_cancels (state : State) (id : Nat) :
+    CancelsWithEnds state (state.removeOccurrence id) := by
+  have fold : ∀ (scopes : List ScopeOccurrence) (current : State), CancelsWithEnds state current →
+      CancelsWithEnds state (scopes.foldl (fun state scope => state.leaveScope scope.id) current) := by
+    intro scopes
+    induction scopes with
+    | nil => intro current reached; exact reached
+    | cons scope rest ih =>
+      intro current reached
+      refine ih _ (reached.trans ?_)
+      obtain ⟨begun, keys, facts⟩ := clearInside_cancels current scope.id []
+      obtain ⟨cancelled, ended, length, flagged⟩ := facts
+      exact ⟨begun, keys, by simpa [State.leaveScope] using cancelled, by simpa [State.leaveScope] using ended, length,
+        flagged⟩
+  exact fold _ _ (.ofDraft rfl)
+
+private theorem withdrawOccurrence_draft (state : State) (id : Nat) :
+    (state.withdrawOccurrence id).draft = state.draft := by
+  have fold : ∀ (scopes : List ScopeOccurrence) (current : State), current.draft = state.draft →
+      (scopes.foldl (fun state scope => state.withdrawInside scope.id) current).draft = state.draft := by
+    intro scopes
+    induction scopes with
+    | nil => intro current same; exact same
+    | cons scope rest ih => intro current same; exact ih _ (by simpa [State.withdrawInside] using same)
+  exact fold _ _ (by simp [State.closeOwnItems, State.disarm])
+
+/-- Clearing a scope occurrence and cancelling an occurrence journal their cancelled facts with their end facts
+(`CancelsWithEnds`): `State.Removal`'s one cancelled-fact writer pairs every cancelled fact with its end, so P3's notice
+is given exactly when the end is journalled. -/
+theorem removal_cancels_with_ends (state : State) :
+    (∀ scope keep, CancelsWithEnds state (state.clearInside scope keep)) ∧
+      ∀ id, CancelsWithEnds state (state.cancelOccurrence id) := by
+  refine ⟨clearInside_cancels state, fun id => ?_⟩
+  unfold State.cancelOccurrence
+  split
+  · exact .ofDraft rfl
+  · rename_i occurrence _
+    exact ((CancelsWithEnds.ofDraft (withdrawOccurrence_draft state id)).trans
+      (removeOccurrence_cancels _ id)).trans (recordCancelled_cancels _ [occurrence])
 
 end Kernel.Laws.State

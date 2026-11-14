@@ -173,7 +173,7 @@ def candidateHolds (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Bo
       | _ => false
 
 /-- A condition `Kernel.Feature.Flow` reads without failing has the value `candidateHolds` gives it. -/
-theorem condition_holds {ctx : Ctx} {context : EvalContext} {candidate : FlowId} {value : Bool}
+private theorem condition_holds {ctx : Ctx} {context : EvalContext} {candidate : FlowId} {value : Bool}
     (ran : Feature.Flow.condition ctx context candidate = .ok value) : candidateHolds ctx context candidate = value := by
   unfold Feature.Flow.condition at ran
   unfold candidateHolds
@@ -189,7 +189,7 @@ theorem condition_holds {ctx : Ctx} {context : EvalContext} {candidate : FlowId}
       simp only [some_]
       split at ran <;> rename_i evaluated <;> simp_all
 
-theorem firstTrue_spec {ctx : Ctx} {context : EvalContext} :
+private theorem firstTrue_spec {ctx : Ctx} {context : EvalContext} :
     ∀ {candidates : List FlowId} {chosen : Option FlowId},
       Feature.Flow.firstTrue ctx context candidates = .ok chosen →
       (∀ flow, chosen = some flow → ∃ earlier later, candidates = earlier ++ flow :: later ∧

@@ -65,7 +65,9 @@ def ActsIn (signal : Signal) (scope : ScopeOccurrenceId) : Prop :=
     (∃ activity trigger leave resume, signal = .compensate scope activity trigger leave resume) ∨
     ∃ code message origin, signal = .compensationFailed scope code message origin
 
-/-- Nothing but the journal changed. -/
+/-- Nothing a later micro-step or the observation boundary reads changed but the journal: the scope tree, occurrences,
+open items, tokens, variables, queued signals, feature slots, issue counter, activation counters, status, failure and
+outbox are as they were. -/
 structure Inert (before after : State) : Prop where
   scopes : after.scopes = before.scopes
   occurrences : after.occurrences = before.occurrences
@@ -75,7 +77,10 @@ structure Inert (before after : State) : Prop where
   signals : after.signals = before.signals
   slots : after.slots = before.slots
   nextIssue : after.nextIssue = before.nextIssue
+  activations : after.activations = before.activations
   status : after.status = before.status
+  failure : after.failure = before.failure
+  outbox : after.outbox = before.outbox
 
 /-- Queued work naming a scope occurrence that was issued and has since been removed has no effect: the closure
 micro-step that runs it either fails the input or changes nothing but the journal (`Kernel/Step/Stale.lean`). It is
@@ -88,8 +93,9 @@ def QueuedWorkInert (hooks : Hooks) : Prop :=
     Inert { state with signals := rest } after
 
 /-- Every begun occurrence a committed input removes ends exactly once in the input's journal, which is when `Step`
-hands a cancelled one to `Hooks.cancelled`, the owning features' notice: the journal's cancelled facts and the
-notices are made together (`State.clearInside`, `State.cancelOccurrence`). -/
+hands a cancelled one to `Hooks.cancelled`, the owning features' notice: the journal's cancelled facts and their end
+facts are made together (`Laws.State.removal_cancels_with_ends` of `State.clearInside` and `State.cancelOccurrence`);
+the input's other end facts come from `State.recordEnd`. -/
 def RemovedEndOnce (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before after : State) (occurrence : Occurrence),
     WellFormed before → Step.step hooks program (some before) input = .ok after →

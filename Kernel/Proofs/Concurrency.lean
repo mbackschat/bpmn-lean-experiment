@@ -1,7 +1,6 @@
 module
 
 public import Kernel.Laws.Step
-public import Kernel.Laws.Flow
 public import Kernel.Laws.Data
 public import Kernel.IL.Footprint
 
@@ -19,8 +18,9 @@ that admission enforces with `flow.concurrentWrite`, `flow.concurrentInterferenc
 `multiInstance.concurrentInstances` (and the refusal P1 adds for #81), over the read and write account of
 `Kernel.IL.Footprint`. `apart` is a draft parameter: P1's fix of #81 settles it, since today's admission admits
 schedules that wake races and item-dependent exits tell apart, and the fixed refusal fixes what `apart` compares, the
-footprints of concurrent branch closures that stop where a branch waits or joins. That admission enforces it stays
-scenario evidence. Nothing executable imports this module.
+footprints of concurrent branch closures that stop where a branch waits or joins. P1's interpretation review approves
+its declarative form. That admission enforces it stays scenario evidence. `Laws.Data` is this module's path to `Laws.State`, whose
+importers are all feature `Laws` modules. Nothing executable imports this module.
 -/
 
 public section
@@ -50,12 +50,15 @@ structure Issued (rename : Nat → Nat) (from_ : Nat) : Prop where
   surjective : ∀ target, ∃ source, rename source = target
   fixed : ∀ id, id < from_ → rename id = id
 
-/-- A bijection of activations: it keeps an occurrence key's instance, element and role. -/
-structure Activations (rename : OccurrenceKey → OccurrenceKey) : Prop where
+/-- A bijection of activations: it keeps an occurrence key's instance, element and role, and fixes every activation
+`state` had already counted, so only those numbered from `state` on are renamed. -/
+structure Activations (state : State) (rename : OccurrenceKey → OccurrenceKey) : Prop where
   injective : ∀ first second, rename first = rename second → first = second
   surjective : ∀ target, ∃ source, rename source = target
   keeps : ∀ key, (rename key).processInstanceId = key.processInstanceId ∧ (rename key).element = key.element ∧
     (rename key).role = key.role
+  fixed : ∀ key, (∃ count ∈ state.activations, count.processInstance = key.processInstanceId ∧
+    count.element = key.element ∧ count.role = key.role ∧ key.activation ≤ count.count) → rename key = key
 
 /-- The open items of a state at the observation boundary: the public key of the occurrence each waits for, and its
 kind. -/
@@ -63,12 +66,13 @@ def openKeys (state : State) : List (OccurrenceKey × OpenKind) :=
   state.openItems.filterMap fun item => (state.occurrence? item.occurrence).map fun occurrence => (state.keyOf occurrence, item.kind)
 
 /-- Equal at the canonical-result observation boundary up to `ids` and `keys`: status and failure, the variable sets
-by renamed scope occurrence, the journal's start and end facts and the open waits by renamed key, and the outbox, each
-as a multiset. -/
+by renamed scope occurrence, each set's bindings as a multiset, the journal's start and end facts and the open waits by
+renamed key, and the outbox, each as a multiset. -/
 structure Alike (ids : Nat → Nat) (keys : OccurrenceKey → OccurrenceKey) (left right : State) : Prop where
   status : left.status = right.status
   failure : left.failure = right.failure
-  variables : (left.variables.map fun frame => { frame with scope := ⟨ids frame.scope.value⟩ }).Perm right.variables
+  variables : ∃ matched : List ScopeVariables, matched.Perm right.variables ∧ matched.length = left.variables.length ∧
+    ∀ pair ∈ left.variables.zip matched, pair.2.scope = ⟨ids pair.1.scope.value⟩ ∧ pair.1.entries.Perm pair.2.entries
   started : ((left.journal.flatMap (·.started)).map fun fact => keys fact.occurrence).Perm
     ((right.journal.flatMap (·.started)).map (·.occurrence))
   ended : ((left.journal.flatMap (·.ended)).map fun fact => (keys fact.1, fact.2)).Perm (right.journal.flatMap (·.ended))
@@ -78,12 +82,13 @@ structure Alike (ids : Nat → Nat) (keys : OccurrenceKey → OccurrenceKey) (le
 
 /-- P6: from a closure state reached from a well-formed state, any two schedules of its enabled work that both settle
 commit results alike up to a bijection of the identities and activations issued from that state on. `apart` is a draft
-that P1's fix of #81 settles; with today's admission as `apart` the statement is false (#81). -/
+that P1's fix of #81 settles and P1's interpretation review approves; with today's admission as `apart` the statement
+is false (#81). -/
 def SchedulesAgree (hooks : Hooks) (apart : Program → Prop) : Prop :=
   ∀ (ctx : Ctx) (start state reordered left right : State) (fuel work fuel' work' : Nat),
     ctx.program.options.branchSchedule = .orderInvariant → apart ctx.program →
     WellFormed start → Reaches hooks ctx start state → Reordered state reordered →
     Step.settle hooks ctx fuel work state = .ok left → Step.settle hooks ctx fuel' work' reordered = .ok right →
-    ∃ ids keys, Issued ids state.nextIssue ∧ Activations keys ∧ Alike ids keys left right
+    ∃ ids keys, Issued ids state.nextIssue ∧ Activations state keys ∧ Alike ids keys left right
 
 end Kernel.Proofs.Concurrency

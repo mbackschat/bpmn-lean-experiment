@@ -26,14 +26,14 @@ open Kernel Kernel.Step
 
 /-! ## Outcomes -/
 
-theorem bind_ok {α β ε : Type} {x : Except ε α} {f : α → Except ε β} {b : β} (ran : (x >>= f) = .ok b) :
+private theorem bind_ok {α β ε : Type} {x : Except ε α} {f : α → Except ε β} {b : β} (ran : (x >>= f) = .ok b) :
     ∃ a, x = .ok a ∧ f a = .ok b := by
   cases x with
   | error failure => exact absurd ran (by simp [bind, Except.bind])
   | ok a => exact ⟨a, by simp, by simpa [bind, Except.bind] using ran⟩
 
 /-- A transaction boundary changes only a failure: a committed outcome passes through it. -/
-theorem deferred_ok {program : Program} {state after : State} {outcome : Outcome}
+private theorem deferred_ok {program : Program} {state after : State} {outcome : Outcome}
     (ran : deferred program state outcome = .ok after) : outcome = .ok after := by
   unfold deferred at ran
   split at ran <;> (try split at ran) <;> simp_all

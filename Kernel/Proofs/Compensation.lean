@@ -5,6 +5,7 @@ public import Kernel.Laws.Scopes
 public import Kernel.Laws.Compensation
 public import Kernel.Laws.Propagation
 public import Kernel.IL.Paths
+public import Kernel.Laws.Population
 
 /-! # Proofs: Compensation and Transaction (P5)
 
@@ -26,7 +27,7 @@ public section
 namespace Kernel.Proofs.Compensation
 
 open Kernel
-open Kernel.Laws.State (WellFormed scopeIds)
+open Kernel.Laws.State (WellFormed scopeIds Queues)
 open Kernel.Laws.Compensation (ClaimsApart TakesOut Advances Failed)
 
 /-- Every retained record lies in a present scope occurrence. -/
@@ -39,10 +40,22 @@ def RunsUnfinished (s : State) : Prop :=
 
 /-- The lane's slot invariant: no record is claimed twice (`ClaimsApart`), every retained record lies in a present scope
 occurrence and no finished run is left. It is a lane premise beside `WellFormed`, not a clause of it, since feature
-slot entries are each feature's own laws; the lane proves it preserved, `ClaimsStayApart`, `RetainedInPresentScopes`
-and `NoFinishedRunLeft` being its parts of the after-state. -/
+slot entries are each feature's own laws; the lane proves it preserved, as P2 does `WellFormed`: by a committed input
+(`ClaimsStayApart`, `RetainedInPresentScopes` and `NoFinishedRunLeft` are its parts of the after-state), at a start
+(`CompensationsFormedAtStart`) and in every instance of a population run (`CompensationsFormedInPopulation`). -/
 def CompensationsFormed (s : State) : Prop :=
   ClaimsApart s.slots.compensation ∧ RetainedPresent s ∧ RunsUnfinished s
+
+/-- A committed start keeps the lane's slot invariant. -/
+def CompensationsFormedAtStart (hooks : Hooks) : Prop :=
+  ∀ (program : Program) (input : Input) (after : State), Step.step hooks program none input = .ok after →
+    CompensationsFormed after
+
+/-- Every instance a committed population run holds keeps the lane's slot invariant. -/
+def CompensationsFormedInPopulation (hooks : Hooks) : Prop :=
+  ∀ (admission : Program → Option String) (stimuli : List Population.Stimulus) (result : Population.Result),
+    Population.runStimuli hooks admission stimuli = .ok result →
+    ∀ instance_ ∈ result.instances, CompensationsFormed instance_.state
 
 /-- A committed input from `before` to `after`, from a well-formed before-state that keeps the lane's slot invariant. -/
 def Commits (hooks : Hooks) (program : Program) (before after : State) : Prop :=
@@ -82,8 +95,10 @@ def Depends (program : Program) (reads writes : ElementId → List String) : Com
 /-- Handler order: every change a hook makes to a run in progress is one `Advances` of it under `Depends`
 (`Laws.Compensation.Advances`), so no handler starts while one that must complete before it is pending or running.
 Stated of `Hooks.compensate` and `Hooks.handlerCompleted`, the hooks that start handlers. `reads` and `writes` name
-what each subject's run reads and writes; a footprint that reads or writes every name (`NameSet.all`) has no name list,
-so the lane fixes their binding. -/
+what each subject's run reads and writes. `Laws.Compensation.Precedes` takes them as `List String`, while the kernel's
+dependency reads a `NameSet` that may hold every name (`NameSet.all`, `Feature.Compensation.precedes`): a mismatch of
+the law's type, not a kernel defect, handed explicitly to P5's lane review, which decides the law's type and with it
+their binding. -/
 def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
   ∀ (ctx : Ctx) (state after : State) (run next : CompensationRun),
     ((∃ scope activity trigger leave resume, hooks.compensate ctx scope activity trigger leave resume state = .ok after) ∨
@@ -100,26 +115,28 @@ def NoFinishedRunLeft (hooks : Hooks) : Prop :=
 /-- Failure: an Error that leaves a handler's context uncaught fails the instance under
 `CompensationHandlerFailure.failsInstance` (COMPH-FAIL-01) and is searched for from the run's scope occurrence under
 `propagatesFromTrigger` (CIB-INT-0038), without failing the instance there. Stated of `Hooks.failCompensation`, which
-`Step` calls for a queued `Signal.compensationFailed`. -/
+`Step` calls for a queued `Signal.compensationFailed`, of the signals it newly queues (`Laws.State.Queues`). -/
 def HandlerFailure (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (handler : ScopeOccurrenceId) (code : String) (message : Option String) (origin : Origin)
     (state after : State),
     hooks.failCompensation ctx handler code message origin state = .ok after →
-    (ctx.program.options.compensationHandlerFailure = .failsInstance →
-      ∃ failure, Signal.endInstance .failed failure ∈ after.signals) ∧
-    (ctx.program.options.compensationHandlerFailure = .propagatesFromTrigger →
-      (∀ failure, Signal.endInstance .failed failure ∉ after.signals) ∧
-      ∃ run ∈ state.slots.compensation.runs, ∃ event raisedFrom, Signal.raise event raisedFrom ∈ after.signals ∧
-        run.running.any (·.1 == handler))
+    ∃ new, Queues state after new ∧
+      (ctx.program.options.compensationHandlerFailure = .failsInstance →
+        ∃ failure, Signal.endInstance .failed failure ∈ new) ∧
+      (ctx.program.options.compensationHandlerFailure = .propagatesFromTrigger →
+        (∀ failure, Signal.endInstance .failed failure ∉ new) ∧
+        ∃ run ∈ state.slots.compensation.runs, ∃ event raisedFrom, Signal.raise event raisedFrom ∈ new ∧
+          run.running.any (·.1 == handler))
 
 /-- Cancel propagation: a Cancel End Event inside a Transaction compensates the Transaction's completed work before its
 Cancel boundary is taken, and is never caught by anything else (§10.5.4 Cancel, §13.5.6; `Laws.Propagation.CancelAdmission`
 admits it only with exactly one Cancel boundary). Stated of `Hooks.arriveThrow`: the Cancel End queues one compensation of
-its Transaction, whose run resumes at the boundary, and no flow token. -/
+its Transaction, whose run resumes at the boundary, among the signals it newly queues (`Laws.State.Queues`), and no
+flow token. -/
 def CancelCompensatesFirst (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrence : Occurrence) (state after : State),
     hooks.arriveThrow ctx header payload .cancel occurrence state = .ok after →
-    after.tokens = state.tokens ∧
-      ∃ scope trigger leave resume, Signal.compensate scope none trigger leave resume ∈ after.signals ∧ resume.isSome
+    after.tokens = state.tokens ∧ ∃ new, Queues state after new ∧
+      ∃ scope trigger leave resume, Signal.compensate scope none trigger leave resume ∈ new ∧ resume.isSome
 
 end Kernel.Proofs.Compensation
