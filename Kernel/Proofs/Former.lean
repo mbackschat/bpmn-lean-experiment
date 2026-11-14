@@ -2,6 +2,7 @@ module
 
 public import Kernel.Laws.Step
 public import Kernel.Laws.Data
+public import Kernel.Proofs.Concurrency
 
 /-! # Proofs: the former lanes (P7)
 
@@ -19,7 +20,7 @@ premise is `Laws.State.WellFormed`.
 | PC-DATA-01 | bound checks reject before partial writes | restated: `ValuesRejectedWhole` |
 | PC-HUM-04 | pass-through lowering and its admission checks | not applicable: there is no lowering; a pass-through Task runs as an Activity through `Step`'s one pipeline |
 | PC-HUM-04 | the closure burst bound (never proved) | not applicable: `Step.closureBound` and `Step.closureWorkBound` make an overlong closure `unsupported`, dynamic-only |
-| PC-HUM-04 | `prepared_end_declared_entry_pair` (`DTB-COMMUTE-01`) | restated as a corollary of P6's `Proofs.Concurrency.SchedulesAgree` under `apart`: the End and entry tokens' two orders are one `Reordered` pair of a closure state, so no statement of its own |
+| PC-HUM-04 | `prepared_end_declared_entry_pair` (`DTB-COMMUTE-01`) | proved as a corollary of P6's `Proofs.Concurrency.SchedulesAgree` under `apart`: `endBesideEntry` |
 | PC-SCOPE-04 | `invokeState?_installs_snapshot`, `copyValues?_absent_is_null` (`CVM-IN-01`) | restated: `CallInstallsSnapshot` |
 | PC-SCOPE-04 | the read, write and owner isolation lemmas (`CVM-ISOLATE-01`) | restated: `CalledReadsIsolated`, `CalledWritesIsolated` |
 | PC-SCOPE-04 | `returnState?_writes_outputs_from_caller` (`CVM-OUT-01`) | restated: `OutputsAtNearestOwner` |
@@ -34,7 +35,7 @@ Model premises cite their refusal codes where admission enforces one; that admis
 evidence. Nothing executable imports this module.
 -/
 
-public section
+@[expose] public section
 
 namespace Kernel.Proofs.Former
 
@@ -50,6 +51,20 @@ def ValuesRejectedWhole (hooks : Hooks) : Prop :=
     (∀ formed, before = some formed → WellFormed formed) →
     (∃ binding ∈ values, ¬ Laws.Data.InDomain binding.2) →
     ∃ code, Step.step hooks program before input = .error (.rejected code)
+
+/-- PC-HUM-04 (`DTB-COMMUTE-01`): a token to a None End beside a token entering an embedded Sub-Process commute under
+`orderInvariant` (BPMN 2.0.2 §10.5.3, §13.5.6). The pair's two orders are one `Reordered` pair of a closure state, so
+the former theorem is P6 under `apart` at a state queuing the two tokens, with no premise about the pair's elements. -/
+theorem endBesideEntry {hooks : Hooks} {apart : Program → Prop} (agree : Proofs.Concurrency.SchedulesAgree hooks apart)
+    (ctx : Ctx) (start state reordered left right : State) (fuel work fuel' work' : Nat) (toEnd toEntry : FlowId)
+    (scope : ScopeOccurrenceId) (_pair : state.tokens = [.flow toEnd scope, .flow toEntry scope])
+    (invariant : ctx.program.options.branchSchedule = .orderInvariant) (separate : apart ctx.program)
+    (formed : WellFormed start) (reached : Proofs.Concurrency.Reaches hooks ctx start state)
+    (swapped : Proofs.Concurrency.Reordered state reordered) (settled : Step.settle hooks ctx fuel work state = .ok left)
+    (settled' : Step.settle hooks ctx fuel' work' reordered = .ok right) :
+    ∃ ids keys, Proofs.Concurrency.Issued ids state.nextIssue ∧ Proofs.Concurrency.Activations state keys ∧
+      Proofs.Concurrency.Alike ids keys left right :=
+  agree ctx start state reordered left right fuel work fuel' work' invariant separate formed reached swapped settled settled'
 
 /-- `root` is the root of a called process instance in `state`. -/
 def CalledRoot (state : State) (root : ScopeOccurrenceId) : Prop :=

@@ -17,7 +17,7 @@ micro-step contracts the lane proves these from.
 `Signal.write` to a removed scope occurrence reaches the instance root (P1). Nothing executable imports this module.
 -/
 
-public section
+@[expose] public section
 
 namespace Kernel.Proofs.Cancellation
 

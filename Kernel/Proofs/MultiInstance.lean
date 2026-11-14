@@ -18,7 +18,7 @@ loops the kernel does not run (`multiInstance.*`, `scope.multiInstance`) stays s
 tests): no statement here names the admission evaluator. Nothing executable imports this module.
 -/
 
-public section
+@[expose] public section
 
 namespace Kernel.Proofs.MultiInstance
 

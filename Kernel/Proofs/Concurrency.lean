@@ -23,7 +23,7 @@ its declarative form. That admission enforces it stays scenario evidence. `Laws.
 importers are all feature `Laws` modules. Nothing executable imports this module.
 -/
 
-public section
+@[expose] public section
 
 namespace Kernel.Proofs.Concurrency
 

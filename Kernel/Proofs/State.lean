@@ -24,7 +24,7 @@ scope occurrence an interruption already removed, so the closure is proved throu
 module.
 -/
 
-public section
+@[expose] public section
 
 namespace Kernel.Proofs.State
 

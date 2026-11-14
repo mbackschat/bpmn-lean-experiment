@@ -15,7 +15,7 @@ own `Kernel.Proofs.<Lane>` module and proved there from hook contracts; a lane c
 statement of `Registry.hooks`. Nothing executable imports this module.
 -/
 
-public section
+@[expose] public section
 
 namespace Kernel.Proofs.Step
 

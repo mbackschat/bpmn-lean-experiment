@@ -22,7 +22,7 @@ does not run (`compensation.*`, `throw.compensation.*`, `throw.cancel.*`) stays 
 imports this module.
 -/
 
-public section
+@[expose] public section
 
 namespace Kernel.Proofs.Compensation
 
