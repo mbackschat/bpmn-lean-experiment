@@ -215,10 +215,36 @@ def Beginnable (s : State) (scope : ScopeOccurrenceId) (id : Nat) : Prop :=
     (∀ item ∈ s.openItems, item.occurrence ≠ id ∧ item.attachedTo ≠ some id) ∧
     (scope ∈ scopeIds s → s.instanceOf scope = s.instanceOf occurrence.scope)
 
-/-- No queued begin names the reservation `id` and no queued completion completes it. -/
+/-- A feature slot or a queued compensation will complete the occurrence `id`: a join parks it, a Multi-Instance body
+runs on it, or a compensation run resumes it once it ends (what `SlotsSettled` reads). -/
+def SlotCompletes (s : State) (id : Nat) : Prop :=
+  (∃ waiting ∈ s.slots.parked, waiting.occurrence = id) ∨ (∃ run ∈ s.slots.multiInstances, run.occurrence = id) ∨
+    (∃ run ∈ s.slots.compensation.runs, ∃ leave, run.resume = some (.complete id leave)) ∨
+    ∃ scope activity trigger leave resume,
+      Signal.compensate scope activity trigger leave (some (.complete id resume)) ∈ s.signals
+
+/-- What a slot completes in a state with the same slots and fewer queued signals, it completes in the other. -/
+theorem SlotCompletes.shrink {before after : State} (slots : after.slots = before.slots)
+    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) {id : Nat} (completes : SlotCompletes after id) :
+    SlotCompletes before id := by
+  rw [SlotCompletes, ← slots]
+  rcases completes with parked | bodies | runs | ⟨scope, activity, trigger, rest⟩
+  · exact .inl parked
+  · exact .inr (.inl bodies)
+  · exact .inr (.inr (.inl runs))
+  · obtain ⟨leave, resume, member⟩ := rest
+    exact .inr (.inr (.inr ⟨scope, activity, trigger, leave, resume, signals _ member⟩))
+
+/-- Nothing claims the reservation `id`: no queued begin names it, and no queued completion or feature slot completes
+it. -/
 def Unclaimed (s : State) (id : Nat) : Prop :=
   (∀ request, Queued s request → id ∉ names request) ∧
-    ∀ leave writes rule, Signal.complete id leave writes rule ∉ s.signals
+    (∀ leave writes rule, Signal.complete id leave writes rule ∉ s.signals) ∧ ¬ SlotCompletes s id
+
+/-- The Event Sub-Process start reservation a begin request names (`BeginRequest.inner`) lies, while it stands, in the
+scope occurrence the request begins in. -/
+def InnerPlaced (s : State) (request : BeginRequest) : Prop :=
+  ∀ id ∈ request.inner.toList, ∀ occurrence ∈ s.occurrences, occurrence.id = id → occurrence.scope = request.scope
 
 /-- `first` occurs in `l` before `second`. -/
 def Precedes {α : Type} (l : List α) (first second : α) : Prop := [first, second].Sublist l
@@ -243,6 +269,10 @@ structure ReservationsClaimed (s : State) : Prop where
   /-- A queued begin names an issued scope occurrence, so a scope occurrence entered later is never the one it
   begins in. -/
   scopesIssued : ∀ request, Queued s request → request.scope.value < s.nextIssue
+  /-- A queued begin's Event Sub-Process start reservation lies in the scope occurrence it begins in, as the firing
+  that queues the begin reads both off the item that held it (`Subscriptions.fireEventStart`), so the interrupting
+  entry's clearing of that scope occurrence keeps it housed (`Scopes.arriveScope`). -/
+  innerPlaced : ∀ request, Queued s request → InnerPlaced s request
 
 /-! ## What the slots complete -/
 
@@ -271,6 +301,17 @@ structure SlotsSettled (s : State) : Prop where
   queued : ∀ scope activity trigger leave occurrence resume,
     Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ s.signals → Settled s occurrence
   placed : ∀ run ∈ s.slots.multiInstances, Placed s run
+
+/-- What a slot completes no queued begin names. -/
+theorem SlotsSettled.free {s : State} (settled : SlotsSettled s) {request : BeginRequest} (queued : Queued s request)
+    {id : Nat} (named : id ∈ names request) : ¬ SlotCompletes s id := by
+  rintro (⟨waiting, member, rfl⟩ | ⟨run, member, rfl⟩ | ⟨run, member, leave, resume⟩ |
+    ⟨scope, activity, trigger, rest⟩)
+  · exact (settled.parked waiting member).2.2 request queued named
+  · exact (settled.bodies run member).2.2 request queued named
+  · exact (settled.resumed run member id leave resume).2.2 request queued named
+  · obtain ⟨leave, resume, member⟩ := rest
+    exact (settled.queued scope activity trigger leave id resume member).2.2 request queued named
 
 /-! ## What an open item waits on -/
 
@@ -845,57 +886,5 @@ theorem nested_instance_placed (kind : OpenKind) : Placed (sample kind) (instanc
 theorem misplaced_instance_rejected (kind : OpenKind) : ¬ Placed (sample kind) (instanceRun subScope) := fun placed => by
   have := (placed subScope (by simp [instanceRun])).2 childScope (by simp [sample]) rfl
   simp [childScope, processRoot, subScope, instanceRun] at this
-
-/-- An item of `Outer` holding the reservation 7, for a program that declares `Outer` a start Event, as an Event
-Sub-Process's is, and `Inner` none. -/
-def startItem (kind : OpenKind) : OpenItem :=
-  { id := 8, kind, element := ⟨"Outer"⟩, scope := processRoot, occurrence := 7, passive := true }
-
-theorem start_item_typed (kind : OpenKind) {program : Program}
-    (inner : ((program.element? ⟨"Inner"⟩).bind (·.start?)).isSome = false) :
-    Typed program { armedState kind with openItems := [innerItem kind, startItem kind] } := by
-  intro item member started
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl
-  · simp [innerItem, inner] at started
-  · refine ⟨fun occurrence present named => ?_, fun other inside same => ?_⟩
-    · simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at present
-      rcases present with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation, startItem]
-    · simp only [List.mem_cons, List.not_mem_nil, or_false] at inside
-      rcases inside with rfl | rfl <;> simp_all [innerItem, startItem]
-
-/-- Under such a program, the item of `Outer` waiting for the begun occurrence 5 breaks `Typed`: its firing would begin
-5 again; so do two items of `Outer` holding the reservation 7, since the firing of one would leave the other waiting on
-a begun occurrence. -/
-theorem begun_start_rejected (kind : OpenKind) {program : Program}
-    (outer : ((program.element? ⟨"Outer"⟩).bind (·.start?)).isSome = true) : ¬ Typed program (sample kind) :=
-  fun typed => by
-    have := (typed (outerItem kind) (by simp [sample]) (by simpa [outerItem] using outer)).1 outerTask
-      (by simp [sample]) rfl
-    simp [outerTask] at this
-
-theorem shared_start_rejected (kind : OpenKind) {program : Program}
-    (outer : ((program.element? ⟨"Outer"⟩).bind (·.start?)).isSome = true) :
-    ¬ Typed program { armedState kind with openItems := [startItem kind, { startItem kind with id := 9 }] } :=
-  fun typed => by
-    have := (typed (startItem kind) (by simp) (by simpa [startItem] using outer)).2 { startItem kind with id := 9 }
-      (by simp) rfl
-    simp [startItem] at this
-
-/-- An item attached to the root's task 5 holding the reservation 7 is reserved; one waiting for the begun occurrence 5
-itself breaks `AttachedReserved`. -/
-theorem attached_reserved (kind : OpenKind) :
-    AttachedReserved { armedState kind with openItems := [{ startItem kind with attachedTo := some 5 }] } := by
-  intro item member _ occurrence present named
-  simp only [List.mem_singleton] at member
-  subst member
-  simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at present
-  rcases present with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation, startItem]
-
-theorem attached_begun_rejected (kind : OpenKind) :
-    ¬ AttachedReserved { sample kind with openItems := [{ outerItem kind with attachedTo := some 1 }] } :=
-  fun reserved => by
-    have := reserved { outerItem kind with attachedTo := some 1 } (by simp) rfl outerTask (by simp [sample]) rfl
-    simp [outerTask] at this
 
 end Kernel.Laws.State

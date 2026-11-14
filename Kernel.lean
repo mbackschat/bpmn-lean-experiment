@@ -65,12 +65,14 @@ public import Kernel.Laws.Registry
 public import Kernel.Laws.Scopes
 public import Kernel.Laws.Starts
 public import Kernel.Laws.State
+public import Kernel.Laws.State.Claim
 public import Kernel.Laws.State.Enter
 public import Kernel.Laws.State.Frames
 public import Kernel.Laws.State.Invariant
 public import Kernel.Laws.State.Issue
 public import Kernel.Laws.State.Keeps
 public import Kernel.Laws.State.Removal
+public import Kernel.Laws.State.Reserve
 public import Kernel.Laws.State.Sample
 public import Kernel.Laws.State.Variables
 public import Kernel.Laws.Step

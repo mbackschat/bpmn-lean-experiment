@@ -13,7 +13,7 @@ public import Kernel.Laws.MultiInstance
 public import Kernel.Laws.Hooks
 public import Kernel.Proofs.State
 public import Kernel.Laws.State.Removal
-public import Kernel.Laws.State.Enter
+public import Kernel.Laws.State.Claim
 
 /-! # Proofs: composition over the registered hooks
 
@@ -179,8 +179,8 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
       rw [Laws.Step.endInstance_eq]
       exact Laws.State.endInstance_wellFormed formed recorded
     begin := fun _ _ request role sourceType formed stands admitted =>
-      ⟨Laws.State.begin_wellFormed formed request role sourceType (mem stands) admitted.2,
-        Laws.State.begin_entry formed request role sourceType admitted.1 admitted.2⟩
+      ⟨Laws.State.begin_wellFormed formed request role sourceType (mem stands) admitted.2.1,
+        Laws.State.begin_entry formed request role sourceType admitted.1 admitted.2.1 admitted.2.2⟩
     reserve := fun _ _ element scope formed stands => Laws.State.reserve_wellFormed formed element scope (mem stands)
     startReserved := fun _ _ _ sourceType formed member unnamed =>
       Laws.State.startReserved_closeOwnItems_wellFormed formed sourceType member unnamed
@@ -392,6 +392,21 @@ theorem startsOps : Laws.Starts.StartsOps (Laws.State.WellFormed program) where
 theorem scopesOps : Laws.Scopes.ScopesOps (Laws.State.WellFormed program) where
   owner _ _ _ formed member owned link := owner_begun formed member owned link
   complete _ _ leave writes rule formed member begun := complete_wellFormed formed member begun leave writes rule
+  clear _ _ _ formed member begun ready := Laws.State.clearInside_inner formed member begun ready
+  enter _ element locals _ _ formed member begun claimable :=
+    Laws.State.enterScope_inner formed element locals member begun claimable
+  arm _ _ element formed member begun := queueArm_wellFormed formed member begun element
+  armScope _ _ formed stands := armScope_wellFormed formed (List.mem_map.mp stands)
+  begin _ request formed stands inner nodup admitted :=
+    Laws.State.signal_named_wellFormed formed stands nodup admitted (by simp [Laws.State.InnerPlaced, inner])
+      (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same) (fun _ same => by simp at same)
+        (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
+      (fun _ _ _ _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same)
+  armed _ _ _ _ _ _ ready := ⟨by rw [Laws.State.signal_eq], Laws.State.Claimable.signal ready
+    (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same)⟩
+  scopeArmed _ _ _ _ ready := ⟨by rw [Laws.State.signal_eq], Laws.State.Claimable.signal ready
+    (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same)⟩
+  signalScopes _ _ := by rw [Laws.State.signal_eq]
 
 /-- `HookContract.outflow` of the registered hooks. -/
 theorem registered_outflow : ∀ ctx occurrence leave state after, Laws.State.WellFormed ctx.program state →
@@ -424,6 +439,17 @@ theorem registered_completeScope : ∀ ctx header payload scope occurrence state
   intro _ _ _ _ _ _ _ formed member owned link ran
   rw [Laws.Registry.hooks_completeScope] at ran
   exact Laws.Scopes.completeScope_keeps scopesOps formed member owned link ran
+
+/-- `HookContract.arriveScope` of the registered hooks. -/
+theorem registered_arriveScope : ∀ ctx header payload occurrence entry state after,
+    Laws.State.WellFormed ctx.program state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    (∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id ∧
+      ∀ found ∈ state.occurrences, found.id = id → found.scope = occurrence.scope) →
+    Registry.hooks.arriveScope ctx header payload occurrence entry state = .ok after →
+    Laws.State.WellFormed ctx.program after := by
+  intro _ _ _ _ _ _ _ formed member begun ready ran
+  rw [Laws.Registry.hooks_arriveScope] at ran
+  exact Laws.Scopes.arriveScope_keeps scopesOps formed member begun ready ran
 
 /-- The subscription hooks' operations record (`Laws.Subscriptions.SubscriptionsOps`) of `WellFormed`. -/
 theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.State.WellFormed program) where

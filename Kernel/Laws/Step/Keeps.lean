@@ -145,7 +145,8 @@ theorem fireItem_keeps (contract : HookContract hooks inv) {ctx : Ctx} {item : O
 theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}
     {trigger : StartTrigger} {state after : State} (holds : inv ctx.program state) (member : occurrence ∈ state.occurrences)
     (begun : occurrence.begun = true) (inner : ∀ id ∈ entry.inner.toList,
-      Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id)
+      Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id ∧
+        ∀ found ∈ state.occurrences, found.id = id → found.scope = occurrence.scope)
     (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) : inv ctx.program after := by
   rcases dispatch_unstarted ran with ⟨_, _, ran⟩ | ⟨_, _, _, ran⟩ | ⟨unstarted, arrives⟩
   · exact contract.arriveStart _ _ _ _ _ _ _ holds member begun ran
@@ -173,7 +174,7 @@ theorem begin_keeps (contract : HookContract hooks inv) (phases : Phases inv) (f
 /-- A request an arrival or a start makes names no reservation. -/
 theorem admitted_fresh {state : State} {element : ElementId} {scope : ScopeOccurrenceId} {incoming : Option FlowId}
     {trigger : StartTrigger} : Admitted state { element, scope, incoming, trigger } :=
-  ⟨by simp [Laws.State.names], by simp [Laws.State.names]⟩
+  ⟨by simp [Laws.State.names], by simp [Laws.State.names], by simp [Laws.State.InnerPlaced]⟩
 
 /-- The closure's next queued signal keeps `inv`: its work runs only once what it names stands, or changes nothing
 (`Laws.Step`'s queued work whose target is gone). -/

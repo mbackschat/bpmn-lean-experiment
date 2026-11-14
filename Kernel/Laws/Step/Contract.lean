@@ -31,11 +31,12 @@ def ScopeStands (state : State) (scope : ScopeOccurrenceId) : Prop := ∃ entry 
 def OccurrenceStands (state : State) (id : Nat) : Prop := ∃ occurrence ∈ state.occurrences, occurrence.id = id
 
 /-- A begin request `Step` may begin in `state`: the reservations it names are distinct, each beginnable in the
-request's scope occurrence and claimed by nothing queued (`Laws.State.ReservationsClaimed`). A request an arrival or a
-start makes names none. -/
+request's scope occurrence and claimed by nothing queued or slotted (`Laws.State.ReservationsClaimed`), and its Event
+Sub-Process start reservation lies in that scope occurrence. A request an arrival or a start makes names none. -/
 def Admitted (state : State) (request : BeginRequest) : Prop :=
-  (Laws.State.names request).Nodup ∧ ∀ id ∈ Laws.State.names request,
-    Laws.State.Beginnable state request.scope id ∧ Laws.State.Unclaimed state id
+  (Laws.State.names request).Nodup ∧ (∀ id ∈ Laws.State.names request,
+    Laws.State.Beginnable state request.scope id ∧ Laws.State.Unclaimed state id) ∧
+    Laws.State.InnerPlaced state request
 
 /-- What the completion pipeline needs of each phase it runs between closing the completing occurrence's own items and
 removing its record (`Step.complete`): the scope occurrences and the begun occurrences stay, and no open item is added,
@@ -52,7 +53,8 @@ activity's, catch's or throw's is of an element the program declares no start Ev
 `Hooks.arriveStart`); the item it hands over is open; the scope occurrence and occurrence a queued signal names stand
 (`Step.stale`, `Step.gone`), and an arming's host is begun in the scope occurrence the arming names; a completed
 occurrence's continuation runs while its scope occurrence stands; an Event Sub-Process's start Event reservation
-(`ScopeEntry.inner`) is beginnable in the scope occurrence its occurrence began in, and claimed by nothing queued. The
+(`ScopeEntry.inner`) is beginnable in, and lies in, the scope occurrence its occurrence began in, and nothing claims
+it. The
 completion pipeline's hooks also keep its frame (`PipelineFrame`), and `Hooks.leave` leaves nothing hanging on the
 completing occurrence. `Hooks.delivered`, a query, picks an open item. Each field keeps `inv` under the program of the
 hook's context, which is the program the step runs (`Laws.Step.inputCtx_program`). Each feature's `Laws` module proves
@@ -72,7 +74,8 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
   arriveScope : ∀ ctx header payload occurrence entry state after, inv ctx.program state →
     occurrence ∈ state.occurrences →
     occurrence.begun = true →
-    (∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id) →
+    (∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id ∧
+      ∀ found ∈ state.occurrences, found.id = id → found.scope = occurrence.scope) →
     hooks.arriveScope ctx header payload occurrence entry state = .ok after → inv ctx.program after
   arriveGateway : ∀ ctx header payload occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     occurrence.begun = true → hooks.arriveGateway ctx header payload occurrence state = .ok after →
@@ -204,14 +207,16 @@ structure Phases (inv : Program → State → Prop) : Prop where
   endInstance : ∀ program state status failure, inv program state → (failure.isSome = true ↔ status = .failed) →
     inv program (endInstance status failure state)
   /-- `State.beginOccurrence` of an admitted request, in a scope occurrence that stands (`Step.requireScope`); the
-  request's start Event reservation stays beginnable and unclaimed in the scope occurrence its begun occurrence runs
-  in. -/
+  request's start Event reservation stays beginnable, unclaimed and placed in the scope occurrence its begun occurrence
+  runs in. -/
   begin : ∀ program state request role sourceType, inv program state → ScopeStands state request.scope →
     Admitted state request →
     inv program (state.beginOccurrence request role sourceType).1 ∧ ∀ id ∈ request.inner.toList,
       Laws.State.Beginnable (state.beginOccurrence request role sourceType).1
         (state.beginOccurrence request role sourceType).2.scope id ∧
-      Laws.State.Unclaimed (state.beginOccurrence request role sourceType).1 id
+      Laws.State.Unclaimed (state.beginOccurrence request role sourceType).1 id ∧
+      ∀ found ∈ (state.beginOccurrence request role sourceType).1.occurrences, found.id = id →
+        found.scope = (state.beginOccurrence request role sourceType).2.scope
   /-- `State.reserve` for `Signal.occur`, in a scope occurrence that stands; nothing queued names the reservation. -/
   reserve : ∀ program state element scope, inv program state → ScopeStands state scope →
     inv program (state.reserve element scope).1 ∧

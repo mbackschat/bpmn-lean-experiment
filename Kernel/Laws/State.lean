@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.State.Issue
+public import Kernel.Laws.State.Reserve
 public import Kernel.State.Removal
 import all Kernel.State
 import all Kernel.State.Removal
@@ -465,7 +465,7 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
   ownedBelow := by simp [OwnedBelow, State.initial]
   claimed := ⟨by simp [State.initial], by simp [Queued, State.initial], by simp [Precedes, State.initial],
     by simp [Precedes, State.initial], by simp [State.initial], by simp [Queued, State.initial],
-    by simp [Queued, State.initial]⟩
+    by simp [Queued, State.initial], by simp [Queued, State.initial]⟩
   settled := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial],
     by simp [State.initial]⟩
   attachedReserved := by simp [AttachedReserved, State.initial]

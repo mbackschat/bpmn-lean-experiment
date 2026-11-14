@@ -233,7 +233,10 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       exact formed.claimed.uncompleted request id leave writes rule ((queuedEq request).mp queued) named,
     fun request queued => by
       rw [hNext]
-      exact Nat.lt_succ_of_lt (formed.claimed.scopesIssued request ((queuedEq request).mp queued))⟩
+      exact Nat.lt_succ_of_lt (formed.claimed.scopesIssued request ((queuedEq request).mp queued)),
+    fun request queued id named occurrence member => by
+      rw [hOcc] at member
+      exact formed.claimed.innerPlaced request ((queuedEq request).mp queued) id named occurrence member⟩
   exact ⟨issued, distinct, by simpa [StartedOnce, startsEq] using formed.startedOnce,
     ⟨by rw [enters.activations]; exact formed.activations.keys,
       by rw [enters.activations]; exact formed.activations.positive⟩,
@@ -369,7 +372,8 @@ theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : Well
     simp at inside
   refine ⟨formed.claimed.attached, fun other queuedOther => ?_, fun first second pair id inside => ?_,
     formed.claimed.tokensApart, fun first second signal token id inside => ?_,
-    fun other id leave writes rule queuedOther inside completed => ?_, fun other queuedOther => ?_⟩
+    fun other id leave writes rule queuedOther inside completed => ?_, fun other queuedOther => ?_,
+    fun other queuedOther id inside => ?_⟩
   · rcases queued other queuedOther with old | rfl
     · exact (formed.claimed.named other old).imp id fun beginnable id inside =>
         (beginnable id inside).congr rfl rfl rfl rfl fun _ => by apply instanceOf_congr <;> rfl
@@ -391,6 +395,10 @@ theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : Well
     · exact formed.claimed.scopesIssued other old
     · obtain ⟨entry, member, named⟩ := List.mem_map.mp stands
       exact named ▸ formed.issued.scopes entry member
+  · rcases queued other queuedOther with old | rfl
+    · exact formed.claimed.innerPlaced other old id inside
+    · have named : id ∈ names other := List.mem_append_right _ inside
+      simp [bare] at named
 
 /-- Queuing a bare begin keeps the slots settled: it claims nothing. That the begin is no compensation,
 `Kernel.Proofs.Step` tells. -/
@@ -461,7 +469,11 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
       rcases queued request named with old | new
       · exact formed.claimed.scopesIssued request old
       · obtain ⟨entry, member, same⟩ := List.mem_map.mp (bare request new).2
-        exact same ▸ formed.issued.scopes entry member⟩
+        exact same ▸ formed.issued.scopes entry member,
+    fun request named id inside => by
+      rcases queued request named with old | new
+      · exact formed.claimed.innerPlaced request old id inside
+      · exact absurd (List.mem_append_right _ inside) (nameless request new id)⟩
   exact {
   issued := ⟨formed.issued.occurrences, formed.issued.items, formed.issued.scopes⟩
   distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩

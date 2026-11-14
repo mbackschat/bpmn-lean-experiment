@@ -111,6 +111,56 @@ structure ScopesOps (inv : State → Prop) : Prop where
   /-- The completion of a begun occurrence that stands. -/
   complete : ∀ state occurrence leave writes rule, inv state → occurrence ∈ state.occurrences →
     occurrence.begun = true → inv (state.signal (.complete occurrence.id leave writes rule))
+  /-- An interrupting Event Sub-Process's clearing of the scope occurrence its begun occurrence runs in, keeping that
+  occurrence and its start Event's reservation, which lies there; the occurrence stands and the reservation stays
+  claimable there. -/
+  clear : ∀ state occurrence (inner : Option Nat), inv state → occurrence ∈ state.occurrences →
+    occurrence.begun = true →
+    (∀ id ∈ inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id ∧
+      ∀ found ∈ state.occurrences, found.id = id → found.scope = occurrence.scope) →
+    inv (state.clearInside occurrence.scope (occurrence.id :: inner.toList)) ∧
+      occurrence ∈ (state.clearInside occurrence.scope (occurrence.id :: inner.toList)).occurrences ∧
+      ∀ id ∈ inner.toList,
+        Laws.State.Beginnable (state.clearInside occurrence.scope (occurrence.id :: inner.toList)) occurrence.scope id ∧
+        Laws.State.Unclaimed (state.clearInside occurrence.scope (occurrence.id :: inner.toList)) id
+  /-- A Scope's occurrence entered below the scope occurrence its begun occurrence runs in, which owns it: the
+  occurrences stay, the entered scope occurrence stands, and a reservation claimable in the parent is claimable in it. -/
+  enter : ∀ state element locals occurrence (inner : Option Nat), inv state → occurrence ∈ state.occurrences →
+    occurrence.begun = true →
+    (∀ id ∈ inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id) →
+    inv (state.enterScope element occurrence.scope locals (some occurrence.id)).1 ∧
+      (state.enterScope element occurrence.scope locals (some occurrence.id)).1.occurrences = state.occurrences ∧
+      (state.enterScope element occurrence.scope locals (some occurrence.id)).2 ∈
+        Laws.State.scopeIds (state.enterScope element occurrence.scope locals (some occurrence.id)).1 ∧
+      ∀ id ∈ inner.toList,
+        Laws.State.Beginnable (state.enterScope element occurrence.scope locals (some occurrence.id)).1
+          (state.enterScope element occurrence.scope locals (some occurrence.id)).2 id ∧
+        Laws.State.Unclaimed (state.enterScope element occurrence.scope locals (some occurrence.id)).1 id
+  /-- The arming of a begun occurrence's boundaries. -/
+  arm : ∀ state occurrence element, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    inv (state.signal (.arm occurrence.id element occurrence.scope))
+  /-- The arming of the Event Sub-Process starts of a scope occurrence that stands. -/
+  armScope : ∀ state scope, inv state → scope ∈ Laws.State.scopeIds state → inv (state.signal (.armScope scope))
+  /-- A begin in a scope occurrence that stands, naming distinct reservations beginnable there that nothing claims,
+  and no Event Sub-Process start's. -/
+  begin : ∀ state request, inv state → request.scope ∈ Laws.State.scopeIds state → request.inner = none →
+    (Laws.State.names request).Nodup →
+    (∀ id ∈ Laws.State.names request, Laws.State.Beginnable state request.scope id ∧ Laws.State.Unclaimed state id) →
+    inv (state.signal (.begin request))
+  /-- An arming keeps the scope occurrences and leaves reservations claimable. -/
+  armed : ∀ state host element hostScope scope (inner : Option Nat),
+    (∀ id ∈ inner.toList, Laws.State.Beginnable state scope id ∧ Laws.State.Unclaimed state id) →
+    (state.signal (.arm host element hostScope)).scopes = state.scopes ∧ ∀ id ∈ inner.toList,
+      Laws.State.Beginnable (state.signal (.arm host element hostScope)) scope id ∧
+      Laws.State.Unclaimed (state.signal (.arm host element hostScope)) id
+  /-- An arming of Event Sub-Process starts keeps the scope occurrences and leaves reservations claimable. -/
+  scopeArmed : ∀ state armed scope (inner : Option Nat),
+    (∀ id ∈ inner.toList, Laws.State.Beginnable state scope id ∧ Laws.State.Unclaimed state id) →
+    (state.signal (.armScope armed)).scopes = state.scopes ∧ ∀ id ∈ inner.toList,
+      Laws.State.Beginnable (state.signal (.armScope armed)) scope id ∧
+      Laws.State.Unclaimed (state.signal (.armScope armed)) id
+  /-- A queued signal keeps the scope occurrences. -/
+  signalScopes : ∀ (state : State) signal, (state.signal signal).scopes = state.scopes
 
 /-- `Hooks.completeScope` keeps `inv`: an idle Scope completes its owner. -/
 theorem completeScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {header : Header}
@@ -123,6 +173,93 @@ theorem completeScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : 
   · cases ran
   · cases ran
     exact ops.complete _ _ _ _ _ holds owned (ops.owner _ _ _ holds member owned link)
+
+/-- Bare begins of a Scope's implicit start, queued in a scope occurrence that stands, keep `inv`. -/
+theorem implicitBegins_keeps {inv : State → Prop} (ops : ScopesOps inv) {scope : ScopeOccurrenceId} :
+    ∀ (elements : List ElementId) (state : State), inv state → scope ∈ Laws.State.scopeIds state →
+      inv (elements.foldl (fun state element => state.signal (.begin { element, scope })) state)
+  | [], _, holds, _ => holds
+  | element :: rest, state, holds, stands => by
+    refine implicitBegins_keeps ops rest _ (ops.begin _ _ holds stands rfl (by simp [Laws.State.names])
+      (by simp [Laws.State.names])) ?_
+    simpa [Laws.State.scopeIds, ops.signalScopes] using stands
+
+/-- Entering a Scope keeps `inv`: the entry, the arming of its boundaries and Event Sub-Process starts, and the begin of
+its start Event, an Event Sub-Process's triggered start with the reservation its firing held, or its implicit
+start. -/
+theorem enter_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {header : Header} {payload : ScopePayload}
+    {occurrence : Occurrence} {entry : ScopeEntry} {state after : State} (holds : inv state)
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (claimable : ∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧
+      Laws.State.Unclaimed state id)
+    (ran : Feature.Scopes.enter ctx header payload occurrence entry state = .ok after) : inv after := by
+  unfold Feature.Scopes.enter at ran
+  simp only [bind, Except.bind] at ran
+  split at ran
+  · cases ran
+  rename_i locals _
+  obtain ⟨entered, occurrences, stands, ready⟩ :=
+    ops.enter state header.id (locals ++ entry.locals) occurrence entry.inner holds member begun claimable
+  generalize state.enterScope header.id occurrence.scope (locals ++ entry.locals) (some occurrence.id) = pair
+    at entered occurrences stands ready ran
+  obtain ⟨entered_, scope⟩ := pair
+  dsimp only at entered occurrences stands ready ran
+  have armed : ∃ armed : State, inv armed ∧ armed.scopes = entered_.scopes ∧
+      (∀ id ∈ entry.inner.toList, Laws.State.Beginnable armed scope id ∧ Laws.State.Unclaimed armed id) ∧
+      (if payload.envelope.boundaries.isEmpty || payload.envelope.multiInstance.isSome then entered_
+        else entered_.signal (.arm occurrence.id header.id occurrence.scope)) = armed := by
+    split
+    · exact ⟨entered_, entered, rfl, ready, rfl⟩
+    · obtain ⟨sameScopes, stillReady⟩ := ops.armed _ _ _ _ _ _ ready
+      exact ⟨_, ops.arm _ _ _ entered (occurrences ▸ member) begun, sameScopes, stillReady, rfl⟩
+  obtain ⟨armed, armedHolds, armedScopes, rest⟩ := armed
+  obtain ⟨armedReady, armedIs⟩ := rest
+  rw [armedIs] at ran
+  have armedStands : scope ∈ Laws.State.scopeIds armed := by
+    simpa [Laws.State.scopeIds, armedScopes] using stands
+  obtain ⟨scopedScopes, scopedReady⟩ := ops.scopeArmed armed scope scope entry.inner armedReady
+  have starts_ := ops.armScope armed scope armedHolds armedStands
+  have scopedStands : scope ∈ Laws.State.scopeIds (armed.signal (.armScope scope)) := by
+    simpa [Laws.State.scopeIds, scopedScopes] using armedStands
+  split at ran
+  · cases ran
+    have names : ∀ element, Laws.State.names { element, scope, reserved := entry.inner } = entry.inner.toList := by
+      simp [Laws.State.names]
+    refine ops.begin _ _ starts_ scopedStands rfl ?_ ?_
+    · rw [names]
+      cases entry.inner <;> simp
+    · rw [names]
+      exact scopedReady
+  · split at ran
+    · cases ran
+    · rename_i begun_ _
+      split at ran
+      · cases ran
+      · cases ran
+        exact implicitBegins_keeps ops _ _ starts_ scopedStands
+
+/-- `Hooks.arriveScope` keeps `inv`: an interrupting Event Sub-Process first clears its parent occurrence, keeping its
+own occurrence and its start Event's reservation, which lies there; then the Scope is entered. -/
+theorem arriveScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {header : Header}
+    {payload : ScopePayload} {occurrence : Occurrence} {entry : ScopeEntry} {state after : State} (holds : inv state)
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (ready : ∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧
+      Laws.State.Unclaimed state id ∧ ∀ found ∈ state.occurrences, found.id = id → found.scope = occurrence.scope)
+    (ran : Feature.Scopes.arriveScope ctx header payload occurrence entry state = .ok after) : inv after := by
+  have claimable : ∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧
+      Laws.State.Unclaimed state id := fun id inner => ⟨(ready id inner).1, (ready id inner).2.1⟩
+  unfold Feature.Scopes.arriveScope at ran
+  split at ran
+  · exact enter_keeps ops holds member begun claimable ran
+  · exact enter_keeps ops holds member begun claimable ran
+  · rename_i interrupting _
+    split at ran
+    · cases ran
+    · dsimp only at ran
+      cases interrupting
+      · exact enter_keeps ops holds member begun claimable ran
+      · obtain ⟨cleared, stays, clearedReady⟩ := ops.clear state occurrence entry.inner holds member begun ready
+        exact enter_keeps ops cleared stays begun clearedReady ran
 
 /-! ## Non-vacuity
 
