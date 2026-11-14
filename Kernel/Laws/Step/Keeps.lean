@@ -213,7 +213,9 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : Phases inv) (
     · exact fireItem_keeps contract popped open_ ran
     · exact same ▸ popped
   | onEndInstance => exact phases.endInstance _ _ _ _ popped (phases.endRecorded _ queue _ _ holds head)
-  | onCompensate stands ran => exact contract.compensate _ _ _ _ _ _ _ _ popped stands ran
+  | onCompensate stands ran =>
+    exact contract.compensate _ _ _ _ _ _ _ _ popped stands (fun _ same => phases.resumable _ _ _ _ _ _ _ _ holds
+      (same ▸ heads)) ran
   | onCompensationFailed stands ran => exact contract.failCompensation _ _ _ _ _ _ _ popped stands ran
 
 theorem completeIdleScope_keeps (contract : HookContract hooks inv) (facts : StateFacts) {ctx : Ctx}

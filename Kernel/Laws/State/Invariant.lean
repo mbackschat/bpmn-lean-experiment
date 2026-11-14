@@ -289,10 +289,26 @@ def Placed (s : State) (run : MultiInstanceRun) : Prop :=
   ∀ scope, Iteration.active scope ∈ run.instances → scope.value < s.nextIssue ∧
     ∀ entry ∈ s.scopes, entry.id = scope → entry.parent = some run.scope
 
+/-- A compensation run's handlers run in context scope occurrences entered below its scope occurrence: each was issued,
+and while it stands its parent is the run's (`Compensation.beginHandler`), so releasing a context that stands advances
+the run in a scope occurrence that stands (`Compensation.release`); a group's nested run resumes from its own context,
+the one it runs in. -/
+def RunPlaced (s : State) (run : CompensationRun) : Prop :=
+  (∀ outer context, run.resume = some (.group outer context) → context = run.scope) ∧
+    ∀ context ∈ run.running.map (·.1), context.value < s.nextIssue ∧
+      ∀ entry ∈ s.scopes, entry.id = context → entry.parent = some run.scope
+
+/-- A compensation run in `scope` may end with `resume`: the occurrence it completes has begun, and the group context it
+releases is `scope` itself (`Compensation.advance`). -/
+def Resumable (s : State) (scope : ScopeOccurrenceId) (resume : Resume) : Prop :=
+  (∀ occurrence leave, resume = .complete occurrence leave → Settled s occurrence) ∧
+    ∀ outer context, resume = .group outer context → context = scope
+
 /-- What the feature slots and a queued compensation will complete has begun: the occurrences parked at a join
 (`Feature.Flow.join` completes them when it fires), a Multi-Instance body's occurrence (`MultiInstance.finish`), and
 the occurrence a compensation run, or a queued one, completes once it ends (`Compensation.advance`). Each arrived,
-entered or threw while begun, and an identity is never issued again (`IssuedBelow`). A body's instances are `Placed`. -/
+entered or threw while begun, and an identity is never issued again (`IssuedBelow`). A body's instances are `Placed`,
+a compensation run's handler contexts `RunPlaced`. -/
 structure SlotsSettled (s : State) : Prop where
   parked : ∀ waiting ∈ s.slots.parked, Settled s waiting.occurrence
   bodies : ∀ run ∈ s.slots.multiInstances, Settled s run.occurrence
@@ -301,6 +317,11 @@ structure SlotsSettled (s : State) : Prop where
   queued : ∀ scope activity trigger leave occurrence resume,
     Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ s.signals → Settled s occurrence
   placed : ∀ run ∈ s.slots.multiInstances, Placed s run
+  runsPlaced : ∀ run ∈ s.slots.compensation.runs, RunPlaced s run
+  /-- A queued compensation releases no group context but its own scope occurrence: `Propagation` queues none that
+  resumes a group. -/
+  grouped : ∀ scope activity trigger leave outer context,
+    Signal.compensate scope activity trigger leave (some (.group outer context)) ∈ s.signals → context = scope
 
 /-- What a slot completes no queued begin names. -/
 theorem SlotsSettled.free {s : State} (settled : SlotsSettled s) {request : BeginRequest} (queued : Queued s request)
@@ -868,6 +889,8 @@ theorem parked_begun_settled (kind : OpenKind) :
   resumed := by simp
   queued := by simp [armedState, sample]
   placed := by simp
+  runsPlaced := by simp
+  grouped := by simp [armedState, sample]
 
 /-- A body's run, in `body`, whose one instance is active in `subScope`. -/
 def instanceRun (body : ScopeOccurrenceId) : MultiInstanceRun :=

@@ -339,9 +339,8 @@ compensation. -/
 theorem SlotsSettled.bare {s t : State} (settled : SlotsSettled s) (slots : t.slots = s.slots)
     (scopes : t.scopes = s.scopes) (issued : s.nextIssue ≤ t.nextIssue) (occurrences : t.occurrences = s.occurrences)
     (queued : ∀ request, Queued t request → Queued s request ∨ names request = [])
-    (compensations : ∀ scope activity trigger leave occurrence resume,
-      Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ t.signals →
-        Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ s.signals) :
+    (compensations : ∀ scope activity trigger leave resume, Signal.compensate scope activity trigger leave resume ∈ t.signals →
+      Signal.compensate scope activity trigger leave resume ∈ s.signals) :
     SlotsSettled t where
   parked waiting member := (settled.parked waiting (slots ▸ member)).bare issued occurrences queued
   bodies run member := (settled.bodies run (slots ▸ member)).bare issued occurrences queued
@@ -349,8 +348,12 @@ theorem SlotsSettled.bare {s t : State} (settled : SlotsSettled s) (slots : t.sl
     (settled.resumed run (slots ▸ member) occurrence leave resume).bare issued occurrences queued
   queued scope activity trigger leave occurrence resume member :=
     (settled.queued scope activity trigger leave occurrence resume
-      (compensations scope activity trigger leave occurrence resume member)).bare issued occurrences queued
+      (compensations scope activity trigger leave _ member)).bare issued occurrences queued
   placed run member := (settled.placed run (slots ▸ member)).transport issued fun _ inside => .inl (scopes ▸ inside)
+  runsPlaced run member :=
+    (settled.runsPlaced run (slots ▸ member)).transport issued fun _ inside => .inl (scopes ▸ inside)
+  grouped scope activity trigger leave outer context member :=
+    settled.grouped scope activity trigger leave outer context (compensations scope activity trigger leave _ member)
 
 /-- Queuing a bare begin in a scope occurrence that stands keeps the claims single. That the begin is no completion,
 `Kernel.Proofs.Step` tells. -/
@@ -403,12 +406,12 @@ theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : Well
 /-- Queuing a bare begin keeps the slots settled: it claims nothing. That the begin is no compensation,
 `Kernel.Proofs.Step` tells. -/
 theorem signal_settled_begin {s : State} {request : BeginRequest} (formed : WellFormed program s) (bare : names request = [])
-    (notCompensate : ∀ scope activity trigger leave occurrence resume,
-      Signal.begin request ≠ .compensate scope activity trigger leave (some (.complete occurrence resume))) :
+    (notCompensate : ∀ scope activity trigger leave resume,
+      Signal.begin request ≠ .compensate scope activity trigger leave resume) :
     SlotsSettled (s.signal (.begin request)) := by
   rw [signal_eq]
   refine formed.settled.bare rfl rfl (Nat.le_refl _) rfl (fun other named => ?_)
-    fun scope activity trigger leave occurrence resume member => ?_
+    fun scope activity trigger leave resume member => ?_
   · rcases named with signal | token
     · rcases List.mem_append.mp signal with old | new
       · exact .inl (.inl old)
@@ -417,7 +420,7 @@ theorem signal_settled_begin {s : State} {request : BeginRequest} (formed : Well
     · exact .inl (.inr token)
   · rcases List.mem_append.mp member with old | new
     · exact old
-    · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave occurrence resume)
+    · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave resume)
 
 /-- Deferring bare begins, each in a scope occurrence that stands, keeps a state well-formed. -/
 theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requests : List BeginRequest}
@@ -493,6 +496,6 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
   ownedBelow := formed.ownedBelow
   claimed := claimed
   settled := formed.settled.bare rfl rfl (Nat.le_refl _) rfl (fun request named =>
-    (queued request named).imp id fun new => (bare request new).1) fun _ _ _ _ _ _ member => member
+    (queued request named).imp id fun new => (bare request new).1) fun _ _ _ _ _ member => member
   attachedReserved := formed.attachedReserved
   typed := formed.typed }

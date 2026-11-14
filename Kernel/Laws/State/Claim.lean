@@ -120,8 +120,8 @@ theorem signal_claimed_named {s : State} {request : BeginRequest} (formed : Well
 `Kernel.Proofs.Step` tells. -/
 theorem signal_settled_named {s : State} {request : BeginRequest} (formed : WellFormed program s)
     (admitted : ∀ id ∈ names request, Unclaimed s id)
-    (notCompensate : ∀ scope activity trigger leave occurrence resume,
-      Signal.begin request ≠ .compensate scope activity trigger leave (some (.complete occurrence resume))) :
+    (notCompensate : ∀ scope activity trigger leave resume,
+      Signal.begin request ≠ .compensate scope activity trigger leave resume) :
     SlotsSettled (s.signal (.begin request)) := by
   rw [signal_eq]
   have queued : ∀ other, Queued { s with signals := s.signals ++ [.begin request] } other →
@@ -143,11 +143,16 @@ theorem signal_settled_named {s : State} {request : BeginRequest} (formed : Well
     fun run member occurrence leave resume => carry _ (formed.settled.resumed run member occurrence leave resume)
       (.inr (.inr (.inl ⟨run, member, leave, resume⟩))),
     fun scope activity trigger leave occurrence resume member => ?_,
-    fun run member => (formed.settled.placed run member).transport (Nat.le_refl _) fun _ inside => .inl inside⟩
-  rcases List.mem_append.mp member with old | new
-  · exact carry _ (formed.settled.queued scope activity trigger leave occurrence resume old)
-      (.inr (.inr (.inr ⟨scope, activity, trigger, leave, resume, old⟩)))
-  · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave occurrence resume)
+    fun run member => (formed.settled.placed run member).transport (Nat.le_refl _) fun _ inside => .inl inside,
+    fun run member => (formed.settled.runsPlaced run member).transport (Nat.le_refl _) fun _ inside => .inl inside,
+    fun scope activity trigger leave outer context member => ?_⟩
+  · rcases List.mem_append.mp member with old | new
+    · exact carry _ (formed.settled.queued scope activity trigger leave occurrence resume old)
+        (.inr (.inr (.inr ⟨scope, activity, trigger, leave, resume, old⟩)))
+    · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave _)
+  · rcases List.mem_append.mp member with old | new
+    · exact formed.settled.grouped scope activity trigger leave outer context old
+    · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave _)
 
 /-- Queuing such a begin keeps a state well-formed. -/
 theorem signal_named_wellFormed {s : State} {request : BeginRequest} (formed : WellFormed program s)
@@ -155,8 +160,8 @@ theorem signal_named_wellFormed {s : State} {request : BeginRequest} (formed : W
     (admitted : ∀ id ∈ names request, Beginnable s request.scope id ∧ Unclaimed s id) (placed : InnerPlaced s request)
     (queue : QueueSound (s.signal (.begin request)))
     (notComplete : ∀ id leave writes rule, Signal.begin request ≠ .complete id leave writes rule)
-    (notCompensate : ∀ scope activity trigger leave occurrence resume,
-      Signal.begin request ≠ .compensate scope activity trigger leave (some (.complete occurrence resume))) :
+    (notCompensate : ∀ scope activity trigger leave resume,
+      Signal.begin request ≠ .compensate scope activity trigger leave resume) :
     WellFormed program (s.signal (.begin request)) :=
   signal_wellFormed formed queue (signal_claimed_named formed stands nodup admitted placed notComplete)
     (signal_settled_named formed (fun id named => (admitted id named).2) notCompensate)

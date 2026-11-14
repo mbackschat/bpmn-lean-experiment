@@ -50,6 +50,7 @@ public import Kernel.IL.Types.Options
 public import Kernel.IL.Types.Reference
 public import Kernel.IL.Types.Work
 public import Kernel.Laws.Compensation
+public import Kernel.Laws.Compensation.Runs
 public import Kernel.Laws.Correlation
 public import Kernel.Laws.Data
 public import Kernel.Laws.Decision

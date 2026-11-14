@@ -228,12 +228,12 @@ theorem signal_wellFormed {s : State} {signal : Signal} (formed : WellFormed pro
   attachedReserved := formed.attachedReserved
   typed := formed.typed }
 
-/-- A queued signal other than a begin keeps the slots settled when, should it be a compensation that completes an
-occurrence once it ends, that occurrence has begun. Which signal it is, `Kernel.Proofs.Step` tells. -/
+/-- A queued signal other than a begin keeps the slots settled when, should it be a compensation, it may end as it
+asks (`Resumable`). Which signal it is, `Kernel.Proofs.Step` tells. -/
 theorem signal_settled {s : State} {signal : Signal} (formed : WellFormed program s)
     (notBegin : ∀ request, signal ≠ .begin request)
-    (compensates : ∀ scope activity trigger leave occurrence resume,
-      signal = .compensate scope activity trigger leave (some (.complete occurrence resume)) → Settled s occurrence) :
+    (compensates : ∀ scope activity trigger leave resume,
+      signal = .compensate scope activity trigger leave (some resume) → Resumable s scope resume) :
     SlotsSettled (s.signal signal) := by
   rw [signal_eq]
   have queuedOld : ∀ request, Queued { s with signals := s.signals ++ [signal] } request → Queued s request :=
@@ -244,10 +244,14 @@ theorem signal_settled {s : State} {signal : Signal} (formed : WellFormed progra
   refine ⟨fun waiting member => carry _ (formed.settled.parked waiting member),
     fun run member => carry _ (formed.settled.bodies run member),
     fun run member occurrence leave resume => carry _ (formed.settled.resumed run member occurrence leave resume),
-    fun scope activity trigger leave occurrence resume member => carry _ ?_, formed.settled.placed⟩
-  rcases List.mem_append.mp member with old | new
-  · exact formed.settled.queued scope activity trigger leave occurrence resume old
-  · exact compensates scope activity trigger leave occurrence resume (List.mem_singleton.mp new).symm
+    fun scope activity trigger leave occurrence resume member => carry _ ?_, formed.settled.placed,
+    formed.settled.runsPlaced, fun scope activity trigger leave outer context member => ?_⟩
+  · rcases List.mem_append.mp member with old | new
+    · exact formed.settled.queued scope activity trigger leave occurrence resume old
+    · exact (compensates scope activity trigger leave _ (List.mem_singleton.mp new).symm).1 _ _ rfl
+  · rcases List.mem_append.mp member with old | new
+    · exact formed.settled.grouped scope activity trigger leave outer context old
+    · exact (compensates scope activity trigger leave _ (List.mem_singleton.mp new).symm).2 _ _ rfl
 
 /-- A queued signal keeps the queue sound when, should it be an arming, what it names was issued and its host, while it
 stands, is begun in the named scope occurrence, and, should it be an instance end, it records a failure exactly when it
@@ -762,6 +766,20 @@ theorem complete_unnamed {state : State} (formed : WellFormed program state) {id
     (completed : Signal.complete id leave writes rule ∈ state.signals) :
     ∀ request, Queued state request → id ∉ names request :=
   fun request queued named => formed.claimed.uncompleted request id leave writes rule queued named completed
+
+/-- The closure's next signal, a compensation, may end as it asks once it leaves the queue. -/
+theorem resumable_signal {state : State} (formed : WellFormed program state) {scope : ScopeOccurrenceId}
+    {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option Nat} {resume : Resume} {rest : List Signal}
+    (head : state.signals = .compensate scope activity trigger leave (some resume) :: rest) :
+    Resumable { state with signals := rest } scope resume :=
+  ⟨fun occurrence _ same => by
+    subst same
+    exact (formed.settled.queued scope activity trigger leave occurrence _ (head ▸ List.mem_cons_self ..)).transport
+      (Nat.le_refl _) (fun _ member _ => .inl member) fun _ queued =>
+        queued.shrink (before := state) (after := { state with signals := rest })
+          (by rw [head]; exact List.sublist_cons_self _ _) (.refl _),
+    fun outer context same => formed.settled.grouped scope activity trigger leave outer context
+      (same ▸ head ▸ List.mem_cons_self ..)⟩
 
 /-- An occurrence's scope occurrence stands. -/
 theorem housed_wellFormed {s : State} (formed : WellFormed program s) {occurrence : Occurrence}

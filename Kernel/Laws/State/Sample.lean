@@ -72,7 +72,8 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
   claimed := ⟨by simp [sample, innerItem, outerItem], by simp [Queued, sample], by simp [Precedes, sample],
     by simp [Precedes, sample], by simp [sample], by simp [Queued, sample], by simp [Queued, sample],
     by simp [Queued, sample]⟩
-  settled := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample], by simp [sample]⟩
+  settled := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample], by simp [sample],
+    by simp [sample], by simp [sample]⟩
   attachedReserved := by simp [AttachedReserved, sample, innerItem, outerItem]
   typed := fun item member started => by simp [unstarted item member] at started
 

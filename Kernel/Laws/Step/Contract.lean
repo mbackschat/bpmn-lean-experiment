@@ -51,14 +51,13 @@ over stands (a begun occurrence, an idle scope occurrence's owner, a parked join
 occurrence), and an arrival's is begun, as `Step.begin` hands it over and as a parked join's offer finds it, and an
 activity's, catch's or throw's is of an element the program declares no start Event of (`Step.dispatch` sends those to
 `Hooks.arriveStart`); the item it hands over is open; the scope occurrence and occurrence a queued signal names stand
-(`Step.stale`, `Step.gone`), and an arming's host is begun in the scope occurrence the arming names; a completed
-occurrence's continuation runs while its scope occurrence stands; an Event Sub-Process's start Event reservation
-(`ScopeEntry.inner`) is beginnable in, and lies in, the scope occurrence its occurrence began in, and nothing claims
-it. The
-completion pipeline's hooks also keep its frame (`PipelineFrame`), and `Hooks.leave` leaves nothing hanging on the
-completing occurrence. `Hooks.delivered`, a query, picks an open item. Each field keeps `inv` under the program of the
-hook's context, which is the program the step runs (`Laws.Step.inputCtx_program`). Each feature's `Laws` module proves
-the fields of the hooks it fills. -/
+(`Step.stale`, `Step.gone`), an arming's host is begun in the scope occurrence the arming names, and a compensation may
+end as it asks (`Laws.State.Resumable`); a completed occurrence's continuation runs while its scope occurrence stands;
+an Event Sub-Process's start Event reservation (`ScopeEntry.inner`) is beginnable in, and lies in, the scope occurrence
+its occurrence began in, and nothing claims it. The completion pipeline's hooks also keep its frame (`PipelineFrame`),
+and `Hooks.leave` leaves nothing hanging on the completing occurrence. `Hooks.delivered`, a query, picks an open item.
+Each field keeps `inv` under the program of the hook's context, which is the program the step runs
+(`Laws.Step.inputCtx_program`). Each feature's `Laws` module proves the fields of the hooks it fills. -/
 structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop where
   arriveStart : ∀ ctx header payload trigger occurrence state after, inv ctx.program state →
     occurrence ∈ state.occurrences →
@@ -124,6 +123,7 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
   raise : ∀ ctx event origin state after, inv ctx.program state → hooks.raise ctx event origin state = .ok after →
     inv ctx.program after
   compensate : ∀ ctx scope activity trigger leave resume state after, inv ctx.program state → ScopeStands state scope →
+    (∀ next, resume = some next → Laws.State.Resumable state scope next) →
     hooks.compensate ctx scope activity trigger leave resume state = .ok after → inv ctx.program after
   failCompensation : ∀ ctx handler code message origin state after, inv ctx.program state → ScopeStands state handler →
     hooks.failCompensation ctx handler code message origin state = .ok after → inv ctx.program after
@@ -196,6 +196,10 @@ structure Phases (inv : Program → State → Prop) : Prop where
   completeQueued : ∀ program state id leave writes rule, inv program state →
     Signal.complete id leave writes rule ∈ state.signals →
     ∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request
+  /-- The closure's next signal, a compensation, may end as it asks once it leaves the queue. -/
+  resumable : ∀ program state scope activity trigger leave resume rest, inv program state →
+    state.signals = .compensate scope activity trigger leave (some resume) :: rest →
+    Laws.State.Resumable { state with signals := rest } scope resume
   /-- An occurrence's scope occurrence stands. -/
   housed : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
     ScopeStands state occurrence.scope

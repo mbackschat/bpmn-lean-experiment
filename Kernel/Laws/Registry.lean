@@ -82,6 +82,18 @@ theorem hooks_written : Registry.hooks.written = Feature.Subscriptions.offerWrit
 theorem hooks_completed : Registry.hooks.completed = Feature.Compensation.completed := by
   simp only [Registry.hooks]
 
+/-- Compensation runs every queued trigger. -/
+theorem hooks_compensate : Registry.hooks.compensate = Feature.Compensation.compensate := by
+  simp only [Registry.hooks]
+
+/-- Compensation releases every completed handler's context. -/
+theorem hooks_handlerCompleted : Registry.hooks.handlerCompleted = Feature.Compensation.handlerCompleted := by
+  simp only [Registry.hooks]
+
+/-- Compensation decides every handler left without completing. -/
+theorem hooks_handlerEnded : Registry.hooks.handlerEnded = Feature.Compensation.handlerEnded := by
+  simp only [Registry.hooks]
+
 /-- Compensation fails every handler left uncaught. -/
 theorem hooks_failCompensation : Registry.hooks.failCompensation = Feature.Compensation.failCompensation := by
   simp only [Registry.hooks]

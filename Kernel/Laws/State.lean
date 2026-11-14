@@ -467,7 +467,7 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
     by simp [Precedes, State.initial], by simp [State.initial], by simp [Queued, State.initial],
     by simp [Queued, State.initial], by simp [Queued, State.initial]⟩
   settled := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial],
-    by simp [State.initial]⟩
+    by simp [State.initial], by simp [State.initial], by simp [State.initial]⟩
   attachedReserved := by simp [AttachedReserved, State.initial]
   typed := by simp [Typed, State.initial]
 

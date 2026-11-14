@@ -98,6 +98,19 @@ theorem Placed.transport {before after : State} {run : MultiInstanceRun} (placed
     · rw [named] at fresh
       omega
 
+/-- A compensation run stays placed through a change that issues nothing back and adds only scope occurrences it
+issues. -/
+theorem RunPlaced.transport {before after : State} {run : CompensationRun} (placed : RunPlaced before run)
+    (issued : before.nextIssue ≤ after.nextIssue)
+    (scopes : ∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ before.nextIssue ≤ entry.id.value) : RunPlaced after run :=
+  ⟨placed.1, fun context running => by
+    obtain ⟨below, parent⟩ := placed.2 context running
+    refine ⟨Nat.lt_of_lt_of_le below issued, fun entry member named => ?_⟩
+    rcases scopes entry member with old | fresh
+    · exact parent entry old named
+    · rw [named] at fresh
+      omega⟩
+
 /-- The slots stay settled through such a change that adds no slot entry, queues no compensation and adds only scope
 occurrences it issues. -/
 theorem SlotsSettled.transport {before after : State} (settled : SlotsSettled before) (slots : SlotsWithin before after)
@@ -114,6 +127,9 @@ theorem SlotsSettled.transport {before after : State} (settled : SlotsSettled be
   queued scope activity trigger leave occurrence resume member :=
     (settled.queued scope activity trigger leave occurrence resume (signals _ member)).transport issued occurrences queued
   placed run member := (settled.placed run (slots.bodies run member)).transport issued scopes
+  runsPlaced run member := (settled.runsPlaced run (slots.runs run member)).transport issued scopes
+  grouped scope activity trigger leave outer context member :=
+    settled.grouped scope activity trigger leave outer context (signals _ member)
 
 /-! ## Process instances
 
