@@ -115,6 +115,15 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
     raisable := fun _ _ _ _ _ formed head => Laws.State.raisable_signal formed head
     housed := fun _ _ _ formed member => Laws.State.housed_wellFormed formed member
     bodied := fun _ _ occurrence formed member => formed.bodyRoles occurrence member
+    unrun := fun _ _ request role sourceType formed admitted run member same => by
+      have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
+      rw [begins.slots] at member
+      rcases begins.source with ⟨reserved, facts⟩ | fresh
+      · exact (admitted.2.1 reserved.id (by simp [Laws.State.names, facts.named])).2.2.2
+          (.inr (.inl ⟨run, member, same.trans facts.id⟩))
+      · have below := (formed.settled.bodies run member).1
+        rw [same, fresh.id] at below
+        exact Nat.lt_irrefl _ below
     parkedBegun := fun _ _ waiting _ formed parked member named =>
       (formed.settled.parked waiting parked).2.1 _ member named
     endInstance := fun _ _ _ _ formed recorded => by

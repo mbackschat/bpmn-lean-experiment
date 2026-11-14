@@ -472,9 +472,9 @@ def Framed (program : Program) (s : State) : Prop :=
 /-- The registered Multi-Instance hooks keep `Framed`: its `WellFormed` half by `Laws.MultiInstance.MultiInstanceOps`,
 its `RunsFramed` half by what each hook does. -/
 theorem multiInstanceKeeps_framed : Proofs.Step.MultiInstanceKeeps Framed where
-  arrive ctx header envelope loop occurrence state after holds member begun body named looped ran :=
+  arrive ctx header envelope loop occurrence state after holds member begun body named looped unrun ran :=
     ⟨(Proofs.Step.multiInstanceKeeps_of Proofs.Step.registeredOps_wellFormed.multiInstance).arrive ctx header envelope
-      loop occurrence state after holds.1 member begun body named looped ran,
+      loop occurrence state after holds.1 member begun body named looped unrun ran,
       arriveMultiInstance_framed holds.1 holds.2 member begun body named looped ran⟩
   completeBody ctx header envelope loop occurrence state after holds member ran :=
     ⟨(Proofs.Step.multiInstanceKeeps_of Proofs.Step.registeredOps_wellFormed.multiInstance).completeBody ctx header

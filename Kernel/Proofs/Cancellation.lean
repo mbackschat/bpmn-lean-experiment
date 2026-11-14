@@ -618,6 +618,7 @@ theorem phases_alongside {rel : Program → State → Prop} (phases : Laws.Step.
   raisable _ _ raised origin rest holds := phases.raisable _ _ raised origin rest holds.1
   housed _ _ occurrence holds := phases.housed _ _ occurrence holds.1
   bodied _ _ occurrence holds := phases.bodied _ _ occurrence holds.1
+  unrun _ _ request role sourceType holds := phases.unrun _ _ request role sourceType holds.1
   parkedBegun _ _ waiting occurrence holds := phases.parkedBegun _ _ waiting occurrence holds.1
   endInstance _ s status failure holds recorded := by
     refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩
