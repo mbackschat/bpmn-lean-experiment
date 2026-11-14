@@ -385,42 +385,21 @@ theorem fire_absent {hooks : Hooks} {ctx : Ctx} {item : Nat} {fired : Fired} {st
   simp [signalWork, absent]
 
 /-- A queued arming, Event-Based Gateway arming, scope arming, begin or `occur` whose scope occurrence was issued and is
-gone fails the input (`perform_stale`): these are the signals `Step.stale` reads a scope occurrence of. -/
-theorem arm_scope_stale {hooks : Hooks} {ctx : Ctx} {host : Nat} {element : ElementId} {scope : ScopeOccurrenceId}
-    {state : State} (issued : scope.value < state.nextIssue) (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
-    (signalWork hooks ctx (.arm host element scope)).perform state = .error (.unsupported "interrupted-before-wait") :=
-  perform_stale (by simp_all [stale, signalWork])
-
-theorem armScope_stale {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrenceId} {state : State}
+gone fails the input: these are the signals `Step.stale` reads a scope occurrence of. -/
+theorem scope_stale {hooks : Hooks} {ctx : Ctx} {signal : Signal} {scope : ScopeOccurrenceId} {state : State}
+    (names : (∃ host element, signal = .arm host element scope) ∨ signal = .armScope scope ∨
+      (∃ occurrence gateway, signal = .armGateway occurrence gateway scope) ∨
+      (∃ request : BeginRequest, signal = .begin request ∧ request.scope = scope) ∨
+      ∃ element leave writes rule, signal = .occur element scope leave writes rule)
     (issued : scope.value < state.nextIssue) (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
-    (signalWork hooks ctx (.armScope scope)).perform state = .error (.unsupported "interrupted-before-wait") :=
-  perform_stale (by simp_all [stale, signalWork])
-
-theorem armGateway_scope_stale {hooks : Hooks} {ctx : Ctx} {occurrence : Nat} {gateway : ElementId}
-    {scope : ScopeOccurrenceId} {state : State} (issued : scope.value < state.nextIssue)
-    (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
-    (signalWork hooks ctx (.armGateway occurrence gateway scope)).perform state =
-      .error (.unsupported "interrupted-before-wait") :=
-  perform_stale (by simp_all [stale, signalWork])
-
-theorem begin_scope_stale {hooks : Hooks} {ctx : Ctx} {request : BeginRequest} {state : State}
-    (issued : request.scope.value < state.nextIssue) (absent : ∀ entry ∈ state.scopes, entry.id ≠ request.scope) :
-    (signalWork hooks ctx (.begin request)).perform state = .error (.unsupported "interrupted-before-wait") :=
-  perform_stale (by simp_all [stale, signalWork])
-
-theorem occur_scope_stale {hooks : Hooks} {ctx : Ctx} {element : ElementId} {scope : ScopeOccurrenceId} {leave : Leave}
-    {writes : List (String × Value)} {rule : WriteRule} {state : State} (issued : scope.value < state.nextIssue)
-    (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
-    (signalWork hooks ctx (.occur element scope leave writes rule)).perform state =
-      .error (.unsupported "interrupted-before-wait") :=
-  perform_stale (by simp_all [stale, signalWork])
+    (signalWork hooks ctx signal).perform state = .error (.unsupported "interrupted-before-wait") := by
+  rcases names with ⟨_, _, rfl⟩ | rfl | ⟨_, _, rfl⟩ | ⟨_, rfl, rfl⟩ | ⟨_, _, ⟨_, _, rfl⟩⟩ <;>
+    exact perform_stale (by simp_all [stale, signalWork])
 
 /-! ### Inputs no lookup addresses
 
-An addressed input (a command, a timer firing, an effect result) whose occurrence reference no lookup finds is rejected
-(`step_unknown`). The lookups run on the transition's start state, which is the before-state with an emptied journal
-and outbox and an advanced clock, so the premise speaks of every state agreeing with the before-state on what a lookup
-reads (`Agrees`). -/
+An addressed input whose occurrence reference no lookup finds is rejected (`step_unknown`). The lookups run on the
+transition's start state, so the premise speaks of every state agreeing with the before-state on what they read. -/
 
 /-- The fields an addressed lookup reads agree with `state`'s. -/
 def Agrees (state s : State) : Prop :=
@@ -448,19 +427,11 @@ theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : S
         ∃ start, advanceClock at? { state with journal := [], outbox := [], draft := {}, writes := [] } = .ok start ∧ Agrees state start := by
       intro at?
       unfold advanceClock
-      split
-      · exact .inr ⟨_, rfl, rfl, rfl, rfl, rfl⟩
-      · split
-        · exact .inl ⟨_, rfl⟩
-        · exact .inr ⟨_, rfl, rfl, rfl, rfl, rfl⟩
+      split <;> (try split) <;> first | exact .inl ⟨_, rfl⟩ | exact .inr ⟨_, rfl, rfl, rfl, rfl, rfl⟩
     have chosen : (∃ code, admitChoices hooks ctx = .error (.rejected code)) ∨ admitChoices hooks ctx = .ok () := by
       unfold admitChoices
       dsimp only
-      split
-      · exact .inl ⟨_, rfl⟩
-      · split
-        · exact .inr rfl
-        · exact .inl ⟨_, rfl⟩
+      split <;> (try split) <;> first | exact .inl ⟨_, rfl⟩ | exact .inr rfl
     rcases clocked (inputHead input).2.1 with ⟨code, clock⟩ | ⟨start, clock, agrees⟩
     · exact ⟨code, by simp [bind, Except.bind, clock]⟩
     · rcases chosen with ⟨code, chose⟩ | chose
