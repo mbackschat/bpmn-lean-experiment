@@ -3,7 +3,10 @@ module
 public import Kernel.Hooks
 public import Kernel.Laws.State.Invariant
 public import Kernel.IL.Timer
+public import Kernel.Feature.Subscriptions
 import all Kernel.Feature.Subscriptions
+public import Kernel.Feature.Subscriptions.Conditions
+import all Kernel.Feature.Subscriptions.Conditions
 public import Kernel.Feature.Subscriptions.Delivery
 import all Kernel.Feature.Subscriptions.Delivery
 
@@ -477,5 +480,80 @@ theorem cron_zero_step_malformed : CertifiedSecondsRule ['*', '/', '0'] :=
 
 theorem cron_open_range_malformed : CertifiedSecondsRule ['5', '-'] :=
   .inr (.inr (.inr (.inr ⟨[], ['5'], [], rfl, by simp, by decide +kernel, .inl rfl, .inl rfl⟩)))
+
+/-! ## Preservation
+
+What the subscription hooks keep of an invariant: a completing occurrence's leaving disarms it, and an offered write
+records a Conditional item's last value and queues the firings its contests resolve to. -/
+
+/-- What the subscription hooks need of the state operations they apply, for an invariant `inv`. -/
+structure SubscriptionsOps (inv : State → Prop) : Prop where
+  fire : ∀ state item fired, inv state → inv (state.signal (.fire item fired))
+  /-- What open items wait for replaced, each keeping everything else. -/
+  rekind : ∀ state (change : OpenItem → OpenItem), inv state →
+    (∀ item, change item = { item with kind := (change item).kind }) → inv { state with openItems := state.openItems.map change }
+  disarm : ∀ state host, inv state → inv (state.disarm host)
+
+private theorem ok_bind {α β ε : Type} {x : Except ε α} {f : α → Except ε β} {b : β} (ran : (x >>= f) = .ok b) :
+    ∃ a, x = .ok a ∧ f a = .ok b := by
+  cases x with
+  | error failure => exact absurd ran (by simp [bind, Except.bind])
+  | ok a => exact ⟨a, by simp, by simpa [bind, Except.bind] using ran⟩
+
+private theorem foldlM_holds {α β : Type} {holds : β → Prop} {f : β → α → Except Failure β}
+    (each : ∀ b a after, holds b → f b a = .ok after → holds after) :
+    ∀ (items : List α) (b after : β), holds b → items.foldlM f b = .ok after → holds after
+  | [], b, after, start, ran => by
+    simp only [List.foldlM_nil] at ran
+    exact (Except.ok.inj ran) ▸ start
+  | a :: rest, b, after, start, ran => by
+    simp only [List.foldlM_cons] at ran
+    obtain ⟨mid, stepped, ran⟩ := ok_bind ran
+    exact foldlM_holds each rest mid after (each _ _ _ start stepped) ran
+
+/-- `Hooks.leave` keeps `inv` and is the completing occurrence's disarming. -/
+theorem leave_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {occurrence : Occurrence}
+    {state after : State} (holds : inv state) (ran : Feature.Subscriptions.leave ctx occurrence state = .ok after) :
+    inv after ∧ after = state.disarm occurrence.id := by
+  unfold Feature.Subscriptions.leave at ran
+  cases ran
+  exact ⟨ops.disarm _ _ holds, rfl⟩
+
+theorem fireAll_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) (write : Option WriteEvent) :
+    ∀ (items : List OpenItem) (state : State), inv state → inv (Feature.Subscriptions.fireAll write items state)
+  | [], _, holds => holds
+  | item :: rest, state, holds => by
+    unfold Feature.Subscriptions.fireAll
+    exact fireAll_keeps ops write rest _ (ops.fire _ _ _ holds)
+
+/-- An evaluated Conditional item records at most its last value. -/
+theorem evaluateItem_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {item : OpenItem}
+    {trigger : ConditionTrigger} {state after : State} {fires : Bool} (holds : inv state)
+    (ran : Feature.Subscriptions.evaluateItem ctx item trigger state = .ok (after, fires)) : inv after := by
+  unfold Feature.Subscriptions.evaluateItem at ran
+  simp only [bind, Except.bind] at ran
+  repeat' split at ran
+  all_goals cases ran
+  all_goals first
+    | exact holds
+    | exact ops.rekind _ _ holds fun open_ => by split <;> rfl
+
+/-- `Hooks.written` keeps `inv`. -/
+theorem offerWrites_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {writes : List WriteEvent}
+    {state after : State} (holds : inv state) (ran : Feature.Subscriptions.offerWrites ctx writes state = .ok after) :
+    inv after := by
+  unfold Feature.Subscriptions.offerWrites at ran
+  obtain ⟨⟨offered, _⟩, folded, ran⟩ := ok_bind ran
+  cases ran
+  refine foldlM_holds (holds := fun pair => inv pair.1) ?_ _ _ _ holds folded
+  intro ⟨current, earlier⟩ write next kept stepped
+  obtain ⟨⟨evaluated, fired⟩, inner, stepped⟩ := ok_bind stepped
+  obtain ⟨firings, _, stepped⟩ := ok_bind stepped
+  cases stepped
+  refine fireAll_keeps ops _ _ _ (foldlM_holds (holds := fun pair => inv pair.1) ?_ _ _ _ kept inner)
+  intro ⟨current, fired⟩ ⟨item, trigger⟩ next kept stepped
+  obtain ⟨⟨evaluated, fires⟩, evaluation, stepped⟩ := ok_bind stepped
+  cases stepped
+  exact evaluateItem_keeps ops kept evaluation
 
 end Kernel.Laws.Subscriptions

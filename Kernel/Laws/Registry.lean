@@ -62,6 +62,14 @@ theorem hooks_retryIncident : Registry.hooks.retryIncident = Feature.Work.retryI
 theorem hooks_cancelIncidentProcess : Registry.hooks.cancelIncidentProcess = Feature.Work.cancelIncidentProcess := by
   simp only [Registry.hooks]
 
+/-- Subscriptions disarms every completing occurrence. -/
+theorem hooks_leave : Registry.hooks.leave = Feature.Subscriptions.leave := by
+  simp only [Registry.hooks]
+
+/-- Subscriptions offers every write. -/
+theorem hooks_written : Registry.hooks.written = Feature.Subscriptions.offerWrites := by
+  simp only [Registry.hooks]
+
 /-- Data applies every write. -/
 theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOutputs := by
   simp only [Registry.hooks]

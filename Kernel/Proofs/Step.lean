@@ -274,6 +274,42 @@ theorem registered_completeScope : ∀ ctx header payload scope occurrence state
   rw [Laws.Registry.hooks_completeScope] at ran
   exact Laws.Scopes.completeScope_keeps scopesOps formed member owned link ran
 
+/-- The subscription hooks' operations record (`Laws.Subscriptions.SubscriptionsOps`) of `WellFormed`. -/
+theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps Laws.State.WellFormed where
+  fire _ _ _ formed := Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed
+      (fun _ _ _ same => by simp at same) (fun _ same => by simp at same) (fun _ _ _ same => by simp at same)
+      (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+  rekind _ _ formed kept := Laws.State.rekind_wellFormed formed kept
+  disarm _ host formed := Laws.State.disarm_wellFormed formed host
+
+/-- Disarming a host keeps the completion pipeline's frame and leaves nothing attached to the host. -/
+theorem disarm_frame (state : State) (host : Nat) : Laws.Step.PipelineFrame state (state.disarm host) ∧
+    ∀ item ∈ (state.disarm host).openItems, item.attachedTo ≠ some host := by
+  rw [Laws.State.disarm_eq]
+  refine ⟨⟨rfl, fun found member begun => ?_, fun item member => (List.mem_filter.mp member).1⟩,
+    fun item member => by simpa using (List.mem_filter.mp member).2⟩
+  exact List.mem_filter.mpr ⟨member, by simp [begun]⟩
+
+/-- `HookContract.leave` of the registered hooks: the completing occurrence's disarming keeps the begun occurrences and
+leaves nothing attached to it. -/
+theorem registered_leave : ∀ ctx occurrence state after, Laws.State.WellFormed state → occurrence ∈ state.occurrences →
+    Registry.hooks.leave ctx occurrence state = .ok after →
+    Laws.State.WellFormed after ∧ Laws.Step.PipelineFrame state after ∧
+      ∀ item ∈ after.openItems, item.attachedTo ≠ some occurrence.id := by
+  intro _ occurrence state _ formed _ ran
+  rw [Laws.Registry.hooks_leave] at ran
+  obtain ⟨kept, disarmed⟩ := Laws.Subscriptions.leave_keeps subscriptionsOps formed ran
+  subst disarmed
+  exact ⟨kept, disarm_frame state occurrence.id⟩
+
+/-- `HookContract.written` of the registered hooks. -/
+theorem registered_written : ∀ ctx writes state after, Laws.State.WellFormed state →
+    Registry.hooks.written ctx writes state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ formed ran
+  rw [Laws.Registry.hooks_written] at ran
+  exact Laws.Subscriptions.offerWrites_keeps subscriptionsOps formed ran
+
 /-- `HookContract.completeUserTask` of the registered hooks. -/
 theorem registered_completeUserTask : ∀ ctx header payload item values state after, Laws.State.WellFormed state →
     item ∈ state.openItems → Registry.hooks.completeUserTask ctx header payload item values state = .ok after →
