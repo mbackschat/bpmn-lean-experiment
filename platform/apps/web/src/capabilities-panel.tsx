@@ -196,7 +196,7 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
       </InlineDisclosure>
       <InlineDisclosure title="Outside the Practical CIB7 target">
         <section className={styles.families} aria-label="Supported features outside the Practical CIB7 target">
-          <p>The kernel supports these, but CIB Seven 2.2.0 lacks them, so they lie outside the Practical CIB7 target and count toward none of its rows. Most run only under the standards profile: the cibseven profiles refuse such a model or, for Multi-Instance output aggregation, write no output collection. The basis names the relation-register entry that records what CIB Seven lacks; the capability rows they belong to carry a note.</p>
+          <p>The kernel supports these, but CIB Seven 2.2.0 lacks them, so they lie outside the Practical CIB7 target and count toward none of its rows. They run only under the standards profile: the cibseven profiles refuse such a model or, for Multi-Instance output aggregation, write no output collection. The basis names the relation-register entry that records what CIB Seven lacks; the capability rows they belong to carry a note.</p>
           <div className={`${styles.tableOwner} ${styles.outsideTargetTable}`}>
             <table>
               <caption>Outside the Practical CIB7 target — supported features</caption>
