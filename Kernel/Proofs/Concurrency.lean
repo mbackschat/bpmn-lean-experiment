@@ -22,8 +22,9 @@ those of the mechanisms that queue more than one work item, one case each: a spl
 Table 13.1), a parallel body's instances (§13.3.7), a Signal throw's firings beside its continuation (§10.5.1: a Signal
 reaches every catcher), a non-interrupting catch beside its thrower, which goes on (§10.5.1), the Conditional firings
 one write offers (`Feature.Subscriptions.offerWrites`), the handlers one Compensation throw begins (§13.5.5), the
-children a Scope's entry begins without a start Event (§13.3.4), and the Conditional items one arming finds true beside
-the entry's begun work (§13.4.4); an Error no catcher takes ends every unit (Table 10.88). `Laws.Flow.Concurrent`'s cases are exactly the cases of P6's
+children a Scope's entry begins without a start Event (§13.3.4), the Conditional items one arming finds true beside the
+entry's begun work (§13.4.4), and the continuations of Inclusive joins a quiescent closure offers again (Table 13.3); an
+Error no catcher takes ends every unit (Table 10.88). `Laws.Flow.Concurrent`'s cases are exactly the cases of P6's
 provenance lemma, that two items queued together at a reachable closure state lie in distinct units of one case, and
 they must match the mechanisms `Admission.Flow.Concurrency.concurrentLevel` counts as making a level concurrent. That
 admission enforces `Apart` stays scenario evidence (`scenarios/open-rows/split-branch-order`,
@@ -50,11 +51,13 @@ signal in place, the ones before the block included.
 
 It does not vary the `begin` signals of a parallel body's instances (under `orderInvariant` no begin is deferred onto
 the tokens), of a Scope's implicitly begun children, whose tokens `tokens` reorders, the begins of the handlers one
-Compensation throw starts, or the order of idle scope completions, which
-`Step.settle` fixes: that those orders are immaterial rests on admission alone (`multiInstance.concurrentInstances`,
-which counts an instance completing where the instances begin or where a broadcast resumes them, the compensation pairs
-of `flow.concurrentWrite` and `flow.concurrentInterference`, a Scope's completion followed as its thrower's
-continuation), restated in `Laws.Flow.Concurrent`'s `instances`, `compensating` and `continuationOf`. The Conditional firings one write or one arming offers stay in place too: admission refuses a write
+Compensation throw starts, the order of idle scope completions, or the parking order in which `Step.reoffer?` offers
+Inclusive joins again, which `Step.settle` fixes: that those orders are immaterial rests on admission alone
+(`multiInstance.concurrentInstances`, which counts an instance completing where the instances begin or where a broadcast
+resumes them, the compensation pairs of `flow.concurrentWrite` and `flow.concurrentInterference`, a Scope's completion
+followed as its thrower's continuation, the joins' continuations of `flow.concurrentWrite` and
+`flow.concurrentInterference`), restated in `Laws.Flow.Concurrent`'s `instances`, `compensating`, `rejoined` and
+`continuationOf`. The Conditional firings one write or one arming offers stay in place too: admission refuses a write
 whose firings race a sibling unit, and an uncontested firing's effects reach the other units only through the tokens it
 emits, which `tokens` reorders. -/
 structure Reordered (left right : State) : Prop where

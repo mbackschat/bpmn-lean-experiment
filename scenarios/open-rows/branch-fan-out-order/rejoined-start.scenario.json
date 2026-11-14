@@ -1,0 +1,28 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-rejoined-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-rejoined",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/rejoined.bpmn",
+    "sha256": "b0377b827b239cd5c16a595a9b7cfb4aa6ab97c915fa2c6f0e8f8ec4d4e88ad1",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Table 13.3",
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

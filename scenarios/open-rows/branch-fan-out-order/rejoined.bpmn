@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Rejoined" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:rejoined" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_Rejoined" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <parallelGateway id="Fork" />
+    <inclusiveGateway id="Join1" />
+    <inclusiveGateway id="Join2" />
+    <userTask id="Wait" />
+    <exclusiveGateway id="Choose" default="Flow_Away" />
+    <subProcess id="Write1">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">one</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="Write1_S" /><endEvent id="Write1_E" />
+      <sequenceFlow id="Write1_F" sourceRef="Write1_S" targetRef="Write1_E" />
+    </subProcess>
+    <subProcess id="Write2">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">two</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="Write2_S" /><endEvent id="Write2_E" />
+      <sequenceFlow id="Write2_F" sourceRef="Write2_S" targetRef="Write2_E" />
+    </subProcess>
+    <endEvent id="End1" /><endEvent id="End2" /><endEvent id="Away" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fork" />
+    <sequenceFlow id="Flow_F1" sourceRef="Fork" targetRef="Join1" />
+    <sequenceFlow id="Flow_F2" sourceRef="Fork" targetRef="Join2" />
+    <sequenceFlow id="Flow_FW" sourceRef="Fork" targetRef="Wait" />
+    <sequenceFlow id="Flow_Wait" sourceRef="Wait" targetRef="Choose" />
+    <sequenceFlow id="Flow_C1" sourceRef="Choose" targetRef="Join1"><conditionExpression xsi:type="tFormalExpression">isPresent(never)</conditionExpression></sequenceFlow>
+    <sequenceFlow id="Flow_C2" sourceRef="Choose" targetRef="Join2"><conditionExpression xsi:type="tFormalExpression">isPresent(never)</conditionExpression></sequenceFlow>
+    <sequenceFlow id="Flow_Away" sourceRef="Choose" targetRef="Away" />
+    <sequenceFlow id="Flow_J1" sourceRef="Join1" targetRef="Write1" />
+    <sequenceFlow id="Flow_W1" sourceRef="Write1" targetRef="End1" />
+    <sequenceFlow id="Flow_J2" sourceRef="Join2" targetRef="Write2" />
+    <sequenceFlow id="Flow_W2" sourceRef="Write2" targetRef="End2" />
+  </process>
+</definitions>

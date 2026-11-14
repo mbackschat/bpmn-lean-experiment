@@ -303,6 +303,22 @@ const rootArming = (writes: boolean) => {
   [flow("f1", "S", "W"), flow("w", "W", "E"), flow("k1", "KS", "KW"), flow("k2", "KW", "KE"), ...mainInner, ...noticedInner]);
 };
 
+/**
+ * A root Parallel fork into the Inclusive joins `J1` and `J2` and the User Task `U`, whose Exclusive Gateway `G` may send
+ * a token to either join; once `G` sends it elsewhere both joins are ready at one quiescent closure, which offers them
+ * in parking order (`Step.reoffer?`). `J1` leads to a writer of `outcome`, `J2` to one of `name` (P1 census, G4).
+ */
+const rejoined = (name: string) => {
+  const [first, firstInner] = writer("W1", "outcome", "one");
+  const [second, secondInner] = writer("W2", name, "two");
+  const join = (id: string): Json => gateway(id, { inclusive: { candidates: [], default: null } });
+  return model([start("S"), gateway("F", "parallel"), join("J1"), join("J2"), activity("U", userWork()),
+    gateway("G", { exclusive: { candidates: ["g1", "g2"], default: "ga" } }), ...first, ...second, end("E1"), end("E2"), end("A")],
+  [flow("f1", "S", "F"), flow("f2", "F", "J1"), flow("f3", "F", "J2"), flow("f4", "F", "U"), flow("u", "U", "G"),
+    flow("g1", "G", "J1", simpleBoolean()), flow("g2", "G", "J2", simpleBoolean()), flow("ga", "G", "A"),
+    flow("j1", "J1", "W1"), flow("w1", "W1", "E1"), flow("j2", "J2", "W2"), flow("w2", "W2", "E2"), ...firstInner, ...secondInner]);
+};
+
 const rows: Row[] = [
   {
     code: "flow.concurrentWrite",
@@ -424,6 +440,12 @@ const rows: Row[] = [
     mutate: rootArming(true),
     control: rootArming(false),
   },
+  {
+    code: "flow.concurrentWrite",
+    description: "two Inclusive joins one quiescent closure offers again, whose continuations write the same name",
+    mutate: rejoined("outcome"),
+    control: rejoined("other"),
+  },
 ];
 
 refusalTests("flow fan-out", rows);
@@ -504,4 +526,22 @@ test("flow fan-out: an uncaught Error ends the instance only under the profile t
 test("flow fan-out: an arming's interrupting firing that removes the entry's begun work first is not held against it", () => {
   // The firing is a queued signal, which removes the Sub-Process before any token its start emits moves.
   assert.equal(refusalOf(entryCondition(true, true)(base())), null);
+});
+
+test("flow fan-out: an Inclusive join a level entered twice at once parks twice is held against itself", () => {
+  // A root fork enters `R` twice; inside, a fork parks at `J` beside `U`, whose `G` may still reach it, and both
+  // occurrences of `J` may be offered again in one closure.
+  const shape = (twice: boolean) => (program: Json): Json => {
+    const [written, inner] = writer("W", "outcome", "joined", "R");
+    return model([start("S"), ...(twice ? [gateway("F", "parallel"), gateway("FJ", "parallel")] : []), scope("R", "embedded"),
+      start("RS", null, [], "R"), gateway("RF", "parallel", {}, "R"), gateway("J", { inclusive: { candidates: [], default: null } }, {}, "R"),
+      activity("U", userWork(), {}, "R"), gateway("G", { exclusive: { candidates: ["gj"], default: "ga" } }, {}, "R"), ...written,
+      end("RE", "none", "R"), end("A", "none", "R"), end("E")],
+    [...(twice ? [flow("f1", "S", "F"), flow("fa", "F", "R"), flow("fb", "F", "R"), flow("r", "R", "FJ"), flow("fj", "FJ", "E")]
+      : [flow("f1", "S", "R"), flow("r", "R", "E")]),
+    flow("rs", "RS", "RF"), flow("rj", "RF", "J"), flow("ru", "RF", "U"), flow("u", "U", "G"), flow("gj", "G", "J", simpleBoolean()),
+    flow("ga", "G", "A"), flow("j", "J", "W"), flow("w", "W", "RE"), ...inner])(program);
+  };
+  assert.equal(refusalOf(shape(false)(base())), null);
+  assert.equal(refusalOf(shape(true)(base())), "flow.concurrentWrite");
 });

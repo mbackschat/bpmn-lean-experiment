@@ -208,11 +208,13 @@ def continuationOf (program : Program) (element : Element) : WorkUnit :=
 def enteredFrom (program : Program) (scope : ElementId) (walk : Walk) : WorkUnit :=
   { walk, start := fun visit => ∃ child, EnteredChildren program scope child ∧ visit = .enters child }
 
-/-- A resumption against a second open occurrence of its own subscription: a removal reaches it only through a
-holder, and only names and removals are compared. -/
-def itselfAt (program : Program) (visit : Visit) : Account :=
-  { (pathFrom (· = visit)).account program with
-    exposed := Holder program visit, resumes := fun _ => False, compensates := fun _ => False }
+/-- A path from `visit` against a second occurrence of itself that the elements `held` tell apart: a removal reaches it
+only through a holder, and only names and removals are compared. -/
+def itselfHeld (program : Program) (visit : Visit) (held : ElementId → Prop) : Account :=
+  { (pathFrom (· = visit)).account program with exposed := held, resumes := fun _ => False, compensates := fun _ => False }
+
+/-- A resumption against a second open occurrence of its own subscription. -/
+def itselfAt (program : Program) (visit : Visit) : Account := itselfHeld program visit (Holder program visit)
 
 /-- The body with every instance in it, which an instance's completion removes once the completion condition holds
 (BPMN 2.0.2 §13.3.7). -/
@@ -385,6 +387,19 @@ inductive ArmPair (program : Program) (element : Element) : Account → Account 
       ¬ Contested program visit other →
       ArmPair program element ((pathFrom (· = visit)).account program) ((pathFrom (· = other)).account program)
 
+/-- An Inclusive join, which parks a token while a position may still reach an empty incoming flow. -/
+def InclusiveJoin (element : Element) : Prop :=
+  ∃ header payload candidates default, element.gateway? = some (header, payload) ∧
+    payload.kind = .inclusive candidates default ∧ payload.incoming.length ≥ 2
+
+/-- An element telling apart two parked occurrences of the join `join`: the Scope it lies in, or at a called process's
+level a Call of it, when that holder loops or is not solitary. -/
+def JoinHolder (program : Program) (join : Element) (holder : ElementId) : Prop :=
+  ∃ around, ((join.header.parent = some around.header.id ∧ program.element? around.header.id = some around) ∨
+      (join.header.parent = none ∧ ∃ process, program.processOf join.header = some process ∧ around ∈ program.elements ∧
+        Calls program around process)) ∧
+    ((around.envelope?).bind (·.multiInstance) ≠ none ∨ ¬ Solitary program around) ∧ holder = around.header.id
+
 /-- Two units of work one closure may hold together, in an order no input states, one constructor per mechanism that
 queues more than one work item. P6's provenance lemma, that two items queued together at a reachable closure state lie
 in distinct units of one case, has exactly these cases; the mechanisms that make a level hold two tokens at once
@@ -432,6 +447,17 @@ inductive Concurrent (program : Program) : Account → Account → Prop where
   `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.armingFanOut`). -/
   | armed {element : Element} {left right : Account} : element ∈ program.elements → ArmPair program element left right →
       Concurrent program left right
+  /-- The continuations of two Inclusive joins one quiescent closure offers again, in parking order: Table 13.3 activates
+  a join by the state, giving two activated at once no order (P1 census, G4); `flow.concurrentWrite` and
+  `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.rejoinFanOut`). -/
+  | rejoined {first second : Element} : first ∈ program.elements → second ∈ program.elements → InclusiveJoin first →
+      InclusiveJoin second → first.header.id ≠ second.header.id →
+      Concurrent program ((continuationOf program first).account program) ((continuationOf program second).account program)
+  /-- Two occurrences of one Inclusive join that two occurrences of its holder park at once (`JoinHolder`). -/
+  | rejoinedItself {join : Element} {holder : ElementId} : join ∈ program.elements → InclusiveJoin join →
+      JoinHolder program join holder →
+      Concurrent program (itselfHeld program (.completes join) (JoinHolder program join))
+        (itselfHeld program (.completes join) (JoinHolder program join))
 
 /-- P6's order-invariance premise: no two units one closure may hold together race on a name or act on each other's
 work, so the order `Step.settle` runs them in is immaterial. An Error no catcher takes ends every unit (Table 10.88),
@@ -461,6 +487,8 @@ theorem quiet_apart : Apart quiet := by
   | writes member => simp [quiet] at member
   | compensating member => simp [quiet] at member
   | armed member => simp [quiet] at member
+  | rejoined member => simp [quiet] at member
+  | rejoinedItself member => simp [quiet] at member
 
 theorem split_race_not_apart {program : Program} {flow : Flow} {other : FlowId} {left right : Element}
     (member : flow ∈ program.flows) (forks : Forks program flow.source) (leaving : Leaving program flow.source other)

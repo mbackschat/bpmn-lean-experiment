@@ -193,16 +193,19 @@ def preempts (reading : Reading) (program : Program) (visit : Visit) (element : 
     withdrawal.root != some element.header.id &&
       removesElement program withdrawal (program.elements.length + 1) element.header.id
 
-/-- A resumption against itself, when its subscription may be open twice at once (`holders`): one occurrence's path
-may not write a name, nor remove an element holding the other occurrence. -/
-def againstItself (reading : Reading) (program : Program) (visit : Visit) (wake : Closure) : Option String :=
-  let held := holders reading program visit
+/-- A path against a second occurrence of itself that the elements `held` tell apart: one occurrence's path may not
+write a name, nor remove an element holding the other occurrence. -/
+def againstHolders (program : Program) (held : List ElementId) (wake : Closure) : Option String :=
   if held.isEmpty then none
   else if wake.footprint.races wake.footprint then some "flow.concurrentWrite"
   else if wake.withdraws.any (fun withdrawal =>
       held.any (removesElement program withdrawal (program.elements.length + 1))) then
     some "flow.concurrentInterference"
   else none
+
+/-- A resumption against itself, when its subscription may be open twice at once (`holders`, `againstHolders`). -/
+def againstItself (reading : Reading) (program : Program) (visit : Visit) (wake : Closure) : Option String :=
+  againstHolders program (holders reading program visit) wake
 
 /-- The walk of a resumption's or catcher's path: a branch's, stopping where it waits or joins. -/
 def pathOf (reading : Reading) (program : Program) (begun : List Visit) : Closure :=
@@ -405,6 +408,36 @@ def implicitFanOut (reading : Reading) (program : Program) (element : Element) :
         (rest.map fun other => pathOf reading program [.enters other]) <|> pairs rest
   ((element.scope?).map fun (header, _) => pairs (enteredChildren program header.id)).getD none
 
+/-- Whether `element` is an Inclusive join, which parks a token while a position may still reach an empty incoming flow
+(`Kernel.Feature.Flow.join`). -/
+def inclusiveJoin (element : Element) : Bool :=
+  element.gateway?.any fun (_, payload) =>
+    (routing payload).concurrent && (routing payload).conditional.isSome && payload.incoming.length ≥ 2
+
+/-- The elements telling apart two parked occurrences of the join `element` that one closure may offer again: the Scope
+it lies in, or at a called process's level a Call of it, when that holder may run twice at once, since it loops or is
+not `solitary`. Two occurrences parked in one scope occurrence run one continuation twice, which no order changes. -/
+def joinHolders (reading : Reading) (program : Program) (element : Element) : List ElementId :=
+  let around : List Element := match element.header.parent with
+    | some parent => (program.element? parent).toList
+    | none => ((program.processOf element.header).map (callers program)).getD []
+  (around.filter fun holder =>
+    ((holder.envelope?).bind (·.multiInstance)).isSome || !solitary reading program holder).map (·.header.id)
+
+/-- Under `BranchSchedule.orderInvariant`, the continuations of two Inclusive joins one quiescent closure may offer again
+may not conflict, nor two occurrences of one join that two occurrences of its Scope or called process may park at once
+(`joinHolders`, `againstHolders`): `Kernel.Step.reoffer?` fires the first ready one in parking order, which is the order
+earlier tokens arrived in, and runs its continuation to quiescence before it offers the next, so two joins Table 13.3
+activates by one state run in an order no input states (issue #81; P1 census, G4). Any two Inclusive joins count, a conservative bound: whether both can be
+parked and ready at once is the run's. -/
+def rejoinFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
+  if !inclusiveJoin element then none
+  else
+    let own := continuation reading program element
+    ((program.elements.filter fun other => inclusiveJoin other && other.header.id != element.header.id).findSome?
+        fun other => conflict program own (continuation reading program other)) <|>
+      againstHolders program (joinHolders reading program element) (pathOf reading program [.completes element])
+
 /-- The fan-outs of one element's run or entry besides a split's and a loop's, under `BranchSchedule.orderInvariant`. -/
 def fanOutConflict (reading : Reading) (program : Program) (element : Element) : Option String :=
   match program.options.branchSchedule with
@@ -412,7 +445,8 @@ def fanOutConflict (reading : Reading) (program : Program) (element : Element) :
   | .orderInvariant =>
     signalFanOut reading program element <|> escalationFanOut reading program element <|>
       writeFanOut reading program element <|> compensationFanOut reading program element <|>
-      implicitFanOut reading program element <|> armingFanOut reading program element
+      implicitFanOut reading program element <|> armingFanOut reading program element <|>
+      rejoinFanOut reading program element
 
 /-- What the instances of a looping `element` do in the closure that begins them, which
 `Kernel.Admission.MultiInstance.concurrentInstances` reads. -/
