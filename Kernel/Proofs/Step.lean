@@ -425,7 +425,8 @@ theorem runsOps : Laws.Compensation.RunsOps (Laws.State.WellFormed program) Laws
   fits _ run formed member :=
     ⟨formed.settled.resumed run member, (formed.settled.runsPlaced run member).1, (formed.settled.runsPlaced run member).2⟩
   issued _ formed := formed.issued.scopes
-  store _ _ formed kept := ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked, formed.settled.bodies,
+  slotsIssued _ formed body member scope active := (formed.settled.placed body member scope active).1
+  store _ _ formed kept _ := ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked, formed.settled.bodies,
     fun run member => (kept run member).elim (formed.settled.resumed run) (·.1), formed.settled.queued,
     formed.settled.placed, fun run member => (kept run member).elim (formed.settled.runsPlaced run) (·.2),
     formed.settled.grouped, formed.settled.raised⟩, fun _ settled => settled⟩
@@ -441,7 +442,7 @@ theorem runsOps : Laws.Compensation.RunsOps (Laws.State.WellFormed program) Laws
     fun _ settled => settled.begin (by simp [Laws.State.names])⟩
   leave _ _ _ formed member link _ := by
     obtain ⟨left, standing, frame⟩ := Laws.State.leaveChild_wellFormed formed member link
-    exact ⟨left, standing, frame.nextIssue, fun _ kept => frame.scopesSublist.subset kept, fun _ settled =>
+    exact ⟨left, standing, frame.nextIssue, fun _ kept => frame.scopesSublist.subset kept, frame.slots.bodies, fun _ settled =>
       settled.transport (Nat.le_of_eq frame.nextIssue.symm) (fun _ present _ => .inl (frame.occurrencesSublist.subset present))
         fun _ queued => queued.shrink (by rw [frame.signals]; exact .refl _) frame.tokensSublist⟩
 

@@ -78,14 +78,14 @@ theorem FrameAlongside.withdrawOccurrence (side : FrameAlongside rel) {program :
   rw [Laws.State.closeOwnItems_eq]
   exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ kept
 
-theorem operations_alongside (side : FrameAlongside rel) (ops : Operations WellFormed) :
-    Operations fun program s => WellFormed program s ∧ rel s where
+theorem operations_alongside {rel : Program → State → Prop} (side : ∀ program, FrameAlongside (rel program))
+    (ops : Operations WellFormed) : Operations fun program s => WellFormed program s ∧ rel program s where
   variablesHoused program s holds := ops.variablesHoused program s holds.1
   rootStands program s holds := ops.rootStands program s holds.1
-  setVariable program s target name value holds stands :=
-    ⟨ops.setVariable program s target name value holds.1 stands, side.setVariable program s target name value holds.1 holds.2⟩
+  setVariable program s target name value holds stands := ⟨ops.setVariable program s target name value holds.1 stands,
+    (side program).setVariable program s target name value holds.1 holds.2⟩
   removeVariable program s target name holds :=
-    ⟨ops.removeVariable program s target name holds.1, side.removeVariable program s target name holds.1 holds.2⟩
+    ⟨ops.removeVariable program s target name holds.1, (side program).removeVariable program s target name holds.1 holds.2⟩
 
 theorem workOps_alongside (side : FrameAlongside rel) {program : Program}
     (ops : Laws.Work.WorkOps program (WellFormed program)) :
@@ -255,16 +255,19 @@ theorem propagationOps_alongside (side : FrameAlongside rel) {program : Program}
     ⟨ops.rollBack s scope trigger leave element parent flows holds.1 stands, side.signal (side.clearInside program s scope []
       holds.1 (List.mem_map.mpr stands) (fun _ _ none => by simp at none) holds.2) _⟩
 
-/-- Compensation runs' record beside `WellFormed`, through `Alongside`'s context leave and run store, since
-`Laws.Compensation.RunsOps` carries neither `LeavesOwned` nor `StoresHeldOrFresh`. -/
-theorem runsOps_alongside (side : Alongside rel) {program : Program}
+/-- Compensation runs' record beside `WellFormed`: a context `Laws.Compensation.RunsOps` leaves is a running one
+(`LeavesOwned`), and the runs it stores hold only contexts held or fresh (`StoresHeldOrFresh`). -/
+theorem runsOps_alongside (side : FrameAlongside rel) {program : Program}
     (ops : Laws.Compensation.RunsOps (WellFormed program) Laws.State.Settled) :
     Laws.Compensation.RunsOps (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
   fits s run holds member := ops.fits s run holds.1 member
   issued s holds := ops.issued s holds.1
-  store s compensation holds kept :=
-    have stored := ops.store s compensation holds.1 kept
-    ⟨⟨stored.1, side.storeContexts program s compensation holds.1 holds.2⟩, stored.2⟩
+  slotsIssued s holds := ops.slotsIssued s holds.1
+  store s compensation holds kept contexts :=
+    have stored := ops.store s compensation holds.1 kept contexts
+    ⟨⟨stored.1, side.storeRuns program s compensation holds.1 (fun run member context running =>
+      (contexts run member context running).imp_right fun none ⟨body, inside, active⟩ => none body inside active)
+      holds.2⟩, stored.2⟩
   enter s element parent locals holds stands :=
     have entered := ops.enter s element parent locals holds.1 stands
     ⟨⟨entered.1, side.enterScope program s element parent locals none holds.1 holds.2⟩, entered.2⟩
@@ -337,34 +340,30 @@ end Alongside
 
 /-! ## The registered hooks' feature records beside `WellFormed` -/
 
-/-- The feature records of `WellFormed` and a property beside it, from those of `WellFormed`, given Multi-Instance's and
-the compensation runs' records beside `WellFormed`: every other record follows from `FrameAlongside` alone
-(`Proofs.Step.registered_contract` turns them into the registered hooks' contract). -/
-theorem registeredOps_frame {rel : State → Prop} (ops : Proofs.Step.RegisteredOps WellFormed)
-    (side : FrameAlongside rel)
-    (multiInstance : ∀ program, Laws.MultiInstance.MultiInstanceOps program (fun s => WellFormed program s ∧ rel s)
-      Laws.State.Settled)
-    (runs : ∀ program, Laws.Compensation.RunsOps (fun s => WellFormed program s ∧ rel s) Laws.State.Settled) :
-    Proofs.Step.RegisteredOps fun program s => WellFormed program s ∧ rel s where
+/-- The feature records but Multi-Instance's of `WellFormed` and a property beside it, which may read the step's
+program, from those of `WellFormed` and `FrameAlongside` alone (`Proofs.Step.registered_contract_of` turns them and
+what the Multi-Instance hooks keep into the registered hooks' contract). -/
+theorem featureOps_frame {rel : Program → State → Prop} (ops : Proofs.Step.FeatureOps WellFormed)
+    (side : ∀ program, FrameAlongside (rel program)) :
+    Proofs.Step.FeatureOps fun program s => WellFormed program s ∧ rel program s where
   operations := operations_alongside side ops.operations
-  work _ := workOps_alongside side (ops.work _)
-  flow _ := flowOps_alongside side (ops.flow _)
-  join _ := joinOps_alongside side (ops.join _)
-  multiInstance := multiInstance
-  starts _ := startsOps_alongside side (ops.starts _)
-  scopes _ := scopesOps_alongside side (ops.scopes _)
-  subscriptions _ := subscriptionsOps_alongside side (ops.subscriptions _)
-  compensation _ := compensationOps_alongside side (ops.compensation _)
-  propagation _ := propagationOps_alongside side (ops.propagation _)
-  runs := runs
+  work _ := workOps_alongside (side _) (ops.work _)
+  flow _ := flowOps_alongside (side _) (ops.flow _)
+  join _ := joinOps_alongside (side _) (ops.join _)
+  starts _ := startsOps_alongside (side _) (ops.starts _)
+  scopes _ := scopesOps_alongside (side _) (ops.scopes _)
+  subscriptions _ := subscriptionsOps_alongside (side _) (ops.subscriptions _)
+  compensation _ := compensationOps_alongside (side _) (ops.compensation _)
+  propagation _ := propagationOps_alongside (side _) (ops.propagation _)
+  runs _ := runsOps_alongside (side _) (ops.runs _)
 
 /-- The feature records of `WellFormed` and a property beside it that `Alongside` gathers, from those of
 `WellFormed`. -/
 theorem registeredOps_alongside {rel : State → Prop} (ops : Proofs.Step.RegisteredOps WellFormed)
     (side : Alongside rel) :
     Proofs.Step.RegisteredOps fun program s => WellFormed program s ∧ rel s :=
-  registeredOps_frame ops side.toFrameAlongside (fun _ => multiInstanceOps_alongside side (ops.multiInstance _))
-    fun _ => runsOps_alongside side (ops.runs _)
+  { featureOps_frame ops.toFeatureOps fun _ => side.toFrameAlongside with
+    multiInstance := fun _ => multiInstanceOps_alongside side (ops.multiInstance _) }
 
 /-! ## Subtree removal of the registered hooks -/
 
@@ -467,8 +466,8 @@ gives `RemovedEndOnce`. -/
 theorem microStepsKeepEnds_registered (ops : Proofs.Step.RegisteredOps WellFormed)
     (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed) :
     MicroStepsKeepEnds Registry.hooks := by
-  have kept := fun b => microStepsKeep_alongside (rel := Laws.Step.EndsKept b none) (endsInv_contract ops b none) phases
-    (endsKept_stepAlongside b) Proofs.State.stateFacts
+  have kept := fun b => microStepsKeep_alongside (rel := fun _ => Laws.Step.EndsKept b none) (endsInv_contract ops b none)
+    phases (fun _ => endsKept_stepAlongside b) Proofs.State.stateFacts
     (Laws.Step.complete_ends (endsInv_contract ops b) phases pipeline Proofs.State.stateFacts)
   obtain ⟨cancelled, written⟩ := registered_quiet
   refine ⟨fun ctx cause transition b state after runs holds ran =>

@@ -15,7 +15,9 @@ public import Kernel.Proofs.MultiInstance.Hooks
 /-! # Proofs: the registered hooks' contract
 
 The registered hooks keep any invariant every feature's operations record is filled for (`RegisteredOps`), one field
-per hook from its feature's lemma, which is generic in the invariant (`registered_contract`). `Kernel.Proofs.Step` fills
+per hook from its feature's lemma, which is generic in the invariant (`registered_contract`), or every record but
+Multi-Instance's (`FeatureOps`) when the Multi-Instance hooks keep it by its own proof (`MultiInstanceKeeps`,
+`registered_contract_of`). `Kernel.Proofs.Step` fills
 the records of `Laws.State.WellFormed`, and the cancellation lane those of properties carried beside it
 (`Kernel.Proofs.Cancellation.Registered`), which `Kernel.Proofs.Step` then instantiates; the contract sits in a module
 of its own so that both can import it. Nothing executable imports this module.
@@ -97,19 +99,47 @@ theorem registered_delivered : ∀ ctx data state item fired,
   · exact Laws.Hooks.item?_mem found
   · exact Laws.Hooks.item?_mem found
 
-/-- The operations records of every feature the registered hooks run, of one invariant. -/
-structure RegisteredOps (inv : Program → State → Prop) : Prop where
+/-- The operations records of every feature the registered hooks run but Multi-Instance's, of one invariant. -/
+structure FeatureOps (inv : Program → State → Prop) : Prop where
   operations : Laws.Step.Operations inv
   work : ∀ program, Laws.Work.WorkOps program (inv program)
   flow : ∀ program, Laws.Flow.FlowOps (inv program)
   join : ∀ program, Laws.Flow.JoinOps (inv program) Laws.State.Settled
-  multiInstance : ∀ program, Laws.MultiInstance.MultiInstanceOps program (inv program) Laws.State.Settled
   starts : ∀ program, Laws.Starts.StartsOps (inv program)
   scopes : ∀ program, Laws.Scopes.ScopesOps (inv program)
   subscriptions : ∀ program, Laws.Subscriptions.SubscriptionsOps program (inv program)
   compensation : ∀ program, Laws.Compensation.CompensationOps (inv program)
   propagation : ∀ program, Laws.Propagation.PropagationOps program (inv program)
   runs : ∀ program, Laws.Compensation.RunsOps (inv program) Laws.State.Settled
+
+/-- The operations records of every feature the registered hooks run, of one invariant. -/
+structure RegisteredOps (inv : Program → State → Prop) : Prop extends FeatureOps inv where
+  multiInstance : ∀ program, Laws.MultiInstance.MultiInstanceOps program (inv program) Laws.State.Settled
+
+/-- What the registered Multi-Instance hooks keep of `inv`, under what `Laws.Step.HookContract` gives each: an invariant
+whose feature record is not filled, since it reads what a body's slot record is set to, proves them of the hooks
+directly. -/
+structure MultiInstanceKeeps (inv : Program → State → Prop) : Prop where
+  arrive : ∀ ctx header envelope loop occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
+    occurrence.begun = true → occurrence.role = .multiInstanceBody → header.id = occurrence.element →
+    ((ctx.program.element? header.id).bind (·.envelope?)).bind (·.multiInstance) = some loop →
+    Feature.MultiInstance.arriveMultiInstance ctx header envelope loop occurrence state = .ok after →
+    inv ctx.program after
+  completeBody : ∀ ctx header envelope loop occurrence state after, inv ctx.program state →
+    occurrence ∈ state.occurrences →
+    Feature.MultiInstance.completeBody ctx header envelope loop occurrence state = .ok after → inv ctx.program after
+  instanceCompleted : ∀ ctx body occurrence writes state after, inv ctx.program state →
+    occurrence.scope ∈ Laws.State.scopeIds state →
+    Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after → inv ctx.program after
+
+/-- The registered Multi-Instance hooks keep an invariant their feature record is filled for. -/
+theorem multiInstanceKeeps_of
+    (ops : ∀ program, Laws.MultiInstance.MultiInstanceOps program (inv program) Laws.State.Settled) :
+    MultiInstanceKeeps inv where
+  arrive _ _ _ _ _ _ _ holds member begun _ _ _ ran :=
+    Proofs.MultiInstance.arriveMultiInstance_keeps (ops _) holds member begun ran
+  completeBody _ _ _ _ _ _ _ holds _ ran := Laws.MultiInstance.completeBody_keeps (ops _) holds ran
+  instanceCompleted _ _ _ _ _ _ holds stands ran := Proofs.MultiInstance.instanceCompleted_keeps (ops _) holds stands ran
 
 /-- What a variable write changes, it changes alone, so a raise's search reads the same. -/
 theorem steady_of_same {before after : State} (same : Laws.State.SameButVariables before after) :
@@ -121,7 +151,7 @@ theorem steady_of_same {before after : State} (same : Laws.State.SameButVariable
 /-- The hooks the registered raise's search takes keep `inv` and what the search reads
 (`Laws.Propagation.SearchHooks`): Data's writes change only variables, Work's Error-path leave then completes its
 settled host, and Compensation's drop changes only the runs. -/
-theorem registeredSearch (ops : RegisteredOps inv) (facts : Laws.Step.StateFacts) (ctx : Ctx)
+theorem registeredSearch (ops : FeatureOps inv) (facts : Laws.Step.StateFacts) (ctx : Ctx)
     {propagation : Feature.Propagation.PropagationHooks}
     (mapped : propagation.mappedErrorOutputs = Feature.Work.mappedErrorOutputs Feature.Data.writeOutputs)
     (caught : ∀ ctx scope writes,
@@ -159,8 +189,10 @@ theorem registeredSearch (ops : RegisteredOps inv) (facts : Laws.Step.StateFacts
       rw [same]
       exact ⟨rfl, rfl, Nat.le_refl _, fun _ queued => queued⟩ }
 
-/-- The registered hooks keep any invariant every feature's record is filled for, given its `raise` field. -/
-theorem registered_contract {inv : Program → State → Prop} (ops : RegisteredOps inv) (facts : Laws.Step.StateFacts) :
+/-- The registered hooks keep any invariant every feature's record but Multi-Instance's is filled for and the
+Multi-Instance hooks keep. -/
+theorem registered_contract_of {inv : Program → State → Prop} (ops : FeatureOps inv)
+    (multiInstance : MultiInstanceKeeps inv) (facts : Laws.Step.StateFacts) :
     Laws.Step.HookContract Registry.hooks inv where
   arriveStart _ _ _ _ _ _ _ holds member begun ran := by
     rw [Laws.Registry.hooks_arriveStart] at ran
@@ -168,9 +200,9 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
   arriveActivity _ _ _ _ _ _ holds member begun unstarted role ran := by
     rw [Laws.Registry.hooks_arriveActivity] at ran
     exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted role ran
-  arriveMultiInstance _ _ _ _ _ _ _ holds member begun _ _ _ ran := by
+  arriveMultiInstance _ _ _ _ _ _ _ holds member begun body named looped ran := by
     rw [Laws.Registry.hooks_arriveMultiInstance] at ran
-    exact Proofs.MultiInstance.arriveMultiInstance_keeps (ops.multiInstance _) holds member begun ran
+    exact multiInstance.arrive _ _ _ _ _ _ _ holds member begun body named looped ran
   arriveScope _ _ _ _ _ _ _ holds member begun ready ran := by
     rw [Laws.Registry.hooks_arriveScope] at ran
     exact Laws.Scopes.arriveScope_keeps (ops.scopes _) holds member begun ready ran
@@ -192,9 +224,9 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
   completeCall _ _ _ _ _ _ _ holds member owned link ran := by
     rw [Laws.Registry.hooks_completeCall] at ran
     exact Laws.Work.completeCall_keeps (ops.work _) holds member owned link ran
-  completeBody _ _ _ _ _ _ _ holds _ ran := by
+  completeBody _ _ _ _ _ _ _ holds member ran := by
     rw [Laws.Registry.hooks_completeBody] at ran
-    exact Laws.MultiInstance.completeBody_keeps (ops.multiInstance _) holds ran
+    exact multiInstance.completeBody _ _ _ _ _ _ _ holds member ran
   completeUserTask _ _ _ _ _ _ _ holds member activity ran := by
     rw [Laws.Registry.hooks_completeUserTask] at ran
     exact Laws.Work.completeUserTask_keeps (ops.work _) holds member activity ran
@@ -251,8 +283,7 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
   instanceCompleted _ _ _ _ _ _ holds stands ran := by
     rw [Laws.Registry.hooks_instanceCompleted] at ran
     obtain ⟨entry, inside, named⟩ := stands
-    exact Proofs.MultiInstance.instanceCompleted_keeps (ops.multiInstance _) holds
-      (List.mem_map.mpr ⟨entry, inside, named⟩) ran
+    exact multiInstance.instanceCompleted _ _ _ _ _ _ holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran
   handlerCompleted _ _ _ _ _ holds stands ran := by
     rw [Laws.Registry.hooks_handlerCompleted] at ran
     obtain ⟨entry, inside, named⟩ := stands
@@ -269,6 +300,11 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
     rw [Laws.Registry.hooks_written] at ran
     exact Laws.Subscriptions.offerWrites_keeps (ops.subscriptions _) holds ran
   delivered := registered_delivered
+
+/-- The registered hooks keep any invariant every feature's record is filled for. -/
+theorem registered_contract {inv : Program → State → Prop} (ops : RegisteredOps inv) (facts : Laws.Step.StateFacts) :
+    Laws.Step.HookContract Registry.hooks inv :=
+  registered_contract_of ops.toFeatureOps (multiInstanceKeeps_of ops.multiInstance) facts
 
 end Contract
 
