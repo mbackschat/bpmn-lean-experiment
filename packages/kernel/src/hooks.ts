@@ -50,6 +50,7 @@ import {
   failed,
   failedWith,
   instanceOf,
+  keyed,
   leaveFlows,
   occurrenceOf,
   openKindView,
@@ -393,12 +394,7 @@ export function ctxRunsAsInstance(ctx: Ctx, state: State, element: ElementId, sc
  * order a publication shows them in.
  */
 export function lastWrites(bindings: readonly Binding[]): readonly Binding[] {
-  const kept: Binding[] = [];
-  for (let index = bindings.length - 1; index >= 0; index -= 1) {
-    const binding = bindings[index] as Binding;
-    if (!kept.some(([name]) => name === binding[0])) kept.unshift(binding);
-  }
-  return mergeSort(kept, (left, right) => compareStrings(left[0], right[0]) <= 0);
+  return mergeSort(keyed(bindings), (left, right) => compareStrings(left[0], right[0]) <= 0);
 }
 
 /**

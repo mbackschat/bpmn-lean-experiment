@@ -712,6 +712,43 @@ theorem removeVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {
     · simp only [beq_iff_eq, targeted, ite_false]
       exact nodup
 
+/-- `keyed` binds each name at most once, whatever bindings it was given. -/
+theorem keyed_names (bindings : List (String × Value)) : ((keyed bindings).map (·.1)).Nodup := by
+  induction bindings with
+  | nil => simp [keyed]
+  | cons binding rest held =>
+    have step : keyed (binding :: rest) =
+        if (keyed rest).any (·.1 == binding.1) then keyed rest else binding :: keyed rest := rfl
+    rw [step]
+    split
+    · exact held
+    · rename_i absent
+      refine List.nodup_cons.mpr ⟨fun member => absent ?_, held⟩
+      obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
+      exact List.any_eq_true.mpr ⟨entry, inside, beq_iff_eq.mpr named⟩
+
+/-- A fresh instance's variables are keyed, whatever bindings the start supplied (#147). -/
+theorem initial_variablesKeyed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
+    VariablesKeyed (State.initial instanceId variables businessKey) where
+  scopes := by simp [State.initial]
+  names := by
+    intro vars member
+    simp only [State.initial, List.mem_singleton] at member
+    subst member
+    exact keyed_names variables
+
+/-- The variable set a new scope occurrence installs binds each name at most once, whatever locals it was given (#147). -/
+theorem enterScope_names (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
+    (locals : List (String × Value)) (occurrence : Option Nat)
+    (names : ∀ vars ∈ state.variables, (vars.entries.map (·.1)).Nodup) :
+    ∀ vars ∈ (state.enterScope element parent locals occurrence).1.variables, (vars.entries.map (·.1)).Nodup := by
+  intro vars member
+  simp only [State.enterScope, State.issue, List.mem_append, List.mem_singleton] at member
+  rcases member with old | fresh
+  · exact names vars old
+  · subst fresh
+    exact keyed_names locals
+
 /-! ### Cancellation facts -/
 
 private theorem CancelsWithEnds.trans {first second third : State} (one : CancelsWithEnds first second)

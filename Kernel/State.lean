@@ -254,15 +254,21 @@ inductive Failure where
 
 abbrev Outcome := Except Failure State
 
+/-- `bindings` with only the last binding of each name, where that binding stands: a variable set holds one value per
+name, as a Data Association's copy replaces its target's value (BPMN 2.0.2 §10.4.2) and CIB keys a scope's variables by
+name (`VariableStore.java:39`), so a name bound twice keeps the value bound last (#147). -/
+def keyed (bindings : List (String × Value)) : List (String × Value) :=
+  bindings.foldr (fun binding kept => if kept.any (·.1 == binding.1) then kept else binding :: kept) []
+
 namespace State
 
 def root : ScopeOccurrenceId := ⟨0⟩
 
-/-- A fresh process instance: one root scope occurrence with the given variables. -/
+/-- A fresh process instance: one root scope occurrence with the given variables, `keyed`. -/
 def initial (instanceId : String) (variables : List (String × Value)) (businessKey : Option String := none) : State :=
   { instanceId
     scopes := [{ id := root, element := none, parent := none }]
-    variables := [{ scope := root, entries := variables }]
+    variables := [{ scope := root, entries := keyed variables }]
     slots := { instances := [{ root, businessKey }] } }
 
 def emit (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) : State :=
@@ -410,15 +416,15 @@ def disarm (state : State) (host : Nat) : State :=
       occurrences := state.occurrences.filter fun occurrence =>
         occurrence.begun || !attached.any (·.occurrence == occurrence.id) }
 
-/-- Enter a new scope occurrence of `element` inside `parent`, with the given local variables. The scope belongs to
-`occurrence`, when it has one. -/
+/-- Enter a new scope occurrence of `element` inside `parent`, with the given local variables, `keyed`. The scope
+belongs to `occurrence`, when it has one. -/
 def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (occurrence : Option Nat) : State × ScopeOccurrenceId :=
   let (state, issued) := state.issue
   let id : ScopeOccurrenceId := ⟨issued⟩
   ({ state with
       scopes := state.scopes ++ [{ id, element := some element, parent := some parent, occurrence }]
-      variables := state.variables ++ [{ scope := id, entries := locals }] }, id)
+      variables := state.variables ++ [{ scope := id, entries := keyed locals }] }, id)
 
 /-- The identifier of the process instance a Call Activity's `activation` calls from the instance `caller`: each
 part prefixed by its UTF-8 byte length, so that nested identifiers never collide. -/

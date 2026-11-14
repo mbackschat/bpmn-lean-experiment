@@ -391,9 +391,23 @@ export function failedWith<T>(failure: Failure): Result<T> { return { ok: false,
 
 // State operations
 
+/**
+ * `bindings` with only the last binding of each name, where that binding stands: a variable set holds one value per
+ * name, as a Data Association's copy replaces its target's value (BPMN 2.0.2 §10.4.2) and CIB keys a scope's variables
+ * by name (`VariableStore.java:39`), so a name bound twice keeps the value bound last (#147).
+ */
+export function keyed(bindings: readonly Binding[]): readonly Binding[] {
+  const kept: Binding[] = [];
+  for (let index = bindings.length - 1; index >= 0; index -= 1) {
+    const binding = bindings[index] as Binding;
+    if (!kept.some(([name]) => name === binding[0])) kept.unshift(binding);
+  }
+  return kept;
+}
+
 export const root: ScopeOccurrenceId = 0;
 
-/** A fresh process instance: one root scope occurrence with the given variables. */
+/** A fresh process instance: one root scope occurrence with the given variables, `keyed`. */
 export function initial(instanceId: string, variables: readonly Binding[], businessKey: string | null = null): State {
   return {
     instanceId,
@@ -401,7 +415,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     scopes: [{ id: root, element: null, parent: null, occurrence: null, calledInstance: null }],
     occurrences: [],
     tokens: [],
-    variables: [{ scope: root, entries: variables }],
+    variables: [{ scope: root, entries: keyed(variables) }],
     openItems: [],
     activations: [],
     nextIssue: 1,
@@ -667,8 +681,8 @@ export function disarm(state: State, host: number): State {
 }
 
 /**
- * Enter a new scope occurrence of `element` inside `parent`, with the given local variables. The scope belongs to
- * `occurrence`, when it has one.
+ * Enter a new scope occurrence of `element` inside `parent`, with the given local variables, `keyed`. The scope belongs
+ * to `occurrence`, when it has one.
  */
 export function enterScope(
   state: State,
@@ -682,7 +696,7 @@ export function enterScope(
     {
       ...issued,
       scopes: [...issued.scopes, { id, element, parent, occurrence, calledInstance: null }],
-      variables: [...issued.variables, { scope: id, entries: locals }],
+      variables: [...issued.variables, { scope: id, entries: keyed(locals) }],
     },
     id,
   ];

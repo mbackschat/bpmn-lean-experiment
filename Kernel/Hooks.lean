@@ -222,8 +222,7 @@ def Ctx.runsAsInstance (ctx : Ctx) (state : State) (element : ElementId) (scope 
 last, as CIB's sequential writes do, and the bindings, one per target, then commute, so they are kept in the name order
 a publication shows them in. -/
 def lastWrites (bindings : List (String × Value)) : List (String × Value) :=
-  (bindings.foldr (fun binding kept => if kept.any (·.1 == binding.1) then kept else binding :: kept) []).mergeSort
-    fun left right => decide (left.1 ≤ right.1)
+  (keyed bindings).mergeSort fun left right => decide (left.1 ≤ right.1)
 
 /-- Evaluate each mapping's source in document order, as CIB runs a parameter list one at a time
 (`IoMapping.java:38-48`), against `reads earlier`, the context given the bindings `earlier` the mappings before it
