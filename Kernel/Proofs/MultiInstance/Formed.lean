@@ -23,7 +23,7 @@ namespace Kernel.Proofs.MultiInstance
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
-  InstancesPlaced BeginsQueued BoundariesApart SequentialSlots OutputsFit)
+  InstancesPlaced BeginsQueued IdsUnique SequentialSlots OutputsFit)
 open Kernel.Proofs.Cancellation (phases_alongside featureOps_frame)
 
 /-! ## What the Multi-Instance hooks keep
@@ -487,13 +487,13 @@ theorem multiInstanceKeeps_framed : Proofs.Step.MultiInstanceKeeps Framed where
 /-- What the numbering lane supplies: after a committed input from a well-formed state that keeps the slot invariant,
 and after a committed start, every running body numbers its instances in item order and each instance is the one
 occurrence of the Activity in its scope occurrence, and the instance begins still queued are in order, under a program
-whose boundaries name no element. -/
+whose identifiers are unique. -/
 structure NumberingKept (hooks : Hooks) : Prop where
-  step : ∀ program input before after, BoundariesApart program → WellFormed program before →
+  step : ∀ program input before after, IdsUnique program → WellFormed program before →
     RunsFormed program before → Step.step hooks program (some before) input = .ok after →
       (∀ run ∈ after.slots.multiInstances, NumberedInOrder after run ∧ InstancesPlaced after run) ∧
         BeginsQueued program after
-  start : ∀ program input after, BoundariesApart program → Step.step hooks program none input = .ok after →
+  start : ∀ program input after, IdsUnique program → Step.step hooks program none input = .ok after →
     (∀ run ∈ after.slots.multiInstances, NumberedInOrder after run ∧ InstancesPlaced after run) ∧
       BeginsQueued program after
 
@@ -551,7 +551,7 @@ theorem registered_instancesApart :
 /-- The registered hooks keep the lane's slot invariant through a committed input, given the numbering lane's
 supply. -/
 theorem registered_runsFormed (numbering : NumberingKept Registry.hooks) {program : Program} {input : Input}
-    {before after : State} (apart : BoundariesApart program)
+    {before after : State} (apart : IdsUnique program)
     (formed : WellFormed program before) (runs : RunsFormed program before)
     (ran : Step.step Registry.hooks program (some before) input = .ok after) :
     WellFormed program after ∧ RunsFormed program after :=
@@ -569,7 +569,7 @@ the numbering lane's supply. -/
 theorem registered_runsFormedInPopulation (numbering : NumberingKept Registry.hooks) :
     RunsFormedInPopulation Registry.hooks := fun _ _ _ ran member inside =>
   (Laws.Population.runStimuli_held
-    (good := fun program s => Framed program s ∧ (BoundariesApart program → RunsFormed program s))
+    (good := fun program s => Framed program s ∧ (IdsUnique program → RunsFormed program s))
     ⟨fun _ _ _ _ holds stepped => ⟨framed_stepKeeps holds.1 stepped, fun apart =>
       (registered_runsFormed numbering apart holds.1.1 (holds.2 apart) stepped).2⟩,
       fun _ _ _ ran => ⟨framed_start ran, fun apart => registered_runsFormedAtStart numbering _ _ _ apart ran⟩⟩

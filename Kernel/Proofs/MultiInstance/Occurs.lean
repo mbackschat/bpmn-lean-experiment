@@ -8,7 +8,7 @@ A reservation is an occurrence under the element role (`State.reserve`), so the 
 the features make to name no looping element: one of a looping element in an instance's scope occurrence would be no
 instance (`Laws.MultiInstance.InstancesPlaced`). This module states where a reservation's element comes from, for the
 frame and phase records that carry a property beside `WellFormed` to require it, and what that gives under a program
-whose boundaries name no element (`Laws.MultiInstance.BoundariesApart`). It imports no proof module, so the cancellation
+whose identifiers are unique (`Laws.MultiInstance.IdsUnique`). It imports no proof module, so the cancellation
 lane's records can name it. Nothing executable imports this module.
 -/
 
@@ -18,7 +18,7 @@ namespace Kernel.Proofs.MultiInstance
 
 open Kernel
 open Kernel.Laws.State (WellFormed)
-open Kernel.Laws.MultiInstance (LoopOf BoundariesApart OccurPending)
+open Kernel.Laws.MultiInstance (LoopOf IdsUnique OccurPending)
 
 /-- `element` is the identifier of a boundary of one of `program`'s elements. -/
 def BoundaryOf (program : Program) (element : ElementId) : Prop :=
@@ -53,19 +53,19 @@ def ResumesPending (rel : State → Prop) (s : State) (compensation : Compensati
   ∀ run ∈ compensation.runs, ∀ element at_ leave, run.resume = some (.occur element at_ leave) →
     OccurPending s element ∨ PendingIn rel element
 
-/-- A boundary's identifier names no looping element of a program whose boundaries name no element. -/
-theorem BoundaryOf.unlooped {program : Program} {element : ElementId} (apart : BoundariesApart program)
+/-- A boundary's identifier names no looping element of a program whose identifiers are unique. -/
+theorem BoundaryOf.unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
     (boundary : BoundaryOf program element) : ∀ loop, ¬ LoopOf program element loop := by
   obtain ⟨host, member, envelope, rest⟩ := boundary
   obtain ⟨has, found, inside, named⟩ := rest
   intro loop looped
-  have none := apart host member envelope has found inside
+  have none := apart.boundaries host member envelope has found inside
   rw [named] at none
   rw [LoopOf, none] at looped
   cases looped
 
-/-- A reservable element is no looping one of a program whose boundaries name no element. -/
-theorem Reservable.unlooped {program : Program} {element : ElementId} (apart : BoundariesApart program)
+/-- A reservable element is no looping one of a program whose identifiers are unique. -/
+theorem Reservable.unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
     (reservable : Reservable program element) : ∀ loop, ¬ LoopOf program element loop := by
   rcases reservable with boundary | bare
   · exact boundary.unlooped apart

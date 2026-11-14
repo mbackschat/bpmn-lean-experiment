@@ -14,8 +14,8 @@ the cancellation lane (`Kernel.Proofs.Cancellation`). Each is stated over a hook
 `Kernel.Proofs.Step` proves it of `Registry.hooks`.
 
 The model premises are the loop a run's element carries (`LoopOf`), read from the IL, two loop conditions admission
-enforces (`ItemApart`, `OutputsNamed`), and, for the statements that read instance identity, the IL contract that no
-boundary's identifier names an element (`BoundariesApart`), which the codec does not check. That admission refuses the loops the kernel does not run (`multiInstance.*`,
+enforces (`ItemApart`, `OutputsNamed`), and, for the statements that read instance identity, the IL contract that the
+program's identifiers are unique (`IdsUnique`), which the codec does not check. That admission refuses the loops the kernel does not run (`multiInstance.*`,
 `scope.multiInstance`) stays scenario evidence (guard 12's refusal tests): no statement here names the admission
 evaluator. Nothing executable imports this module.
 
@@ -31,7 +31,7 @@ namespace Kernel.Proofs.MultiInstance
 
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds occurrenceIds Queues)
-open Kernel.Laws.MultiInstance (LoopOf BoundariesApart Generated SnapshotFixed Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed
+open Kernel.Laws.MultiInstance (LoopOf IdsUnique Generated SnapshotFixed Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed
   NumberedInOrder InstancesPlaced BeginsQueued SlotsCounted CountersHeld BeginsInOrder SequentialSlots ParallelSlots OutputsFit Collects)
 
 /-- A running body's slots shaped by its loop's mode, its filled slots holding what its instances submitted, and its
@@ -80,24 +80,24 @@ structure RunsFormed (program : Program) (s : State) : Prop where
 def Commits (hooks : Hooks) (program : Program) (before after : State) : Prop :=
   WellFormed program before ∧ RunsFormed program before ∧ ∃ input, Step.step hooks program (some before) input = .ok after
 
-/-- A committed start keeps the lane's slot invariant, under a program whose boundaries name no element. -/
+/-- A committed start keeps the lane's slot invariant, under a program whose identifiers are unique. -/
 def RunsFormedAtStart (hooks : Hooks) : Prop :=
-  ∀ (program : Program) (input : Input) (after : State), BoundariesApart program →
+  ∀ (program : Program) (input : Input) (after : State), IdsUnique program →
     Step.step hooks program none input = .ok after → RunsFormed program after
 
 /-- Every instance a committed population run holds keeps the lane's slot invariant under its deployment's program,
-where that program's boundaries name no element. -/
+where that program's identifiers are unique. -/
 def RunsFormedInPopulation (hooks : Hooks) : Prop :=
   ∀ (admission : Program → Option String) (stimuli : List Population.Stimulus) (result : Population.Result),
     Population.runStimuli hooks admission stimuli = .ok result →
-    ∀ instance_ ∈ result.instances, BoundariesApart instance_.deployment.program →
+    ∀ instance_ ∈ result.instances, IdsUnique instance_.deployment.program →
       RunsFormed instance_.deployment.program instance_.state
 
-/-- Every running body after a committed input is `Shaped` by its loop, under a program whose boundaries name no
-element. -/
+/-- Every running body after a committed input is `Shaped` by its loop, under a program whose identifiers are
+unique. -/
 def RunsShaped (hooks : Hooks) : Prop :=
   ∀ (program : Program) (before after : State) (run : MultiInstanceRun) (loop : MultiInstance),
-    BoundariesApart program → Commits hooks program before after → run ∈ after.slots.multiInstances → LoopOf program run.element loop →
+    IdsUnique program → Commits hooks program before after → run ∈ after.slots.multiInstances → LoopOf program run.element loop →
     Shaped after run loop
 
 /-- A body begun by the input has at least one slot; a body running before and after it keeps its snapshot, slot

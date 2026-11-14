@@ -30,16 +30,17 @@ open Kernel.Laws.State (Within)
 def LoopOf (program : Program) (element : ElementId) (loop : MultiInstance) : Prop :=
   ((program.element? element).bind (·.envelope?)).bind (·.multiInstance) = some loop
 
-/-- No boundary of the program's elements has an identifier that names an element: the IL contract that `Boundary.id` is unique in the
-program, as `Header.id` is (`Kernel/IL/Types.lean:118`), which compiled programs satisfy and the codec does not check.
-A boundary's reservation is an occurrence of its identifier under the element role (`State.reserve`), so a boundary
+/-- The program's identifiers are unique: no two of its elements share a header identifier, and no boundary of its
+elements has an identifier that names an element. It is the IL contract that `Boundary.id` "is unique in the program,
+as `Header.id` is" (`Kernel/IL/Types.lean:118`), which compiled programs satisfy and the codec does not check. A
+reservation is an occurrence of its identifier under the element role (`State.reserve`), so a boundary or a start Event
 whose identifier named a Multi-Instance Activity could reserve an occurrence of that Activity, which is no instance, in
 an instance's scope occurrence: the statements that read instance identity (`InstancesPlaced`) are false of programs
-that break the contract, and take it as a model premise (root decision, 2026-11-14). It ranges over every element the
-program lists, not only those `Program.element?` finds, since a firing finds its boundary among them all
-(`Program.boundary?`). -/
-def BoundariesApart (program : Program) : Prop :=
-  ∀ element ∈ program.elements, ∀ envelope, element.envelope? = some envelope →
+that break the contract, and take it as a model premise (root decision, 2026-11-14). The boundary clause ranges over
+every element the program lists, since a firing finds its boundary among them all (`Program.boundary?`). -/
+structure IdsUnique (program : Program) : Prop where
+  headers : (program.elements.map (·.header.id)).Nodup
+  boundaries : ∀ element ∈ program.elements, ∀ envelope, element.envelope? = some envelope →
     ∀ boundary ∈ envelope.boundaries, program.element? boundary.id = none
 
 /-! ## Entry and generation -/
@@ -155,7 +156,7 @@ the body's element under the element role (`continued`); a queued instance begin
 while that slot's scope occurrence stands, with the body's element and no reservation (`targets`); no queued begin into
 an instance's scope occurrence begins a reservation of the body's element under the element role, and every reservation
 continues by its flows (`reserved`, `reservations`), and no reservation still to be made names a looping element, as a
-boundary's never does under `BoundariesApart` (`occurs`); the closure takes queued begins in slot order: begin signals first
+boundary's or an Event's never does under `IdsUnique` (`occurs`); the closure takes queued begins in slot order: begin signals first
 in, first out, deferred begins last in, first out, and only under `declarationDepthFirst` (`Step.nextToken`); and every
 instance that has begun lies in a slot below every one still queued (`above`). -/
 structure BeginsQueued (program : Program) (s : State) : Prop where
