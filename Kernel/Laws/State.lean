@@ -289,6 +289,16 @@ theorem openSubscription_eq (state : State) (kind : OpenKind) (element : Element
                occurrence := (state.reserve element scope).2.id, attachedTo := host, passive }] } := by
   simp only [State.openSubscription, State.issue]
 
+/-- A scope occurrence is entered at the counter, below its parent, with its locals keyed. -/
+theorem enterScope_eq (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
+    (locals : List (String × Value)) (occurrence : Option Nat) :
+    state.enterScope element parent locals occurrence =
+      ({ state with
+          nextIssue := state.nextIssue + 1
+          scopes := state.scopes ++ [{ id := ⟨state.nextIssue⟩, element := some element, parent := some parent, occurrence }]
+          variables := state.variables ++ [{ scope := ⟨state.nextIssue⟩, entries := keyed locals }] }, ⟨state.nextIssue⟩) := by
+  simp only [State.enterScope, State.issue]
+
 theorem recordEnd_eq (state : State) (key : OccurrenceKey) (terminal : Terminal) :
     state.recordEnd key terminal = { state with draft := { state.draft with ended := state.draft.ended ++ [(key, terminal)] } } := by
   simp only [State.recordEnd]
