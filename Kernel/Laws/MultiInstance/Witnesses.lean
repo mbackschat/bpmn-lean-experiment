@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.MultiInstance.Rules
+public import Kernel.Laws.Step.Signals
 
 /-! # Laws of Multi-Instance Activities: non-vacuity witnesses
 
@@ -396,7 +397,16 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
     simp only [queuing, List.mem_singleton] at inside
     subst inside
     simp [firstInstance] at unbegun
-  occurs _ pending := by simp [OccurPending, queuing, entered] at pending
+  occurs _ pending := by
+    rcases pending with signal | compensate | resumed
+    · obtain ⟨_, rest⟩ := signal
+      obtain ⟨_, _, _, member⟩ := rest
+      exact absurd (List.mem_singleton.mp member) Laws.Step.occur_ne_begin
+    · obtain ⟨_, _, _, rest⟩ := compensate
+      obtain ⟨_, _, _, member⟩ := rest
+      exact absurd (List.mem_singleton.mp member) Laws.Step.compensate_ne_begin
+    · obtain ⟨_, member, _⟩ := resumed
+      simp [queuing, entered] at member
   signalsOrdered _ _ first second _ _ precedes _ _ := by
     have := precedes.length_le
     simp [queuing] at this
