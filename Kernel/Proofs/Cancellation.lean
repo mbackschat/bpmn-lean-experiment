@@ -14,10 +14,8 @@ occurrence has no effect; every owning feature is notified once. Each is stated 
 `Kernel.Proofs.Step` proves it of `Registry.hooks`. No model premise is needed: removal is generic (`State.clearInside`,
 `State.cancelOccurrence`) and reads no IL.
 
-A proof here composes `Laws.Step`'s, `Laws.Hooks`' and `Laws.State`'s lemmas and opens no body. A `Step` fact it needs
-that no `Laws` module states yet is an explicit premise named as a pending lemma request, never a model or state premise
-of the lane statement; the root replaces it with the lemma once that lands. Subtree removal rests on the
-state-invariant lane's preservation of `WellFormed` and on the step keeping its before-state's scope occurrences
+A proof here composes `Laws.Step`'s, `Laws.Hooks`' and `Laws.State`'s lemmas and opens no body. Subtree removal rests on
+the state-invariant lane's preservation of `WellFormed` and on the step keeping its before-state's scope occurrences
 (`StepKeepsScopes`), an invariant of the closure relative to the before-state, which the state operations keep
 (`Alongside`) and `Kernel.Proofs.Cancellation.Registered` carries through the registered hooks. A removed occurrence's
 single end fact rests on each micro-step keeping the input's end facts from its start (`MicroStepsKeepEnds`,
@@ -318,16 +316,6 @@ theorem ScopesKept.enter {before s t : State} (kept : ScopesKept before s) (issu
     rw [same]
     exact Nat.le_refl _
 
-/-- Pending lemma request R13 (`Kernel.Laws.State`): the removal operations drop scope occurrences and issue no
-identity. -/
-structure PendingRemoval : Prop where
-  removal_shrinks : ∀ s : State,
-    (∀ scope keep, (s.clearInside scope keep).scopes.Sublist s.scopes ∧
-      (s.clearInside scope keep).nextIssue = s.nextIssue) ∧
-    (∀ scope, (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextIssue = s.nextIssue) ∧
-    (∀ id, (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextIssue = s.nextIssue) ∧
-    ∀ id, (s.cancelOccurrence id).scopes.Sublist s.scopes ∧ (s.cancelOccurrence id).nextIssue = s.nextIssue
-
 /-- `t` agrees with `s` on everything a property carried beside `WellFormed` may read: the scope occurrences, the
 occurrences, the issue and activation counters, the journal, the draft and the instance identity. -/
 structure Unmoved (s t : State) : Prop where
@@ -361,7 +349,7 @@ structure Alongside (rel : State → Prop) : Prop where
   removeVariable : ∀ program s target name, WellFormed program s → rel s → rel (s.removeVariable target name)
 
 /-- The state operations the hooks apply keep the scope occurrences of any before-state. -/
-theorem scopesKept_alongside (pending : PendingRemoval) (before : State) : Alongside (ScopesKept before) where
+theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) where
   frame _ _ moved kept := kept.shrink (by rw [moved.scopes]; exact .refl _) moved.nextIssue
   issue s kept := by
     rw [Laws.State.issue_eq]
@@ -382,9 +370,9 @@ theorem scopesKept_alongside (pending : PendingRemoval) (before : State) : Along
     have reserves := Laws.State.reserve_reserves formed.activations element scope
     kept.enter reserves.nextIssue fun _ member => .inl (reserves.scopes ▸ member)
   leaveScope _ s scope _ _ kept :=
-    kept.shrink ((pending.removal_shrinks s).2.1 scope).1 ((pending.removal_shrinks s).2.1 scope).2
+    kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2
   clearInside _ s scope keep _ _ _ kept :=
-    kept.shrink ((pending.removal_shrinks s).1 scope keep).1 ((pending.removal_shrinks s).1 scope keep).2
+    kept.shrink ((Laws.State.removal_shrinks s).1 scope keep).1 ((Laws.State.removal_shrinks s).1 scope keep).2
   disarm _ s host _ kept := by
     rw [Laws.State.disarm_eq]
     exact kept
@@ -455,9 +443,9 @@ theorem phases_alongside {rel : State → Prop} (phases : Laws.Step.Phases WellF
 
 /-- `Step`'s phases keep the scope occurrences of any before-state: journalling and ordering move no scope occurrence
 nor the counter, beginning issues at most one identity and enters no scope occurrence, and cancelling drops some
-(`PendingRemoval`). -/
-theorem scopesKept_stepAlongside (pending : PendingRemoval) (before : State) : StepAlongside (ScopesKept before) where
-  toAlongside := scopesKept_alongside pending before
+(`Laws.State.removal_shrinks`). -/
+theorem scopesKept_stepAlongside (before : State) : StepAlongside (ScopesKept before) where
+  toAlongside := scopesKept_alongside before
   journal _ _ _ _ kept _ _ := kept
   runOrder _ _ _ kept := kept
   begin _ s request role sourceType formed _ _ kept :=
@@ -467,16 +455,18 @@ theorem scopesKept_stepAlongside (pending : PendingRemoval) (before : State) : S
       · exact Nat.le_of_eq reserved.nextIssue.symm
       · rw [fresh.nextIssue]
         exact Nat.le_succ _) fun _ member => .inl (begins.scopes ▸ member)
-  cancel _ s id _ kept := kept.shrink ((pending.removal_shrinks s).2.2.2 id).1 ((pending.removal_shrinks s).2.2.2 id).2
+  cancel _ s id _ kept :=
+    kept.shrink ((Laws.State.removal_shrinks s).2.2.2 id).1 ((Laws.State.removal_shrinks s).2.2.2 id).2
 
 /-- `Step`'s phases keep `KeepsScopes before` where they keep `WellFormed`. -/
-theorem keepsScopes_phases (phases : Laws.Step.Phases WellFormed) (pending : PendingRemoval) (before : State) :
+theorem keepsScopes_phases (phases : Laws.Step.Phases WellFormed) (before : State) :
     Laws.Step.Phases (KeepsScopes before) :=
-  phases_alongside phases (scopesKept_stepAlongside pending before)
+  phases_alongside phases (scopesKept_stepAlongside before)
 
 /-- The completion pipeline's own phases keep `KeepsScopes before` where they keep `WellFormed`: starting a reservation
-keeps the scope occurrences, removing an occurrence drops some (`PendingRemoval`), and journalling an end moves none. -/
-theorem keepsScopes_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) (pending : PendingRemoval)
+keeps the scope occurrences, removing an occurrence drops some (`Laws.State.removal_shrinks`), and journalling an end
+moves none. -/
+theorem keepsScopes_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed)
     (before : State) : Laws.Step.PipelinePhases (KeepsScopes before) where
   startReserved _ s occurrence sourceType holds member unnamed := by
     refine ⟨pipeline.startReserved _ _ occurrence sourceType holds.1 member unnamed, ?_⟩
@@ -489,8 +479,8 @@ theorem keepsScopes_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellForm
       exact holds.2
   removeOccurrence _ s occurrence holds member free :=
     have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
-    ⟨⟨removed.1, holds.2.shrink ((pending.removal_shrinks s).2.2.1 occurrence.id).1
-      ((pending.removal_shrinks s).2.2.1 occurrence.id).2⟩, removed.2⟩
+    ⟨⟨removed.1, holds.2.shrink ((Laws.State.removal_shrinks s).2.2.1 occurrence.id).1
+      ((Laws.State.removal_shrinks s).2.2.1 occurrence.id).2⟩, removed.2⟩
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
     rw [Laws.State.recordEnd_eq]
     exact holds.2⟩
@@ -516,10 +506,9 @@ def MicroStepsKeepEnds (hooks : Hooks) : Prop :=
     Laws.Step.ClosureStep hooks ctx state after → Laws.Step.EndsInv b none ctx.program after ∧ after.draft.ended = []
 
 /-- The state operations the hooks apply keep an input's end facts from its start under any exemption, since each frames
-them (`Kernel.Laws.Step.EndsFrames`), up to the `Laws.State` facts of their bodies still pending
-(`Laws.Step.PendingStateEnds`): the hooks then keep `Laws.Step.EndsInv` by their feature lemmas
+them (`Kernel.Laws.Step.EndsFrames`): the hooks then keep `Laws.Step.EndsInv` by their feature lemmas
 (`Kernel.Proofs.Cancellation.Registered`). -/
-theorem endsKept_alongside (ends : Laws.Step.PendingStateEnds) (b : State) (x : Option (Nat × OccurrenceKey)) :
+theorem endsKept_alongside (b : State) (x : Option (Nat × OccurrenceKey)) :
     Alongside (Laws.Step.EndsKept b x) where
   frame _ _ moved kept := kept.unmoved moved.occurrences moved.activations ⟨moved.scopes, moved.instanceId⟩
     (Nat.le_of_eq moved.nextIssue.symm) (.of_eq (by simp only [Laws.Step.endKeys, moved.journal, moved.draft]))
@@ -530,12 +519,12 @@ theorem endsKept_alongside (ends : Laws.Step.PendingStateEnds) (b : State) (x : 
     kept.step formed (Laws.Step.enterScope_frame formed element parent locals owner)
   enterCalled _ s called call variables definition formed kept :=
     kept.step formed (Laws.Step.enterCalled_frame formed called call variables definition)
-  reserve _ _ element scope formed kept := kept.step formed (Laws.Step.reserve_frame ends formed element scope)
-  leaveScope _ _ _ formed present kept := kept.step formed (Laws.Step.leaveScope_frame ends formed present)
-  clearInside _ _ _ _ formed present inside kept := kept.step formed (Laws.Step.clearInside_frame ends formed present inside)
+  reserve _ _ element scope formed kept := kept.step formed (Laws.Step.reserve_frame formed element scope)
+  leaveScope _ _ _ formed present kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
+  clearInside _ _ _ _ formed present inside kept := kept.step formed (Laws.Step.clearInside_frame formed present inside)
   disarm _ s host formed kept := kept.step formed (Laws.Step.disarm_frame s host)
-  setVariable _ s target name value formed kept := kept.step formed (Laws.Step.setVariable_frame ends s target name value)
-  removeVariable _ s target name formed kept := kept.step formed (Laws.Step.removeVariable_frame ends s target name)
+  setVariable _ s target name value formed kept := kept.step formed (Laws.Step.setVariable_frame s target name value)
+  removeVariable _ s target name formed kept := kept.step formed (Laws.Step.removeVariable_frame s target name)
 
 /-- Each committed micro-step of an input on a running instance keeps `inv`: its transition and every closure
 micro-step. -/
@@ -559,17 +548,17 @@ theorem microStepsKeep_alongside {hooks : Hooks} {rel : State → Prop}
 
 /-- `Step`'s phases keep an input's end facts from its start: journalling the draft and ordering the journal permute
 them, and beginning and cancelling frame them (`Kernel.Laws.Step.EndsFrames`). -/
-theorem endsKept_stepAlongside (ends : Laws.Step.PendingStateEnds) (b : State) :
+theorem endsKept_stepAlongside (b : State) :
     StepAlongside (Laws.Step.EndsKept b none) where
-  toAlongside := endsKept_alongside ends b none
+  toAlongside := endsKept_alongside b none
   journal _ s transition _ kept _ ended := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (by
     simp only [Laws.Step.endKeys, List.flatMap_cons, ended, List.map_append]
     simpa using List.perm_append_comm)
   runOrder _ s _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _)
     ((((List.reverse_perm s.journal).flatMap_right _).append_right _).map _)
   begin _ _ _ role sourceType formed stands admitted kept :=
-    kept.step formed (Laws.Step.beginOccurrence_frame ends formed stands admitted role sourceType)
-  cancel _ _ id formed kept := kept.step formed (Laws.Step.cancelOccurrence_frame ends formed id)
+    kept.step formed (Laws.Step.beginOccurrence_frame formed stands admitted role sourceType)
+  cancel _ _ id formed kept := kept.step formed (Laws.Step.cancelOccurrence_frame formed id)
 
 /-- A list whose keys are distinct holds the key `key` once if at all. -/
 theorem once_of_nodup {α β : Type} {facts : List (α × β)} {key : α} (distinct : (facts.map (·.1)).Nodup)

@@ -9,9 +9,9 @@ public import Kernel.Laws.State.Enter
 Each state operation a hook or a phase of `Step` applies frames the end facts (`EndsStep`): what it adds to them are
 the keys of the begun occurrences it removes, each once, and every occurrence it leaves keeps its key. The frames compose
 `Laws.State`'s equations and frames of each operation (`Laws.State.Enters`, `Reserves`, `Begins`, `StartsReserved`,
-`Cleared`, `Left`) with three facts of their bodies that no `Laws.State` lemma states yet (`PendingStateEnds`): which
-begun occurrences clearing and cancelling journal, and that beginning, reserving, clearing and writing keep the instance
-identity and add no end fact. `Kernel.Laws.Step.Ends` carries an input's end facts through them. The module reads no
+`Cleared`, `Left`) with what clearing and cancelling journal (`Laws.State.clearInside_ends`,
+`Laws.State.cancelOccurrence_ended`) and what beginning, reserving, clearing and writing keep
+(`Laws.State.ends_unmoved`). `Kernel.Laws.Step.Ends` carries an input's end facts through them. The module reads no
 body. Nothing executable imports it.
 -/
 
@@ -43,32 +43,6 @@ structure EndsStep (s t : State) (spare : Option Nat) : Prop where
   ends : ∃ gone : List Occurrence, (endKeys t).Perm (endKeys s ++ gone.map (key s)) ∧ (gone.map (·.id)).Nodup ∧
     (∀ o ∈ gone, o ∈ s.occurrences ∧ spare ≠ some o.id ∧ o.id ∉ occurrenceIds t) ∧
     ∀ o ∈ s.occurrences, o.begun = true → o.id ∉ occurrenceIds t → spare ≠ some o.id → o ∈ gone
-
-/-- Pending lemma requests R15 (`Kernel.Laws.State`), facts of the bodies of `Kernel.State` and `Kernel.State.Removal`
-that no `Laws.State` lemma states: clearing a present scope occurrence of a well-formed state journals each begun
-occurrence it removes once, under its key; cancelling a standing occurrence journals, after what removing it journals,
-its own end if it was begun; beginning, starting, reserving, clearing and writing keep the instance identity, beginning
-and starting journal no end, and a reservation appends its occurrence and keeps the scope occurrences and the draft. -/
-structure PendingStateEnds : Prop where
-  clearInside_ends : ∀ (program : Program) (s : State), WellFormed program s → ∀ scope, scope ∈ scopeIds s → ∀ keep,
-    ∃ gone : List Occurrence,
-      (s.clearInside scope keep).draft.ended = s.draft.ended ++ gone.map (fun o => (key s o, Terminal.cancelled)) ∧
-      (gone.map (·.id)).Nodup ∧ ∀ o, o ∈ gone ↔ o ∈ s.occurrences ∧ o.begun = true ∧ Within s o.scope scope ∧ o.id ∉ keep
-  cancelOccurrence_ended : ∀ (s : State) id occurrence, s.occurrence? id = some occurrence →
-    (s.cancelOccurrence id).draft.ended = ((s.withdrawOccurrence id).removeOccurrence id).draft.ended ++
-      ([occurrence].filter (·.begun)).map fun o => (key ((s.withdrawOccurrence id).removeOccurrence id) o, .cancelled)
-  ends_unmoved : ∀ s : State,
-    (∀ request role sourceType, (s.beginOccurrence request role sourceType).1.instanceId = s.instanceId ∧
-      (s.beginOccurrence request role sourceType).1.journal = s.journal ∧
-      (s.beginOccurrence request role sourceType).1.draft.ended = s.draft.ended) ∧
-    (∀ occurrence sourceType, (s.startReserved occurrence sourceType).1.instanceId = s.instanceId ∧
-      (s.startReserved occurrence sourceType).1.draft.ended = s.draft.ended) ∧
-    (∀ element scope, (s.reserve element scope).1.instanceId = s.instanceId ∧ (s.reserve element scope).1.draft = s.draft ∧
-      (s.reserve element scope).1.scopes = s.scopes ∧
-      (s.reserve element scope).1.occurrences = s.occurrences ++ [(s.reserve element scope).2]) ∧
-    (∀ scope keep, (s.clearInside scope keep).instanceId = s.instanceId) ∧
-    (∀ target name value, (s.setVariable target name value).instanceId = s.instanceId) ∧
-    ∀ target name, (s.removeVariable target name).instanceId = s.instanceId
 
 /-! ## Composing frames -/
 
@@ -235,10 +209,10 @@ theorem enterCalled_frame (formed : WellFormed program s) (called : Program) (ca
     ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩⟩ (by simp)
 
 /-- A reservation is a fresh occurrence whose key the counters had not issued. -/
-theorem reserve_frame (ends : PendingStateEnds) (formed : WellFormed program s) (element : ElementId)
+theorem reserve_frame (formed : WellFormed program s) (element : ElementId)
     (scope : ScopeOccurrenceId) : EndsStep s (s.reserve element scope).1 none := by
   have reserves := Laws.State.reserve_reserves formed.activations element scope
-  obtain ⟨instanceId, draft, _⟩ := (ends.ends_unmoved s).2.2.1 element scope
+  obtain ⟨instanceId, draft, _⟩ := (Laws.State.ends_unmoved s).2.2.1 element scope
   refine .quiet instanceId (by rw [reserves.nextIssue]; exact Nat.le_succ _) (countsGrow_activated reserves.activated)
     (by simp [endKeys, reserves.journal, draft]) (fun o' inside => ?_) fun o member _ => ?_
   · rw [reserves.occurrences] at inside
@@ -252,13 +226,13 @@ theorem reserve_frame (ends : PendingStateEnds) (formed : WellFormed program s) 
 
 /-- Clearing a present scope occurrence, keeping occurrences that lie in no scope occurrence strictly within it,
 journals the begun occurrences it removes. -/
-theorem clearInside_frame (ends : PendingStateEnds) (formed : WellFormed program s) {scope : ScopeOccurrenceId}
+theorem clearInside_frame (formed : WellFormed program s) {scope : ScopeOccurrenceId}
     (present : scope ∈ scopeIds s) {keep : List Nat}
     (kept : ∀ o ∈ s.occurrences, o.id ∈ keep → ¬ StrictlyWithin s o.scope scope) :
     EndsStep s (s.clearInside scope keep) none := by
   have cleared := Laws.State.clearInside_cleared formed present keep
-  obtain ⟨gone, ended, ids, exactly⟩ := ends.clearInside_ends program s formed scope present keep
-  refine .remove formed ((ends.ends_unmoved s).2.2.2.1 scope keep) cleared.nextIssue cleared.activations
+  obtain ⟨gone, ended, ids, exactly⟩ := Laws.State.clearInside_ends formed present keep
+  refine .remove formed ((Laws.State.ends_unmoved s).2.2.2.1 scope keep) cleared.nextIssue cleared.activations
     cleared.journal cleared.occurrencesSublist.subset (fun o inside => ?_) ended ids fun o => (exactly o).trans ?_
   · obtain ⟨member, stays⟩ := (cleared.occurrences o).mp inside
     obtain ⟨entry, inScope, named⟩ := List.mem_map.mp (formed.owned.occurrenceScopes o member)
@@ -275,10 +249,10 @@ theorem clearInside_frame (ends : PendingStateEnds) (formed : WellFormed program
         fun keeps => out ((cleared.occurrences o).mpr ⟨member, .inr keeps⟩)⟩
 
 /-- Leaving a present scope occurrence journals the begun occurrences within it. -/
-theorem leaveScope_frame (ends : PendingStateEnds) (formed : WellFormed program s) {scope : ScopeOccurrenceId}
+theorem leaveScope_frame (formed : WellFormed program s) {scope : ScopeOccurrenceId}
     (present : scope ∈ scopeIds s) : EndsStep s (s.leaveScope scope) none := by
   have left := Laws.State.leaveScope_left formed present
-  obtain ⟨gone, ended, ids, exactly⟩ := ends.clearInside_ends program s formed scope present []
+  obtain ⟨gone, ended, ids, exactly⟩ := Laws.State.clearInside_ends formed present []
   have drafted : (s.leaveScope scope).draft = (s.clearInside scope).draft :=
     (congrArg State.draft (Laws.State.leaveScope_eq s scope).1).trans rfl
   refine .remove formed (Laws.State.leaveScope_eq s scope).2 left.nextIssue left.activations left.journal
@@ -300,17 +274,17 @@ theorem disarm_frame (s : State) (host : Nat) : EndsStep s (s.disarm host) none 
   exact .prune ⟨rfl, rfl⟩ rfl rfl rfl (fun _ inside => (List.mem_filter.mp inside).1)
     fun _ member begun => List.mem_filter.mpr ⟨member, by simp [begun]⟩
 
-theorem setVariable_frame (ends : PendingStateEnds) (s : State) (target : ScopeOccurrenceId) (name : String)
+theorem setVariable_frame (s : State) (target : ScopeOccurrenceId) (name : String)
     (value : Value) : EndsStep s (s.setVariable target name value) none :=
   have same := Laws.State.setVariable_same s target name value
-  .prune ⟨same.scopes, (ends.ends_unmoved s).2.2.2.2.1 target name value⟩ same.nextIssue same.activations
+  .prune ⟨same.scopes, (Laws.State.ends_unmoved s).2.2.2.2.1 target name value⟩ same.nextIssue same.activations
     (by simp [endKeys, same.journal, same.draft]) (fun _ inside => same.occurrences ▸ inside)
     fun _ member _ => same.occurrences ▸ member
 
-theorem removeVariable_frame (ends : PendingStateEnds) (s : State) (target : ScopeOccurrenceId) (name : String) :
+theorem removeVariable_frame (s : State) (target : ScopeOccurrenceId) (name : String) :
     EndsStep s (s.removeVariable target name) none :=
   have same := Laws.State.removeVariable_same s target name
-  .prune ⟨same.scopes, (ends.ends_unmoved s).2.2.2.2.2 target name⟩ same.nextIssue same.activations
+  .prune ⟨same.scopes, (Laws.State.ends_unmoved s).2.2.2.2.2 target name⟩ same.nextIssue same.activations
     (by simp [endKeys, same.journal, same.draft]) (fun _ inside => same.occurrences ▸ inside)
     fun _ member _ => same.occurrences ▸ member
 
@@ -324,11 +298,11 @@ variable {program : Program} {s : State}
 
 /-- Beginning an admitted request in a scope occurrence that stands begins its reservation under its key, or a fresh
 occurrence under a key the counters had not issued. -/
-theorem beginOccurrence_frame (ends : PendingStateEnds) (formed : WellFormed program s) {request : BeginRequest}
+theorem beginOccurrence_frame (formed : WellFormed program s) {request : BeginRequest}
     (stands : ScopeStands s request.scope) (admitted : Admitted s request) (role : ActivationRole) (sourceType : String) :
     EndsStep s (s.beginOccurrence request role sourceType).1 none := by
   have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
-  obtain ⟨instanceId, journal, ended⟩ := (ends.ends_unmoved s).1 request role sourceType
+  obtain ⟨instanceId, journal, ended⟩ := (Laws.State.ends_unmoved s).1 request role sourceType
   have present : request.scope ∈ scopeIds s := by
     obtain ⟨entry, inside, named⟩ := stands
     exact List.mem_map.mpr ⟨entry, inside, named⟩
@@ -360,12 +334,12 @@ theorem beginOccurrence_frame (ends : PendingStateEnds) (formed : WellFormed pro
     · exact .inl (List.mem_map.mpr ⟨o, List.mem_filter.mpr ⟨member, by simp [same]⟩, rfl⟩)
 
 /-- Starting a reservation begins it under its key. -/
-theorem startReserved_frame (ends : PendingStateEnds) (formed : WellFormed program s) {occurrence : Occurrence}
+theorem startReserved_frame (formed : WellFormed program s) {occurrence : Occurrence}
     (member : occurrence ∈ s.occurrences) (sourceType : String) :
     EndsStep s (s.startReserved occurrence sourceType).1 none := by
   cases flag : occurrence.begun
   · have starts := Laws.State.startReserved_starts s sourceType flag
-    obtain ⟨instanceId, ended⟩ := (ends.ends_unmoved s).2.1 occurrence sourceType
+    obtain ⟨instanceId, ended⟩ := (Laws.State.ends_unmoved s).2.1 occurrence sourceType
     refine .quiet instanceId (Nat.le_of_eq starts.nextIssue.symm) (countsGrow_same starts.activations)
       (by simp [endKeys, starts.journal, ended]) (fun o' inside => ?_) fun o inS _ => ?_
     · rw [starts.occurrences] at inside
@@ -411,27 +385,13 @@ theorem withoutRecord_frame (u : State) (id : Nat) : EndsStep u (Laws.State.with
     absurd (List.mem_map.mpr ⟨o, List.mem_filter.mpr ⟨member, by simpa using fun same => other (by rw [same])⟩, rfl⟩)
       absent⟩
 
-/-- Two scope occurrences below one parent lie outside each other (as `Laws.State`'s private `sibling_outside`). -/
-private theorem siblings_apart (formed : WellFormed program s) {first second : ScopeOccurrence}
-    {parent : ScopeOccurrenceId} (one : first ∈ s.scopes) (two : second ∈ s.scopes) (firstLink : first.parent = some parent)
-    (secondLink : second.parent = some parent) (other : second.id ≠ first.id) : ¬ Within s second.id first.id := by
-  intro within
-  generalize named : second.id = x at within
-  cases within with
-  | refl => exact other named
-  | parent child above _ member link inner =>
-    obtain rfl := Laws.State.scope_unique formed.distinct two member named
-    rw [secondLink] at link
-    cases link
-    exact Laws.State.parent_not_within formed one firstLink inner
-
 /-- Leaving the scope occurrences of `owned`. -/
 private abbrev leaveAll (owned : List ScopeOccurrence) (t : State) : State :=
   owned.foldl (fun state entry => state.leaveScope entry.id) t
 
 /-- Leaving the scope occurrences an occurrence `record` owns, siblings below its scope occurrence, frames the end facts,
 keeps the record and its scope occurrence with its process instance, and commutes with removing the record. -/
-private theorem leaveOwned_frame (ends : PendingStateEnds) {record : Occurrence} :
+private theorem leaveOwned_frame {record : Occurrence} :
     ∀ (owned : List ScopeOccurrence) (t : State), WellFormed program t → record ∈ t.occurrences → owned.Nodup →
       (∀ entry ∈ owned, entry ∈ t.scopes ∧ entry.parent = some record.scope) →
       leaveAll owned (Laws.State.withoutRecord t record.id) = Laws.State.withoutRecord (leaveAll owned t) record.id ∧
@@ -457,23 +417,23 @@ private theorem leaveOwned_frame (ends : PendingStateEnds) {record : Occurrence}
         obtain ⟨entryMember, entryLink⟩ := placed entry (List.mem_cons_of_mem _ inside)
         have other : entry.id ≠ first.id := fun same =>
           (List.nodup_cons.mp nodup).1 (Laws.State.scope_unique formed.distinct entryMember firstMember same ▸ inside)
-        exact ⟨(left.scopes entry).mpr ⟨entryMember, siblings_apart formed firstMember entryMember firstLink entryLink
-          other⟩, entryLink⟩
-    obtain ⟨commutes, frame, rest⟩ := leaveOwned_frame ends rest (t.leaveScope first.id)
+        exact ⟨(left.scopes entry).mpr ⟨entryMember,
+          Laws.State.sibling_outside formed firstMember entryMember firstLink entryLink other⟩, entryLink⟩
+    obtain ⟨commutes, frame, rest⟩ := leaveOwned_frame rest (t.leaveScope first.id)
       (left.wellFormed formed present notRoot) ((left.occurrences record).mpr ⟨member, outside⟩) (List.nodup_cons.mp nodup).2
       restPlaced
     obtain ⟨within, recorded, fewer, rest⟩ := rest
     obtain ⟨stands, instances⟩ := rest
     simp only [leaveAll, List.foldl_cons] at commutes frame within recorded fewer stands instances ⊢
     rw [Laws.State.leaveScope_withoutRecord t record.id first.id apart]
-    exact ⟨commutes, (leaveScope_frame ends formed present).trans formed left.occurrencesSublist.subset frame
+    exact ⟨commutes, (leaveScope_frame formed present).trans formed left.occurrencesSublist.subset frame
       (fun _ none => by cases none), fun o inside => left.occurrencesSublist.subset (within o inside), recorded,
       fewer.trans left.scopesSublist, stands, fun x inside => (instances x inside).trans (left.instances x
         (List.Sublist.subset (fewer.map _) inside))⟩
 
 /-- Removing an occurrence `record` of a well-formed state journals the begun occurrences inside the scope occurrences
 it owns but not `record`, which it removes; its scope occurrence stands and keeps its process instance. -/
-theorem removeOccurrence_frame (ends : PendingStateEnds) (formed : WellFormed program s) {record : Occurrence}
+theorem removeOccurrence_frame (formed : WellFormed program s) {record : Occurrence}
     (member : record ∈ s.occurrences) :
     EndsStep s (s.removeOccurrence record.id) (some record.id) ∧ record.id ∉ occurrenceIds (s.removeOccurrence record.id) ∧
       record.scope ∈ scopeIds (s.removeOccurrence record.id) ∧
@@ -481,7 +441,7 @@ theorem removeOccurrence_frame (ends : PendingStateEnds) (formed : WellFormed pr
   have scopesNodup : s.scopes.Nodup :=
     List.Pairwise.of_map (R := (· ≠ ·)) (S := (· ≠ ·)) (·.id) (fun _ _ apart same => apart (congrArg _ same))
       formed.distinct.scopes
-  obtain ⟨commutes, frame, rest⟩ := leaveOwned_frame ends (s.scopes.filter (·.occurrence == some record.id)) s formed
+  obtain ⟨commutes, frame, rest⟩ := leaveOwned_frame (s.scopes.filter (·.occurrence == some record.id)) s formed
     member (scopesNodup.sublist List.filter_sublist) fun entry inside => by
       obtain ⟨entryMember, owns⟩ := List.mem_filter.mp inside
       exact ⟨entryMember, formed.ownedBelow entry entryMember record member (by simpa using owns)⟩
@@ -559,7 +519,7 @@ private theorem withdrawn_shape : ∀ (scopes : List ScopeOccurrence) (t : State
       rw [same, Laws.State.withdrawInside_eq]
 
 /-- Cancelling an occurrence of a well-formed state journals each begun occurrence it removes, itself included, once. -/
-theorem cancelOccurrence_frame (ends : PendingStateEnds) (formed : WellFormed program s) (id : Nat) :
+theorem cancelOccurrence_frame (formed : WellFormed program s) (id : Nat) :
     EndsStep s (s.cancelOccurrence id) none := by
   cases found : s.occurrence? id with
   | none =>
@@ -567,7 +527,7 @@ theorem cancelOccurrence_frame (ends : PendingStateEnds) (formed : WellFormed pr
     exact .refl
   | some occurrence =>
     obtain ⟨member, rfl⟩ := Laws.State.occurrence?_some found
-    have ended := ends.cancelOccurrence_ended s _ _ found
+    have ended := Laws.State.cancelOccurrence_ended found
     obtain ⟨endedR, cancelled, shape⟩ := Laws.State.cancelOccurrence_some found
     have disarmed := Laws.State.disarm_wellFormed (Laws.State.closeOwnItems_wellFormed formed occurrence.id) occurrence.id
     obtain ⟨items, fewer, withdrawn⟩ := withdrawn_shape
@@ -599,7 +559,7 @@ theorem cancelOccurrence_frame (ends : PendingStateEnds) (formed : WellFormed pr
       by_cases held : occurrence.id ∈ occurrenceIds (s.withdrawOccurrence occurrence.id)
       · obtain ⟨record, inside, named⟩ := List.mem_map.mp held
         obtain rfl := only record inside named
-        obtain ⟨frame, gone, stands, instances⟩ := removeOccurrence_frame ends uFormed inside
+        obtain ⟨frame, gone, stands, instances⟩ := removeOccurrence_frame uFormed inside
         exact ⟨frame, gone, fun _ => ⟨inside, Laws.State.key_congr (instances _ stands)⟩⟩
       · rw [removeOccurrence_absent uFormed held]
         refine ⟨withoutRecord_frame _ _, fun named => held ?_, fun flag => absurd (List.mem_map.mpr ⟨_, stays flag, rfl⟩)

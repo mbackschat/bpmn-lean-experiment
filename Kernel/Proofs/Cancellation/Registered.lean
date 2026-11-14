@@ -1,19 +1,21 @@
 module
 
 public import Kernel.Proofs.Cancellation
-public import Kernel.Proofs.Step
+public import Kernel.Proofs.Step.Contract
+public import Kernel.Proofs.State
+public import Kernel.Laws.State.Fire
 public import Kernel.Laws.Registry
 
 /-! # Proofs: cancellation over the registered hooks
 
 The registered hooks keep a property carried beside `Laws.State.WellFormed` when the state operations they apply keep
 it (`Alongside`): each feature's operations record of `WellFormed` and the property follows from its record of
-`WellFormed` (`Kernel.Proofs.Step`) and `Alongside`, and the registered hooks' contract follows from the feature
-records (`Proofs.Step.registered_contract`). The cancellation lane instantiates it at the before-state's scope
-occurrences (`KeepsScopes`), which closes `SubtreeRemoved Registry.hooks` up to one `Laws.State` request
-(`PendingRemoval`), and at an input's end facts from its start (`Laws.Step.EndsKept`), which closes
-`RemovedEndOnce Registry.hooks` up to the `Laws.State` facts of the operations' bodies (`Laws.Step.PendingStateEnds`).
-Nothing executable imports this module.
+`WellFormed` and `Alongside`, and the registered hooks' contract follows from the feature records
+(`Proofs.Step.registered_contract`). The cancellation lane instantiates it at the before-state's scope occurrences
+(`KeepsScopes`), which gives `SubtreeRemoved Registry.hooks`, and at an input's end facts from its start
+(`Laws.Step.EndsKept`), which gives `RemovedEndOnce Registry.hooks`. Both take the records and phases of `WellFormed`
+as arguments, which `Kernel.Proofs.Step` fills, since that module imports this one. Nothing executable imports this
+module.
 -/
 
 @[expose] public section
@@ -332,24 +334,23 @@ theorem registeredOps_alongside {rel : State → Prop} (ops : Proofs.Step.Regist
 /-! ## Subtree removal of the registered hooks -/
 
 /-- The registered hooks keep the scope occurrences of any before-state beside `WellFormed`. -/
-theorem keepsScopes_contract (removal : PendingRemoval) (before : State) :
+theorem keepsScopes_contract (ops : Proofs.Step.RegisteredOps WellFormed) (before : State) :
     Laws.Step.HookContract Registry.hooks (KeepsScopes before) :=
-  Proofs.Step.registered_contract (registeredOps_alongside Proofs.Step.registeredOps_wellFormed
-    (scopesKept_alongside removal before)) Proofs.State.stateFacts
+  Proofs.Step.registered_contract (registeredOps_alongside ops (scopesKept_alongside before)) Proofs.State.stateFacts
 
-/-- `SubtreeRemoved` of the registered hooks, up to the pending `Laws.State` request. -/
-theorem subtreeRemoved_registered (removal : PendingRemoval) : SubtreeRemoved Registry.hooks :=
-  subtreeRemoved_of_keeps (keepsScopes_contract removal) (keepsScopes_phases Proofs.Step.phases removal)
-    (keepsScopes_pipelinePhases Proofs.Step.pipelinePhases removal) Proofs.State.stateFacts
+/-- `SubtreeRemoved` of the registered hooks, from the records and phases of `WellFormed`. -/
+theorem subtreeRemoved_registered (ops : Proofs.Step.RegisteredOps WellFormed) (phases : Laws.Step.Phases WellFormed)
+    (pipeline : Laws.Step.PipelinePhases WellFormed) : SubtreeRemoved Registry.hooks :=
+  subtreeRemoved_of_keeps (keepsScopes_contract ops) (keepsScopes_phases phases) (keepsScopes_pipelinePhases pipeline)
+    Proofs.State.stateFacts
 
 /-! ## End facts of the registered hooks -/
 
 /-- The registered hooks keep an input's end facts from its start beside `WellFormed`, under any exemption
 (`Laws.Step.EndsInv`), the hook contract `Laws.Step.complete_ends` and `MicroStepsKeepEnds` rest on. -/
-theorem endsInv_contract (ends : Laws.Step.PendingStateEnds) (b : State) (x : Option (Nat × OccurrenceKey)) :
+theorem endsInv_contract (ops : Proofs.Step.RegisteredOps WellFormed) (b : State) (x : Option (Nat × OccurrenceKey)) :
     Laws.Step.HookContract Registry.hooks (Laws.Step.EndsInv b x) :=
-  Proofs.Step.registered_contract (registeredOps_alongside Proofs.Step.registeredOps_wellFormed
-    (endsKept_alongside ends b x)) Proofs.State.stateFacts
+  Proofs.Step.registered_contract (registeredOps_alongside ops (endsKept_alongside b x)) Proofs.State.stateFacts
 
 /-! ## The draft the registered hooks leave -/
 
@@ -372,16 +373,16 @@ private theorem withdrawOccurrence_draft (s : State) (id : Nat) : (s.withdrawOcc
     (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
   rw [Laws.State.withdrawOccurrence_eq, frame, Laws.State.disarm_eq, Laws.State.closeOwnItems_eq]
 
-/-- Opening a subscription keeps the draft's end facts: its reservation journals nothing (`Laws.Step.PendingStateEnds`). -/
-private theorem openSubscription_ended (ends : Laws.Step.PendingStateEnds) (s : State) (kind : OpenKind)
+/-- Opening a subscription keeps the draft's end facts: its reservation journals nothing (`Laws.State.ends_unmoved`). -/
+private theorem openSubscription_ended (s : State) (kind : OpenKind)
     (element : ElementId) (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool) :
     (s.openSubscription kind element scope host passive).1.draft.ended = s.draft.ended := by
   rw [Laws.State.openSubscription_eq]
-  exact congrArg (·.ended) ((ends.ends_unmoved s).2.2.1 element scope).2.1
+  exact congrArg (·.ended) ((Laws.State.ends_unmoved s).2.2.1 element scope).2.1
 
 /-- Subscriptions' operations keep the draft's end facts: they queue firings and completions, open, close, withdraw
 and rekind items and disarm hosts, and a subscription reserves its occurrence, which journals nothing. -/
-theorem subscriptionsOps_draft (ends : Laws.Step.PendingStateEnds) (program : Program)
+theorem subscriptionsOps_draft (program : Program)
     (ended : List (OccurrenceKey × Terminal)) :
     Laws.Subscriptions.SubscriptionsOps program fun s => s.draft.ended = ended where
   fire s _ _ same := by rw [signal_draft]; exact same
@@ -392,9 +393,9 @@ theorem subscriptionsOps_draft (ends : Laws.Step.PendingStateEnds) (program : Pr
     rw [Laws.State.openItem_eq]
     exact same
   openSubscription s kind element scope host passive same _ _ _ :=
-    (openSubscription_ended ends s kind element scope host passive).trans same
+    (openSubscription_ended s kind element scope host passive).trans same
   subscribed s kind element scope host passive _ := by
-    obtain ⟨_, _, scopes, occurrences⟩ := (ends.ends_unmoved s).2.2.1 element scope
+    obtain ⟨_, _, scopes, occurrences⟩ := (Laws.State.ends_unmoved s).2.2.1 element scope
     rw [Laws.State.openSubscription_eq]
     exact ⟨scopes, fun o inside => occurrences ▸ List.mem_append_left _ inside⟩
   closeComplete s _ _ _ same _ := by rw [signal_draft, closeItem_draft]; exact same
@@ -402,11 +403,11 @@ theorem subscriptionsOps_draft (ends : Laws.Step.PendingStateEnds) (program : Pr
   interruptComplete s _ _ _ _ same _ := by
     rw [signal_draft, signal_draft, withdrawOccurrence_draft, closeItem_draft]
     exact same
-  reopenComplete s _ _ _ _ same _ := by rw [signal_draft, openSubscription_ended ends, closeItem_draft]; exact same
+  reopenComplete s _ _ _ _ same _ := by rw [signal_draft, openSubscription_ended, closeItem_draft]; exact same
   occur s _ _ _ _ same _ := by rw [signal_draft]; exact same
   insideBegin s _ _ _ same _ _ := by rw [signal_draft, withdrawInside_draft, closeItem_draft]; exact same
   closeBegin s _ _ _ same _ _ := by rw [signal_draft, closeItem_draft]; exact same
-  reopenBegin s _ _ _ _ same _ _ := by rw [signal_draft, openSubscription_ended ends, closeItem_draft]; exact same
+  reopenBegin s _ _ _ _ same _ _ := by rw [signal_draft, openSubscription_ended, closeItem_draft]; exact same
   bareBegin s _ _ _ same _ := by rw [signal_draft]; exact same
 
 end Draft
@@ -414,7 +415,7 @@ end Draft
 /-- The registered hooks journal no end when told of a cancellation, which no feature hears, or of variable writes,
 which Subscriptions offers to Conditional items by queueing the firings they decide (`Laws.Subscriptions`), so each
 micro-step leaves the draft without end facts (`Laws.Step.microStep_drafts`). -/
-theorem registered_quiet (ends : Laws.Step.PendingStateEnds) :
+theorem registered_quiet :
     (∀ ctx occurrence state after, state.draft.ended = [] → Registry.hooks.cancelled ctx occurrence state = .ok after →
       after.draft.ended = []) ∧
     ∀ ctx writes state after, state.draft.ended = [] → Registry.hooks.written ctx writes state = .ok after →
@@ -424,24 +425,26 @@ theorem registered_quiet (ends : Laws.Step.PendingStateEnds) :
     cases ran
     exact empty, fun ctx _ _ _ empty ran => by
     rw [Laws.Registry.hooks_written] at ran
-    exact Laws.Subscriptions.offerWrites_keeps (subscriptionsOps_draft ends ctx.program []) empty ran⟩
+    exact Laws.Subscriptions.offerWrites_keeps (subscriptionsOps_draft ctx.program []) empty ran⟩
 
-/-- `MicroStepsKeepEnds` of the registered hooks, up to the pending requests: the `Laws.State` facts of the operations'
-bodies (`Laws.Step.PendingStateEnds`, R15); `removedEndOnce` then gives `RemovedEndOnce`. -/
-theorem microStepsKeepEnds_registered (ends : Laws.Step.PendingStateEnds) : MicroStepsKeepEnds Registry.hooks := by
-  have kept := fun b => microStepsKeep_alongside (rel := Laws.Step.EndsKept b none)
-    (endsInv_contract ends b none) Proofs.Step.phases (endsKept_stepAlongside ends b) Proofs.State.stateFacts
-    (Laws.Step.complete_ends (endsInv_contract ends b) Proofs.Step.phases Proofs.Step.pipelinePhases
-      Proofs.State.stateFacts ends)
-  obtain ⟨cancelled, written⟩ := registered_quiet ends
+/-- `MicroStepsKeepEnds` of the registered hooks, from the records and phases of `WellFormed`; `removedEndOnce` then
+gives `RemovedEndOnce`. -/
+theorem microStepsKeepEnds_registered (ops : Proofs.Step.RegisteredOps WellFormed)
+    (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed) :
+    MicroStepsKeepEnds Registry.hooks := by
+  have kept := fun b => microStepsKeep_alongside (rel := Laws.Step.EndsKept b none) (endsInv_contract ops b none) phases
+    (endsKept_stepAlongside b) Proofs.State.stateFacts
+    (Laws.Step.complete_ends (endsInv_contract ops b) phases pipeline Proofs.State.stateFacts)
+  obtain ⟨cancelled, written⟩ := registered_quiet
   refine ⟨fun ctx cause transition b state after runs holds ran =>
     ⟨(kept b).1 ctx cause transition state after runs holds ran, Laws.Step.microStep_drafts cancelled written ran⟩,
     fun ctx b state after holds step => ⟨(kept b).2 ctx state after holds step, ?_⟩⟩
   obtain ⟨_, _, _, ⟨_, _, ran⟩⟩ := step.microStep
   exact Laws.Step.microStep_drafts cancelled written ran
 
-/-- `RemovedEndOnce` of the registered hooks, up to the pending requests `microStepsKeepEnds_registered` names. -/
-theorem removedEndOnce_registered (ends : Laws.Step.PendingStateEnds) : RemovedEndOnce Registry.hooks :=
-  removedEndOnce (microStepsKeepEnds_registered ends)
+/-- `RemovedEndOnce` of the registered hooks, from the records and phases of `WellFormed`. -/
+theorem removedEndOnce_registered (ops : Proofs.Step.RegisteredOps WellFormed) (phases : Laws.Step.Phases WellFormed)
+    (pipeline : Laws.Step.PipelinePhases WellFormed) : RemovedEndOnce Registry.hooks :=
+  removedEndOnce (microStepsKeepEnds_registered ops phases pipeline)
 
 end Kernel.Proofs.Cancellation

@@ -104,6 +104,7 @@ public import Kernel.Proofs.Former
 public import Kernel.Proofs.MultiInstance
 public import Kernel.Proofs.State
 public import Kernel.Proofs.Step
+public import Kernel.Proofs.Step.Contract
 public import Kernel.Proofs.Step.Queue
 public import Kernel.Publish
 public import Kernel.Registry
