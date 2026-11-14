@@ -156,23 +156,36 @@ theorem reversed_numbering_rejected :
   simp [secondInstance, firstInstance] at this
 
 theorem instances_placed : InstancesPlaced entered running := by
-  intro scope active o member at_
+  intro scope active o member at_ _ _
   simp only [entered, List.mem_cons, List.not_mem_nil, or_false] at member
   simp only [running, List.mem_cons, List.not_mem_nil, or_false] at active
   rcases member with rfl | rfl | rfl
   · rcases active with same | same <;> obtain rfl := Iteration.active.inj same
     · simp [bodyOccurrence, root, firstScope] at at_
     · simp [bodyOccurrence, root, secondScope] at at_
-  · exact ⟨rfl, rfl, rfl⟩
-  · exact ⟨rfl, rfl, rfl⟩
+  · rfl
+  · rfl
 
-/-- An occurrence of another element in an instance's scope occurrence breaks `InstancesPlaced`. -/
+/-- `InstancesPlaced` states identity, not isolation: an occurrence of another element may stand in an instance's scope
+occurrence (#158). -/
+theorem other_element_placed :
+    InstancesPlaced
+      { entered with occurrences := [{ id := 7, element := ⟨"Other"⟩, scope := firstScope, activation := 1 }] } running := by
+  intro scope _ o member _ element _
+  simp only [List.mem_singleton] at member
+  subst member
+  simp [running, review] at element
+
+/-- An occurrence of the Activity under the element role in an instance's scope occurrence that continues into another
+body breaks `InstancesPlaced`. -/
 theorem stray_occurrence_rejected :
     ¬ InstancesPlaced
-      { entered with occurrences := [{ id := 7, element := ⟨"Other"⟩, scope := firstScope, activation := 1 }] } running :=
-    fun placed => by
-  have := (placed firstScope (by simp [running]) _ (List.mem_singleton_self _) rfl).1
-  simp [running, review] at this
+      { entered with occurrences :=
+        [{ id := 7, element := review, scope := firstScope, activation := 3, continuation := .multiInstance 2 }] }
+      running := fun placed => by
+  have := Continuation.multiInstance.inj
+    (placed firstScope (by simp [running]) _ (List.mem_singleton_self _) rfl rfl rfl)
+  simp [running] at this
 
 theorem slots_counted : SlotsCounted { entered with nextIssue := 3 } entered := by
   intro run member index scope slot _
@@ -337,5 +350,101 @@ theorem partial_output_rejected :
     early.noOutput "out" rfl { scope := root, entries := [("out", .list [])] } (by simp) (.list []) (by simp)
   simp only [entered, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl <;> simp [firstLocals, secondLocals] at entry
+
+/-! ## Queued instance begins -/
+
+/-- The begin of the second instance, queued. -/
+def secondBegin : BeginRequest := { element := review, scope := secondScope, continuation := .multiInstance 1 }
+
+/-- The first instance begun, the second's begin queued. -/
+def queuing : State :=
+  { entered with occurrences := [firstInstance], signals := [.begin secondBegin] }
+
+theorem queuing_queued : QueuedFor running 1 secondBegin := ⟨rfl, rfl⟩
+
+/-- Under any program whose `Review` loops. -/
+theorem begins_queued {program : Program} {loop : MultiInstance} (looping : LoopOf program review loop) :
+    BeginsQueued program queuing where
+  looped run member := by
+    simp only [queuing, entered, List.mem_singleton] at member
+    subst member
+    exact ⟨loop, looping⟩
+  uncalled run member scope _ entry inside _ := by
+    simp only [queuing, entered, List.mem_singleton] at member
+    simp only [queuing, entered, List.mem_cons, List.not_mem_nil, or_false] at inside
+    rcases inside with rfl | rfl | rfl | rfl <;> rfl
+  continued run member o inside _ := by
+    simp only [queuing, entered, List.mem_singleton] at member inside
+    subst member inside
+    exact ⟨rfl, rfl⟩
+  targets request queued body continued _ := by
+    rcases queued with signal | token
+    · simp only [queuing, List.mem_singleton] at signal
+      have := Signal.begin.inj signal
+      subst this
+      obtain rfl := Continuation.multiInstance.inj continued
+      exact ⟨running, by simp [queuing, entered], rfl, rfl, rfl, by simp [running, secondBegin]⟩
+    · simp [queuing, entered] at token
+  reserved request queued _ _ _ id reserved := by
+    rcases queued with signal | token
+    · simp only [queuing, List.mem_singleton] at signal
+      have := Signal.begin.inj signal
+      subst this
+      simp [secondBegin] at reserved
+    · simp [queuing, entered] at token
+  reservations o inside unbegun := by
+    simp only [queuing, List.mem_singleton] at inside
+    subst inside
+    simp [firstInstance] at unbegun
+  signalsOrdered _ _ first second _ _ precedes _ _ := by
+    have := precedes.length_le
+    simp [queuing] at this
+  tokensOrdered _ _ _ _ _ _ precedes _ _ := by
+    have := precedes.length_le
+    simp [queuing, entered] at this
+  queuesOrdered _ _ _ _ _ _ _ token _ _ := by simp [queuing, entered] at token
+  deferred _ _ token := by simp [queuing, entered] at token
+  above run member request index queued scope inQueue for_ slot begun := by
+    simp only [queuing, entered, List.mem_singleton] at member
+    subst member
+    obtain ⟨o, inside, at_, _⟩ := begun
+    simp only [queuing, List.mem_singleton] at inside
+    subst inside
+    rcases inQueue with signal | token
+    · simp only [queuing, List.mem_singleton] at signal
+      have := Signal.begin.inj signal
+      subst this
+      obtain ⟨_, queuedSlot⟩ := for_
+      have one : queued = 1 := by
+        match queued, queuedSlot with
+        | 0, slotted => simp [running, secondBegin, firstScope, secondScope] at slotted
+        | 1, _ => rfl
+        | _ + 2, slotted => simp [running] at slotted
+      have zero : index = 0 := by
+        subst at_
+        match index, slot with
+        | 0, _ => rfl
+        | 1, slotted => simp [running, firstInstance, firstScope, secondScope] at slotted
+        | _ + 2, slotted => simp [running] at slotted
+      omega
+    · simp [queuing, entered] at token
+
+/-- Two begins queued out of slot order break `BeginsQueued`. -/
+theorem reversed_begins_rejected {program : Program} :
+    ¬ BeginsQueued program
+      { entered with occurrences := [], signals := [.begin secondBegin, .begin { secondBegin with scope := firstScope }] } :=
+    fun queued => by
+  have := queued.signalsOrdered running (by simp [entered]) secondBegin { secondBegin with scope := firstScope } 1 0
+    (List.Sublist.refl _) ⟨rfl, rfl⟩ ⟨rfl, rfl⟩
+  omega
+
+/-- A begin queued below an instance that has begun breaks `BeginsQueued`. -/
+theorem begun_above_rejected {program : Program} :
+    ¬ BeginsQueued program
+      { entered with occurrences := [secondInstance], signals := [.begin { secondBegin with scope := firstScope }] } :=
+    fun queued => by
+  have := queued.above running (by simp [entered]) { secondBegin with scope := firstScope } 1 0 secondScope
+    (.inl (by simp)) ⟨rfl, rfl⟩ rfl ⟨secondInstance, by simp, rfl, rfl⟩
+  omega
 
 end Kernel.Laws.MultiInstance

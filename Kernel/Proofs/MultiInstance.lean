@@ -31,7 +31,7 @@ namespace Kernel.Proofs.MultiInstance
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds occurrenceIds Queues)
 open Kernel.Laws.MultiInstance (LoopOf Generated SnapshotFixed Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed
-  NumberedInOrder InstancesPlaced SlotsCounted CountersHeld BeginsInOrder SequentialSlots ParallelSlots OutputsFit Collects)
+  NumberedInOrder InstancesPlaced BeginsQueued SlotsCounted CountersHeld BeginsInOrder SequentialSlots ParallelSlots OutputsFit Collects)
 
 /-- A running body's slots shaped by its loop's mode, its filled slots holding what its instances submitted, and its
 instances numbered in item order (`PMI-*`, `SMI-*`; the numbering of
@@ -49,9 +49,9 @@ def Apart (s : State) (run : MultiInstanceRun) : Prop :=
 
 /-- What the lane keeps of one running body: it is `Owned` whatever the loop, `Shaped` by its loop, its instances lie
 `Apart`, its scope occurrence is its body occurrence's (`BodyOwns`), and each active instance's scope occurrence belongs to
-no occurrence (`InstancesUnowned`), is no compensation handler's context (`InstancesUnheld`) and hosts only its instance
-(`InstancesPlaced`), so that `Shaped`'s numbering of the instances numbers every occurrence of the Activity in them
-(`Laws.MultiInstance.numbered_of_placed`; root decision E1, 2026-11-15). -/
+no occurrence (`InstancesUnowned`), is no compensation handler's context (`InstancesUnheld`) and holds no occurrence of
+the Activity but its instance (`InstancesPlaced`), so that `Shaped`'s numbering of the instances numbers every
+occurrence of the Activity in them (`Laws.MultiInstance.numbered_of_placed`; root decisions E1 and E5, 2026-11-15). -/
 structure RunFormed (program : Program) (s : State) (run : MultiInstanceRun) : Prop where
   owned : Owned s run
   shaped : ∀ loop, LoopOf program run.element loop → Shaped s run loop
@@ -61,16 +61,19 @@ structure RunFormed (program : Program) (s : State) (run : MultiInstanceRun) : P
   unheld : InstancesUnheld s run
   placed : InstancesPlaced s run
 
-/-- The lane's slot invariant: one running body per body occurrence (`RunsKeyed`), each `RunFormed`. It is a lane
+/-- The lane's slot invariant: one running body per body occurrence (`RunsKeyed`), each `RunFormed`, and the instance
+begins still queued in the order the numbering needs (`BeginsQueued`). It is a lane
 premise beside `WellFormed`, not a clause of it, since feature slot entries are each feature's own laws; the lane
 proves it preserved, as P2 does `WellFormed`: by a committed input (`RunsShaped` and `InstancesApart` are its parts of
 the after-state), at a start (`RunsFormedAtStart`) and in every instance of a population run
 (`RunsFormedInPopulation`). The clauses besides `Shaped` and `Apart` are inductive strengthening: without them a
 body whose occurrence is no Multi-Instance element's would outlive its occurrence, and two runs of one occurrence would
-let a completion fill one and finish the other (root decision D2, 2026-11-14). -/
+let a completion fill one and finish the other (root decision D2, 2026-11-14), and without `BeginsQueued` a before-state
+whose queues hold begins out of slot order would number its instances out of order (root decision E6, 2026-11-15). -/
 structure RunsFormed (program : Program) (s : State) : Prop where
   keyed : RunsKeyed s
   formed : ∀ run ∈ s.slots.multiInstances, RunFormed program s run
+  queued : BeginsQueued program s
 
 /-- A committed input from `before` to `after`, from a well-formed before-state that keeps the lane's slot invariant. -/
 def Commits (hooks : Hooks) (program : Program) (before after : State) : Prop :=

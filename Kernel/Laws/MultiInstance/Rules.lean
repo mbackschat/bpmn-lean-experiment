@@ -81,8 +81,8 @@ def RunsKeyed (s : State) : Prop :=
 
 /-- The instances of one body are numbered in item order: of two active slots, the instance in the earlier slot's scope
 occurrence has the lower activation. An instance is an occurrence carrying the continuation `.multiInstance` of the
-body occurrence, which its begin carries (`MultiInstance.beginInstances`); that no other occurrence stands in an instance's
-scope occurrence is instance isolation (`InstancesPlaced`), and the two together number every occurrence of the
+body occurrence, which its begin carries (`MultiInstance.beginInstances`); that an occurrence of the Activity in an
+instance's scope occurrence is its instance is `InstancesPlaced`, and the two together number every occurrence of the
 Activity in the slots' scope occurrences (`numbered_of_placed`). The activation counter runs across the whole Process
 instance, so an instance's activation is `offset + index + 1` only while no other body of the element begins instances
 in between, and only the order within a body is its own: two concurrent bodies interleave their numbers
@@ -95,16 +95,17 @@ def NumberedInOrder (s : State) (run : MultiInstanceRun) : Prop :=
       earlier.continuation = .multiInstance run.occurrence → later.continuation = .multiInstance run.occurrence →
       earlier.activation < later.activation
 
-/-- Instance isolation: an active instance's scope occurrence hosts only its instance, an occurrence of the body's
-element under the element role that continues into the body (§13.3.7; CIB runs each instance in an execution of its
-own below the body's). What an instance runs inside, such as a Sub-Process's inner nodes, stands in scope occurrences
-below it. -/
+/-- Instance identity: an occurrence of the body's element under the element role in an active instance's scope
+occurrence is that instance, continuing into the body (§13.3.7; CIB runs each instance in an execution of its own below
+the body's). It states identity, not isolation: that nothing else stands in an instance's scope occurrence is not
+stated, since a raise rethrown from an Event Sub-Process of a Multi-Instance Sub-Process begins that handler again there
+(#158). -/
 def InstancesPlaced (s : State) (run : MultiInstanceRun) : Prop :=
-  ∀ scope, Iteration.active scope ∈ run.instances → ∀ o ∈ s.occurrences, o.scope = scope →
-    o.element = run.element ∧ o.role = .element ∧ o.continuation = .multiInstance run.occurrence
+  ∀ scope, Iteration.active scope ∈ run.instances → ∀ o ∈ s.occurrences, o.scope = scope → o.element = run.element →
+    o.role = .element → o.continuation = .multiInstance run.occurrence
 
-/-- Numbered and isolated instances number every occurrence of the body's element under the element role in the
-slots' scope occurrences in item order. -/
+/-- Numbered instances, each the one occurrence of the body's element under the element role in its scope occurrence,
+number every such occurrence in the slots' scope occurrences in item order. -/
 theorem numbered_of_placed {s : State} {run : MultiInstanceRun} (numbered : NumberedInOrder s run)
     (placed : InstancesPlaced s run) :
     ∀ (first second : Nat) (firstScope secondScope : ScopeOccurrenceId), first < second →
@@ -112,10 +113,55 @@ theorem numbered_of_placed {s : State} {run : MultiInstanceRun} (numbered : Numb
       ∀ earlier ∈ s.occurrences, ∀ later ∈ s.occurrences, earlier.scope = firstScope → later.scope = secondScope →
         earlier.element = run.element → later.element = run.element → earlier.role = .element →
         later.role = .element → earlier.activation < later.activation :=
-  fun first second firstScope secondScope lower one two earlier earlierIn later laterIn atFirst atSecond _ _ _ _ =>
+  fun first second firstScope secondScope lower one two earlier earlierIn later laterIn atFirst atSecond earlierElement
+      laterElement earlierRole laterRole =>
     numbered first second firstScope secondScope lower one two earlier earlierIn later laterIn atFirst atSecond
-      (placed firstScope (List.mem_of_getElem? one) earlier earlierIn atFirst).2.2
-      (placed secondScope (List.mem_of_getElem? two) later laterIn atSecond).2.2
+      (placed firstScope (List.mem_of_getElem? one) earlier earlierIn atFirst earlierElement earlierRole)
+      (placed secondScope (List.mem_of_getElem? two) later laterIn atSecond laterElement laterRole)
+
+/-! ## Queued instance begins
+
+An instance's begin waits in a queue from its body's entry or from its predecessor's completion until the closure
+reaches it, so whether instances number in item order depends on the order of the begins still queued. A committed
+running state queues nothing, so these are inductive strengthening (root decision E6, 2026-11-15). -/
+
+/-- The queued begin `request` begins the instance in slot `index` of `run`. -/
+def QueuedFor (run : MultiInstanceRun) (index : Nat) (request : BeginRequest) : Prop :=
+  request.continuation = .multiInstance run.occurrence ∧ run.instances[index]? = some (.active request.scope)
+
+/-- What the instances' begins still queued need for the numbering: every body's element loops, and its instances'
+scope occurrences belong to no called instance, so they share one activation counter; an instance is an occurrence of
+the body's element under the element role (`continued`); a queued instance begin targets an active slot of its body,
+while that slot's scope occurrence stands, with the body's element and no reservation (`targets`); no queued begin into
+an instance's scope occurrence begins a reservation of the body's element under the element role, and every reservation
+continues by its flows (`reserved`, `reservations`); the closure takes queued begins in slot order: begin signals first
+in, first out, deferred begins last in, first out, and only under `declarationDepthFirst` (`Step.nextToken`); and every
+instance that has begun lies in a slot below every one still queued (`above`). -/
+structure BeginsQueued (program : Program) (s : State) : Prop where
+  looped : ∀ run ∈ s.slots.multiInstances, ∃ loop, LoopOf program run.element loop
+  uncalled : ∀ run ∈ s.slots.multiInstances, ∀ scope, Iteration.active scope ∈ run.instances →
+    ∀ entry ∈ s.scopes, entry.id = scope → entry.calledInstance = none
+  continued : ∀ run ∈ s.slots.multiInstances, ∀ o ∈ s.occurrences, o.continuation = .multiInstance run.occurrence →
+    o.element = run.element ∧ o.role = .element
+  targets : ∀ request, Laws.State.Queued s request → ∀ body, request.continuation = .multiInstance body →
+    request.scope ∈ Laws.State.scopeIds s → ∃ run ∈ s.slots.multiInstances, run.occurrence = body ∧
+      request.element = run.element ∧ request.reserved = none ∧ Iteration.active request.scope ∈ run.instances
+  reserved : ∀ request, Laws.State.Queued s request → ∀ run ∈ s.slots.multiInstances,
+    Iteration.active request.scope ∈ run.instances → ∀ id, request.reserved = some id → ∀ o ∈ s.occurrences,
+      o.id = id → o.element = run.element → o.role = .element → False
+  reservations : ∀ o ∈ s.occurrences, o.begun = false → o.continuation = .flow
+  signalsOrdered : ∀ run ∈ s.slots.multiInstances, ∀ first second first' second',
+    Laws.State.Precedes s.signals (.begin first) (.begin second) → QueuedFor run first' first →
+    QueuedFor run second' second → first' < second'
+  tokensOrdered : ∀ run ∈ s.slots.multiInstances, ∀ first second first' second',
+    Laws.State.Precedes s.tokens (.begin first) (.begin second) → QueuedFor run first' first →
+    QueuedFor run second' second → second' < first'
+  queuesOrdered : ∀ run ∈ s.slots.multiInstances, ∀ first second first' second', Signal.begin first ∈ s.signals →
+    Token.begin second ∈ s.tokens → QueuedFor run first' first → QueuedFor run second' second → first' < second'
+  deferred : program.options.branchSchedule = .orderInvariant → ∀ request, Token.begin request ∉ s.tokens
+  above : ∀ run ∈ s.slots.multiInstances, ∀ request (index queued : Nat) scope, Laws.State.Queued s request →
+    QueuedFor run queued request → run.instances[index]? = some (.active scope) →
+    (∃ o ∈ s.occurrences, o.scope = scope ∧ o.continuation = .multiInstance run.occurrence) → index < queued
 
 /-- Under `MultiInstanceCounters.cibLocals` each instance's scope occurrence is entered holding `loopCounter`, its
 zero-based index (CIB-INT-0018, `MultiInstanceActivityBehavior:76-78`): every active slot of `after` whose scope
