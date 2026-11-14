@@ -321,4 +321,46 @@ theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContrac
     rw [Laws.State.keyOf_eq, ← keyed]
     exact ⟨phases.recordEnd _ _ _ _ continuedFormed, continuedKept.record .completed⟩
 
+/-! ### The draft a micro-step leaves -/
+
+/-- Every closure micro-step is a micro-step: a moved token's is its arrival's or its deferred begin's. -/
+theorem ClosureStep.microStep {hooks : Hooks} {ctx : Ctx} {state after : State} (step : ClosureStep hooks ctx state after) :
+    ∃ cause element owner body start, microStep hooks ctx cause element owner body start = .ok after := by
+  cases step with
+  | signal _ _ ran => exact ⟨_, _, _, _, _, ran⟩
+  | @token token _ _ _ _ ran =>
+    cases token with
+    | flow => exact ⟨_, _, _, _, _, moveToken_flow ran⟩
+    | begin => exact ⟨_, _, _, _, _, moveToken_begin ran⟩
+  | idle _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
+  | reoffer _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
+  | finish _ _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
+
+/-- A committed micro-step leaves no end fact in the draft when the hooks `Step.conclude` runs once it has journalled the
+draft, `Hooks.cancelled` and `Hooks.written`, add none to a draft without any. -/
+theorem microStep_drafts {hooks : Hooks}
+    (cancelled : ∀ ctx occurrence state after, state.draft.ended = [] → hooks.cancelled ctx occurrence state = .ok after →
+      after.draft.ended = [])
+    (written : ∀ ctx writes state after, state.draft.ended = [] → hooks.written ctx writes state = .ok after →
+      after.draft.ended = [])
+    {ctx : Ctx} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId} {body : State → Outcome}
+    {state after : State} (ran : microStep hooks ctx cause element owner body state = .ok after) : after.draft.ended = [] := by
+  obtain ⟨_, _, _, ⟨_, concluded⟩⟩ := microStep_ok ran
+  obtain ⟨notified, notifying, writing⟩ := conclude_ok concluded
+  have fold : ∀ (occurrences : List Occurrence) (start finish : State), start.draft.ended = [] →
+      occurrences.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) start = .ok finish →
+      finish.draft.ended = [] := by
+    intro occurrences
+    induction occurrences with
+    | nil =>
+      intro start finish empty folded
+      simp only [List.foldlM_nil] at folded
+      exact (Except.ok.inj folded) ▸ empty
+    | cons occurrence rest ih =>
+      intro start finish empty folded
+      simp only [List.foldlM_cons] at folded
+      obtain ⟨mid, told, folded⟩ := bind_ok folded
+      exact ih mid finish (cancelled _ _ _ _ empty told) folded
+  exact written _ _ _ _ (fold _ _ _ rfl notifying) writing
+
 end Kernel.Laws.Step

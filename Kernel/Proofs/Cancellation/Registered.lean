@@ -415,4 +415,46 @@ theorem endsInv_contract (ends : Laws.Step.PendingStateEnds)
   registered_contract (registeredOps_wellFormed.alongside (endsKept_alongside ends b x)) Proofs.State.stateFacts
     (pending b x)
 
+/-! ## The draft the registered hooks leave -/
+
+/-- Subscriptions' operations keep the draft's end facts: they queue firings, open, close and rekind items, and a
+subscription reserves its occurrence, which journals nothing (`Laws.Step.PendingStateEnds`). -/
+theorem subscriptionsOps_draft (ends : Laws.Step.PendingStateEnds) (program : Program)
+    (ended : List (OccurrenceKey × Terminal)) :
+    Laws.Subscriptions.SubscriptionsOps program fun s => s.draft.ended = ended where
+  fire s item fired same := by
+    rw [Laws.State.signal_eq]
+    exact same
+  rekind _ _ same _ := same
+  disarm s host same := by
+    rw [Laws.State.disarm_eq]
+    exact same
+  openItem s kind occurrence same _ _ _ := by
+    rw [Laws.State.openItem_eq]
+    exact same
+  openSubscription s kind element scope host passive same _ _ := by
+    rw [Laws.State.openSubscription_eq]
+    show (s.reserve element scope).1.draft.ended = ended
+    rw [((ends.ends_unmoved s).2.2.1 element scope).2.1]
+    exact same
+  subscribed s kind element scope host passive _ := by
+    obtain ⟨_, _, scopes, occurrences⟩ := (ends.ends_unmoved s).2.2.1 element scope
+    rw [Laws.State.openSubscription_eq]
+    exact ⟨scopes, fun o inside => occurrences ▸ List.mem_append_left _ inside⟩
+
+/-- The registered hooks journal no end when told of a cancellation, which no feature hears, or of variable writes,
+which Subscriptions offers to Conditional items by queueing the firings they decide (`Laws.Subscriptions`), so each
+micro-step leaves the draft without end facts (`Laws.Step.microStep_drafts`). -/
+theorem registered_quiet (ends : Laws.Step.PendingStateEnds) :
+    (∀ ctx occurrence state after, state.draft.ended = [] → Registry.hooks.cancelled ctx occurrence state = .ok after →
+      after.draft.ended = []) ∧
+    ∀ ctx writes state after, state.draft.ended = [] → Registry.hooks.written ctx writes state = .ok after →
+      after.draft.ended = [] :=
+  ⟨fun _ _ _ _ empty ran => by
+    rw [Laws.Registry.hooks_cancelled] at ran
+    cases ran
+    exact empty, fun ctx _ _ _ empty ran => by
+    rw [Laws.Registry.hooks_written] at ran
+    exact Laws.Subscriptions.offerWrites_keeps (subscriptionsOps_draft ends ctx.program []) empty ran⟩
+
 end Kernel.Proofs.Cancellation
