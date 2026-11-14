@@ -127,6 +127,7 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
     (fun _ same => by cases same; exact Laws.State.initial_rootIssued instanceId variables businessKey)
     (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
 
 /-- A variable command queues its write (`Laws.Step.Phases.queueWrite`). -/
 theorem queueWrite_wellFormed {state : State} (formed : Laws.State.WellFormed state) (scope : ScopeOccurrenceId)
@@ -135,6 +136,7 @@ theorem queueWrite_wellFormed {state : State} (formed : Laws.State.WellFormed st
   Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
     (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
 
 /-- A variable command queues its removal (`Laws.Step.Phases.queueRemove`). -/
 theorem queueRemove_wellFormed {state : State} (formed : Laws.State.WellFormed state) (scope : ScopeOccurrenceId)
@@ -142,6 +144,7 @@ theorem queueRemove_wellFormed {state : State} (formed : Laws.State.WellFormed s
   Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
     (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
 
 /-- The phases `Step` runs itself keep `Laws.State.WellFormed` (`Laws.Step.Phases`), from what `Laws.State` shows
 each state operation keeps. -/
@@ -197,6 +200,7 @@ theorem unnamed_wellFormed {state : State} (formed : Laws.State.WellFormed state
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) fun _ _ _ _ same => by
       cases same
       exact unnamed)
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
 
 /-- A begun occurrence's completion, queued, keeps `WellFormed`: no queued begin names a begun occurrence. -/
 theorem complete_wellFormed {state : State} (formed : Laws.State.WellFormed state) {occurrence : Occurrence}
@@ -224,10 +228,12 @@ theorem workOps : Laws.Work.WorkOps Laws.State.WellFormed where
       (fun _ _ _ same => by simp at same) (fun _ same => by simp at same) (fun _ _ _ same => by simp at same)
       (fun _ _ same => by simp at same))
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
   cancel _ formed := Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed
       (fun _ _ _ same => by simp at same) (fun _ same => by simp at same) (fun _ _ _ same => by simp at same)
       (fun _ _ same => by cases same; simp))
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
   rekind _ _ formed kept := Laws.State.rekind_wellFormed formed kept
   queued state signal := by rw [Laws.State.signal_eq]
 
@@ -286,6 +292,7 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps Laws.State.WellFo
       (fun _ _ _ same => by simp at same) (fun _ same => by simp at same) (fun _ _ _ same => by simp at same)
       (fun _ _ same => by simp at same))
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
   rekind _ _ formed kept := Laws.State.rekind_wellFormed formed kept
   disarm _ host formed := Laws.State.disarm_wellFormed formed host
   openItem _ kind _ formed member begun := Laws.State.openItem_wellFormed formed kind member begun
@@ -372,13 +379,14 @@ theorem registered_written : ∀ ctx writes state after, Laws.State.WellFormed s
 
 /-- The compensation hooks' operations record (`Laws.Compensation.CompensationOps`) of `WellFormed`. -/
 theorem compensationOps : Laws.Compensation.CompensationOps Laws.State.WellFormed where
-  store _ compensation formed := Laws.State.compensation_wellFormed formed compensation
+  store _ _ formed runs := Laws.State.compensation_wellFormed formed runs
   issue _ formed := Laws.State.issue_wellFormed formed
-  issued state := by rw [Laws.State.issue_eq]; exact ⟨rfl, rfl, rfl⟩
+  issued state := by rw [Laws.State.issue_eq]; exact ⟨rfl, rfl, rfl, rfl⟩
   fail _ _ formed := Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed
       (fun _ _ _ same => by simp at same) (fun _ same => by simp at same) (fun _ _ _ same => by simp at same)
       (fun _ _ same => by cases same; simp))
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
 
 /-- A completion's retained record keeps the completion pipeline's frame. -/
 theorem retained_frame {state after : State} (scopes : after.scopes = state.scopes)

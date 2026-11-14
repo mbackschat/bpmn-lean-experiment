@@ -405,12 +405,13 @@ handler's uncaught failure ends the instance failed. -/
 
 /-- What the compensation hooks need of the state operations they apply, for an invariant `inv`. -/
 structure CompensationOps (inv : State → Prop) : Prop where
-  /-- The retained records and runs replaced. -/
-  store : ∀ state compensation, inv state → inv { state with slots := { state.slots with compensation } }
+  /-- The retained records replaced, and the runs by some of them. -/
+  store : ∀ state compensation, inv state → (∀ run ∈ compensation.runs, run ∈ state.slots.compensation.runs) →
+    inv { state with slots := { state.slots with compensation } }
   issue : ∀ state, inv state → inv state.issue.1
-  /-- Issuing keeps the scope occurrences, the occurrences and the open items. -/
+  /-- Issuing keeps the scope occurrences, the occurrences, the open items and the slots. -/
   issued : ∀ state : State, state.issue.1.scopes = state.scopes ∧ state.issue.1.occurrences = state.occurrences ∧
-    state.issue.1.openItems = state.openItems
+    state.issue.1.openItems = state.openItems ∧ state.issue.1.slots = state.slots
   fail : ∀ state failure, inv state → inv (state.signal (.endInstance .failed (some failure)))
 
 /-- `Hooks.completed` keeps `inv`, the scope occurrences, the occurrences and the open items. -/
@@ -426,9 +427,10 @@ theorem completed_keeps {inv : State → Prop} (ops : CompensationOps inv) {ctx 
     dsimp only at ran
     split at ran
     · cases ran
-      exact ⟨ops.store _ _ holds, rfl, rfl, rfl⟩
+      exact ⟨ops.store _ _ holds fun _ member => member, rfl, rfl, rfl⟩
     · cases ran
-      exact ⟨ops.store _ _ kept, issued⟩
+      obtain ⟨scopes, occurrences, items, slots⟩ := issued
+      exact ⟨ops.store _ _ kept fun _ member => slots ▸ member, scopes, occurrences, items⟩
 
 /-- `Hooks.failCompensation` keeps `inv`. -/
 theorem failCompensation_keeps {inv : State → Prop} (ops : CompensationOps inv) {ctx : Ctx} {handler : ScopeOccurrenceId}

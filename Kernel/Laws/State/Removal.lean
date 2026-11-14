@@ -40,7 +40,11 @@ theorem leaveScope_left {s : State} (formed : WellFormed s) {scope : ScopeOccurr
     by rw [shape]; exact cleared.tokensSublist, by rw [shape]; exact List.filter_sublist.trans cleared.variablesSublist,
     fun x member => ?_, by rw [shape]; exact cleared.activations, by rw [shape]; exact cleared.nextIssue,
     by rw [shape]; exact cleared.signals, by rw [shape]; exact cleared.status, by rw [shape]; exact cleared.failure,
-    by rw [shape]; exact cleared.journal, by rw [shape]; exact cleared.started⟩
+    by rw [shape]; exact cleared.journal, by rw [shape]; exact cleared.started, ?_⟩
+  rotate_right
+  · obtain ⟨parked, bodies, runs⟩ := leaveScope_slots s scope
+    exact ⟨fun _ member => cleared.slots.parked _ (parked ▸ member),
+      fun _ member => cleared.slots.bodies _ (bodies ▸ member), fun _ member => cleared.slots.runs _ (runs ▸ member)⟩
   · rw [shape]
     simpa using cleared.occurrences occurrence
   · rw [shape]
@@ -82,7 +86,7 @@ theorem withoutRecord_wellFormed {s : State} (formed : WellFormed s) {id : Nat}
   have kept : ∀ occurrence ∈ s.occurrences, occurrence.id ≠ id → occurrence ∈ (withoutRecord s id).occurrences :=
     fun occurrence member other => List.mem_filter.mpr ⟨member, by simpa using other⟩
   refine Prunes.wellFormed formed ⟨rfl, instanceOf_congr rfl rfl, List.filter_sublist, .refl _, rfl, rfl, rfl, rfl, rfl,
-    rfl, rfl, rfl, rfl, fun item member occurrence inside link => ?_, fun entry member occurrence inside owned => ?_⟩
+    rfl, rfl, rfl, rfl, rfl, fun item member occurrence inside link => ?_, fun entry member occurrence inside owned => ?_⟩
   · refine kept occurrence inside fun same => ?_
     rcases link with waits | hangs
     · exact (free item member).1 (waits ▸ same)
@@ -171,7 +175,7 @@ reservation hosts no item and owns no scope occurrence, so what stays refers onl
 theorem disarm_wellFormed {s : State} (formed : WellFormed s) (host : Nat) : WellFormed (s.disarm host) := by
   rw [disarm_eq]
   refine Prunes.wellFormed formed ⟨rfl, instanceOf_congr rfl rfl, List.filter_sublist, List.filter_sublist, rfl, rfl,
-    rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun item member occurrence inside link => ?_,
+    rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun item member occurrence inside link => ?_,
     fun entry _ occurrence inside owned => ?_⟩
   · obtain ⟨old, unattached⟩ := List.mem_filter.mp member
     refine List.mem_filter.mpr ⟨inside, ?_⟩
@@ -205,7 +209,7 @@ private theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), W
     have step : WellFormed (t.withdrawInside first.id) := by
       rw [withdrawInside_eq]
       exact formed.narrow ⟨rfl, rfl, rfl, rfl, instanceOf_congr rfl rfl, id, List.filter_sublist, .refl _, .refl _,
-        fun _ => id⟩ rfl formed.startedOnce
+        fun _ => id, .same rfl⟩ rfl formed.startedOnce
     obtain ⟨kept, fewer, same⟩ := withdrawAll rest _ step
     refine ⟨kept, fewer.trans ?_, same.trans ?_⟩
     · rw [withdrawInside_eq]
@@ -215,8 +219,8 @@ private theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), W
 /-- Journalling end and cancelled facts keeps a state well-formed. -/
 theorem draftEnds_wellFormed {s : State} (formed : WellFormed s) (ended : List (OccurrenceKey × Terminal))
     (cancelled : List Occurrence) : WellFormed { s with draft := { s.draft with ended, cancelled } } :=
-  formed.narrow ⟨rfl, rfl, rfl, rfl, instanceOf_congr rfl rfl, id, .refl _, .refl _, .refl _, fun _ => id⟩ rfl
-    formed.startedOnce
+  formed.narrow ⟨rfl, rfl, rfl, rfl, instanceOf_congr rfl rfl, id, .refl _, .refl _, .refl _, fun _ => id, .same rfl⟩
+    rfl formed.startedOnce
 
 /-- Cancelling an occurrence keeps a state well-formed: its items and the subscriptions on it are withdrawn first, so
 its record goes with nothing left waiting for it or hanging on it. -/

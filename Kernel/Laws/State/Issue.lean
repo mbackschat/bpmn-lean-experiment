@@ -114,6 +114,7 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   journal : after.journal = before.journal
   status : after.status = before.status
   failure : after.failure = before.failure
+  slots : after.slots = before.slots
 
 /-- The begun occurrence takes a key no other occurrence and no start fact of `before` has: a reservation's own, or a
 fresh activation. -/
@@ -231,7 +232,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     · exact begins.scope ▸ stands
     · exact formed.owned.occurrenceScopes occurrence old
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
-    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed⟩
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled⟩
   case issued =>
     exact ⟨fun occurrence member => by
         rcases members occurrence member with rfl | ⟨old, _⟩
@@ -376,6 +377,19 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       tokensApart := by simpa [begins.tokens] using formed.claimed.tokensApart
       queuesApart := by simpa [begins.signals, begins.tokens] using formed.claimed.queuesApart
       uncompleted := by simpa [Queued, begins.signals, begins.tokens] using formed.claimed.uncompleted }
+  case settled =>
+    have later : before.nextIssue ≤ after.nextIssue := by
+      rcases begins.source with ⟨_, reservation⟩ | fresh
+      · exact Nat.le_of_eq reservation.nextIssue.symm
+      · have := fresh.nextIssue
+        omega
+    exact formed.settled.transport (.same begins.slots) later
+      (fun found inside unbegun => by
+        rcases members found inside with rfl | ⟨old, _⟩
+        · simp [begins.isBegun] at unbegun
+        · exact .inl old)
+      (fun _ queued => by simpa [Queued, begins.signals, begins.tokens] using queued)
+      (fun _ member => begins.signals ▸ member)
 
 /-- An admitted request's start Event reservation stays beginnable and unclaimed after its begin, in the scope
 occurrence the begun occurrence runs in. -/
@@ -433,6 +447,7 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   draft : after.draft = before.draft
   status : after.status = before.status
   failure : after.failure = before.failure
+  slots : after.slots = before.slots
 
 /-- A reservation in a scope occurrence that stands keeps a state well-formed, and nothing queued names it: it is
 issued above every identity a queued begin names. -/
@@ -466,7 +481,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
   · have := ((formed.claimed.named request (queuedBefore request queued)).2 _ named).1
     omega
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
-    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed⟩
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled⟩
   case issued =>
     exact ⟨fun occurrence member => by
         rcases members occurrence member with rfl | old
@@ -591,6 +606,13 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       queuesApart := by simpa [reserves.signals, reserves.tokens] using formed.claimed.queuesApart
       uncompleted := fun request id leave writes rule queued =>
         reserves.signals ▸ formed.claimed.uncompleted request id leave writes rule (queuedBefore request queued) }
+  case settled =>
+    exact formed.settled.transport (.same reserves.slots) (by omega)
+      (fun found inside _ => by
+        rcases members found inside with rfl | old
+        · exact .inr (by omega)
+        · exact .inl old)
+      queuedBefore (fun _ member => reserves.signals ▸ member)
 
 /-- What `State.startReserved` makes of `before` for an unbegun `occurrence`: it begins where it stands and its start
 is journalled under its key. Nothing else changes. -/
@@ -610,6 +632,7 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
   journal : after.journal = before.journal
   status : after.status = before.status
   failure : after.failure = before.failure
+  slots : after.slots = before.slots
 
 /-- Starting an unbegun reservation that no queued begin names keeps a state well-formed. -/
 theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrence} {sourceType : String}
@@ -644,7 +667,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
   have keysOther : ∀ old ∈ before.occurrences, old.id ≠ occurrence.id → key before old ≠ key before occurrence :=
     fun old held other same => other (by rw [nodup_map_eq formed.distinct.keys held member same])
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
-    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed⟩
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled⟩
   case issued =>
     exact ⟨fun found inside => by
         rw [issued]
@@ -784,5 +807,12 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
       queuesApart := by simpa [starts_.signals, starts_.tokens] using formed.claimed.queuesApart
       uncompleted := fun request id leave writes rule queued =>
         starts_.signals ▸ formed.claimed.uncompleted request id leave writes rule (queuedBefore request queued) }
+  case settled =>
+    exact formed.settled.transport (.same starts_.slots) (Nat.le_of_eq issued.symm)
+      (fun found inside unbegun => by
+        rcases members found inside with rfl | ⟨old, _⟩
+        · simp at unbegun
+        · exact .inl old)
+      queuedBefore (fun _ member => starts_.signals ▸ member)
 
 end Kernel.Laws.State

@@ -4,6 +4,7 @@ public import Kernel.Laws.State.Issue
 public import Kernel.State.Removal
 import all Kernel.State
 import all Kernel.State.Removal
+import all Kernel.State.Slots
 
 /-! # Laws of the kernel state: the operations
 
@@ -77,7 +78,8 @@ theorem setVariable_same (state : State) (target : ScopeOccurrenceId) (name : St
     SameButVariables state (state.setVariable target name value) := by
   unfold State.setVariable
   dsimp only
-  split <;> split <;> exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl⟩
+  split <;> split <;> exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl,
+    rfl⟩
 
 /-- The variable sets after `setVariable`: the target's set rebinds or appends the name, or a new set holds it. -/
 theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
@@ -95,7 +97,7 @@ theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name
 /-- `removeVariable` changes only the variable sets and the write log. -/
 theorem removeVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) :
     SameButVariables state (state.removeVariable target name) :=
-  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl⟩
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, rfl⟩
 
 /-- `keyed` binds each name at most once, whatever bindings it was given. -/
 theorem keyed_names (bindings : List (String × Value)) : ((keyed bindings).map (·.1)).Nodup := by
@@ -422,6 +424,7 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
   ownedBelow := by simp [OwnedBelow, State.initial]
   claimed := ⟨by simp [State.initial], by simp [Queued, State.initial], by simp [Precedes, State.initial],
     by simp [Precedes, State.initial], by simp [State.initial], by simp [Queued, State.initial]⟩
+  settled := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial]⟩
 
 /-- The fresh instance's root was issued. -/
 theorem initial_rootIssued (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
@@ -635,7 +638,8 @@ theorem reserve_reserves {state : State} (keyed : ActivationsKeyed state) (eleme
     instances, by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
     by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
     by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
-    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue]⟩
+    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
+    by simp [State.reserve, State.activate, State.issue]⟩
   obtain ⟨activations, above, positive⟩ := activated
   exact ⟨by simpa [State.reserve, State.issue] using activations, by simpa [State.reserve, State.issue] using above,
     by simpa [State.reserve] using positive⟩
@@ -661,7 +665,8 @@ theorem startReserved_starts (state : State) {occurrence : Occurrence} (sourceTy
   intro instances
   refine ⟨by simp [State.recordStart], ?_, by simp [State.recordStart], instances, by simp [State.recordStart],
     by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
-    by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart]⟩
+    by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
+    by simp [State.recordStart]⟩
   rw [recordStart_started]
   simp [key]
 
@@ -691,7 +696,8 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
     refine ⟨by simp [State.recordStart], by rw [recordStart_started], rfl, rfl,
       .inl ⟨reserved, member, same ▸ named, rfl, rfl, rfl, rfl, by simp [State.recordStart], by simp [State.recordStart]⟩,
       keeps.1, instances, by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
-      keeps.2.1, by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart]⟩
+      keeps.2.1, by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
+      by simp [State.recordStart]⟩
   · rename_i found
     have shape : (state.activate (state.instanceOf request.scope) request.element role).1 =
         { state with activations := (state.activate (state.instanceOf request.scope) request.element role).1.activations } := by
@@ -710,7 +716,8 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
       rfl, rfl, .inr ⟨absent, by simp [State.issue], by simp [State.recordStart, State.issue], rfl, rfl, ?_⟩,
       keeps.1, instances, by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue],
       by simp [State.recordStart, State.issue], keeps.2.1, by simp [State.recordStart, State.issue],
-      by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue]⟩
+      by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue],
+      by simp [State.recordStart, State.issue]⟩
     exact ⟨by simpa [State.recordStart, State.issue] using activated.activations, activated.above, activated.positive⟩
 
 /-! ## Clearing a scope occurrence -/
@@ -725,7 +732,7 @@ theorem clearInside_cleared {s : State} (formed : WellFormed s) {scope : ScopeOc
   have fewer : (s.clearInside scope keep).scopes.Sublist s.scopes := List.filter_sublist
   refine ⟨scopes, fun occurrence => ?_, fun item => ?_, fun token => ?_, fun variables => ?_,
     fewer, List.filter_sublist, List.filter_sublist, List.filter_sublist, List.filter_sublist, fun x member => ?_,
-    rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+    rfl, rfl, rfl, rfl, rfl, rfl, rfl, ⟨fun _ member => ?_, fun _ member => ?_, fun _ member => ?_⟩⟩
   rotate_left 4
   · obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
     obtain ⟨old, outside⟩ := (scopes entry).mp inside
@@ -736,6 +743,9 @@ theorem clearInside_cleared {s : State} (formed : WellFormed s) {scope : ScopeOc
     refine outside ⟨entryInside, fun same => other ?_⟩
     rw [same] at within
     exact Within.antisymm formed (List.mem_map.mpr ⟨above, upper, rfl⟩) inner within
+  iterate 3
+    · simp only [State.clearInside, State.recordCancelled, FeatureSlots.clear] at member
+      exact (List.mem_filter.mp member).1
   all_goals simp [State.clearInside, State.recordCancelled, mem, StrictlyWithin]
 
 /-! ## Removing occurrences -/
@@ -758,6 +768,13 @@ theorem leaveScope_eq (s : State) (scope : ScopeOccurrenceId) :
       slots := (s.leaveScope scope).slots } ∧
     (s.leaveScope scope).instanceId = s.instanceId := by
   simp [State.leaveScope, State.clearInside, State.recordCancelled]
+
+/-- Leaving a scope occurrence keeps the slots its clearing leaves but the retained compensation records. -/
+theorem leaveScope_slots (s : State) (scope : ScopeOccurrenceId) :
+    (s.leaveScope scope).slots.parked = (s.clearInside scope).slots.parked ∧
+      (s.leaveScope scope).slots.multiInstances = (s.clearInside scope).slots.multiInstances ∧
+      (s.leaveScope scope).slots.compensation.runs = (s.clearInside scope).slots.compensation.runs := by
+  simp [State.leaveScope]
 
 /-- `State.removeOccurrence` leaves the scope occurrences the occurrence owns after removing its record. -/
 theorem removeOccurrence_eq (s : State) (id : Nat) :

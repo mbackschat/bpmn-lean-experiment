@@ -137,18 +137,20 @@ That each phase `Step` runs itself keeps `WellFormed` (`Laws.Step.Phases`, which
 /-- `Step.onRunning` starts an input from an empty journal and outbox. -/
 theorem reset_wellFormed {s : State} (formed : WellFormed s) : WellFormed { s with journal := [], outbox := [] } :=
   formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _, fun fact member => by
-      simp only [starts, List.flatMap_nil, List.nil_append] at member; exact List.mem_append_right _ member⟩ rfl
+      simp only [starts, List.flatMap_nil, List.nil_append] at member; exact List.mem_append_right _ member,
+    .same rfl⟩ rfl
     (formed.startedOnce.sublist ((List.sublist_append_right _ _).map _))
 
 /-- `Step.advanceClock` moves the logical time. -/
 theorem clock_wellFormed {s : State} (formed : WellFormed s) (atMs : Nat) : WellFormed { s with logicalTimeMs := atMs } :=
-  formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _, fun _ => id⟩ rfl formed.startedOnce
+  formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _, fun _ => id, .same rfl⟩ rfl formed.startedOnce
 
 /-- `Step.orderJournal` puts the journal in run order. -/
 theorem runOrder_wellFormed {s : State} (formed : WellFormed s) : WellFormed { s with journal := s.journal.reverse } :=
   have perm : (starts { s with journal := s.journal.reverse }).Perm (starts s) :=
     ((List.reverse_perm _).flatMap_right _).append_right _
-  formed.permuted ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _, fun _ => perm.mem_iff.mp⟩ rfl perm
+  formed.permuted ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _, fun _ => perm.mem_iff.mp,
+    .same rfl⟩ rfl perm
 
 /-- `Step.conclude` journals the draft, whose start facts the transition carries, and empties it and the write log. -/
 theorem journal_wellFormed {s : State} (formed : WellFormed s) {transition : Transition}
@@ -157,27 +159,28 @@ theorem journal_wellFormed {s : State} (formed : WellFormed s) {transition : Tra
   have perm : (starts { s with journal := transition :: s.journal, draft := {}, writes := [] }).Perm (starts s) := by
     simp only [starts, List.flatMap_cons, started, List.append_nil]
     exact List.perm_append_comm
-  formed.permuted ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _, fun _ => perm.mem_iff.mp⟩ rfl perm
+  formed.permuted ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _, fun _ => perm.mem_iff.mp,
+    .same rfl⟩ rfl perm
 
 /-- `State.recordEnd` journals an end fact. -/
 theorem recordEnd_wellFormed {s : State} (formed : WellFormed s) (key : OccurrenceKey) (terminal : Terminal) :
     WellFormed (s.recordEnd key terminal) :=
-  recordEnd_eq s key terminal ▸ formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _, fun _ => id⟩ rfl formed.startedOnce
+  recordEnd_eq s key terminal ▸ formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _, fun _ => id, .same rfl⟩ rfl formed.startedOnce
 
 /-- The closure takes queued signals off the queue. -/
 theorem dequeue_wellFormed {s : State} (formed : WellFormed s) {signals : List Signal} (fewer : signals.Sublist s.signals) :
     WellFormed { s with signals } :=
-  formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, fewer, fun _ => id⟩ rfl formed.startedOnce
+  formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, fewer, fun _ => id, .same rfl⟩ rfl formed.startedOnce
 
 /-- The closure takes its next token off the work stack. -/
 theorem untoken_wellFormed {s : State} (formed : WellFormed s) {tokens : List Token} (fewer : tokens.Sublist s.tokens) :
     WellFormed { s with tokens } :=
-  formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, fewer, .refl _, fun _ => id⟩ rfl formed.startedOnce
+  formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, fewer, .refl _, fun _ => id, .same rfl⟩ rfl formed.startedOnce
 
 /-- `State.closeOwnItems` closes the items waiting for an occurrence. -/
 theorem closeOwnItems_wellFormed {s : State} (formed : WellFormed s) (occurrence : Nat) :
     WellFormed (s.closeOwnItems occurrence) :=
-  closeOwnItems_eq s occurrence ▸ formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, List.filter_sublist, .refl _, .refl _, fun _ => id⟩ rfl
+  closeOwnItems_eq s occurrence ▸ formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, List.filter_sublist, .refl _, .refl _, fun _ => id, .same rfl⟩ rfl
     formed.startedOnce
 
 /-- Replacing what open items wait for, each keeping its identity, element, scope occurrence, occurrence and
@@ -195,7 +198,9 @@ theorem rekind_wellFormed {s : State} (formed : WellFormed s) {change : OpenItem
   refine ⟨?issued, ?distinct, formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive⟩, ?reservations,
     ?owned, ?rooted, ⟨formed.variables.scopes, formed.variables.names⟩, formed.failure,
     ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends⟩, formed.counted,
-    ?occurrencesCounted, formed.ownedBelow, ?claimed⟩
+    ?occurrencesCounted, formed.ownedBelow, ?claimed,
+    formed.settled.transport (.same rfl) (Nat.le_refl _) (fun _ member _ => .inl member) (fun _ queued => queued)
+      (fun _ member => member)⟩
   case issued =>
     refine ⟨formed.issued.occurrences, fun item member => ?_, formed.issued.scopes⟩
     obtain ⟨old, inside, rfl⟩ := back item member
@@ -277,17 +282,22 @@ theorem issue_wellFormed {s : State} (formed : WellFormed s) : WellFormed s.issu
   occurrencesCounted := by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted
   ownedBelow := formed.ownedBelow
   claimed := formed.claimed.shrink (fun _ member => member) (fun _ member => member) formed.owned.occurrenceScopes
-    (fun _ member => member) (fun _ _ => by apply instanceOf_congr <;> rfl) later (.refl _) (.refl _) }
+    (fun _ member => member) (fun _ _ => by apply instanceOf_congr <;> rfl) later (.refl _) (.refl _)
+  settled := formed.settled.transport (.same rfl) later (fun _ member _ => .inl member) (fun _ queued => queued)
+    (fun _ member => member) }
 
-/-- Replacing the retained compensation records and runs keeps a state well-formed: no clause reads them. -/
-theorem compensation_wellFormed {s : State} (formed : WellFormed s) (compensation : Compensations) :
+/-- Replacing the retained compensation records, and the runs by some of them, keeps a state well-formed: a run that
+stays completes what it completed. -/
+theorem compensation_wellFormed {s : State} (formed : WellFormed s) {compensation : Compensations}
+    (runs : ∀ run ∈ compensation.runs, run ∈ s.slots.compensation.runs) :
     WellFormed { s with slots := { s.slots with compensation } } :=
   formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _,
-    fun _ => id⟩ rfl formed.startedOnce
+    fun _ => id, ⟨fun _ member => member, fun _ member => member, runs⟩⟩ rfl formed.startedOnce
 
 /-- Queuing a signal keeps a state well-formed when the queue stays sound and the claims single. -/
 theorem signal_wellFormed {s : State} {signal : Signal} (formed : WellFormed s) (queue : QueueSound (s.signal signal))
-    (claimed : ReservationsClaimed (s.signal signal)) : WellFormed (s.signal signal) := by
+    (claimed : ReservationsClaimed (s.signal signal)) (settled : SlotsSettled (s.signal signal)) :
+    WellFormed (s.signal signal) := by
   rw [signal_eq] at *
   have keys : key { s with signals := s.signals ++ [signal] } = key s :=
     funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
@@ -307,7 +317,29 @@ theorem signal_wellFormed {s : State} {signal : Signal} (formed : WellFormed s) 
   counted := formed.counted
   occurrencesCounted := by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted
   ownedBelow := formed.ownedBelow
-  claimed := claimed }
+  claimed := claimed
+  settled := settled }
+
+/-- A queued signal other than a begin keeps the slots settled when, should it be a compensation that completes an
+occurrence once it ends, that occurrence has begun. Which signal it is, `Kernel.Proofs.Step` tells. -/
+theorem signal_settled {s : State} {signal : Signal} (formed : WellFormed s)
+    (notBegin : ∀ request, signal ≠ .begin request)
+    (compensates : ∀ scope activity trigger leave occurrence resume,
+      signal = .compensate scope activity trigger leave (some (.complete occurrence resume)) → Settled s occurrence) :
+    SlotsSettled (s.signal signal) := by
+  rw [signal_eq]
+  have queuedOld : ∀ request, Queued { s with signals := s.signals ++ [signal] } request → Queued s request :=
+    fun request queued => queued.elim (fun queued => .inl ((List.mem_append.mp queued).resolve_right fun new =>
+      notBegin request (List.mem_singleton.mp new).symm)) .inr
+  have carry : ∀ id, Settled s id → Settled { s with signals := s.signals ++ [signal] } id := fun _ settled =>
+    settled.transport (Nat.le_refl _) (fun _ member _ => .inl member) queuedOld
+  refine ⟨fun waiting member => carry _ (formed.settled.parked waiting member),
+    fun run member => carry _ (formed.settled.bodies run member),
+    fun run member occurrence leave resume => carry _ (formed.settled.resumed run member occurrence leave resume),
+    fun scope activity trigger leave occurrence resume member => carry _ ?_⟩
+  rcases List.mem_append.mp member with old | new
+  · exact formed.settled.queued scope activity trigger leave occurrence resume old
+  · exact compensates scope activity trigger leave occurrence resume (List.mem_singleton.mp new).symm
 
 /-- A queued signal keeps the queue sound when, should it be an arming, what it names was issued and its host, while it
 stands, is begun in the named scope occurrence, and, should it be an instance end, it records a failure exactly when it
@@ -424,7 +456,9 @@ theorem addItem_wellFormed {s : State} (formed : WellFormed s) {item : OpenItem}
     by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations, ?owned, ?rooted,
     ⟨formed.variables.scopes, formed.variables.names⟩, formed.failure,
     ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends⟩, formed.counted,
-    by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted, formed.ownedBelow, ?claimed⟩
+    by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted, formed.ownedBelow, ?claimed,
+    formed.settled.transport (.same rfl) (Nat.le_refl _) (fun _ member _ => .inl member) (fun _ queued => queued)
+      (fun _ member => member)⟩
   case issued =>
     refine ⟨formed.issued.occurrences, fun found inside => ?_, formed.issued.scopes⟩
     rcases members found inside with old | rfl
@@ -559,7 +593,9 @@ theorem emit_wellFormed {s : State} (formed : WellFormed s) (flows : List FlowId
     formed.claimed.signalsApart, fun first second pair => formed.claimed.tokensApart first second ?_,
     fun first second signal token => formed.claimed.queuesApart first second signal (old second token),
     fun request id leave writes rule queued named completed =>
-      formed.claimed.uncompleted request id leave writes rule (queuedOld request queued) named completed⟩⟩
+      formed.claimed.uncompleted request id leave writes rule (queuedOld request queued) named completed⟩,
+    formed.settled.transport (.same rfl) (Nat.le_refl _) (fun _ member _ => .inl member) queuedOld
+      (fun _ member => member)⟩
   · rcases List.mem_append.mp member with old | new
     · exact formed.owned.tokenScopes token old
     · obtain ⟨flow, _, rfl⟩ := List.mem_map.mp new

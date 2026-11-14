@@ -238,6 +238,26 @@ structure ReservationsClaimed (s : State) : Prop where
   uncompleted : ∀ request id leave writes rule, Queued s request → id ∈ names request →
     Signal.complete id leave writes rule ∉ s.signals
 
+/-! ## What the slots complete -/
+
+/-- The occurrence `id` has begun: it was issued, it is begun while it stands, and no queued begin names it, so a
+completion of it completes no reservation (`ReservationsClaimed.uncompleted`). -/
+def Settled (s : State) (id : Nat) : Prop :=
+  id < s.nextIssue ∧ (∀ occurrence ∈ s.occurrences, occurrence.id = id → occurrence.begun = true) ∧
+    ∀ request, Queued s request → id ∉ names request
+
+/-- What the feature slots and a queued compensation will complete has begun: the occurrences parked at a join
+(`Feature.Flow.join` completes them when it fires), a Multi-Instance body's occurrence (`MultiInstance.finish`), and
+the occurrence a compensation run, or a queued one, completes once it ends (`Compensation.advance`). Each arrived,
+entered or threw while begun, and an identity is never issued again (`IssuedBelow`). -/
+structure SlotsSettled (s : State) : Prop where
+  parked : ∀ waiting ∈ s.slots.parked, Settled s waiting.occurrence
+  bodies : ∀ run ∈ s.slots.multiInstances, Settled s run.occurrence
+  resumed : ∀ run ∈ s.slots.compensation.runs, ∀ occurrence leave, run.resume = some (.complete occurrence leave) →
+    Settled s occurrence
+  queued : ∀ scope activity trigger leave occurrence resume,
+    Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ s.signals → Settled s occurrence
+
 /-- The state invariants together: what holds of every committed state and between any two micro-steps of a closure. -/
 structure WellFormed (s : State) : Prop where
   issued : IssuedBelow s
@@ -254,6 +274,7 @@ structure WellFormed (s : State) : Prop where
   occurrencesCounted : OccurrencesCounted s
   ownedBelow : OwnedBelow s
   claimed : ReservationsClaimed s
+  settled : SlotsSettled s
 
 /-! ## The scope tree of a well-formed state
 
@@ -745,5 +766,26 @@ theorem shared_reservation_rejected (kind : OpenKind) :
     { id := 9, kind, element := ⟨"Timer"⟩, scope := processRoot, occurrence := 7 }
     (List.mem_cons_of_mem _ (List.mem_singleton.mpr rfl)) rfl
   simp at this
+
+/-- An unbegun reservation parked at a join breaks `SlotsSettled`: the join's firing would complete it. -/
+theorem parked_reservation_rejected (kind : OpenKind) :
+    ¬ SlotsSettled { armedState kind with slots := { parked := [{ occurrence := 7, flow := ⟨"F"⟩, scope := processRoot }] } } :=
+  fun settled => by
+    have := (settled.parked _ (List.mem_singleton.mpr rfl)).2.1 reservation (by simp [armedState]) rfl
+    simp [reservation] at this
+
+/-- A parked begun occurrence settles. -/
+theorem parked_begun_settled (kind : OpenKind) :
+    SlotsSettled { armedState kind with slots := { parked := [{ occurrence := 5, flow := ⟨"F"⟩, scope := processRoot }] } } where
+  parked := by
+    simp only [List.mem_singleton]
+    rintro _ rfl
+    refine ⟨by simp [armedState], fun occurrence member same => ?_, fun request queued => ?_⟩
+    · simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at member
+      rcases member with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation]
+    · simp [Queued, armedState, sample] at queued
+  bodies := by simp
+  resumed := by simp
+  queued := by simp [armedState, sample]
 
 end Kernel.Laws.State
