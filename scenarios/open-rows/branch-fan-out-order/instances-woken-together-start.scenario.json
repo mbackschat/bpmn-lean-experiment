@@ -1,0 +1,39 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-instances-woken-together-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-instances-woken-together",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/instances-woken-together.bpmn",
+    "sha256": "28a626be18b09f222fa9e4317a29bd2d18979984f15475e572b639d676fb3362",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 Table 10.29"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

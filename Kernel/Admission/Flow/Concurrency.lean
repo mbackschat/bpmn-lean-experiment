@@ -333,7 +333,7 @@ structure InstanceClosure where
   /-- One instance writes a name before it waits, removes the body, or resumes what a sibling instance opens, there or
   after one broadcast resumes them all; every instance has the same closure, so it meets its own. -/
   races : Bool
-  /-- An instance may complete in that closure. -/
+  /-- An instance may complete in that closure, or in the one where a broadcast resumes the instances together. -/
   completes : Bool
 
 /-- A Sub-Process instance runs from its `enteredChildren` and continues past a join, which the instance's own branches
@@ -351,7 +351,10 @@ def instanceClosure (reading : Reading) (program : Program) (element : Element) 
   match element.scope? with
   | some (header, _) =>
     let closure := walk ((enteredChildren program header.id).map Visit.enters)
-    { races := conflicts closure || (!closure.wakes.isEmpty && conflicts (walk closure.wakes)), completes := closure.ends }
+    -- A broadcast resumes every instance's subscription in one closure, which completes the idle instances in scope
+    -- order (`Step.settle`), so an instance completing there meets the completion condition in an order no input states.
+    let woken := if closure.wakes.isEmpty then none else some (walk closure.wakes)
+    { races := conflicts closure || woken.any conflicts, completes := closure.ends || woken.any (·.ends) }
   | none =>
     if awaitsStimulus element then { races := false, completes := false }
     else

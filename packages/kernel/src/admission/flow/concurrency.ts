@@ -500,7 +500,7 @@ export function fanOutConflict(reading: Reading, program: Program, element: Elem
  * What the instances of a looping element do in the closure that begins them, which
  * `concurrentInstances` (`admission/multi-instance.ts`) reads: `races` when one instance writes a name before it waits,
  * removes the body, or resumes what a sibling instance opens, there or after one broadcast resumes them all, since every
- * instance has the same closure and so meets its own, and `completes` when an instance may complete there.
+ * instance has the same closure and so meets its own, and `completes` when an instance may complete in either.
  */
 export type InstanceClosure = Readonly<{ races: boolean; completes: boolean }>;
 
@@ -523,7 +523,11 @@ export function instanceClosure(reading: Reading, program: Program, element: Ele
   const scope = elementScope(element);
   if (scope !== null) {
     const closure = walk(enteredChildren(program, scope[0].id).map(toEnter));
-    return { races: conflicts(closure) || (closure.wakes.length > 0 && conflicts(walk(closure.wakes))), completes: closure.ends };
+    // A broadcast resumes every instance's subscription in one closure, which completes the idle instances in scope
+    // order (`step.ts` `settle`), so an instance completing there meets the completion condition in an order no input
+    // states.
+    const woken = closure.wakes.length === 0 ? null : walk(closure.wakes);
+    return { races: conflicts(closure) || (woken !== null && conflicts(woken)), completes: closure.ends || (woken?.ends ?? false) };
   }
   if (awaitsStimulus(element)) return { races: false, completes: false };
   // The instance's run counts as every path counts a run (`runs`), its unhandled Error's withdrawal included.

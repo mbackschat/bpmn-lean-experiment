@@ -11,8 +11,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, append, callWork, definitionRef, end, flow, foreign, gateway, juel, literalValue, bool, loop, mapping, receiveWork,
-  base, refusalOf, refusalTests, scope, serviceWork, simpleBoolean, start, task, text, userWork, variable, withFlows, withOptions,
+  activity, append, callWork, catchEvent, definitionRef, end, flow, foreign, gateway, juel, literalValue, bool, loop, mapping, receiveWork,
+  base, refusalOf, refusalTests, scope, serviceWork, signal, simpleBoolean, start, task, text, userWork, variable, withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -317,6 +317,13 @@ export const rows: readonly Row[] = [
     description: "under the standards schedule, a parallel loop whose instances write one name from an implicitly begun Sub-Process",
     mutate: implicitInstances({}, ...writesX),
     control: implicitInstances({ mode: "sequential" }, ...writesX),
+  },
+  {
+    // One broadcast resumes every instance's catch in one closure, which completes the idle instances in scope order.
+    code: "multiInstance.concurrentInstances",
+    description: "under the standards schedule, a parallel loop with a completion condition whose instances one broadcast completes",
+    mutate: instances({ completionCondition: itemIsB }, ["C"], [catchEvent("C", signal(), [], "T")]),
+    control: instances({ completionCondition: itemIsB }, ["C", "R"], [catchEvent("C", signal(), [], "T"), review]),
   },
 ];
 
