@@ -14,7 +14,8 @@ occurrence has no effect; every owning feature is notified once. Each is stated 
 micro-step contracts the lane proves these from.
 
 A proof here composes `Laws.Step`'s, `Laws.Hooks`' and `Laws.State`'s lemmas and opens no body. A `Step` fact it needs
-that no `Laws` module states yet is an explicit premise named as a pending lemma request (`PendingStale`), never a
+that no `Laws` module states yet is an explicit premise named as a pending lemma request (`PendingStale`,
+`PendingLate`), never a
 model or state premise of the lane statement; the root replaces it with the lemma once that lands. Nothing executable
 imports this module.
 -/
@@ -134,6 +135,29 @@ structure PendingStale : Prop where
     (Step.signalWork hooks ctx (.occur element scope leave writes rule)).perform state =
       .error (.unsupported "interrupted-before-wait")
 
+/-- An input addressed to an occurrence no lookup finds is rejected (`Laws.Step`), what the lookups read
+(`Laws.Step`, `Laws.Hooks`), and that the instance an occurrence belongs to is read from the scope tree and the
+instance identity alone (`Laws.State`). -/
+structure PendingLate : Prop where
+  step_unknown : ∀ (hooks : Hooks) (program : Program) (state : State) (input : Input) (ref : OccurrenceRef),
+    ((∃ data : CommandInput, input = .command data ∧ data.occurrence = ref) ∨
+      (∃ data : TimerInput, input = .timerFire data ∧ data.occurrence = ref) ∨
+      ∃ data : EffectInput, input = .effectResult data ∧ data.occurrence = ref) →
+    (∀ (ctx : Ctx) (s : State), ctx.program = program → s.occurrences = state.occurrences →
+      s.openItems = state.openItems → s.scopes = state.scopes → s.instanceId = state.instanceId →
+      Step.occurrenceOf? ctx s ref = none ∧ ∀ {α : Type} (detail : WaitView → Option α), itemDetail? ctx s ref detail = none) →
+    ∃ code, Step.step hooks program (some state) input = .error (.rejected code)
+  occurrenceOf?_some : ∀ (ctx : Ctx) (state : State) (ref : OccurrenceRef) (occurrence : Occurrence),
+    Step.occurrenceOf? ctx state ref = some occurrence →
+    occurrence ∈ state.occurrences ∧ ctx.program.publicId occurrence.element = ref.element ∧
+      occurrence.activation = ref.activation ∧ state.instanceOf occurrence.scope = ref.processInstanceId
+  itemDetail?_some : ∀ {α : Type} (ctx : Ctx) (state : State) (ref : OccurrenceRef) (detail : WaitView → Option α)
+    (item : OpenItem) (value : α), itemDetail? ctx state ref detail = some (item, value) →
+    item ∈ state.openItems ∧ ctx.program.publicId item.element = ref.element ∧
+      (state.occurrence? item.occurrence).map (·.activation) = some ref.activation ∧
+      state.instanceOf item.scope = ref.processInstanceId
+  instanceOf_congr : ∀ (s t : State), t.scopes = s.scopes → t.instanceId = s.instanceId → t.instanceOf = s.instanceOf
+
 /-! ## Queued work naming a removed scope occurrence -/
 
 /-- `QueuedWorkInert` holds vacuously: the micro-step never commits. Work that does something in a removed scope
@@ -161,5 +185,46 @@ theorem queuedWorkInert {hooks : Hooks} (pending : PendingStale) : QueuedWorkIne
   · rw [pending.occur_scope_stale hooks ctx element _ leave writes rule queue issued absent] at body; cases body
   · rw [Laws.Step.compensate_scope_gone absent] at body; cases body
   · rw [Laws.Step.compensationFailed_scope_gone absent] at body; cases body
+
+/-! ## Inputs addressed to a removed occurrence -/
+
+/-- An item an addressed lookup finds in a state with the before-state's occurrences, items, scope tree and instance
+identity waits for an occurrence of the before-state that the lookup's reference designates: `WellFormed` gives every
+open item an occurrence of its own element in its own scope occurrence (`Laws.State.Owned.itemOccurrences`), and the
+distinct identifiers make it the one the item's activation was read from. -/
+theorem item_designates {program : Program} {before s : State} {ref : OccurrenceRef} {item : OpenItem}
+    (formed : WellFormed before) (occurrences : s.occurrences = before.occurrences)
+    (items : s.openItems = before.openItems) (sameInstance : s.instanceOf = before.instanceOf)
+    (member : item ∈ s.openItems) (named : program.publicId item.element = ref.element)
+    (activation : (s.occurrence? item.occurrence).map (·.activation) = some ref.activation)
+    (instance_ : s.instanceOf item.scope = ref.processInstanceId) :
+    ∃ occurrence ∈ before.occurrences, Designates program before ref occurrence := by
+  obtain ⟨owner, owned, ownerId, ownerFacts⟩ := formed.owned.itemOccurrences item (items ▸ member)
+  obtain ⟨ownerElement, ownerScope⟩ := ownerFacts
+  obtain ⟨found, lookup, foundActivation⟩ := Option.map_eq_some_iff.mp activation
+  obtain ⟨foundMember, foundId⟩ := Laws.State.occurrence?_some lookup
+  have same : found = owner :=
+    Laws.State.nodup_map_eq formed.distinct.occurrences (occurrences ▸ foundMember) owned (foundId.trans ownerId.symm)
+  subst same
+  exact ⟨found, owned, ownerElement ▸ named, foundActivation, ownerScope ▸ sameInstance ▸ instance_⟩
+
+/-- `LateInputRejected`: an input addressed to an occurrence the before-state does not hold finds nothing to act on,
+neither the occurrence nor an open item of it, so `Step` rejects it before its transition commits anything
+(`PendingLate.step_unknown`). -/
+theorem lateInputRejected {hooks : Hooks} (pending : PendingLate) : LateInputRejected hooks := by
+  intro program input before ref formed addressed undesignated
+  refine pending.step_unknown hooks program before input ref addressed
+    fun ctx s program_ occurrences items scopes named => ?_
+  have sameInstance : s.instanceOf = before.instanceOf := pending.instanceOf_congr before s scopes named
+  subst program_
+  refine ⟨?_, fun detail => ?_⟩
+  · refine Option.eq_none_iff_forall_ne_some.mpr fun occurrence found => ?_
+    obtain ⟨member, publicId, activation, instance_⟩ := pending.occurrenceOf?_some ctx s ref occurrence found
+    exact undesignated occurrence (occurrences ▸ member) ⟨publicId, activation, sameInstance ▸ instance_⟩
+  · refine Option.eq_none_iff_forall_ne_some.mpr fun pair found => ?_
+    obtain ⟨member, publicId, activation, instance_⟩ := pending.itemDetail?_some ctx s ref detail pair.1 pair.2 found
+    obtain ⟨occurrence, owned, designated⟩ :=
+      item_designates formed occurrences items sameInstance member publicId activation instance_
+    exact undesignated occurrence owned designated
 
 end Kernel.Proofs.Cancellation
