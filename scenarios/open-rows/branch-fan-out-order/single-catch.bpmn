@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_single-catch" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:single-catch">
+  <signal id="Signal_Go" name="go" />
+  <error id="Error_Fail" errorCode="FAIL" />
+  <process id="Process_single-catch" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <parallelGateway id="Fork" />
+    <userTask id="Fire" />
+    <intermediateThrowEvent id="Throw"><signalEventDefinition signalRef="Signal_Go" /></intermediateThrowEvent>
+    <userTask id="AfterThrow" />
+    <endEvent id="ThrowDone" />
+    <userTask id="Prepare" />
+    <intermediateCatchEvent id="Catch"><signalEventDefinition signalRef="Signal_Go" /></intermediateCatchEvent>
+      <subProcess id="Write_Caught">
+        <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">caught</camunda:outputParameter></camunda:inputOutput></extensionElements>
+        <startEvent id="WriteStarted_Caught" />
+        <endEvent id="WriteEnded_Caught" />
+        <sequenceFlow id="Flow_WriteInner_Caught" sourceRef="WriteStarted_Caught" targetRef="WriteEnded_Caught" />
+      </subProcess>
+    <userTask id="AfterCatch" />
+    <endEvent id="CatchDone" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fork" />
+    <sequenceFlow id="Flow_F1" sourceRef="Fork" targetRef="Fire" />
+    <sequenceFlow id="Flow_F2" sourceRef="Fork" targetRef="Prepare" />
+    <sequenceFlow id="Flow_Fired" sourceRef="Fire" targetRef="Throw" />
+    <sequenceFlow id="Flow_Thrown" sourceRef="Throw" targetRef="AfterThrow" />
+    <sequenceFlow id="Flow_AfterThrow" sourceRef="AfterThrow" targetRef="ThrowDone" />
+    <sequenceFlow id="Flow_Prepared" sourceRef="Prepare" targetRef="Catch" />
+    <sequenceFlow id="Flow_Caught" sourceRef="Catch" targetRef="Write_Caught" />
+    <sequenceFlow id="Flow_Written" sourceRef="Write_Caught" targetRef="AfterCatch" />
+    <sequenceFlow id="Flow_AfterCatch" sourceRef="AfterCatch" targetRef="CatchDone" />
+  </process>
+</definitions>

@@ -1,0 +1,28 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-escalation-end-scope-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-escalation-end-scope",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/escalation-end-scope.bpmn",
+    "sha256": "d41c906d004660d0050da6dbcd0dac7ac598a27f7b62af8b10fb96f04a5c958b",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

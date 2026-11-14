@@ -137,12 +137,19 @@ function cancelRecord(cancelSite: CancelSite): string | null {
 /**
  * What a throw is read for besides its refusal: whether its raise may reach a catcher (an Error, Escalation or Cancel,
  * or a bound Message throw, whose effect may fail with a business Error), whether it begins compensation handlers (a
- * Compensation throw, or a Cancel End, which compensates its Transaction, §10.3.5). What its receivers install is
+ * Compensation throw, or a Cancel End, which compensates its Transaction, §10.3.5), the code of the Error it raises
+ * (`admission/flow/closure.ts` `Reading.errorCode`) and whether it raises an Escalation. What its receivers install is
  * `il/footprint.ts` `writes`'s.
  */
-export type Thrown = Readonly<{ refusal: string | null; raises: boolean; compensates: boolean }>;
+export type Thrown = Readonly<{
+  refusal: string | null;
+  raises: boolean;
+  compensates: boolean;
+  errorCode: Readonly<{ code: string | null }> | null;
+  escalates: boolean;
+}>;
 
-const nothingThrown: Thrown = { refusal: null, raises: false, compensates: false };
+const nothingThrown: Thrown = { refusal: null, raises: false, compensates: false, errorCode: null, escalates: false };
 
 /**
  * `cancelSite` says where the throw sits: a Cancel End is used only within a Transaction Sub-Process (BPMN 2.0.2
@@ -156,11 +163,11 @@ export function throwReading(options: ProfileOptions, site: ThrowSite, cancelSit
     case ThrowTag.Terminate:
       return nothingThrown;
     case ThrowTag.Escalation:
-      return { ...nothingThrown, raises: true };
+      return { ...nothingThrown, raises: true, escalates: true };
     case ThrowTag.Cancel:
       return { ...nothingThrown, refusal: cancelRecord(cancelSite), raises: true, compensates: true };
     case ThrowTag.Error:
-      return { ...nothingThrown, raises: true,
+      return { ...nothingThrown, raises: true, errorCode: { code: record.payload.code },
         refusal: record.payload.message !== null && record.payload.message.tag === ValueSourceTag.Expression ? "throw.error.message" : null };
     case ThrowTag.Message:
       return { ...nothingThrown, refusal: messageThrow(options, site, record.payload), raises: record.payload.binding !== null };

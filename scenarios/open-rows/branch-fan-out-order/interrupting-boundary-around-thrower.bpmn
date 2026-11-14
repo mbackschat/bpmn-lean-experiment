@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_N4" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:interrupting-boundary-around-thrower">
+  <signal id="Signal_Go" name="go" />
+  <process id="Process_N4" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <subProcess id="Region">
+      <startEvent id="RegionStarted" />
+      <userTask id="Fire" />
+      <intermediateThrowEvent id="Throw"><signalEventDefinition signalRef="Signal_Go" /></intermediateThrowEvent>
+      <subProcess id="Write_Thrower">
+        <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">thrower</camunda:outputParameter></camunda:inputOutput></extensionElements>
+        <startEvent id="WriteStarted_Thrower" /><endEvent id="WriteEnded_Thrower" />
+        <sequenceFlow id="Flow_WriteInner_Thrower" sourceRef="WriteStarted_Thrower" targetRef="WriteEnded_Thrower" />
+      </subProcess>
+      <endEvent id="RegionEnded" />
+      <sequenceFlow id="Flow_RegionStarted" sourceRef="RegionStarted" targetRef="Fire" />
+      <sequenceFlow id="Flow_Fired" sourceRef="Fire" targetRef="Throw" />
+      <sequenceFlow id="Flow_Thrown" sourceRef="Throw" targetRef="Write_Thrower" />
+      <sequenceFlow id="Flow_Wrote" sourceRef="Write_Thrower" targetRef="RegionEnded" />
+    </subProcess>
+    <boundaryEvent id="Stopped" attachedToRef="Region" cancelActivity="true"><signalEventDefinition signalRef="Signal_Go" /></boundaryEvent>
+    <userTask id="AfterStop" />
+    <userTask id="AfterRegion" />
+    <endEvent id="Finished" />
+    <endEvent id="StopFinished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Region" />
+    <sequenceFlow id="Flow_RegionDone" sourceRef="Region" targetRef="AfterRegion" />
+    <sequenceFlow id="Flow_AfterRegion" sourceRef="AfterRegion" targetRef="Finished" />
+    <sequenceFlow id="Flow_Stopped" sourceRef="Stopped" targetRef="AfterStop" />
+    <sequenceFlow id="Flow_AfterStop" sourceRef="AfterStop" targetRef="StopFinished" />
+  </process>
+</definitions>

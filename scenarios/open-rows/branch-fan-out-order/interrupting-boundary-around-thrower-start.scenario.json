@@ -1,0 +1,28 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-interrupting-boundary-around-thrower-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-interrupting-boundary-around-thrower",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/interrupting-boundary-around-thrower.bpmn",
+    "sha256": "f689fcdd766bbc2e1f7bd91939f4e06170536ed1a19d0fc117193f48bbe1628a",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

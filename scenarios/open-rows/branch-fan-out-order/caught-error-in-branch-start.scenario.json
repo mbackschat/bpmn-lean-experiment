@@ -1,0 +1,29 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-caught-error-in-branch-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-caught-error-in-branch",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/caught-error-in-branch.bpmn",
+    "sha256": "afcaa61904555342b240da2b80854c66c56c14b90b30849b54ea94492277227e",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 Table 10.88"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

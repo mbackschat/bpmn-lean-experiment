@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_TerminateResumption" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:terminate-resumption">
+  <signal id="Signal_Go" name="go" />
+  <process id="Process_TerminateResumption" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <parallelGateway id="Fork" />
+    <intermediateCatchEvent id="Caught"><signalEventDefinition signalRef="Signal_Go" /></intermediateCatchEvent>
+    <endEvent id="Terminated"><terminateEventDefinition /></endEvent>
+    <userTask id="Fire" />
+    <intermediateThrowEvent id="Throw"><signalEventDefinition signalRef="Signal_Go" /></intermediateThrowEvent>
+    <subProcess id="Write_Thrower">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">thrower</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="WriteStarted_Thrower" />
+      <endEvent id="WriteEnded_Thrower" />
+      <sequenceFlow id="Flow_WriteInner_Thrower" sourceRef="WriteStarted_Thrower" targetRef="WriteEnded_Thrower" />
+    </subProcess>
+    <userTask id="Inspect" />
+    <endEvent id="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fork" />
+    <sequenceFlow id="Flow_ToCatch" sourceRef="Fork" targetRef="Caught" />
+    <sequenceFlow id="Flow_Caught" sourceRef="Caught" targetRef="Terminated" />
+    <sequenceFlow id="Flow_ToFire" sourceRef="Fork" targetRef="Fire" />
+    <sequenceFlow id="Flow_Fired" sourceRef="Fire" targetRef="Throw" />
+    <sequenceFlow id="Flow_Thrown" sourceRef="Throw" targetRef="Write_Thrower" />
+    <sequenceFlow id="Flow_ThrowerWrote" sourceRef="Write_Thrower" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="Finished" />
+  </process>
+</definitions>

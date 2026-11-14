@@ -60,7 +60,7 @@ import * as Decision from "./work/decision.js";
  * Multi-Instance instance submits (`instanceBody`), whether an occurrence no token began may do it
  * (`beginsWithoutToken`), the names CIB installs from it (`declaredNames`), whether its run may raise an Error or
  * Escalation in the closure that completes it (an effect's business failure, a called instance's raise), which
- * `admission/flow.ts`'s closure walk follows, and the delegate token it binds.
+ * `admission/flow/closure.ts`'s closure walk follows, and the delegate token it binds.
  */
 export interface Traits {
   readonly mapsData: boolean;

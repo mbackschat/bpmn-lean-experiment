@@ -1,0 +1,28 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-terminate-resumption-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-terminate-resumption",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/terminate-resumption.bpmn",
+    "sha256": "07f002ca1b14a46f09fb8b4f5575cf69c18bbb24d2094ce563acf240e40daa75",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

@@ -45,6 +45,14 @@ def juelCount (juel : Bool → Expression → Option String) : InstanceCount →
 /-- Whether the loop runs its instances at once, not one after another (BPMN 2.0.2 §13.3.7). -/
 def runsAtOnce (loop : MultiInstance) : Bool := loop.mode == .parallel
 
+/-- Whether completing one of the loop's instances may begin another in the same closure: a sequential loop's next one,
+or under `BranchSchedule.declarationDepthFirst` a parallel loop's deferred one (`Kernel.Feature.MultiInstance.opening`).
+Under `orderInvariant` a parallel loop begins every instance on entry, so none is left to begin. -/
+def beginsNext (options : ProfileOptions) (loop : MultiInstance) : Bool :=
+  !runsAtOnce loop || match options.branchSchedule with
+    | .declarationDepthFirst => true
+    | .orderInvariant => false
+
 /-- An instance's result, given whether its work submits the output data item (`Kernel.Admission.Work.instanceBody`):
 a User Task's submission fills it, except that a submission installing variables (CIB-EXT-0005) needs none, since
 CIB's `TaskService.complete` sets each value through the instance's task execution; a Service Task's empty OutputSet
@@ -112,7 +120,7 @@ def mayRunNone (loop : MultiInstance) : Bool :=
   | .countAndCollection _ _ => true
 
 /-- Under `BranchSchedule.orderInvariant`, the instances of a parallel loop may not race one another in the closure that
-begins them (`Kernel.Admission.Flow.instanceClosure`): BPMN 2.0.2 §13.3.7 fixes no order among them, which
+begins them (`Kernel.Admission.Flow.Concurrency.instanceClosure`): BPMN 2.0.2 §13.3.7 fixes no order among them, which
 `Kernel.Feature.MultiInstance` leaves to the closure's first-in, first-out queue, so a name an instance writes there,
 or which instance's completion first satisfies the completion condition and cancels the rest, would depend on an order
 no input states. `races` and `completes` count conservatively, as `flow.concurrentWrite` does: an instance's write to

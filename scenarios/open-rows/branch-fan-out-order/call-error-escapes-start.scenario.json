@@ -1,0 +1,29 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-call-error-escapes-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-call-error-escapes",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/call-error-escapes.bpmn",
+    "sha256": "aecc2081d14b83c01429ee8e2e936971db7862825e3a6cb582c6774a149c9f51",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 Table 10.88"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

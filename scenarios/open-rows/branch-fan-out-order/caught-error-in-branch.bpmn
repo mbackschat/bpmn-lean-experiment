@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_caught-error-in-branch" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:caught-error-in-branch">
+  <signal id="Signal_Go" name="go" />
+  <error id="Error_Fail" errorCode="FAIL" />
+  <process id="Process_caught-error-in-branch" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <parallelGateway id="Fork" />
+    <subProcess id="Risky">
+      <startEvent id="RiskyStarted" />
+      <endEvent id="RiskyFailed"><errorEventDefinition errorRef="Error_Fail" /></endEvent>
+      <sequenceFlow id="Flow_RiskyInner" sourceRef="RiskyStarted" targetRef="RiskyFailed" />
+    </subProcess>
+    <boundaryEvent id="RiskyCaught" attachedToRef="Risky"><errorEventDefinition errorRef="Error_Fail" /></boundaryEvent>
+    <userTask id="Recover" />
+    <endEvent id="Recovered" />
+      <subProcess id="Write_Other">
+        <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">other</camunda:outputParameter></camunda:inputOutput></extensionElements>
+        <startEvent id="WriteStarted_Other" />
+        <endEvent id="WriteEnded_Other" />
+        <sequenceFlow id="Flow_WriteInner_Other" sourceRef="WriteStarted_Other" targetRef="WriteEnded_Other" />
+      </subProcess>
+    <userTask id="Hold" />
+    <endEvent id="Held" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fork" />
+    <sequenceFlow id="Flow_Risky" sourceRef="Fork" targetRef="Risky" />
+    <sequenceFlow id="Flow_Other" sourceRef="Fork" targetRef="Write_Other" />
+    <sequenceFlow id="Flow_RiskyDone" sourceRef="Risky" targetRef="Recovered" />
+    <sequenceFlow id="Flow_Caught" sourceRef="RiskyCaught" targetRef="Recover" />
+    <sequenceFlow id="Flow_Recovered" sourceRef="Recover" targetRef="Recovered" />
+    <sequenceFlow id="Flow_OtherDone" sourceRef="Write_Other" targetRef="Hold" />
+    <sequenceFlow id="Flow_Held" sourceRef="Hold" targetRef="Held" />
+  </process>
+</definitions>

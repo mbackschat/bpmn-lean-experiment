@@ -33,7 +33,7 @@ export {
   type TimerFiring,
 } from "./il/codec/stimulus.js";
 export { admit, admitLocated, closureReach, type AdmissionRefusal } from "./admission-registry.js";
-export { VisitTag, conditionalCatches, type Closure, type Visit } from "./admission/flow.js";
+export { VisitTag, conditionalCatches, type Closure, type Visit } from "./admission/flow/closure.js";
 export { hooks } from "./registry.js";
 export { integerBound, textBytes } from "./hooks.js";
 export { isJavascriptFormat } from "./admission/work.js";

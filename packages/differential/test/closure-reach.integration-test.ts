@@ -1,6 +1,6 @@
 /**
  * The closure law of `flow.concurrentWrite` (issue #99) over every discovered admitted scenario: admission's closure
- * walk (`closureReach`, the walk `admission/flow.ts` refuses racing branches with, ascending out of Scopes and called
+ * walk (`closureReach`, the walk `admission/flow/closure.ts` refuses racing branches with, ascending out of Scopes and called
  * processes) reaches every occurrence one committed input begins in the instance, and counts every name the closure
  * writes once the input's own installation is done. A closure the walk under-counts would let a standards-profile model
  * whose result depends on branch order be admitted.

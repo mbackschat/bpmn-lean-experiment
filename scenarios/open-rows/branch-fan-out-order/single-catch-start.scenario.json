@@ -1,0 +1,28 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-single-catch-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-single-catch",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/single-catch.bpmn",
+    "sha256": "4d0f0053e997339b34010e38d114774970077846e96850d0f29ad4aa093f0d53",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

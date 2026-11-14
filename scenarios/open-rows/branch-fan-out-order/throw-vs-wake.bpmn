@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_ThrowVsWake" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:throw-vs-wake">
+  <signal id="Signal_Go" name="go" />
+  <process id="Process_ThrowVsWake" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <userTask id="Fire" />
+    <intermediateThrowEvent id="Throw"><signalEventDefinition signalRef="Signal_Go" /></intermediateThrowEvent>
+      <subProcess id="Write_Thrower">
+        <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">thrower</camunda:outputParameter></camunda:inputOutput></extensionElements>
+        <startEvent id="WriteStarted_Thrower" />
+        <endEvent id="WriteEnded_Thrower" />
+        <sequenceFlow id="Flow_WriteInner_Thrower" sourceRef="WriteStarted_Thrower" targetRef="WriteEnded_Thrower" />
+      </subProcess>
+    <userTask id="Inspect" />
+    <endEvent id="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fire" />
+    <sequenceFlow id="Flow_Fired" sourceRef="Fire" targetRef="Throw" />
+    <sequenceFlow id="Flow_Thrown" sourceRef="Throw" targetRef="Write_Thrower" />
+    <sequenceFlow id="Flow_ThrowerWrote" sourceRef="Write_Thrower" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="Finished" />
+    <subProcess id="Esp" triggeredByEvent="true">
+      <startEvent id="Heard" isInterrupting="false"><signalEventDefinition signalRef="Signal_Go" /></startEvent>
+      <subProcess id="Write_Catcher">
+        <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">catcher</camunda:outputParameter></camunda:inputOutput></extensionElements>
+        <startEvent id="WriteStarted_Catcher" />
+        <endEvent id="WriteEnded_Catcher" />
+        <sequenceFlow id="Flow_WriteInner_Catcher" sourceRef="WriteStarted_Catcher" targetRef="WriteEnded_Catcher" />
+      </subProcess>
+      <endEvent id="EspEnded" />
+      <sequenceFlow id="Flow_Heard" sourceRef="Heard" targetRef="Write_Catcher" />
+      <sequenceFlow id="Flow_CatcherWrote" sourceRef="Write_Catcher" targetRef="EspEnded" />
+    </subProcess>
+  </process>
+</definitions>

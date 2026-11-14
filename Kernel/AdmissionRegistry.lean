@@ -2,6 +2,7 @@ module
 
 public import Kernel.Admission.Data
 public import Kernel.Admission.Flow
+public import Kernel.Admission.Flow.Closure
 public import Kernel.Admission.Flow.Concurrency
 public import Kernel.Admission.Profile
 public import Kernel.Admission.Work
@@ -315,9 +316,11 @@ def loopedHandler (program : Program) : Bool :=
 
 /-- What `Admission.Flow`'s closure walk reads beyond the IL's footprints, each part from its owner: what an element
 and a fired boundary write (`Kernel.writes`, `Kernel.catchWrites`), whether a work may raise (`Admission.Work.traits`),
-whether a catch catches a raise or starts compensation (`Admission.Subscriptions`), whether a throw raises or begins
-compensation handlers (`Admission.Propagation.throwReading`), a loop's own names and whether it may run no instance
-(`Admission.MultiInstance`), and whether a Scope is an interrupting Event Sub-Process (`Admission.Scopes`). -/
+whether a catch catches a raise, which Error codes it takes or whether it starts compensation (`Admission.Subscriptions`),
+whether a throw raises, with which Error code, escalates or begins compensation handlers
+(`Admission.Propagation.throwReading`), a loop's own names, whether it may run no instance and whether an instance's
+completion may begin another (`Admission.MultiInstance`), and whether a Scope is an interrupting Event Sub-Process
+(`Admission.Scopes`). -/
 def reading (program : Program) : Admission.Flow.Reading :=
   let thrownOf (element : Element) : Option Admission.Propagation.Thrown :=
     element.event?.bind fun (_, payload) => payload.throw?.map (Admission.Propagation.throwReading program.options {} .caught)
@@ -332,8 +335,13 @@ def reading (program : Program) : Admission.Flow.Reading :=
     compensates := fun element => (thrownOf element).any (·.compensates)
     compensationStart := Admission.Subscriptions.compensates
     mayRunNone := fun element => (loop element).any Admission.MultiInstance.mayRunNone
+    nextInstance := fun element => (loop element).any (Admission.MultiInstance.beginsNext program.options)
     interrupts := fun element =>
-      element.scope?.any fun (_, payload) => (Admission.Scopes.interruptingStart payload).isSome }
+      element.scope?.any fun (_, payload) => (Admission.Scopes.interruptingStart payload).isSome
+    errorCode := fun element =>
+      (thrownOf element).bind (·.errorCode) <|> if (traits element).any (·.raises) then some none else none
+    catchesError := Admission.Subscriptions.catchesError
+    escalates := fun element => (thrownOf element).any (·.escalates) }
 
 /-- What one closure from `begun` may reach and write, ascending out of Scopes and called processes: the walk every
 closure of a run is held to by the closure law (`packages/differential/test/closure-reach.integration-test.ts`). -/
@@ -381,8 +389,9 @@ def located {α : Type} (items : List α) (id : α → String) (check : α → O
 
 /-- The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
 called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances of
-each loop, the Conditional starts of each process level, then the Message and the Signal names of the whole program. A
-flow's, an element's or a loop's own refusal names it, so a host can point at the refused element. -/
+each loop, the units each element's run fans out to (`Admission.Flow.Concurrency.fanOutConflict`), the Conditional starts of
+each process level, then the Message and the Signal names of the whole program. A flow's, an element's or a loop's own
+refusal names it, so a host can point at the refused element. -/
 def admitLocated (program : Program) : Option AdmissionRefusal :=
   let elementId (element : Element) : String := element.header.id.value
   unlocated (Admission.Flow.references program) <|> unlocated (Admission.Scopes.membership program) <|>
@@ -396,6 +405,7 @@ def admitLocated (program : Program) : Option AdmissionRefusal :=
     located program.flows (·.id.value) (flow program) <|>
     located program.elements elementId (element program (program.elements.filter (reading program).compensates)) <|>
     located program.elements elementId (loopInstances program) <|>
+    located program.elements elementId (Admission.Flow.Concurrency.fanOutConflict (reading program) program) <|>
     unlocated (Admission.Subscriptions.startConditions program) <|>
     unlocated (Admission.Subscriptions.messageNames program.options (program.elements.flatMap (sites program messages))) <|>
     unlocated (signalDeclarations program)

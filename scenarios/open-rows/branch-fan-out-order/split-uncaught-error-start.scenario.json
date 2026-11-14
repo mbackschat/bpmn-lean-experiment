@@ -1,0 +1,29 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-split-uncaught-error-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-split-uncaught-error",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/split-uncaught-error.bpmn",
+    "sha256": "10a02e56d203d4618c3eb4eb4968f354dde7794e9daa208b831a38028307c2b6",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 Table 10.88"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-handlers-together-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-handlers-together",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/handlers-together.bpmn",
+    "sha256": "e7265a098597552b8a3d5b90016c59f8ed2b8da6ab2a3c9cb7ffd97065ffb10a",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §13.5.5"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

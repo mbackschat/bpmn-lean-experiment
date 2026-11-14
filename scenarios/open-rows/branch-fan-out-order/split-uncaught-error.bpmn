@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_SplitUncaught" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:split-uncaught-error">
+  <error id="Error_Fail" errorCode="FAIL" />
+  <process id="Process_SplitUncaught" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <parallelGateway id="Fork" />
+    <endEvent id="Failed"><errorEventDefinition errorRef="Error_Fail" /></endEvent>
+    <subProcess id="Work">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">worked</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="WorkStarted" />
+      <endEvent id="WorkEnded" />
+      <sequenceFlow id="Flow_WorkInner" sourceRef="WorkStarted" targetRef="WorkEnded" />
+    </subProcess>
+    <endEvent id="Worked" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fork" />
+    <sequenceFlow id="Flow_Fail" sourceRef="Fork" targetRef="Failed" />
+    <sequenceFlow id="Flow_Work" sourceRef="Fork" targetRef="Work" />
+    <sequenceFlow id="Flow_Worked" sourceRef="Work" targetRef="Worked" />
+  </process>
+</definitions>

@@ -181,6 +181,22 @@ export function counterTarget(counters: boolean, targets: readonly string[]): st
   return counters && targets.some((target) => multiInstanceCounterNames.includes(target)) ? "multiInstance.counterTarget" : null;
 }
 
+/**
+ * Whether completing one of the loop's instances may begin another in the same closure: a sequential loop's next one, or
+ * under `BranchSchedule.DeclarationDepthFirst` a parallel loop's deferred one (`feature/multi-instance.ts` `opening`).
+ * Under `OrderInvariant` a parallel loop begins every instance on entry, so none is left to begin.
+ */
+export function beginsNext(options: ProfileOptions, loop: MultiInstance): boolean {
+  if (!runsAtOnce(loop)) return true;
+  switch (options.branchSchedule) {
+    case BranchSchedule.DeclarationDepthFirst:
+      return true;
+    case BranchSchedule.OrderInvariant:
+      return false;
+  }
+  return assertNever(options.branchSchedule);
+}
+
 /** Whether the loop runs its instances at once, in no order the schedule fixes. */
 function unordered(options: ProfileOptions, loop: MultiInstance): boolean {
   switch (options.branchSchedule) {
@@ -221,7 +237,7 @@ export function mayRunNone(loop: MultiInstance): boolean {
 
 /**
  * Under `BranchSchedule.orderInvariant`, the instances of a parallel loop may not race one another in the closure that
- * begins them (`admission/flow.ts` `instanceClosure`): BPMN 2.0.2 §13.3.7 fixes no order among them, which
+ * begins them (`admission/flow/concurrency.ts` `instanceClosure`): BPMN 2.0.2 §13.3.7 fixes no order among them, which
  * `feature/multi-instance.ts` leaves to the closure's first-in, first-out queue, so a name an instance writes there, or
  * which instance's completion first satisfies the completion condition and cancels the rest, would depend on an order no
  * input states. `races` and `completes` count conservatively, as `flow.concurrentWrite` does: an instance's write to its

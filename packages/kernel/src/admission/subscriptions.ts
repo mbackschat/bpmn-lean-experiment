@@ -492,17 +492,18 @@ function boundary(options: ProfileOptions, reading: Reading, host: Host, seen: D
 
 /**
  * What a catcher's trigger is read for outside its admission: whether it catches a raised Error, Escalation or Cancel,
- * whether that is Cancel, and whether it starts a Compensation Event Sub-Process. What a catch writes is
- * `il/footprint.ts` `catchWrites`'s.
+ * whether that is Cancel, whether it starts a Compensation Event Sub-Process, and the code an Error catch takes,
+ * `{ code: null }` for every code. What a catch writes is `il/footprint.ts` `catchWrites`'s.
  */
-export type CatchView = Readonly<{ raised: boolean; cancel: boolean; compensation: boolean }>;
+export type CatchView = Readonly<{ raised: boolean; cancel: boolean; compensation: boolean; errorCode: Readonly<{ code: string | null }> | null }>;
 
-const noCatch: CatchView = { raised: false, cancel: false, compensation: false };
+const noCatch: CatchView = { raised: false, cancel: false, compensation: false, errorCode: null };
 
 export function catchView(subscription: Subscription): CatchView {
   const trigger = subscription.trigger;
   switch (trigger.tag) {
     case TriggerTag.Error:
+      return { ...noCatch, raised: true, errorCode: { code: trigger.payload.code } };
     case TriggerTag.Escalation:
       return { ...noCatch, raised: true };
     case TriggerTag.Cancel:
@@ -516,6 +517,12 @@ export function catchView(subscription: Subscription): CatchView {
       return noCatch;
   }
   return assertNever(trigger);
+}
+
+/** Whether a subscription surely takes an Error of `code` (`null`: of any code, which only a catch-all takes). */
+export function catchesError(subscription: Subscription, code: string | null): boolean {
+  const caught = catchView(subscription).errorCode;
+  return caught !== null && (caught.code === null || caught.code === code);
 }
 
 /** Whether a boundary catches Cancel. */

@@ -46,6 +46,7 @@ import {
 } from "./il/types.js";
 import * as Data from "./admission/data.js";
 import * as FlowAdmission from "./admission/flow.js";
+import * as FlowClosure from "./admission/flow/closure.js";
 import * as Concurrency from "./admission/flow/concurrency.js";
 import * as Decision from "./admission/work/decision.js";
 import * as Profile from "./admission/profile.js";
@@ -493,14 +494,15 @@ const neutralSite: Propagation.ThrowSite = {
 };
 
 /**
- * What `admission/flow.ts`'s closure walk reads beyond the IL's footprints, each part from its owner: what an element
+ * What `admission/flow/closure.ts`'s closure walk reads beyond the IL's footprints, each part from its owner: what an element
  * and a fired boundary write (`il/footprint.ts` `writes`, `catchWrites`), whether a work may raise (`admission/work.ts`
- * `traits`), whether a catch catches a raise or starts compensation (`admission/subscriptions.ts`), whether a throw
- * raises or begins compensation handlers (`admission/propagation.ts` `throwReading`), a loop's own names and whether it
- * may run no instance (`admission/multi-instance.ts`), and whether a Scope is an interrupting Event Sub-Process
- * (`admission/scopes.ts`).
+ * `traits`), whether a catch catches a raise, which Error codes it takes or whether it starts compensation
+ * (`admission/subscriptions.ts`), whether a throw raises, with which Error code, escalates or begins compensation
+ * handlers (`admission/propagation.ts` `throwReading`), a loop's own names, whether it may run no instance and whether an
+ * instance's completion may begin another (`admission/multi-instance.ts`), and whether a Scope is an interrupting Event
+ * Sub-Process (`admission/scopes.ts`).
  */
-function reading(program: Program): FlowAdmission.Reading {
+function reading(program: Program): FlowClosure.Reading {
   const thrownOf = (element: Element): Propagation.Thrown | null => {
     const event = elementEvent(element);
     const record = event === null ? null : eventPayloadThrow(event[1]);
@@ -526,10 +528,17 @@ function reading(program: Program): FlowAdmission.Reading {
       const found = loop(element);
       return found !== null && MultiInstance.mayRunNone(found);
     },
+    nextInstance: (element) => {
+      const found = loop(element);
+      return found !== null && MultiInstance.beginsNext(program.options, found);
+    },
     interrupts: (element) => {
       const scope = elementScope(element);
       return scope !== null && Scopes.interruptingStart(scope[1]) !== null;
     },
+    errorCode: (element) => thrownOf(element)?.errorCode ?? (traits(element)?.raises === true ? { code: null } : null),
+    catchesError: Subscriptions.catchesError,
+    escalates: (element) => thrownOf(element)?.escalates === true,
   };
 }
 
@@ -537,12 +546,12 @@ function reading(program: Program): FlowAdmission.Reading {
  * What one closure from `begun` may reach and write, ascending out of Scopes and called processes: the walk every
  * closure of a run is held to by the closure law (`packages/differential/test/closure-reach.integration-test.ts`).
  */
-export function closureReach(program: Program, begun: readonly FlowAdmission.Visit[]): FlowAdmission.Closure {
-  return FlowAdmission.closureWalk(reading(program), program, { stop: FlowAdmission.awaitsStimulus, ascends: true }, begun);
+export function closureReach(program: Program, begun: readonly FlowClosure.Visit[]): FlowClosure.Closure {
+  return FlowClosure.closureWalk(reading(program), program, { stop: FlowAdmission.awaitsStimulus, ascends: true }, begun);
 }
 
 /**
- * Whether a looping element's instances race one another where they begin: the closure is `admission/flow.ts`'s, the
+ * Whether a looping element's instances race one another where they begin: the closure is `admission/flow/closure.ts`'s, the
  * loop's mode and condition `admission/multi-instance.ts`'s.
  */
 function loopInstances(program: Program, entry: Element): string | null {
@@ -605,7 +614,8 @@ function located<T>(items: readonly T[], id: (item: T) => string, check: (item: 
 /**
  * The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
  * called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances
- * of each loop, the Conditional starts of each process level, then the Message and the Signal names of the whole program.
+ * of each loop, the units each element's run fans out to (`admission/flow/concurrency.ts` `fanOutConflict`), the Conditional
+ * starts of each process level, then the Message and the Signal names of the whole program.
  * A flow's, an element's or a loop's own refusal names it, so a host can point at the refused element.
  */
 export function admitLocated(program: Program): AdmissionRefusal | null {
@@ -625,6 +635,7 @@ export function admitLocated(program: Program): AdmissionRefusal | null {
     located(program.flows, (entry) => entry.id, (entry) => flow(program, entry)),
     located(program.elements, elementId, (entry) => element(program, throws, entry)),
     located(program.elements, elementId, (entry) => loopInstances(program, entry)),
+    located(program.elements, elementId, (entry) => Concurrency.fanOutConflict(reading(program), program, entry)),
     unlocated(() => Starts.startConditions(program)),
     unlocated(() => Subscriptions.messageNames(program.options, program.elements.flatMap((entry) => sites(program, messages, entry)))),
     unlocated(() => signalDeclarations(program)),

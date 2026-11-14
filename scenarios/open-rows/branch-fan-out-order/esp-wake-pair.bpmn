@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_WakePair" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:esp-wake-pair">
+  <signal id="Signal_Go" name="go" />
+  <process id="Process_WakePair" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <userTask id="Fire" />
+    <intermediateThrowEvent id="Throw"><signalEventDefinition signalRef="Signal_Go" /></intermediateThrowEvent>
+    <userTask id="Inspect" />
+    <endEvent id="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fire" />
+    <sequenceFlow id="Flow_Fired" sourceRef="Fire" targetRef="Throw" />
+    <sequenceFlow id="Flow_Thrown" sourceRef="Throw" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="Finished" />
+    <subProcess id="Esp_One" triggeredByEvent="true">
+      <startEvent id="Heard_One" isInterrupting="false"><signalEventDefinition signalRef="Signal_Go" /></startEvent>
+      <subProcess id="Write_One">
+        <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">one</camunda:outputParameter></camunda:inputOutput></extensionElements>
+        <startEvent id="WriteStarted_One" />
+        <endEvent id="WriteEnded_One" />
+        <sequenceFlow id="Flow_WriteInner_One" sourceRef="WriteStarted_One" targetRef="WriteEnded_One" />
+      </subProcess>
+      <endEvent id="EspEnded_One" />
+      <sequenceFlow id="Flow_Heard_One" sourceRef="Heard_One" targetRef="Write_One" />
+      <sequenceFlow id="Flow_Written_One" sourceRef="Write_One" targetRef="EspEnded_One" />
+    </subProcess>
+    <subProcess id="Esp_Two" triggeredByEvent="true">
+      <startEvent id="Heard_Two" isInterrupting="false"><signalEventDefinition signalRef="Signal_Go" /></startEvent>
+      <subProcess id="Write_Two">
+        <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">two</camunda:outputParameter></camunda:inputOutput></extensionElements>
+        <startEvent id="WriteStarted_Two" />
+        <endEvent id="WriteEnded_Two" />
+        <sequenceFlow id="Flow_WriteInner_Two" sourceRef="WriteStarted_Two" targetRef="WriteEnded_Two" />
+      </subProcess>
+      <endEvent id="EspEnded_Two" />
+      <sequenceFlow id="Flow_Heard_Two" sourceRef="Heard_Two" targetRef="Write_Two" />
+      <sequenceFlow id="Flow_Written_Two" sourceRef="Write_Two" targetRef="EspEnded_Two" />
+    </subProcess>
+  </process>
+</definitions>

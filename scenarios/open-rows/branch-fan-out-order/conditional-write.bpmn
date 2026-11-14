@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_ConditionalWrite" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:conditional-write" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_ConditionalWrite" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <property id="flag" name="flag" />
+    <startEvent id="Started" />
+    <parallelGateway id="Fork" />
+    <userTask id="Host" />
+    <boundaryEvent id="Noticed" attachedToRef="Host" cancelActivity="false">
+      <conditionalEventDefinition><condition xsi:type="tFormalExpression">isPresent(flag)</condition></conditionalEventDefinition>
+    </boundaryEvent>
+    <subProcess id="Write_Catcher">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">catcher</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="WriteStarted_Catcher" />
+      <endEvent id="WriteEnded_Catcher" />
+      <sequenceFlow id="Flow_WriteInner_Catcher" sourceRef="WriteStarted_Catcher" targetRef="WriteEnded_Catcher" />
+    </subProcess>
+    <userTask id="AfterCatch" />
+    <endEvent id="CatchFinished" />
+    <endEvent id="HostFinished" />
+    <userTask id="Fire" />
+    <subProcess id="Write_Flag">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="flag">set</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="WriteStarted_Flag" />
+      <endEvent id="WriteEnded_Flag" />
+      <sequenceFlow id="Flow_WriteInner_Flag" sourceRef="WriteStarted_Flag" targetRef="WriteEnded_Flag" />
+    </subProcess>
+    <subProcess id="Write_Thrower">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">writer</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="WriteStarted_Thrower" />
+      <endEvent id="WriteEnded_Thrower" />
+      <sequenceFlow id="Flow_WriteInner_Thrower" sourceRef="WriteStarted_Thrower" targetRef="WriteEnded_Thrower" />
+    </subProcess>
+    <userTask id="Inspect" />
+    <endEvent id="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fork" />
+    <sequenceFlow id="Flow_ToHost" sourceRef="Fork" targetRef="Host" />
+    <sequenceFlow id="Flow_Hosted" sourceRef="Host" targetRef="HostFinished" />
+    <sequenceFlow id="Flow_Noticed" sourceRef="Noticed" targetRef="Write_Catcher" />
+    <sequenceFlow id="Flow_CatcherWrote" sourceRef="Write_Catcher" targetRef="AfterCatch" />
+    <sequenceFlow id="Flow_AfterCatch" sourceRef="AfterCatch" targetRef="CatchFinished" />
+    <sequenceFlow id="Flow_ToFire" sourceRef="Fork" targetRef="Fire" />
+    <sequenceFlow id="Flow_Fired" sourceRef="Fire" targetRef="Write_Flag" />
+    <sequenceFlow id="Flow_FlagWritten" sourceRef="Write_Flag" targetRef="Write_Thrower" />
+    <sequenceFlow id="Flow_ThrowerWrote" sourceRef="Write_Thrower" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="Finished" />
+  </process>
+</definitions>

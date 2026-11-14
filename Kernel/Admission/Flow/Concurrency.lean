@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Admission.Flow
+public import Kernel.Admission.Flow.Closure
 
 /-! # Order invariance of concurrent branches and instances
 
@@ -8,7 +8,8 @@ Under `BranchSchedule.orderInvariant` a closure takes its queued tokens first in
 branches of a split and the instances of a parallel Multi-Instance Activity interleave in any order (Table 13.1,
 §13.3.1, §13.3.7). These checks compare the closures `Kernel.Admission.Flow.closureWalk` finds for them and refuse a
 model whose committed result would depend on that order: `flow.concurrentWrite` and `flow.concurrentInterference` for
-a split's branches, and the `races` `Kernel.Admission.MultiInstance.concurrentInstances` reads for instances.
+a split's branches and for the units one element's run fans out to (`fanOutConflict`), and the `races`
+`Kernel.Admission.MultiInstance.concurrentInstances` reads for instances.
 -/
 
 public section
@@ -30,7 +31,7 @@ calls. -/
 def removesElement (program : Program) (withdrawal : Withdrawal) : Nat → ElementId → Bool
   | 0, _ => false
   | fuel + 1, id =>
-    match program.element? id with
+    withdrawal.everything || match program.element? id with
     | none => false
     | some element =>
       let enclosing := ancestors program program.elements.length element.header.parent
@@ -85,6 +86,247 @@ def concurrentBranches (reading : Reading) (program : Program) (flow : Flow) : O
     else others.findSome? (conflict program own) <|>
       (woken own).bind fun ownWake => (others.filterMap woken).findSome? (conflict program ownWake)
 
+/-! ## Fan-outs of one element's run
+
+Besides a split's branches and a loop's instances, one element's run may queue several units of work that the closure
+then runs in an order no input states: the resumptions a Signal throw fires beside its thrower's continuation, the
+catcher of an intermediate or end Escalation beside its thrower, the Conditional items a write makes true beside its
+writer, and the compensation handlers one trigger begins together. One check per mechanism compares the units with
+`conflict`; a unit is the closure walk from where it starts, and a continuation ascends, since a token that ends its
+Scope lets the Scope complete beside the other units (`Step.settle` completes idle scopes only after every signal and
+token). -/
+
+/-- The first conflict (`conflict`) between two of `units`, each against every later one. -/
+def firstConflict (program : Program) : List Closure → Option String
+  | [] => none
+  | unit :: rest => rest.findSome? (conflict program unit) <|> firstConflict program rest
+
+/-- The element a resumption's subscription hangs on: a catch, a boundary's host, an Event Sub-Process. -/
+def anchorOf (program : Program) : Visit → Option Element
+  | .completes caught => some caught
+  | .fires boundary => (program.boundary? boundary.id).map (·.1)
+  | .enters started => some started
+  | .passes _ => none
+
+/-- Whether a level, the children of a Scope or the elements of a process level, may hold two tokens at once: two
+starts or implicitly begun children, a split (a concurrent Gateway or any other element or boundary with several
+outgoing flows), a boundary that does not interrupt, an Event Sub-Process that does not interrupt, or a compensation
+handler, which a throw may begin beside others. -/
+def concurrentLevel (reading : Reading) (level : List Element) : Bool :=
+  (level.filter (·.start?.isSome)).length ≥ 2 ||
+    (!level.any (·.start?.isSome) && (level.filter (·.beginsImplicitly)).length ≥ 2) ||
+    level.any fun element =>
+      element.isCompensationActivity ||
+      (element.gateway?.any fun (_, payload) => (routing payload).concurrent && payload.outgoing.length ≥ 2) ||
+      (element.gateway?.isNone && element.outgoing.length ≥ 2) ||
+      ((element.envelope?.map (·.boundaries)).getD []).any (fun boundary =>
+        !boundary.interrupting || boundary.outgoing.length ≥ 2) ||
+      (((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome && !reading.interrupts element)
+
+/-- Whether at most one token moves through `element`'s level at a time and the level is entered at most once at a
+time: that level and every level around it hold no concurrency (`concurrentLevel`), no Scope around it loops, and its
+process is the root process, which no Call calls. -/
+def solitary (reading : Reading) (program : Program) (element : Element) : Bool :=
+  let enclosing := ancestors program program.elements.length element.header.parent
+  let top := (enclosing.getLast?).getD element
+  !program.inCalledProcess top.header.id && !concurrentLevel reading (program.siblings top.header) &&
+    enclosing.all fun scope =>
+      ((scope.envelope?).bind (·.multiInstance)).isNone &&
+        !concurrentLevel reading (program.children (some scope.header.id))
+
+/-- The elements whose occurrences tell apart two open occurrences of the subscription a resumption fires, which one
+throw or write may resume together: the Scope its anchor lies in, or at a called process's level its Calls; none for a
+solitary anchor (`solitary`), whose level is entered once at a time, and none at the root process's level, whose
+subscriptions are open once. -/
+def holders (reading : Reading) (program : Program) (visit : Visit) : List ElementId :=
+  ((anchorOf program visit).filter (!solitary reading program ·)).map (fun element =>
+    match element.header.parent with
+    | some parent => [parent]
+    | none => ((program.processOf element.header).map fun process => (callers program process).map (·.header.id)).getD [])
+    |>.getD []
+
+/-- Whether the subscription `visit` resumes cannot be open while `thrower` runs: its catch, or its boundary's host,
+lies in a solitary level (`solitary`) whose one token is at the thrower or at another element holding it. An Event
+Sub-Process start stays open while its scope occurrence lives, so it is never excluded. -/
+def closedAt (reading : Reading) (program : Program) (thrower : Element) (visit : Visit) : Bool :=
+  let level (element : Element) := (element.header.parent, (program.processOf element.header).map (·.definition))
+  (if visit matches .enters _ then none else anchorOf program visit).any fun held => solitary reading program held &&
+    (thrower :: ancestors program program.elements.length thrower.header.parent).any fun holder =>
+      level holder == level held && holder.header.id != held.header.id
+
+/-- What a resumption's first visit removes, as a queued signal that runs before any token moves: an interrupting
+boundary's host or an interrupting Event Sub-Process's Scope. What its path removes later is not this. -/
+def firstWithdrawals (reading : Reading) (program : Program) : Visit → List Withdrawal
+  | .fires boundary => interruption program boundary
+  | .enters started => removal reading started
+  | .completes _ => []
+  | .passes _ => []
+
+/-- Whether a resumption's first visit removes `element` together with the level its token goes on in, so the
+continuation never moves beside the resumption: the removal reaches `element` and is not an interruption of `element`
+itself, whose outflow lies outside it. -/
+def preempts (reading : Reading) (program : Program) (visit : Visit) (element : Element) : Bool :=
+  (firstWithdrawals reading program visit).any fun withdrawal =>
+    withdrawal.root != some element.header.id &&
+      removesElement program withdrawal (program.elements.length + 1) element.header.id
+
+/-- A resumption against itself, when its subscription may be open twice at once (`holders`): one occurrence's path
+may not write a name, nor remove an element holding the other occurrence. -/
+def againstItself (reading : Reading) (program : Program) (visit : Visit) (wake : Closure) : Option String :=
+  let held := holders reading program visit
+  if held.isEmpty then none
+  else if wake.footprint.races wake.footprint then some "flow.concurrentWrite"
+  else if wake.withdraws.any (fun withdrawal =>
+      held.any (removesElement program withdrawal (program.elements.length + 1))) then
+    some "flow.concurrentInterference"
+  else none
+
+/-- The walk of a resumption's or catcher's path: a branch's, stopping where it waits or joins. -/
+def pathOf (reading : Reading) (program : Program) (begun : List Visit) : Closure :=
+  closureWalk reading program { stop := branchStop, ascends := false } begun
+
+/-- What a token leaving `element` runs next in its closure: its flows and, ascending, the completion of the Scope or
+called process its token may end (review change 4: `Step.settle` completes an idle scope only after every signal and
+token, so that completion goes on beside the other units). -/
+def continuation (reading : Reading) (program : Program) (element : Element) : Closure :=
+  let walk : Walk := { stop := branchStop, ascends := true }
+  closureWalk reading program walk (onwardVisits reading program walk element)
+
+/-- Under `BranchSchedule.orderInvariant`, the work one Signal throw starts in its closure may not conflict
+(`conflict`): its thrower's continuation and the resumption of every Signal subscription it may resume, any of the
+program as `Kernel.Admission.Flow.beyond` counts, which the closure runs in arming order, an order no input states
+(BPMN 2.0.2 §10.5.1 lets one Signal reach every catcher; issue #81). A resumption whose first visit removes the thrower
+(`preempts`) is not held against the continuation: that removal is a queued signal, which runs before any token the
+thrower's completion emits, whatever the schedule. A resumption that cannot be open while the thrower runs (`closedAt`)
+is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`). -/
+def signalFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
+  if !((element.event?.bind (·.2.throw?)).any fun thrown => (throwView thrown).signal.isSome) then none
+  else
+    let wakes := ((program.elements.flatMap (catching signalled)).filter (!closedAt reading program element ·)).map
+      fun visit => (visit, pathOf reading program [visit])
+    let own := continuation reading program element
+    (wakes.filter fun (visit, _) => !preempts reading program visit element).findSome?
+        (fun (_, wake) => conflict program own wake) <|>
+      firstConflict program (wakes.map (·.2)) <|>
+      wakes.findSome? fun (visit, wake) => againstItself reading program visit wake
+
+/-- Under `BranchSchedule.orderInvariant`, an Escalation thrower's continuation may not conflict with what a catcher
+that does not interrupt it runs: BPMN 2.0.2 §10.5.1 continues the thrower, an End Event's Scope included, while the
+catcher's path runs, in an order no input states (issue #81). -/
+def escalationFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
+  if !reading.escalates element then none
+  else
+    let beside := (catchers reading program element (program.elements.length + 1)).filter fun visit =>
+      match visit with
+      | .fires boundary => !boundary.interrupting
+      | .enters started => !reading.interrupts started
+      | .completes _ => false
+      | .passes _ => false
+    if beside.isEmpty then none
+    else conflict program (continuation reading program element) (pathOf reading program beside)
+
+/-- Whether a write of `written` may make true the Conditional subscription `visit` resumes: under
+`ConditionalRetrigger.edge` only a write of a name its condition reads can turn it true (BPMN 2.0.2 Tables 10.89, 10.90);
+under `eachWrite` every write its filters pass fires it while it holds (CIB-EXT-0035). -/
+def mayMakeTrue (program : Program) (written : NameSet) (visit : Visit) : Bool :=
+  (visitSubscription visit).any fun subscription => (subscription.trigger.condition?).any fun trigger =>
+    trigger.variableName.all (fun name => written.all || written.names.contains name) &&
+      (program.options.conditionalRetrigger == .eachWrite || (expressionReads trigger.condition).meets written)
+
+/-- Whether two Conditional resumptions are one contest, whose order the input's ranking decides
+(`Kernel.Feature.Subscriptions.resolveContests`, CIB-LIM-0053): one's first visit removes the other's anchor, or both
+are arms of one Event-Based Gateway. -/
+def contested (reading : Reading) (program : Program) (left right : Visit) : Bool :=
+  let removes (first second : Visit) : Bool := (firstWithdrawals reading program first).any fun withdrawal =>
+    (anchorOf program second).any (removesElement program withdrawal (program.elements.length + 1) ·.header.id)
+  removes left right || removes right left ||
+    (anchors program left).any fun id => (anchors program right).contains id &&
+      (program.element? id).any (·.gateway?.any fun (_, payload) => (routing payload).waits)
+
+/-- Under `BranchSchedule.orderInvariant`, a write's Conditional firings may not conflict with the writer's continuation
+nor with each other: `Kernel.Feature.Subscriptions.offerWrites` queues the firings of the items one write makes true
+after the writer's completion, each contest at its first member's place in evaluation order, an order no input states
+(issue #81, review change 2). A writer is an element whose run writes, or a boundary whose firing writes; its
+continuation is held against each resumption its write may make true (`mayMakeTrue`), except one whose first visit
+removes it (`preempts`); an Event Sub-Process writes its start's outputs as it begins, so its entered children are
+held against them too. The Conditional resumptions `element` holds are held against every other one a single write
+may make true with them, a variable command's included, unless they are one contest (`contested`), whose order the
+input's ranking states, and against themselves when open twice at once (`againstItself`). Every walk arms every
+Conditional once its unit writes (`closureWalk`), so two writing units beside a writing Conditional path conflict: a
+conservative bound. -/
+def writeFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
+  let resumed (written : NameSet) : List (Visit × Closure) :=
+    ((conditionalCatches program).filter (mayMakeTrue program written)).map fun visit => (visit, pathOf reading program [visit])
+  let written := (runs reading program element).footprint.writes
+  let inside : List Visit := if ((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome then
+      (((element.scope?).map fun (header, _) => enteredChildren program header.id).getD []).map Visit.enters
+    else []
+  let own := if written.names.isEmpty && !written.all then none
+    else
+      let next := continuation reading program element
+      let begun := pathOf reading program inside
+      ((resumed written).filter fun (visit, _) => !preempts reading program visit element).findSome?
+        fun (_, wake) => conflict program next wake <|> conflict program begun wake
+  let fired := ((element.envelope?.map (·.boundaries)).getD []).findSome? fun boundary =>
+    if (reading.fires boundary).isEmpty then none
+    else
+      let next := closureWalk reading program { stop := branchStop, ascends := true }
+        ((flowTargets program boundary.outgoing).map Visit.enters)
+      (resumed { names := reading.fires boundary }).findSome? fun (_, wake) => conflict program next wake
+  let reads (visit : Visit) : NameSet := ((visitSubscription visit).bind fun subscription =>
+    (subscription.trigger.condition?).map (expressionReads ·.condition)).getD {}
+  let together (left right : Visit) : Bool :=
+    visitKey left != visitKey right && !contested reading program left right &&
+      (program.options.conditionalRetrigger == .eachWrite || (reads left).meets (reads right))
+  let rivals := (catching conditional element).findSome? fun visit =>
+    let wake := pathOf reading program [visit]
+    againstItself reading program visit wake <|>
+      ((conditionalCatches program).filter (together visit)).findSome? fun other =>
+        conflict program wake (pathOf reading program [other])
+  own <|> fired <|> rivals
+
+/-- Under `BranchSchedule.orderInvariant`, the compensation handlers one Compensation throw or Cancel End may begin
+together may not conflict: a handler's own run, without the resumption of the trigger once it completes, which comes
+after every handler it races. `Kernel.Feature.Compensation.precedes` orders two handlers by Sequence Flow from one
+subject or its boundary Events to the other's, by data or by one subject; handlers it leaves unordered begin together,
+in declaration order, an order no input states (BPMN 2.0.2 §13.5.5; issue #81, review change 3). Statically a pair
+counts as ordered only when a Sequence Flow path or one subject joins every pair of their subjects, in either direction,
+as `precedes` orders them in the completion order such a path gives; a data dependency is not counted, a conservative
+reading. -/
+def compensationFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
+  if !reading.compensates element then none
+  else
+    let unit (handler : Element) : Closure :=
+      let begun := closureWalk reading program
+        { stop := fun other => other.header.id == handler.header.id || branchStop other, ascends := false }
+        [Visit.enters handler]
+      if branchStop handler then begun
+      else
+        let run := runs reading program handler
+        { begun with footprint := begun.footprint.union run.footprint, withdraws := run.withdraws ++ begun.withdraws
+                     completed := handler.header.id :: begun.completed }
+    let boundariesOf (id : ElementId) : List ElementId :=
+      (((program.element? id).bind (·.envelope?)).map (·.boundaries.map (·.id))).getD []
+    let joined (first second : ElementId) : Bool :=
+      first == second || flowReaches program [first] second || flowReaches program (boundariesOf first) second
+    let ordered (left right : Element) : Bool :=
+      (subjectsOf program left).all fun first => (subjectsOf program right).all fun second =>
+        joined first second || joined second first
+    let rec pairs : List Element → Option String
+      | [] => none
+      | handler :: rest =>
+        (rest.filter (!ordered handler ·)).findSome? (fun other => conflict program (unit handler) (unit other)) <|>
+          pairs rest
+    pairs (handlersOf reading program element)
+
+/-- The fan-outs of one element's run besides a split's and a loop's, under `BranchSchedule.orderInvariant`. -/
+def fanOutConflict (reading : Reading) (program : Program) (element : Element) : Option String :=
+  match program.options.branchSchedule with
+  | .declarationDepthFirst => none
+  | .orderInvariant =>
+    signalFanOut reading program element <|> escalationFanOut reading program element <|>
+      writeFanOut reading program element <|> compensationFanOut reading program element
+
 /-- What the instances of a looping `element` do in the closure that begins them, which
 `Kernel.Admission.MultiInstance.concurrentInstances` reads. -/
 structure InstanceClosure where
@@ -113,8 +355,10 @@ def instanceClosure (reading : Reading) (program : Program) (element : Element) 
   | none =>
     if awaitsStimulus element then { races := false, completes := false }
     else
-      let reads := (footprint program element).reads
-      let own : Footprint := { reads, writes := (footprint program element).writes.union (reading.writes element) }
-      { races := own.races own || meetsSibling (walk (beyond reading program element true)), completes := true }
+      -- The instance's run counts as every path counts a run (`runs`), its unhandled Error's withdrawal included.
+      let run := runs reading program element
+      let beside := walk (beyond reading program element true)
+      { races := run.footprint.races run.footprint || meetsSibling { beside with withdraws := run.withdraws ++ beside.withdraws }
+        completes := true }
 
 end Kernel.Admission.Flow.Concurrency

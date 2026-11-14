@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:tns="urn:bpmn-lean:scenarios:branch-fan-out-order:call-error-caught-inside" id="Definitions_CallBranch" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:call-error-caught-inside">
+  <error id="Error_Fail" errorCode="FAIL" />
+  <process id="Process_CallBranch" isExecutable="true">
+    <startEvent id="Started" />
+    <parallelGateway id="Fork" />
+    <callActivity id="Check" calledElement="tns:Process_Check" />
+    <endEvent id="Checked" />
+    <userTask id="Review" />
+    <endEvent id="Reviewed" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fork" />
+    <sequenceFlow id="Flow_ToCheck" sourceRef="Fork" targetRef="Check" />
+    <sequenceFlow id="Flow_Checked" sourceRef="Check" targetRef="Checked" />
+    <sequenceFlow id="Flow_ToReview" sourceRef="Fork" targetRef="Review" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Review" targetRef="Reviewed" />
+  </process>
+  <process id="Process_Check" isExecutable="true">
+    <startEvent id="CheckStarted" />
+    <subProcess id="Attempt">
+      <startEvent id="AttemptStarted" />
+      <endEvent id="AttemptFailed"><errorEventDefinition errorRef="Error_Fail" /></endEvent>
+      <sequenceFlow id="Flow_AttemptStarted" sourceRef="AttemptStarted" targetRef="AttemptFailed" />
+    </subProcess>
+    <boundaryEvent id="AttemptCaught" attachedToRef="Attempt"><errorEventDefinition errorRef="Error_Fail" /></boundaryEvent>
+    <endEvent id="CheckDone" />
+    <endEvent id="CheckRecovered" />
+    <sequenceFlow id="Flow_CheckStarted" sourceRef="CheckStarted" targetRef="Attempt" />
+    <sequenceFlow id="Flow_Attempted" sourceRef="Attempt" targetRef="CheckDone" />
+    <sequenceFlow id="Flow_Recovered" sourceRef="AttemptCaught" targetRef="CheckRecovered" />
+  </process>
+</definitions>

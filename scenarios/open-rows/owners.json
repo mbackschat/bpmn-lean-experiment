@@ -17,6 +17,9 @@
   "automation-incident-composition": [
     "PC-AUTO-03"
   ],
+  "branch-fan-out-order": [
+    "PC-BASIC-03"
+  ],
   "business-rule-hit-policies": [
     "PC-AUTO-07"
   ],

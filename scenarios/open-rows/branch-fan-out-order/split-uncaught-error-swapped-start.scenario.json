@@ -1,0 +1,29 @@
+{
+  "kind": "scenario",
+  "id": "branch-fan-out-order-split-uncaught-error-swapped-start",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "branch-fan-out-order-split-uncaught-error-swapped",
+    "relativePath": "scenarios/open-rows/branch-fan-out-order/split-uncaught-error-swapped.bpmn",
+    "sha256": "87fce9acbdbefcba3b75b5b82b91d3e68fd20be2e273eb95b1c1c9c08442209c",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 Table 10.88"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

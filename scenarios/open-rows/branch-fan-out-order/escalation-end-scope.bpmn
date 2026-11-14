@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_EscalationEnd" targetNamespace="urn:bpmn-lean:scenarios:branch-fan-out-order:escalation-end-scope">
+  <escalation id="Escalation_Up" escalationCode="UP" />
+  <process id="Process_EscalationEnd" isExecutable="true">
+    <property id="outcome" name="outcome" />
+    <startEvent id="Started" />
+    <userTask id="Fire" />
+    <subProcess id="Region">
+      <startEvent id="RegionStarted" />
+      <endEvent id="Escalated"><escalationEventDefinition escalationRef="Escalation_Up" /></endEvent>
+      <sequenceFlow id="Flow_RegionStarted" sourceRef="RegionStarted" targetRef="Escalated" />
+    </subProcess>
+    <boundaryEvent id="Noticed" attachedToRef="Region" cancelActivity="false"><escalationEventDefinition escalationRef="Escalation_Up" /></boundaryEvent>
+    <subProcess id="Write_Catcher">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">catcher</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="WriteStarted_Catcher" />
+      <endEvent id="WriteEnded_Catcher" />
+      <sequenceFlow id="Flow_WriteInner_Catcher" sourceRef="WriteStarted_Catcher" targetRef="WriteEnded_Catcher" />
+    </subProcess>
+    <subProcess id="Write_Region">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">region</camunda:outputParameter></camunda:inputOutput></extensionElements>
+      <startEvent id="WriteStarted_Region" />
+      <endEvent id="WriteEnded_Region" />
+      <sequenceFlow id="Flow_WriteInner_Region" sourceRef="WriteStarted_Region" targetRef="WriteEnded_Region" />
+    </subProcess>
+    <userTask id="AfterCatch" />
+    <userTask id="Inspect" />
+    <endEvent id="Finished" />
+    <endEvent id="CatchFinished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fire" />
+    <sequenceFlow id="Flow_Fired" sourceRef="Fire" targetRef="Region" />
+    <sequenceFlow id="Flow_RegionDone" sourceRef="Region" targetRef="Write_Region" />
+    <sequenceFlow id="Flow_RegionWrote" sourceRef="Write_Region" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="Finished" />
+    <sequenceFlow id="Flow_Noticed" sourceRef="Noticed" targetRef="Write_Catcher" />
+    <sequenceFlow id="Flow_CatcherWrote" sourceRef="Write_Catcher" targetRef="AfterCatch" />
+    <sequenceFlow id="Flow_AfterCatch" sourceRef="AfterCatch" targetRef="CatchFinished" />
+  </process>
+</definitions>

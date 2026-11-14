@@ -325,16 +325,17 @@ def boundary (options : ProfileOptions) (reading : Reading) (host : Host) (seen 
       .ok { seen with cancel := true }
 
 /-- What a catcher's trigger is read for outside its admission: whether it catches a raised Error, Escalation or Cancel,
-whether that is Cancel, and whether it starts a Compensation Event Sub-Process. What a catch writes is
-`Kernel.catchWrites`'s. -/
+whether that is Cancel, whether it starts a Compensation Event Sub-Process, and the code an Error catch takes, `some
+none` for every code. What a catch writes is `Kernel.catchWrites`'s. -/
 structure CatchView where
   raised : Bool := false
   cancel : Bool := false
   compensation : Bool := false
+  errorCode : Option (Option String) := none
 
 def catchView (subscription : Subscription) : CatchView :=
   match subscription.trigger with
-  | .error _ => { raised := true }
+  | .error trigger => { raised := true, errorCode := some trigger.code }
   | .escalation _ => { raised := true }
   | .cancel => { raised := true, cancel := true }
   | .compensation => { compensation := true }
@@ -342,6 +343,13 @@ def catchView (subscription : Subscription) : CatchView :=
   | .message _ => {}
   | .signal _ => {}
   | .condition _ => {}
+
+/-- Whether a subscription surely takes an Error of `code` (`none`: of any code, which only a catch-all takes). -/
+def catchesError (subscription : Subscription) (code : Option String) : Bool :=
+  match (catchView subscription).errorCode with
+  | some none => true
+  | some (some caught) => code == some caught
+  | none => false
 
 /-- Whether a boundary catches Cancel. -/
 def cancels (boundary : Boundary) : Bool := (catchView boundary.subscription).cancel
