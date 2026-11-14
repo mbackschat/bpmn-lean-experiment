@@ -1,24 +1,15 @@
 module
 
-public import Kernel.Proofs.MultiInstance
+public import Kernel.Proofs.MultiInstance.Framed
 public import Kernel.Proofs.Step
 public import Kernel.Laws.Registry
 
-/-! # Proofs: the Multi-Instance lane's slot invariant beside `WellFormed`
+/-! # Proofs: the Multi-Instance lane's slot invariant under the registered hooks
 
-What the state operations and `Step`'s phases keep of the lane's slot invariant `RunsFormed` but its numbering, which
-reads the occurrences' activations and is a fact of its own (`RunsFramed`): its read set is the Multi-Instance runs,
-the compensation runs, the scope tree with each scope occurrence's owner, and the body occurrences' element and role, so
-a variable write, a queued signal and a journal entry are frames, and so are entering, reserving and issuing, which add
-only what is fresh. Removal keeps it because a body that stays has its scope occurrence outside the removed subtree
-(`Laws.State.Cleared.bodies`), so its body occurrence, which owns that scope occurrence and lies directly above it,
-stays, and so do its instances' scope occurrences, which lie directly below it, but for one the removal leaves itself,
-which `LeavesOwned` excludes: an active instance's scope occurrence is owned by no occurrence and holds no handler.
-Instances lie `Apart` in every well-formed state, so the lane carries `Owned` instead.
-
-Under the registered hooks `WellFormed` and `RunsFramed` (`Framed`) then hold through every committed input, given what
-the Multi-Instance hooks keep of them (`Proofs.Step.MultiInstanceKeeps Framed`): the other feature records follow from
-`WellFormed`'s and `FrameAlongside` (`Proofs.Cancellation.featureOps_frame`). The lane's statements that read the slot
+Under the registered hooks `WellFormed` and the lane's slot invariant but its numbering (`RunsFramed`,
+`Kernel.Proofs.MultiInstance.Framed`) hold through every committed input: the other feature records follow from
+`WellFormed`'s and `FrameAlongside` (`Proofs.Cancellation.featureOps_frame`), and the Multi-Instance hooks keep it by
+what `Laws.MultiInstance` proves each does (`multiInstanceKeeps_framed`). The lane's statements that read the slot
 invariant whole follow from what the numbering lane supplies (`NumberingKept`), `RunsFramed.formed` composing the two.
 The module imports the registry's Laws module because it composes the registered hooks, and so stays in every feature's
 rebuild cone (guard 15). Nothing executable imports this module.
@@ -29,373 +20,468 @@ rebuild cone (guard 15). Nothing executable imports this module.
 namespace Kernel.Proofs.MultiInstance
 
 open Kernel
-open Kernel.Laws.State (WellFormed Within StrictlyWithin scopeIds)
+open Kernel.Laws.State (WellFormed Within scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
-  InstancesPlaced BeginsQueued SequentialSlots ParallelSlots OutputsFit)
-open Kernel.Proofs.Cancellation (FrameAlongside StepAlongside Unmoved LeavesOwned StoresHeldOrFresh RunningContext
-  ActiveInstance phases_alongside featureOps_frame)
+  InstancesPlaced BeginsQueued SequentialSlots OutputsFit)
+open Kernel.Proofs.Cancellation (phases_alongside featureOps_frame)
 
-/-- `Shaped` but the numbering: a running body's slots shaped by its loop's mode, its filled slots holding what its
-instances submitted. -/
-def SlotsShaped (run : MultiInstanceRun) (loop : MultiInstance) : Prop :=
-  (loop.mode = .sequential → SequentialSlots run) ∧ (loop.mode = .parallel → ParallelSlots run) ∧ OutputsFit run loop
+/-! ## What the Multi-Instance hooks keep
 
-/-- `RunFormed` but the numbering and `Apart`, which every well-formed state gives of `Owned` (`owned_apart`). -/
-structure RunFramed (program : Program) (s : State) (run : MultiInstanceRun) : Prop where
+A hook sets a body's slot record (`MultiInstance.setRun`) after entering and queuing its instances, which adds only
+fresh scope occurrences (`Laws.MultiInstance.Begun`), or after leaving a completed instance's scope occurrence
+(`Laws.MultiInstance.leftWith`). The record it sets keeps what `RunPlaced` asks of the one it replaces, since an opened
+slot is active in a scope occurrence entered for it below the body's (`Laws.MultiInstance.EnteredFor`), and the slot
+shapes of its loop's mode, since a sequential body opens a slot only while none is active and then the first waiting one
+(`Laws.MultiInstance.opening_idle`). -/
+
+/-- `RunFramed` but the slot shapes, which an opening changes by the loop's mode (`opens_shaped`). -/
+structure RunPlaced (s : State) (run : MultiInstanceRun) : Prop where
   owned : Owned s run
-  shaped : ∀ loop, LoopOf program run.element loop → SlotsShaped run loop
   bodyOwns : BodyOwns s run
   unowned : InstancesUnowned s run
   unheld : InstancesUnheld s run
 
-/-- `RunsFormed` but the numbering and `Apart`: one running body per body occurrence, each `RunFramed`. -/
-structure RunsFramed (program : Program) (s : State) : Prop where
-  keyed : RunsKeyed s
-  framed : ∀ run ∈ s.slots.multiInstances, RunFramed program s run
+/-- `RunFramed` but the slot shapes. -/
+theorem RunFramed.placed {program : Program} {s : State} {run : MultiInstanceRun} (framed : RunFramed program s run) :
+    RunPlaced s run :=
+  ⟨framed.owned, framed.bodyOwns, framed.unowned, framed.unheld⟩
 
-/-- A running body's instances lie `Apart` in a well-formed state: their scope occurrences are distinct children of
-the body's. -/
-theorem owned_apart {program : Program} {s : State} {run : MultiInstanceRun} (formed : WellFormed program s)
-    (owned : Owned s run) : Apart s run := by
-  intro first second firstScope secondScope one two differs within
-  obtain ⟨firstEntry, firstMember, firstNamed, firstLink⟩ := owned.instanceScopes first firstScope one
-  obtain ⟨secondEntry, secondMember, secondNamed, secondLink⟩ := owned.instanceScopes second secondScope two
-  have other : firstEntry.id ≠ secondEntry.id := fun same => by
-    rw [firstNamed, secondNamed] at same
-    exact differs (owned.ownScopes first second firstScope one (same ▸ two))
-  rw [← firstNamed, ← secondNamed] at within
-  exact Laws.State.sibling_outside formed secondMember firstMember secondLink firstLink other within
+/-- `RunPlaced` with the slot shapes of every loop the body's element carries. -/
+theorem RunPlaced.framed {program : Program} {s : State} {run : MultiInstanceRun} (placed : RunPlaced s run)
+    (shaped : ∀ loop, LoopOf program run.element loop → SlotsShaped run loop) : RunFramed program s run :=
+  ⟨placed.owned, shaped, placed.bodyOwns, placed.unowned, placed.unheld⟩
 
-/-- The lane's slot invariant without its numbering. -/
-theorem RunsFormed.framed {program : Program} {s : State} (formed : RunsFormed program s) : RunsFramed program s :=
-  ⟨formed.keyed, fun run member =>
-    have each := formed.formed run member
-    ⟨each.owned, fun loop looped => ⟨(each.shaped loop looped).1, (each.shaped loop looped).2.1,
-      (each.shaped loop looped).2.2.1⟩, each.bodyOwns, each.unowned, each.unheld⟩⟩
+/-- `RunPlaced` reads only the scope occurrences, the occurrences and the compensation runs. -/
+theorem RunPlaced.transport {s t : State} {run : MultiInstanceRun} (placed : RunPlaced s run)
+    (scopes : t.scopes = s.scopes) (occurrences : t.occurrences = s.occurrences)
+    (runs : t.slots.compensation.runs = s.slots.compensation.runs) : RunPlaced t run := by
+  refine ⟨⟨occurrences ▸ placed.owned.body, by rw [scopes]; exact placed.owned.bodyScope,
+    fun index scope slot => scopes ▸ placed.owned.instanceScopes index scope slot, placed.owned.ownScopes⟩,
+    fun entry inside named => placed.bodyOwns entry (scopes ▸ inside) named,
+    fun scope active entry inside named => placed.unowned scope active entry (scopes ▸ inside) named,
+    fun scope active other held => placed.unheld scope active other (runs ▸ held)⟩
 
-/-- The lane's slot invariant of a well-formed state from its part without numbering, the numbering and identity of
-each running body's instances, and the instance begins still queued. -/
-theorem RunsFramed.formed {program : Program} {s : State} (well : WellFormed program s) (framed : RunsFramed program s)
-    (numbered : (∀ run ∈ s.slots.multiInstances, NumberedInOrder s run ∧ InstancesPlaced s run) ∧
-      BeginsQueued program s) : RunsFormed program s :=
-  ⟨framed.keyed, fun run member =>
-    have each := framed.framed run member
-    ⟨each.owned, fun loop looped => ⟨(each.shaped loop looped).1, (each.shaped loop looped).2.1,
-      (each.shaped loop looped).2.2, (numbered.1 run member).1⟩, owned_apart well each.owned, each.bodyOwns, each.unowned,
-      each.unheld, (numbered.1 run member).2⟩, numbered.2⟩
+/-- Setting a body's slot record that keeps what `RunFramed` asks of it, in a state with one record per body
+occurrence whose records of other occurrences keep it, keeps the invariant. -/
+theorem setRun_framed {program : Program} {s : State} {next : MultiInstanceRun} (keyed : RunsKeyed s)
+    (others : ∀ run ∈ s.slots.multiInstances, run.occurrence ≠ next.occurrence → RunFramed program s run)
+    (fresh : RunFramed program s next) : RunsFramed program (Feature.MultiInstance.setRun s next) := by
+  have same := Laws.MultiInstance.setRun_eq s next
+  have move : ∀ {run}, RunFramed program s run → RunFramed program (Feature.MultiInstance.setRun s next) run :=
+    fun each => (each.placed.transport (by rw [same]) (by rw [same]) (by rw [same])).framed each.shaped
+  refine ⟨Laws.MultiInstance.setRun_keyed keyed next, fun run member => ?_⟩
+  rcases Laws.MultiInstance.mem_setRun member with ⟨held, differs⟩ | rfl
+  · exact move (others run held differs)
+  · exact move fresh
 
-/-! ## Carrying the invariant -/
-
-/-- What `t` keeps of what `RunsFramed` reads of `s`: no new body, each body occurrence of a body that stays, the scope
-occurrences of `s` or fresh ones, a staying body's own and instances' scope occurrences, and running compensation
-contexts held before or fresh. -/
-structure Carries (s t : State) : Prop where
-  bodies : t.slots.multiInstances.Sublist s.slots.multiInstances
-  occurrences : ∀ run ∈ t.slots.multiInstances, ∀ o ∈ s.occurrences, o.id = run.occurrence →
-    ∃ kept ∈ t.occurrences, kept.id = o.id ∧ kept.element = o.element ∧ kept.role = o.role
-  fresh : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ entry.id ∉ scopeIds s
-  scopes : ∀ run ∈ t.slots.multiInstances, ∀ entry ∈ s.scopes,
-    (entry.id = run.scope ∨ Iteration.active entry.id ∈ run.instances) → entry ∈ t.scopes
-  runs : StoresHeldOrFresh s t.slots.compensation
-
-/-- What `Carries` keeps. -/
-theorem RunsFramed.carry {program : Program} {s t : State} (framed : RunsFramed program s) (carries : Carries s t) :
-    RunsFramed program t := by
-  refine ⟨carries.bodies.map _ |>.nodup framed.keyed, fun run member => ?_⟩
-  have each := framed.framed run (carries.bodies.subset member)
-  have bodyIn : run.scope ∈ scopeIds s := each.owned.bodyScope
-  have activeIn : ∀ scope, Iteration.active scope ∈ run.instances → scope ∈ scopeIds s := fun scope active => by
-    obtain ⟨index, slot⟩ := List.mem_iff_getElem?.mp active
-    obtain ⟨entry, inside, named, _⟩ := each.owned.instanceScopes index scope slot
-    exact List.mem_map.mpr ⟨entry, inside, named⟩
-  have entryOf : ∀ entry ∈ t.scopes, entry.id ∈ scopeIds s → entry ∈ s.scopes := fun entry inside known =>
-    (carries.fresh entry inside).resolve_right fun fresh => fresh known
-  refine ⟨⟨?_, ?_, fun index scope slot => ?_, each.owned.ownScopes⟩, each.shaped, fun entry inside named => ?_,
-    fun scope active entry inside named => ?_, fun scope active other held running => ?_⟩
-  · obtain ⟨o, present, named, rest⟩ := each.owned.body
-    obtain ⟨kept, keptIn, keptId, same⟩ := carries.occurrences run member o present named
-    exact ⟨kept, keptIn, keptId.trans named, same.1.trans rest.1, same.2.trans rest.2⟩
-  · obtain ⟨entry, inside, named⟩ := List.mem_map.mp bodyIn
-    exact List.mem_map.mpr ⟨entry, carries.scopes run member entry inside (.inl named), named⟩
-  · obtain ⟨entry, inside, named, link⟩ := each.owned.instanceScopes index scope slot
-    exact ⟨entry, carries.scopes run member entry inside (.inr (named ▸ List.mem_of_getElem? slot)), named, link⟩
-  · exact each.bodyOwns entry (entryOf entry inside (named ▸ bodyIn)) named
-  · exact each.unowned scope active entry (entryOf entry inside (named ▸ activeIn scope active)) named
-  · rcases carries.runs other held scope running with ⟨older, olderIn, olderRunning⟩ | fresh
-    · exact each.unheld scope active older olderIn olderRunning
-    · exact fresh ⟨run, carries.bodies.subset member, active⟩
-
-/-- Every context the compensation runs of `s` hold running is one of `s`'s. -/
-theorem StoresHeldOrFresh.self (s : State) : StoresHeldOrFresh s s.slots.compensation :=
-  fun run member _ running => .inl ⟨run, member, running⟩
-
-/-- A change that keeps the scope occurrences, the bodies and the compensation runs and keeps each body occurrence
-carries the invariant. -/
-theorem Carries.same {s t : State} (scopes : t.scopes = s.scopes) (bodies : t.slots.multiInstances = s.slots.multiInstances)
-    (runs : t.slots.compensation.runs = s.slots.compensation.runs)
-    (occurrences : ∀ o ∈ s.occurrences, o.begun = true → o ∈ t.occurrences) (settled : ∀ run ∈ s.slots.multiInstances,
-      ∀ o ∈ s.occurrences, o.id = run.occurrence → o.begun = true) : Carries s t where
-  bodies := bodies ▸ .refl _
-  occurrences run member o present named := ⟨o, occurrences o present (settled run (bodies ▸ member) o present named), rfl,
-    rfl, rfl⟩
-  fresh _ inside := .inl (scopes ▸ inside)
-  scopes _ _ _ inside _ := scopes ▸ inside
-  runs run member _ running := .inl ⟨run, runs ▸ member, running⟩
-
-/-- Every body occurrence of a well-formed state has begun. -/
-theorem bodies_begun {program : Program} {s : State} (formed : WellFormed program s) :
-    ∀ run ∈ s.slots.multiInstances, ∀ o ∈ s.occurrences, o.id = run.occurrence → o.begun = true :=
-  fun run member o present named => (formed.settled.bodies run member).2.1 o present named
-
-/-- A change that adds only fresh scope occurrences and keeps every occurrence, the bodies and the compensation runs
-carries the invariant. -/
-theorem Carries.grow {s t : State} (scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ entry.id ∉ scopeIds s)
-    (kept : ∀ entry ∈ s.scopes, entry ∈ t.scopes) (bodies : t.slots.multiInstances = s.slots.multiInstances)
-    (runs : t.slots.compensation.runs = s.slots.compensation.runs) (occurrences : ∀ o ∈ s.occurrences, o ∈ t.occurrences) :
-    Carries s t where
-  bodies := bodies ▸ .refl _
-  occurrences _ _ o present _ := ⟨o, occurrences o present, rfl, rfl, rfl⟩
-  fresh := scopes
-  scopes _ _ entry inside _ := kept entry inside
-  runs run member _ running := .inl ⟨run, runs ▸ member, running⟩
-
-/-- A change that keeps everything `RunsFramed` reads carries it. -/
-theorem Carries.equal {s t : State} (scopes : t.scopes = s.scopes) (occurrences : t.occurrences = s.occurrences)
-    (bodies : t.slots.multiInstances = s.slots.multiInstances)
-    (runs : t.slots.compensation.runs = s.slots.compensation.runs) : Carries s t :=
-  .grow (fun _ inside => .inl (scopes ▸ inside)) (fun _ inside => scopes ▸ inside) bodies runs
-    fun _ present => occurrences ▸ present
-
-/-- No scope occurrence of a well-formed state carries the identity at its counter. -/
-theorem counter_fresh {program : Program} {s : State} (formed : WellFormed program s) :
-    (⟨s.nextIssue⟩ : ScopeOccurrenceId) ∉ scopeIds s := fun inside => by
+/-- No scope occurrence of a well-formed state carries an identity at or above its counter. -/
+theorem issued_fresh {program : Program} {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId}
+    (fresh : s.nextIssue ≤ scope.value) : scope ∉ scopeIds s := fun inside => by
   obtain ⟨entry, member, named⟩ := List.mem_map.mp inside
   have below := formed.issued.scopes entry member
   rw [named] at below
-  exact Nat.lt_irrefl _ below
+  omega
 
-/-! ## What removal keeps -/
+/-- Entering and queuing a body's instances keeps the invariant: they add only fresh scope occurrences and keep every
+occurrence, scope occurrence and slot. -/
+theorem begun_framed {program : Program} {inv : State → Prop} {settled : State → Nat → Prop} {ctx : Ctx}
+    {loop : MultiInstance} {state queued : State} {run : MultiInstanceRun} {instances : List Iteration}
+    (formed : WellFormed program state) (framed : RunsFramed program state)
+    (begun : Laws.MultiInstance.Begun inv settled ctx loop state run queued instances) : RunsFramed program queued :=
+  framed.carry (.grow (fun entry inside => (begun.scopes entry inside).imp_right (issued_fresh formed)) begun.kept
+    (congrArg (·.multiInstances) begun.slots) (congrArg (·.compensation.runs) begun.slots)
+    fun _ present => begun.occurrences ▸ present)
 
-/-- A running body whose scope occurrence lies outside `scope` has its body occurrence outside it, since that occurrence
-owns the body's scope occurrence directly above it, and each of its instances' scope occurrences inside `scope` is
-`scope` itself, since it lies directly below the body's. -/
-theorem outside_body {program other : Program} {s : State} {run : MultiInstanceRun} (formed : WellFormed program s)
-    (framed : RunFramed other s run) {scope : ScopeOccurrenceId} (outside : ¬ Within s run.scope scope) :
-    (∀ o ∈ s.occurrences, o.id = run.occurrence → ¬ Within s o.scope scope) ∧
-      ∀ entry ∈ s.scopes, Iteration.active entry.id ∈ run.instances → Within s entry.id scope → entry.id = scope := by
-  obtain ⟨body, bodyIn, bodyNamed⟩ := List.mem_map.mp framed.owned.bodyScope
-  refine ⟨fun o present named within => outside ?_, fun entry inside active within => ?_⟩
-  · have owned := framed.bodyOwns body bodyIn bodyNamed
-    have link := formed.ownedBelow body bodyIn o present (by rw [owned, named])
-    exact bodyNamed ▸ Within.parent body o.scope scope bodyIn link within
+/-- The slot record entering and queuing a body's instances sets keeps what `RunPlaced` asks of the one it opens. -/
+theorem begun_placed {program : Program} {inv : State → Prop} {settled : State → Nat → Prop} {ctx : Ctx}
+    {loop : MultiInstance} {state queued : State} {run : MultiInstanceRun} {instances : List Iteration}
+    (formed : WellFormed program state) (begun : Laws.MultiInstance.Begun inv settled ctx loop state run queued instances)
+    (placed : RunPlaced state run) : RunPlaced queued { run with instances } := by
+  have opens := begun.opens
+  have old : ∀ scope, scope ∈ scopeIds state → ∀ entry ∈ queued.scopes, entry.id = scope → entry ∈ state.scopes :=
+    fun _ known entry inside named =>
+      (begun.scopes entry inside).resolve_right fun fresh => issued_fresh formed fresh (named ▸ known)
+  have activeOld : ∀ scope, Iteration.active scope ∈ run.instances → scope ∈ scopeIds state := fun scope active => by
+    obtain ⟨index, slot⟩ := List.mem_iff_getElem?.mp active
+    obtain ⟨entry, inside, named, _⟩ := placed.owned.instanceScopes index scope slot
+    exact List.mem_map.mpr ⟨entry, inside, named⟩
+  have slotOf : ∀ (index : Nat) (scope : ScopeOccurrenceId), instances[index]? = some (.active scope) →
+      Laws.MultiInstance.EnteredFor queued run scope ∨ run.instances[index]? = some (.active scope) := by
+    intro index scope slot
+    by_cases inside : index ∈ Feature.MultiInstance.opening loop.mode run.instances
+    · obtain ⟨found, slot', entered⟩ := opens.opened index inside
+      have same : instances[index]? = some (.active found) := slot'
+      rw [slot] at same
+      obtain rfl := Iteration.active.inj (Option.some.inj same)
+      exact .inl entered
+    · exact .inr ((opens.unopened index inside).symm.trans slot)
+  refine ⟨⟨?_, ?_, fun index scope slot => ?_, fun first second scope one two => ?_⟩, fun entry inside named =>
+    placed.bodyOwns entry (old run.scope placed.owned.bodyScope entry inside named) named,
+    fun scope active entry inside named => ?_, fun scope active other held => ?_⟩
+  · obtain ⟨o, present, named, rest⟩ := placed.owned.body
+    exact ⟨o, begun.occurrences ▸ present, named, rest⟩
+  · obtain ⟨entry, inside, named⟩ := List.mem_map.mp placed.owned.bodyScope
+    exact List.mem_map.mpr ⟨entry, begun.kept entry inside, named⟩
+  · rcases slotOf index scope slot with entered | earlier
+    · obtain ⟨entry, inside, named⟩ := List.mem_map.mp entered.1
+      exact ⟨entry, inside, named, (entered.2.1 entry inside named).1⟩
+    · obtain ⟨entry, inside, named, link⟩ := placed.owned.instanceScopes index scope earlier
+      exact ⟨entry, begun.kept entry inside, named, link⟩
+  · by_cases opened : first ∈ Feature.MultiInstance.opening loop.mode run.instances
+    · exact opens.apart first second scope opened one two
+    · by_cases other : second ∈ Feature.MultiInstance.opening loop.mode run.instances
+      · exact (opens.apart second first scope other two one).symm
+      · exact placed.owned.ownScopes first second scope ((opens.unopened first opened).symm.trans one)
+          ((opens.unopened second other).symm.trans two)
   · obtain ⟨index, slot⟩ := List.mem_iff_getElem?.mp active
-    obtain ⟨placed, placedIn, placedNamed, placedLink⟩ := framed.owned.instanceScopes index entry.id slot
-    obtain rfl := Laws.State.scope_unique formed.distinct placedIn inside placedNamed
-    rcases Proofs.Cancellation.Within.up within with same | ⟨child, childIn, childNamed, rest⟩
-    · exact same
-    · obtain ⟨_, link, above⟩ := rest
-      obtain rfl := Laws.State.scope_unique formed.distinct childIn placedIn childNamed
-      rw [placedLink] at link
-      cases link
-      exact absurd above outside
+    rcases slotOf index scope slot with entered | earlier
+    · exact (entered.2.1 entry inside named).2
+    · have was := List.mem_of_getElem? earlier
+      exact placed.unowned scope was entry (old scope (activeOld scope was) entry inside named) named
+  · obtain ⟨index, slot⟩ := List.mem_iff_getElem?.mp active
+    rcases slotOf index scope slot with entered | earlier
+    · exact entered.2.2.1 other held
+    · exact placed.unheld scope (List.mem_of_getElem? earlier) other (begun.slots ▸ held)
 
-/-- The bodies a clearing of `scope` keeps are those whose scope occurrence lies outside it. -/
-theorem cleared_bodies {program : Program} {s t : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId}
-    (present : scope ∈ scopeIds s) {keep : List Nat} (cleared : Laws.State.Cleared s t scope keep) :
-    t.slots.multiInstances.Sublist s.slots.multiInstances ∧
-      ∀ run ∈ t.slots.multiInstances, ¬ Within s run.scope scope := by
-  rw [cleared.bodies]
-  refine ⟨List.filter_sublist, fun run member within => ?_⟩
-  have outside := (List.mem_filter.mp member).2
-  simp only [Bool.not_eq_true'] at outside
-  have inside := (Laws.State.subtree_iff formed present _).mpr within
-  rw [List.contains_iff_mem.mpr inside] at outside
-  cases outside
+/-- A sequential body's slots split at its running instance: every slot before it is filled, every one after it waits,
+and a slot active in the running instance's scope occurrence is the one after the filled ones. -/
+theorem sequential_split {run : MultiInstanceRun} {index : Nat} {scope : ScopeOccurrenceId}
+    (shaped : SequentialSlots run) (slot : run.instances[index]? = some (.active scope)) :
+    ∃ filled waiting, run.instances = filled ++ .active scope :: waiting ∧ index = filled.length ∧
+      (∀ slot ∈ filled, ∃ output, slot = .completed output) ∧ ∀ slot ∈ waiting, slot = .waiting := by
+  obtain ⟨filled, current, ⟨waiting, split, rest⟩⟩ := shaped
+  obtain ⟨done, short, _, idle⟩ := rest
+  have found := slot
+  rw [split] at found
+  have notFilled : ¬ index < filled.length := fun lower => by
+    rw [List.append_assoc, List.getElem?_append_left lower] at found
+    obtain ⟨output, same⟩ := done _ (List.mem_of_getElem? found)
+    cases same
+  have notWaiting : ¬ filled.length + current.length ≤ index := fun upper => by
+    rw [List.getElem?_append_right (by simpa using upper)] at found
+    cases idle _ (List.mem_of_getElem? found)
+  rcases current with _ | ⟨only, _ | ⟨extra, more⟩⟩
+  · simp at notWaiting
+    omega
+  · have at_ : index = filled.length := by simp at notWaiting; omega
+    subst at_
+    rw [List.append_assoc, List.getElem?_append_right (Nat.le_refl _)] at found
+    simp at found
+    subst found
+    exact ⟨filled, waiting, by simp [split], rfl, done, idle⟩
+  · simp at short
 
-/-- Leaving a scope occurrence that stands and is owned or a running compensation context carries the invariant. -/
-theorem leaveScope_carries {program other : Program} {s : State} {scope : ScopeOccurrenceId}
-    (formed : WellFormed program s) (present : scope ∈ scopeIds s) (leaves : LeavesOwned s scope)
-    (framed : RunsFramed other s) :
-    Carries s (s.leaveScope scope) := by
+/-- The slot record an opening sets has the slot shapes of its loop's mode, from a record that had a sequential body's
+shape, and keeps the filled slots' outputs. -/
+theorem opens_shaped {s : State} {base next : MultiInstanceRun} {loop : MultiInstance}
+    (opens : Laws.MultiInstance.Opens s base next loop) (sequential : loop.mode = .sequential → SequentialSlots base)
+    (fits : OutputsFit base loop) : SlotsShaped next loop := by
+  have slotOf : ∀ (index : Nat) (slot : Iteration), next.instances[index]? = some slot →
+      (∃ scope, slot = .active scope) ∨
+        (index ∉ Feature.MultiInstance.opening loop.mode base.instances ∧ base.instances[index]? = some slot) := by
+    intro index slot found
+    by_cases inside : index ∈ Feature.MultiInstance.opening loop.mode base.instances
+    · obtain ⟨scope, slot', _⟩ := opens.opened index inside
+      rw [found] at slot'
+      exact .inl ⟨scope, Option.some.inj slot'⟩
+    · exact .inr ⟨inside, (opens.unopened index inside).symm.trans found⟩
+  refine ⟨fun mode => ?_, fun mode slot member => ?_, fun output member => ?_⟩
+  · have unopened := opens.unopened
+    rw [mode] at unopened
+    have same : (∀ index, index ∉ Feature.MultiInstance.opening .sequential base.instances) →
+        next.instances = base.instances := fun none => List.ext_getElem? fun index => unopened index (none index)
+    by_cases running : ∃ scope, Iteration.active scope ∈ base.instances
+    · have equal := same fun index inside => by simp [Laws.MultiInstance.opening_running running] at inside
+      obtain ⟨filled, current, ⟨waiting, split, rest⟩⟩ := sequential mode
+      exact ⟨filled, current, waiting, equal.trans split, rest⟩
+    · have idle : ∀ scope, Iteration.active scope ∉ base.instances := fun scope active => running ⟨scope, active⟩
+      obtain ⟨filled, current, ⟨waiting, split, rest⟩⟩ := sequential mode
+      obtain ⟨done, _, active, waits⟩ := rest
+      have noCurrent : current = [] := List.eq_nil_iff_forall_not_mem.mpr fun slot inside => by
+        obtain ⟨scope, rfl⟩ := active slot inside
+        exact idle scope (by rw [split]; simp [inside])
+      subst noCurrent
+      simp only [List.append_nil] at split
+      have notWaiting : ∀ (index : Nat) (slot : Iteration), filled[index]? = some slot → slot ≠ .waiting := fun index slot found same => by
+        obtain ⟨output, rfl⟩ := done slot (List.mem_of_getElem? found)
+        cases same
+      rcases waiting with _ | ⟨first, rest⟩
+      · have equal := same fun index inside => by
+          have waiting := ((Laws.MultiInstance.opening_idle idle).mp inside).1
+          rw [split, List.append_nil] at waiting
+          exact notWaiting index _ waiting rfl
+        exact ⟨filled, [], [], equal.trans (by rw [split]; simp), done, by simp, by simp, by simp⟩
+      · have first_eq : first = .waiting := waits first (List.mem_cons_self ..)
+        subst first_eq
+        have opened : filled.length ∈ Feature.MultiInstance.opening .sequential base.instances :=
+          (Laws.MultiInstance.opening_idle idle).mpr ⟨by rw [split]; simp, fun earlier lower found => by
+            rw [split, List.getElem?_append_left lower] at found
+            exact notWaiting earlier _ found rfl⟩
+        have onlyOne : ∀ index ∈ Feature.MultiInstance.opening .sequential base.instances, index = filled.length := by
+          intro index inside
+          obtain ⟨waiting, least⟩ := (Laws.MultiInstance.opening_idle idle).mp inside
+          rcases Nat.lt_trichotomy index filled.length with lower | equal | upper
+          · rw [split, List.getElem?_append_left lower] at waiting
+            exact (notWaiting index _ waiting rfl).elim
+          · exact equal
+          · exact (least filled.length upper (by rw [split]; simp)).elim
+        obtain ⟨scope, slot, _⟩ := opens.opened filled.length (by rw [mode]; exact opened)
+        have below : filled.length < base.instances.length := by rw [split]; simp
+        refine ⟨filled, [.active scope], rest, ?_, done, by simp, by simp, fun slot inside => waits slot
+          (List.mem_cons_of_mem _ inside)⟩
+        have set : next.instances = base.instances.set filled.length (.active scope) := by
+          refine List.ext_getElem? fun index => ?_
+          by_cases at_ : index = filled.length
+          · subst at_
+            rw [List.getElem?_set_self below]
+            exact slot
+          · rw [List.getElem?_set_ne (Ne.symm at_)]
+            exact unopened index fun inside => at_ (onlyOne index inside)
+        rw [set, split]
+        simp
+  · obtain ⟨index, found⟩ := List.mem_iff_getElem?.mp member
+    rcases slotOf index slot found with ⟨scope, rfl⟩ | ⟨outside, earlier⟩
+    · exact fun same => by cases same
+    · intro same
+      subst same
+      rw [mode] at outside
+      exact outside (Laws.MultiInstance.opening_parallel.mpr earlier)
+  · obtain ⟨index, found⟩ := List.mem_iff_getElem?.mp member
+    rcases slotOf index _ found with ⟨scope, same⟩ | ⟨_, earlier⟩
+    · cases same
+    · have collection : next.collection = base.collection := by rw [opens.kept]
+      exact collection ▸ fits output (List.mem_of_getElem? earlier)
+
+/-- The slot record an instance's completion sets keeps the slot shapes of its loop's mode: a sequential body's running
+slot becomes its last filled one. -/
+theorem recorded_shaped {program : Program} {run : MultiInstanceRun} {loop : MultiInstance} {index : Nat}
+    {scope : ScopeOccurrenceId} {output : Option Value} {results : List String} (shaped : SlotsShaped run loop)
+    (slot : run.instances[index]? = some (.active scope)) (fresh : Laws.MultiInstance.OutputFits program run output)
+    (looped : LoopOf program run.element loop) :
+    SlotsShaped (Laws.MultiInstance.recorded run index output results) loop := by
+  refine ⟨fun mode => ?_, fun mode slot member same => ?_, recorded_fits shaped.2.2 fresh looped⟩
+  · obtain ⟨filled, waiting, ⟨split, at_, ⟨done, waits⟩⟩⟩ := sequential_split (shaped.1 mode) slot
+    refine ⟨filled ++ [.completed output], [], waiting, ?_, fun slot inside => ?_, by simp, by simp, waits⟩
+    · show run.instances.set index (.completed output) = _
+      rw [split, at_]
+      simp
+    · rcases List.mem_append.mp inside with old | new
+      · exact done slot old
+      · exact ⟨output, List.mem_singleton.mp new⟩
+  · subst same
+    rcases List.mem_or_eq_of_mem_set member with old | new
+    · exact shaped.2.1 mode _ old rfl
+    · cases new
+
+/-- Leaving an active instance's scope occurrence and recording its slot with an output that fits keeps the invariant:
+the body stays outside the left scope occurrence, which lies directly below its own, and so do its other instances,
+which are siblings of the left one; a body of another occurrence has no instance there, since an instance's scope
+occurrence lies directly below one body scope occurrence, which one body occurrence owns. -/
+theorem leftWith_framed {program : Program} {s : State} {run : MultiInstanceRun} {index : Nat}
+    {scope : ScopeOccurrenceId} {output : Option Value} {results : List String} (formed : WellFormed program s)
+    (framed : RunsFramed program s) (member : run ∈ s.slots.multiInstances)
+    (slot : run.instances[index]? = some (.active scope)) (fits : Laws.MultiInstance.OutputFits program run output) :
+    RunsFramed program (Laws.MultiInstance.leftWith s scope (Laws.MultiInstance.recorded run index output results)) := by
+  have each := framed.framed run member
+  obtain ⟨placed, placedIn, placedNamed, placedLink⟩ := each.owned.instanceScopes index scope slot
+  have present : scope ∈ scopeIds s := List.mem_map.mpr ⟨placed, placedIn, placedNamed⟩
+  have away : ¬ Within s run.scope scope := placedNamed ▸ Laws.State.parent_not_within formed placedIn placedLink
   have left := Laws.State.leaveScope_left formed present
-  obtain ⟨_, bodiesEq, runsEq⟩ := Laws.State.leaveScope_slots s scope
-  obtain ⟨fewer, outside⟩ := cleared_bodies formed present (Laws.State.clearInside_cleared formed present [])
-  rw [← bodiesEq] at fewer outside
-  refine ⟨fewer, fun run member o inside named => ⟨o, (left.occurrences o).mpr ⟨inside,
-    (outside_body formed (framed.framed run (fewer.subset member)) (outside run member)).1 o inside named⟩, rfl, rfl,
-    rfl⟩, fun _ inside => .inl (left.scopesSublist.subset inside), fun run member entry inside which => ?_,
-    fun other member _ running => .inl ⟨other, left.slots.runs other member, running⟩⟩
-  have each := framed.framed run (fewer.subset member)
-  refine (left.scopes entry).mpr ⟨inside, fun within => ?_⟩
-  rcases which with named | active
-  · exact outside run member (named ▸ within)
-  · have same := (outside_body formed each (outside run member)).2 entry inside active within
-    rcases leaves with ⟨owned, ownedIn, ownedNamed, rest⟩ | ⟨holder, holderIn, running⟩
-    · obtain ⟨owner, owns⟩ := rest
-      obtain rfl := Laws.State.scope_unique formed.distinct ownedIn inside (ownedNamed.trans same.symm)
-      rw [each.unowned owned.id active owned ownedIn rfl] at owns
-      cases owns
-    · exact each.unheld entry.id active holder holderIn (same ▸ running)
+  obtain ⟨_, bodiesEq, _⟩ := Laws.State.leaveScope_slots s scope
+  obtain ⟨fewer, _⟩ := cleared_bodies formed present (Laws.State.clearInside_cleared formed present [])
+  rw [← bodiesEq] at fewer
+  have entryOf : ∀ entry ∈ (s.leaveScope scope).scopes, entry ∈ s.scopes := fun _ inside =>
+    left.scopesSublist.subset inside
+  have others : ∀ other ∈ (s.leaveScope scope).slots.multiInstances,
+      other.occurrence ≠ (Laws.MultiInstance.recorded run index output results).occurrence →
+      RunFramed program (s.leaveScope scope) other := by
+    intro other inside differs
+    refine leaveScope_framed formed present framed inside fun active => differs ?_
+    obtain ⟨at_, found⟩ := List.mem_iff_getElem?.mp active
+    have theirs := framed.framed other (fewer.subset inside)
+    obtain ⟨entry, entryIn, entryNamed, entryLink⟩ := theirs.owned.instanceScopes at_ scope found
+    obtain rfl := Laws.State.scope_unique formed.distinct entryIn placedIn (entryNamed.trans placedNamed.symm)
+    rw [placedLink] at entryLink
+    obtain ⟨body, bodyIn, bodyNamed⟩ := List.mem_map.mp each.owned.bodyScope
+    have mine := each.bodyOwns body bodyIn bodyNamed
+    rw [theirs.bodyOwns body bodyIn (bodyNamed.trans (Option.some.inj entryLink))] at mine
+    exact Option.some.inj mine
+  refine setRun_framed (fewer.map _ |>.nodup framed.keyed) others ?_
+  have notHere : ∀ (other : Nat) (found : ScopeOccurrenceId),
+      (Laws.MultiInstance.recorded run index output results).instances[other]? = some (.active found) →
+      other ≠ index ∧ run.instances[other]? = some (.active found) := fun other found active => by
+    have differs : other ≠ index := fun same => by
+      rw [same, show (Laws.MultiInstance.recorded run index output results).instances =
+        run.instances.set index (.completed output) from rfl,
+        List.getElem?_set_self (List.getElem?_eq_some_iff.mp slot).1] at active
+      cases active
+    exact ⟨differs, by
+      rw [show (Laws.MultiInstance.recorded run index output results).instances =
+        run.instances.set index (.completed output) from rfl, List.getElem?_set_ne (Ne.symm differs)] at active
+      exact active⟩
+  have activeOf : ∀ found, Iteration.active found ∈ (Laws.MultiInstance.recorded run index output results).instances →
+      Iteration.active found ∈ run.instances := fun found active => by
+    obtain ⟨other, at_⟩ := List.mem_iff_getElem?.mp active
+    exact List.mem_of_getElem? (notHere other found at_).2
+  refine ⟨⟨?_, ?_, fun other found active => ?_, fun first second found one two => ?_⟩, fun loop looped =>
+    recorded_shaped (each.shaped loop looped) slot fits looped, fun entry inside named => each.bodyOwns entry
+    (entryOf entry inside) named, fun found active entry inside named => each.unowned found (activeOf found active)
+    entry (entryOf entry inside) named, fun found active holder held => each.unheld found (activeOf found active) holder
+    (left.slots.runs holder held)⟩
+  · obtain ⟨o, stands, named, rest⟩ := each.owned.body
+    exact ⟨o, (left.occurrences o).mpr ⟨stands, (outside_body formed each away).1 o stands named⟩, named, rest⟩
+  · obtain ⟨entry, inside, named⟩ := List.mem_map.mp each.owned.bodyScope
+    exact List.mem_map.mpr ⟨entry, (left.scopes entry).mpr ⟨inside, fun within => away (named ▸ within)⟩, named⟩
+  · obtain ⟨differs, earlier⟩ := notHere other found active
+    obtain ⟨entry, inside, named, link⟩ := each.owned.instanceScopes other found earlier
+    refine ⟨entry, (left.scopes entry).mpr ⟨inside, fun within => differs ?_⟩, named, link⟩
+    have same := (outside_body formed each away).2 entry inside (named ▸ List.mem_of_getElem? earlier) within
+    rw [named.symm.trans same] at earlier
+    exact each.owned.ownScopes other index scope earlier slot
+  · exact each.owned.ownScopes first second found (notHere first found one).2 (notHere second found two).2
 
-/-- Clearing a scope occurrence that stands carries the invariant. -/
-theorem clearInside_carries {program other : Program} {s : State} {scope : ScopeOccurrenceId}
-    (formed : WellFormed program s) (present : scope ∈ scopeIds s) (keep : List Nat) (framed : RunsFramed other s) :
-    Carries s (s.clearInside scope keep) := by
-  have cleared := Laws.State.clearInside_cleared formed present keep
-  obtain ⟨fewer, outside⟩ := cleared_bodies formed present cleared
-  refine ⟨fewer, fun run member o inside named => ⟨o, (cleared.occurrences o).mpr ⟨inside,
-    .inl ((outside_body formed (framed.framed run (fewer.subset member)) (outside run member)).1 o inside named)⟩, rfl,
-    rfl, rfl⟩, fun _ inside => .inl (cleared.scopesSublist.subset inside), fun run member entry inside which => ?_,
-    fun other member _ running => .inl ⟨other, cleared.slots.runs other member, running⟩⟩
-  refine (cleared.scopes entry).mpr ⟨inside, fun ⟨within, differs⟩ => ?_⟩
-  rcases which with named | active
-  · exact outside run member (named ▸ within)
-  · exact differs ((outside_body formed (framed.framed run (fewer.subset member)) (outside run member)).2 entry inside
-      active within)
+/-- A body's instances, entered and queued from a state that keeps the invariant and places the body, its loop the one
+its element carries and its slots of a sequential body's shape, keep the invariant once their slot record is set. -/
+theorem beginInstances_framed {ctx : Ctx} {loop : MultiInstance} {items : List Value} {state : State}
+    {base : MultiInstanceRun}
+    (entering : Laws.MultiInstance.Entering (WellFormed ctx.program) Laws.State.Settled base state base.instances [])
+    (framed : RunsFramed ctx.program state) (placed : RunPlaced state base)
+    (sequential : loop.mode = .sequential → SequentialSlots base) (fits : OutputsFit base loop)
+    (looped : LoopOf ctx.program base.element loop) :
+    RunsFramed ctx.program (Feature.MultiInstance.beginInstances ctx loop items base state) := by
+  obtain ⟨queued, instances, ran, begun⟩ := Laws.MultiInstance.beginInstances_spec (ctx := ctx) (loop := loop)
+    (items := items) (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program) entering
+  rw [ran]
+  have queuedFramed := begun_framed entering.1 framed begun
+  refine setRun_framed queuedFramed.keyed (fun run inside _ => queuedFramed.framed run inside)
+    ((begun_placed entering.1 begun placed).framed fun other otherLooped => ?_)
+  obtain rfl : other = loop := Option.some.inj (otherLooped.symm.trans looped)
+  exact opens_shaped begun.opens sequential fits
 
-/-! ## The state operations -/
-
-/-- The state operations the hooks apply keep the lane's slot invariant but its numbering under any program
-(`Proofs.Cancellation.FrameAlongside`). -/
-theorem runsFramed_frameAlongside (program : Program) : FrameAlongside (RunsFramed program) where
-  frame _ _ moved kept := kept.carry (.equal moved.scopes moved.occurrences moved.multiInstances moved.runs)
-  issue s kept := by
-    rw [Laws.State.issue_eq]
-    exact kept.carry (.equal rfl rfl rfl rfl)
-  enterScope _ s element parent locals owner formed kept := by
+/-- Entering a body's scope occurrence below its begun occurrence's own, which it owns, and arming its boundaries or not,
+keeps the invariant and places the body, every slot waiting. -/
+theorem enterBody_placed {program : Program} {occurrence : Occurrence} {state : State} (formed : WellFormed program state)
+    (framed : RunsFramed program state) (member : occurrence ∈ state.occurrences)
+    (body : occurrence.role = .multiInstanceBody) (element : ElementId) (named : occurrence.element = element)
+    (locals : List (String × Value)) (unarmed : Bool) (collection : Value) (count : Nat) :
+    RunsFramed program (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
+        else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
+          (.arm occurrence.id element occurrence.scope)) ∧
+      RunPlaced (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
+        else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
+          (.arm occurrence.id element occurrence.scope))
+        { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
+          occurrence := occurrence.id, collection, instances := List.replicate count .waiting } := by
+  have entered := (runsFramed_frameAlongside program).enterScope program state element occurrence.scope locals
+    (some occurrence.id) formed framed
+  have none : ∀ scope, Iteration.active scope ∉ List.replicate count Iteration.waiting := fun _ active => by
+    cases List.eq_of_mem_replicate active
+  have placed : RunPlaced (state.enterScope element occurrence.scope locals (some occurrence.id)).1
+      { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
+        occurrence := occurrence.id, collection, instances := List.replicate count .waiting } := by
     rw [Laws.State.enterScope_eq]
-    refine kept.carry (.grow (fun entry inside => ?_) (fun _ inside => List.mem_append_left _ inside) rfl rfl
-      fun _ present => present)
+    refine ⟨⟨⟨occurrence, member, rfl, named, body⟩, by simp, fun _ scope slot =>
+      absurd (List.mem_of_getElem? slot) (none scope), fun _ _ scope one _ =>
+      absurd (List.mem_of_getElem? one) (none scope)⟩, fun entry inside same => ?_,
+      fun scope active => absurd active (none scope), fun scope active => absurd active (none scope)⟩
     rcases List.mem_append.mp inside with old | new
-    · exact .inl old
+    · have below := formed.issued.scopes entry old
+      rw [same] at below
+      exact absurd below (Nat.lt_irrefl _)
     · rw [List.mem_singleton.mp new]
-      exact .inr (counter_fresh formed)
-  enterCalled _ s called call variables definition formed kept := by
-    have fresh : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ := fun entry inside same =>
-      counter_fresh formed (same ▸ List.mem_map.mpr ⟨entry, inside, rfl⟩)
-    rw [Laws.State.enterCalled_eq _ _ _ _ _ fresh]
-    refine kept.carry (.grow (fun entry inside => ?_) (fun _ inside => List.mem_append_left _ inside) rfl rfl
-      fun _ present => present)
-    rcases List.mem_append.mp inside with old | new
-    · exact .inl old
-    · rw [List.mem_singleton.mp new]
-      exact .inr (counter_fresh formed)
-  reserve _ s element scope _ kept :=
-    have reserves := Laws.State.reserve_reserves s element scope
-    kept.carry (.grow (fun _ inside => .inl (reserves.scopes ▸ inside)) (fun _ inside => reserves.scopes ▸ inside)
-      (congrArg (·.multiInstances) reserves.slots) (congrArg (·.compensation.runs) reserves.slots)
-      fun _ present => reserves.occurrences ▸ List.mem_append_left _ present)
-  leaveScope _ _ _ formed present leaves kept := kept.carry (leaveScope_carries formed present leaves kept)
-  clearInside _ _ _ keep formed present _ kept := kept.carry (clearInside_carries formed present keep kept)
-  disarm _ s host formed kept := by
-    rw [Laws.State.disarm_eq]
-    exact kept.carry (.same rfl rfl rfl (fun _ present begun => List.mem_filter.mpr ⟨present, by simp [begun]⟩)
-      (bodies_begun formed))
-  setVariable _ s target name value _ kept :=
-    have same := Laws.State.setVariable_same s target name value
-    kept.carry (.equal same.scopes same.occurrences (congrArg (·.multiInstances) same.slots)
-      (congrArg (·.compensation.runs) same.slots))
-  removeVariable _ s target name _ kept :=
-    have same := Laws.State.removeVariable_same s target name
-    kept.carry (.equal same.scopes same.occurrences (congrArg (·.multiInstances) same.slots)
-      (congrArg (·.compensation.runs) same.slots))
-  storeRuns _ s compensation _ fresh kept :=
-    kept.carry ⟨.refl _, fun _ _ o present _ => ⟨o, present, rfl, rfl, rfl⟩, fun _ inside => .inl inside,
-      fun _ _ _ inside _ => inside, fresh⟩
+  cases unarmed
+  · simp only [Bool.false_eq_true, ↓reduceIte]
+    have same := Laws.State.signal_eq (state.enterScope element occurrence.scope locals (some occurrence.id)).1
+      (.arm occurrence.id element occurrence.scope)
+    exact ⟨entered.carry (.equal (by rw [same]) (by rw [same]) (by rw [same]) (by rw [same])),
+      placed.transport (by rw [same]) (by rw [same]) (by rw [same])⟩
+  · exact ⟨entered, placed⟩
 
-/-- Dropping a record that owns no scope occurrence carries the invariant: it is no running body's body occurrence,
-which owns the body's scope occurrence. -/
-theorem withoutRecord_carries {program : Program} {t : State} {id : Nat}
-    (unowned : ∀ entry ∈ t.scopes, entry.occurrence ≠ some id) (framed : RunsFramed program t) :
-    RunsFramed program (Laws.State.withoutRecord t id) :=
-  framed.carry ⟨.refl _, fun run member o present named => ⟨o, List.mem_filter.mpr ⟨present, by
-    obtain ⟨entry, inside, bodyNamed⟩ := List.mem_map.mp (framed.framed run member).owned.bodyScope
-    simp only [bne_iff_ne, ne_eq]
-    exact fun same => unowned entry inside (by rw [(framed.framed run member).bodyOwns entry inside bodyNamed, ← named, same])⟩,
-    rfl, rfl, rfl⟩, fun _ inside => .inl inside, fun _ _ _ inside _ => inside, StoresHeldOrFresh.self t⟩
+/-- `Hooks.arriveMultiInstance` keeps the invariant: it holds the occurrence, completes it, or sets the slot record of
+a body it enters, every slot waiting, and whose loop its element carries. -/
+theorem arriveMultiInstance_framed {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
+    {occurrence : Occurrence} {state after : State} (formed : WellFormed ctx.program state)
+    (framed : RunsFramed ctx.program state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (body : occurrence.role = .multiInstanceBody) (named : header.id = occurrence.element)
+    (looped : LoopOf ctx.program header.id loop)
+    (ran : Feature.MultiInstance.arriveMultiInstance ctx header envelope loop occurrence state = .ok after) :
+    RunsFramed ctx.program after := by
+  rcases Laws.MultiInstance.arriveMultiInstance_spec ran with ⟨held, rfl⟩ | ⟨writes, rfl⟩ | ⟨locals, unarmed, entered⟩
+  · have same := Laws.Hooks.hold_eq state held
+    exact framed.carry (.equal (by rw [same]) (by rw [same]) (by rw [same]) (by rw [same]))
+  · have same := Laws.State.signal_eq state (.complete occurrence.id .outgoing writes .outward)
+    exact framed.carry (.equal (by rw [same]) (by rw [same]) (by rw [same]) (by rw [same]))
+  · obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
+    have waiting : ∀ slot ∈ List.replicate count Iteration.waiting, slot = .waiting := fun _ inside =>
+      List.eq_of_mem_replicate inside
+    obtain ⟨enteredFramed, placed⟩ := enterBody_placed formed framed member body header.id named.symm locals unarmed
+      collection count
+    exact beginInstances_framed (enterBody_entering (Proofs.Step.registeredOps_wellFormed.multiInstance
+      ctx.program) formed member begun header.id locals unarmed collection _ waiting).1 enteredFramed placed
+      (fun _ => ⟨[], [], List.replicate count .waiting, by simp, by simp, by simp, by simp, waiting⟩)
+      (fun _ inside => by cases waiting _ inside) looped
 
-/-! ## `Step`'s phases -/
+/-- `Hooks.completeBody` keeps the invariant: it queues the body's completion. -/
+theorem completeBody_framed {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
+    {occurrence : Occurrence} {state after : State} (framed : RunsFramed ctx.program state)
+    (ran : Feature.MultiInstance.completeBody ctx header envelope loop occurrence state = .ok after) :
+    RunsFramed ctx.program after := by
+  obtain ⟨run, _, rfl⟩ := Laws.MultiInstance.completeBody_spec ran
+  obtain ⟨writes, same, _⟩ := Laws.MultiInstance.finish_spec ctx loop run state
+  have frame := Laws.State.signal_eq state (.complete run.occurrence .outgoing writes .outward)
+  rw [same]
+  exact framed.carry (.equal (by rw [frame]) (by rw [frame]) (by rw [frame]) (by rw [frame]))
 
-/-- `Step`'s phases keep the lane's slot invariant but its numbering: journalling and ordering move nothing it reads,
-beginning replaces a reservation by its begun record or adds a fresh occurrence, and cancelling withdraws items and
-removes an occurrence (`FrameAlongside.removeOccurrence`). -/
-theorem runsFramed_stepAlongside (program : Program) : StepAlongside (RunsFramed program) where
-  toFrameAlongside := runsFramed_frameAlongside program
-  journal _ _ _ _ kept _ _ := kept.carry (.equal rfl rfl rfl rfl)
-  runOrder _ _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
-  begin _ s request role sourceType formed _ _ kept := by
-    have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
-    refine kept.carry ⟨by rw [begins.slots]; exact .refl _, fun run _ o present named => ?_,
-      fun _ inside => .inl (begins.scopes ▸ inside), fun _ _ _ inside _ => begins.scopes ▸ inside,
-      by rw [begins.slots]; exact StoresHeldOrFresh.self s⟩
-    rw [begins.occurrences]
-    by_cases same : o.id = (s.beginOccurrence request role sourceType).2.id
-    · rcases begins.source with ⟨reserved, source⟩ | fresh
-      · obtain rfl := Laws.State.nodup_map_eq formed.distinct.occurrences present source.member (same.trans source.id)
-        exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), same.symm, source.element, source.role⟩
-      · have below := formed.issued.occurrences o present
-        rw [same, fresh.id] at below
-        exact absurd below (Nat.lt_irrefl _)
-    · exact ⟨o, List.mem_append_left _ (List.mem_filter.mpr ⟨present, by simpa using same⟩), rfl, rfl, rfl⟩
-  cancel _ s id formed kept := by
-    cases found : s.occurrence? id with
-    | none =>
-      rw [Laws.State.cancelOccurrence_absent found]
-      exact kept
-    | some occurrence =>
-      obtain ⟨ended, cancelled, cancels⟩ := Laws.State.cancelOccurrence_some found
-      have side := runsFramed_frameAlongside program
-      have formedWithdrawn := (Laws.State.withdrawAll
-        (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) _
-        (Laws.State.disarm_wellFormed (Laws.State.closeOwnItems_wellFormed formed id) id)).1
-      obtain ⟨items, withdrawn⟩ := Laws.State.withdrawAll_frame
-        (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
-      rw [← Laws.State.withdrawOccurrence_eq] at formedWithdrawn withdrawn
-      have closed : RunsFramed program (s.closeOwnItems id) := by
-        rw [Laws.State.closeOwnItems_eq]
-        exact kept.carry (.equal rfl rfl rfl rfl)
-      have withdrawnKept : RunsFramed program (s.withdrawOccurrence id) := by
-        rw [withdrawn]
-        exact (side.disarm _ _ id (Laws.State.closeOwnItems_wellFormed formed id) closed).carry (.equal rfl rfl rfl rfl)
-      rw [cancels]
-      exact (side.removeOccurrence (fun _ _ unowned framed => withoutRecord_carries unowned framed) formedWithdrawn
-        withdrawnKept).carry (.equal rfl rfl rfl rfl)
-
-/-- The completion pipeline's own phases keep the lane's slot invariant but its numbering where they keep
-`WellFormed`: starting a reservation begins its record in place, removing an occurrence is
-`FrameAlongside.removeOccurrence`, and journalling an end moves nothing it reads. -/
-theorem runsFramed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) :
-    Laws.Step.PipelinePhases fun program s => WellFormed program s ∧ RunsFramed program s where
-  startReserved program s occurrence sourceType holds member unnamed := by
-    refine ⟨pipeline.startReserved _ _ occurrence sourceType holds.1 member unnamed, ?_⟩
-    rw [Laws.State.closeOwnItems_eq]
-    suffices started : RunsFramed program (s.startReserved occurrence sourceType).1 from
-      started.carry (.equal rfl rfl rfl rfl)
-    cases begun : occurrence.begun
-    · have starts := Laws.State.startReserved_starts s sourceType begun
-      refine holds.2.carry ⟨by rw [starts.slots]; exact .refl _, fun run _ o present _ => ?_,
-        fun _ inside => .inl (starts.scopes ▸ inside), fun _ _ _ inside _ => starts.scopes ▸ inside,
-        by rw [starts.slots]; exact StoresHeldOrFresh.self s⟩
-      rw [starts.occurrences]
-      by_cases same : o.id = occurrence.id
-      · obtain rfl := Laws.State.nodup_map_eq holds.1.distinct.occurrences present member same
-        exact ⟨{ o with begun := true }, List.mem_map.mpr ⟨o, present, by simp⟩, rfl, rfl, rfl⟩
-      · exact ⟨o, List.mem_map.mpr ⟨o, present, by simp [same]⟩, rfl, rfl, rfl⟩
-    · rw [Laws.State.startReserved_begun s sourceType begun]
-      exact holds.2
-  removeOccurrence program _ occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
-    ⟨⟨removed.1, (runsFramed_frameAlongside program).removeOccurrence
-      (fun _ _ unowned framed => withoutRecord_carries unowned framed) holds.1 holds.2⟩, removed.2⟩
-  recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
-    rw [Laws.State.recordEnd_eq]
-    exact holds.2.carry (.equal rfl rfl rfl rfl)⟩
+/-- `Hooks.instanceCompleted` keeps the invariant for an instance in a scope occurrence that stands: it records the
+instance's slot, leaving its scope occurrence (`leftWith_framed`), writes the body's counters or not, then completes the
+body or begins its next instances (`beginInstances_framed`). -/
+theorem instanceCompleted_framed {ctx : Ctx} {body : Nat} {occurrence : Occurrence} {writes : List (String × Value)}
+    {state after : State} (formed : WellFormed ctx.program state) (framed : RunsFramed ctx.program state)
+    (stands : occurrence.scope ∈ scopeIds state)
+    (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) :
+    RunsFramed ctx.program after := by
+  have ops := Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program
+  obtain ⟨run, loop, index, found⟩ := Laws.MultiInstance.instanceCompleted_spec ran
+  obtain ⟨output, done⟩ := found
+  obtain ⟨results, counted, left, ended⟩ := done.ends
+  have member := Laws.MultiInstance.found_mem done.found
+  obtain ⟨entering, _, present⟩ := counted_entering ops formed stands done left
+  have countedFramed : RunsFramed ctx.program counted := by
+    have leftFramed := leftWith_framed (results := results) formed framed member done.slot done.fits
+    rcases left with rfl | ⟨target, counts, rule, rfl⟩
+    · exact leftFramed
+    · have same := Laws.State.signal_eq (Laws.MultiInstance.leftWith state occurrence.scope
+        (Laws.MultiInstance.recorded run index output results)) (.write target counts rule)
+      exact leftFramed.carry (.equal (by rw [same]) (by rw [same]) (by rw [same]) (by rw [same]))
+  have recordedFramed := countedFramed.framed _ present
+  rcases ended with rfl | ⟨items, rfl⟩
+  · obtain ⟨written, same, _⟩ := Laws.MultiInstance.finish_spec ctx loop
+      (Laws.MultiInstance.recorded run index output results) counted
+    rw [same]
+    exact countedFramed.carry (.equal (by rw [Laws.State.signal_eq]) (by rw [Laws.State.signal_eq])
+      (by rw [Laws.State.signal_eq]) (by rw [Laws.State.signal_eq]))
+  · have shaped := recordedFramed.shaped loop done.looped
+    exact beginInstances_framed entering countedFramed recordedFramed.placed shaped.1 shaped.2.2 done.looped
 
 /-! ## Under the registered hooks -/
 
 /-- `WellFormed` and the lane's slot invariant but its numbering. -/
 def Framed (program : Program) (s : State) : Prop :=
   WellFormed program s ∧ RunsFramed program s
+
+/-- The registered Multi-Instance hooks keep `Framed`: its `WellFormed` half by `Laws.MultiInstance.MultiInstanceOps`,
+its `RunsFramed` half by what each hook does. -/
+theorem multiInstanceKeeps_framed : Proofs.Step.MultiInstanceKeeps Framed where
+  arrive ctx header envelope loop occurrence state after holds member begun body named looped ran :=
+    ⟨(Proofs.Step.multiInstanceKeeps_of Proofs.Step.registeredOps_wellFormed.multiInstance).arrive ctx header envelope
+      loop occurrence state after holds.1 member begun body named looped ran,
+      arriveMultiInstance_framed holds.1 holds.2 member begun body named looped ran⟩
+  completeBody ctx header envelope loop occurrence state after holds member ran :=
+    ⟨(Proofs.Step.multiInstanceKeeps_of Proofs.Step.registeredOps_wellFormed.multiInstance).completeBody ctx header
+      envelope loop occurrence state after holds.1 member ran, completeBody_framed holds.2 ran⟩
+  instanceCompleted ctx body occurrence writes state after holds stands ran :=
+    ⟨(Proofs.Step.multiInstanceKeeps_of Proofs.Step.registeredOps_wellFormed.multiInstance).instanceCompleted ctx body
+      occurrence writes state after holds.1 stands ran, instanceCompleted_framed holds.1 holds.2 stands ran⟩
 
 /-- What the numbering lane supplies: after a committed input from a well-formed state that keeps the slot invariant,
 and after a committed start, every running body numbers its instances in item order and each instance is the one
@@ -409,11 +495,10 @@ structure NumberingKept (hooks : Hooks) : Prop where
     (∀ run ∈ after.slots.multiInstances, NumberedInOrder after run ∧ InstancesPlaced after run) ∧
       BeginsQueued program after
 
-/-- The registered hooks keep `Framed` where the Multi-Instance hooks do. -/
-theorem framed_contract (multiInstance : Proofs.Step.MultiInstanceKeeps Framed) :
-    Laws.Step.HookContract Registry.hooks Framed :=
+/-- The registered hooks keep `Framed`. -/
+theorem framed_contract : Laws.Step.HookContract Registry.hooks Framed :=
   Proofs.Step.registered_contract_of
-    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps runsFramed_frameAlongside) multiInstance
+    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps runsFramed_frameAlongside) multiInstanceKeeps_framed
     Proofs.State.stateFacts
 
 /-- `Step`'s phases keep `Framed`. -/
@@ -436,64 +521,61 @@ theorem framed_initial (program : Program) (instanceId : String) (variables : Li
   · rw [Laws.State.signal_eq] at member
     simp [none] at member
 
-/-- A committed input on a running instance keeps `Framed` under the registered hooks, given the Multi-Instance
-hooks keep it. -/
-theorem framed_stepKeeps (multiInstance : Proofs.Step.MultiInstanceKeeps Framed) {program : Program} {input : Input}
+/-- A committed input on a running instance keeps `Framed` under the registered hooks. -/
+theorem framed_stepKeeps {program : Program} {input : Input}
     {before after : State} (holds : Framed program before)
     (ran : Step.step Registry.hooks program (some before) input = .ok after) : Framed program after :=
-  Laws.Step.running_keeps (framed_contract multiInstance) framed_phases Proofs.State.stateFacts
-    (Laws.Step.complete_keeps (framed_contract multiInstance) framed_phases
+  Laws.Step.running_keeps framed_contract framed_phases Proofs.State.stateFacts
+    (Laws.Step.complete_keeps framed_contract framed_phases
       (runsFramed_pipelinePhases Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
     (fun _ _ => framed_reset) holds ran
 
-/-- A committed start makes a `Framed` state under the registered hooks, given the Multi-Instance hooks keep it. -/
-theorem framed_start (multiInstance : Proofs.Step.MultiInstanceKeeps Framed) {program : Program} {input : Input}
+/-- A committed start makes a `Framed` state under the registered hooks. -/
+theorem framed_start {program : Program} {input : Input}
     {after : State} (ran : Step.step Registry.hooks program none input = .ok after) : Framed program after :=
-  Laws.Step.step_keeps (framed_contract multiInstance) framed_phases Proofs.State.stateFacts
-    (Laws.Step.complete_keeps (framed_contract multiInstance) framed_phases
+  Laws.Step.step_keeps framed_contract framed_phases Proofs.State.stateFacts
+    (Laws.Step.complete_keeps framed_contract framed_phases
       (runsFramed_pipelinePhases Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
     (fun _ _ => framed_reset) (framed_initial program) (fun _ given => by simp at given) ran
 
 /-! ## The lane's statements -/
 
-/-- The registered hooks keep every running body's instances `Apart`, given the Multi-Instance hooks keep `Framed`. -/
-theorem registered_instancesApart (multiInstance : Proofs.Step.MultiInstanceKeeps Framed) :
+/-- The registered hooks keep every running body's instances `Apart`. -/
+theorem registered_instancesApart :
     InstancesApart Registry.hooks := fun _ _ _ run ⟨formed, runs, _, ran⟩ member =>
-  have after := framed_stepKeeps multiInstance ⟨formed, runs.framed⟩ ran
+  have after := framed_stepKeeps ⟨formed, runs.framed⟩ ran
   owned_apart after.1 (after.2.framed run member).owned
 
-/-- The registered hooks keep the lane's slot invariant through a committed input, given the Multi-Instance hooks keep
-`Framed` and the numbering lane's supply. -/
-theorem registered_runsFormed (multiInstance : Proofs.Step.MultiInstanceKeeps Framed)
-    (numbering : NumberingKept Registry.hooks) {program : Program} {input : Input} {before after : State}
+/-- The registered hooks keep the lane's slot invariant through a committed input, given the numbering lane's
+supply. -/
+theorem registered_runsFormed (numbering : NumberingKept Registry.hooks) {program : Program} {input : Input}
+    {before after : State}
     (formed : WellFormed program before) (runs : RunsFormed program before)
     (ran : Step.step Registry.hooks program (some before) input = .ok after) :
     WellFormed program after ∧ RunsFormed program after :=
-  have framed := framed_stepKeeps multiInstance ⟨formed, runs.framed⟩ ran
+  have framed := framed_stepKeeps ⟨formed, runs.framed⟩ ran
   ⟨framed.1, framed.2.formed framed.1 (numbering.step _ _ _ _ formed runs ran)⟩
 
-/-- A committed start keeps the lane's slot invariant under the registered hooks, given the Multi-Instance hooks keep
-`Framed` and the numbering lane's supply. -/
-theorem registered_runsFormedAtStart (multiInstance : Proofs.Step.MultiInstanceKeeps Framed)
-    (numbering : NumberingKept Registry.hooks) : RunsFormedAtStart Registry.hooks := fun _ _ _ ran =>
-  have framed := framed_start multiInstance ran
+/-- A committed start keeps the lane's slot invariant under the registered hooks, given the numbering lane's supply. -/
+theorem registered_runsFormedAtStart (numbering : NumberingKept Registry.hooks) : RunsFormedAtStart Registry.hooks :=
+    fun _ _ _ ran =>
+  have framed := framed_start ran
   framed.2.formed framed.1 (numbering.start _ _ _ ran)
 
 /-- Every instance a committed population run holds keeps the lane's slot invariant under the registered hooks, given
-the Multi-Instance hooks keep `Framed` and the numbering lane's supply. -/
-theorem registered_runsFormedInPopulation (multiInstance : Proofs.Step.MultiInstanceKeeps Framed)
-    (numbering : NumberingKept Registry.hooks) : RunsFormedInPopulation Registry.hooks := fun _ _ _ ran member inside =>
+the numbering lane's supply. -/
+theorem registered_runsFormedInPopulation (numbering : NumberingKept Registry.hooks) :
+    RunsFormedInPopulation Registry.hooks := fun _ _ _ ran member inside =>
   (Laws.Population.runStimuli_held (good := fun program s => WellFormed program s ∧ RunsFormed program s)
-    ⟨fun _ _ _ _ holds stepped => registered_runsFormed multiInstance numbering holds.1 holds.2 stepped,
-      fun _ _ _ ran => ⟨(framed_start multiInstance ran).1, registered_runsFormedAtStart multiInstance numbering _ _ _ ran⟩⟩
+    ⟨fun _ _ _ _ holds stepped => registered_runsFormed numbering holds.1 holds.2 stepped,
+      fun _ _ _ ran => ⟨(framed_start ran).1, registered_runsFormedAtStart numbering _ _ _ ran⟩⟩
     ran member inside).2
 
-/-- Every running body after a committed input is `Shaped` by its loop under the registered hooks, given the
-Multi-Instance hooks keep `Framed` and the numbering lane's supply. -/
-theorem registered_runsShaped (multiInstance : Proofs.Step.MultiInstanceKeeps Framed)
-    (numbering : NumberingKept Registry.hooks) : RunsShaped Registry.hooks :=
+/-- Every running body after a committed input is `Shaped` by its loop under the registered hooks, given the numbering
+lane's supply. -/
+theorem registered_runsShaped (numbering : NumberingKept Registry.hooks) : RunsShaped Registry.hooks :=
   fun _ _ _ run loop ⟨formed, runs, _, ran⟩ member looped =>
-    ((registered_runsFormed multiInstance numbering formed runs ran).2.formed run member).shaped loop looped
+    ((registered_runsFormed numbering formed runs ran).2.formed run member).shaped loop looped
 
 /-- A committed input keeps its well-formed before-state's scope occurrences under the registered hooks. -/
 theorem registered_stepKeepsScopes : Proofs.Cancellation.StepKeepsScopes Registry.hooks :=
@@ -501,14 +583,14 @@ theorem registered_stepKeepsScopes : Proofs.Cancellation.StepKeepsScopes Registr
     (Proofs.Cancellation.keepsScopes_phases Proofs.Step.phases)
     (Proofs.Cancellation.keepsScopes_pipelinePhases Proofs.Step.pipelinePhases) Proofs.State.stateFacts
 
-/-- A body whose occurrence goes takes its instances with it under the registered hooks, given the Multi-Instance hooks
-keep `Framed`: no slot record of it stays, since each running body's occurrence stands; its instances' scope
-occurrences go, since a standing one would keep its parent, the body's scope occurrence, whose owner is the body's
-occurrence; and so does what lay in them (`Proofs.Cancellation.outside_removed`). -/
-theorem registered_endsWithInstances (multiInstance : Proofs.Step.MultiInstanceKeeps Framed) :
+/-- A body whose occurrence goes takes its instances with it under the registered hooks: no slot record of it stays,
+since each running body's occurrence stands; its instances' scope occurrences go, since a standing one would keep its
+parent, the body's scope occurrence, whose owner is the body's occurrence; and so does what lay in them
+(`Proofs.Cancellation.outside_removed`). -/
+theorem registered_endsWithInstances :
     EndsWithInstances Registry.hooks := by
   intro program before after run index scope ⟨formed, runs, input, ran⟩ member gone slot
-  have framed := framed_stepKeeps multiInstance ⟨formed, runs.framed⟩ ran
+  have framed := framed_stepKeeps ⟨formed, runs.framed⟩ ran
   have kept := registered_stepKeepsScopes program input before after formed ran
   have each := runs.formed run member
   have removed : scope ∉ scopeIds after := fun stands => by

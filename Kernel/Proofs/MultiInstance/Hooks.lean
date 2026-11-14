@@ -126,7 +126,7 @@ theorem arriveMultiInstance_keeps (ops : MultiInstanceOps program inv settled) {
   rcases arriveMultiInstance_spec ran with ⟨held, rfl⟩ | ⟨writes, rfl⟩ | ⟨locals, unarmed, entered⟩
   · exact ops.hold _ _ holds
   · exact ops.complete _ _ _ _ _ holds (ops.begun _ _ holds member begun)
-  · obtain ⟨collection, count, items, rfl⟩ := entered
+  · obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
     exact enterBody_keeps ops holds member begun _ _ _ _ _ fun _ inside => List.eq_of_mem_replicate inside
 
 /-- An instance's completion leaves the issue counter where it was. -/
@@ -141,8 +141,31 @@ theorem leftWith_issue (state : State) (scope : ScopeOccurrenceId) (next : Multi
 theorem signal_issue (state : State) (signal : Signal) : (state.signal signal).nextIssue = state.nextIssue := by
   rw [Laws.State.signal_eq]
 
-/-- Recording an instance's slot in a scope occurrence that stands, and writing the body's counters or not, leaves a
-state where the recorded body keeps what it keeps while it enters, recorded, issuing nothing. -/
+/-- Recording an instance's slot in a scope occurrence that stands, and writing the body's counters or not (`counted`),
+leaves a state where the recorded body keeps what it keeps while it enters, recorded, issuing nothing. -/
+theorem counted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv settled) {body : Nat}
+    {scope : ScopeOccurrenceId} {state after counted : State} {run : MultiInstanceRun} {loop : MultiInstance}
+    {index : Nat} {output : Option Value} {results : List String} (holds : inv state)
+    (stands : scope ∈ Laws.State.scopeIds state) (done : Completes ctx body scope state after run loop index output)
+    (left : counted = leftWith state scope (recorded run index output results) ∨ ∃ target writes rule,
+      counted = (leftWith state scope (recorded run index output results)).signal (.write target writes rule)) :
+    Entering inv settled (recorded run index output results) counted (recorded run index output results).instances [] ∧
+      counted.nextIssue = state.nextIssue ∧ recorded run index output results ∈ counted.slots.multiInstances := by
+  obtain ⟨kept, carried, standing, placed⟩ := ops.record state run index scope output results holds
+    (Laws.MultiInstance.found_mem done.found) done.slot stands done.fits
+  have base : Entering inv settled (recorded run index output results)
+      (leftWith state scope (recorded run index output results)) (recorded run index output results).instances [] :=
+    ⟨kept, carried, standing, placed, fun _ none => by cases none⟩
+  refine ⟨?_, ?_, ?_⟩ <;> rcases left with rfl | ⟨target, written, rule, rfl⟩
+  · exact base
+  · exact written_entering ops base _ _ _
+  · exact leftWith_issue _ _ _
+  · exact (signal_issue _ _).trans (leftWith_issue _ _ _)
+  · exact setRun_mem _ _
+  · rw [Laws.State.signal_eq]
+    exact setRun_mem _ _
+
+/-- What `counted_entering` leaves, for the state a committed `Hooks.instanceCompleted` recorded its instance in. -/
 theorem instanceCompleted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv settled) {body : Nat}
     {scope : ScopeOccurrenceId} {state after : State} {run : MultiInstanceRun} {loop : MultiInstance} {index : Nat}
     {output : Option Value} (holds : inv state) (stands : scope ∈ Laws.State.scopeIds state)
@@ -154,19 +177,8 @@ theorem instanceCompleted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.progr
         ∃ items, after = Feature.MultiInstance.beginInstances ctx loop items (recorded run index output results)
           counted) := by
   obtain ⟨results, counted, left, ended⟩ := done.ends
-  obtain ⟨kept, carried, standing, placed⟩ := ops.record state run index scope output results holds
-    (Laws.MultiInstance.found_mem done.found) done.slot stands done.fits
-  have base : Entering inv settled (recorded run index output results)
-      (leftWith state scope (recorded run index output results)) (recorded run index output results).instances [] :=
-    ⟨kept, carried, standing, placed, fun _ none => by cases none⟩
-  refine ⟨results, counted, ?_, ?_, ?_, ended⟩ <;> rcases left with rfl | ⟨target, written, rule, rfl⟩
-  · exact base
-  · exact written_entering ops base _ _ _
-  · exact leftWith_issue _ _ _
-  · exact (signal_issue _ _).trans (leftWith_issue _ _ _)
-  · exact setRun_mem _ _
-  · rw [Laws.State.signal_eq]
-    exact setRun_mem _ _
+  obtain ⟨entering, issue, present⟩ := counted_entering ops holds stands done left
+  exact ⟨results, counted, entering, issue, present, ended⟩
 
 /-- `Hooks.instanceCompleted` keeps `inv` for an instance in a scope occurrence that stands: it records its slot,
 leaving its scope occurrence, then completes the body or begins the next instances. -/
@@ -259,7 +271,7 @@ theorem arriveMultiInstance_counted (ops : MultiInstanceOps program inv settled)
   · exact .inl held
   · exact .inr (nothingCounted ops (ops.complete _ _ _ _ _ holds (ops.begun _ _ holds member begun))
       (Nat.le_of_eq (signal_issue _ _)))
-  · obtain ⟨collection, count, items, rfl⟩ := entered
+  · obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
     exact .inr (enterBody_counted ops holds member begun _ _ _ _ _
       (fun _ inside => List.eq_of_mem_replicate inside) cib apart)
 
@@ -342,7 +354,7 @@ theorem instanceCompleted_queues {ctx : Ctx} {body : Nat} {occurrence : Occurren
         rcases mem_setRun member with ⟨_, differs⟩ | same
         · exact absurd named differs
         · exact same
-  · obtain ⟨begins, same⟩ := Laws.MultiInstance.beginInstances_signals ctx loop items
+  · obtain ⟨begins, same, _⟩ := Laws.MultiInstance.beginInstances_signals ctx loop items
       (recorded run index output results) counted
     refine ⟨counts ++ begins.map .begin, by rw [same, queued, List.append_assoc], fun signal inside => ?_⟩
     rcases List.mem_append.mp inside with old | new
