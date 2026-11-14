@@ -406,17 +406,13 @@ structure FrameAlongside (rel : State → Prop) : Prop where
 
 /-- `FrameAlongside` with the operations of the records that carry none of its premises: leaving an active
 Multi-Instance instance's scope occurrence and replacing the Multi-Instance runs
-(`Laws.MultiInstance.MultiInstanceOps`), and leaving a scope occurrence that stands below a parent and storing
-compensation runs, as `Laws.Compensation.RunsOps` states them, with no premise that the context left runs or that a
-stored running context is held or fresh. The scope occurrences kept and an input's end facts read neither runs nor
-contexts. -/
+(`Laws.MultiInstance.MultiInstanceOps`), and storing compensation runs, as `Laws.Compensation.RunsOps` states it, with
+no premise that a stored running context is held or fresh. The scope occurrences kept and an input's end facts read
+neither runs nor contexts. -/
 structure Alongside (rel : State → Prop) : Prop extends FrameAlongside rel where
   leaveInstance : ∀ program s run scope, WellFormed program s → run ∈ s.slots.multiInstances →
     Iteration.active scope ∈ run.instances → scope ∈ scopeIds s → rel s → rel (s.leaveScope scope)
-  runs : ∀ program s (runs : List MultiInstanceRun), WellFormed program s → rel s →
-    rel { s with slots := { s.slots with multiInstances := runs } }
-  leaveContext : ∀ program s (entry : ScopeOccurrence) parent, WellFormed program s → entry ∈ s.scopes →
-    entry.parent = some parent → rel s → rel (s.leaveScope entry.id)
+  runs : ∀ s (runs : List MultiInstanceRun), rel s → rel { s with slots := { s.slots with multiInstances := runs } }
   storeContexts : ∀ program s (compensation : Compensations), WellFormed program s → rel s →
     rel { s with slots := { s.slots with compensation } }
 
@@ -457,9 +453,7 @@ theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) wh
   storeRuns _ _ _ _ _ kept := kept.shrink (.refl _) rfl
   leaveInstance _ s _ scope _ _ _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2
-  runs _ _ _ _ kept := kept.shrink (.refl _) rfl
-  leaveContext _ s entry _ _ _ _ kept :=
-    kept.shrink ((Laws.State.removal_shrinks s).2.1 entry.id).1 ((Laws.State.removal_shrinks s).2.1 entry.id).2
+  runs _ _ kept := kept.shrink (.refl _) rfl
   storeContexts _ _ _ _ kept := kept.shrink (.refl _) rfl
 
 /-- A queued signal moves nothing `rel` reads. -/
@@ -611,9 +605,7 @@ theorem endsKept_alongside (b : State) (x : Option (Nat × OccurrenceKey)) :
   removeVariable _ s target name formed kept := kept.step formed (Laws.Step.removeVariable_frame s target name)
   storeRuns _ _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
   leaveInstance _ _ _ _ formed _ _ present kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
-  runs _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
-  leaveContext _ _ entry _ formed member _ kept :=
-    kept.step formed (Laws.Step.leaveScope_frame formed (List.mem_map.mpr ⟨entry, member, rfl⟩))
+  runs _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
   storeContexts _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
 
 /-- Each committed micro-step of an input on a running instance keeps `inv`: its transition and every closure

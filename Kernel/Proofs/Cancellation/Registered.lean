@@ -149,8 +149,16 @@ theorem joinOps_alongside (side : FrameAlongside rel) {program : Program}
 
 /-- Multi-Instance's record beside `WellFormed`, through `Alongside`'s instance leave and run replacement. -/
 theorem multiInstanceOps_alongside (side : Alongside rel) {program : Program}
-    (ops : Laws.MultiInstance.MultiInstanceOps (WellFormed program) Laws.State.Settled) :
-    Laws.MultiInstance.MultiInstanceOps (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
+    (ops : Laws.MultiInstance.MultiInstanceOps program (WellFormed program) Laws.State.Settled) :
+    Laws.MultiInstance.MultiInstanceOps program (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
+  issued s holds := ops.issued s holds.1
+  contexts s holds := ops.contexts s holds.1
+  record s run index scope output results holds member slot stands fits :=
+    have recorded := ops.record s run index scope output results holds.1 member slot stands fits
+    ⟨⟨recorded.1, by
+      rw [Laws.MultiInstance.leftWith, Laws.MultiInstance.setRun_eq]
+      exact side.runs _ _ (side.leaveInstance program s run scope holds.1 member (List.mem_of_getElem? slot) stands
+        holds.2)⟩, recorded.2⟩
   bodies s run holds member := ops.bodies s run holds.1 member
   placed s run holds member := ops.placed s run holds.1 member
   complete s id leave writes rule holds settled := ⟨ops.complete s id leave writes rule holds.1 settled, side.signal holds.2 _⟩
@@ -171,12 +179,9 @@ theorem multiInstanceOps_alongside (side : Alongside rel) {program : Program}
     ⟨⟨deferred.1, by
       rw [Laws.State.deferBegins_eq]
       exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩, deferred.2⟩
-  runs s runs holds kept :=
-    have ran := ops.runs s runs holds.1 kept
-    ⟨⟨ran.1, side.runs program s runs holds.1 holds.2⟩, ran.2⟩
-  leave s run scope holds member active stands :=
-    have left := ops.leave s run scope holds.1 member active stands
-    ⟨⟨left.1, side.leaveInstance program s run scope holds.1 member active stands holds.2⟩, left.2⟩
+  runs s base next loop holds settledNext placedNext opens linked :=
+    have ran := ops.runs s base next loop holds.1 settledNext placedNext opens linked
+    ⟨⟨ran.1, by rw [Laws.MultiInstance.setRun_eq]; exact side.runs _ _ holds.2⟩, ran.2⟩
   write s scope writes rule holds :=
     have written := ops.write s scope writes rule holds.1
     ⟨⟨written.1, side.signal holds.2 _⟩, written.2⟩
@@ -275,9 +280,10 @@ theorem runsOps_alongside (side : Alongside rel) {program : Program}
   begin s handler context scope holds stands :=
     have queued := ops.begin s handler context scope holds.1 stands
     ⟨⟨queued.1, side.signal holds.2 _⟩, queued.2⟩
-  leave s entry parent holds member link :=
-    have left := ops.leave s entry parent holds.1 member link
-    ⟨⟨left.1, side.leaveContext program s entry parent holds.1 member link holds.2⟩, left.2⟩
+  leave s entry parent holds member link running :=
+    have left := ops.leave s entry parent holds.1 member link running
+    ⟨⟨left.1, side.leaveScope program s entry.id holds.1 (List.mem_map.mpr ⟨entry, member, rfl⟩) (.inr running)
+      holds.2⟩, left.2⟩
 
 theorem subscriptionsOps_alongside (side : FrameAlongside rel) {program : Program}
     (ops : Laws.Subscriptions.SubscriptionsOps program (WellFormed program)) :
@@ -336,7 +342,7 @@ the compensation runs' records beside `WellFormed`: every other record follows f
 (`Proofs.Step.registered_contract` turns them into the registered hooks' contract). -/
 theorem registeredOps_frame {rel : State → Prop} (ops : Proofs.Step.RegisteredOps WellFormed)
     (side : FrameAlongside rel)
-    (multiInstance : ∀ program, Laws.MultiInstance.MultiInstanceOps (fun s => WellFormed program s ∧ rel s)
+    (multiInstance : ∀ program, Laws.MultiInstance.MultiInstanceOps program (fun s => WellFormed program s ∧ rel s)
       Laws.State.Settled)
     (runs : ∀ program, Laws.Compensation.RunsOps (fun s => WellFormed program s ∧ rel s) Laws.State.Settled) :
     Proofs.Step.RegisteredOps fun program s => WellFormed program s ∧ rel s where
