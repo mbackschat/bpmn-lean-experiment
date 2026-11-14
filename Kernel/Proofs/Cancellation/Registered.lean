@@ -373,12 +373,12 @@ private theorem withdrawOccurrence_draft (s : State) (id : Nat) : (s.withdrawOcc
     (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
   rw [Laws.State.withdrawOccurrence_eq, frame, Laws.State.disarm_eq, Laws.State.closeOwnItems_eq]
 
-/-- Opening a subscription keeps the draft's end facts: its reservation journals nothing (`Laws.State.ends_unmoved`). -/
+/-- Opening a subscription keeps the draft's end facts: its reservation journals nothing (`Laws.State.Reserves`). -/
 private theorem openSubscription_ended (s : State) (kind : OpenKind)
     (element : ElementId) (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool) :
     (s.openSubscription kind element scope host passive).1.draft.ended = s.draft.ended := by
   rw [Laws.State.openSubscription_eq]
-  exact congrArg (·.ended) ((Laws.State.ends_unmoved s).2.2.1 element scope).2.1
+  exact congrArg (·.ended) (Laws.State.reserve_reserves s element scope).draft
 
 /-- Subscriptions' operations keep the draft's end facts: they queue firings and completions, open, close, withdraw
 and rekind items and disarm hosts, and a subscription reserves its occurrence, which journals nothing. -/
@@ -395,9 +395,9 @@ theorem subscriptionsOps_draft (program : Program)
   openSubscription s kind element scope host passive same _ _ _ :=
     (openSubscription_ended s kind element scope host passive).trans same
   subscribed s kind element scope host passive _ := by
-    obtain ⟨_, _, scopes, occurrences⟩ := (Laws.State.ends_unmoved s).2.2.1 element scope
+    have reserves := Laws.State.reserve_reserves s element scope
     rw [Laws.State.openSubscription_eq]
-    exact ⟨scopes, fun o inside => occurrences ▸ List.mem_append_left _ inside⟩
+    exact ⟨reserves.scopes, fun o inside => reserves.occurrences ▸ List.mem_append_left _ inside⟩
   closeComplete s _ _ _ same _ := by rw [signal_draft, closeItem_draft]; exact same
   gatewayComplete s _ _ _ _ same _ _ := by rw [signal_draft, signal_draft, disarm_draft, closeItem_draft]; exact same
   interruptComplete s _ _ _ _ same _ := by

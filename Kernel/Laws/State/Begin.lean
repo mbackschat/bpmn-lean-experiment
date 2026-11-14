@@ -86,7 +86,7 @@ theorem reserve_wellFormed {state : State} (formed : WellFormed program state) (
     (scope : ScopeOccurrenceId) (stands : scope ∈ scopeIds state) :
     WellFormed program (state.reserve element scope).1 ∧
       ∀ request, Queued (state.reserve element scope).1 request → (state.reserve element scope).2.id ∉ names request :=
-  (reserve_reserves formed.activations element scope).wellFormed formed stands
+  (reserve_reserves state element scope).wellFormed formed stands
 
 /-- Starting an occurrence that no queued begin names and no open item waits on. -/
 theorem startReserved_wellFormed {state : State} (formed : WellFormed program state) {occurrence : Occurrence}
@@ -119,9 +119,10 @@ theorem startReserved_closeOwnItems_wellFormed {state : State} (formed : WellFor
       have before : State.instanceOf { state with openItems := state.openItems.filter (·.occurrence != occurrence.id) } x =
           state.instanceOf x := by apply instanceOf_congr <;> rfl
       rw [after, before, starts_.instances x]
-    refine StartsReserved.wellFormed (sourceType := sourceType) closed ⟨starts_.occurrences, ?_, starts_.scopes, instances, starts_.activations,
-      starts_.nextIssue, by simp [starts_.openItems], starts_.tokens, starts_.signals, starts_.variables, starts_.journal,
-      starts_.status, starts_.failure, starts_.slots⟩ member begun (fun request queued => unnamed request queued)
+    refine StartsReserved.wellFormed (sourceType := sourceType) closed ⟨starts_.occurrences, ?_, starts_.scopes, instances,
+      starts_.instanceId, starts_.activations, starts_.nextIssue, by simp [starts_.openItems], starts_.tokens,
+      starts_.signals, starts_.variables, starts_.journal, starts_.ended, starts_.status, starts_.failure,
+      starts_.slots⟩ member begun (fun request queued => unnamed request queued)
       fun item inside => by simpa using (List.mem_filter.mp inside).2
     have filtered : State.instanceOf { state with openItems := state.openItems.filter (·.occurrence != occurrence.id) }
         occurrence.scope = state.instanceOf occurrence.scope := by apply instanceOf_congr <;> rfl

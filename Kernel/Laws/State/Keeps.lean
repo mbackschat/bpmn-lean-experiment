@@ -542,7 +542,7 @@ theorem openSubscription_wellFormed {s : State} (formed : WellFormed program s) 
       occurrence.scope = scope) (passive : Bool)
     (waits : AwaitsTrigger kind) : WellFormed program (s.openSubscription kind element scope host passive).1 := by
   rw [openSubscription_eq]
-  have reserves := reserve_reserves formed.activations element scope
+  have reserves := reserve_reserves s element scope
   obtain ⟨reserved, unnamed⟩ := reserves.wellFormed formed stands
   generalize s.reserve element scope = pair at reserves reserved unnamed
   obtain ⟨t, reservation⟩ := pair

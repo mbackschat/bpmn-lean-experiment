@@ -16,7 +16,8 @@ namespace Kernel.Laws.State
 open Kernel
 
 /-- What `State.reserve` makes of `before`: an unbegun occurrence of `element` in `scope`, issued at the counter and
-numbered as an element activation, joins the occurrences. Nothing else changes. -/
+numbered as an element activation, above every count its counter had when the counters are keyed, joins the
+occurrences. Nothing else changes. -/
 structure Reserves (before after : State) (element : ElementId) (scope : ScopeOccurrenceId) (reserved : Occurrence) :
     Prop where
   occurrences : after.occurrences = before.occurrences ++ [reserved]
@@ -26,9 +27,11 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   placed : reserved.scope = scope
   role : reserved.role = .element
   unbegun : reserved.begun = false
-  activated : Activated before after (before.instanceOf scope) element .element reserved.activation
+  activated : ActivationsKeyed before →
+    Activated before after (before.instanceOf scope) element .element reserved.activation
   scopes : after.scopes = before.scopes
   instances : ∀ x, after.instanceOf x = before.instanceOf x
+  instanceId : after.instanceId = before.instanceId
   openItems : after.openItems = before.openItems
   tokens : after.tokens = before.tokens
   signals : after.signals = before.signals
@@ -48,6 +51,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (reserves.instances _)
   have issuedAt := reserves.id
   have next := reserves.nextIssue
+  have activated := reserves.activated formed.activations
   have keyed : key before reserved =
       { processInstanceId := before.instanceOf scope, element, activation := reserved.activation, role := .element } := by
     simp [key, reserves.placed, reserves.kind, reserves.role]
@@ -65,7 +69,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
   have startsAfter : starts after = starts before := by simp [starts, reserves.journal, reserves.draft]
   have keyFresh : ∀ k, Counted before k → k ≠ key before reserved := fun k counted => by
     rw [keyed]
-    exact reserves.activated.fresh counted
+    exact activated.fresh counted
   refine ⟨?_, fun request queued named => ?_⟩
   rotate_left
   · have := ((formed.claimed.named request (queuedBefore request queued)).2 _ named).1
@@ -103,7 +107,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       subst named new
       exact keyFresh _ (formed.occurrencesCounted occurrence inside)
   case startedOnce => simpa [StartedOnce, startsAfter] using formed.startedOnce
-  case activations => exact reserves.activated.keyed formed.activations
+  case activations => exact activated.keyed formed.activations
   case reservations =>
     exact fun occurrence member unbegun fact started => by
       rw [startsAfter] at started
@@ -158,14 +162,14 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       · exact facts found old named
     · have := queue.completes id leave writes rule (reserves.signals ▸ queued)
       omega
-  case counted => exact fun fact started => reserves.activated.counted (formed.counted fact (startsAfter ▸ started))
+  case counted => exact fun fact started => activated.counted (formed.counted fact (startsAfter ▸ started))
   case occurrencesCounted =>
     exact fun occurrence member => by
       rw [keys]
       rcases members occurrence member with rfl | old
       · rw [keyed]
-        exact ⟨_, reserves.activated.activations ▸ List.mem_cons_self .., rfl, rfl, rfl, Nat.le_refl _⟩
-      · exact reserves.activated.counted (formed.occurrencesCounted occurrence old)
+        exact ⟨_, activated.activations ▸ List.mem_cons_self .., rfl, rfl, rfl, Nat.le_refl _⟩
+      · exact activated.counted (formed.occurrencesCounted occurrence old)
   case ownedBelow =>
     exact fun entry member occurrence inside owned => by
       rw [reserves.scopes] at member
@@ -237,10 +241,10 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     obtain ⟨below, counted, begun⟩ := formed.raises raised origin (reserves.signals ▸ queued) event
     refine ⟨by omega, fun present => ?_, fun found inside element placed activation => ?_⟩
     · rw [reserves.instances]
-      exact reserves.activated.counted (counted (by simpa [scopeIds, reserves.scopes] using present))
+      exact activated.counted (counted (by simpa [scopeIds, reserves.scopes] using present))
     · rcases members found inside with rfl | old
       · refine absurd (counted (placed ▸ reserves.placed ▸ stands)) fun numbered => ?_
-        refine reserves.activated.fresh numbered ?_
+        refine activated.fresh numbered ?_
         rw [← placed, reserves.placed, ← element, reserves.kind, ← activation]
       · exact begun found old element placed activation
 
@@ -253,6 +257,7 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
     before.draft.started ++ [{ occurrence := key after occurrence, owner := occurrence.scope, sourceType }]
   scopes : after.scopes = before.scopes
   instances : ∀ x, after.instanceOf x = before.instanceOf x
+  instanceId : after.instanceId = before.instanceId
   activations : after.activations = before.activations
   nextIssue : after.nextIssue = before.nextIssue
   openItems : after.openItems = before.openItems
@@ -260,6 +265,7 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
   signals : after.signals = before.signals
   variables : after.variables = before.variables
   journal : after.journal = before.journal
+  ended : after.draft.ended = before.draft.ended
   status : after.status = before.status
   failure : after.failure = before.failure
   slots : after.slots = before.slots

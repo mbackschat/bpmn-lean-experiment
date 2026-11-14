@@ -366,8 +366,8 @@ theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) wh
     rw [Laws.State.enterCalled_eq _ _ _ _ _ fresh]
     exact kept.enter rfl fun entry member => (List.mem_append.mp member).imp_right fun fresh => by
       rw [List.mem_singleton.mp fresh]
-  reserve _ s element scope formed kept :=
-    have reserves := Laws.State.reserve_reserves formed.activations element scope
+  reserve _ s element scope _ kept :=
+    have reserves := Laws.State.reserve_reserves s element scope
     kept.enter reserves.nextIssue fun _ member => .inl (reserves.scopes ▸ member)
   leaveScope _ s scope _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2

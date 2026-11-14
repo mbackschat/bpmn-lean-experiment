@@ -82,7 +82,7 @@ theorem setVariable_same (state : State) (target : ScopeOccurrenceId) (name : St
   unfold State.setVariable
   dsimp only
   split <;> split <;> exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl,
-    rfl⟩
+    rfl, rfl⟩
 
 /-- The variable sets after `setVariable`: the target's set rebinds or appends the name, or a new set holds it. -/
 theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
@@ -100,7 +100,7 @@ theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name
 /-- `removeVariable` changes only the variable sets and the write log. -/
 theorem removeVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) :
     SameButVariables state (state.removeVariable target name) :=
-  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, rfl⟩
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, rfl, rfl⟩
 
 /-- `keyed` binds each name at most once, whatever bindings it was given. -/
 theorem keyed_names (bindings : List (String × Value)) : ((keyed bindings).map (·.1)).Nodup := by
@@ -574,23 +574,22 @@ theorem activate_activated {state : State} (keyed : ActivationsKeyed state) (ins
       simp [hit.1.1, hit.1.2, hit.2, named, same, roled]
   simp [State.activate, found]
 
-/-- `State.reserve` in a state whose counters are keyed. -/
-theorem reserve_reserves {state : State} (keyed : ActivationsKeyed state) (element : ElementId)
-    (scope : ScopeOccurrenceId) :
+/-- `State.reserve`. -/
+theorem reserve_reserves (state : State) (element : ElementId) (scope : ScopeOccurrenceId) :
     Reserves state (state.reserve element scope).1 element scope (state.reserve element scope).2 := by
-  have activated := activate_activated keyed (state.instanceOf scope) element .element
   have instances : ∀ x, (state.reserve element scope).1.instanceOf x = state.instanceOf x :=
     instanceOf_congr (by simp [State.reserve, State.activate, State.issue])
       (by simp [State.reserve, State.activate, State.issue])
   refine ⟨by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
     by simp [State.reserve, State.activate, State.issue], by simp [State.reserve], by simp [State.reserve],
-    by simp [State.reserve], by simp [State.reserve], ?_, by simp [State.reserve, State.activate, State.issue],
-    instances, by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
+    by simp [State.reserve], by simp [State.reserve], fun keyed => ?_, by simp [State.reserve, State.activate, State.issue],
+    instances, by simp [State.reserve, State.activate, State.issue],
+    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
     by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
     by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
     by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
     by simp [State.reserve, State.activate, State.issue]⟩
-  obtain ⟨activations, above, positive⟩ := activated
+  obtain ⟨activations, above, positive⟩ := activate_activated keyed (state.instanceOf scope) element .element
   exact ⟨by simpa [State.reserve, State.issue] using activations, by simpa [State.reserve, State.issue] using above,
     by simpa [State.reserve] using positive⟩
 
@@ -616,7 +615,7 @@ theorem startReserved_starts (state : State) {occurrence : Occurrence} (sourceTy
   refine ⟨by simp [State.recordStart], ?_, by simp [State.recordStart], instances, by simp [State.recordStart],
     by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
     by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
-    by simp [State.recordStart]⟩
+    by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart]⟩
   rw [recordStart_started]
   simp [key]
 
@@ -646,8 +645,8 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
     refine ⟨by simp [State.recordStart], by rw [recordStart_started], rfl, rfl,
       .inl ⟨reserved, member, same ▸ named, rfl, rfl, rfl, rfl, by simp [State.recordStart], by simp [State.recordStart]⟩,
       keeps.1, instances, by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
-      keeps.2.1, by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
-      by simp [State.recordStart]⟩
+      by simp [State.recordStart], keeps.2.1, by simp [State.recordStart], by simp [State.recordStart],
+      by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart]⟩
   · rename_i found
     have shape : (state.activate (state.instanceOf request.scope) request.element role).1 =
         { state with activations := (state.activate (state.instanceOf request.scope) request.element role).1.activations } := by
@@ -665,7 +664,8 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
     refine ⟨by simp [State.recordStart, State.issue], by rw [recordStart_started]; simp [State.recordStart, State.issue],
       rfl, rfl, .inr ⟨absent, by simp [State.issue], by simp [State.recordStart, State.issue], rfl, rfl, ?_⟩,
       keeps.1, instances, by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue],
-      by simp [State.recordStart, State.issue], keeps.2.1, by simp [State.recordStart, State.issue],
+      by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue], keeps.2.1,
+      by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue],
       by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue],
       by simp [State.recordStart, State.issue]⟩
     exact ⟨by simpa [State.recordStart, State.issue] using activated.activations, activated.above, activated.positive⟩
@@ -844,33 +844,9 @@ theorem cancelOccurrence_ended {s : State} {id : Nat} {occurrence : Occurrence} 
       ([occurrence].filter (·.begun)).map fun o => (key ((s.withdrawOccurrence id).removeOccurrence id) o, .cancelled) := by
   simp [State.cancelOccurrence, found, State.recordCancelled, keyOf_eq]
 
-/-! ## What the end facts read -/
-
-/-- Beginning, starting, reserving, clearing and writing keep the instance identity, beginning and starting journal no
-end, and a reservation appends its occurrence and keeps the scope occurrences and the draft. -/
-theorem ends_unmoved (s : State) :
-    (∀ request role sourceType, (s.beginOccurrence request role sourceType).1.instanceId = s.instanceId ∧
-      (s.beginOccurrence request role sourceType).1.journal = s.journal ∧
-      (s.beginOccurrence request role sourceType).1.draft.ended = s.draft.ended) ∧
-    (∀ occurrence sourceType, (s.startReserved occurrence sourceType).1.instanceId = s.instanceId ∧
-      (s.startReserved occurrence sourceType).1.draft.ended = s.draft.ended) ∧
-    (∀ element scope, (s.reserve element scope).1.instanceId = s.instanceId ∧ (s.reserve element scope).1.draft = s.draft ∧
-      (s.reserve element scope).1.scopes = s.scopes ∧
-      (s.reserve element scope).1.occurrences = s.occurrences ++ [(s.reserve element scope).2]) ∧
-    (∀ scope keep, (s.clearInside scope keep).instanceId = s.instanceId) ∧
-    (∀ target name value, (s.setVariable target name value).instanceId = s.instanceId) ∧
-    ∀ target name, (s.removeVariable target name).instanceId = s.instanceId := by
-  refine ⟨fun request role sourceType => ?_, fun occurrence sourceType => ?_, fun element scope => ?_,
-    fun scope keep => ?_, fun target name value => ?_, fun target name => ?_⟩
-  · simp only [State.beginOccurrence, State.recordStart]
-    split <;> simp [State.activate, State.issue]
-  · simp only [State.startReserved, State.recordStart]
-    split <;> simp
-  · simp [State.reserve, State.activate, State.issue]
-  · simp [State.clearInside, State.recordCancelled]
-  · unfold State.setVariable
-    dsimp only
-    split <;> split <;> rfl
-  · rfl
+/-- Clearing a scope occurrence keeps the instance identity. -/
+theorem clearInside_instanceId (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
+    (s.clearInside scope keep).instanceId = s.instanceId := by
+  simp [State.clearInside, State.recordCancelled]
 
 end Kernel.Laws.State

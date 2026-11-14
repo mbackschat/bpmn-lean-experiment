@@ -338,8 +338,8 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
     obtain ⟨entry, inside, named⟩ := stands
     exact Laws.State.openSubscription_wellFormed formed kind element (List.mem_map.mpr ⟨entry, inside, named⟩) hangs passive
       waits
-  subscribed state kind element scope host passive formed := by
-    have reserves := Laws.State.reserve_reserves formed.activations element scope
+  subscribed state kind element scope host passive _ := by
+    have reserves := Laws.State.reserve_reserves state element scope
     rw [Laws.State.openSubscription_eq]
     exact ⟨reserves.scopes, fun occurrence member => by
       rw [reserves.occurrences]

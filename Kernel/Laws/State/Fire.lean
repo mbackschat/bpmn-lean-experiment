@@ -201,7 +201,7 @@ theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item
     (waits : AwaitsTrigger kind) : WellFormed program (s.openSubscription kind element scope host passive).1 ∧
       Fired program (s.openSubscription kind element scope host passive).1 item := by
   refine ⟨openSubscription_wellFormed formed kind element stands hangs passive waits, ?_⟩
-  have reserves := reserve_reserves formed.activations element scope
+  have reserves := reserve_reserves s element scope
   rw [openSubscription_eq]
   generalize s.reserve element scope = pair at reserves
   obtain ⟨t, reservation⟩ := pair

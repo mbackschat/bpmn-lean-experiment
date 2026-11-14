@@ -107,11 +107,13 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   source : (∃ reserved, Reserved before after request begun reserved) ∨ Issued before after request role begun
   scopes : after.scopes = before.scopes
   instances : ∀ x, after.instanceOf x = before.instanceOf x
+  instanceId : after.instanceId = before.instanceId
   openItems : after.openItems = before.openItems
   tokens : after.tokens = before.tokens
   signals : after.signals = before.signals
   variables : after.variables = before.variables
   journal : after.journal = before.journal
+  ended : after.draft.ended = before.draft.ended
   status : after.status = before.status
   failure : after.failure = before.failure
   slots : after.slots = before.slots

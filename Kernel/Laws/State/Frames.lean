@@ -535,6 +535,7 @@ structure SameButVariables (before after : State) : Prop where
   failure : after.failure = before.failure
   signals : after.signals = before.signals
   instances : ∀ scope, after.instanceOf scope = before.instanceOf scope
+  instanceId : after.instanceId = before.instanceId
   slots : after.slots = before.slots
 
 /-- A state that differs from a well-formed one only in its variable sets is well-formed when every set belongs to a
