@@ -109,6 +109,31 @@ theorem registered_removeVariables (ops : Operations inv) (facts : StateFacts) :
 
 end Contract
 
+/-! ## The phases that queue a signal
+
+`Laws.State.signal_queueSound` asks which signal a phase queues, which only `Signal`'s owners may tell. -/
+
+/-- A start's fresh instance, with its root's Event Sub-Process starts queued for arming (`Laws.Step.Phases.initial`). -/
+theorem initial_wellFormed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
+    Laws.State.WellFormed ((State.initial instanceId variables businessKey).signal (.armScope State.root)) :=
+  have formed := Laws.State.initial_wellFormed instanceId variables businessKey
+  Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
+    (fun _ same => by cases same; exact Laws.State.initial_rootIssued instanceId variables businessKey)
+    (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
+
+/-- A variable command queues its write (`Laws.Step.Phases.queueWrite`). -/
+theorem queueWrite_wellFormed {state : State} (formed : Laws.State.WellFormed state) (scope : ScopeOccurrenceId)
+    (writes : List (String × Value)) (rule : WriteRule) :
+    Laws.State.WellFormed (state.signal (.write scope writes rule)) :=
+  Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
+    (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
+
+/-- A variable command queues its removal (`Laws.Step.Phases.queueRemove`). -/
+theorem queueRemove_wellFormed {state : State} (formed : Laws.State.WellFormed state) (scope : ScopeOccurrenceId)
+    (names : List String) : Laws.State.WellFormed (state.signal (.remove scope names)) :=
+  Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
+    (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
+
 /-- Data's share of the state invariant, measured at P0 (P2's budget rests on it): the registered write and removal
 hooks keep `Laws.State.WellFormed`. -/
 theorem registeredWrites_wellFormed {ctx : Ctx} {scope : ScopeOccurrenceId} {writes : List (String × Value)}

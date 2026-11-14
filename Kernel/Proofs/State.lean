@@ -82,6 +82,12 @@ theorem operations : Laws.Step.Operations WellFormed where
     exact Laws.State.setVariable_wellFormed formed (List.mem_map.mpr ⟨entry, inside, same⟩)
   removeVariable _ _ _ formed := Laws.State.removeVariable_wellFormed formed
 
+/-- `Step.endInstance` keeps `WellFormed` (`Laws.Step.Phases.endInstance`). -/
+theorem endInstance_wellFormed {state : State} {status : InstanceStatus} {failure : Option InstanceFailure}
+    (formed : WellFormed state) (recorded : failure.isSome = true ↔ status = .failed) :
+    WellFormed (Step.endInstance status failure state) :=
+  Laws.Step.endInstance_eq ▸ Laws.State.endInstance_wellFormed formed recorded
+
 /-- The composition of the state-invariant lane: hooks that keep their contract (`Laws.Step.HookContract`) and the
 phases of `Step` (`Laws.Step.Phases`) keep `WellFormed` through every committed input. -/
 theorem stepKeepsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hooks WellFormed)

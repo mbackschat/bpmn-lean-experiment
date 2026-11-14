@@ -18,6 +18,19 @@ open Kernel Kernel.Step
 
 /-! ## The closure from its bodies -/
 
+/-- An invariant that a micro-step's body, its absorbed completion and its transition each preserve is preserved by
+the micro-step. -/
+theorem microStep_preserves {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Option ElementId}
+    {owner : ScopeOccurrenceId} {body : State → Outcome} (invariant : State → Prop)
+    (byBody : ∀ state next, invariant state → body state = .ok next → invariant next)
+    (byAbsorb : ∀ before state next, invariant state → absorb hooks ctx before state = .ok next → invariant next)
+    (byConclude : ∀ state next, invariant state → conclude hooks ctx cause element owner state = .ok next →
+      invariant next)
+    {state after : State} (holds : invariant state)
+    (ran : microStep hooks ctx cause element owner body state = .ok after) : invariant after := by
+  obtain ⟨next, absorbed, body_, ⟨absorbed_, concluded⟩⟩ := microStep_ok ran
+  exact byConclude _ _ (byAbsorb _ _ _ (byBody _ _ holds body_) absorbed_) concluded
+
 /-- `settle_induction` from micro-step bodies: an invariant that every closure micro-step's body, absorbed completion
 and transition preserve, from the state the micro-step starts in, is preserved by `Step.settle`. The bodies are a
 queued signal's (`Step.dispatchSignal`), a moved token's (`Step.moveToken`, itself one micro-step), an idle scope

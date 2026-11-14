@@ -57,19 +57,6 @@ theorem microStep_ok {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Opti
   obtain ⟨absorbed, absorbed_, ran⟩ := bind_ok ran
   exact ⟨next, absorbed, deferred_ok body_, deferred_ok absorbed_, deferred_ok ran⟩
 
-/-- An invariant that a micro-step's body, its absorbed completion and its transition each preserve is preserved by
-the micro-step. -/
-theorem microStep_preserves {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Option ElementId}
-    {owner : ScopeOccurrenceId} {body : State → Outcome} (invariant : State → Prop)
-    (byBody : ∀ state next, invariant state → body state = .ok next → invariant next)
-    (byAbsorb : ∀ before state next, invariant state → absorb hooks ctx before state = .ok next → invariant next)
-    (byConclude : ∀ state next, invariant state → conclude hooks ctx cause element owner state = .ok next →
-      invariant next)
-    {state after : State} (holds : invariant state)
-    (ran : microStep hooks ctx cause element owner body state = .ok after) : invariant after := by
-  obtain ⟨next, absorbed, body_, ⟨absorbed_, concluded⟩⟩ := microStep_ok ran
-  exact byConclude _ _ (byAbsorb _ _ _ (byBody _ _ holds body_) absorbed_) concluded
-
 /-! ## The closure
 
 `ClosureStep hooks ctx before after`: `after` is what one micro-step of `Step.settle` commits from `before`, in the
@@ -234,6 +221,11 @@ these and never opens `Kernel.Step`. -/
 /-- The context `Step.step` gives every hook of `input`'s closure. -/
 def inputCtx (hooks : Hooks) (program : Program) (input : Input) : Ctx :=
   { context hooks program with conditionChoices := (inputHead input).2.2 }
+
+/-- An instance end clears the instance root and records the status and failure. -/
+theorem endInstance_eq {status : InstanceStatus} {failure : Option InstanceFailure} {state : State} :
+    endInstance status failure state = { state.clearInside State.root with status, failure } := by
+  simp only [endInstance]
 
 /-- A committed timer firing committed its closure's outcome: `Step.timerJob` changes only a failure. -/
 theorem timerJob_ok {failure : ContinuationFailure} {outcome : Outcome} {after : State}

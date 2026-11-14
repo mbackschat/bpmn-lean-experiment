@@ -14,10 +14,11 @@ Besides the state's fields a law names only `Token.busyScope`, a total projectio
 the `State` contract documents, since matching `Token` is `Step`'s
 ([module table](../../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)).
 
-Each law is followed by its non-vacuity witness: a small state that satisfies it and, where the law could otherwise hold
-of everything, one that violates it. The witnesses read only the laws, never a `State` operation's body, so this module
-sees none; the lemmas about the operations, and the witness that the sample instance is well-formed, which reads
-`State.root`'s value, are `Kernel.Laws.State`'s.
+Besides the laws, it holds what follows from them over the fields alone: that a well-formed state's scope occurrences
+form a tree (`Depth`), and the frames through which a change of the fields keeps `WellFormed`. Each law is followed by
+its non-vacuity witness: a small state that satisfies it and, where the law could otherwise hold of everything, one that
+violates it. Nothing here reads a `State` operation's body, so this module sees none; the lemmas about the operations,
+and the witness that the sample instance is well-formed, which reads `State.root`'s value, are `Kernel.Laws.State`'s.
 -/
 
 @[expose] public section
@@ -173,6 +174,346 @@ structure WellFormed (s : State) : Prop where
   queue : QueueSound s
   counted : StartsCounted s
   ownedBelow : OwnedBelow s
+
+/-! ## The scope tree of a well-formed state
+
+`Rooted` and `Distinct` make the scope occurrences a tree: each has one record, so one parent, and a depth below
+`State.root`, which grows by one from parent to child, so no parent chain returns to where it started. -/
+
+/-- `Depth s scope n`: `scope` lies `n` parent links below `State.root`. -/
+inductive Depth (s : State) : ScopeOccurrenceId → Nat → Prop where
+  | root : Depth s State.root 0
+  | child (child : ScopeOccurrence) (parent : ScopeOccurrenceId) (depth : Nat) :
+      child ∈ s.scopes → child.parent = some parent → Depth s parent depth → Depth s child.id (depth + 1)
+
+/-- A scope occurrence within `State.root` has a depth. -/
+theorem Within.depth {s : State} {scope : ScopeOccurrenceId} (within : Within s scope State.root) : ∃ n, Depth s scope n := by
+  generalize rooted : State.root = root at within
+  induction within with
+  | refl => exact ⟨0, rooted ▸ .root⟩
+  | parent child parent _ member link _ ih =>
+    obtain ⟨n, depth⟩ := ih rooted
+    exact ⟨n + 1, .child child parent n member link depth⟩
+
+/-- Members of a list whose images are distinct are equal when their images are. -/
+theorem nodup_map_eq {α β : Type} {f : α → β} : ∀ {l : List α}, (l.map f).Nodup → ∀ {a b : α}, a ∈ l → b ∈ l →
+    f a = f b → a = b
+  | [], _, _, _, member, _, _ => by simp at member
+  | x :: l, nodup, a, b, first, second, same => by
+    simp only [List.map_cons, List.nodup_cons, List.mem_map, not_exists, not_and] at nodup
+    obtain ⟨fresh, nodup⟩ := nodup
+    rcases List.mem_cons.mp first with rfl | inFirst <;> rcases List.mem_cons.mp second with rfl | inSecond
+    · rfl
+    · exact absurd same.symm (fresh b inSecond)
+    · exact absurd same (fresh a inFirst)
+    · exact nodup_map_eq nodup inFirst inSecond same
+
+/-- Two scope occurrences of a state whose identifiers are distinct and which share an identifier are one. -/
+theorem scope_unique {s : State} (distinct : Distinct s) {first second : ScopeOccurrence} (one : first ∈ s.scopes)
+    (two : second ∈ s.scopes) (same : first.id = second.id) : first = second :=
+  nodup_map_eq distinct.scopes one two same
+
+/-- A scope occurrence's depth is one more than its parent's. -/
+theorem Depth.parent {s : State} (formed : WellFormed s) {child : ScopeOccurrence} {parent : ScopeOccurrenceId}
+    {n : Nat} (member : child ∈ s.scopes) (link : child.parent = some parent) (depth : Depth s child.id n) :
+    ∃ m, n = m + 1 ∧ Depth s parent m := by
+  generalize named : child.id = id at depth
+  cases depth with
+  | root =>
+    have := (formed.rooted.2.1 child member).mpr named
+    simp [this] at link
+  | child other parent' m inside link' depth' =>
+    have same := scope_unique formed.distinct member inside named
+    subst same
+    rw [link] at link'
+    cases link'
+    exact ⟨m, rfl, depth'⟩
+
+/-- Depths are unique. -/
+theorem Depth.unique {s : State} (formed : WellFormed s) {scope : ScopeOccurrenceId} {n m : Nat}
+    (first : Depth s scope n) (second : Depth s scope m) : n = m := by
+  induction first generalizing m with
+  | root =>
+    generalize named : State.root = id at second
+    cases second with
+    | root => rfl
+    | child child _ _ member link _ =>
+      have := (formed.rooted.2.1 child member).mpr named.symm
+      simp [this] at link
+  | child child parent n member link _ ih =>
+    obtain ⟨k, rfl, depth⟩ := Depth.parent formed member link second
+    rw [ih depth]
+
+/-- A scope occurrence lies no higher than one it is within, and strictly lower when it is another. -/
+theorem Within.deeper {s : State} (formed : WellFormed s) {inner outer : ScopeOccurrenceId} (within : Within s inner outer)
+    {n m : Nat} (innerDepth : Depth s inner n) (outerDepth : Depth s outer m) : m ≤ n ∧ (inner ≠ outer → m < n) := by
+  induction within generalizing n with
+  | refl => exact ⟨Nat.le_of_eq (Depth.unique formed outerDepth innerDepth), fun distinct => absurd rfl distinct⟩
+  | parent child parent _ member link _ ih =>
+    obtain ⟨k, rfl, depth⟩ := Depth.parent formed member link innerDepth
+    have := (ih depth outerDepth).1
+    exact ⟨by omega, fun _ => by omega⟩
+
+/-- No scope occurrence's parent lies within it. -/
+theorem parent_not_within {s : State} (formed : WellFormed s) {child : ScopeOccurrence} {parent : ScopeOccurrenceId}
+    (member : child ∈ s.scopes) (link : child.parent = some parent) : ¬ Within s parent child.id := fun within => by
+  obtain ⟨n, depth⟩ := (formed.rooted.2.2 child member).depth
+  obtain ⟨m, rfl, parentDepth⟩ := Depth.parent formed member link depth
+  have := (within.deeper formed parentDepth depth).1
+  omega
+
+/-- What a scope occurrence with a depth lies within has a depth. -/
+theorem Within.depthUp {s : State} (formed : WellFormed s) {inner outer : ScopeOccurrenceId}
+    (within : Within s inner outer) {n : Nat} (depth : Depth s inner n) : ∃ m, Depth s outer m := by
+  induction within generalizing n with
+  | refl => exact ⟨n, depth⟩
+  | parent child parent _ member link _ ih =>
+    obtain ⟨k, _, parentDepth⟩ := Depth.parent formed member link depth
+    exact ih parentDepth
+
+/-- Two scope occurrences within each other are one. -/
+theorem Within.antisymm {s : State} (formed : WellFormed s) {first second : ScopeOccurrenceId}
+    (present : first ∈ scopeIds s) (down : Within s first second) (up : Within s second first) : first = second := by
+  obtain ⟨entry, member, same⟩ := List.mem_map.mp present
+  obtain ⟨n, firstDepth⟩ := (same ▸ formed.rooted.2.2 entry member).depth
+  obtain ⟨m, secondDepth⟩ := down.depthUp formed firstDepth
+  by_cases same : first = second
+  · exact same
+  · have := (down.deeper formed firstDepth secondDepth).2 same
+    have := (up.deeper formed secondDepth firstDepth).1
+    omega
+
+/-! ## Frames
+
+What `WellFormed` keeps through a change of the fields it reads, stated over the fields alone: the phases of `Step` that
+only drop or reorder entries (`Narrows`), a change of status and failure, and the clearing of a scope occurrence
+(`Cleared`), which `Kernel.Laws.State` shows `State.clearInside` makes. -/
+
+/-- The start facts of the input in progress, which `StartedOnce`, `ReservationsUnstarted` and `StartsCounted` read. -/
+def starts (s : State) : List StartedFact := s.journal.flatMap (·.started) ++ s.draft.started
+
+/-- `after` holds what `before` holds, with no more open items, tokens, queued signals or start facts of the input in
+progress, and no new identifier: the phases that only drop or reorder entries. -/
+structure Narrows (before after : State) : Prop where
+  scopes : after.scopes = before.scopes
+  occurrences : after.occurrences = before.occurrences
+  variables : after.variables = before.variables
+  activations : after.activations = before.activations
+  nextIssue : after.nextIssue = before.nextIssue
+  status : after.status = before.status
+  failure : after.failure = before.failure
+  openItems : after.openItems.Sublist before.openItems
+  tokens : ∀ token ∈ after.tokens, token ∈ before.tokens
+  signals : ∀ signal ∈ after.signals, signal ∈ before.signals
+  starts : ∀ fact ∈ starts after, fact ∈ starts before
+
+/-- A state that narrows a well-formed one is well-formed when it starts no occurrence key twice. -/
+theorem WellFormed.narrow {before after : State} (formed : WellFormed before) (narrows : Narrows before after)
+    (once : StartedOnce after) : WellFormed after where
+  issued := ⟨by simpa [narrows.occurrences, narrows.nextIssue] using formed.issued.occurrences,
+    fun item member => narrows.nextIssue ▸ formed.issued.items item (narrows.openItems.subset member),
+    by simpa [narrows.scopes, narrows.nextIssue] using formed.issued.scopes⟩
+  distinct := ⟨by simpa [occurrenceIds, narrows.occurrences] using formed.distinct.occurrences,
+    formed.distinct.items.sublist (narrows.openItems.map _), by simpa [scopeIds, narrows.scopes] using formed.distinct.scopes⟩
+  startedOnce := once
+  activations := ⟨by simpa [narrows.activations] using formed.activations.keys,
+    by simpa [narrows.activations] using formed.activations.positive⟩
+  reservations occurrence member unbegun fact started :=
+    formed.reservations occurrence (narrows.occurrences ▸ member) unbegun fact (narrows.starts fact started)
+  owned := {
+    occurrenceScopes := by simpa [scopeIds, narrows.occurrences, narrows.scopes] using formed.owned.occurrenceScopes
+    itemScopes := fun item member => by
+      simpa [scopeIds, narrows.scopes] using formed.owned.itemScopes item (narrows.openItems.subset member)
+    itemOccurrences := fun item member => by
+      simpa [narrows.occurrences] using formed.owned.itemOccurrences item (narrows.openItems.subset member)
+    attachments := fun item member => by
+      simpa [occurrenceIds, narrows.occurrences] using formed.owned.attachments item (narrows.openItems.subset member)
+    scopeOwners := by simpa [occurrenceIds, narrows.scopes, narrows.occurrences] using formed.owned.scopeOwners
+    variableScopes := by simpa [scopeIds, narrows.variables, narrows.scopes] using formed.owned.variableScopes
+    tokenScopes := fun token member => by
+      simpa [scopeIds, narrows.scopes] using formed.owned.tokenScopes token (narrows.tokens token member) }
+  rooted := by
+    obtain ⟨present, parentless, reach⟩ := formed.rooted
+    refine ⟨by simpa [scopeIds, narrows.scopes] using present, by simpa [narrows.scopes] using parentless, ?_⟩
+    intro scope member
+    exact Within.congr narrows.scopes (reach scope (narrows.scopes ▸ member))
+  variables := ⟨by simpa [narrows.variables] using formed.variables.scopes,
+    by simpa [narrows.variables] using formed.variables.names⟩
+  failure := by simpa [FailureRecorded, narrows.failure, narrows.status] using formed.failure
+  queue := {
+    arm := fun host element scope queued => narrows.nextIssue ▸ formed.queue.arm host element scope (narrows.signals _ queued)
+    armScope := fun scope queued => narrows.nextIssue ▸ formed.queue.armScope scope (narrows.signals _ queued)
+    armGateway := fun occurrence gateway scope queued =>
+      narrows.nextIssue ▸ formed.queue.armGateway occurrence gateway scope (narrows.signals _ queued)
+    ends := fun status failure queued => formed.queue.ends status failure (narrows.signals _ queued) }
+  counted fact started := by simpa [narrows.activations] using formed.counted fact (narrows.starts fact started)
+  ownedBelow := by simpa [OwnedBelow, narrows.scopes, narrows.occurrences] using formed.ownedBelow
+
+/-- Start facts that are a permutation of a well-formed state's, with nothing else but the journal and the draft
+changed, keep it well-formed. -/
+theorem WellFormed.permuted {before after : State} (formed : WellFormed before) (narrows : Narrows before after)
+    (perm : (starts after).Perm (starts before)) : WellFormed after :=
+  formed.narrow narrows ((perm.map _).nodup_iff.mpr formed.startedOnce)
+
+/-- A well-formed state with its status and failure changed together stays well-formed. -/
+theorem WellFormed.withStatus {s : State} (formed : WellFormed s) {status : InstanceStatus}
+    {failure : Option InstanceFailure} (recorded : failure.isSome = true ↔ status = .failed) :
+    WellFormed { s with status, failure } where
+  issued := ⟨formed.issued.occurrences, formed.issued.items, formed.issued.scopes⟩
+  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes⟩
+  startedOnce := formed.startedOnce
+  activations := ⟨formed.activations.keys, formed.activations.positive⟩
+  reservations := formed.reservations
+  owned := ⟨formed.owned.occurrenceScopes, formed.owned.itemScopes, formed.owned.itemOccurrences,
+    formed.owned.attachments, formed.owned.scopeOwners, formed.owned.variableScopes, formed.owned.tokenScopes⟩
+  rooted := ⟨formed.rooted.1, formed.rooted.2.1,
+    fun scope member => Within.congr (s := s) (t := { s with status, failure }) rfl (formed.rooted.2.2 scope member)⟩
+  variables := ⟨formed.variables.scopes, formed.variables.names⟩
+  failure := recorded
+  queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends⟩
+  counted := formed.counted
+  ownedBelow := formed.ownedBelow
+
+/-- What `State.clearInside before scope keep` leaves of `before`, read through the scope tree: the scope occurrences
+and variable sets not strictly within `scope`, the occurrences, open items and tokens not within it but those of the
+kept occurrences, and everything else as it was but the draft's end and cancelled facts. P3's cancellation lane and the
+phases that clear (`Step.endInstance`, `State.leaveScope`) build on it. -/
+structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : List Nat) : Prop where
+  scopes : ∀ entry, entry ∈ after.scopes ↔ entry ∈ before.scopes ∧ ¬ StrictlyWithin before entry.id scope
+  occurrences : ∀ occurrence, occurrence ∈ after.occurrences ↔
+    occurrence ∈ before.occurrences ∧ (¬ Within before occurrence.scope scope ∨ occurrence.id ∈ keep)
+  openItems : ∀ item, item ∈ after.openItems ↔
+    item ∈ before.openItems ∧ (¬ Within before item.scope scope ∨ item.occurrence ∈ keep)
+  tokens : ∀ token, token ∈ after.tokens ↔ token ∈ before.tokens ∧ ¬ Within before token.busyScope scope
+  variables : ∀ variables, variables ∈ after.variables ↔
+    variables ∈ before.variables ∧ ¬ StrictlyWithin before variables.scope scope
+  scopesSublist : after.scopes.Sublist before.scopes
+  occurrencesSublist : after.occurrences.Sublist before.occurrences
+  openItemsSublist : after.openItems.Sublist before.openItems
+  variablesSublist : after.variables.Sublist before.variables
+  activations : after.activations = before.activations
+  nextIssue : after.nextIssue = before.nextIssue
+  signals : after.signals = before.signals
+  status : after.status = before.status
+  failure : after.failure = before.failure
+  journal : after.journal = before.journal
+  started : after.draft.started = before.draft.started
+
+/-- A scope occurrence that lies within `State.root` and not strictly within a cleared `scope` still does after the
+clearing: nothing on its way up lies strictly within `scope`, or it would itself. -/
+private theorem Cleared.reaches {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat}
+    (formed : WellFormed before) (cleared : Cleared before after scope keep) {x : ScopeOccurrenceId}
+    (within : Within before x State.root) : ¬ StrictlyWithin before x scope → Within after x State.root := by
+  generalize rooted : State.root = root at within
+  induction within with
+  | refl => intro _; subst rooted; exact .refl _
+  | parent child parent _ member link _ ih =>
+    intro outside
+    refine .parent child parent _ ((cleared.scopes child).mpr ⟨member, outside⟩) link (ih rooted fun ⟨inside, other⟩ => ?_)
+    have childInside : Within before child.id scope := .parent child parent scope member link inside
+    have same : child.id = scope := Classical.byContradiction fun distinct => outside ⟨childInside, distinct⟩
+    exact parent_not_within formed member link (same ▸ inside)
+
+/-- A cleared well-formed state is well-formed when every occurrence the clearing keeps lies in no scope occurrence
+strictly within the cleared one, and every open item the clearing leaves hangs on an occurrence it leaves. -/
+theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat} (formed : WellFormed before)
+    (cleared : Cleared before after scope keep) (present : scope ∈ scopeIds before)
+    (kept : ∀ occurrence ∈ before.occurrences, occurrence.id ∈ keep → ¬ StrictlyWithin before occurrence.scope scope)
+    (attached : ∀ item ∈ before.openItems, (¬ Within before item.scope scope ∨ item.occurrence ∈ keep) → ∀ host,
+      item.attachedTo = some host → ∀ occurrence ∈ before.occurrences, occurrence.id = host →
+        ¬ Within before occurrence.scope scope ∨ host ∈ keep) :
+    WellFormed after := by
+  have sameStarts : starts after = starts before := by simp [starts, cleared.journal, cleared.started]
+  -- A scope occurrence of `before` that is no strict descendant of `scope` stands after the clearing.
+  have stays : ∀ id, id ∈ scopeIds before → ¬ StrictlyWithin before id scope → id ∈ scopeIds after := fun id member outside => by
+    obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
+    exact List.mem_map.mpr ⟨entry, (cleared.scopes entry).mpr ⟨inside, named ▸ outside⟩, named⟩
+  have notStrict : ∀ id, ¬ Within before id scope → ¬ StrictlyWithin before id scope := fun _ outside strict =>
+    outside strict.1
+  -- An occurrence of `before` that the clearing leaves lies in a scope occurrence that stands.
+  have occurrenceStays : ∀ occurrence ∈ before.occurrences, (¬ Within before occurrence.scope scope ∨ occurrence.id ∈ keep) →
+      occurrence.scope ∈ scopeIds after := fun occurrence member left => by
+    refine stays _ (formed.owned.occurrenceScopes occurrence member) ?_
+    rcases left with outside | keeps
+    · exact notStrict _ outside
+    · exact kept occurrence member keeps
+  constructor
+  · exact ⟨fun occurrence member => cleared.nextIssue ▸ formed.issued.occurrences occurrence
+        (cleared.occurrencesSublist.subset member),
+      fun item member => cleared.nextIssue ▸ formed.issued.items item (cleared.openItemsSublist.subset member),
+      fun entry member => cleared.nextIssue ▸ formed.issued.scopes entry (cleared.scopesSublist.subset member)⟩
+  · exact ⟨formed.distinct.occurrences.sublist (cleared.occurrencesSublist.map _),
+      formed.distinct.items.sublist (cleared.openItemsSublist.map _),
+      formed.distinct.scopes.sublist (cleared.scopesSublist.map _)⟩
+  · have once := formed.startedOnce
+    unfold StartedOnce at once ⊢
+    rw [show after.journal.flatMap (·.started) ++ after.draft.started = starts after from rfl, sameStarts]
+    exact once
+  · exact ⟨cleared.activations ▸ formed.activations.keys, cleared.activations ▸ formed.activations.positive⟩
+  · intro occurrence member unbegun fact started
+    exact formed.reservations occurrence (cleared.occurrencesSublist.subset member) unbegun fact
+      (show fact ∈ starts before from sameStarts ▸ started)
+  · constructor
+    · intro occurrence member
+      obtain ⟨old, left⟩ := (cleared.occurrences occurrence).mp member
+      exact occurrenceStays occurrence old left
+    · intro item member
+      obtain ⟨old, left⟩ := (cleared.openItems item).mp member
+      obtain ⟨occurrence, inside, facts⟩ := formed.owned.itemOccurrences item old
+      obtain ⟨named, _, placed⟩ := facts
+      rw [← placed]
+      refine occurrenceStays occurrence inside ?_
+      rcases left with outside | keeps
+      · exact .inl (placed ▸ outside)
+      · exact .inr (named ▸ keeps)
+    · intro item member
+      obtain ⟨old, left⟩ := (cleared.openItems item).mp member
+      obtain ⟨occurrence, inside, facts⟩ := formed.owned.itemOccurrences item old
+      obtain ⟨named, element, placed⟩ := facts
+      refine ⟨occurrence, (cleared.occurrences occurrence).mpr ⟨inside, ?_⟩, named, element, placed⟩
+      rcases left with outside | keeps
+      · exact .inl (placed ▸ outside)
+      · exact .inr (named ▸ keeps)
+    · intro item member host link
+      obtain ⟨old, left⟩ := (cleared.openItems item).mp member
+      obtain ⟨occurrence, inside, named⟩ := List.mem_map.mp (formed.owned.attachments item old host link)
+      exact List.mem_map.mpr ⟨occurrence, (cleared.occurrences occurrence).mpr
+        ⟨inside, named ▸ attached item old left host link occurrence inside named⟩, named⟩
+    · intro entry member owner owned
+      obtain ⟨old, outside⟩ := (cleared.scopes entry).mp member
+      obtain ⟨occurrence, inside, named⟩ := List.mem_map.mp (formed.owned.scopeOwners entry old owner owned)
+      refine List.mem_map.mpr ⟨occurrence, (cleared.occurrences occurrence).mpr ⟨inside, ?_⟩, named⟩
+      by_cases keeps : occurrence.id ∈ keep
+      · exact .inr keeps
+      · refine .inl fun within => ?_
+        have link := formed.ownedBelow entry old occurrence inside (named ▸ owned)
+        have entryInside : Within before entry.id scope := .parent entry occurrence.scope scope old link within
+        have same : entry.id = scope := Classical.byContradiction fun distinct => outside ⟨entryInside, distinct⟩
+        exact parent_not_within formed old link (same ▸ within)
+    · intro variables member
+      obtain ⟨old, outside⟩ := (cleared.variables variables).mp member
+      exact stays _ (formed.owned.variableScopes variables old) outside
+    · intro token member
+      obtain ⟨old, outside⟩ := (cleared.tokens token).mp member
+      exact stays _ (formed.owned.tokenScopes token old) (notStrict _ outside)
+  · obtain ⟨rootPresent, parentless, reach⟩ := formed.rooted
+    obtain ⟨scopeEntry, scopeInside, scopeNamed⟩ := List.mem_map.mp present
+    refine ⟨stays _ rootPresent fun ⟨inside, distinct⟩ => distinct (Within.antisymm formed rootPresent inside
+      (scopeNamed ▸ reach scopeEntry scopeInside)), fun entry member => parentless entry
+      (cleared.scopesSublist.subset member), fun entry member => ?_⟩
+    obtain ⟨old, outside⟩ := (cleared.scopes entry).mp member
+    exact cleared.reaches formed (reach entry old) outside
+  · exact ⟨formed.variables.scopes.sublist (cleared.variablesSublist.map _),
+      fun variables member => formed.variables.names variables (cleared.variablesSublist.subset member)⟩
+  · simpa [FailureRecorded, cleared.status, cleared.failure] using formed.failure
+  · obtain ⟨arm, armScope, armGateway, ends⟩ := formed.queue
+    exact ⟨by simpa [cleared.signals, cleared.nextIssue] using arm, by simpa [cleared.signals, cleared.nextIssue] using armScope,
+      by simpa [cleared.signals, cleared.nextIssue] using armGateway, by simpa [cleared.signals] using ends⟩
+  · intro fact started
+    simpa [cleared.activations] using formed.counted fact (show fact ∈ starts before from sameStarts ▸ started)
+  · intro entry member occurrence inside owned
+    exact formed.ownedBelow entry (cleared.scopesSublist.subset member) occurrence
+      (cleared.occurrencesSublist.subset inside) owned
 
 /-! ## Permitted transitions -/
 
