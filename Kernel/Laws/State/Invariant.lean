@@ -745,8 +745,8 @@ theorem queued_and_deferred_rejected (kind : OpenKind) :
 occurrence before it begins. -/
 theorem completed_reservation_rejected (kind : OpenKind) :
     ¬ ReservationsClaimed { armedState kind with signals := [.begin reservedBegin, .complete 7 .outgoing [] .outward] } :=
-  fun claimed => claimed.uncompleted reservedBegin 7 .outgoing [] .outward (.inl (by simp))
-    (by simp [names, reservedBegin]) (by simp)
+  fun claimed => claimed.uncompleted reservedBegin 7 .outgoing [] .outward (.inl List.mem_cons_self)
+    (by simp [names, reservedBegin]) (List.mem_cons_of_mem _ List.mem_cons_self)
 
 /-- A begin queued in the scope occurrence 9, never issued, breaks `ReservationsClaimed`: a scope occurrence entered
 later would be the one it begins in. -/
