@@ -94,6 +94,14 @@ theorem hooks_armScope : Registry.hooks.armScope = Feature.Subscriptions.armScop
 theorem hooks_armGateway : Registry.hooks.armGateway = Feature.Subscriptions.armGateway := by
   simp only [Registry.hooks]
 
+/-- Work answers every delivery to an Activity. -/
+theorem hooks_triggerActivity : Registry.hooks.triggerActivity = Feature.Work.triggerActivity Registry.workHooks := by
+  simp only [Registry.hooks]
+
+/-- Work returns from every called instance. -/
+theorem hooks_completeCall : Registry.hooks.completeCall = Feature.Work.completeCall := by
+  simp only [Registry.hooks]
+
 /-- Data applies every write. -/
 theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOutputs := by
   simp only [Registry.hooks]

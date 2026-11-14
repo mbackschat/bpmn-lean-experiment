@@ -3,6 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.Feature.Work
 import all Kernel.Feature.Work
+import all Kernel.Feature.Work.Call
 
 /-! # Laws of Work
 
@@ -152,6 +153,10 @@ structure WorkOps (inv : State → Prop) : Prop where
   /-- The completion of the occurrence an open item waits for. -/
   complete : ∀ state item leave writes rule, inv state → item ∈ state.openItems →
     inv (state.signal (.complete item.occurrence leave writes rule))
+  /-- The completion of the occurrence that owns a scope occurrence. -/
+  completeOwner : ∀ state scope occurrence leave writes rule, inv state → scope ∈ state.scopes →
+    occurrence ∈ state.occurrences → scope.occurrence = some occurrence.id →
+    inv (state.signal (.complete occurrence.id leave writes rule))
   raise : ∀ state event origin, inv state → inv (state.signal (.raise event origin))
   cancel : ∀ state, inv state → inv (state.signal (.endInstance .cancelled none))
   /-- What open items wait for replaced, each keeping everything else. -/
@@ -217,5 +222,31 @@ theorem cancelIncidentProcess_keeps {inv : State → Prop} (ops : WorkOps inv) {
   repeat' split at ran
   all_goals cases ran
   exact ops.cancel _ holds
+
+/-- `Hooks.triggerActivity` keeps `inv` for an open item: a delivery completes the Receive Task its item waits for. -/
+theorem triggerActivity_keeps {inv : State → Prop} (ops : WorkOps inv) {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
+    {header : Header} {payload : ActivityPayload} {item : OpenItem} {fired : Fired} {state after : State}
+    (holds : inv state) (member : item ∈ state.openItems)
+    (ran : Feature.Work.triggerActivity hooks ctx header payload item fired state = .ok after) : inv after := by
+  unfold Feature.Work.triggerActivity at ran
+  simp only [bind, Except.bind] at ran
+  repeat' split at ran
+  all_goals cases ran
+  all_goals exact ops.complete _ _ _ _ _ holds member
+
+/-- `Hooks.completeCall` keeps `inv`: a called instance's end completes the Call that owns its root. -/
+theorem completeCall_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {header : Header}
+    {payload : ActivityPayload} {root : ScopeOccurrence} {owner : Occurrence} {state after : State} (holds : inv state)
+    (member : root ∈ state.scopes) (owned : owner ∈ state.occurrences) (link : root.occurrence = some owner.id)
+    (ran : Feature.Work.completeCall ctx header payload root owner state = .ok after) : inv after := by
+  unfold Feature.Work.completeCall at ran
+  split at ran
+  · unfold Feature.Work.Call.returnFromCall at ran
+    simp only [bind, Except.bind] at ran
+    split at ran
+    · cases ran
+    · cases ran
+      exact ops.completeOwner _ _ _ _ _ _ holds member owned link
+  all_goals cases ran
 
 end Kernel.Laws.Work

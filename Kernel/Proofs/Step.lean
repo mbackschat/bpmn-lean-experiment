@@ -205,11 +205,21 @@ theorem complete_wellFormed {state : State} (formed : Laws.State.WellFormed stat
     Laws.State.WellFormed (state.signal (.complete occurrence.id leave writes rule)) :=
   unnamed_wellFormed formed (Laws.State.begun_unnamed formed member begun) leave writes rule
 
+/-- The occurrence that owns a scope occurrence is begun. -/
+theorem owner_begun {state : State} (formed : Laws.State.WellFormed state) {scope : ScopeOccurrence}
+    {occurrence : Occurrence} (member : scope ∈ state.scopes) (owned : occurrence ∈ state.occurrences)
+    (link : scope.occurrence = some occurrence.id) : occurrence.begun = true := by
+  obtain ⟨found, inside, named, begunFlag⟩ := formed.owned.scopeOwners scope member _ link
+  rw [Laws.State.nodup_map_eq formed.distinct.occurrences inside owned named] at begunFlag
+  exact begunFlag
+
 /-- Work's operations record (`Laws.Work.WorkOps`) of `WellFormed`. -/
 theorem workOps : Laws.Work.WorkOps Laws.State.WellFormed where
   write _ scope writes rule formed := queueWrite_wellFormed formed scope writes rule
   complete _ _ leave writes rule formed member :=
     unnamed_wellFormed formed (Laws.State.waited_unnamed formed member) leave writes rule
+  completeOwner _ _ _ leave writes rule formed member owned link :=
+    complete_wellFormed formed owned (owner_begun formed member owned link) leave writes rule
   raise _ _ _ formed := Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed
       (fun _ _ _ same => by simp at same) (fun _ same => by simp at same) (fun _ _ _ same => by simp at same)
       (fun _ _ same => by simp at same))
@@ -235,10 +245,7 @@ theorem startsOps : Laws.Starts.StartsOps Laws.State.WellFormed where
 
 /-- Scopes' operations record (`Laws.Scopes.ScopesOps`) of `WellFormed`. -/
 theorem scopesOps : Laws.Scopes.ScopesOps Laws.State.WellFormed where
-  owner _ scope _ formed member owned link := by
-    obtain ⟨found, inside, named, begunFlag⟩ := formed.owned.scopeOwners scope member _ link
-    rw [Laws.State.nodup_map_eq formed.distinct.occurrences inside owned named] at begunFlag
-    exact begunFlag
+  owner _ scope _ formed member owned link := owner_begun formed member owned link
   complete _ _ leave writes rule formed member begun := complete_wellFormed formed member begun leave writes rule
 
 /-- `HookContract.outflow` of the registered hooks. -/
@@ -426,6 +433,22 @@ theorem registered_cancelIncidentProcess : ∀ ctx detail generation state after
   intro _ _ _ _ _ formed ran
   rw [Laws.Registry.hooks_cancelIncidentProcess] at ran
   exact Laws.Work.cancelIncidentProcess_keeps workOps formed ran
+
+/-- `HookContract.triggerActivity` of the registered hooks. -/
+theorem registered_triggerActivity : ∀ ctx header payload item fired state after, Laws.State.WellFormed state →
+    item ∈ state.openItems → Registry.hooks.triggerActivity ctx header payload item fired state = .ok after →
+    Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ _ formed member ran
+  rw [Laws.Registry.hooks_triggerActivity] at ran
+  exact Laws.Work.triggerActivity_keeps workOps formed member ran
+
+/-- `HookContract.completeCall` of the registered hooks. -/
+theorem registered_completeCall : ∀ ctx header payload scope occurrence state after, Laws.State.WellFormed state →
+    scope ∈ state.scopes → occurrence ∈ state.occurrences → scope.occurrence = some occurrence.id →
+    Registry.hooks.completeCall ctx header payload scope occurrence state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ _ formed member owned link ran
+  rw [Laws.Registry.hooks_completeCall] at ran
+  exact Laws.Work.completeCall_keeps workOps formed member owned link ran
 
 /-- `HookContract.cancelled` of the registered hooks: no feature is told, so nothing changes. -/
 theorem registered_cancelled : ∀ ctx occurrence state after, Laws.State.WellFormed state →
