@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Feature.Work
 import all Kernel.Feature.Work
 
 /-! # Laws of Work
@@ -137,5 +138,84 @@ theorem error_path_refused :
 /-- Accepting an unmapped error path's outputs is rejected. -/
 theorem error_path_accepted_rejected : ¬ ErrorPathPatch false [("x", .int 1)] (.ok ()) := fun law => by
   simpa using law rfl (by simp)
+
+/-! ## Preservation
+
+What Work's completion and incident hooks keep of an invariant: a submission and an effect's result queue writes and the
+completion of the occurrence their item waits for, or raise its business error; a technical failure under an incident
+profile and a retry change only what the item waits for; cancelling an incident's process queues the instance's
+cancelled end. -/
+
+/-- What Work's completion and incident hooks need of the state operations they apply, for an invariant `inv`. -/
+structure WorkOps (inv : State → Prop) : Prop where
+  write : ∀ state scope writes rule, inv state → inv (state.signal (.write scope writes rule))
+  /-- The completion of the occurrence an open item waits for. -/
+  complete : ∀ state item leave writes rule, inv state → item ∈ state.openItems →
+    inv (state.signal (.complete item.occurrence leave writes rule))
+  raise : ∀ state event origin, inv state → inv (state.signal (.raise event origin))
+  cancel : ∀ state, inv state → inv (state.signal (.endInstance .cancelled none))
+  /-- What open items wait for replaced, each keeping everything else. -/
+  rekind : ∀ state (change : OpenItem → OpenItem), inv state →
+    (∀ item, change item = { item with kind := (change item).kind }) → inv { state with openItems := state.openItems.map change }
+  /-- Queuing a signal keeps the open items. -/
+  queued : ∀ (state : State) signal, (state.signal signal).openItems = state.openItems
+
+/-- `reopen` replaces only what the item waits for. -/
+theorem reopen_keeps {inv : State → Prop} (ops : WorkOps inv) {state : State} (holds : inv state) (id : Nat)
+    (kind : OpenKind) : inv (Feature.Work.reopen state id kind) :=
+  ops.rekind state _ holds fun item => by split <;> rfl
+
+/-- A completion of the item's occurrence after a write. -/
+theorem installed_keeps {inv : State → Prop} (ops : WorkOps inv) {state : State} {item : OpenItem}
+    (holds : inv state) (member : item ∈ state.openItems) (scope : ScopeOccurrenceId)
+    (values writes : List (String × Value)) (rule : WriteRule) (leave : Leave) (completion : WriteRule) :
+    inv ((state.signal (.write scope values rule)).signal (.complete item.occurrence leave writes completion)) :=
+  ops.complete _ _ _ _ _ (ops.write _ _ _ _ holds) (by rw [ops.queued]; exact member)
+
+/-- `Hooks.completeUserTask` keeps `inv` for an open item. -/
+theorem completeUserTask_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {header : Header}
+    {payload : ActivityPayload} {item : OpenItem} {values : List (String × Value)} {state after : State}
+    (holds : inv state) (member : item ∈ state.openItems)
+    (ran : Feature.Work.completeUserTask ctx header payload item values state = .ok after) : inv after := by
+  unfold Feature.Work.completeUserTask at ran
+  simp only [bind, Except.bind] at ran
+  repeat' split at ran
+  all_goals cases ran
+  all_goals first
+    | exact installed_keeps ops holds member _ _ _ _ _ _
+    | exact ops.complete _ _ _ _ _ holds member
+
+/-- `Hooks.effectResult` keeps `inv` for an open item. -/
+theorem effectResult_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {item : OpenItem}
+    {outcome : EffectOutcome} {state after : State} (holds : inv state) (member : item ∈ state.openItems)
+    (ran : Feature.Work.effectResult ctx item outcome state = .ok after) : inv after := by
+  unfold Feature.Work.effectResult Feature.Work.effectCompletion at ran
+  simp only [bind, Except.bind] at ran
+  repeat' split at ran
+  all_goals cases ran
+  all_goals first
+    | exact installed_keeps ops holds member _ _ _ _ _ _
+    | exact ops.complete _ _ _ _ _ holds member
+    | exact ops.raise _ _ _ holds
+    | exact reopen_keeps ops holds _ _
+
+/-- `Hooks.retryIncident` keeps `inv`. -/
+theorem retryIncident_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {item : OpenItem}
+    {incident : IncidentDetail} {generation : Nat} {state after : State} (holds : inv state)
+    (ran : Feature.Work.retryIncident ctx item incident generation state = .ok after) : inv after := by
+  unfold Feature.Work.retryIncident Feature.Work.staleIncident at ran
+  split at ran
+  · cases ran
+  · cases ran
+    exact reopen_keeps ops holds _ _
+
+/-- `Hooks.cancelIncidentProcess` keeps `inv`. -/
+theorem cancelIncidentProcess_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {incident : IncidentDetail}
+    {generation : Nat} {state after : State} (holds : inv state)
+    (ran : Feature.Work.cancelIncidentProcess ctx incident generation state = .ok after) : inv after := by
+  unfold Feature.Work.cancelIncidentProcess Feature.Work.staleIncident at ran
+  repeat' split at ran
+  all_goals cases ran
+  exact ops.cancel _ holds
 
 end Kernel.Laws.Work

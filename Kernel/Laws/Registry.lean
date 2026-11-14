@@ -46,6 +46,22 @@ theorem hooks_cancelled (ctx : Ctx) (occurrence : Occurrence) (state : State) :
 theorem hooks_delivered : Registry.hooks.delivered = Feature.Subscriptions.delivered := by
   simp only [Registry.hooks]
 
+/-- Work completes every User Task. -/
+theorem hooks_completeUserTask : Registry.hooks.completeUserTask = Feature.Work.completeUserTask := by
+  simp only [Registry.hooks]
+
+/-- Work takes every effect result. -/
+theorem hooks_effectResult : Registry.hooks.effectResult = Feature.Work.effectResult := by
+  simp only [Registry.hooks]
+
+/-- Work retries every incident. -/
+theorem hooks_retryIncident : Registry.hooks.retryIncident = Feature.Work.retryIncident := by
+  simp only [Registry.hooks]
+
+/-- Work cancels every incident's process. -/
+theorem hooks_cancelIncidentProcess : Registry.hooks.cancelIncidentProcess = Feature.Work.cancelIncidentProcess := by
+  simp only [Registry.hooks]
+
 /-- Data applies every write. -/
 theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOutputs := by
   simp only [Registry.hooks]

@@ -7,6 +7,7 @@ public import Kernel.Laws.Scopes
 public import Kernel.Laws.Starts
 public import Kernel.Laws.Subscriptions
 public import Kernel.Laws.Data
+public import Kernel.Laws.Work
 public import Kernel.Laws.Hooks
 public import Kernel.Proofs.State
 public import Kernel.Laws.State.Removal
@@ -187,16 +188,39 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
 The fields of `Laws.Step.HookContract Registry.hooks Laws.State.WellFormed` proved so far, each from its feature's lemma
 and the operations record that feature states, filled here from `Laws.State`. -/
 
+/-- A completion, queued, keeps `WellFormed` when no queued begin names what it completes. -/
+theorem unnamed_wellFormed {state : State} (formed : Laws.State.WellFormed state) {id : Nat}
+    (unnamed : ∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request) (leave : Leave)
+    (writes : List (String × Value)) (rule : WriteRule) :
+    Laws.State.WellFormed (state.signal (.complete id leave writes rule)) :=
+  Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
+    (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) fun _ _ _ _ same => by
+      cases same
+      exact unnamed)
+
 /-- A begun occurrence's completion, queued, keeps `WellFormed`: no queued begin names a begun occurrence. -/
 theorem complete_wellFormed {state : State} (formed : Laws.State.WellFormed state) {occurrence : Occurrence}
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (leave : Leave)
     (writes : List (String × Value)) (rule : WriteRule) :
     Laws.State.WellFormed (state.signal (.complete occurrence.id leave writes rule)) :=
-  Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
-    (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
-    (Laws.State.signal_claimed formed (fun _ same => by simp at same) fun _ _ _ _ same => by
-      cases same
-      exact Laws.State.begun_unnamed formed member begun)
+  unnamed_wellFormed formed (Laws.State.begun_unnamed formed member begun) leave writes rule
+
+/-- Work's operations record (`Laws.Work.WorkOps`) of `WellFormed`. -/
+theorem workOps : Laws.Work.WorkOps Laws.State.WellFormed where
+  write _ scope writes rule formed := queueWrite_wellFormed formed scope writes rule
+  complete _ _ leave writes rule formed member :=
+    unnamed_wellFormed formed (Laws.State.waited_unnamed formed member) leave writes rule
+  raise _ _ _ formed := Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed
+      (fun _ _ _ same => by simp at same) (fun _ same => by simp at same) (fun _ _ _ same => by simp at same)
+      (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+  cancel _ formed := Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed
+      (fun _ _ _ same => by simp at same) (fun _ same => by simp at same) (fun _ _ _ same => by simp at same)
+      (fun _ _ same => by cases same; simp))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+  rekind _ _ formed kept := Laws.State.rekind_wellFormed formed kept
+  queued state signal := by rw [Laws.State.signal_eq]
 
 /-- Flow's operations record (`Laws.Flow.FlowOps`) of `WellFormed`. -/
 theorem flowOps : Laws.Flow.FlowOps Laws.State.WellFormed where
@@ -249,6 +273,37 @@ theorem registered_completeScope : ∀ ctx header payload scope occurrence state
   intro _ _ _ _ _ _ _ formed member owned link ran
   rw [Laws.Registry.hooks_completeScope] at ran
   exact Laws.Scopes.completeScope_keeps scopesOps formed member owned link ran
+
+/-- `HookContract.completeUserTask` of the registered hooks. -/
+theorem registered_completeUserTask : ∀ ctx header payload item values state after, Laws.State.WellFormed state →
+    item ∈ state.openItems → Registry.hooks.completeUserTask ctx header payload item values state = .ok after →
+    Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ _ formed member ran
+  rw [Laws.Registry.hooks_completeUserTask] at ran
+  exact Laws.Work.completeUserTask_keeps workOps formed member ran
+
+/-- `HookContract.effectResult` of the registered hooks. -/
+theorem registered_effectResult : ∀ ctx item outcome state after, Laws.State.WellFormed state →
+    item ∈ state.openItems → Registry.hooks.effectResult ctx item outcome state = .ok after →
+    Laws.State.WellFormed after := by
+  intro _ _ _ _ _ formed member ran
+  rw [Laws.Registry.hooks_effectResult] at ran
+  exact Laws.Work.effectResult_keeps workOps formed member ran
+
+/-- `HookContract.retryIncident` of the registered hooks. -/
+theorem registered_retryIncident : ∀ ctx item detail generation state after, Laws.State.WellFormed state →
+    item ∈ state.openItems → Registry.hooks.retryIncident ctx item detail generation state = .ok after →
+    Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ formed _ ran
+  rw [Laws.Registry.hooks_retryIncident] at ran
+  exact Laws.Work.retryIncident_keeps workOps formed ran
+
+/-- `HookContract.cancelIncidentProcess` of the registered hooks. -/
+theorem registered_cancelIncidentProcess : ∀ ctx detail generation state after, Laws.State.WellFormed state →
+    Registry.hooks.cancelIncidentProcess ctx detail generation state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ formed ran
+  rw [Laws.Registry.hooks_cancelIncidentProcess] at ran
+  exact Laws.Work.cancelIncidentProcess_keeps workOps formed ran
 
 /-- `HookContract.cancelled` of the registered hooks: no feature is told, so nothing changes. -/
 theorem registered_cancelled : ∀ ctx occurrence state after, Laws.State.WellFormed state →
