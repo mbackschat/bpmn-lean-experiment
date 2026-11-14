@@ -13,8 +13,10 @@ occurrence has no effect; every owning feature is notified once. Each is stated 
 `State.cancelOccurrence`) and reads no IL. `Laws.State.ClearsInside` and `Laws.Scopes`' clearing laws are the
 micro-step contracts the lane proves these from.
 
-[#121](https://github.com/mbackschat/bpmn-lean-experiment/issues/121) falsifies `QueuedWorkInert` today: a queued
-`Signal.write` to a removed scope occurrence reaches the instance root (P1). Nothing executable imports this module.
+A proof here composes `Laws.Step`'s, `Laws.Hooks`' and `Laws.State`'s lemmas and opens no body. A `Step` fact it needs
+that no `Laws` module states yet is an explicit premise named as a pending lemma request (`PendingStale`), never a
+model or state premise of the lane statement; the root replaces it with the lemma once that lands. Nothing executable
+imports this module.
 -/
 
 @[expose] public section
@@ -103,5 +105,61 @@ def RemovedEndOnce (hooks : Hooks) : Prop :=
     occurrence ∈ before.occurrences → occurrence.begun = true → occurrence.id ∉ occurrenceIds after →
     ∃ earlier terminal later, after.journal.flatMap (·.ended) = earlier ++ (before.keyOf occurrence, terminal) :: later ∧
       ∀ fact ∈ earlier ++ later, fact.1 ≠ before.keyOf occurrence
+
+/-! ## Pending lemma requests
+
+`Kernel.Laws.Step` facts the proofs below use, stated exactly as requested of its owner; each field becomes the lemma of
+the same name, and the premise goes, once it lands. -/
+
+/-- A queued arming, begin or `occur` whose scope occurrence was issued and is gone fails the input as
+`interrupted-before-wait` (`Step.stale`), as `Laws.Step.write_scope_gone` and its siblings state of the work that acts
+from a scope occurrence (`Step.gone`). -/
+structure PendingStale : Prop where
+  arm_scope_stale : ∀ (hooks : Hooks) (ctx : Ctx) (host : Nat) (element : ElementId) (scope : ScopeOccurrenceId)
+    (state : State), scope.value < state.nextIssue → (∀ entry ∈ state.scopes, entry.id ≠ scope) →
+    (Step.signalWork hooks ctx (.arm host element scope)).perform state = .error (.unsupported "interrupted-before-wait")
+  armScope_stale : ∀ (hooks : Hooks) (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State),
+    scope.value < state.nextIssue → (∀ entry ∈ state.scopes, entry.id ≠ scope) →
+    (Step.signalWork hooks ctx (.armScope scope)).perform state = .error (.unsupported "interrupted-before-wait")
+  armGateway_scope_stale : ∀ (hooks : Hooks) (ctx : Ctx) (occurrence : Nat) (gateway : ElementId)
+    (scope : ScopeOccurrenceId) (state : State), scope.value < state.nextIssue → (∀ entry ∈ state.scopes, entry.id ≠ scope) →
+    (Step.signalWork hooks ctx (.armGateway occurrence gateway scope)).perform state =
+      .error (.unsupported "interrupted-before-wait")
+  begin_scope_stale : ∀ (hooks : Hooks) (ctx : Ctx) (request : BeginRequest) (state : State),
+    request.scope.value < state.nextIssue → (∀ entry ∈ state.scopes, entry.id ≠ request.scope) →
+    (Step.signalWork hooks ctx (.begin request)).perform state = .error (.unsupported "interrupted-before-wait")
+  occur_scope_stale : ∀ (hooks : Hooks) (ctx : Ctx) (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave)
+    (writes : List (String × Value)) (rule : WriteRule) (state : State), scope.value < state.nextIssue →
+    (∀ entry ∈ state.scopes, entry.id ≠ scope) →
+    (Step.signalWork hooks ctx (.occur element scope leave writes rule)).perform state =
+      .error (.unsupported "interrupted-before-wait")
+
+/-! ## Queued work naming a removed scope occurrence -/
+
+/-- `QueuedWorkInert` holds vacuously: the micro-step never commits. Work that does something in a removed scope
+occurrence (an arming, a begin, an `occur`) is stale (`PendingStale`), and work that acts from one (a write, a removal, a
+compensation, a compensation's failure) is gone (`Laws.Step.write_scope_gone` and its siblings, #121); either fails the
+micro-step's body, which a committed micro-step ran (`Laws.Step.microStep_ok`). -/
+theorem queuedWorkInert {hooks : Hooks} (pending : PendingStale) : QueuedWorkInert hooks := by
+  intro ctx state after next rest scope _ acts issued removed ran
+  obtain ⟨_, _, body, _⟩ := Laws.Step.microStep_ok ran
+  rw [Laws.Step.dispatchSignal_eq] at body
+  generalize popped : ({ state with signals := rest } : State) = queue at body
+  have absent : ∀ entry ∈ queue.scopes, entry.id ≠ scope := by
+    subst popped
+    exact fun entry member same => removed (List.mem_map.mpr ⟨entry, member, same⟩)
+  replace issued : scope.value < queue.nextIssue := by subst popped; exact issued
+  rcases acts with ⟨host, element, rfl⟩ | rfl | ⟨occurrence, gateway, rfl⟩ | ⟨request, rfl, rfl⟩ |
+      ⟨writes, rule, rfl⟩ | ⟨names, rfl⟩ | ⟨element, leave, ⟨writes, rule, rfl⟩⟩ |
+      ⟨activity, trigger, ⟨leave, resume, rfl⟩⟩ | ⟨code, message, origin, rfl⟩
+  · rw [pending.arm_scope_stale hooks ctx host element _ queue issued absent] at body; cases body
+  · rw [pending.armScope_stale hooks ctx _ queue issued absent] at body; cases body
+  · rw [pending.armGateway_scope_stale hooks ctx occurrence gateway _ queue issued absent] at body; cases body
+  · rw [pending.begin_scope_stale hooks ctx request queue issued absent] at body; cases body
+  · rw [Laws.Step.write_scope_gone absent] at body; cases body
+  · rw [Laws.Step.remove_scope_gone absent] at body; cases body
+  · rw [pending.occur_scope_stale hooks ctx element _ leave writes rule queue issued absent] at body; cases body
+  · rw [Laws.Step.compensate_scope_gone absent] at body; cases body
+  · rw [Laws.Step.compensationFailed_scope_gone absent] at body; cases body
 
 end Kernel.Proofs.Cancellation
