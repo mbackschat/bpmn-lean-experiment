@@ -6,8 +6,8 @@ closed dispatch and no catch-all, read from the built environment because only t
 type a `match`, `if let` or `matches` discriminates and which alternatives cover which constructors.
 
 - Closed dispatch: a guarded type is matched (`match`, `casesOn`, `rec`, `ctorIdx`) only in its owner module, the
-  module that defines it, `Kernel.IL.Codec`, and the owner's own `Admission` module; `Element` and `EventRole` also
-  in `Kernel.AdmissionRegistry`. Nothing compares one with `==` or
+  module that defines it, `Kernel.IL.Codec`, the owner's own `Admission` and `Laws` modules, and `Kernel.Proofs.Step`;
+  `Element` and `EventRole` also in `Kernel.AdmissionRegistry`. Nothing compares one with `==` or
   `decide`: no guarded type has a `DecidableEq` or `BEq` instance outside its defining module.
 - No catch-all: no match alternative binds a guarded-type discriminant to a variable, so every alternative names
   the constructors it covers and a new constructor fails to compile at every dispatch site.
@@ -23,24 +23,28 @@ open Lean Meta
 /-- Each guarded type with the modules, besides its defining module and `Kernel.IL.Codec`, that may match it. A
 listed module also covers its submodules. -/
 def owners : List (Name × List Name) := [
-  (`Kernel.Element, [`Kernel.Step, `Kernel.AdmissionRegistry]),
-  (`Kernel.EventRole, [`Kernel.Step, `Kernel.AdmissionRegistry]),
-  (`Kernel.Input, [`Kernel.Step]),
-  (`Kernel.Signal, [`Kernel.Step]),
-  (`Kernel.Continuation, [`Kernel.Step]),
-  (`Kernel.Raised, [`Kernel.Feature.Propagation, `Kernel.Feature.Subscriptions]),
-  (`Kernel.OpenKind, []),
-  (`Kernel.Trigger, [`Kernel.Feature.Subscriptions, `Kernel.Admission.Subscriptions]),
-  (`Kernel.Work, [`Kernel.Feature.Work, `Kernel.Admission.Work]),
-  (`Kernel.GatewayKind, [`Kernel.Feature.Flow, `Kernel.Admission.Flow]),
-  (`Kernel.ScopeKind, [`Kernel.Feature.Scopes, `Kernel.Admission.Scopes]),
-  (`Kernel.Throw, [`Kernel.Feature.Propagation, `Kernel.Admission.Propagation]),
-  (`Kernel.MultiInstanceMode, [`Kernel.Feature.MultiInstance, `Kernel.Admission.MultiInstance]),
-  (`Kernel.JuelNode, [`Kernel.Feature.Data, `Kernel.Admission.Data]),
-  (`Kernel.JuelBinary, [`Kernel.Feature.Data, `Kernel.Admission.Data]),
-  (`Kernel.JuelUnary, [`Kernel.Feature.Data, `Kernel.Admission.Data]),
-  (`Kernel.JuelCall, [`Kernel.Feature.Data, `Kernel.Admission.Data]),
-  (`Kernel.JuelMethod, [`Kernel.Feature.Data, `Kernel.Admission.Data])]
+  (`Kernel.Element, [`Kernel.Step, `Kernel.AdmissionRegistry, `Kernel.Laws.Step, `Kernel.Proofs.Step]),
+  (`Kernel.EventRole, [`Kernel.Step, `Kernel.AdmissionRegistry, `Kernel.Laws.Step, `Kernel.Proofs.Step]),
+  (`Kernel.Input, [`Kernel.Step, `Kernel.Laws.Step, `Kernel.Proofs.Step]),
+  (`Kernel.Signal, [`Kernel.Step, `Kernel.Laws.Step, `Kernel.Proofs.Step]),
+  (`Kernel.Continuation, [`Kernel.Step, `Kernel.Laws.Step, `Kernel.Proofs.Step]),
+  (`Kernel.Raised, [`Kernel.Feature.Propagation, `Kernel.Feature.Subscriptions, `Kernel.Laws.Propagation,
+    `Kernel.Laws.Subscriptions, `Kernel.Proofs.Step]),
+  (`Kernel.OpenKind, [`Kernel.Proofs.Step]),
+  (`Kernel.Trigger, [`Kernel.Feature.Subscriptions, `Kernel.Admission.Subscriptions, `Kernel.Laws.Subscriptions,
+    `Kernel.Proofs.Step]),
+  (`Kernel.Work, [`Kernel.Feature.Work, `Kernel.Admission.Work, `Kernel.Laws.Work, `Kernel.Proofs.Step]),
+  (`Kernel.GatewayKind, [`Kernel.Feature.Flow, `Kernel.Admission.Flow, `Kernel.Laws.Flow, `Kernel.Proofs.Step]),
+  (`Kernel.ScopeKind, [`Kernel.Feature.Scopes, `Kernel.Admission.Scopes, `Kernel.Laws.Scopes, `Kernel.Proofs.Step]),
+  (`Kernel.Throw, [`Kernel.Feature.Propagation, `Kernel.Admission.Propagation, `Kernel.Laws.Propagation,
+    `Kernel.Proofs.Step]),
+  (`Kernel.MultiInstanceMode, [`Kernel.Feature.MultiInstance, `Kernel.Admission.MultiInstance,
+    `Kernel.Laws.MultiInstance, `Kernel.Proofs.Step]),
+  (`Kernel.JuelNode, [`Kernel.Feature.Data, `Kernel.Admission.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step]),
+  (`Kernel.JuelBinary, [`Kernel.Feature.Data, `Kernel.Admission.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step]),
+  (`Kernel.JuelUnary, [`Kernel.Feature.Data, `Kernel.Admission.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step]),
+  (`Kernel.JuelCall, [`Kernel.Feature.Data, `Kernel.Admission.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step]),
+  (`Kernel.JuelMethod, [`Kernel.Feature.Data, `Kernel.Admission.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step])]
 
 def guarded (type : Name) : Bool := owners.any (·.1 == type)
 

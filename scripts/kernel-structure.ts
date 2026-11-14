@@ -23,6 +23,7 @@ export const Layer = {
   AdmissionRegistry: "admissionRegistry",
   Run: "run",
   Laws: "laws",
+  Proofs: "proofs",
   Root: "root",
 } as const;
 
@@ -32,7 +33,8 @@ export type Module = Readonly<{ name: string; layer: Layer; family: string; file
 
 /** Which layers a layer may import; a feature, admission or dispatch module may also import its own family's modules,
  * so a family splits into paired parts instead of outgrowing the size target, and the runner its own parts. A `Laws`
- * module may also import the feature or dispatch family it states laws for; no executable layer imports `Laws`. */
+ * module may also import the executable family it states laws for, and a `Proofs` module reaches `Step` besides the
+ * `Laws` it composes; no executable layer imports `Laws` or `Proofs`. */
 const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Il]: [Layer.Il],
   [Layer.Codec]: [Layer.Il, Layer.State, Layer.Codec],
@@ -45,6 +47,7 @@ const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.AdmissionRegistry]: [Layer.Il, Layer.Admission],
   [Layer.Run]: [Layer.Il, Layer.Codec, Layer.State, Layer.Hooks, Layer.Dispatch, Layer.Registry, Layer.AdmissionRegistry, Layer.Run],
   [Layer.Laws]: [Layer.Il, Layer.State, Layer.Hooks, Layer.Laws],
+  [Layer.Proofs]: [Layer.Il, Layer.State, Layer.Hooks, Layer.Laws, Layer.Proofs],
   [Layer.Root]: Object.values(Layer),
 };
 
@@ -69,6 +72,7 @@ export function classify(segments: readonly string[]): readonly [Layer, string] 
     case "admissionregistry": return [Layer.AdmissionRegistry, ""];
     case "run": return [Layer.Run, ""];
     case "laws": return [Layer.Laws, second];
+    case "proofs": return [Layer.Proofs, second];
     case "index":
     case "kernel": return [Layer.Root, ""];
     default: throw new Error(`unclassified kernel module: ${segments.join("/")}`);
@@ -129,15 +133,21 @@ export function layeringFindings(modules: readonly Module[], isKernel: (name: st
     // The population layer drives each instance through the one step function (proposal, module table and guard 13).
     const populationSteps = module.layer === Layer.Dispatch && module.family === "population" &&
       target.layer === Layer.Dispatch && target.family === "step";
-    // `Kernel.Laws.<F>` states the rules of the feature or dispatch family `F` (proposal, module table).
-    const ownLaws = module.layer === Layer.Laws && target.family === module.family &&
-      (target.layer === Layer.Feature || target.layer === Layer.Dispatch);
-    const typeScriptRootLaws = module.layer === Layer.Root && target.layer === Layer.Laws && !isLean(module);
-    if (!typeScriptRootLaws && (sameFamily || populationSteps || ownLaws || mayImport[module.layer].includes(target.layer))) return [];
+    // `Kernel.Laws.<F>` states the rules of the feature or dispatch family `F`, and `Kernel.Laws.Registry` those of the
+    // registry (proposal, module table).
+    const ownLaws = module.layer === Layer.Laws && (target.family === module.family &&
+      (target.layer === Layer.Feature || target.layer === Layer.Dispatch) ||
+      target.layer === Layer.Registry && module.family === "registry");
+    // `Kernel.Proofs.*` reaches `Step` itself, and no other dispatch module (proposal, module table).
+    const proofsStep = module.layer === Layer.Proofs && target.layer === Layer.Dispatch && target.family === "step";
+    const typeScriptRootLaws = module.layer === Layer.Root && (target.layer === Layer.Laws || target.layer === Layer.Proofs) &&
+      !isLean(module);
+    if (!typeScriptRootLaws && (sameFamily || populationSteps || ownLaws || proofsStep || mayImport[module.layer].includes(target.layer))) return [];
     return [`${module.file}: ${module.layer} module imports ${target.layer} module ${imported}`];
   };
   return modules.flatMap((module) => [
     ...(module.layer === Layer.Laws && !isLean(module) ? [`${module.file}: the TypeScript kernel has no laws layer`] : []),
+    ...(module.layer === Layer.Proofs && !isLean(module) ? [`${module.file}: the TypeScript kernel has no proofs layer`] : []),
     ...module.imports.flatMap((imported) => importFindings(module, imported)),
   ]);
 }
@@ -158,7 +168,21 @@ export function featureFileFindings(modules: readonly Module[]): string[] {
     .map(([family, files]) => `feature ${family}: ${files.length} files, above three (${[...files].sort().join(", ")})`);
 }
 
-/** Guards 9 and 10: a file above 1,200 nonblank lines, `Step` above 600, `import all` outside `Laws`, `export *`. */
+/** Guard 5's module-system clause: `import all` only in `Kernel/Laws/<X>.lean`, and only of the executable module whose
+ * body it states laws for, `Kernel.Feature.<X>` or `Kernel.<X>`, or one of that module's submodules: an executable
+ * module's body is seen only by its own `Laws` module. */
+function importAllFindings(relative: string, source: string): string[] {
+  const own = /^Kernel\/Laws\/([^/.]+)\.lean$/u.exec(relative.split(path.sep).join("/"))?.[1];
+  return [...source.matchAll(/^(?:public )?(?:meta )?import all ([\w.]+)/gmu)].flatMap((match) => {
+    const imported = match[1] ?? "";
+    const opens = (module: string): boolean => imported === module || imported.startsWith(`${module}.`);
+    if (own !== undefined && (opens(`Kernel.Feature.${own}`) || opens(`Kernel.${own}`))) return [];
+    return [own === undefined ? `${relative}: import all outside Laws` : `${relative}: import all ${imported} outside its own Laws module`];
+  });
+}
+
+/** Guards 5, 9 and 10: a file above 1,200 nonblank lines, `Step` above 600, `import all` outside a module's own `Laws`
+ * module, `export *`. */
 export function shapeFindings(root = projectRoot): string[] {
   const scanned = [
     path.join(root, "Kernel.lean"),
@@ -175,9 +199,7 @@ export function shapeFindings(root = projectRoot): string[] {
     if ((relative === path.join("Kernel", "Step.lean") || relative.endsWith(path.join("kernel", "src", "step.ts"))) && nonblank > 600) {
       findings.push(`${relative}: ${nonblank} nonblank lines, above Step's 600`);
     }
-    if (/^(?:public )?import all /mu.test(source) && !relative.startsWith(path.join("Kernel", "Laws"))) {
-      findings.push(`${relative}: import all outside Laws`);
-    }
+    findings.push(...importAllFindings(relative, source));
     if (/^export \* from/mu.test(source) && relative.startsWith(path.join("packages", "kernel"))) {
       findings.push(`${relative}: export *`);
     }

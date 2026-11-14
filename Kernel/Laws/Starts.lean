@@ -1,7 +1,6 @@
 module
 
 public import Kernel.Hooks
-import all Kernel.Feature.Starts
 
 /-! # Laws of root starts
 
@@ -18,6 +17,8 @@ The laws take a process's elements, their parents and their triggers as paramete
 
 Each law is followed by its non-vacuity witness: values that satisfy it and, where the law could otherwise hold of
 everything, values that violate it.
+
+Its laws read no body of `Kernel.Feature.Starts`, so the module does not open them (#92).
 -/
 
 @[expose] public section

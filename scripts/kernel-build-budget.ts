@@ -112,13 +112,17 @@ function cleanBuild(lean: Lean, label: string): string[] {
   return buildFindings(`${label} clean build`, build.seconds, budgetSeconds.cleanBuild, moduleTimes(build.output));
 }
 
-/** Guard 23: the dispatch scan rejects a match on a guarded type in a module that does not own it. */
+/** Guard 23: the dispatch scan rejects a match on a guarded type in a module that does not own it, a `Laws` module
+ * matching another family's type included. */
 function proveDispatchScan(lean: Lean, directory: string): string[] {
   const file = path.join(directory, "Kernel", "Feature", "Data.lean");
   // Fully qualified: the seed lands outside the module's namespace, where an unqualified `Element` auto-binds.
   const seeded = "def seededDispatchViolation : Kernel.Element → Nat\n  | .activity .. => 1\n  | _ => 0";
+  // A `Laws` module matches only its own family's guarded types: Flow's laws may match `GatewayKind`, never `ScopeKind`.
+  const lawsFile = path.join(directory, "Kernel", "Laws", "Flow.lean");
+  const seededLaws = "def seededLawsDispatchViolation : Kernel.ScopeKind → Nat\n  | .embedded => 1\n  | .transaction _ => 2\n  | .eventSubProcess _ _ => 3";
   let findings: string[] = [];
-  edited(file, seeded, () => {
+  edited(file, seeded, () => edited(lawsFile, seededLaws, () => {
     const build = lean(kernelTargets);
     if (build.status !== 0) {
       findings = [`G23: the seeded dispatch violation did not compile\n${build.output}`];
@@ -126,7 +130,10 @@ function proveDispatchScan(lean: Lean, directory: string): string[] {
     }
     const scan = lean(["run", "scripts/kernel-dispatch.lean"]);
     if (scan.status === 0 || !scan.output.includes("Kernel.Element")) findings = [`G23: kernel-dispatch.lean did not reject the seeded violation\n${scan.output}`];
-  });
+    if (!/Kernel\.Laws\.Flow \S+: matches guarded Kernel\.ScopeKind/u.test(scan.output)) {
+      findings.push(`G23: kernel-dispatch.lean did not reject the seeded Laws violation\n${scan.output}`);
+    }
+  }));
   return findings;
 }
 

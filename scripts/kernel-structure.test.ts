@@ -117,6 +117,66 @@ test("a Laws module is classified apart, imports only its own feature or dispatc
   ]);
 });
 
+test("a Proofs module is classified apart, imports Laws, Proofs and Step but no other dispatch module or the registry, and nothing executable imports it", () => {
+  assert.deepEqual(classify(["Proofs", "Cancellation"]), [Layer.Proofs, "cancellation"]);
+  const module = (name: string, layer: Layer, family: string, imports: string[], file = `${name.split(".").join("/")}.lean`): Module =>
+    ({ name, layer, family, file, imports });
+  const modules = [
+    module("Kernel", Layer.Root, "", ["Kernel.Proofs.Step"], "Kernel.lean"),
+    module("Kernel.Hooks", Layer.Hooks, "", []),
+    module("Kernel.Step", Layer.Dispatch, "step", ["Kernel.Hooks"]),
+    module("Kernel.Population", Layer.Dispatch, "population", ["Kernel.Step"]),
+    module("Kernel.Registry", Layer.Registry, "", ["Kernel.Hooks"]),
+    module("Kernel.Run", Layer.Run, "", ["Kernel.Registry", "Kernel.Proofs.Step"]),
+    module("Kernel.Laws.Step", Layer.Laws, "step", ["Kernel.Step"]),
+    module("Kernel.Laws.Registry", Layer.Laws, "registry", ["Kernel.Registry"]),
+    module("Kernel.Laws.Flow", Layer.Laws, "flow", ["Kernel.Hooks", "Kernel.Registry"]),
+    module("Kernel.Proofs.Step", Layer.Proofs, "step", ["Kernel.Laws.Step", "Kernel.Laws.Registry", "Kernel.Step"]),
+    module("Kernel.Proofs.Cancellation", Layer.Proofs, "cancellation", ["Kernel.Proofs.Step", "Kernel.Registry", "Kernel.Population"]),
+  ];
+  assert.deepEqual(layeringFindings(modules, (name) => name === "Kernel" || name.startsWith("Kernel.")), [
+    "Kernel/Run.lean: run module imports proofs module Kernel.Proofs.Step",
+    "Kernel/Laws/Flow.lean: laws module imports registry module Kernel.Registry",
+    "Kernel/Proofs/Cancellation.lean: proofs module imports registry module Kernel.Registry",
+    "Kernel/Proofs/Cancellation.lean: proofs module imports dispatch module Kernel.Population",
+  ]);
+  const typeScript = [
+    module("index", Layer.Root, "", ["proofs/step"], "packages/kernel/src/index.ts"),
+    module("proofs/step", Layer.Proofs, "step", [], "packages/kernel/src/proofs/step.ts"),
+  ];
+  assert.deepEqual(layeringFindings(typeScript, (name) => !name.startsWith("node:")), [
+    "packages/kernel/src/index.ts: root module imports proofs module proofs/step",
+    "packages/kernel/src/proofs/step.ts: the TypeScript kernel has no proofs layer",
+  ]);
+});
+
+test("import all opens only the body of a Laws module's own executable module or its submodules", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "kernel-import-all-"));
+  try {
+    const sources: Readonly<Record<string, string>> = {
+      "Kernel.lean": "module\n",
+      "packages/kernel/src/index.ts": "export const x = 1;\n",
+      "packages/bpmn-source/src/a.ts": "export const y = 1;\n",
+      "Kernel/Laws/Step.lean": "module\npublic import Kernel.Step\nimport all Kernel.Step\nimport all Kernel.Step.Jobs\n",
+      "Kernel/Laws/Registry.lean": "module\nimport all Kernel.Registry\n",
+      "Kernel/Laws/Flow.lean": "module\nimport all Kernel.Feature.Flow\nimport all Kernel.Feature.Data\n",
+      "Kernel/Laws/State.lean": "module\nimport all Kernel.State\nimport all Kernel.Step\n",
+      "Kernel/Proofs/Step.lean": "module\nimport all Kernel.Step\n",
+    };
+    for (const [file, text] of Object.entries(sources)) {
+      mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+      writeFileSync(path.join(root, file), text);
+    }
+    assert.deepEqual(shapeFindings(root).sort(), [
+      "Kernel/Laws/Flow.lean: import all Kernel.Feature.Data outside its own Laws module",
+      "Kernel/Laws/State.lean: import all Kernel.Step outside its own Laws module",
+      "Kernel/Proofs/Step.lean: import all outside Laws",
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("the name clause rejects a helper defined twice and exempts only the two halves of one family", () => {
   const root = mkdtempSync(path.join(tmpdir(), "kernel-names-"));
   try {

@@ -401,6 +401,18 @@ holdsItsGround("guard 15 (static rebuild-set model)", rebuildFindings, {
   "packages/kernel/src/step.ts": `import { gateway } from "./feature/flow.js";\nexport const s = gateway;\n`,
 }, /G15 Lean: editing Kernel\.Feature\.Flow rebuilds Kernel\.Step[\s\S]*G15 TypeScript: editing feature\/flow rebuilds step/u);
 
+test("guard 15 puts the registry's Laws module and the proofs importing it or Laws.F in a feature's cone, and no proof that reaches Laws.F only through another", () => {
+  const proofs = {
+    "Kernel/Laws/Flow.lean": "module\npublic import Kernel.Hooks\nimport all Kernel.Feature.Flow\n",
+    "Kernel/Laws/Registry.lean": "module\npublic import Kernel.Registry\nimport all Kernel.Registry\n",
+    "Kernel/Proofs/Step.lean": "module\npublic import Kernel.Laws.Registry\npublic import Kernel.Laws.Flow\n",
+    "Kernel/Proofs/Lane.lean": "module\npublic import Kernel.Laws.Flow\n",
+  };
+  assert.deepEqual(rebuildFindings(fixture(proofs)), []);
+  seeded(rebuildFindings, { ...proofs, "Kernel/Proofs/Later.lean": "module\npublic import Kernel.Proofs.Lane\n" },
+    /G15 Lean: editing Kernel\.Feature\.Flow rebuilds Kernel\.Proofs\.Later, outside its cone/u);
+});
+
 test("guard 15 rejects a sixth direct importer and allows the three hubs", () => {
   const importers = Object.fromEntries(["A", "B", "C", "D", "E", "F"].map((name) => [`packages/kernel/src/il/${name}.ts`, `import { x } from "./query.js";\nexport { x };\n`]));
   seeded(rebuildFindings, { ...importers, "packages/kernel/src/il/query.ts": "export const x = 1;\n" }, /il\/query has 6 direct importers, above 5/u);

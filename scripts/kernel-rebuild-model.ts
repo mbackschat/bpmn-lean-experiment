@@ -98,8 +98,11 @@ const leanLanguage: Language = {
     const own = layer === "feature" ? `Kernel.Feature.${family}` : `Kernel.Admission.${family}`;
     if (module === own || module.startsWith(`${own}.`) || module === "Kernel.Run" || module === "Kernel") return true;
     if (layer === "admission") return module === "Kernel.AdmissionRegistry";
-    if (module === "Kernel.Registry" || module === `Kernel.Laws.${family}`) return true;
-    return module.startsWith("Kernel.Proofs.") && (graph.get(module) ?? []).includes(`Kernel.Laws.${family}`);
+    // `Kernel.Laws.Registry` opens the registry, which imports every feature; the proofs that import it or `Laws.F`
+    // compose the feature's lemmas (proposal, module table).
+    if (module === "Kernel.Registry" || module === "Kernel.Laws.Registry" || module === `Kernel.Laws.${family}`) return true;
+    const imports = graph.get(module) ?? [];
+    return module.startsWith("Kernel.Proofs.") && (imports.includes(`Kernel.Laws.${family}`) || imports.includes("Kernel.Laws.Registry"));
   },
   hubs: new Set(["Kernel.IL.Types", "Kernel.State", "Kernel.Hooks"]),
   aggregators: new Set(["Kernel"]),
