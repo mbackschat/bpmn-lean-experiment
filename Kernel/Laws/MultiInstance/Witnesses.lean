@@ -396,6 +396,7 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
     simp only [queuing, List.mem_singleton] at inside
     subst inside
     simp [firstInstance] at unbegun
+  occurs _ pending := by simp [OccurPending, queuing, entered] at pending
   signalsOrdered _ _ first second _ _ precedes _ _ := by
     have := precedes.length_le
     simp [queuing] at this
@@ -428,6 +429,11 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
         | _ + 2, slotted => simp [running] at slotted
       omega
     · simp [queuing, entered] at token
+
+/-- A pending reservation of a looping element breaks `BeginsQueued`. -/
+theorem looping_occur_rejected {program : Program} {loop : MultiInstance} (looping : LoopOf program review loop) :
+    ¬ BeginsQueued program { queuing with signals := [.occur review firstScope .outgoing [] .outward] } :=
+  fun queued => queued.occurs review (.inl ⟨firstScope, .outgoing, [], .outward, List.mem_singleton_self _⟩) loop looping
 
 /-- Two begins queued out of slot order break `BeginsQueued`. -/
 theorem reversed_begins_rejected {program : Program} :

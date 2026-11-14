@@ -30,6 +30,18 @@ open Kernel.Laws.State (Within)
 def LoopOf (program : Program) (element : ElementId) (loop : MultiInstance) : Prop :=
   ((program.element? element).bind (·.envelope?)).bind (·.multiInstance) = some loop
 
+/-- No boundary of the program's elements has an identifier that names an element: the IL contract that `Boundary.id` is unique in the
+program, as `Header.id` is (`Kernel/IL/Types.lean:118`), which compiled programs satisfy and the codec does not check.
+A boundary's reservation is an occurrence of its identifier under the element role (`State.reserve`), so a boundary
+whose identifier named a Multi-Instance Activity could reserve an occurrence of that Activity, which is no instance, in
+an instance's scope occurrence: the statements that read instance identity (`InstancesPlaced`) are false of programs
+that break the contract, and take it as a model premise (root decision, 2026-11-14). It ranges over every element the
+program lists, not only those `Program.element?` finds, since a firing finds its boundary among them all
+(`Program.boundary?`). -/
+def BoundariesApart (program : Program) : Prop :=
+  ∀ element ∈ program.elements, ∀ envelope, element.envelope? = some envelope →
+    ∀ boundary ∈ envelope.boundaries, program.element? boundary.id = none
+
 /-! ## Entry and generation -/
 
 /-- One slot per item or per count, fixed on entry, and never none: an empty collection completes the Activity at once
@@ -129,12 +141,21 @@ running state queues nothing, so these are inductive strengthening (root decisio
 def QueuedFor (run : MultiInstanceRun) (index : Nat) (request : BeginRequest) : Prop :=
   request.continuation = .multiInstance run.occurrence ∧ run.instances[index]? = some (.active request.scope)
 
+/-- A reservation of `element` still to be made: a queued `Signal.occur`, or the resume of a queued compensation or of a
+compensation run that ends by reserving it (`Compensation.advance`). -/
+def OccurPending (s : State) (element : ElementId) : Prop :=
+  (∃ scope leave writes rule, Signal.occur element scope leave writes rule ∈ s.signals) ∨
+    (∃ scope activity trigger leave at_ resumed,
+      Signal.compensate scope activity trigger leave (some (.occur element at_ resumed)) ∈ s.signals) ∨
+    ∃ run ∈ s.slots.compensation.runs, ∃ at_ leave, run.resume = some (.occur element at_ leave)
+
 /-- What the instances' begins still queued need for the numbering: every body's element loops, and its instances'
 scope occurrences belong to no called instance, so they share one activation counter; an instance is an occurrence of
 the body's element under the element role (`continued`); a queued instance begin targets an active slot of its body,
 while that slot's scope occurrence stands, with the body's element and no reservation (`targets`); no queued begin into
 an instance's scope occurrence begins a reservation of the body's element under the element role, and every reservation
-continues by its flows (`reserved`, `reservations`); the closure takes queued begins in slot order: begin signals first
+continues by its flows (`reserved`, `reservations`), and no reservation still to be made names a looping element, as a
+boundary's never does under `BoundariesApart` (`occurs`); the closure takes queued begins in slot order: begin signals first
 in, first out, deferred begins last in, first out, and only under `declarationDepthFirst` (`Step.nextToken`); and every
 instance that has begun lies in a slot below every one still queued (`above`). -/
 structure BeginsQueued (program : Program) (s : State) : Prop where
@@ -150,6 +171,7 @@ structure BeginsQueued (program : Program) (s : State) : Prop where
     Iteration.active request.scope ∈ run.instances → ∀ id, request.reserved = some id → ∀ o ∈ s.occurrences,
       o.id = id → o.element = run.element → o.role = .element → False
   reservations : ∀ o ∈ s.occurrences, o.begun = false → o.continuation = .flow
+  occurs : ∀ element, OccurPending s element → ∀ loop, ¬ LoopOf program element loop
   signalsOrdered : ∀ run ∈ s.slots.multiInstances, ∀ first second first' second',
     Laws.State.Precedes s.signals (.begin first) (.begin second) → QueuedFor run first' first →
     QueuedFor run second' second → first' < second'

@@ -22,7 +22,7 @@ namespace Kernel.Proofs.MultiInstance
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
-  InstancesPlaced BeginsQueued SequentialSlots OutputsFit)
+  InstancesPlaced BeginsQueued BoundariesApart SequentialSlots OutputsFit)
 open Kernel.Proofs.Cancellation (phases_alongside featureOps_frame)
 
 /-! ## What the Multi-Instance hooks keep
@@ -485,13 +485,14 @@ theorem multiInstanceKeeps_framed : Proofs.Step.MultiInstanceKeeps Framed where
 
 /-- What the numbering lane supplies: after a committed input from a well-formed state that keeps the slot invariant,
 and after a committed start, every running body numbers its instances in item order and each instance is the one
-occurrence of the Activity in its scope occurrence, and the instance begins still queued are in order. -/
+occurrence of the Activity in its scope occurrence, and the instance begins still queued are in order, under a program
+whose boundaries name no element. -/
 structure NumberingKept (hooks : Hooks) : Prop where
-  step : ∀ program input before after, WellFormed program before → RunsFormed program before →
-    Step.step hooks program (some before) input = .ok after →
+  step : ∀ program input before after, BoundariesApart program → WellFormed program before →
+    RunsFormed program before → Step.step hooks program (some before) input = .ok after →
       (∀ run ∈ after.slots.multiInstances, NumberedInOrder after run ∧ InstancesPlaced after run) ∧
         BeginsQueued program after
-  start : ∀ program input after, Step.step hooks program none input = .ok after →
+  start : ∀ program input after, BoundariesApart program → Step.step hooks program none input = .ok after →
     (∀ run ∈ after.slots.multiInstances, NumberedInOrder after run ∧ InstancesPlaced after run) ∧
       BeginsQueued program after
 
@@ -549,33 +550,35 @@ theorem registered_instancesApart :
 /-- The registered hooks keep the lane's slot invariant through a committed input, given the numbering lane's
 supply. -/
 theorem registered_runsFormed (numbering : NumberingKept Registry.hooks) {program : Program} {input : Input}
-    {before after : State}
+    {before after : State} (apart : BoundariesApart program)
     (formed : WellFormed program before) (runs : RunsFormed program before)
     (ran : Step.step Registry.hooks program (some before) input = .ok after) :
     WellFormed program after ∧ RunsFormed program after :=
   have framed := framed_stepKeeps ⟨formed, runs.framed⟩ ran
-  ⟨framed.1, framed.2.formed framed.1 (numbering.step _ _ _ _ formed runs ran)⟩
+  ⟨framed.1, framed.2.formed framed.1 (numbering.step _ _ _ _ apart formed runs ran)⟩
 
 /-- A committed start keeps the lane's slot invariant under the registered hooks, given the numbering lane's supply. -/
 theorem registered_runsFormedAtStart (numbering : NumberingKept Registry.hooks) : RunsFormedAtStart Registry.hooks :=
-    fun _ _ _ ran =>
+    fun _ _ _ apart ran =>
   have framed := framed_start ran
-  framed.2.formed framed.1 (numbering.start _ _ _ ran)
+  framed.2.formed framed.1 (numbering.start _ _ _ apart ran)
 
 /-- Every instance a committed population run holds keeps the lane's slot invariant under the registered hooks, given
 the numbering lane's supply. -/
 theorem registered_runsFormedInPopulation (numbering : NumberingKept Registry.hooks) :
     RunsFormedInPopulation Registry.hooks := fun _ _ _ ran member inside =>
-  (Laws.Population.runStimuli_held (good := fun program s => WellFormed program s ∧ RunsFormed program s)
-    ⟨fun _ _ _ _ holds stepped => registered_runsFormed numbering holds.1 holds.2 stepped,
-      fun _ _ _ ran => ⟨(framed_start ran).1, registered_runsFormedAtStart numbering _ _ _ ran⟩⟩
+  (Laws.Population.runStimuli_held
+    (good := fun program s => Framed program s ∧ (BoundariesApart program → RunsFormed program s))
+    ⟨fun _ _ _ _ holds stepped => ⟨framed_stepKeeps holds.1 stepped, fun apart =>
+      (registered_runsFormed numbering apart holds.1.1 (holds.2 apart) stepped).2⟩,
+      fun _ _ _ ran => ⟨framed_start ran, fun apart => registered_runsFormedAtStart numbering _ _ _ apart ran⟩⟩
     ran member inside).2
 
 /-- Every running body after a committed input is `Shaped` by its loop under the registered hooks, given the numbering
 lane's supply. -/
 theorem registered_runsShaped (numbering : NumberingKept Registry.hooks) : RunsShaped Registry.hooks :=
-  fun _ _ _ run loop ⟨formed, runs, _, ran⟩ member looped =>
-    ((registered_runsFormed numbering formed runs ran).2.formed run member).shaped loop looped
+  fun _ _ _ run loop apart ⟨formed, runs, _, ran⟩ member looped =>
+    ((registered_runsFormed numbering apart formed runs ran).2.formed run member).shaped loop looped
 
 /-- A committed input keeps its well-formed before-state's scope occurrences under the registered hooks. -/
 theorem registered_stepKeepsScopes : Proofs.Cancellation.StepKeepsScopes Registry.hooks :=
