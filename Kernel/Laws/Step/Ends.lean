@@ -1,7 +1,7 @@
 module
 
 public import Kernel.Laws.Step.Keeps
-public import Kernel.Laws.State.Removal
+public import Kernel.Laws.Step.EndsFrames
 
 /-! # Laws of the step function: the end facts of an input
 
@@ -9,7 +9,8 @@ What an input on a running instance keeps of its end facts, from its start (`End
 an occurrence the state still holds, and every begun occurrence the start held and the state no longer does has ended
 under the key it had at the start. It is an invariant of the input indexed by its start, as the cancellation lane's
 `KeepsScopes` is indexed by the before-state, so it passes through each hook by the hook's lemma, which is generic in
-the invariant, once every state operation the hook applies frames the end facts (`EndsStep`).
+the invariant, since every state operation the hook applies frames the end facts (`EndsStep`,
+`Kernel.Laws.Step.EndsFrames`).
 
 It is not an invariant of `Laws.Step.Phases`: the completion pipeline (`Step.complete`) removes the completing
 occurrence, runs its continuation's hooks and only then journals its end, so between the two the occurrence is gone and
@@ -24,28 +25,6 @@ namespace Kernel.Laws.Step
 
 open Kernel Kernel.Step
 open Kernel.Laws.State (WellFormed key Counted CountsGrow occurrenceIds)
-
-/-- The keys of the end facts of the input in progress: its journal's and its draft's. -/
-def endKeys (s : State) : List OccurrenceKey := (s.journal.flatMap (·.ended) ++ s.draft.ended).map (·.1)
-
-theorem counted_grow {s t : State} (grow : CountsGrow s t) {k : OccurrenceKey} (counted : Counted s k) : Counted t k := by
-  obtain ⟨count, member, named, ⟨element, role, below⟩⟩ := counted
-  obtain ⟨grown, inside, named', ⟨element', role', more⟩⟩ := grow count member
-  exact ⟨grown, inside, named'.trans named, element'.trans element, role'.trans role, Nat.le_trans below more⟩
-
-/-- What a state operation from `s` to `t` does to the end facts, sparing `spare`'s removal from being journalled: every
-occurrence `t` holds is one of `s` under the same key, unchanged if begun, or a fresh one whose key `s`'s counters have
-not issued; the end facts `t` adds are the keys in `s` of begun occurrences of `s` it no longer holds, each once, among
-them every such occurrence but `spare`; the instance, the counters and the issue counter stay or grow. -/
-structure EndsStep (s t : State) (spare : Option Nat) : Prop where
-  instanceId : t.instanceId = s.instanceId
-  issued : s.nextIssue ≤ t.nextIssue
-  grow : CountsGrow s t
-  held : ∀ o' ∈ t.occurrences, (∃ o ∈ s.occurrences, o'.id = o.id ∧ key t o' = key s o ∧ (o.begun = true → o' = o)) ∨
-    (s.nextIssue ≤ o'.id ∧ ¬ Counted s (key t o'))
-  ends : ∃ gone : List Occurrence, (endKeys t).Perm (endKeys s ++ gone.map (key s)) ∧ (gone.map (·.id)).Nodup ∧
-    (∀ o ∈ gone, o ∈ s.occurrences ∧ spare ≠ some o.id ∧ o.id ∉ occurrenceIds t) ∧
-    ∀ o ∈ s.occurrences, o.begun = true → o.id ∉ occurrenceIds t → spare ≠ some o.id → o ∈ gone
 
 /-- What an input keeps of its end facts from its start `b`, with `x`, a removed occurrence's identifier and key, exempt
 while its completion's continuation runs: `b`'s begun occurrences keep their records and keys while held; the end
@@ -248,66 +227,36 @@ theorem EndsKept.record {b s : State} {id : Nat} {k : OccurrenceKey} (kept : End
         obtain rfl := Option.some.inj same
         exact fun equal => named equal.symm)
 
-/-- An operation that moves nothing `EndsKept` reads but the issue counter, which it may raise, keeps it. -/
+/-- An operation that moves nothing `EndsKept` reads but the issue counter, which it may raise, and the order of the
+end facts keeps it: journalling the draft (`Step.conclude`) and ordering the journal (`Step.orderJournal`) only
+permute them. -/
 theorem EndsKept.unmoved {b s t : State} {x : Option (Nat × OccurrenceKey)} (kept : EndsKept b x s)
     (occurrences : t.occurrences = s.occurrences) (counters : t.activations = s.activations)
     (tree : t.scopes = s.scopes ∧ t.instanceId = s.instanceId) (issued : s.nextIssue ≤ t.nextIssue)
-    (ends : endKeys t = endKeys s) : EndsKept b x t := by
+    (ends : (endKeys t).Perm (endKeys s)) : EndsKept b x t := by
   have same : ∀ o, key t o = key s o := fun o =>
     Laws.State.key_congr (Laws.State.instanceOf_congr tree.1 tree.2 o.scope)
   have ids : occurrenceIds t = occurrenceIds s := by rw [occurrenceIds, occurrences]; rfl
   refine ⟨kept.below, tree.2.trans kept.instanceId, Nat.le_trans kept.issued issued, occurrences ▸ kept.records,
-    fun o member begun inside => (same o).trans (kept.keys o member begun (occurrences ▸ inside)), ends ▸ kept.nodup,
-    fun o inside => ?_, fun k ended => Laws.State.Counted.congr counters (kept.counted k (ends ▸ ended)), ?_,
-    fun y named => ?_⟩
-  · rw [same, ends]
+    fun o member begun inside => (same o).trans (kept.keys o member begun (occurrences ▸ inside)),
+    ends.nodup_iff.mpr kept.nodup, fun o inside => ?_,
+    fun k ended => Laws.State.Counted.congr counters (kept.counted k (ends.mem_iff.mp ended)), ?_, fun y named => ?_⟩
+  · rw [same, ends.mem_iff]
     exact kept.present o (occurrences ▸ inside)
-  · rw [ids, ends]
-    exact kept.removed
+  · intro o member begun absent exempt
+    exact ends.mem_iff.mpr (kept.removed o member begun (ids ▸ absent) exempt)
   · obtain ⟨below, absent, unended, ⟨unheld, countedY, keyed⟩⟩ := kept.pending y named
-    exact ⟨Nat.lt_of_lt_of_le below issued, ids ▸ absent, ends ▸ unended,
+    exact ⟨Nat.lt_of_lt_of_le below issued, ids ▸ absent, fun ended => unended (ends.mem_iff.mp ended),
       fun o inside => (same o) ▸ unheld o (occurrences ▸ inside), Laws.State.Counted.congr counters countedY, keyed⟩
 
-/-- Pending lemma requests R15 (`Kernel.Laws.State`): the state operations the hooks apply frame the end facts,
-sparing nothing (`EndsStep`): entering a scope occurrence or a called root, reserving, leaving or clearing a scope
-occurrence (which journal the begun occurrences they remove), disarming (which removes only reservations) and a
-variable write or removal. -/
-structure PendingHookFrames : Prop where
-  enterScope_frame : ∀ (program : Program) (s : State) element parent locals owner, WellFormed program s →
-    EndsStep s (s.enterScope element parent locals owner).1 none
-  enterCalled_frame : ∀ (program : Program) (s : State) called call variables definition, WellFormed program s →
-    EndsStep s (s.enterCalled called call variables definition).1 none
-  reserve_frame : ∀ (program : Program) (s : State) element scope, WellFormed program s →
-    EndsStep s (s.reserve element scope).1 none
-  leaveScope_frame : ∀ (program : Program) (s : State) scope, WellFormed program s → EndsStep s (s.leaveScope scope) none
-  clearInside_frame : ∀ (program : Program) (s : State) scope keep, WellFormed program s →
-    EndsStep s (s.clearInside scope keep) none
-  disarm_frame : ∀ (program : Program) (s : State) host, WellFormed program s → EndsStep s (s.disarm host) none
-  setVariable_frame : ∀ (program : Program) (s : State) target name value, WellFormed program s →
-    EndsStep s (s.setVariable target name value) none
-  removeVariable_frame : ∀ (program : Program) (s : State) target name, WellFormed program s →
-    EndsStep s (s.removeVariable target name) none
-
 /-! ### The completion pipeline -/
-
-/-- Pending lemma requests R15 (`Kernel.Laws.State`): what the completion pipeline's own state operations do to the end
-facts. Starting a reservation begins an unbegun occurrence under its key and ends nothing; removing the completing
-occurrence ends every begun occurrence inside the scope occurrences it owns, but not itself, which it removes. -/
-structure PendingPipelineFrames : Prop where
-  startReserved_frame : ∀ (program : Program) (s : State) occurrence sourceType, WellFormed program s →
-    occurrence ∈ s.occurrences → EndsStep s (s.startReserved occurrence sourceType).1 none
-  removeOccurrence_frame : ∀ (program : Program) (s : State) occurrence, WellFormed program s →
-    occurrence ∈ s.occurrences →
-    (∀ item ∈ s.openItems, item.occurrence ≠ occurrence.id ∧ item.attachedTo ≠ some occurrence.id) →
-    EndsStep s (s.removeOccurrence occurrence.id) (some occurrence.id) ∧
-      occurrence.id ∉ occurrenceIds (s.removeOccurrence occurrence.id)
 
 /-- The completion pipeline keeps an input's end facts, as a unit: its hooks before the removal and its continuation
 keep `EndsInv`, the continuation with the completing occurrence exempt, and the end it journals last lifts the
 exemption (`EndsKept.remove`, `EndsKept.record`). The one obligation `Step`'s phases cannot carry (module
 documentation). -/
 theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContract hooks (EndsInv b x))
-    (phases : Phases WellFormed) (facts : StateFacts) (frames : PendingPipelineFrames) {ctx : Ctx} {id : Nat}
+    (phases : Phases WellFormed) (facts : StateFacts) (ends : PendingStateEnds) {ctx : Ctx} {id : Nat}
     {leave : Leave} {writes : List (String × Value)} {rule : WriteRule} {state after : State}
     (holds : EndsInv b none ctx.program state)
     (free : ∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request)
@@ -322,10 +271,10 @@ theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContrac
   obtain ⟨begunScope, reservedScopes⟩ := reservation
   have closedFormed := phases.startReserved _ state occurrence sourceType holds.1 member (named ▸ free)
   rw [named] at closedFormed
-  have startedKept := holds.2.step holds.1 (frames.startReserved_frame _ state occurrence sourceType holds.1 member)
+  have startedKept := holds.2.step holds.1 (startReserved_frame ends holds.1 member sourceType)
   have closedKept : EndsKept b none ((state.startReserved occurrence sourceType).1.closeOwnItems id) := by
     rw [Laws.State.closeOwnItems_eq]
-    exact startedKept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) rfl
+    exact startedKept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
   obtain ⟨closedFrame, closedFree⟩ := facts.closeOwnItems (state.startReserved occurrence sourceType).1 id
   subst made
   have inClosed := closedFrame.begun _ begunMember begunFlag
@@ -348,8 +297,7 @@ theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContrac
   | raised continuing =>
     obtain ⟨removedFormed, removedStands⟩ := phases.removeOccurrence _ written _ writtenHolds.1 inWritten
       (free written writtenFrame.items)
-    obtain ⟨removing, gone⟩ := frames.removeOccurrence_frame _ written _ writtenHolds.1 inWritten
-      (free written writtenFrame.items)
+    obtain ⟨removing, gone, _⟩ := removeOccurrence_frame ends writtenHolds.1 inWritten
     have recorded := (writtenHolds.2.remove writtenHolds.1 inWritten removing gone).record .cancelled
     rw [identity] at removedFormed removedStands recorded
     obtain ⟨entry, inside, entryNamed⟩ := removedStands
@@ -361,7 +309,7 @@ theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContrac
     have inRetained := retainedFrame.begun _ inWritten begunFlag
     have unhung := free _ fun item member => writtenFrame.items item (retainedFrame.items item member)
     obtain ⟨removedFormed, removedStands⟩ := phases.removeOccurrence _ _ _ retainedHolds.1 inRetained unhung
-    obtain ⟨removing, gone⟩ := frames.removeOccurrence_frame _ _ _ retainedHolds.1 inRetained unhung
+    obtain ⟨removing, gone, _⟩ := removeOccurrence_frame ends retainedHolds.1 inRetained
     have exempt := retainedHolds.2.remove retainedHolds.1 inRetained removing gone
     rw [identity] at removedFormed removedStands exempt
     obtain ⟨continuedFormed, continuedKept⟩ := continueAfter_keeps (contract _) ⟨removedFormed, exempt⟩ removedStands

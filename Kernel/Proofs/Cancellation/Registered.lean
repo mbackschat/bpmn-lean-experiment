@@ -137,7 +137,7 @@ theorem multiInstanceOps_alongside (side : Alongside rel) {program : Program}
     ⟨⟨ran.1, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩, ran.2⟩
   leave s run scope holds member active stands :=
     have left := ops.leave s run scope holds.1 member active stands
-    ⟨⟨left.1, side.leaveScope program s scope holds.1 holds.2⟩, left.2⟩
+    ⟨⟨left.1, side.leaveScope program s scope holds.1 stands holds.2⟩, left.2⟩
   write s scope writes rule holds :=
     have written := ops.write s scope writes rule holds.1
     ⟨⟨written.1, side.signal holds.2 _⟩, written.2⟩
@@ -155,7 +155,13 @@ theorem scopesOps_alongside (side : Alongside rel) {program : Program} (ops : La
     ⟨ops.complete s occurrence leave writes rule holds.1 member begun, side.signal holds.2 _⟩
   clear s occurrence inner holds member begun ready :=
     have cleared := ops.clear s occurrence inner holds.1 member begun ready
-    ⟨⟨cleared.1, side.clearInside program s _ _ holds.1 holds.2⟩, cleared.2⟩
+    have kept : ∀ o ∈ s.occurrences, o.id ∈ occurrence.id :: inner.toList →
+        ¬ Laws.State.StrictlyWithin s o.scope occurrence.scope := fun o inside keeps strictly => by
+      rcases List.mem_cons.mp keeps with same | reserved
+      · exact strictly.2 (congrArg Occurrence.scope (Laws.State.nodup_map_eq holds.1.distinct.occurrences inside member same))
+      · exact strictly.2 ((ready o.id reserved).2.2 o inside rfl)
+    ⟨⟨cleared.1, side.clearInside program s _ _ holds.1 (holds.1.owned.occurrenceScopes occurrence member) kept holds.2⟩,
+      cleared.2⟩
   enter s element locals occurrence inner holds member begun ready :=
     have entered := ops.enter s element locals occurrence inner holds.1 member begun ready
     ⟨⟨entered.1, side.enterScope program s _ _ _ _ holds.1 holds.2⟩, entered.2⟩
@@ -179,7 +185,9 @@ theorem propagationOps_alongside (side : Alongside rel) {program : Program}
     ⟨ops.compensate s occurrence scope activity trigger leave holds.1 member begun, side.signal holds.2 _⟩
   terminate s occurrence holds member begun :=
     have cleared := ops.terminate s occurrence holds.1 member begun
-    ⟨⟨cleared.1, side.clearInside program s _ _ holds.1 holds.2⟩, cleared.2⟩
+    ⟨⟨cleared.1, side.clearInside program s _ _ holds.1 (holds.1.owned.occurrenceScopes occurrence member)
+      (fun _ inside keeps strictly => strictly.2 (congrArg Occurrence.scope (Laws.State.nodup_map_eq
+        holds.1.distinct.occurrences inside member (List.mem_singleton.mp keeps)))) holds.2⟩, cleared.2⟩
   openItem s kind occurrence holds member begun unstarted :=
     ⟨ops.openItem s kind occurrence holds.1 member begun unstarted, side.openItem holds.2 kind occurrence⟩
   signalOccurrences := ops.signalOccurrences
@@ -209,7 +217,7 @@ theorem runsOps_alongside (side : Alongside rel) {program : Program}
     ⟨⟨queued.1, side.signal holds.2 _⟩, queued.2⟩
   leave s entry parent holds member link :=
     have left := ops.leave s entry parent holds.1 member link
-    ⟨⟨left.1, side.leaveScope program s entry.id holds.1 holds.2⟩, left.2⟩
+    ⟨⟨left.1, side.leaveScope program s entry.id holds.1 (List.mem_map.mpr ⟨entry, member, rfl⟩) holds.2⟩, left.2⟩
 
 theorem subscriptionsOps_alongside (side : Alongside rel) {program : Program}
     (ops : Laws.Subscriptions.SubscriptionsOps program (WellFormed program)) :
@@ -401,10 +409,10 @@ theorem subtreeRemoved_registered (removal : PendingRemoval) (pending : ∀ befo
 
 /-- The registered hooks keep an input's end facts from its start beside `WellFormed`, under any exemption
 (`Laws.Step.EndsInv`), the hook contract `Laws.Step.complete_ends` and `MicroStepsKeepEnds` rest on. -/
-theorem endsInv_contract (frames : Laws.Step.PendingHookFrames)
+theorem endsInv_contract (ends : Laws.Step.PendingStateEnds)
     (pending : ∀ b x, PendingHooks (Laws.Step.EndsInv b x)) (b : State) (x : Option (Nat × OccurrenceKey)) :
     Laws.Step.HookContract Registry.hooks (Laws.Step.EndsInv b x) :=
-  registered_contract (registeredOps_wellFormed.alongside (endsKept_alongside frames b x)) Proofs.State.stateFacts
+  registered_contract (registeredOps_wellFormed.alongside (endsKept_alongside ends b x)) Proofs.State.stateFacts
     (pending b x)
 
 end Kernel.Proofs.Cancellation

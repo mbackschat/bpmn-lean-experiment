@@ -335,7 +335,8 @@ structure Unmoved (s t : State) : Prop where
 
 /-- What the state operations the hooks apply keep of a property `rel` carried beside `WellFormed`: an update of
 nothing `rel` may read (`Unmoved`), issuing an identity, entering a scope occurrence or a Call's called root,
-reserving an occurrence, leaving or clearing a scope occurrence, disarming a host and a variable write or removal. A feature's
+reserving an occurrence, leaving or clearing a scope occurrence that stands, keeping only occurrences that lie in no
+scope occurrence strictly within it, disarming a host and a variable write or removal. A feature's
 operations record of `WellFormed` and `rel` follows from its record of `WellFormed` and this one. -/
 structure Alongside (rel : State → Prop) : Prop where
   frame : ∀ s t, Unmoved s t → rel s → rel t
@@ -345,8 +346,10 @@ structure Alongside (rel : State → Prop) : Prop where
   enterCalled : ∀ program s called call variables definition, WellFormed program s → rel s →
     rel (s.enterCalled called call variables definition).1
   reserve : ∀ program s element scope, WellFormed program s → rel s → rel (s.reserve element scope).1
-  leaveScope : ∀ program s scope, WellFormed program s → rel s → rel (s.leaveScope scope)
-  clearInside : ∀ program s scope keep, WellFormed program s → rel s → rel (s.clearInside scope keep)
+  leaveScope : ∀ program s scope, WellFormed program s → scope ∈ scopeIds s → rel s → rel (s.leaveScope scope)
+  clearInside : ∀ program s scope keep, WellFormed program s → scope ∈ scopeIds s →
+    (∀ o ∈ s.occurrences, o.id ∈ keep → ¬ Laws.State.StrictlyWithin s o.scope scope) → rel s →
+    rel (s.clearInside scope keep)
   disarm : ∀ program s host, WellFormed program s → rel s → rel (s.disarm host)
   setVariable : ∀ program s target name value, WellFormed program s → rel s → rel (s.setVariable target name value)
   removeVariable : ∀ program s target name, WellFormed program s → rel s → rel (s.removeVariable target name)
@@ -372,8 +375,9 @@ theorem scopesKept_alongside (pending : PendingRemoval) (before : State) : Along
   reserve _ s element scope formed kept :=
     have reserves := Laws.State.reserve_reserves formed.activations element scope
     kept.enter reserves.nextIssue fun _ member => .inl (reserves.scopes ▸ member)
-  leaveScope _ s scope _ kept := kept.shrink ((pending.removal_shrinks s).2.1 scope).1 ((pending.removal_shrinks s).2.1 scope).2
-  clearInside _ s scope keep _ kept :=
+  leaveScope _ s scope _ _ kept :=
+    kept.shrink ((pending.removal_shrinks s).2.1 scope).1 ((pending.removal_shrinks s).2.1 scope).2
+  clearInside _ s scope keep _ _ _ kept :=
     kept.shrink ((pending.removal_shrinks s).1 scope keep).1 ((pending.removal_shrinks s).1 scope keep).2
   disarm _ s host _ kept := by
     rw [Laws.State.disarm_eq]
@@ -473,28 +477,27 @@ def MicroStepsKeepEnds (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (b state after : State), Laws.Step.EndsInv b none ctx.program state →
     Laws.Step.ClosureStep hooks ctx state after → Laws.Step.EndsInv b none ctx.program after ∧ after.draft.ended = []
 
-/-- The state operations the hooks apply keep an input's end facts from its start under any exemption, once each
-frames them (`Laws.Step.PendingHookFrames`): the hooks then keep `Laws.Step.EndsInv` by their feature lemmas
+/-- The state operations the hooks apply keep an input's end facts from its start under any exemption, since each frames
+them (`Kernel.Laws.Step.EndsFrames`), up to the `Laws.State` facts of their bodies still pending
+(`Laws.Step.PendingStateEnds`): the hooks then keep `Laws.Step.EndsInv` by their feature lemmas
 (`Kernel.Proofs.Cancellation.Registered`). -/
-theorem endsKept_alongside (frames : Laws.Step.PendingHookFrames) (b : State) (x : Option (Nat × OccurrenceKey)) :
+theorem endsKept_alongside (ends : Laws.Step.PendingStateEnds) (b : State) (x : Option (Nat × OccurrenceKey)) :
     Alongside (Laws.Step.EndsKept b x) where
   frame _ _ moved kept := kept.unmoved moved.occurrences moved.activations ⟨moved.scopes, moved.instanceId⟩
-    (Nat.le_of_eq moved.nextIssue.symm) (by simp only [Laws.Step.endKeys, moved.journal, moved.draft])
+    (Nat.le_of_eq moved.nextIssue.symm) (.of_eq (by simp only [Laws.Step.endKeys, moved.journal, moved.draft]))
   issue _ kept := by
     rw [Laws.State.issue_eq]
-    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_succ _) rfl
-  enterScope program s element parent locals owner formed kept :=
-    kept.step formed (frames.enterScope_frame program s element parent locals owner formed)
-  enterCalled program s called call variables definition formed kept :=
-    kept.step formed (frames.enterCalled_frame program s called call variables definition formed)
-  reserve program s element scope formed kept := kept.step formed (frames.reserve_frame program s element scope formed)
-  leaveScope program s scope formed kept := kept.step formed (frames.leaveScope_frame program s scope formed)
-  clearInside program s scope keep formed kept := kept.step formed (frames.clearInside_frame program s scope keep formed)
-  disarm program s host formed kept := kept.step formed (frames.disarm_frame program s host formed)
-  setVariable program s target name value formed kept :=
-    kept.step formed (frames.setVariable_frame program s target name value formed)
-  removeVariable program s target name formed kept :=
-    kept.step formed (frames.removeVariable_frame program s target name formed)
+    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_succ _) (.refl _)
+  enterScope _ s element parent locals owner formed kept :=
+    kept.step formed (Laws.Step.enterScope_frame formed element parent locals owner)
+  enterCalled _ s called call variables definition formed kept :=
+    kept.step formed (Laws.Step.enterCalled_frame formed called call variables definition)
+  reserve _ _ element scope formed kept := kept.step formed (Laws.Step.reserve_frame ends formed element scope)
+  leaveScope _ _ _ formed present kept := kept.step formed (Laws.Step.leaveScope_frame ends formed present)
+  clearInside _ _ _ _ formed present inside kept := kept.step formed (Laws.Step.clearInside_frame ends formed present inside)
+  disarm _ s host formed kept := kept.step formed (Laws.Step.disarm_frame s host)
+  setVariable _ s target name value formed kept := kept.step formed (Laws.Step.setVariable_frame ends s target name value)
+  removeVariable _ s target name formed kept := kept.step formed (Laws.Step.removeVariable_frame ends s target name)
 
 /-- A list whose keys are distinct holds the key `key` once if at all. -/
 theorem once_of_nodup {α β : Type} {facts : List (α × β)} {key : α} (distinct : (facts.map (·.1)).Nodup)
