@@ -132,10 +132,10 @@ process is the root process, which no Call calls. -/
 def solitary (reading : Reading) (program : Program) (element : Element) : Bool :=
   let enclosing := ancestors program program.elements.length element.header.parent
   let top := (enclosing.getLast?).getD element
-  !program.inCalledProcess top.header.id && !concurrentLevel reading false (program.siblings top.header) &&
+  !program.inCalledProcess top.header.id && !concurrentLevel reading (alongFlows := false) (program.siblings top.header) &&
     enclosing.all fun scope =>
       ((scope.envelope?).bind (·.multiInstance)).isNone &&
-        !concurrentLevel reading false (program.children (some scope.header.id))
+        !concurrentLevel reading (alongFlows := false) (program.children (some scope.header.id))
 
 /-- Whether `element`'s level is entered once per process instance and moves one token at a time along its flows, so its
 occurrences complete one after another along that token's path: that level and every level around it move no two tokens
@@ -146,11 +146,11 @@ def runsOnce (reading : Reading) (program : Program) (element : Element) : Bool 
   let enclosing := ancestors program program.elements.length element.header.parent
   let top := (enclosing.getLast?).getD element
   let boundariesOf (scope : Element) : List ElementId := ((scope.envelope?.map (·.boundaries)).getD []).map (·.id)
-  !program.inCalledProcess top.header.id && !concurrentLevel reading true (program.siblings top.header) &&
+  !program.inCalledProcess top.header.id && !concurrentLevel reading (alongFlows := true) (program.siblings top.header) &&
     enclosing.all fun scope =>
       ((scope.envelope?).bind (·.multiInstance)).isNone && !handler reading scope &&
         !reaches program (scope.header.id :: boundariesOf scope) scope.header.id &&
-        !concurrentLevel reading true (program.children (some scope.header.id))
+        !concurrentLevel reading (alongFlows := true) (program.children (some scope.header.id))
 
 /-- The elements whose occurrences tell apart two open occurrences of the subscription a resumption fires, which one
 throw or write may resume together: the Scope its anchor lies in, or at a called process's level its Calls; none for a

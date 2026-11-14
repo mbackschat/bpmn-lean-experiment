@@ -210,7 +210,7 @@ function anchorOf(program: Program, visit: Visit): Element | null {
  * so a handler, which has none (`compensation.handlerFlow`), and a boundary without an outgoing flow, such as a
  * Compensation boundary, add none.
  */
-function concurrentLevel(reading: Reading, alongFlows: boolean, level: readonly Element[]): boolean {
+function concurrentLevel(reading: Reading, { alongFlows }: Readonly<{ alongFlows: boolean }>, level: readonly Element[]): boolean {
   const starts = level.filter((element) => elementStart(element) !== null).length;
   return starts >= 2 || (starts === 0 && level.filter(elementBeginsImplicitly).length >= 2) || level.some((element) => {
     const gateway = elementGateway(element);
@@ -232,9 +232,9 @@ function concurrentLevel(reading: Reading, alongFlows: boolean, level: readonly 
 function solitary(reading: Reading, program: Program, element: Element): boolean {
   const enclosing = ancestors(program, elementHeader(element).parent);
   const top = enclosing.at(-1) ?? element;
-  return !programInCalledProcess(program, elementHeader(top).id) && !concurrentLevel(reading, false, programSiblings(program, elementHeader(top))) &&
+  return !programInCalledProcess(program, elementHeader(top).id) && !concurrentLevel(reading, { alongFlows: false }, programSiblings(program, elementHeader(top))) &&
     enclosing.every((scope) => (elementEnvelope(scope)?.multiInstance ?? null) === null &&
-      !concurrentLevel(reading, false, programChildren(program, elementHeader(scope).id)));
+      !concurrentLevel(reading, { alongFlows: false }, programChildren(program, elementHeader(scope).id)));
 }
 
 /**
@@ -248,10 +248,10 @@ function runsOnce(reading: Reading, program: Program, element: Element): boolean
   const enclosing = ancestors(program, elementHeader(element).parent);
   const top = enclosing.at(-1) ?? element;
   const boundariesOf = (scope: Element): ElementId[] => (elementEnvelope(scope)?.boundaries ?? []).map((attached) => attached.id);
-  return !programInCalledProcess(program, elementHeader(top).id) && !concurrentLevel(reading, true, programSiblings(program, elementHeader(top))) &&
+  return !programInCalledProcess(program, elementHeader(top).id) && !concurrentLevel(reading, { alongFlows: true }, programSiblings(program, elementHeader(top))) &&
     enclosing.every((scope) => (elementEnvelope(scope)?.multiInstance ?? null) === null && !handler(reading, scope) &&
       !reaches(program, [elementHeader(scope).id, ...boundariesOf(scope)], elementHeader(scope).id) &&
-      !concurrentLevel(reading, true, programChildren(program, elementHeader(scope).id)));
+      !concurrentLevel(reading, { alongFlows: true }, programChildren(program, elementHeader(scope).id)));
 }
 
 /**
