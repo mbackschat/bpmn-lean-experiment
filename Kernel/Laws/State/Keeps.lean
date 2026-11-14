@@ -655,6 +655,38 @@ theorem begin_wellFormed {state : State} (formed : WellFormed state) (request : 
     WellFormed (state.beginOccurrence request role sourceType).1 :=
   (beginOccurrence_begins formed.activations request role sourceType).wellFormed formed stands admitted
 
+/-- An admitted request's start Event reservation stays beginnable and unclaimed after its begin, in the scope
+occurrence the begun occurrence runs in. -/
+theorem Begins.entry {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
+    {begun : Occurrence} (begins : Begins before after request role sourceType begun) (nodup : (names request).Nodup)
+    (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id) :
+    ∀ id ∈ request.inner.toList, Beginnable after begun.scope id ∧ Unclaimed after id := by
+  intro id inner
+  have named : id ∈ names request := List.mem_append_right _ inner
+  obtain ⟨⟨below, facts⟩, unclaimed⟩ := admitted id named
+  have other : begun.id ≠ id := by
+    rcases begins.source with ⟨reserved, reservation⟩ | fresh
+    · intro equal
+      have apart := (List.nodup_append.mp nodup).2.2
+      exact apart reserved.id (by simp [reservation.named]) id inner (reservation.id ▸ equal)
+    · have := fresh.id
+      omega
+  have issued : before.nextIssue ≤ after.nextIssue := by
+    rcases begins.source with ⟨_, reservation⟩ | fresh
+    · exact Nat.le_of_eq reservation.nextIssue.symm
+    · have := fresh.nextIssue
+      omega
+  refine ⟨⟨by omega, fun occurrence member same => ?_⟩, ?_⟩
+  · rw [begins.occurrences] at member
+    rcases List.mem_append.mp member with old | new
+    · obtain ⟨unbegun, free, instance_⟩ := facts occurrence (List.mem_filter.mp old).1 same
+      refine ⟨unbegun, by simpa [begins.openItems] using free, fun present => ?_⟩
+      rw [begins.instances, begins.instances, begins.scope]
+      exact instance_ (by simpa [scopeIds, begins.scopes, begins.scope] using present)
+    · exact absurd ((List.mem_singleton.mp new) ▸ same) other
+  · exact ⟨by simpa [Queued, begins.signals, begins.tokens] using unclaimed.1,
+      by simpa [begins.signals] using unclaimed.2⟩
+
 /-- Such a begin leaves the request's start Event reservation beginnable and unclaimed where its occurrence runs. -/
 theorem begin_entry {state : State} (formed : WellFormed state) (request : BeginRequest) (role : ActivationRole)
     (sourceType : String) (nodup : (names request).Nodup)

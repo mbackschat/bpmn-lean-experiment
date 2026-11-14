@@ -291,7 +291,7 @@ theorem startsOps : Laws.Starts.StartsOps Laws.State.WellFormed where
 
 /-- Scopes' operations record (`Laws.Scopes.ScopesOps`) of `WellFormed`. -/
 theorem scopesOps : Laws.Scopes.ScopesOps Laws.State.WellFormed where
-  owner _ scope _ formed member owned link := owner_begun formed member owned link
+  owner _ _ _ formed member owned link := owner_begun formed member owned link
   complete _ _ leave writes rule formed member begun := complete_wellFormed formed member begun leave writes rule
 
 /-- `HookContract.outflow` of the registered hooks. -/
