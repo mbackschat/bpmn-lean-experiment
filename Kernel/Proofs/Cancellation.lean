@@ -10,13 +10,13 @@ The statements of the proof wave's cancellation lane ([PLAN, P3](../../docs/PLAN
 subtree; an input addressed to a removed occurrence is rejected without effect; queued work naming a removed scope
 occurrence has no effect; every owning feature is notified once. Each is stated over a hooks parameter and closes when
 `Kernel.Proofs.Step` proves it of `Registry.hooks`. No model premise is needed: removal is generic (`State.clearInside`,
-`State.cancelOccurrence`) and reads no IL. `Laws.State.ClearsInside` and `Laws.Scopes`' clearing laws are the
-micro-step contracts the lane proves these from.
+`State.cancelOccurrence`) and reads no IL.
 
 A proof here composes `Laws.Step`'s, `Laws.Hooks`' and `Laws.State`'s lemmas and opens no body. A `Step` fact it needs
-that no `Laws` module states yet is an explicit premise named as a pending lemma request (`PendingStale`,
-`PendingLate`), never a
-model or state premise of the lane statement; the root replaces it with the lemma once that lands. Nothing executable
+that no `Laws` module states yet is an explicit premise named as a pending lemma request (`PendingStale`, `PendingLate`),
+never a model or state premise of the lane statement; the root replaces it with the lemma once that lands. Subtree
+removal rests on the state-invariant lane's preservation of `WellFormed` and on the step keeping its before-state's
+scope occurrences (`StepKeepsScopes`), an invariant of the closure relative to the before-state. Nothing executable
 imports this module.
 -/
 
@@ -226,5 +226,77 @@ theorem lateInputRejected {hooks : Hooks} (pending : PendingLate) : LateInputRej
     obtain ⟨occurrence, owned, designated⟩ :=
       item_designates formed occurrences items sameInstance member publicId activation instance_
     exact undesignated occurrence owned designated
+
+/-! ## Subtree removal
+
+A committed input leaves nothing in the subtree of a scope occurrence it removed because two facts of the after-state
+meet: it is well-formed, so everything it holds lies in a scope occurrence it holds whose parent it holds
+(`Laws.State.Owned`, `Laws.State.Rooted`), and every scope occurrence it holds that the before-state held is the
+before-state's record (`ScopesKept`), so its parent link is unchanged. Climbing the before-state's links from anything
+inside the removed subtree would then reach the removed scope occurrence inside the after-state. -/
+
+/-- The scope occurrences of `before` survive into `s` unchanged, if at all, and `s` issues above them, so a scope
+occurrence `s` enters is none of them: what a committed input keeps of its before-state's scope tree (a scope
+occurrence is entered once with its parent, `State.enterScope`, and removed whole, `State.clearInside`,
+`State.leaveScope`). -/
+def ScopesKept (before s : State) : Prop :=
+  (∀ old ∈ before.scopes, old.id.value < s.nextIssue) ∧ ∀ entry ∈ s.scopes, entry.id ∈ scopeIds before → entry ∈ before.scopes
+
+/-- A committed input keeps its well-formed before-state's scope occurrences (`ScopesKept`). -/
+def StepKeepsScopes (hooks : Hooks) : Prop :=
+  ∀ (program : Program) (input : Input) (before after : State),
+    WellFormed before → Step.step hooks program (some before) input = .ok after → ScopesKept before after
+
+/-- One link up: `inner` is `outer`, or a scope occurrence of `s` whose parent lies within `outer`. -/
+theorem Within.up {s : State} {inner outer : ScopeOccurrenceId} (within : Within s inner outer) :
+    inner = outer ∨ ∃ child ∈ s.scopes, child.id = inner ∧ ∃ parent, child.parent = some parent ∧ Within s parent outer := by
+  cases within with
+  | refl => exact .inl rfl
+  | parent child parent _ member link above => exact .inr ⟨child, member, rfl, parent, link, above⟩
+
+/-- In a well-formed state the parent of a scope occurrence is one of its scope occurrences. -/
+theorem parent_stands {s : State} (formed : WellFormed s) {entry : ScopeOccurrence} (member : entry ∈ s.scopes)
+    {parent : ScopeOccurrenceId} (link : entry.parent = some parent) : parent ∈ scopeIds s := by
+  rcases Within.up (formed.rooted.2.2 entry member) with isRoot | ⟨child, inside, same, above⟩
+  · simp [(formed.rooted.2.1 entry member).mpr isRoot] at link
+  · obtain ⟨above, childLink, reaches⟩ := above
+    obtain rfl := Laws.State.scope_unique formed.distinct inside member same
+    obtain rfl := Option.some.inj (childLink.symm.trans link)
+    rcases Within.up reaches with isRoot | ⟨top, topInside, topSame, _⟩
+    · exact isRoot ▸ formed.rooted.1
+    · exact List.mem_map.mpr ⟨top, topInside, topSame⟩
+
+/-- No scope occurrence of a well-formed after-state that keeps its well-formed before-state's scope occurrences lies,
+in the before-state, within one the after-state no longer holds. -/
+theorem outside_removed {before after : State} (formedBefore : WellFormed before) (formedAfter : WellFormed after)
+    (kept : ScopesKept before after) {removed : ScopeOccurrenceId} (gone : removed ∉ scopeIds after)
+    {scope : ScopeOccurrenceId} (member : scope ∈ scopeIds after) : ¬ Within before scope removed := by
+  intro within
+  refine gone ?_
+  clear gone
+  induction within with
+  | refl => exact member
+  | parent child parent _ inside link _ climb =>
+    obtain ⟨entry, kept_, same⟩ := List.mem_map.mp member
+    have old := kept.2 entry kept_ (same ▸ List.mem_map.mpr ⟨child, inside, rfl⟩)
+    obtain rfl := Laws.State.scope_unique formedBefore.distinct old inside same
+    exact climb (parent_stands formedAfter kept_ link)
+
+/-- `SubtreeRemoved`, from the state-invariant lane's `Proofs.State.StepKeepsWellFormed` (`wellFormed`, stated here
+as its unfolding so that this module does not import `Proofs.State`'s feature laws) and `StepKeepsScopes`: the
+after-state's tokens, open items, occurrences and variable sets lie in its scope occurrences (`Laws.State.Owned`), none
+of which lies within a removed one (`outside_removed`). -/
+theorem subtreeRemoved {hooks : Hooks}
+    (wellFormed : ∀ (program : Program) (input : Input) (before after : State),
+      WellFormed before → Step.step hooks program (some before) input = .ok after → WellFormed after)
+    (scopes : StepKeepsScopes hooks) : SubtreeRemoved hooks := by
+  intro program input before after removed formed ran _ gone
+  have formedAfter := wellFormed program input before after formed ran
+  have outside := fun {scope} => outside_removed formed formedAfter (scopes program input before after formed ran) gone
+    (scope := scope)
+  exact ⟨fun token member => outside (formedAfter.owned.tokenScopes token member),
+    fun item member => outside (formedAfter.owned.itemScopes item member),
+    fun occurrence member => outside (formedAfter.owned.occurrenceScopes occurrence member),
+    fun variables member => outside (formedAfter.owned.variableScopes variables member)⟩
 
 end Kernel.Proofs.Cancellation
