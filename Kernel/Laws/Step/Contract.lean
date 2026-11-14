@@ -38,6 +38,142 @@ def Admitted (state : State) (request : BeginRequest) : Prop :=
     Laws.State.Beginnable state request.scope id ∧ Laws.State.Unclaimed state id) ∧
     Laws.State.InnerPlaced state request
 
+/-! ## Queued begins
+
+What `Step` reads of the begin requests its queues hold, the ones an invariant over the queued begins sees: the requests
+of the `begin` signals and of the deferred begins, each in queue order. -/
+
+/-- The requests of the `begin` signals of `signals`, in queue order. -/
+def beginsOf (signals : List Signal) : List BeginRequest :=
+  signals.filterMap fun
+    | .begin request => some request
+    | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .raise _ _ | .complete _ _ _ _ | .write _ _ _ | .remove _ _
+    | .occur _ _ _ _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensate _ _ _ _ _
+    | .compensationFailed _ _ _ _ => none
+
+/-- The requests of the deferred begins of `tokens`, in stack order. -/
+def deferredOf (tokens : List Token) : List BeginRequest :=
+  tokens.filterMap fun
+    | .begin request => some request
+    | .flow _ _ => none
+
+/-- A request's `begin` signal is queued exactly when the request is among the queued begins. -/
+theorem mem_beginsOf {signals : List Signal} {request : BeginRequest} :
+    request ∈ beginsOf signals ↔ Signal.begin request ∈ signals := by
+  simp only [beginsOf, List.mem_filterMap]
+  constructor
+  · rintro ⟨signal, member, made⟩
+    cases signal <;> simp_all
+  · exact fun member => ⟨_, member, rfl⟩
+
+/-- A request's deferred begin is on the stack exactly when the request is among the deferred begins. -/
+theorem mem_deferredOf {tokens : List Token} {request : BeginRequest} :
+    request ∈ deferredOf tokens ↔ Token.begin request ∈ tokens := by
+  simp only [deferredOf, List.mem_filterMap]
+  constructor
+  · rintro ⟨token, member, made⟩
+    cases token <;> simp_all
+  · exact fun member => ⟨_, member, rfl⟩
+
+/-- A sublist of `filterMap f` is the image of a sublist, for `f` inverse to `g`. -/
+theorem sublist_filterMap_map {α β : Type} {f : α → Option β} {g : β → α} (inverse : ∀ a b, f a = some b ↔ a = g b) :
+    ∀ {l : List α} {l₁ : List β}, (l₁.map g).Sublist l ↔ l₁.Sublist (l.filterMap f)
+  | [], l₁ => by cases l₁ <;> simp
+  | a :: l, l₁ => by
+    have rest := @sublist_filterMap_map α β f g inverse l
+    rw [List.filterMap_cons]
+    cases found : f a with
+    | none =>
+      rw [← rest]
+      refine ⟨fun sub => ?_, fun sub => sub.cons a⟩
+      rcases List.sublist_cons_iff.mp sub with tail | ⟨r, same, _⟩
+      · exact tail
+      · cases l₁ with
+        | nil => simp at same
+        | cons b _ =>
+          simp only [List.map_cons, List.cons.injEq] at same
+          rw [(inverse a b).mpr same.1.symm] at found
+          cases found
+    | some b =>
+      obtain rfl := (inverse a b).mp found
+      cases l₁ with
+      | nil => simp
+      | cons c cs =>
+        have injective : g c = g b → c = b := fun same => by
+          have := (inverse (g c) c).mpr rfl
+          rw [same, (inverse (g b) b).mpr rfl] at this
+          exact (Option.some.inj this).symm
+        simp only [List.map_cons, List.sublist_cons_iff, List.cons.injEq]
+        rw [← List.map_cons, rest]
+        constructor
+        · rintro (tail | ⟨r, ⟨same, rfl⟩, tail⟩)
+          · exact .inl tail
+          · exact .inr ⟨cs, ⟨injective same, rfl⟩, rest.mp tail⟩
+        · rintro (tail | ⟨r, ⟨rfl, rfl⟩, tail⟩)
+          · exact .inl tail
+          · exact .inr ⟨_, ⟨rfl, rfl⟩, rest.mpr tail⟩
+
+/-- Begin signals lie in queue order exactly as their requests lie among the queued begins. -/
+theorem sublist_beginsOf {signals : List Signal} {requests : List BeginRequest} :
+    (requests.map Signal.begin).Sublist signals ↔ requests.Sublist (beginsOf signals) :=
+  sublist_filterMap_map fun signal request => by cases signal <;> simp
+
+/-- Deferred begins lie in stack order exactly as their requests lie among the deferred begins. -/
+theorem sublist_deferredOf {tokens : List Token} {requests : List BeginRequest} :
+    (requests.map Token.begin).Sublist tokens ↔ requests.Sublist (deferredOf tokens) :=
+  sublist_filterMap_map fun token request => by cases token <;> simp
+
+/-- A `begin` signal precedes another exactly when its request precedes the other's among the queued begins. -/
+theorem precedes_beginsOf {signals : List Signal} {first second : BeginRequest} :
+    Laws.State.Precedes signals (.begin first) (.begin second) ↔ Laws.State.Precedes (beginsOf signals) first second :=
+  sublist_beginsOf (requests := [first, second])
+
+/-- A deferred begin precedes another exactly when its request precedes the other's among the deferred begins. -/
+theorem precedes_deferredOf {tokens : List Token} {first second : BeginRequest} :
+    Laws.State.Precedes tokens (.begin first) (.begin second) ↔ Laws.State.Precedes (deferredOf tokens) first second :=
+  sublist_deferredOf (requests := [first, second])
+
+/-- Queuing signals adds the requests of their begins to the queued begins. -/
+theorem beginsOf_append (signals more : List Signal) : beginsOf (signals ++ more) = beginsOf signals ++ beginsOf more :=
+  List.filterMap_append
+
+/-- Deferring tokens adds their requests to the deferred begins. -/
+theorem deferredOf_append (tokens more : List Token) :
+    deferredOf (tokens ++ more) = deferredOf tokens ++ deferredOf more :=
+  List.filterMap_append
+
+/-- Flow tokens defer no begin. -/
+theorem deferredOf_flows (flows : List FlowId) (scope : ScopeOccurrenceId) :
+    deferredOf (flows.map (Token.flow · scope)) = [] := by
+  simp [deferredOf, List.filterMap_map]
+
+/-- An occurrence that continues by its flows is no Multi-Instance instance. -/
+theorem flow_ne_multiInstance (body : Nat) : Continuation.flow ≠ .multiInstance body := nofun
+
+/-- A compensation handler is no Multi-Instance instance. -/
+theorem compensation_ne_multiInstance (run : ScopeOccurrenceId) (body : Nat) :
+    Continuation.compensation run ≠ .multiInstance body := nofun
+
+/-- An instance continues into one body. -/
+theorem multiInstance_inj {body other : Nat} (same : Continuation.multiInstance body = .multiInstance other) :
+    body = other := by
+  injection same
+
+/-- The closure took the queued begin `request` off `queue`, leaving `popped`: the head `begin` signal, or, with no
+signal queued, the deferred begin `Step.nextToken` takes, the oldest under `orderInvariant` and the newest otherwise. -/
+def Dequeued (program : Program) (queue : State) (request : BeginRequest) (popped : State) : Prop :=
+  (∃ rest, queue.signals = .begin request :: rest ∧ popped = { queue with signals := rest }) ∨
+    (queue.signals = [] ∧ ∃ rest, ((program.options.branchSchedule = .orderInvariant ∧
+      queue.tokens = .begin request :: rest) ∨ queue.tokens = rest ++ [.begin request]) ∧
+      popped = { queue with tokens := rest })
+
+/-- Where a begin `Step` runs comes from: a fresh request that continues by its flows and names no reservation, as an
+arrival and a start make, or a queued begin the closure took off a state that keeps `inv`, which an invariant over the
+queued begins reads to place the begun occurrence among them. -/
+def BeginOrigin (inv : Program → State → Prop) (program : Program) (state : State) (request : BeginRequest) : Prop :=
+  (request.continuation = .flow ∧ request.reserved = none) ∨
+    ∃ queue, inv program queue ∧ Dequeued program queue request state
+
 /-- What the completion pipeline needs of each phase it runs between closing the completing occurrence's own items and
 removing its record (`Step.complete`): the scope occurrences and the begun occurrences stay, and no open item is added,
 so the record goes with nothing left waiting for it or hanging on it. -/
@@ -233,12 +369,14 @@ structure Phases (inv : Program → State → Prop) : Prop where
     inv program (endInstance status failure state)
   /-- `State.beginOccurrence` of an admitted request, in a scope occurrence that stands (`Step.requireScope`); the
   request's start Event reservation stays beginnable, unclaimed and placed in the scope occurrence its begun occurrence
-  runs in. An Event's occurrence numbers under its element's counter (`Laws.Step.roleOf_event`), and a body only an
-  element with a Multi-Instance envelope's (`Laws.Step.roleOf_body`). -/
+  runs in. The role is the request's (`Step.roleOf`): an Event's occurrence numbers under its element's counter
+  (`Laws.Step.roleOf_event`), and a body only an element with a Multi-Instance envelope's (`Laws.Step.roleOf_body`); and
+  the request is fresh or was queued (`BeginOrigin`). -/
   begin : ∀ program state request role sourceType, inv program state → ScopeStands state request.scope →
     Admitted state request → (((program.element? request.element).bind (·.event?)).isSome = true → role = .element) →
     (role = .multiInstanceBody →
       (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true) →
+    role = roleOf program request → BeginOrigin inv program state request →
     inv program (state.beginOccurrence request role sourceType).1 ∧ ∀ id ∈ request.inner.toList,
       Laws.State.Beginnable (state.beginOccurrence request role sourceType).1
         (state.beginOccurrence request role sourceType).2.scope id ∧

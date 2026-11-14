@@ -197,4 +197,18 @@ inductive Commands (hooks : Hooks) (ctx : Ctx) (state after : State) : Prop wher
   | remove {scope : ScopeOccurrenceId} {names : List String} :
       after = state.signal (.remove scope names) → Commands hooks ctx state after
 
+/-- What a monadic fold over `Option` keeps of the value it found. -/
+theorem foldlM_finds {α β : Type} {f : Option β → α → Except Failure (Option β)} (property : β → Prop)
+    (each : ∀ found a result, (∀ b, found = some b → property b) → f found a = .ok result →
+      ∀ b, result = some b → property b) :
+    ∀ (items : List α) (init result : Option β), (∀ b, init = some b → property b) →
+      items.foldlM f init = .ok result → ∀ b, result = some b → property b
+  | [], init, result, kept, ran => by
+    simp only [List.foldlM_nil] at ran
+    exact (Except.ok.inj ran) ▸ kept
+  | a :: rest, init, result, kept, ran => by
+    simp only [List.foldlM_cons] at ran
+    obtain ⟨mid, stepped, ran⟩ := bind_ok ran
+    exact foldlM_finds property each rest mid result (each _ _ _ kept stepped) ran
+
 end Kernel.Laws.Step

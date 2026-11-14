@@ -279,6 +279,9 @@ theorem clearInside_carries {program other : Program} {s : State} {scope : Scope
 (`Proofs.Cancellation.FrameAlongside`). -/
 theorem runsFramed_frameAlongside (program : Program) : FrameAlongside (RunsFramed program) where
   frame _ _ moved kept := kept.carry (.equal moved.scopes moved.occurrences moved.multiInstances moved.runs)
+  signalBegin s _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.carry (.equal rfl rfl rfl rfl)
   issue s kept := by
     rw [Laws.State.issue_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
@@ -343,7 +346,9 @@ theorem runsFramed_stepAlongside (program : Program) : StepAlongside (RunsFramed
   toFrameAlongside := runsFramed_frameAlongside program
   journal _ _ _ _ kept _ _ := kept.carry (.equal rfl rfl rfl rfl)
   runOrder _ _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
-  begin _ s request role sourceType formed _ _ kept := by
+  dequeue _ _ _ _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
+  untoken _ _ _ _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
+  begin _ s request role sourceType formed _ _ _ _ kept := by
     have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
     refine kept.carry ⟨by rw [begins.slots]; exact .refl _, fun run _ o present named => ?_,
       fun _ inside => .inl (begins.scopes ▸ inside), fun _ _ _ inside _ => begins.scopes ▸ inside,

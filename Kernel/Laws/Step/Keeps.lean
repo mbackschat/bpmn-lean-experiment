@@ -144,10 +144,11 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
 /-- A begin keeps `inv`: it begins only in a scope occurrence that stands, and hands the begun occurrence on. -/
 theorem begin_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts) {ctx : Ctx}
     {request : BeginRequest} {state after : State} (holds : inv ctx.program state) (admitted : Admitted state request)
-    (ran : begin hooks ctx request state = .ok after) : inv ctx.program after := by
+    (origin : BeginOrigin inv ctx.program state request) (ran : begin hooks ctx request state = .ok after) :
+    inv ctx.program after := by
   obtain ⟨sourceType, begun, occurrence, ⟨_, made, dispatched⟩⟩ := begin_ok ran
   have begunHolds := phases.begin _ state request (roleOf ctx.program request) sourceType holds (begin_scope ran) admitted
-    roleOf_event roleOf_body
+    roleOf_event (fun body => (roleOf_body.mp body).1) rfl origin
   have begunMember := facts.begun state request (roleOf ctx.program request) sourceType
   simp only [made] at begunHolds begunMember
   exact dispatch_keeps contract begunHolds.1 begunMember.1 begunMember.2 begunHolds.2
@@ -182,7 +183,9 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : Phases inv) (
   | onRaise ran =>
     obtain ⟨raisable, settled⟩ := phases.raisable _ _ _ _ _ holds heads
     exact contract.raise _ _ _ _ _ popped raisable settled ran
-  | onBegin ran => exact begin_keeps contract phases facts popped (phases.admittedSignal _ _ _ _ holds heads) ran
+  | onBegin ran =>
+    exact begin_keeps contract phases facts popped (phases.admittedSignal _ _ _ _ holds heads)
+      (.inr ⟨queue, holds, .inl ⟨rest, heads, rfl⟩⟩) ran
   | onComplete ran =>
     exact pipeline _ _ _ _ _ _ _ popped (fun request queued => phases.completeQueued _ _ _ _ _ _ holds head
       request (Laws.State.Queued.shrink (before := queue) (after := { queue with signals := rest })
@@ -289,15 +292,17 @@ theorem microStep_keeps (contract : HookContract hooks inv) (phases : Phases inv
 theorem moveToken_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts)
     (pipeline : PipelineKeeps hooks inv) {ctx : Ctx} {token : Token} {state after : State} (holds : inv ctx.program state)
     (admitted : ∀ request, token = .begin request → Admitted state request)
+    (origin : ∀ request, token = .begin request → BeginOrigin inv ctx.program state request)
     (ran : moveToken hooks ctx token state = .ok after) : inv ctx.program after := by
   cases token with
   | flow flow scope =>
     refine microStep_keeps contract phases pipeline (fun next arrived => ?_) (moveToken_flow ran)
     obtain ⟨_, _, begun⟩ := arrive_ok arrived
-    exact begin_keeps contract phases facts holds admitted_fresh begun
+    exact begin_keeps contract phases facts holds admitted_fresh (.inl ⟨rfl, rfl⟩) begun
   | begin request =>
     exact microStep_keeps contract phases pipeline
-      (fun _ dispatched => begin_keeps contract phases facts holds (admitted request rfl) (dispatchBegin_ok dispatched))
+      (fun _ dispatched => begin_keeps contract phases facts holds (admitted request rfl) (origin request rfl)
+        (dispatchBegin_ok dispatched))
       (moveToken_begin ran)
 
 /-- A closure micro-step keeps `inv`: a queued signal's, a moved token's, an idle scope occurrence's completion, a parked
@@ -309,9 +314,10 @@ theorem closureStep_keeps (contract : HookContract hooks inv) (phases : Phases i
   | signal _ queued ran =>
     exact microStep_keeps contract phases pipeline
       (fun _ dispatched => signal_keeps contract phases facts pipeline holds queued dispatched) ran
-  | token _ _ next ran =>
+  | token _ quiet next ran =>
     exact moveToken_keeps contract phases facts pipeline (phases.untoken _ _ _ holds (nextToken_rest next))
-      (fun request same => phases.admittedToken _ _ _ _ holds (same ▸ nextToken_shape next)) ran
+      (fun request same => phases.admittedToken _ _ _ _ holds (same ▸ (nextToken_shape next).imp_left (·.2)))
+      (fun request same => .inr ⟨_, holds, .inr ⟨quiet, _, same ▸ nextToken_shape next, rfl⟩⟩) ran
   | idle _ _ _ idle ran =>
     exact microStep_keeps contract phases pipeline
       (fun _ completed => completeIdleScope_keeps contract facts holds (idleScope_mem idle) completed) ran
@@ -376,7 +382,8 @@ theorem step_keeps (contract : HookContract hooks inv) (phases : Phases inv) (fa
         rw [inputCtx_program]
         exact initial _ _ _
       have moved := microStep_keeps contract phases pipeline
-        (fun _ begun => begin_keeps contract phases facts (advanceClock_keeps phases fresh clocked) admitted_fresh begun)
+        (fun _ begun => begin_keeps contract phases facts (advanceClock_keeps phases fresh clocked) admitted_fresh
+          (.inl ⟨rfl, rfl⟩) begun)
         stepped
       have done := made ▸ phases.runOrder _ _ (settle_keeps contract phases facts pipeline _ _ _ _ moved settling)
       rwa [inputCtx_program] at done

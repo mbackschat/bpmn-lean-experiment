@@ -147,12 +147,14 @@ theorem roleOf_event {program : Program} {request : BeginRequest}
   | some element => cases element <;> split <;> simp_all [Laws.IL.envelope?_event, Laws.IL.event?_activity,
       Laws.IL.event?_scope, Laws.IL.event?_gateway, Laws.IL.event?_start]
 
-/-- A body numbers apart only for an element with a Multi-Instance envelope. -/
-theorem roleOf_body {program : Program} {request : BeginRequest} (body : roleOf program request = .multiInstanceBody) :
-    (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true := by
-  unfold roleOf at body
-  dsimp only at body
-  split at body <;> (try split at body) <;> first | assumption | cases body
+/-- A body numbers apart exactly for an element with a Multi-Instance envelope begun as no instance. -/
+theorem roleOf_body {program : Program} {request : BeginRequest} : roleOf program request = .multiInstanceBody ↔
+    (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true ∧
+      ∀ body, request.continuation ≠ .multiInstance body := by
+  unfold roleOf
+  dsimp only
+  generalize (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = loops
+  cases request.continuation <;> cases loops <;> simp
 
 /-- An occurrence of a Gateway goes to `Hooks.arriveGateway`: a Gateway has no envelope, so no loop wraps it. -/
 theorem dispatch_gateway {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}
@@ -612,7 +614,8 @@ theorem nextToken_rest {ctx : Ctx} {state : State} {token : Token} {rest : List 
 
 /-- The closure takes the oldest token or the newest. -/
 theorem nextToken_shape {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
-    (next : nextToken ctx state = some (token, rest)) : state.tokens = token :: rest ∨ state.tokens = rest ++ [token] := by
+    (next : nextToken ctx state = some (token, rest)) : (ctx.program.options.branchSchedule = .orderInvariant ∧
+      state.tokens = token :: rest) ∨ state.tokens = rest ++ [token] := by
   unfold nextToken at next
   dsimp only at next
   split at next
@@ -620,7 +623,7 @@ theorem nextToken_shape {ctx : Ctx} {state : State} {token : Token} {rest : List
     · simp at next
     · rename_i head tail queued
       obtain ⟨first, same⟩ := Prod.mk.inj (Option.some.inj next)
-      exact .inl (by rw [queued, first, same])
+      exact .inl ⟨by assumption, by rw [queued, first, same]⟩
   · split at next
     · simp at next
     · obtain ⟨last, found, made⟩ := Option.map_eq_some_iff.mp next
@@ -635,19 +638,6 @@ theorem idleScope_mem {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
   split at idle
   · simp at idle
   · exact List.mem_of_find?_eq_some idle
-
-private theorem foldlM_finds {α β : Type} {f : Option β → α → Except Failure (Option β)} (property : β → Prop)
-    (each : ∀ found a result, (∀ b, found = some b → property b) → f found a = .ok result →
-      ∀ b, result = some b → property b) :
-    ∀ (items : List α) (init result : Option β), (∀ b, init = some b → property b) →
-      items.foldlM f init = .ok result → ∀ b, result = some b → property b
-  | [], init, result, kept, ran => by
-    simp only [List.foldlM_nil] at ran
-    exact (Except.ok.inj ran) ▸ kept
-  | a :: rest, init, result, kept, ran => by
-    simp only [List.foldlM_cons] at ran
-    obtain ⟨mid, stepped, ran⟩ := bind_ok ran
-    exact foldlM_finds property each rest mid result (each _ _ _ kept stepped) ran
 
 /-- A parked join offered again ran its gateway's hook on the state the closure reached, for an occurrence it found. -/
 theorem reoffer_ok {hooks : Hooks} {ctx : Ctx} {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId}

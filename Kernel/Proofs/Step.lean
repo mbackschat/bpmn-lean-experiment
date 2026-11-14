@@ -120,7 +120,7 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
     endInstance := fun _ _ _ _ formed recorded => by
       rw [Laws.Step.endInstance_eq]
       exact Laws.State.endInstance_wellFormed formed recorded
-    begin := fun _ _ request role sourceType formed stands admitted roled bodied =>
+    begin := fun _ _ request role sourceType formed stands admitted roled bodied _ _ =>
       ⟨Laws.State.begin_wellFormed formed request role sourceType (mem stands) admitted.2.1 roled bodied,
         Laws.State.begin_entry formed request role sourceType admitted.1 admitted.2.1 admitted.2.2⟩
     reserve := fun _ _ element scope formed stands => Laws.State.reserve_wellFormed formed element scope (mem stands)
@@ -301,7 +301,7 @@ theorem scopesOps : Laws.Scopes.ScopesOps (Laws.State.WellFormed program) where
     Laws.State.enterScope_inner formed element locals member begun claimable
   arm _ _ element formed member begun := queueArm_wellFormed formed member begun element
   armScope _ _ formed stands := armScope_wellFormed formed (List.mem_map.mp stands)
-  begin _ request formed stands inner nodup admitted :=
+  begin _ request formed stands inner _ _ nodup admitted :=
     Laws.State.signal_named_wellFormed formed stands nodup admitted (by simp [Laws.State.InnerPlaced, inner])
       (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same) (fun _ same => by simp at same)
         (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
