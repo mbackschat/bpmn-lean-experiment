@@ -134,8 +134,7 @@ each state operation keeps. -/
 theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
   have mem : ∀ {state : State} {scope : ScopeOccurrenceId}, Laws.Step.ScopeStands state scope →
       scope ∈ Laws.State.scopeIds state := fun ⟨entry, inside, named⟩ => List.mem_map.mpr ⟨entry, inside, named⟩
-  { reset := fun _ _ formed => Laws.State.reset_wellFormed formed
-    clock := fun _ _ atMs formed => Laws.State.clock_wellFormed formed atMs
+  { clock := fun _ _ atMs formed => Laws.State.clock_wellFormed formed atMs
     journal := fun _ _ _ formed started _ => Laws.State.journal_wellFormed formed started
     runOrder := fun _ _ formed => Laws.State.runOrder_wellFormed formed
     dequeue := fun _ _ _ formed fewer => Laws.State.dequeue_wellFormed formed fewer
@@ -162,13 +161,16 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
       ⟨Laws.State.begin_wellFormed formed request role sourceType (mem stands) admitted.2.1 roled,
         Laws.State.begin_entry formed request role sourceType admitted.1 admitted.2.1 admitted.2.2⟩
     reserve := fun _ _ element scope formed stands => Laws.State.reserve_wellFormed formed element scope (mem stands)
-    startReserved := fun _ _ _ sourceType formed member unnamed =>
-      Laws.State.startReserved_closeOwnItems_wellFormed formed sourceType member unnamed
-    removeOccurrence := fun _ _ _ formed member free =>
-      ⟨(Laws.State.removeOccurrence_wellFormed formed member free).1,
-        List.mem_map.mp (Laws.State.removeOccurrence_wellFormed formed member free).2⟩
-    recordEnd := fun _ _ key terminal formed => Laws.State.recordEnd_wellFormed formed key terminal
     cancel := fun _ _ id formed => Laws.State.cancel_wellFormed formed id }
+
+/-- The completion pipeline's own phases keep `Laws.State.WellFormed` (`Laws.Step.PipelinePhases`). -/
+theorem pipelinePhases : Laws.Step.PipelinePhases Laws.State.WellFormed where
+  startReserved _ _ _ sourceType formed member unnamed :=
+    Laws.State.startReserved_closeOwnItems_wellFormed formed sourceType member unnamed
+  removeOccurrence _ _ _ formed member free :=
+    ⟨(Laws.State.removeOccurrence_wellFormed formed member free).1,
+      List.mem_map.mp (Laws.State.removeOccurrence_wellFormed formed member free).2⟩
+  recordEnd _ _ key terminal formed := Laws.State.recordEnd_wellFormed formed key terminal
 
 /-! ## The feature records of `WellFormed`
 
@@ -700,10 +702,11 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
 /-- A committed input keeps the registered hooks' state well-formed. -/
 theorem registered_stepKeeps : Proofs.State.StepKeepsWellFormed Registry.hooks :=
   Proofs.State.stepKeepsWellFormed (registered_contract registeredOps_wellFormed Proofs.State.stateFacts) phases
+    pipelinePhases
 
 /-- A committed start makes a well-formed state under the registered hooks. -/
 theorem registered_startIs : Proofs.State.StartIsWellFormed Registry.hooks :=
   Proofs.State.startIsWellFormed (registered_contract registeredOps_wellFormed Proofs.State.stateFacts) phases
-    initial_wellFormed
+    pipelinePhases initial_wellFormed
 
 end Kernel.Proofs.Step

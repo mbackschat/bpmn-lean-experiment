@@ -251,20 +251,12 @@ theorem EndsKept.unmoved {b s t : State} {x : Option (Nat × OccurrenceKey)} (ke
 
 /-! ### The completion pipeline -/
 
-/-- The completion pipeline keeps `inv`, from a state in which no queued begin names the completing occurrence: what the
-walk of `Laws.Step.Keeps` needs of it once it no longer runs the pipeline's own phases, which an invariant of an input's
-end facts cannot carry one at a time (pending lemma request R14 moves it beside `Laws.Step.Phases`). -/
-def PipelineKeeps (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
-  ∀ (ctx : Ctx) (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) (state after : State),
-    inv ctx.program state → (∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request) →
-    complete hooks ctx id leave writes rule state = .ok after → inv ctx.program after
-
 /-- The completion pipeline keeps an input's end facts, as a unit: its hooks before the removal and its continuation
 keep `EndsInv`, the continuation with the completing occurrence exempt, and the end it journals last lifts the
 exemption (`EndsKept.remove`, `EndsKept.record`). The one obligation `Step`'s phases cannot carry (module
 documentation). -/
 theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContract hooks (EndsInv b x))
-    (phases : Phases WellFormed) (facts : StateFacts) (ends : PendingStateEnds) :
+    (phases : Phases WellFormed) (pipeline : PipelinePhases WellFormed) (facts : StateFacts) (ends : PendingStateEnds) :
     PipelineKeeps hooks (EndsInv b none) := by
   intro ctx id leave writes rule state after holds free ran
   rcases complete_ok ran with ⟨_, same⟩ | ⟨occurrence, sourceType, begun, pipeline⟩
@@ -275,7 +267,7 @@ theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContrac
   obtain ⟨member, named⟩ := facts.found _ _ _ found
   obtain ⟨begunMember, begunFlag, begunId, reservation⟩ := facts.startReserved state occurrence sourceType member
   obtain ⟨begunScope, reservedScopes⟩ := reservation
-  have closedFormed := phases.startReserved _ state occurrence sourceType holds.1 member (named ▸ free)
+  have closedFormed := pipeline.startReserved _ state occurrence sourceType holds.1 member (named ▸ free)
   rw [named] at closedFormed
   have startedKept := holds.2.step holds.1 (startReserved_frame ends holds.1 member sourceType)
   have closedKept : EndsKept b none ((state.startReserved occurrence sourceType).1.closeOwnItems id) := by
@@ -301,20 +293,20 @@ theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContrac
   have inWritten := writtenFrame.begun _ (leftFrame.begun _ inClosed begunFlag) begunFlag
   cases finishes with
   | raised continuing =>
-    obtain ⟨removedFormed, removedStands⟩ := phases.removeOccurrence _ written _ writtenHolds.1 inWritten
+    obtain ⟨removedFormed, removedStands⟩ := pipeline.removeOccurrence _ written _ writtenHolds.1 inWritten
       (free written writtenFrame.items)
     obtain ⟨removing, gone, _⟩ := removeOccurrence_frame ends writtenHolds.1 inWritten
     have recorded := (writtenHolds.2.remove writtenHolds.1 inWritten removing gone).record .cancelled
     rw [identity] at removedFormed removedStands recorded
     obtain ⟨entry, inside, entryNamed⟩ := removedStands
     rw [Laws.State.keyOf_eq] at continuing
-    exact continueAfter_keeps (contract none) ⟨phases.recordEnd _ _ _ _ removedFormed, recorded⟩
+    exact continueAfter_keeps (contract none) ⟨pipeline.recordEnd _ _ _ _ removedFormed, recorded⟩
       ⟨entry, (facts.recordEnd _ _ _).symm ▸ inside, entryNamed⟩ continuing
   | @left _ _ retained _ _ retaining continuing =>
     obtain ⟨retainedHolds, retainedFrame⟩ := (contract none).completed _ _ _ _ writtenHolds inWritten retaining
     have inRetained := retainedFrame.begun _ inWritten begunFlag
     have unhung := free _ fun item member => writtenFrame.items item (retainedFrame.items item member)
-    obtain ⟨removedFormed, removedStands⟩ := phases.removeOccurrence _ _ _ retainedHolds.1 inRetained unhung
+    obtain ⟨removedFormed, removedStands⟩ := pipeline.removeOccurrence _ _ _ retainedHolds.1 inRetained unhung
     obtain ⟨removing, gone, _⟩ := removeOccurrence_frame ends retainedHolds.1 inRetained
     have exempt := retainedHolds.2.remove retainedHolds.1 inRetained removing gone
     rw [identity] at removedFormed removedStands exempt
@@ -325,7 +317,7 @@ theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContrac
       Laws.State.key_congr (Laws.State.instanceOf_congr retainedFrame.scopes
         (retainedHolds.2.instanceId.trans writtenHolds.2.instanceId.symm) _)
     rw [Laws.State.keyOf_eq, ← keyed]
-    exact ⟨phases.recordEnd _ _ _ _ continuedFormed, continuedKept.record .completed⟩
+    exact ⟨pipeline.recordEnd _ _ _ _ continuedFormed, continuedKept.record .completed⟩
 
 /-! ### The draft a micro-step leaves -/
 

@@ -265,20 +265,26 @@ theorem KeepsScopes.self {program : Program} {before : State} (formed : WellForm
 
 /-- `StepKeepsScopes` from the hooks' contract and `Step`'s phases of `KeepsScopes` of every before-state, through
 `Laws.Step.running_keeps` from `KeepsScopes.self`. A fresh instance need not keep `KeepsScopes`, since a running input
-never starts one. -/
+never starts one, and an input's reset changes no field `ScopesKept` reads. -/
 theorem stepKeepsScopes {hooks : Hooks} (contract : ∀ before, Laws.Step.HookContract hooks (KeepsScopes before))
-    (phases : ∀ before, Laws.Step.Phases (KeepsScopes before)) (facts : Laws.Step.StateFacts) :
+    (phases : ∀ before, Laws.Step.Phases (KeepsScopes before))
+    (pipeline : ∀ before, Laws.Step.PipelinePhases (KeepsScopes before)) (facts : Laws.Step.StateFacts) :
     StepKeepsScopes hooks := fun _ _ before _ formed ran =>
-  (Laws.Step.running_keeps (contract before) (phases before) facts (KeepsScopes.self formed) ran).2
+  (Laws.Step.running_keeps (contract before) (phases before) facts
+    (Laws.Step.complete_keeps (contract before) (phases before) (pipeline before) facts)
+    (fun _ _ holds => ⟨Laws.State.reset_wellFormed holds.1, holds.2⟩) (KeepsScopes.self formed) ran).2
 
 /-- `SubtreeRemoved` from the hooks' contract and `Step`'s phases of `KeepsScopes` of every before-state alone: its
 `WellFormed` half is the state-invariant lane's preservation, and its scope half `StepKeepsScopes`. -/
 theorem subtreeRemoved_of_keeps {hooks : Hooks} (contract : ∀ before, Laws.Step.HookContract hooks (KeepsScopes before))
-    (phases : ∀ before, Laws.Step.Phases (KeepsScopes before)) (facts : Laws.Step.StateFacts) :
+    (phases : ∀ before, Laws.Step.Phases (KeepsScopes before))
+    (pipeline : ∀ before, Laws.Step.PipelinePhases (KeepsScopes before)) (facts : Laws.Step.StateFacts) :
     SubtreeRemoved hooks :=
   subtreeRemoved (fun _ _ before _ formed ran =>
-    (Laws.Step.running_keeps (contract before) (phases before) facts (KeepsScopes.self formed) ran).1)
-    (stepKeepsScopes contract phases facts)
+    (Laws.Step.running_keeps (contract before) (phases before) facts
+      (Laws.Step.complete_keeps (contract before) (phases before) (pipeline before) facts)
+      (fun _ _ holds => ⟨Laws.State.reset_wellFormed holds.1, holds.2⟩) (KeepsScopes.self formed) ran).1)
+    (stepKeepsScopes contract phases pipeline facts)
 
 /-! ### What the state operations keep of the before-state's scope occurrences
 
@@ -395,21 +401,32 @@ theorem Alongside.signal {rel : State → Prop} (side : Alongside rel) {s : Stat
   rw [Laws.State.signal_eq]
   exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ kept
 
-/-- `Step`'s phases keep `KeepsScopes before` where they keep `WellFormed`: they record, queue, begin, reserve and start
-occurrences, which keeps the scope occurrences and never lowers the counter, and remove occurrences and clear scope
-occurrences, which drops some (`PendingRemoval`). -/
-theorem keepsScopes_phases (phases : Laws.Step.Phases WellFormed) (pending : PendingRemoval) (before : State) :
-    Laws.Step.Phases (KeepsScopes before) where
-  reset _ _ holds := ⟨phases.reset _ _ holds.1, holds.2⟩
-  clock _ _ atMs holds := ⟨phases.clock _ _ atMs holds.1, holds.2⟩
-  journal _ _ transition holds started ended := ⟨phases.journal _ _ transition holds.1 started ended, holds.2⟩
-  runOrder _ _ holds := ⟨phases.runOrder _ _ holds.1, holds.2⟩
-  dequeue _ _ signals holds fewer := ⟨phases.dequeue _ _ signals holds.1 fewer, holds.2⟩
-  untoken _ _ tokens holds fewer := ⟨phases.untoken _ _ tokens holds.1 fewer, holds.2⟩
+/-- What `Step`'s own phases keep of a property `rel` carried beside `WellFormed`, besides the hooks' state operations
+(`Alongside`): journalling the draft, ordering the journal, beginning an admitted request in a scope occurrence that
+stands and cancelling an occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
+structure StepAlongside (rel : State → Prop) : Prop extends Alongside rel where
+  journal : ∀ program s (transition : Transition), WellFormed program s → rel s → transition.started = s.draft.started →
+    transition.ended = s.draft.ended → rel { s with journal := transition :: s.journal, draft := {}, writes := [] }
+  runOrder : ∀ program s, WellFormed program s → rel s → rel { s with journal := s.journal.reverse }
+  begin : ∀ program s request role sourceType, WellFormed program s → Laws.Step.ScopeStands s request.scope →
+    Laws.Step.Admitted s request → rel s → rel (s.beginOccurrence request role sourceType).1
+  cancel : ∀ program s id, WellFormed program s → rel s → rel (s.cancelOccurrence id)
+
+/-- `Step`'s phases keep a property beside `WellFormed` that the state operations they apply keep: the phases that read
+`WellFormed` alone read its first half, and the others keep the second by `StepAlongside`. -/
+theorem phases_alongside {rel : State → Prop} (phases : Laws.Step.Phases WellFormed) (side : StepAlongside rel) :
+    Laws.Step.Phases fun program s => WellFormed program s ∧ rel s where
+  clock _ s atMs holds := ⟨phases.clock _ _ atMs holds.1, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
+  journal _ s transition holds started ended :=
+    ⟨phases.journal _ _ transition holds.1 started ended, side.journal _ s transition holds.1 holds.2 started ended⟩
+  runOrder _ s holds := ⟨phases.runOrder _ _ holds.1, side.runOrder _ s holds.1 holds.2⟩
+  dequeue _ s signals holds fewer :=
+    ⟨phases.dequeue _ _ signals holds.1 fewer, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
+  untoken _ s tokens holds fewer :=
+    ⟨phases.untoken _ _ tokens holds.1 fewer, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
   queueWrite _ _ scope writes rule holds :=
-    ⟨phases.queueWrite _ _ scope writes rule holds.1, (scopesKept_alongside pending before).signal holds.2 _⟩
-  queueRemove _ _ scope names holds :=
-    ⟨phases.queueRemove _ _ scope names holds.1, (scopesKept_alongside pending before).signal holds.2 _⟩
+    ⟨phases.queueWrite _ _ scope writes rule holds.1, side.toAlongside.signal holds.2 _⟩
+  queueRemove _ _ scope names holds := ⟨phases.queueRemove _ _ scope names holds.1, side.toAlongside.signal holds.2 _⟩
   armIssued _ _ host element scope holds := phases.armIssued _ _ host element scope holds.1
   armScopeIssued _ _ scope holds := phases.armScopeIssued _ _ scope holds.1
   armGatewayIssued _ _ occurrence gateway scope holds :=
@@ -426,21 +443,43 @@ theorem keepsScopes_phases (phases : Laws.Step.Phases WellFormed) (pending : Pen
   endInstance _ s status failure holds recorded := by
     refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩
     rw [Laws.Step.endInstance_eq]
-    exact holds.2.shrink ((pending.removal_shrinks s).1 State.root []).1 ((pending.removal_shrinks s).1 State.root []).2
+    exact side.frame (s.clearInside State.root) _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+      (side.clearInside _ s State.root [] holds.1 holds.1.rooted.1 (fun _ _ none => by cases none) holds.2)
   begin _ s request role sourceType holds stands admitted roled :=
     have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled
-    have begins := Laws.State.beginOccurrence_begins holds.1.activations request role sourceType
-    have issued : s.nextIssue ≤ (s.beginOccurrence request role sourceType).1.nextIssue := by
+    ⟨⟨begun.1, side.begin _ s request role sourceType holds.1 stands admitted holds.2⟩, begun.2⟩
+  reserve _ s element scope holds stands :=
+    have reserved := phases.reserve _ _ element scope holds.1 stands
+    ⟨⟨reserved.1, side.reserve _ s element scope holds.1 holds.2⟩, reserved.2⟩
+  cancel _ s id holds := ⟨phases.cancel _ _ id holds.1, side.cancel _ s id holds.1 holds.2⟩
+
+/-- `Step`'s phases keep the scope occurrences of any before-state: journalling and ordering move no scope occurrence
+nor the counter, beginning issues at most one identity and enters no scope occurrence, and cancelling drops some
+(`PendingRemoval`). -/
+theorem scopesKept_stepAlongside (pending : PendingRemoval) (before : State) : StepAlongside (ScopesKept before) where
+  toAlongside := scopesKept_alongside pending before
+  journal _ _ _ _ kept _ _ := kept
+  runOrder _ _ _ kept := kept
+  begin _ s request role sourceType formed _ _ kept :=
+    have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
+    kept.grow (by
       rcases begins.source with ⟨_, reserved⟩ | fresh
       · exact Nat.le_of_eq reserved.nextIssue.symm
       · rw [fresh.nextIssue]
-        exact Nat.le_succ _
-    ⟨⟨begun.1, holds.2.grow issued fun _ member => .inl (begins.scopes ▸ member)⟩, begun.2⟩
-  reserve _ s element scope holds stands :=
-    have reserved := phases.reserve _ _ element scope holds.1 stands
-    ⟨⟨reserved.1, (scopesKept_alongside pending before).reserve _ s element scope holds.1 holds.2⟩, reserved.2⟩
+        exact Nat.le_succ _) fun _ member => .inl (begins.scopes ▸ member)
+  cancel _ s id _ kept := kept.shrink ((pending.removal_shrinks s).2.2.2 id).1 ((pending.removal_shrinks s).2.2.2 id).2
+
+/-- `Step`'s phases keep `KeepsScopes before` where they keep `WellFormed`. -/
+theorem keepsScopes_phases (phases : Laws.Step.Phases WellFormed) (pending : PendingRemoval) (before : State) :
+    Laws.Step.Phases (KeepsScopes before) :=
+  phases_alongside phases (scopesKept_stepAlongside pending before)
+
+/-- The completion pipeline's own phases keep `KeepsScopes before` where they keep `WellFormed`: starting a reservation
+keeps the scope occurrences, removing an occurrence drops some (`PendingRemoval`), and journalling an end moves none. -/
+theorem keepsScopes_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) (pending : PendingRemoval)
+    (before : State) : Laws.Step.PipelinePhases (KeepsScopes before) where
   startReserved _ s occurrence sourceType holds member unnamed := by
-    refine ⟨phases.startReserved _ _ occurrence sourceType holds.1 member unnamed, ?_⟩
+    refine ⟨pipeline.startReserved _ _ occurrence sourceType holds.1 member unnamed, ?_⟩
     rw [Laws.State.closeOwnItems_eq]
     show ScopesKept before (s.startReserved occurrence sourceType).1
     cases begun : occurrence.begun
@@ -449,14 +488,12 @@ theorem keepsScopes_phases (phases : Laws.Step.Phases WellFormed) (pending : Pen
     · rw [Laws.State.startReserved_begun s sourceType begun]
       exact holds.2
   removeOccurrence _ s occurrence holds member free :=
-    have removed := phases.removeOccurrence _ _ occurrence holds.1 member free
+    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
     ⟨⟨removed.1, holds.2.shrink ((pending.removal_shrinks s).2.2.1 occurrence.id).1
       ((pending.removal_shrinks s).2.2.1 occurrence.id).2⟩, removed.2⟩
-  recordEnd _ _ key terminal holds := ⟨phases.recordEnd _ _ key terminal holds.1, by
+  recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
     rw [Laws.State.recordEnd_eq]
     exact holds.2⟩
-  cancel _ s id holds := ⟨phases.cancel _ _ id holds.1,
-    holds.2.shrink ((pending.removal_shrinks s).2.2.2 id).1 ((pending.removal_shrinks s).2.2.2 id).2⟩
 
 /-! ## Every removed occurrence ends once
 
@@ -500,17 +537,6 @@ theorem endsKept_alongside (ends : Laws.Step.PendingStateEnds) (b : State) (x : 
   setVariable _ s target name value formed kept := kept.step formed (Laws.Step.setVariable_frame ends s target name value)
   removeVariable _ s target name formed kept := kept.step formed (Laws.Step.removeVariable_frame ends s target name)
 
-/-- What `Step`'s own phases keep of a property `rel` carried beside `WellFormed`, besides the hooks' state operations
-(`Alongside`): journalling the draft, ordering the journal, beginning an admitted request in a scope occurrence that
-stands and cancelling an occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
-structure StepAlongside (rel : State → Prop) : Prop extends Alongside rel where
-  journal : ∀ program s (transition : Transition), WellFormed program s → rel s → transition.started = s.draft.started →
-    transition.ended = s.draft.ended → rel { s with journal := transition :: s.journal, draft := {}, writes := [] }
-  runOrder : ∀ program s, WellFormed program s → rel s → rel { s with journal := s.journal.reverse }
-  begin : ∀ program s request role sourceType, WellFormed program s → Laws.Step.ScopeStands s request.scope →
-    Laws.Step.Admitted s request → rel s → rel (s.beginOccurrence request role sourceType).1
-  cancel : ∀ program s id, WellFormed program s → rel s → rel (s.cancelOccurrence id)
-
 /-- Each committed micro-step of an input on a running instance keeps `inv`: its transition and every closure
 micro-step. -/
 def MicroStepsKeep (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
@@ -520,17 +546,16 @@ def MicroStepsKeep (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
   ∀ (ctx : Ctx) (state after : State), inv ctx.program state → Laws.Step.ClosureStep hooks ctx state after →
     inv ctx.program after
 
-/-- Pending lemma request R14 (`Laws.Step.Contract`, `Laws.Step.Keeps`): the walk of `Laws.Step.Keeps` keeps a property
-beside `WellFormed` through each micro-step with the completion pipeline as a premise (`Laws.Step.PipelineKeeps`) and
-without the phases only the pipeline and the input boundary run (`Phases.reset`, `startReserved`, `removeOccurrence`,
-`recordEnd`), which an input's end facts cannot carry one at a time; `Step`'s other phases keep the property by
-`StepAlongside` and `WellFormed` by `Phases WellFormed`. -/
-structure PendingWalk : Prop where
-  walk : ∀ (hooks : Hooks) (rel : State → Prop),
-    Laws.Step.HookContract hooks (fun program s => WellFormed program s ∧ rel s) → Laws.Step.Phases WellFormed →
-    StepAlongside rel → Laws.Step.StateFacts →
-    Laws.Step.PipelineKeeps hooks (fun program s => WellFormed program s ∧ rel s) →
-    MicroStepsKeep hooks fun program s => WellFormed program s ∧ rel s
+/-- The walk of `Laws.Step.Keeps` keeps a property beside `WellFormed` through each micro-step, with the completion
+pipeline as a premise: `Step`'s phases keep it by `StepAlongside` (`phases_alongside`). -/
+theorem microStepsKeep_alongside {hooks : Hooks} {rel : State → Prop}
+    (contract : Laws.Step.HookContract hooks fun program s => WellFormed program s ∧ rel s)
+    (phases : Laws.Step.Phases WellFormed) (side : StepAlongside rel) (facts : Laws.Step.StateFacts)
+    (pipeline : Laws.Step.PipelineKeeps hooks fun program s => WellFormed program s ∧ rel s) :
+    MicroStepsKeep hooks fun program s => WellFormed program s ∧ rel s :=
+  ⟨fun _ _ _ _ _ runs holds ran => Laws.Step.microStep_keeps contract (phases_alongside phases side) pipeline
+      (fun _ transitioned => Laws.Step.transition_keeps contract (phases_alongside phases side) runs holds transitioned) ran,
+    fun _ _ _ holds step => Laws.Step.closureStep_keeps contract (phases_alongside phases side) facts pipeline holds step⟩
 
 /-- `Step`'s phases keep an input's end facts from its start: journalling the draft and ordering the journal permute
 them, and beginning and cancelling frame them (`Kernel.Laws.Step.EndsFrames`). -/

@@ -160,10 +160,11 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
 signal asks for names issued identities, so one that `Step.stale` lets run finds them standing, and a host that stands
 begun in the scope occurrence it names; a queued begin is
 `Admitted` once it leaves the queue, and a queued completion completes no reservation a queued begin names; and a queued
-instance end records a failure exactly when it fails. The state operations' obligations are `Laws.State`'s. -/
+instance end records a failure exactly when it fails. The state operations' obligations are `Laws.State`'s. The phases
+only the completion pipeline runs are apart (`PipelinePhases`), and so is the reset that starts an input
+(`Laws.Step.running_keeps`): an invariant that counts an input's end facts holds across the pipeline only as a unit and
+from the input's start only (`Kernel.Laws.Step.Ends`). -/
 structure Phases (inv : Program → State → Prop) : Prop where
-  /-- An input on a running instance starts from an empty journal and outbox. -/
-  reset : ∀ program state, inv program state → inv program { state with journal := [], outbox := [], draft := {}, writes := [] }
   clock : ∀ program state atMs, inv program state → inv program { state with logicalTimeMs := atMs }
   /-- `Step.conclude` journals the draft and empties it and the write log. -/
   journal : ∀ program state (transition : Transition), inv program state → transition.started = state.draft.started →
@@ -235,6 +236,11 @@ structure Phases (inv : Program → State → Prop) : Prop where
     inv program (state.reserve element scope).1 ∧
     ∀ request, Laws.State.Queued (state.reserve element scope).1 request →
       (state.reserve element scope).2.id ∉ Laws.State.names request
+  cancel : ∀ program state id, inv program state → inv program (state.cancelOccurrence id)
+
+/-- What the completion pipeline's own phases must keep of `inv` (`Step.complete`): starting the completing reservation
+and closing its items, removing its record and journalling its end. -/
+structure PipelinePhases (inv : Program → State → Prop) : Prop where
   /-- `State.startReserved` of an occurrence no queued begin names, which the completion pipeline starts, then
   `State.closeOwnItems` of it, which closes what waited for it. -/
   startReserved : ∀ program state occurrence sourceType, inv program state → occurrence ∈ state.occurrences →
@@ -245,7 +251,14 @@ structure Phases (inv : Program → State → Prop) : Prop where
     (∀ item ∈ state.openItems, item.occurrence ≠ occurrence.id ∧ item.attachedTo ≠ some occurrence.id) →
     inv program (state.removeOccurrence occurrence.id) ∧ ScopeStands (state.removeOccurrence occurrence.id) occurrence.scope
   recordEnd : ∀ program state key terminal, inv program state → inv program (state.recordEnd key terminal)
-  cancel : ∀ program state id, inv program state → inv program (state.cancelOccurrence id)
+
+/-- The completion pipeline keeps `inv`, from a state in which no queued begin names the completing occurrence:
+`Laws.Step.complete_keeps` gives it from the hook contract, `Phases` and `PipelinePhases`, and the walk of
+`Laws.Step.Keeps` takes it as a premise. -/
+def PipelineKeeps (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
+  ∀ (ctx : Ctx) (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) (state after : State),
+    inv ctx.program state → (∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request) →
+    complete hooks ctx id leave writes rule state = .ok after → inv ctx.program after
 
 /-- What the state operations `Step` applies do to the fields it reads, whatever the invariant (`Laws.State`). -/
 structure StateFacts : Prop where

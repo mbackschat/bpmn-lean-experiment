@@ -29,9 +29,11 @@ repeated names in a binding array, and the scenario contract's canonical order i
 The closure is proved through `WellFormed` itself, which holds between any two micro-steps of a closure: queued work
 naming a scope occurrence an interruption removed (`Kernel/Step/Stale.lean`) keeps it, since `Laws.State.QueueSound`
 asks only that what queued work names was issued, and is inert (`Laws.Step.perform_stale`). `stepKeepsWellFormed`
-composes the per-hook and per-phase obligations of `Laws.Step` (`Laws.Step.HookContract`, `Laws.Step.Phases`) into
-the invariant's preservation. `Kernel.Proofs.Step` proves the phases of `WellFormed` (`Kernel.Proofs.Step.phases`);
-what remains is the hook contract. Nothing executable imports this module.
+composes the per-hook and per-phase obligations of `Laws.Step` (`Laws.Step.HookContract`, `Laws.Step.Phases`,
+`Laws.Step.PipelinePhases`) into the invariant's preservation. `Kernel.Proofs.Step` proves the phases of `WellFormed`
+(`Kernel.Proofs.Step.phases`, `Kernel.Proofs.Step.pipelinePhases`) and the registered hooks' contract, and so both
+statements of `Registry.hooks` (`Kernel.Proofs.Step.registered_stepKeeps`, `Kernel.Proofs.Step.registered_startIs`).
+Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -95,19 +97,21 @@ theorem endInstance_wellFormed {program : Program} {state : State} {status : Ins
   Laws.Step.endInstance_eq ▸ Laws.State.endInstance_wellFormed formed recorded
 
 /-- The composition of the state-invariant lane: hooks that keep their contract (`Laws.Step.HookContract`) and the
-phases of `Step` (`Laws.Step.Phases`) keep `WellFormed` through every committed input. -/
+phases of `Step` (`Laws.Step.Phases`, `Laws.Step.PipelinePhases`) keep `WellFormed` through every committed input. -/
 theorem stepKeepsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hooks WellFormed)
-    (phases : Laws.Step.Phases WellFormed) : StepKeepsWellFormed hooks :=
-  fun _ _ _ _ formed ran => Laws.Step.running_keeps contract phases stateFacts formed ran
+    (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed) : StepKeepsWellFormed hooks :=
+  fun _ _ _ _ formed ran => Laws.Step.running_keeps contract phases stateFacts
+    (Laws.Step.complete_keeps contract phases pipeline stateFacts) (fun _ _ => Laws.State.reset_wellFormed) formed ran
 
 /-- A committed start makes a well-formed state, from the same obligations and a well-formed fresh instance with its
 root's Event Sub-Process starts queued for arming. -/
 theorem startIsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hooks WellFormed)
-    (phases : Laws.Step.Phases WellFormed)
+    (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed)
     (initial : ∀ program instanceId variables businessKey,
       WellFormed program ((State.initial instanceId variables businessKey).signal (.armScope State.root))) :
     StartIsWellFormed hooks :=
-  fun program _ _ ran => Laws.Step.step_keeps contract phases stateFacts (initial program)
-    (fun _ given => by simp at given) ran
+  fun program _ _ ran => Laws.Step.step_keeps contract phases stateFacts
+    (Laws.Step.complete_keeps contract phases pipeline stateFacts) (fun _ _ => Laws.State.reset_wellFormed)
+    (initial program) (fun _ given => by simp at given) ran
 
 end Kernel.Proofs.State
