@@ -82,6 +82,18 @@ theorem hooks_failCompensation : Registry.hooks.failCompensation = Feature.Compe
 theorem hooks_arriveCatch : Registry.hooks.arriveCatch = Feature.Subscriptions.arriveCatch := by
   simp only [Registry.hooks]
 
+/-- Subscriptions opens every arming's boundaries. -/
+theorem hooks_arm : Registry.hooks.arm = Feature.Subscriptions.arm := by
+  simp only [Registry.hooks]
+
+/-- Subscriptions opens every scope's Event Sub-Process starts. -/
+theorem hooks_armScope : Registry.hooks.armScope = Feature.Subscriptions.armScope := by
+  simp only [Registry.hooks]
+
+/-- Subscriptions opens every Event-Based Gateway's arms. -/
+theorem hooks_armGateway : Registry.hooks.armGateway = Feature.Subscriptions.armGateway := by
+  simp only [Registry.hooks]
+
 /-- Data applies every write. -/
 theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOutputs := by
   simp only [Registry.hooks]

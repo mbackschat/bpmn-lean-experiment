@@ -187,12 +187,12 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : Phases inv) (
     exact ⟨_, member, same⟩
   cases dispatchSignal_ok ran with
   | onArm host scope ran =>
-    obtain ⟨hostIssued, scopeIssued⟩ := phases.armIssued _ _ _ _ holds head
-    exact contract.arm _ _ _ _ _ _ popped (stands _ (host hostIssued)) (scope scopeIssued) ran
+    obtain ⟨hostIssued, scopeIssued, hosted⟩ := phases.armIssued _ _ _ _ holds head
+    exact contract.arm _ _ _ _ _ _ popped (stands _ (host hostIssued)) (scope scopeIssued) hosted ran
   | onArmScope scope ran => exact contract.armScope _ _ _ _ popped (scope (phases.armScopeIssued queue _ holds head)) ran
   | onArmGateway occurrence scope ran =>
-    obtain ⟨occurrenceIssued, scopeIssued⟩ := phases.armGatewayIssued _ _ _ _ holds head
-    exact contract.armGateway _ _ _ _ _ _ popped (stands _ (occurrence occurrenceIssued)) (scope scopeIssued) ran
+    obtain ⟨occurrenceIssued, scopeIssued, hosted⟩ := phases.armGatewayIssued _ _ _ _ holds head
+    exact contract.armGateway _ _ _ _ _ _ popped (stands _ (occurrence occurrenceIssued)) (scope scopeIssued) hosted ran
   | onRaise ran => exact contract.raise _ _ _ _ _ popped ran
   | onBegin ran => exact begin_keeps contract phases facts popped (phases.admittedSignal _ _ _ holds heads) ran
   | onComplete ran =>

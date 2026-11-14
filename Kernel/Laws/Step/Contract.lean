@@ -49,7 +49,7 @@ structure PipelineFrame (before after : State) : Prop where
 over stands (a begun occurrence, an idle scope occurrence's owner, a parked join's latest occurrence, the completing
 occurrence), and an arrival's is begun, as `Step.begin` hands it over, but a Gateway's, which a parked join's offer
 may reach; the item it hands over is open; the scope occurrence and occurrence a queued signal names stand
-(`Step.stale`, `Step.gone`); a completed occurrence's continuation runs while its scope occurrence stands; an Event
+(`Step.stale`, `Step.gone`), and an arming's host is begun in the scope occurrence the arming names; a completed occurrence's continuation runs while its scope occurrence stands; an Event
 Sub-Process's start Event reservation (`ScopeEntry.inner`) is beginnable in the scope occurrence its occurrence began
 in, and claimed by nothing queued. The completion pipeline's hooks also keep its frame (`PipelineFrame`), and
 `Hooks.leave` leaves nothing hanging on the completing occurrence. `Hooks.delivered`, a query, picks an open item. Each feature's `Laws` module proves the fields of the hooks it fills. -/
@@ -93,11 +93,14 @@ structure HookContract (hooks : Hooks) (inv : State → Prop) : Prop where
   trigger : ∀ ctx item fired state after, inv state → item ∈ state.openItems →
     hooks.trigger ctx item fired state = .ok after → inv after
   arm : ∀ ctx host element scope state after, inv state → OccurrenceStands state host → ScopeStands state scope →
+    (∀ occurrence ∈ state.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope) →
     hooks.arm ctx host element scope state = .ok after → inv after
   armScope : ∀ ctx scope state after, inv state → ScopeStands state scope →
     hooks.armScope ctx scope state = .ok after → inv after
   armGateway : ∀ ctx occurrence gateway scope state after, inv state → OccurrenceStands state occurrence →
-    ScopeStands state scope → hooks.armGateway ctx occurrence gateway scope state = .ok after → inv after
+    ScopeStands state scope →
+    (∀ found ∈ state.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope) →
+    hooks.armGateway ctx occurrence gateway scope state = .ok after → inv after
   raise : ∀ ctx event origin state after, inv state → hooks.raise ctx event origin state = .ok after → inv after
   compensate : ∀ ctx scope activity trigger leave resume state after, inv state → ScopeStands state scope →
     hooks.compensate ctx scope activity trigger leave resume state = .ok after → inv after
@@ -125,7 +128,8 @@ structure HookContract (hooks : Hooks) (inv : State → Prop) : Prop where
   delivered : ∀ ctx data state item fired, hooks.delivered ctx data state = .ok (item, fired) → item ∈ state.openItems
 
 /-- What each phase `Step` runs itself must keep of `inv`, and what the closure reads of `inv`: the arming a queued
-signal asks for names issued identities, so one that `Step.stale` lets run finds them standing; a queued begin is
+signal asks for names issued identities, so one that `Step.stale` lets run finds them standing, and a host that stands
+begun in the scope occurrence it names; a queued begin is
 `Admitted` once it leaves the queue, and a queued completion completes no reservation a queued begin names; and a queued
 instance end records a failure exactly when it fails. The state operations' obligations are `Laws.State`'s. -/
 structure Phases (inv : State → Prop) : Prop where
@@ -148,10 +152,12 @@ structure Phases (inv : State → Prop) : Prop where
   queueWrite : ∀ state scope writes rule, inv state → inv (state.signal (.write scope writes rule))
   queueRemove : ∀ state scope names, inv state → inv (state.signal (.remove scope names))
   armIssued : ∀ state host element scope, inv state → Signal.arm host element scope ∈ state.signals →
-    host < state.nextIssue ∧ scope.value < state.nextIssue
+    host < state.nextIssue ∧ scope.value < state.nextIssue ∧
+      ∀ occurrence ∈ state.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope
   armScopeIssued : ∀ state scope, inv state → Signal.armScope scope ∈ state.signals → scope.value < state.nextIssue
   armGatewayIssued : ∀ state occurrence gateway scope, inv state → Signal.armGateway occurrence gateway scope ∈ state.signals →
-    occurrence < state.nextIssue ∧ scope.value < state.nextIssue
+    occurrence < state.nextIssue ∧ scope.value < state.nextIssue ∧
+      ∀ found ∈ state.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
   endRecorded : ∀ state status failure, inv state → Signal.endInstance status failure ∈ state.signals →
     (failure.isSome = true ↔ status = .failed)
   /-- The closure's next signal or token, a begin, may begin once it leaves the queue. -/

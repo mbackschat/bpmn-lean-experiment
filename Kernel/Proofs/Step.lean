@@ -157,12 +157,10 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
     untoken := fun _ _ formed fewer => Laws.State.untoken_wellFormed formed fewer
     queueWrite := fun _ scope writes rule formed => queueWrite_wellFormed formed scope writes rule
     queueRemove := fun _ scope names formed => queueRemove_wellFormed formed scope names
-    armIssued := fun _ host element scope formed queued =>
-      ⟨(formed.queue.arm host element scope queued).1, (formed.queue.arm host element scope queued).2.1⟩
+    armIssued := fun _ host element scope formed queued => formed.queue.arm host element scope queued
     armScopeIssued := fun _ scope formed queued => formed.queue.armScope scope queued
     armGatewayIssued := fun _ occurrence gateway scope formed queued =>
-      ⟨(formed.queue.armGateway occurrence gateway scope queued).1,
-        (formed.queue.armGateway occurrence gateway scope queued).2.1⟩
+      formed.queue.armGateway occurrence gateway scope queued
     endRecorded := fun _ status failure formed queued => formed.queue.ends status failure queued
     admittedSignal := fun _ _ _ formed head => Laws.State.admitted_signal formed head
     admittedToken := fun _ _ _ formed taken => Laws.State.admitted_token formed taken
@@ -284,6 +282,15 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps Laws.State.WellFo
   rekind _ _ formed kept := Laws.State.rekind_wellFormed formed kept
   disarm _ host formed := Laws.State.disarm_wellFormed formed host
   openItem _ kind _ formed member begun := Laws.State.openItem_wellFormed formed kind member begun
+  openSubscription _ kind element _ _ passive formed stands hangs := by
+    obtain ⟨entry, inside, named⟩ := stands
+    exact Laws.State.openSubscription_wellFormed formed kind element (List.mem_map.mpr ⟨entry, inside, named⟩) hangs passive
+  subscribed state kind element scope host passive formed := by
+    have reserves := Laws.State.reserve_reserves formed.activations element scope
+    rw [Laws.State.openSubscription_eq]
+    exact ⟨reserves.scopes, fun occurrence member => by
+      rw [reserves.occurrences]
+      exact List.mem_append_left _ member⟩
 
 /-- Disarming a host keeps the completion pipeline's frame and leaves nothing attached to the host. -/
 theorem disarm_frame (state : State) (host : Nat) : Laws.Step.PipelineFrame state (state.disarm host) ∧
@@ -313,6 +320,41 @@ theorem registered_arriveCatch : ∀ ctx header payload subscription occurrence 
   intro _ _ _ _ _ _ _ formed member begun ran
   rw [Laws.Registry.hooks_arriveCatch] at ran
   exact Laws.Subscriptions.arriveCatch_keeps subscriptionsOps formed member begun ran
+
+/-- The host facts an arming's premises give, as Subscriptions states them. -/
+theorem hosted_of {state : State} {host : Nat} {scope : ScopeOccurrenceId} (stands : Laws.Step.OccurrenceStands state host)
+    (placed : Laws.Step.ScopeStands state scope)
+    (hosted : ∀ occurrence ∈ state.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope) :
+    Laws.Subscriptions.Hosted scope (some host) state := by
+  obtain ⟨occurrence, member, named⟩ := stands
+  refine ⟨placed, fun id same => ?_⟩
+  cases same
+  exact ⟨occurrence, member, named, hosted occurrence member named⟩
+
+/-- `HookContract.arm` of the registered hooks. -/
+theorem registered_arm : ∀ ctx host element scope state after, Laws.State.WellFormed state →
+    Laws.Step.OccurrenceStands state host → Laws.Step.ScopeStands state scope →
+    (∀ occurrence ∈ state.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope) →
+    Registry.hooks.arm ctx host element scope state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ formed stands placed hosted ran
+  rw [Laws.Registry.hooks_arm] at ran
+  exact Laws.Subscriptions.arm_keeps subscriptionsOps formed (hosted_of stands placed hosted) ran
+
+/-- `HookContract.armScope` of the registered hooks. -/
+theorem registered_armScope : ∀ ctx scope state after, Laws.State.WellFormed state → Laws.Step.ScopeStands state scope →
+    Registry.hooks.armScope ctx scope state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ formed placed ran
+  rw [Laws.Registry.hooks_armScope] at ran
+  exact Laws.Subscriptions.armScope_keeps subscriptionsOps formed placed ran
+
+/-- `HookContract.armGateway` of the registered hooks. -/
+theorem registered_armGateway : ∀ ctx occurrence gateway scope state after, Laws.State.WellFormed state →
+    Laws.Step.OccurrenceStands state occurrence → Laws.Step.ScopeStands state scope →
+    (∀ found ∈ state.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope) →
+    Registry.hooks.armGateway ctx occurrence gateway scope state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ formed stands placed hosted ran
+  rw [Laws.Registry.hooks_armGateway] at ran
+  exact Laws.Subscriptions.armGateway_keeps subscriptionsOps formed (hosted_of stands placed hosted) ran
 
 /-- `HookContract.written` of the registered hooks. -/
 theorem registered_written : ∀ ctx writes state after, Laws.State.WellFormed state →

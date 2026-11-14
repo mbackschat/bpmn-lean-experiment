@@ -276,6 +276,17 @@ theorem openItem_eq (state : State) (kind : OpenKind) (occurrence : Occurrence) 
           [{ id := state.nextIssue, kind, element := occurrence.element, scope := occurrence.scope, occurrence := occurrence.id }] } := by
   simp only [State.openItem, State.issue]
 
+/-- A subscription reserves its occurrence, then issues its item. -/
+theorem openSubscription_eq (state : State) (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId)
+    (host : Option Nat) (passive : Bool) :
+    (state.openSubscription kind element scope host passive).1 =
+      { (state.reserve element scope).1 with
+          nextIssue := (state.reserve element scope).1.nextIssue + 1
+          openItems := (state.reserve element scope).1.openItems ++
+            [{ id := (state.reserve element scope).1.nextIssue, kind, element, scope
+               occurrence := (state.reserve element scope).2.id, attachedTo := host, passive }] } := by
+  simp only [State.openSubscription, State.issue]
+
 theorem recordEnd_eq (state : State) (key : OccurrenceKey) (terminal : Terminal) :
     state.recordEnd key terminal = { state with draft := { state.draft with ended := state.draft.ended ++ [(key, terminal)] } } := by
   simp only [State.recordEnd]
