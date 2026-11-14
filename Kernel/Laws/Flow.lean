@@ -418,7 +418,7 @@ def LinkPassesThrough (unpublished : ElementId → Bool) (between : State) : Pro
 
 theorem no_link_held : LinkPassesThrough (· == ⟨"L"⟩) waitingAtC := by
   intro occurrence member
-  simp only [waitingAtC, List.mem_cons, List.mem_singleton, List.not_mem_nil, or_false] at member
+  simp only [waitingAtC, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl <;> simp [atJoin, atC, joinGateway]
 
 /-- A state still holding the occurrence of an unpublished element breaks the rule. -/
