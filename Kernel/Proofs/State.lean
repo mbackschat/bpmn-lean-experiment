@@ -31,8 +31,9 @@ naming a scope occurrence an interruption removed (`Kernel/Step/Stale.lean`) kee
 asks only that what queued work names was issued, and is inert (`Laws.Step.perform_stale`). `stepKeepsWellFormed`
 composes the per-hook and per-phase obligations of `Laws.Step` (`Laws.Step.HookContract`, `Laws.Step.Phases`,
 `Laws.Step.PipelinePhases`) into the invariant's preservation. `Kernel.Proofs.Step` proves the phases of `WellFormed`
-(`Kernel.Proofs.Step.phases`, `Kernel.Proofs.Step.pipelinePhases`) and the registered hooks' contract, and so both
-statements of `Registry.hooks` (`Kernel.Proofs.Step.registered_stepKeeps`, `Kernel.Proofs.Step.registered_startIs`).
+(`Kernel.Proofs.Step.phases`, `Kernel.Proofs.Step.pipelinePhases`) and the registered hooks' contract, and so the three
+statements of `Registry.hooks` (`Kernel.Proofs.Step.registered_stepKeeps`, `Kernel.Proofs.Step.registered_startIs`,
+`Kernel.Proofs.Step.registered_populationKeeps`).
 Nothing executable imports this module.
 -/
 
@@ -113,5 +114,11 @@ theorem startIsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hoo
   fun program _ _ ran => Laws.Step.step_keeps contract phases stateFacts
     (Laws.Step.complete_keeps contract phases pipeline stateFacts) (fun _ _ => Laws.State.reset_wellFormed)
     (initial program) (fun _ given => by simp at given) ran
+
+/-- A population run keeps every instance well-formed under its deployment's program when `Step.step` does
+(`Laws.Population.runStimuli_held`). -/
+theorem populationKeepsWellFormed {hooks : Hooks} (steps : StepKeepsWellFormed hooks) (starts : StartIsWellFormed hooks) :
+    PopulationKeepsWellFormed hooks :=
+  fun _ _ _ ran => Laws.Population.runStimuli_held ⟨steps, starts⟩ ran
 
 end Kernel.Proofs.State

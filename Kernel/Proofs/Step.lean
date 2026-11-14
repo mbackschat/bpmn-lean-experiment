@@ -709,4 +709,8 @@ theorem registered_startIs : Proofs.State.StartIsWellFormed Registry.hooks :=
   Proofs.State.startIsWellFormed (registered_contract registeredOps_wellFormed Proofs.State.stateFacts) phases
     pipelinePhases initial_wellFormed
 
+/-- Every instance a committed population run holds is well-formed under the registered hooks. -/
+theorem registered_populationKeeps : Proofs.State.PopulationKeepsWellFormed Registry.hooks :=
+  Proofs.State.populationKeepsWellFormed registered_stepKeeps registered_startIs
+
 end Kernel.Proofs.Step

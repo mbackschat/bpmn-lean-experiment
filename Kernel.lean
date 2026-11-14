@@ -61,6 +61,7 @@ public import Kernel.Laws.Hooks
 public import Kernel.Laws.IL
 public import Kernel.Laws.MultiInstance
 public import Kernel.Laws.Population
+public import Kernel.Laws.Population.Timers
 public import Kernel.Laws.Propagation
 public import Kernel.Laws.Registry
 public import Kernel.Laws.Scopes

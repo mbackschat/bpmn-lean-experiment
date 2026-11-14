@@ -1,6 +1,11 @@
 module
 
-public import Kernel.Population
+public import Kernel.Laws.Population.Timers
+import all Kernel.Population
+import all Kernel.Population.Signals
+import all Kernel.Population.Messages
+import all Kernel.Population.Timers
+import all Kernel.Population.Conditions
 
 /-! # Laws of the population
 
@@ -9,9 +14,8 @@ result types, independent of the mechanisms that produce them: the command ledge
 that first binding survives every replay, commands are numbered from 1, a fan-out spends at most its receiver budget,
 receivers follow the explicit order or the linearization, and every started instance carries an identity its command
 derives; over the fan-out machine, each snapshot is taken when its intent is reached and each committed receiver's
-intents go first; and a Timer-start occurrence fires only at or after one of its due instants, while its deployment is
-current and the occurrence unspent, under the identity of the occurrence. The receiver budget is a parameter; the proof wave instantiates it with `cascadeBound` when it proves
-`Population.apply` against these laws.
+intents go first. `Kernel.Laws.Population.Timers` holds the Timer-start laws. The receiver budget is a parameter; the
+proof wave instantiates it with `cascadeBound` when it proves `Population.apply` against these laws.
 
 A law names a public function of this family only where the specification spells out that function's output format, as
 the derived instance identities `startedInstanceId`, `cascadeInstanceId` and `timerInstanceId`; never an evaluator
@@ -19,6 +23,10 @@ the derived instance identities `startedInstanceId`, `cascadeInstanceId` and `ti
 
 Each law is followed by its non-vacuity witness: values that satisfy it and, where the law could otherwise hold of
 everything, values that violate it. The witnesses read only the laws, never a population mechanism's body.
+
+The one lemma about the mechanisms' bodies, `runStimuli_held`, is that a run reaches its instances only through
+`Step.step` of their deployments' programs, so whatever `Step.step` keeps of an instance every instance it holds keeps
+(`StepsKeep`); `Kernel.Proofs.State` instantiates it with `Laws.State.WellFormed`.
 -/
 
 @[expose] public section
@@ -245,77 +253,6 @@ structure RecordPlaced (before after : FanOutMachine) (entry : FanOutEntry) (int
   stopped : after.stopped = before.stopped
   command : after.commandId = before.commandId
 
-/-! ## Timer starts
-
-The due instants of a root Timer start, the verdict on firing one of its occurrences and what a committed firing
-starts and consumes ([population, Timer starts](../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#timer-starts),
-CIB-INT-0029). Which instants a Cron expression matches is the parameter `cronMatch`, a match strictly after the
-origin or after the match before it, since stating it needs the Cron fields' calendar, which `Kernel.IL.Timer` owns. -/
-
-/-- `dueMs` is an occurrence of a start resolved as `resolved` whose schedule counts from `originMs`, its deployment's
-deploy time: a duration `originMs + d`; a date its own instant, also before the origin; the `k`-th period after the
-origin for `1 ≤ k ≤ n`, every `k ≥ 1` when unbounded (CIB-INT-0008); a Cron match strictly after the origin. -/
-def DueInstant (cronMatch : String → Nat → Nat → Prop) (originMs dueMs : Nat) : Timer.Resolved → Prop
-  | .duration ms => dueMs = originMs + ms
-  | .date instantMs => dueMs = instantMs
-  | .cycle periodMs repetitions =>
-    0 < periodMs ∧ ∃ k, 1 ≤ k ∧ (∀ count, repetitions = some count → k ≤ count) ∧ dueMs = originMs + k * periodMs
-  | .cron text => originMs < dueMs ∧ cronMatch text originMs dueMs
-
-/-- An occurrence fires at `atMs` exactly when it is a due instant not later than `atMs`; one the schedule does not name
-is `timer-occurrence-unknown`, a firing before its instant `timer-not-due`. -/
-def FiringVerdict (cronMatch : String → Nat → Nat → Prop) (originMs dueMs atMs : Nat) (resolved : Timer.Resolved) :
-    Option String → Prop
-  | none => DueInstant cronMatch originMs dueMs resolved ∧ dueMs ≤ atMs
-  | some code =>
-    (¬ DueInstant cronMatch originMs dueMs resolved ∧ code = "timer-occurrence-unknown") ∨
-      (DueInstant cronMatch originMs dueMs resolved ∧ atMs < dueMs ∧ code = "timer-not-due")
-
-/-- No later registered deployment shares `deployment`'s key: the current deployment of a key is its last registered
-one, in registration order. -/
-def Current (registry : List DeploymentSummary) (deployment : DeploymentSummary) : Prop :=
-  ∃ earlier later, registry = earlier ++ deployment :: later ∧ ∀ other ∈ later, other.key ≠ deployment.key
-
-/-- The occurrence `fired` names already started an instance. -/
-def Spent (consumed : List TimerOccurrence) (fired : TimerStart) : Prop :=
-  ∃ occurrence ∈ consumed, occurrence.deploymentId = fired.deploymentId ∧ occurrence.startEvent = fired.startEvent ∧
-    occurrence.dueMs = fired.dueMs
-
-/-- The registry is keyed by deployment and each deployment's Timer starts by start Event, so the deployment and start
-a verdict reads are the only ones. -/
-def SummariesKeyed (registry : List DeploymentSummary) : Prop :=
-  (registry.map (·.deploymentId)).Nodup ∧ ∀ deployment ∈ registry, (deployment.timerStarts.map (·.1)).Nodup
-
-/-- The verdict on a `timerStart` at `atMs`, the first refusal in this order: `definition-not-deployed` for a deployment
-not registered; `no-start-event` for a start that is not one of its root Timer starts; the firing verdict;
-`timer-start-superseded` once another deployment of its key is current, as CIB deletes every Timer-start job of a key it
-redeploys; `timer-start-occurrence-consumed` for a spent occurrence; else none, and it fires. -/
-def TimerStartVerdict (cronMatch : String → Nat → Nat → Prop) (registry : List DeploymentSummary) (fired : TimerStart)
-    (atMs : Nat) (consumed : List TimerOccurrence) (verdict : Option String) : Prop :=
-  ((∀ deployment ∈ registry, deployment.deploymentId ≠ fired.deploymentId) ∧ verdict = some "definition-not-deployed") ∨
-  ∃ deployment ∈ registry, deployment.deploymentId = fired.deploymentId ∧
-    (((∀ start ∈ deployment.timerStarts, start.1 ≠ fired.startEvent) ∧ verdict = some "no-start-event") ∨
-    ∃ resolved, (fired.startEvent, resolved) ∈ deployment.timerStarts ∧
-      let firing := FiringVerdict cronMatch deployment.deployedAtMs fired.dueMs atMs resolved
-      (∃ code, firing (some code) ∧ verdict = some code) ∨
-      (firing none ∧ ¬ Current registry deployment ∧ verdict = some "timer-start-superseded") ∨
-      (firing none ∧ Current registry deployment ∧ Spent consumed fired ∧
-        verdict = some "timer-start-occurrence-consumed") ∨
-      (firing none ∧ Current registry deployment ∧ ¬ Spent consumed fired ∧ verdict = none))
-
-/-- What a `timerStart` resolves to: a refusal changes nothing; a firing is one entry, and a started one carries the
-identity of the occurrence, `timer:<len>:<deploymentId>:<len>:<startEvent>:<dueMs>`, whatever the firing time or the
-command, and consumes exactly that occurrence; a start the start step refuses is the failed entry and consumes nothing. -/
-def TimerResolves (fired : TimerStart) (verdict : Option String) (before after : List TimerOccurrence)
-    (resolution : Resolution) : Prop :=
-  match verdict with
-  | some code => resolution = .rejected code ∧ after = before
-  | none =>
-    (∃ version, resolution = .fanOut [.started (timerInstanceId fired.deploymentId fired.startEvent fired.dueMs)
-        fired.deploymentId version fired.startEvent] ∧
-      after = before ++ [{ deploymentId := fired.deploymentId, startEvent := fired.startEvent, dueMs := fired.dueMs }]) ∨
-    (∃ receiver failure, resolution = .fanOut [.failed receiver failure] ∧ after = before)
-
 /-! ## Publication refusals -/
 
 /-- The refusals among a publication's per-instance receiver scans. -/
@@ -526,124 +463,6 @@ theorem empty_run_keyed : RunKeyed {} :=
   { ledger := by simp [LedgerKeyed], numbered := by simp [Numbered], instances := by simp [InstancesKeyed]
     derived := by simp, inputsDerived := by simp, present := by simp }
 
-/-! ### Timer starts
-
-A duration `PT0.5S` deployed at 1000, a cycle of period 100 with two repetitions deployed at 0, a Cron start whose
-matches are a parameter, and two deployments 1 and 2 of the key `k`, each with the Timer start `T` (`PT1M`). -/
-
-theorem duration_due (cronMatch : String → Nat → Nat → Prop) :
-    FiringVerdict cronMatch 1000 1500 1600 (.duration 500) none :=
-  ⟨rfl, by omega⟩
-
-theorem duration_early (cronMatch : String → Nat → Nat → Prop) :
-    FiringVerdict cronMatch 1000 1500 1400 (.duration 500) (some "timer-not-due") :=
-  .inr ⟨rfl, by omega, rfl⟩
-
-/-- An instant the schedule does not name never fires, however late. -/
-theorem unnamed_instant_rejected (cronMatch : String → Nat → Nat → Prop) :
-    ¬ FiringVerdict cronMatch 1000 1700 2000 (.duration 500) none := fun ⟨due, _⟩ => by
-  simp [DueInstant] at due
-
-theorem cycle_second_period (cronMatch : String → Nat → Nat → Prop) :
-    DueInstant cronMatch 0 200 (.cycle 100 (some 2)) :=
-  ⟨by omega, 2, by omega, fun count same => by cases same; omega, by omega⟩
-
-/-- A third period of a cycle of two repetitions is no occurrence. -/
-theorem cycle_third_rejected (cronMatch : String → Nat → Nat → Prop) :
-    ¬ DueInstant cronMatch 0 300 (.cycle 100 (some 2)) := fun ⟨_, period⟩ => by
-  obtain ⟨k, _, bounded, due⟩ := period
-  have := bounded 2 rfl
-  omega
-
-/-- The origin is no occurrence of a cycle. -/
-theorem cycle_origin_rejected (cronMatch : String → Nat → Nat → Prop) (repetitions : Option Nat) :
-    ¬ DueInstant cronMatch 0 0 (.cycle 100 repetitions) := fun ⟨_, period⟩ => by
-  obtain ⟨k, positive, _, due⟩ := period
-  omega
-
-theorem date_before_origin (cronMatch : String → Nat → Nat → Prop) : DueInstant cronMatch 5000 1000 (.date 1000) := rfl
-
-/-- A Cron match at or before the origin is no occurrence. -/
-theorem cron_at_origin_rejected (text : String) : ¬ DueInstant (fun _ _ _ => True) 1000 1000 (.cron text) :=
-  fun ⟨after, _⟩ => by omega
-
-def summaryOf (deploymentId : Nat) : DeploymentSummary :=
-  { deploymentId, key := "k", keys := ["k"], namesAddress := false, messageCorrelation := .modeledKey
-    messageStartNames := [], timerStarts := [("T", .duration 60000)] }
-
-def redeployed : List DeploymentSummary := [summaryOf 1, summaryOf 2]
-
-def firing (deploymentId dueMs : Nat) : TimerStart := { commandId := "c", deploymentId, startEvent := "T", dueMs }
-
-def spentOnce : List TimerOccurrence := [{ deploymentId := 2, startEvent := "T", dueMs := 60000 }]
-
-theorem redeployed_keyed : SummariesKeyed redeployed := by
-  simp [SummariesKeyed, redeployed, summaryOf]
-
-theorem current_fires (cronMatch : String → Nat → Nat → Prop) :
-    TimerStartVerdict cronMatch redeployed (firing 2 60000) 60000 [] none :=
-  .inr ⟨summaryOf 2, by simp [redeployed], rfl, .inr ⟨.duration 60000, by simp [summaryOf, firing],
-    .inr (.inr (.inr ⟨⟨rfl, by simp [firing]⟩, ⟨[summaryOf 1], [], rfl, by simp⟩,
-      fun ⟨_, member, _⟩ => by simp at member, rfl⟩))⟩⟩
-
-theorem undeployed (cronMatch : String → Nat → Nat → Prop) :
-    TimerStartVerdict cronMatch redeployed (firing 3 60000) 60000 [] (some "definition-not-deployed") :=
-  .inl ⟨by simp [redeployed, summaryOf, firing], rfl⟩
-
-theorem superseded (cronMatch : String → Nat → Nat → Prop) :
-    TimerStartVerdict cronMatch redeployed (firing 1 60000) 60000 [] (some "timer-start-superseded") :=
-  .inr ⟨summaryOf 1, by simp [redeployed], rfl, .inr ⟨.duration 60000, by simp [summaryOf, firing],
-    .inr (.inl ⟨⟨rfl, by simp [firing]⟩, fun ⟨earlier, later, split, after⟩ => by
-      rcases earlier with _ | ⟨first, _ | ⟨second, rest⟩⟩
-      · simp only [redeployed, List.nil_append, List.cons.injEq] at split
-        exact after (summaryOf 2) (by simp [← split.2]) rfl
-      · simp [redeployed, summaryOf] at split
-      · simp [redeployed] at split, rfl⟩)⟩⟩
-
-theorem consumed_refused (cronMatch : String → Nat → Nat → Prop) :
-    TimerStartVerdict cronMatch redeployed (firing 2 60000) 60000 spentOnce (some "timer-start-occurrence-consumed") :=
-  .inr ⟨summaryOf 2, by simp [redeployed], rfl, .inr ⟨.duration 60000, by simp [summaryOf, firing],
-    .inr (.inr (.inl ⟨⟨rfl, by simp [firing]⟩, ⟨[summaryOf 1], [], rfl, by simp⟩,
-      ⟨spentOnce.head (by simp [spentOnce]), by simp [spentOnce], rfl, rfl, rfl⟩, rfl⟩))⟩⟩
-
-/-- An instant the schedule does not name is refused as unknown before the deployment's supersession is read. -/
-theorem unknown_before_superseded (cronMatch : String → Nat → Nat → Prop) :
-    ¬ TimerStartVerdict cronMatch redeployed (firing 1 61000) 70000 [] (some "timer-start-superseded") := by
-  rintro (⟨_, wrong⟩ | ⟨deployment, member, same, (⟨missing, wrong⟩ | ⟨resolved, start, verdict⟩)⟩)
-  · simp at wrong
-  · simp at wrong
-  · simp only [redeployed, List.mem_cons, List.not_mem_nil, or_false] at member
-    rcases member with rfl | rfl
-    · simp only [summaryOf, firing, List.mem_singleton, Prod.mk.injEq, true_and] at start
-      subst start
-      rcases verdict with ⟨code, _, wrong⟩ | ⟨⟨due, _⟩, _⟩ | ⟨_, _, _, wrong⟩ | ⟨_, _, _, wrong⟩
-      · cases wrong
-        simp [FiringVerdict, DueInstant, firing, summaryOf] at *
-      · simp [DueInstant, firing, summaryOf] at due
-      · simp at wrong
-      · simp at wrong
-    · simp [summaryOf, firing] at same
-
-theorem timer_started (version : Nat) :
-    TimerResolves (firing 2 60000) none [] [{ deploymentId := 2, startEvent := "T", dueMs := 60000 }]
-      (.fanOut [.started (timerInstanceId 2 "T" 60000) 2 version "T"]) :=
-  .inl ⟨version, by simp [firing], by simp [firing]⟩
-
-/-- An identity derived from the command, not the occurrence, is rejected. -/
-theorem command_identity_rejected (version : Nat) (other : startedInstanceId "c" 2 "T" ≠ timerInstanceId 2 "T" 60000) :
-    ¬ TimerResolves (firing 2 60000) none [] [{ deploymentId := 2, startEvent := "T", dueMs := 60000 }]
-      (.fanOut [.started (startedInstanceId "c" 2 "T") 2 version "T"]) := by
-  rintro (⟨_, same, _⟩ | ⟨_, _, wrong, _⟩)
-  · simp only [firing, Resolution.fanOut.injEq, List.cons.injEq, FanOutEntry.started.injEq, and_true] at same
-    exact other same.1
-  · simp at wrong
-
-/-- A refused start consumes nothing. -/
-theorem refusal_consumes_rejected :
-    ¬ TimerResolves (firing 2 60000) (some "timer-not-due") [] spentOnce (.rejected "timer-not-due") :=
-  fun ⟨_, kept⟩ => by simp [spentOnce] at kept
-
-
 /-- Two scans refuse, one reaches nothing: the least code decides. -/
 def refusingScans : List (Except Failure Unit) := [.error (.unsupported "b"), .ok (), .error (.unsupported "a")]
 
@@ -669,5 +488,320 @@ theorem refusal_changing_rejected : ¬ ScanRefusalDecides refusingScans (.unsupp
 /-- Without a refusal the law asks nothing. -/
 theorem no_refusal_free : ScanRefusalDecides [(.ok () : Except Failure Unit)] .noMatch [0] [1] :=
   fun refused => absurd refused (by decide +kernel)
+
+/-! ## What a run reaches its instances through -/
+
+/-- What `Step.step` keeps of an instance under its deployment's program: a step from a state that holds `good`, and a
+start from none. -/
+structure StepsKeep (hooks : Hooks) (good : Program → State → Prop) : Prop where
+  step : ∀ program input before after, good program before → Step.step hooks program (some before) input = .ok after →
+    good program after
+  start : ∀ program input after, Step.step hooks program none input = .ok after → good program after
+
+/-- Every instance holds `good` under its deployment's program. -/
+def Held (good : Program → State → Prop) (instances : List Instance) : Prop :=
+  ∀ member ∈ instances, good member.deployment.program member.state
+
+variable {hooks : Hooks} {good : Program → State → Prop}
+
+theorem Held.append {good : Program → State → Prop} {left right : List Instance} (one : Held good left) (two : Held good right) :
+    Held good (left ++ right) := fun member inside => (List.mem_append.mp inside).elim (one member) (two member)
+
+theorem Held.set {left : List Instance} (held : Held good left) (index : Nat) {member : Instance}
+    (kept : good member.deployment.program member.state) : Held good (left.set index member) := fun other inside =>
+  (List.mem_or_eq_of_mem_set inside).elim (held other) fun same => same ▸ kept
+
+private theorem bind_ok {ε α β : Type} {x : Except ε α} {f : α → Except ε β} {b : β} (ran : (x >>= f) = .ok b) :
+    ∃ a, x = .ok a ∧ f a = .ok b := by
+  cases x with
+  | error => cases ran
+  | ok a => exact ⟨a, by rfl, ran⟩
+
+theorem startInstance_held (keeps : StepsKeep hooks good) {deployment : Deployment} {publicStart : String}
+    {input : StartInput} {started : Option Instance} {entry : FanOutEntry}
+    (ran : startInstance hooks deployment publicStart input = .ok (started, entry)) : Held good started.toList := by
+  unfold startInstance at ran
+  split at ran
+  · split at ran
+    · rename_i state stepped
+      cases ran
+      intro member inside
+      simp only [Option.toList_some, List.mem_singleton] at inside
+      subst inside
+      exact keeps.start _ _ _ stepped
+    · cases ran
+      simp [Held]
+  · cases ran
+
+theorem reachOccurrence_held (keeps : StepsKeep hooks good) {member : Instance} {address : SignalAddress}
+    {variables : List (String × Value)} {target : OccurrenceRef} {atMs : Nat} {state : State}
+    (stepped : reachOccurrence hooks member.deployment.program member.state address variables target atMs = .stepped (.ok state))
+    (held : good member.deployment.program member.state) : good member.deployment.program state := by
+  unfold reachOccurrence at stepped
+  split at stepped
+  · injection stepped with stepped
+    exact keeps.step _ _ _ _ held stepped
+  · cases stepped
+
+theorem reachReceiver_held (keeps : StepsKeep hooks good) {registry : List Deployment} {atMs : Nat} {commandId : String}
+    {instances : List Instance} {emission : Emission} {receiver : Receiver} {reached : Reached}
+    (ran : reachReceiver hooks registry atMs commandId instances emission receiver = .ok reached)
+    (held : Held good instances) : Held good reached.1 := by
+  cases receiver with
+  | occurrence target =>
+    simp only [reachReceiver] at ran
+    split at ran
+    · cases ran; exact held
+    · rename_i member index state found
+      cases ran
+      obtain ⟨pair, inside, picked⟩ := List.exists_of_findSome?_eq_some found
+      split at picked
+      · cases picked
+      · rename_i outcome stepped
+        simp only [Option.some.injEq, Prod.mk.injEq] at picked
+        obtain ⟨same, _, ran⟩ := picked
+        subst same ran
+        exact held.set index (reachOccurrence_held keeps stepped (held _ (List.fst_mem_of_mem_zipIdx inside)) :)
+    · cases ran; exact held
+  | start deploymentId startEvent =>
+    simp only [reachReceiver] at ran
+    obtain ⟨⟨deployment, header⟩, _, ran⟩ := bind_ok ran
+    obtain ⟨⟨started, entry⟩, starts, ran⟩ := bind_ok ran
+    cases ran
+    exact held.append (startInstance_held keeps starts)
+
+theorem fanOut_held (keeps : StepsKeep hooks good) {registry : List Deployment} {atMs : Nat}
+    {own : List Instance → Receiver → Except String Reached}
+    (owned : ∀ instances receiver reached, own instances receiver = .ok reached → Held good instances → Held good reached.1)
+    (fuel : Nat) {fanning after : Fanning} (ran : fanOut hooks registry atMs own fuel fanning = .ok after)
+    (held : Held good fanning.instances) : Held good after.instances := by
+  induction fuel generalizing fanning with
+  | zero =>
+    rw [fanOut.eq_def] at ran
+    split at ran
+    dsimp only at ran
+    split at ran
+    · cases ran; exact held
+    all_goals first | (cases ran; done) | omega
+  | succ fuel ih =>
+    rw [fanOut.eq_def] at ran
+    split at ran
+    dsimp only at ran
+    split at ran
+    · cases ran; exact held
+    · omega
+    · omega
+    · rename_i same
+      injection same with same
+      subst same
+      split at ran
+      · cases ran
+      · exact ih ran held
+    · rename_i emission _ _ same
+      injection same with same
+      subst same
+      cases emission <;> dsimp only at ran <;> split at ran
+      all_goals first
+        | (cases ran; done)
+        | exact ih ran (owned _ _ _ ‹own _ _ = _› held)
+        | exact ih ran (reachReceiver_held keeps ‹reachReceiver _ _ _ _ _ _ _ = _› held)
+
+theorem signalsOnly_held (instances : List Instance) (receiver : Receiver) (reached : Reached)
+    (ran : signalsOnly instances receiver = .ok reached) : Held good instances → Held good reached.1 := by
+  cases ran
+
+theorem cascadeOf_held (keeps : StepsKeep hooks good) {registry : List Deployment} {commandId instanceId : String}
+    {atMs budget : Nat} {instances : List Instance} {after : Fanning}
+    (ran : cascadeOf hooks registry commandId atMs budget instances instanceId = .ok after) (held : Held good instances) :
+    Held good after.instances := by
+  unfold cascadeOf at ran
+  split at ran
+  · exact fanOut_held keeps signalsOnly_held _ ran held
+  · cases ran
+
+theorem cascadeCommitted_held (keeps : StepsKeep hooks good) {registry : List Deployment} {commandId : String}
+    {atMs : Nat} {instances : List Instance} {delivered : Option String} {resolution : Resolution}
+    {after : List Instance × Resolution}
+    (ran : cascadeCommitted hooks registry commandId atMs instances delivered resolution = .ok after)
+    (held : Held good instances) : Held good after.1 := by
+  unfold cascadeCommitted at ran
+  split at ran
+  · split at ran
+    · obtain ⟨fanning, cascaded, ran⟩ := bind_ok ran
+      cases ran
+      exact cascadeOf_held keeps cascaded held
+    · cases ran
+  · obtain ⟨fanning, cascaded, ran⟩ := bind_ok ran
+    cases ran
+    exact cascadeOf_held keeps cascaded held
+  all_goals cases ran; exact held
+
+theorem broadcast_held (keeps : StepsKeep hooks good) {registry : List Deployment} {instances : List Instance}
+    {atMs : Nat} {sent : Broadcast} {after : List Instance × Resolution}
+    (ran : broadcast hooks registry instances atMs sent = .ok after) (held : Held good instances) : Held good after.1 := by
+  unfold broadcast at ran
+  dsimp only at ran
+  split at ran
+  · cases ran; exact held
+  · split at ran
+    · obtain ⟨fanning, fanned, ran⟩ := bind_ok ran
+      cases ran
+      exact fanOut_held keeps signalsOnly_held _ fanned held
+    · cases ran; exact held
+
+theorem evaluateConditions_held (keeps : StepsKeep hooks good) {registry : List Deployment} {instances : List Instance}
+    {atMs : Nat} {evaluation : ConditionEvaluation} {after : List Instance × Resolution}
+    (ran : evaluateConditions hooks registry instances atMs evaluation = .ok after) (held : Held good instances) :
+    Held good after.1 := by
+  have own : ∀ instances receiver (reached : Reached), evaluateStart hooks registry evaluation atMs instances receiver = .ok reached →
+      Held good instances → Held good reached.1 := by
+    intro instances receiver reached ran held
+    cases receiver with
+    | occurrence => cases ran
+    | start deploymentId publicStart =>
+      simp only [evaluateStart] at ran
+      obtain ⟨⟨deployment, header⟩, _, ran⟩ := bind_ok ran
+      dsimp only at ran
+      split at ran
+      · cases ran; exact held
+      · obtain ⟨⟨started, entry⟩, starts, ran⟩ := bind_ok ran
+        cases ran
+        exact held.append (startInstance_held keeps starts)
+      · cases ran; exact held
+  unfold evaluateConditions at ran
+  split at ran
+  · dsimp only at ran
+    split at ran
+    · cases ran; exact held
+    · split at ran
+      · obtain ⟨fanning, fanned, ran⟩ := bind_ok ran
+        cases ran
+        exact fanOut_held keeps own _ fanned held
+      · cases ran; exact held
+  · cases ran; exact held
+
+theorem startFor_held (keeps : StepsKeep hooks good) {instances : List Instance} {publication : Publication}
+    {atMs : Nat} {deployment : Deployment} {startEvent : ElementId} {channel : MessageChannel}
+    {after : List Instance × Resolution}
+    (ran : startFor hooks instances publication atMs deployment startEvent channel = .ok after) (held : Held good instances) :
+    Held good after.1 := by
+  unfold startFor at ran
+  obtain ⟨⟨started, entry⟩, starts, ran⟩ := bind_ok ran
+  cases ran
+  exact held.append (startInstance_held keeps starts)
+
+theorem publish_held (keeps : StepsKeep hooks good) {registry : List Deployment} {instances : List Instance}
+    {atMs : Nat} {publication : Publication} {after : List Instance × Resolution × Option String}
+    (ran : publish hooks registry instances atMs publication = .ok after) (held : Held good instances) :
+    Held good after.1 := by
+  unfold publish at ran
+  dsimp only at ran
+  repeat' split at ran
+  all_goals first
+    | (cases ran; done)
+    | (cases ran; exact held)
+    | (obtain ⟨_, _, ran⟩ := bind_ok ran; cases ran; exact held)
+    | (obtain ⟨_, started, ran⟩ := bind_ok ran; cases ran; exact startFor_held keeps started held)
+    | (cases ran; exact held.set _ (keeps.step _ _ _ _ (held _ (List.mem_of_getElem? ‹instances[_]? = some _›) :) ‹_›))
+
+theorem timerStart_held (keeps : StepsKeep hooks good) {registry : List Deployment} {instances : List Instance}
+    {consumed : List TimerOccurrence} {atMs : Nat} {fired : TimerStart}
+    {after : List Instance × List TimerOccurrence × Resolution}
+    (ran : timerStart hooks registry instances consumed atMs fired = .ok after) (held : Held good instances) :
+    Held good after.1 := by
+  unfold timerStart at ran
+  dsimp only at ran
+  repeat' split at ran
+  all_goals first
+    | (cases ran; done)
+    | (cases ran; exact held)
+    | (obtain ⟨⟨started, entry⟩, starts, ran⟩ := bind_ok ran; cases ran; exact held.append (startInstance_held keeps starts))
+
+theorem route_held (keeps : StepsKeep hooks good) {progress : Progress} {atMs : Nat} {command : Command}
+    {after : List Instance × List TimerOccurrence × Resolution} (ran : route hooks progress atMs command = .ok after)
+    (held : Held good progress.instances) : Held good after.1 := by
+  cases command with
+  | publish publication =>
+    simp only [route] at ran
+    obtain ⟨⟨instances, resolution, delivered⟩, published, ran⟩ := bind_ok ran
+    obtain ⟨⟨instances', resolution'⟩, cascaded, ran⟩ := bind_ok ran
+    cases ran
+    exact cascadeCommitted_held keeps cascaded (publish_held keeps published held)
+  | timerStart fired =>
+    simp only [route] at ran
+    obtain ⟨⟨instances, occurrences, resolution⟩, started, ran⟩ := bind_ok ran
+    obtain ⟨⟨instances', resolution'⟩, cascaded, ran⟩ := bind_ok ran
+    cases ran
+    exact cascadeCommitted_held keeps cascaded (timerStart_held keeps started held)
+  | evaluateConditions evaluation =>
+    simp only [route] at ran
+    obtain ⟨⟨instances, resolution⟩, evaluated, ran⟩ := bind_ok ran
+    cases ran
+    exact evaluateConditions_held keeps evaluated held
+  | broadcast sent =>
+    simp only [route] at ran
+    obtain ⟨⟨instances, resolution⟩, sent, ran⟩ := bind_ok ran
+    cases ran
+    exact broadcast_held keeps sent held
+
+theorem apply_held (keeps : StepsKeep hooks good) {admission : Program → Option String} {progress after : Progress}
+    {stimulus : Stimulus} (ran : apply hooks admission progress stimulus = .ok after) (held : Held good progress.instances) :
+    Held good after.instances := by
+  cases stimulus with
+  | deploy => simp only [apply] at ran; cases ran; exact held
+  | deployRefused => simp only [apply] at ran; cases ran; exact held
+  | input instanceId definitionRef commandId input =>
+    simp only [apply] at ran
+    split at ran
+    · cases ran; exact held
+    · rename_i deployment found
+      split at ran
+      · cases ran; exact held
+      · rename_i state stepped
+        obtain ⟨fanning, cascaded, ran⟩ := bind_ok ran
+        cases ran
+        refine cascadeOf_held keeps cascaded (Held.append (fun member inside => held member (List.mem_filter.mp inside).1) ?_)
+        intro member inside
+        simp only [List.mem_singleton] at inside
+        subst inside
+        show good deployment.program state
+        cases picked : progress.instances.find? (·.state.instanceId == instanceId) with
+        | none => rw [picked] at stepped; exact keeps.start _ _ _ stepped
+        | some member =>
+          rw [picked] at stepped
+          simp only [Progress.deploymentFor, picked] at found
+          cases found
+          exact keeps.step _ _ _ _ (held member (List.mem_of_find?_eq_some picked)) stepped
+  | command issued atMs digest =>
+    simp only [apply] at ran
+    split at ran
+    · cases ran; exact held
+    · obtain ⟨routed, routes, ran⟩ := bind_ok ran
+      cases ran
+      exact route_held keeps routes held
+
+/-- Every instance a committed run holds keeps what `Step.step` keeps: a run reaches an instance only through
+`Step.step` of its deployment's program, from no state or from the one it holds. -/
+theorem runStimuli_held (keeps : StepsKeep hooks good) {admission : Program → Option String} {stimuli : List Stimulus}
+    {result : Result} (ran : runStimuli hooks admission stimuli = .ok result) : Held good result.instances := by
+  have fold : ∀ (stimuli : List Stimulus) (progress after : Progress), Held good progress.instances →
+      stimuli.foldlM (apply hooks admission) progress = .ok after → Held good after.instances := by
+    intro stimuli
+    induction stimuli with
+    | nil => intro progress after held ran; cases ran; exact held
+    | cons stimulus rest ih =>
+      intro progress after held ran
+      rw [List.foldlM_cons] at ran
+      obtain ⟨next, applied, ran⟩ := bind_ok ran
+      exact ih next after (apply_held keeps applied held) ran
+  unfold runStimuli at ran
+  obtain ⟨progress, folded, ran⟩ := bind_ok ran
+  have held := fold stimuli {} progress (fun _ inside => by cases inside) folded
+  dsimp only at ran
+  split at ran
+  · cases ran
+    intro member inside
+    exact held member (List.mem_mergeSort.mp inside)
+  · cases ran
 
 end Kernel.Laws.Population
