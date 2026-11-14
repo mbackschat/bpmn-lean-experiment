@@ -66,6 +66,8 @@ public import Kernel.Laws.Scopes
 public import Kernel.Laws.Starts
 public import Kernel.Laws.State
 public import Kernel.Laws.Step
+public import Kernel.Laws.Step.Contract
+public import Kernel.Laws.Step.Keeps
 public import Kernel.Laws.Subscriptions
 public import Kernel.Laws.Work
 public import Kernel.Population

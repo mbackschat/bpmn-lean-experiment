@@ -831,11 +831,52 @@ theorem removal_cancels_with_ends (state : State) :
     exact ((CancelsWithEnds.ofDraft (withdrawOccurrence_draft state id)).trans
       (removeOccurrence_cancels _ id)).trans (recordCancelled_cancels _ [occurrence])
 
-/-! ### Queued work whose target is gone -/
+/-! ### What `Step` reads of the operations it applies -/
+
+theorem occurrence?_some {state : State} {id : Nat} {occurrence : Occurrence}
+    (found : state.occurrence? id = some occurrence) : occurrence ∈ state.occurrences ∧ occurrence.id = id := by
+  unfold State.occurrence? at found
+  exact ⟨List.mem_of_find?_eq_some found, by simpa using List.find?_some found⟩
+
+/-- `beginOccurrence` holds the occurrence it begins. -/
+theorem beginOccurrence_mem (state : State) (request : BeginRequest) (role : ActivationRole) (sourceType : String) :
+    (state.beginOccurrence request role sourceType).2 ∈ (state.beginOccurrence request role sourceType).1.occurrences := by
+  simp only [State.beginOccurrence, State.recordStart]
+  split <;> simp [State.activate, State.issue]
+
+/-- `startReserved` holds the occurrence it starts, begun, under its identity and in its scope occurrence, and keeps
+the scope occurrences. -/
+theorem startReserved_facts {state : State} {occurrence : Occurrence} (sourceType : String)
+    (member : occurrence ∈ state.occurrences) :
+    (state.startReserved occurrence sourceType).2 ∈ (state.startReserved occurrence sourceType).1.occurrences ∧
+      (state.startReserved occurrence sourceType).2.begun = true ∧
+      (state.startReserved occurrence sourceType).2.id = occurrence.id ∧
+      (state.startReserved occurrence sourceType).2.scope = occurrence.scope ∧
+      (state.startReserved occurrence sourceType).1.scopes = state.scopes := by
+  unfold State.startReserved
+  split
+  · rename_i begun
+    exact ⟨member, begun, rfl, rfl, rfl⟩
+  · refine ⟨?_, by simp, by simp, by simp, by simp [State.recordStart]⟩
+    simp only [State.recordStart]
+    exact List.mem_map.mpr ⟨occurrence, member, by simp⟩
+
+/-- `closeOwnItems` keeps the scope occurrences and the occurrences, and leaves only items that wait for another
+occurrence. -/
+theorem closeOwnItems_facts (state : State) (id : Nat) :
+    (state.closeOwnItems id).scopes = state.scopes ∧ (state.closeOwnItems id).occurrences = state.occurrences ∧
+      (∀ item ∈ (state.closeOwnItems id).openItems, item ∈ state.openItems) ∧
+      ∀ item ∈ (state.closeOwnItems id).openItems, item.occurrence ≠ id := by
+  refine ⟨rfl, rfl, fun item member => (List.mem_filter.mp member).1, fun item member => ?_⟩
+  simpa using (List.mem_filter.mp member).2
 
 /-- A queued cancellation of an occurrence that is gone changes nothing. -/
 theorem cancelOccurrence_absent {state : State} {id : Nat} (absent : state.occurrence? id = none) :
     state.cancelOccurrence id = state := by
   simp [State.cancelOccurrence, absent]
+
+theorem recordEnd_scopes (state : State) (key : OccurrenceKey) (terminal : Terminal) :
+    (state.recordEnd key terminal).scopes = state.scopes := by
+  simp only [State.recordEnd]
 
 end Kernel.Laws.State

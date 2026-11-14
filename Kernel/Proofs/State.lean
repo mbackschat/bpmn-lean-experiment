@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.Step
+public import Kernel.Laws.Step.Keeps
 public import Kernel.Laws.Data
 public import Kernel.Laws.Population
 
@@ -24,10 +24,13 @@ repeated names in a binding array, and the scenario contract's canonical order i
 
 The closure is proved through `ClosureInvariant`, of which `WellFormed` is part: queued work naming a scope occurrence
 an interruption removed (`Kernel/Step/Stale.lean`) breaks no clause of `WellFormed`, which reads no queued signal, and
-is inert, but the closure needs what `WellFormed` leaves unsaid of queued work, of the input's start facts and of owned
-scope occurrences, which every committed input leaves (`unissued_arming`: `WellFormed` alone does not give them). They
-are stated here, beside the lane, because `Laws.State` has neither the size nor the importer headroom to take them
-(guard 15, the 800-line review target). Nothing executable imports this module.
+is inert (`Laws.Step.perform_stale`), but the closure needs what `WellFormed` leaves unsaid of queued work, of the
+input's start facts and of owned scope occurrences. `stepKeepsClosureInvariant` composes the per-hook and per-phase
+obligations of `Laws.Step` (`Laws.Step.HookContract`, `Laws.Step.Phases`) into the invariant's preservation; what
+remains is to prove those obligations. `StepKeepsWellFormed` follows only for a before-state that also keeps the
+closure invariant's other clauses, which every committed input leaves (`unissued_arming`: `WellFormed` alone does not
+give them). They are stated here, beside the lane, because `Laws.State` has neither the size nor the importer headroom
+to take them (guard 15, the 800-line review target). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -171,5 +174,43 @@ theorem closureInvariant_of_quiet {s : State} (formed : WellFormed s) (quiet : s
   queue := ⟨by simp [quiet], by simp [quiet], by simp [quiet], by simp [quiet]⟩
   counted := fun fact member => by simp [unstarted] at member
   owned := owned
+
+/-! ## The composition -/
+
+/-- A committed input keeps the closure invariant. -/
+def StepKeepsClosureInvariant (hooks : Hooks) : Prop :=
+  ∀ (program : Program) (input : Input) (before after : State),
+    ClosureInvariant before → Step.step hooks program (some before) input = .ok after → ClosureInvariant after
+
+/-- What the state operations `Step` applies do to the fields it reads (`Laws.State`). -/
+theorem stateFacts : Laws.Step.StateFacts where
+  found _ _ _ found := Laws.State.occurrence?_some found
+  begun := Laws.State.beginOccurrence_mem
+  startReserved _ _ sourceType member := Laws.State.startReserved_facts sourceType member
+  closeOwnItems state id := by
+    obtain ⟨scopes, occurrences, fewer, free⟩ := Laws.State.closeOwnItems_facts state id
+    exact ⟨⟨scopes, fun occurrence member _ => occurrences ▸ member, fewer⟩, free⟩
+  recordEnd := Laws.State.recordEnd_scopes
+
+/-- The composition of the state-invariant lane: hooks that keep their contract (`Laws.Step.HookContract`) and the
+phases of `Step` (`Laws.Step.Phases`) keep the closure invariant through every committed input. -/
+theorem stepKeepsClosureInvariant {hooks : Hooks} (contract : Laws.Step.HookContract hooks ClosureInvariant)
+    (phases : Laws.Step.Phases ClosureInvariant) : StepKeepsClosureInvariant hooks :=
+  fun _ _ _ _ holds ran => Laws.Step.step_keeps contract phases stateFacts
+    (fun _ given => Option.some.inj given ▸ holds) ran
+
+/-- A committed start makes a well-formed state, from the same obligations. -/
+theorem startIsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hooks ClosureInvariant)
+    (phases : Laws.Step.Phases ClosureInvariant) : StartIsWellFormed hooks :=
+  fun _ _ _ ran => (Laws.Step.step_keeps contract phases stateFacts (fun _ given => by simp at given) ran).wellFormed
+
+/-- `StepKeepsWellFormed` from the same obligations, for a before-state that also keeps the closure invariant's other
+clauses. -/
+theorem stepKeepsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hooks ClosureInvariant)
+    (phases : Laws.Step.Phases ClosureInvariant) {program : Program} {input : Input} {before after : State}
+    (formed : WellFormed before) (queue : QueueSound before) (counted : StartsCounted before)
+    (owned : OwnedBelow before) (ran : Step.step hooks program (some before) input = .ok after) :
+    WellFormed after :=
+  (stepKeepsClosureInvariant contract phases program input before after ⟨formed, queue, counted, owned⟩ ran).wellFormed
 
 end Kernel.Proofs.State
