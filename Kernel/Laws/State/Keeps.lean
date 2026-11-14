@@ -6,7 +6,8 @@ public import Kernel.Laws.State
 
 That the state operations `Step` and the hooks apply keep `WellFormed` under the conditions their callers establish,
 composed from what `Kernel.Laws.State` shows each operation does to the fields and the frames of
-`Kernel.Laws.State.Frames` and `Kernel.Laws.State.Issue`; it reads no body. `Kernel.Proofs.State` assembles them into `Laws.Step.Phases` and
+`Kernel.Laws.State.Frames` and `Kernel.Laws.State.Issue`; it reads no body. `Kernel.Laws.State.Removal` adds the
+removal of an occurrence; `Kernel.Proofs.Step` assembles them into `Laws.Step.Phases` and `Kernel.Proofs.State` into
 `Laws.Step.Operations`. Nothing executable imports this module.
 -/
 

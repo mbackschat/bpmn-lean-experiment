@@ -6,6 +6,7 @@ public import Kernel.Laws.Flow
 public import Kernel.Laws.Data
 public import Kernel.Laws.Hooks
 public import Kernel.Proofs.State
+public import Kernel.Laws.State.Removal
 
 /-! # Proofs: composition over the registered hooks
 
@@ -136,6 +137,47 @@ theorem queueRemove_wellFormed {state : State} (formed : Laws.State.WellFormed s
   Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
     (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+
+/-- The phases `Step` runs itself keep `Laws.State.WellFormed` (`Laws.Step.Phases`), from what `Laws.State` shows
+each state operation keeps. -/
+theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
+  have mem : ∀ {state : State} {scope : ScopeOccurrenceId}, Laws.Step.ScopeStands state scope →
+      scope ∈ Laws.State.scopeIds state := fun ⟨entry, inside, named⟩ => List.mem_map.mpr ⟨entry, inside, named⟩
+  { initial := initial_wellFormed
+    reset := fun _ formed => Laws.State.reset_wellFormed formed
+    clock := fun _ atMs formed => Laws.State.clock_wellFormed formed atMs
+    journal := fun _ _ formed started _ => Laws.State.journal_wellFormed formed started
+    runOrder := fun _ formed => Laws.State.runOrder_wellFormed formed
+    dequeue := fun _ _ formed fewer => Laws.State.dequeue_wellFormed formed fewer
+    untoken := fun _ _ formed fewer => Laws.State.untoken_wellFormed formed fewer
+    queueWrite := fun _ scope writes rule formed => queueWrite_wellFormed formed scope writes rule
+    queueRemove := fun _ scope names formed => queueRemove_wellFormed formed scope names
+    armIssued := fun _ host element scope formed queued =>
+      ⟨(formed.queue.arm host element scope queued).1, (formed.queue.arm host element scope queued).2.1⟩
+    armScopeIssued := fun _ scope formed queued => formed.queue.armScope scope queued
+    armGatewayIssued := fun _ occurrence gateway scope formed queued =>
+      ⟨(formed.queue.armGateway occurrence gateway scope queued).1,
+        (formed.queue.armGateway occurrence gateway scope queued).2.1⟩
+    endRecorded := fun _ status failure formed queued => formed.queue.ends status failure queued
+    admittedSignal := fun _ _ _ formed head => Laws.State.admitted_signal formed head
+    admittedToken := fun _ _ _ formed taken => Laws.State.admitted_token formed taken
+    completeQueued := fun _ _ _ _ _ formed completed => Laws.State.complete_unnamed formed completed
+    housed := fun _ _ formed member => Laws.State.housed_wellFormed formed member
+    endInstance := fun _ _ _ formed recorded => by
+      rw [Laws.Step.endInstance_eq]
+      exact Laws.State.endInstance_wellFormed formed recorded
+    begin := fun _ request role sourceType formed stands admitted =>
+      ⟨Laws.State.begin_wellFormed formed request role sourceType (mem stands) admitted.2,
+        Laws.State.begin_entry formed request role sourceType admitted.1 admitted.2⟩
+    reserve := fun _ element scope formed stands => Laws.State.reserve_wellFormed formed element scope (mem stands)
+    startReserved := fun _ _ sourceType formed member unnamed =>
+      Laws.State.startReserved_wellFormed formed sourceType member unnamed
+    closeOwnItems := fun _ id formed => Laws.State.closeOwnItems_wellFormed formed id
+    removeOccurrence := fun _ _ formed member free =>
+      ⟨(Laws.State.removeOccurrence_wellFormed formed member free).1,
+        List.mem_map.mp (Laws.State.removeOccurrence_wellFormed formed member free).2⟩
+    recordEnd := fun _ key terminal formed => Laws.State.recordEnd_wellFormed formed key terminal
+    cancel := fun _ id formed => Laws.State.cancel_wellFormed formed id }
 
 /-- Data's share of the state invariant, measured at P0 (P2's budget rests on it): the registered write and removal
 hooks keep `Laws.State.WellFormed`. -/

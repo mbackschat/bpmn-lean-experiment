@@ -434,4 +434,230 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
         exact List.mem_map.mpr ⟨entry, cleared.scopesSublist.subset inside, named⟩)
       cleared.instances (Nat.le_of_eq cleared.nextIssue.symm) (by rw [cleared.signals]; exact .refl _) cleared.tokensSublist
 
+/-! ## Pruning occurrences and items -/
+
+/-- `after` holds `before` with some occurrences and open items removed and nothing else `WellFormed` reads changed,
+and every item that stays waits for and hangs on occurrences that stay, as every scope occurrence's owner stays:
+`State.disarm`, and the removal of an occurrence record nothing refers to. -/
+structure Prunes (before after : State) : Prop where
+  scopes : after.scopes = before.scopes
+  instances : ∀ x, after.instanceOf x = before.instanceOf x
+  occurrences : after.occurrences.Sublist before.occurrences
+  openItems : after.openItems.Sublist before.openItems
+  tokens : after.tokens = before.tokens
+  signals : after.signals = before.signals
+  variables : after.variables = before.variables
+  activations : after.activations = before.activations
+  nextIssue : after.nextIssue = before.nextIssue
+  journal : after.journal = before.journal
+  started : after.draft.started = before.draft.started
+  status : after.status = before.status
+  failure : after.failure = before.failure
+  waited : ∀ item ∈ after.openItems, ∀ occurrence ∈ before.occurrences,
+    (occurrence.id = item.occurrence ∨ item.attachedTo = some occurrence.id) → occurrence ∈ after.occurrences
+  owners : ∀ entry ∈ after.scopes, ∀ occurrence ∈ before.occurrences, entry.occurrence = some occurrence.id →
+    occurrence ∈ after.occurrences
+
+theorem Prunes.wellFormed {before after : State} (formed : WellFormed before) (prunes : Prunes before after) :
+    WellFormed after := by
+  have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (prunes.instances _)
+  have sameStarts : starts after = starts before := by simp [starts, prunes.journal, prunes.started]
+  have kept := prunes.occurrences.subset
+  have items := prunes.openItems.subset
+  have housed : ∀ occurrence ∈ after.occurrences, occurrence.scope ∈ scopeIds after := fun occurrence member => by
+    simpa [scopeIds, prunes.scopes] using formed.owned.occurrenceScopes occurrence (kept member)
+  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed⟩
+  case issued =>
+    exact ⟨fun occurrence member => prunes.nextIssue ▸ formed.issued.occurrences occurrence (kept member),
+      fun item member => prunes.nextIssue ▸ formed.issued.items item (items member),
+      by simpa [prunes.scopes, prunes.nextIssue] using formed.issued.scopes⟩
+  case distinct =>
+    refine ⟨formed.distinct.occurrences.sublist (prunes.occurrences.map _),
+      formed.distinct.items.sublist (prunes.openItems.map _), by simpa [scopeIds, prunes.scopes] using formed.distinct.scopes,
+      ?_⟩
+    rw [funext keys]
+    exact formed.distinct.keys.sublist (prunes.occurrences.map _)
+  case startedOnce => simpa [StartedOnce, sameStarts] using formed.startedOnce
+  case activations => exact ⟨prunes.activations ▸ formed.activations.keys, prunes.activations ▸ formed.activations.positive⟩
+  case reservations =>
+    intro occurrence member unbegun fact started
+    rw [keys]
+    exact formed.reservations occurrence (kept member) unbegun fact (sameStarts ▸ started)
+  case owned =>
+    refine ⟨housed, fun item member => ?_, fun item member => ?_, fun item member host attached => ?_,
+      fun entry member owner owned => ?_, ?_, ?_⟩
+    · simpa [scopeIds, prunes.scopes] using formed.owned.itemScopes item (items member)
+    · obtain ⟨occurrence, inside, named, rest⟩ := formed.owned.itemOccurrences item (items member)
+      exact ⟨occurrence, prunes.waited item member occurrence inside (.inl named), named, rest⟩
+    · obtain ⟨occurrence, inside, named, rest⟩ := formed.owned.attachments item (items member) host attached
+      exact ⟨occurrence, prunes.waited item member occurrence inside (.inr (named ▸ attached)), named, rest⟩
+    · obtain ⟨occurrence, inside, named, begunFlag⟩ :=
+        formed.owned.scopeOwners entry (prunes.scopes ▸ member) owner owned
+      exact ⟨occurrence, prunes.owners entry member occurrence inside (named ▸ owned), named, begunFlag⟩
+    · simpa [scopeIds, prunes.variables, prunes.scopes] using formed.owned.variableScopes
+    · simpa [scopeIds, prunes.tokens, prunes.scopes] using formed.owned.tokenScopes
+  case rooted =>
+    obtain ⟨present, parentless, reach⟩ := formed.rooted
+    refine ⟨by simpa [scopeIds, prunes.scopes] using present, by simpa [prunes.scopes] using parentless, ?_⟩
+    intro x member
+    exact Within.congr prunes.scopes (reach x (prunes.scopes ▸ member))
+  case variables =>
+    exact ⟨by simpa [prunes.variables] using formed.variables.scopes,
+      by simpa [prunes.variables] using formed.variables.names⟩
+  case failure => simpa [FailureRecorded, prunes.failure, prunes.status] using formed.failure
+  case queue =>
+    obtain ⟨arm, armScope, armGateway, ends⟩ := formed.queue
+    refine ⟨fun host element scope queued => ?_, by simpa [prunes.signals, prunes.nextIssue] using armScope,
+      fun occurrence gateway scope queued => ?_, by simpa [prunes.signals] using ends⟩
+    · obtain ⟨hostBelow, scopeBelow, facts⟩ := arm host element scope (prunes.signals ▸ queued)
+      exact ⟨prunes.nextIssue ▸ hostBelow, prunes.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
+    · obtain ⟨below, scopeBelow, facts⟩ := armGateway occurrence gateway scope (prunes.signals ▸ queued)
+      exact ⟨prunes.nextIssue ▸ below, prunes.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
+  case counted =>
+    exact fun fact started => (formed.counted fact (sameStarts ▸ started)).congr prunes.activations
+  case occurrencesCounted =>
+    intro occurrence member
+    rw [keys]
+    exact (formed.occurrencesCounted occurrence (kept member)).congr prunes.activations
+  case ownedBelow =>
+    exact fun entry member occurrence inside owned =>
+      formed.ownedBelow entry (prunes.scopes ▸ member) occurrence (kept inside) owned
+  case claimed =>
+    exact formed.claimed.shrink (fun _ member => items member) (fun _ member => kept member) housed
+      (by simp [scopeIds, prunes.scopes]) (fun x _ => prunes.instances x) (Nat.le_of_eq prunes.nextIssue.symm)
+      (by rw [prunes.signals]; exact .refl _) (by rw [prunes.tokens]; exact .refl _)
+
+/-- `s` without the occurrence record `id`: what `State.removeOccurrence` removes first. -/
+def withoutRecord (s : State) (id : Nat) : State := { s with occurrences := s.occurrences.filter (·.id != id) }
+
+/-! ## Leaving a scope occurrence -/
+
+/-- What `State.leaveScope before scope` leaves of `before`, read through the scope tree: what does not lie within
+`scope`, which goes with everything inside it, and everything else as it was but the draft's end and cancelled facts;
+what stands keeps its process instance. `State.removeOccurrence` leaves the scope occurrences the removed occurrence
+owns. -/
+structure Left (before after : State) (scope : ScopeOccurrenceId) : Prop where
+  scopes : ∀ entry, entry ∈ after.scopes ↔ entry ∈ before.scopes ∧ ¬ Within before entry.id scope
+  occurrences : ∀ occurrence, occurrence ∈ after.occurrences ↔
+    occurrence ∈ before.occurrences ∧ ¬ Within before occurrence.scope scope
+  openItems : ∀ item, item ∈ after.openItems ↔ item ∈ before.openItems ∧ ¬ Within before item.scope scope
+  tokens : ∀ token, token ∈ after.tokens ↔ token ∈ before.tokens ∧ ¬ Within before token.busyScope scope
+  variables : ∀ variables, variables ∈ after.variables ↔
+    variables ∈ before.variables ∧ ¬ Within before variables.scope scope
+  scopesSublist : after.scopes.Sublist before.scopes
+  occurrencesSublist : after.occurrences.Sublist before.occurrences
+  openItemsSublist : after.openItems.Sublist before.openItems
+  tokensSublist : after.tokens.Sublist before.tokens
+  variablesSublist : after.variables.Sublist before.variables
+  instances : ∀ x ∈ scopeIds after, after.instanceOf x = before.instanceOf x
+  activations : after.activations = before.activations
+  nextIssue : after.nextIssue = before.nextIssue
+  signals : after.signals = before.signals
+  status : after.status = before.status
+  failure : after.failure = before.failure
+  journal : after.journal = before.journal
+  started : after.draft.started = before.draft.started
+
+/-- A scope occurrence that lies within `State.root` and not within a left `scope` still does after leaving it:
+nothing on its way up lies within `scope`, or it would itself. -/
+private theorem Left.reaches {before after : State} {scope : ScopeOccurrenceId} (left : Left before after scope)
+    {x : ScopeOccurrenceId} (within : Within before x State.root) : ¬ Within before x scope → Within after x State.root := by
+  generalize rooted : State.root = root at within
+  induction within with
+  | refl => intro _; subst rooted; exact .refl _
+  | parent child parent _ member link _ ih =>
+    intro outside
+    exact .parent child parent _ ((left.scopes child).mpr ⟨member, outside⟩) link
+      (ih rooted fun inside => outside (.parent child parent scope member link inside))
+
+/-- Leaving a present scope occurrence other than the root keeps a state well-formed: whatever stands outside it waits
+for, hangs on and is owned by occurrences outside it, since an item hangs on an occurrence of its own scope occurrence
+and a scope occurrence lies directly below its owner's. -/
+theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (formed : WellFormed before)
+    (left : Left before after scope) (present : scope ∈ scopeIds before) (notRoot : scope ≠ State.root) :
+    WellFormed after := by
+  have sameStarts : starts after = starts before := by simp [starts, left.journal, left.started]
+  have stays : ∀ id, id ∈ scopeIds before → ¬ Within before id scope → id ∈ scopeIds after := fun id member outside => by
+    obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
+    exact List.mem_map.mpr ⟨entry, (left.scopes entry).mpr ⟨inside, named ▸ outside⟩, named⟩
+  have housed : ∀ occurrence ∈ after.occurrences, occurrence.scope ∈ scopeIds after := fun occurrence member => by
+    obtain ⟨old, outside⟩ := (left.occurrences occurrence).mp member
+    exact stays _ (formed.owned.occurrenceScopes occurrence old) outside
+  have keys : ∀ occurrence ∈ after.occurrences, key after occurrence = key before occurrence := fun occurrence member =>
+    key_congr (left.instances _ (housed occurrence member))
+  have kept := left.occurrencesSublist.subset
+  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed⟩
+  case issued =>
+    exact ⟨fun occurrence member => left.nextIssue ▸ formed.issued.occurrences occurrence (kept member),
+      fun item member => left.nextIssue ▸ formed.issued.items item (left.openItemsSublist.subset member),
+      fun entry member => left.nextIssue ▸ formed.issued.scopes entry (left.scopesSublist.subset member)⟩
+  case distinct =>
+    refine ⟨formed.distinct.occurrences.sublist (left.occurrencesSublist.map _),
+      formed.distinct.items.sublist (left.openItemsSublist.map _),
+      formed.distinct.scopes.sublist (left.scopesSublist.map _), ?_⟩
+    rw [List.map_congr_left keys]
+    exact formed.distinct.keys.sublist (left.occurrencesSublist.map _)
+  case startedOnce => simpa [StartedOnce, sameStarts] using formed.startedOnce
+  case activations => exact ⟨left.activations ▸ formed.activations.keys, left.activations ▸ formed.activations.positive⟩
+  case reservations =>
+    intro occurrence member unbegun fact started
+    rw [keys occurrence member]
+    exact formed.reservations occurrence (kept member) unbegun fact (sameStarts ▸ started)
+  case owned =>
+    refine ⟨housed, fun item member => ?_, fun item member => ?_, fun item member host attached => ?_,
+      fun entry member owner owned => ?_, fun variables member => ?_, fun token member => ?_⟩
+    · obtain ⟨old, outside⟩ := (left.openItems item).mp member
+      exact stays _ (formed.owned.itemScopes item old) outside
+    · obtain ⟨old, outside⟩ := (left.openItems item).mp member
+      obtain ⟨occurrence, inside, named, rest⟩ := formed.owned.itemOccurrences item old
+      exact ⟨occurrence, (left.occurrences occurrence).mpr ⟨inside, rest.2 ▸ outside⟩, named, rest⟩
+    · obtain ⟨old, outside⟩ := (left.openItems item).mp member
+      obtain ⟨occurrence, inside, named, rest⟩ := formed.owned.attachments item old host attached
+      exact ⟨occurrence, (left.occurrences occurrence).mpr ⟨inside, rest.2 ▸ outside⟩, named, rest⟩
+    · obtain ⟨old, outside⟩ := (left.scopes entry).mp member
+      obtain ⟨occurrence, inside, named, begunFlag⟩ := formed.owned.scopeOwners entry old owner owned
+      refine ⟨occurrence, (left.occurrences occurrence).mpr ⟨inside, fun within => outside ?_⟩, named, begunFlag⟩
+      exact .parent entry occurrence.scope scope old (formed.ownedBelow entry old occurrence inside (named ▸ owned)) within
+    · obtain ⟨old, outside⟩ := (left.variables variables).mp member
+      exact stays _ (formed.owned.variableScopes variables old) outside
+    · obtain ⟨old, outside⟩ := (left.tokens token).mp member
+      exact stays _ (formed.owned.tokenScopes token old) outside
+  case rooted =>
+    obtain ⟨rootPresent, parentless, reach⟩ := formed.rooted
+    obtain ⟨scopeEntry, scopeInside, scopeNamed⟩ := List.mem_map.mp present
+    refine ⟨stays _ rootPresent fun inside => notRoot (Within.antisymm formed rootPresent inside
+      (scopeNamed ▸ reach scopeEntry scopeInside)).symm, fun entry member => parentless entry
+      (left.scopesSublist.subset member), fun entry member => ?_⟩
+    obtain ⟨old, outside⟩ := (left.scopes entry).mp member
+    exact left.reaches (reach entry old) outside
+  case variables =>
+    exact ⟨formed.variables.scopes.sublist (left.variablesSublist.map _),
+      fun variables member => formed.variables.names variables (left.variablesSublist.subset member)⟩
+  case failure => simpa [FailureRecorded, left.status, left.failure] using formed.failure
+  case queue =>
+    obtain ⟨arm, armScope, armGateway, ends⟩ := formed.queue
+    refine ⟨fun host element scope queued => ?_, by simpa [left.signals, left.nextIssue] using armScope,
+      fun occurrence gateway scope queued => ?_, by simpa [left.signals] using ends⟩
+    · obtain ⟨hostBelow, scopeBelow, facts⟩ := arm host element scope (left.signals ▸ queued)
+      exact ⟨left.nextIssue ▸ hostBelow, left.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
+    · obtain ⟨below, scopeBelow, facts⟩ := armGateway occurrence gateway scope (left.signals ▸ queued)
+      exact ⟨left.nextIssue ▸ below, left.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
+  case counted =>
+    exact fun fact started => (formed.counted fact (sameStarts ▸ started)).congr left.activations
+  case occurrencesCounted =>
+    intro occurrence member
+    rw [keys occurrence member]
+    exact (formed.occurrencesCounted occurrence (kept member)).congr left.activations
+  case ownedBelow =>
+    exact fun entry member occurrence inside owned =>
+      formed.ownedBelow entry (left.scopesSublist.subset member) occurrence (kept inside) owned
+  case claimed =>
+    exact formed.claimed.shrink (fun _ member => left.openItemsSublist.subset member) (fun _ member => kept member)
+      housed (fun x member => by
+        obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
+        exact List.mem_map.mpr ⟨entry, left.scopesSublist.subset inside, named⟩)
+      left.instances (Nat.le_of_eq left.nextIssue.symm) (by rw [left.signals]; exact .refl _) left.tokensSublist
+
 end Kernel.Laws.State

@@ -69,6 +69,7 @@ public import Kernel.Laws.State.Frames
 public import Kernel.Laws.State.Invariant
 public import Kernel.Laws.State.Issue
 public import Kernel.Laws.State.Keeps
+public import Kernel.Laws.State.Removal
 public import Kernel.Laws.Step
 public import Kernel.Laws.Step.Contract
 public import Kernel.Laws.Step.Keeps

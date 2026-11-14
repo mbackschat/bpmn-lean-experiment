@@ -27,8 +27,8 @@ The closure is proved through `WellFormed` itself, which holds between any two m
 naming a scope occurrence an interruption removed (`Kernel/Step/Stale.lean`) keeps it, since `Laws.State.QueueSound`
 asks only that what queued work names was issued, and is inert (`Laws.Step.perform_stale`). `stepKeepsWellFormed`
 composes the per-hook and per-phase obligations of `Laws.Step` (`Laws.Step.HookContract`, `Laws.Step.Phases`) into
-the invariant's preservation; what remains is to prove those obligations of `WellFormed`. Nothing executable imports
-this module.
+the invariant's preservation. `Kernel.Proofs.Step` proves the phases of `WellFormed` (`Kernel.Proofs.Step.phases`);
+what remains is the hook contract. Nothing executable imports this module.
 -/
 
 @[expose] public section
