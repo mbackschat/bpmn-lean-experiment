@@ -104,11 +104,13 @@ structure Owned (s : State) : Prop where
   variableScopes : ∀ variables ∈ s.variables, variables.scope ∈ scopeIds s
   tokenScopes : ∀ token ∈ s.tokens, token.busyScope ∈ scopeIds s
 
-/-- The scope occurrences form one tree: exactly one has no parent, the process instance's, and every one reaches it,
-so no parent chain cycles. -/
+/-- The scope occurrences form one tree rooted at `State.root`: it is present, it is the only one without a parent, and
+every one reaches it, so no parent chain cycles. The root is named, not merely unique, because `State.initial` is the
+only constructor of a parentless scope occurrence and gives it `State.root`; every later one is entered below a parent,
+so an operation that falls back to `State.root` addresses a present scope occurrence. -/
 def Rooted (s : State) : Prop :=
-  ∃ root ∈ scopeIds s, (∀ scope ∈ s.scopes, scope.parent = none ↔ scope.id = root) ∧
-    ∀ scope ∈ s.scopes, Within s scope.id root
+  State.root ∈ scopeIds s ∧ (∀ scope ∈ s.scopes, scope.parent = none ↔ scope.id = State.root) ∧
+    ∀ scope ∈ s.scopes, Within s scope.id State.root
 
 /-- One variable set per scope occurrence, each binding a name at most once: a scope occurrence owns its data, and a
 name declared again in a nested scope shadows the outer one rather than repeating in it
@@ -243,8 +245,8 @@ theorem sample_wellFormed (kind : OpenKind) : WellFormed (sample kind) where
     scopeOwners := by simp [sample, occurrenceIds, rootScope, childScope, subProcess, innerTask, outerTask]
     variableScopes := by simp [sample, scopeIds, rootScope, childScope]
     tokenScopes := by simp [sample] }
-  rooted := ⟨processRoot, by simp [scopeIds, sample, rootScope],
-    by simp [sample, rootScope, childScope, processRoot, subScope], by
+  rooted := ⟨by simp [scopeIds, sample, rootScope, processRoot, State.root],
+    by simp [sample, rootScope, childScope, processRoot, subScope, State.root], by
       simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
       rintro scope (rfl | rfl)
       · exact .refl _
@@ -260,11 +262,14 @@ theorem stale_counter_rejected (kind : OpenKind) : ¬ IssuedBelow { sample kind 
 /-- A second parentless scope breaks `Rooted`. -/
 theorem forest_rejected (kind : OpenKind) :
     ¬ Rooted { sample kind with scopes := [rootScope, { childScope with parent := none }] } := by
-  rintro ⟨root, _, parentless, _⟩
-  have first := (parentless rootScope (by simp)).mp rfl
+  rintro ⟨_, parentless, _⟩
   have second := (parentless { childScope with parent := none } (by simp)).mp rfl
-  simp [rootScope, childScope, processRoot, subScope] at first second
-  simp [← first] at second
+  simp [childScope, subScope, State.root] at second
+
+/-- A lone parentless scope occurrence other than `State.root` breaks `Rooted`. -/
+theorem foreign_root_rejected (kind : OpenKind) : ¬ Rooted { sample kind with scopes := [{ rootScope with id := ⟨7⟩ }] } := by
+  rintro ⟨present, _, _⟩
+  simp [scopeIds, State.root] at present
 
 theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared kind) subScope [] where
   scopeStays := by simp [sample, cleared]
@@ -452,6 +457,33 @@ theorem beginOccurrence_fresh {state : State} {request : BeginRequest} {role : A
       (state.beginOccurrence request role sourceType).2.role = role := by
   simp [State.beginOccurrence, fresh]
 
+/-- `beginOccurrence` keeps the scope occurrences, the variable sets and the logical time. -/
+theorem beginOccurrence_keeps (state : State) (request : BeginRequest) (role : ActivationRole) (sourceType : String) :
+    (state.beginOccurrence request role sourceType).1.scopes = state.scopes ∧
+      (state.beginOccurrence request role sourceType).1.variables = state.variables ∧
+      (state.beginOccurrence request role sourceType).1.logicalTimeMs = state.logicalTimeMs := by
+  simp only [State.beginOccurrence, State.recordStart]
+  split <;> simp [State.activate, State.issue]
+
+/-- What a scope occurrence sees reads only the scope occurrences and the variable sets. -/
+theorem visible_congr {s t : State} (scopes : t.scopes = s.scopes) (variables : t.variables = s.variables)
+    (program : Program) (scope : ScopeOccurrenceId) : t.visible program scope = s.visible program scope := by
+  have shows : t.shows program = s.shows program := by
+    funext id name; simp [State.shows, scopes]
+  have called : t.calledRoot = s.calledRoot := by
+    funext id; simp [State.calledRoot, scopes]
+  have go : ∀ (fuel : Nat) (current : Option ScopeOccurrenceId),
+      State.visible.go t program fuel current = State.visible.go s program fuel current := by
+    intro fuel
+    induction fuel with
+    | zero => intro current; simp [State.visible.go]
+    | succ fuel ih =>
+      intro current
+      cases current with
+      | none => simp [State.visible.go]
+      | some id => simp [State.visible.go, shows, called, scopes, variables, ih]
+  simp only [State.visible, go, scopes]
+
 /-- What `WellFormed` reads besides the variable sets: `setVariable` and `removeVariable` keep all of it. -/
 structure SameButVariables (before after : State) : Prop where
   scopes : after.scopes = before.scopes
@@ -571,8 +603,8 @@ theorem WellFormed.ofVariables {before after : State} (formed : WellFormed befor
     variableScopes := located
     tokenScopes := by simpa [scopeIds, same.tokens, same.scopes] using formed.owned.tokenScopes }
   rooted := by
-    obtain ⟨root, present, parentless, reach⟩ := formed.rooted
-    refine ⟨root, by simpa [scopeIds, same.scopes] using present, by simpa [same.scopes] using parentless, ?_⟩
+    obtain ⟨present, parentless, reach⟩ := formed.rooted
+    refine ⟨by simpa [scopeIds, same.scopes] using present, by simpa [same.scopes] using parentless, ?_⟩
     intro scope member
     exact Within.congr same.scopes (reach scope (same.scopes ▸ member))
   variables := keyed

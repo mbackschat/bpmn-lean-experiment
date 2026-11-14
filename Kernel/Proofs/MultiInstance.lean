@@ -7,7 +7,7 @@ public import Kernel.Laws.MultiInstance
 /-! # Proofs: Multi-Instance (P4)
 
 The statements of the proof wave's Multi-Instance lane ([PLAN, P4](../../docs/PLAN.md#proof-wave)): `Laws.MultiInstance`
-under `Step`, from a `Laws.State.WellFormed` before-state, for generation, numbering, counters, begin order, sequential
+under `Step`, from a `Laws.State.WellFormed` before-state that keeps the lane's slot invariant `RunsFormed`, for generation, numbering, counters, begin order, sequential
 and parallel slots, collection, early end and instance isolation; an outer interruption ends every instance, through
 the cancellation lane (`Kernel.Proofs.Cancellation`). Each is stated over a hooks parameter and closes when
 `Kernel.Proofs.Step` proves it of `Registry.hooks`.
@@ -30,18 +30,34 @@ open Kernel.Laws.MultiInstance (Generated SnapshotFixed Numbered CounterHeld Beg
 def LoopOf (program : Program) (element : ElementId) (loop : MultiInstance) : Prop :=
   ((program.element? element).bind (·.envelope?)).bind (·.multiInstance) = some loop
 
-/-- A committed input from `before` to `after`. -/
-def Commits (hooks : Hooks) (program : Program) (before after : State) : Prop :=
-  WellFormed before ∧ ∃ input, Step.step hooks program (some before) input = .ok after
+/-- A running body owned and shaped by its loop's mode, its instances numbered in begin order and, under
+`MultiInstanceCounters.cibLocals`, holding their counters (`PMI-*`, `SMI-*`, CIB-INT-0018). -/
+def Shaped (program : Program) (s : State) (run : MultiInstanceRun) (loop : MultiInstance) : Prop :=
+  Laws.MultiInstance.Owned s run ∧ (loop.mode = .sequential → SequentialSlots run) ∧
+    (loop.mode = .parallel → ParallelSlots run) ∧ CounterHeld s run program.options.multiInstanceCounters ∧
+    ∃ offset, Numbered s run offset
 
-/-- Every running body after a committed input is owned and shaped by its loop's mode, its instances numbered in
-begin order and, under `MultiInstanceCounters.cibLocals`, holding their counters (`PMI-*`, `SMI-*`, CIB-INT-0018). -/
+/-- A running body's instances are isolated: no active instance's scope occurrence lies within another's. -/
+def Apart (s : State) (run : MultiInstanceRun) : Prop :=
+  ∀ (first second : Nat) (firstScope secondScope : ScopeOccurrenceId),
+    run.instances[first]? = some (.active firstScope) → run.instances[second]? = some (.active secondScope) →
+    first ≠ second → ¬ Within s firstScope secondScope
+
+/-- The lane's slot invariant: every running body is `Shaped` by its loop and its instances lie `Apart`. It is a lane
+premise beside `WellFormed`, not a clause of it, since feature slot entries are each feature's own laws; the lane
+proves it preserved, `RunsShaped` and `InstancesApart` being its parts of the after-state. -/
+def RunsFormed (program : Program) (s : State) : Prop :=
+  ∀ run ∈ s.slots.multiInstances, (∀ loop, LoopOf program run.element loop → Shaped program s run loop) ∧ Apart s run
+
+/-- A committed input from `before` to `after`, from a well-formed before-state that keeps the lane's slot invariant. -/
+def Commits (hooks : Hooks) (program : Program) (before after : State) : Prop :=
+  WellFormed before ∧ RunsFormed program before ∧ ∃ input, Step.step hooks program (some before) input = .ok after
+
+/-- Every running body after a committed input is `Shaped` by its loop. -/
 def RunsShaped (hooks : Hooks) : Prop :=
   ∀ (program : Program) (before after : State) (run : MultiInstanceRun) (loop : MultiInstance),
     Commits hooks program before after → run ∈ after.slots.multiInstances → LoopOf program run.element loop →
-    Laws.MultiInstance.Owned after run ∧ (loop.mode = .sequential → SequentialSlots run) ∧
-      (loop.mode = .parallel → ParallelSlots run) ∧ CounterHeld after run program.options.multiInstanceCounters ∧
-      ∃ offset, Numbered after run offset
+    Shaped program after run loop
 
 /-- A body begun by the input has at least one slot; a body running before and after it keeps its snapshot, slot
 count and filled slots. -/
@@ -57,13 +73,10 @@ def BeginOrder (hooks : Hooks) : Prop :=
     Commits hooks program before after → LoopOf program element loop →
     BeginsInOrder (after.journal.flatMap (·.started)) processInstance element
 
-/-- Instances are isolated: no instance scope occurrence of a running body lies within another's. -/
+/-- Instances stay isolated: the instances of every running body after a committed input lie `Apart`. -/
 def InstancesApart (hooks : Hooks) : Prop :=
-  ∀ (program : Program) (before after : State) (run : MultiInstanceRun) (first second : Nat)
-    (firstScope secondScope : ScopeOccurrenceId),
-    Commits hooks program before after → run ∈ after.slots.multiInstances →
-    run.instances[first]? = some (.active firstScope) → run.instances[second]? = some (.active secondScope) →
-    first ≠ second → ¬ Within after firstScope secondScope
+  ∀ (program : Program) (before after : State) (run : MultiInstanceRun),
+    Commits hooks program before after → run ∈ after.slots.multiInstances → Apart after run
 
 /-- A body that ends, completed, early or interrupted from outside, takes every instance with it: its slot record,
 the instance scope occurrences and what lies in them go (`PMI-EARLY-01`, BPMN 2.0.2 §13.3.7). -/

@@ -17,10 +17,10 @@ proves it of `Registry.hooks`.
 Model premises: the profile option `branchSchedule = .orderInvariant`, and `apart`, the order-invariance condition
 that admission enforces with `flow.concurrentWrite`, `flow.concurrentInterference` and
 `multiInstance.concurrentInstances` (and the refusal P1 adds for #81), over the read and write account of
-`Kernel.IL.Footprint`. `apart` is a parameter here: its declarative form compares the footprints of concurrent branch
-closures that stop where a branch waits or joins, which needs that stop classification as an IL projection or a law
-(a decision of the P0 review). That admission enforces it stays scenario evidence. Nothing executable imports this
-module.
+`Kernel.IL.Footprint`. `apart` is a draft parameter: P1's fix of #81 settles it, since today's admission admits
+schedules that wake races and item-dependent exits tell apart, and the fixed refusal fixes what `apart` compares, the
+footprints of concurrent branch closures that stop where a branch waits or joins. That admission enforces it stays
+scenario evidence. Nothing executable imports this module.
 -/
 
 public section
@@ -77,7 +77,8 @@ structure Alike (ids : Nat → Nat) (keys : OccurrenceKey → OccurrenceKey) (le
     (right.outbox.map fun intent => (intent.address, intent.variables, intent.businessKey))
 
 /-- P6: from a closure state reached from a well-formed state, any two schedules of its enabled work that both settle
-commit results alike up to a bijection of the identities and activations issued from that state on. -/
+commit results alike up to a bijection of the identities and activations issued from that state on. `apart` is a draft
+that P1's fix of #81 settles; with today's admission as `apart` the statement is false (#81). -/
 def SchedulesAgree (hooks : Hooks) (apart : Program → Prop) : Prop :=
   ∀ (ctx : Ctx) (start state reordered left right : State) (fuel work fuel' work' : Nat),
     ctx.program.options.branchSchedule = .orderInvariant → apart ctx.program →

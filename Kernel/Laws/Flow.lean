@@ -158,12 +158,36 @@ theorem ParallelFires.consumesAll {incoming : List FlowId} {scope : ScopeOccurre
 
 What `Kernel.Feature.Flow`'s hooks do, stated by the laws above, for `Kernel.Proofs` to compose with `Step`. -/
 
-/-- Whether a candidate's condition holds in `context`, as `Kernel.Feature.Flow` reads it: a failing evaluation
-holds for no candidate, since it rolls the command back before any flow is taken. -/
+/-- Whether a candidate's condition holds in `context`: its Sequence Flow is unconditioned, or its condition evaluates
+to `true`. A missing flow, a failing or a non-Boolean evaluation holds for no candidate, since it rolls the command back
+before any flow is taken. -/
 def candidateHolds (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Bool :=
-  match Feature.Flow.condition ctx context candidate with
-  | .ok value => value
-  | .error _ => false
+  match ctx.program.flow? candidate with
+  | none => false
+  | some flow =>
+    match flow.condition with
+    | none => true
+    | some condition =>
+      match ctx.evaluate context condition with
+      | .value (.bool value) => value
+      | _ => false
+
+/-- A condition `Kernel.Feature.Flow` reads without failing has the value `candidateHolds` gives it. -/
+theorem condition_holds {ctx : Ctx} {context : EvalContext} {candidate : FlowId} {value : Bool}
+    (ran : Feature.Flow.condition ctx context candidate = .ok value) : candidateHolds ctx context candidate = value := by
+  unfold Feature.Flow.condition at ran
+  unfold candidateHolds
+  split at ran
+  · simp at ran
+  · rename_i flow found
+    simp only [found]
+    split at ran
+    · rename_i none_
+      simp only [none_]
+      simpa using ran
+    · rename_i condition some_
+      simp only [some_]
+      split at ran <;> rename_i evaluated <;> simp_all
 
 theorem firstTrue_spec {ctx : Ctx} {context : EvalContext} :
     ∀ {candidates : List FlowId} {chosen : Option FlowId},
@@ -187,10 +211,10 @@ theorem firstTrue_spec {ctx : Ctx} {context : EvalContext} :
         cases ran
         refine ⟨fun flow found => ?_, fun absent => by simp at absent⟩
         cases found
-        exact ⟨[], rest, by simp, by simp, by simp [candidateHolds, holds]⟩
+        exact ⟨[], rest, by simp, by simp, condition_holds holds⟩
       | false =>
         simp only [Bool.false_eq_true, ite_false] at ran
-        have false_ : candidateHolds ctx context candidate = false := by simp [candidateHolds, holds]
+        have false_ : candidateHolds ctx context candidate = false := condition_holds holds
         obtain ⟨found, absent⟩ := firstTrue_spec ran
         refine ⟨fun flow chosen_ => ?_, fun none_ other member => ?_⟩
         · obtain ⟨earlier, later, split_, ⟨before, here⟩⟩ := found flow chosen_

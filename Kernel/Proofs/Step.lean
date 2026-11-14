@@ -4,6 +4,7 @@ public import Kernel.Laws.Step
 public import Kernel.Laws.Registry
 public import Kernel.Laws.Flow
 public import Kernel.Laws.Data
+public import Kernel.Laws.Hooks
 
 /-! # Proofs: composition over the registered hooks
 
@@ -22,15 +23,14 @@ open Kernel
 
 /-- A flow token moved into an Exclusive Gateway leaves exactly the flows `Laws.Flow.ExclusiveTakes` allows (BPMN 2.0.2
 §13.4.2, Table 13.2): the micro-step's body begins a fresh occurrence of the Gateway on that flow in the token's scope
-occurrence and enqueues its completion, and nothing else, on the first candidate whose condition holds, else the default,
-the conditions read in the state the occurrence began in. The premise that the Gateway's element carries no envelope
-holds by `Element.envelope?`'s definition, which no proof may open; no admission rule is involved. -/
+occurrence and enqueues its completion, and nothing else, on the first candidate whose condition holds, else the default.
+Each condition reads the variables visible from the token's scope occurrence and the logical time of the state the token
+arrived in, so beginning the occurrence changes nothing a condition reads. -/
 def ExclusiveArrival : Prop :=
   ∀ (ctx : Ctx) (flow : FlowId) (scope : ScopeOccurrenceId) (gateway : ElementId) (header : Header)
     (payload : GatewayPayload) (candidates : List FlowId) (default : Option FlowId) (state after : State),
     ctx.program.target? flow = some gateway →
     ctx.program.element? gateway = some (.gateway header payload) →
-    (Element.gateway header payload).envelope? = none →
     payload.kind = .exclusive candidates default →
     Step.moveToken Registry.hooks ctx (.flow flow scope) state = .ok after →
     ∃ next sourceType begun occurrence taken evaluated,
@@ -39,13 +39,15 @@ def ExclusiveArrival : Prop :=
         (Step.roleOf ctx.program { element := gateway, scope, incoming := some flow }) sourceType = (begun, occurrence) ∧
       occurrence.element = gateway ∧ occurrence.scope = scope ∧ occurrence.incoming = some flow ∧
       next = begun.signal (.complete occurrence.id (.flows taken) [] .outward) ∧
-      Laws.Flow.ExclusiveTakes candidates default (Laws.Flow.candidateHolds ctx (begun.evalContext ctx.program scope))
+      Laws.Flow.ExclusiveTakes candidates default
+        (Laws.Flow.candidateHolds ctx { variables := state.visible ctx.program scope, nowMs := state.logicalTimeMs })
         evaluated (some taken)
 
 /-- The representative theorem of P0: `Step`'s token routing and dispatch (`Laws.Step`), the registered Gateway hook
-(`Laws.Registry`) and Flow's Exclusive Gateway lemma (`Laws.Flow`), composed without opening a body. -/
+(`Laws.Registry`), Flow's Exclusive Gateway lemma (`Laws.Flow`) and what a condition reads (`Laws.Hooks`,
+`Laws.State`), composed without opening a body. -/
 theorem exclusiveArrival : ExclusiveArrival := by
-  intro ctx flow scope gateway header payload candidates default state after target element unlooped kind ran
+  intro ctx flow scope gateway header payload candidates default state after target element kind ran
   obtain ⟨next, _, arrived, _⟩ := Laws.Step.microStep_ok (Laws.Step.moveToken_flow ran)
   obtain ⟨reached, reachedTarget, begun_⟩ := Laws.Step.arrive_ok arrived
   have same : reached = gateway := Option.some.inj (reachedTarget.symm.trans target)
@@ -54,11 +56,14 @@ theorem exclusiveArrival : ExclusiveArrival := by
   have fresh := Laws.State.beginOccurrence_fresh (state := state) (sourceType := sourceType)
     (role := Step.roleOf ctx.program { element := reached, scope, incoming := some flow })
     (request := { element := reached, scope, incoming := some flow }) (by simp)
-  simp only [made] at fresh
+  have keeps := Laws.State.beginOccurrence_keeps state { element := reached, scope, incoming := some flow }
+    (Step.roleOf ctx.program { element := reached, scope, incoming := some flow }) sourceType
+  simp only [made] at fresh keeps
   obtain ⟨isGateway, inScope, onFlow, _⟩ := fresh
-  rw [Laws.Step.dispatch_gateway (isGateway ▸ element) unlooped, Laws.Registry.hooks_arriveGateway] at dispatched
+  obtain ⟨scopes, variables, time⟩ := keeps
+  rw [Laws.Step.dispatch_gateway (isGateway ▸ element), Laws.Registry.hooks_arriveGateway] at dispatched
   obtain ⟨taken, evaluated, signalled, takes⟩ := Laws.Flow.arriveGateway_exclusive kind dispatched
-  rw [inScope] at takes
+  rw [inScope, Laws.Hooks.evalContext_eq, Laws.State.visible_congr scopes variables, time] at takes
   exact ⟨next, sourceType, begun, occurrence, taken, evaluated, arrived, made, isGateway, inScope, onFlow, signalled,
     takes⟩
 

@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Step
+public import Kernel.Laws.IL
 import all Kernel.Step
 import all Kernel.Step.Jobs
 
@@ -191,13 +192,11 @@ theorem begin_ok {hooks : Hooks} {ctx : Ctx} {request : BeginRequest} {state nex
     exact ⟨sourceType, _, _, known, by simp, deferred_ok ran⟩
   · simp at ran
 
-/-- An occurrence of a Gateway goes to `Hooks.arriveGateway`. The premise that the Gateway's element carries no
-envelope is `Element.envelope?`'s definition, which no proof may open (the IL has no `Laws` module). -/
+/-- An occurrence of a Gateway goes to `Hooks.arriveGateway`: a Gateway has no envelope, so no loop wraps it. -/
 theorem dispatch_gateway {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}
     {trigger : StartTrigger} {state : State} {header : Header} {payload : GatewayPayload}
-    (element : ctx.program.element? occurrence.element = some (.gateway header payload))
-    (unlooped : (Element.gateway header payload).envelope? = none) :
+    (element : ctx.program.element? occurrence.element = some (.gateway header payload)) :
     dispatch hooks ctx occurrence entry trigger state = hooks.arriveGateway ctx header payload occurrence state := by
-  simp [dispatch, element, bodyLoop?, unlooped]
+  simp [dispatch, element, bodyLoop?, Laws.IL.envelope?_gateway]
 
 end Kernel.Laws.Step
