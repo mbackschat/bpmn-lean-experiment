@@ -299,6 +299,29 @@ theorem enterScope_eq (state : State) (element : ElementId) (parent : ScopeOccur
           variables := state.variables ++ [{ scope := ⟨state.nextIssue⟩, entries := keyed locals }] }, ⟨state.nextIssue⟩) := by
   simp only [State.enterScope, State.issue]
 
+/-- A Call enters its called root at the counter, below its own scope occurrence, recording the instance it names and
+the definition it bound; the other scope occurrences, issued before, stay as they were. -/
+theorem enterCalled_eq (state : State) (program : Program) (call : Occurrence) (variables : List (String × Value))
+    (definition : DefinitionRef) (fresh : ∀ entry ∈ state.scopes, entry.id ≠ ⟨state.nextIssue⟩) :
+    state.enterCalled program call variables definition =
+      ({ state with
+          nextIssue := state.nextIssue + 1
+          scopes := state.scopes ++ [{ id := ⟨state.nextIssue⟩, element := some call.element, parent := some call.scope
+                                       occurrence := some call.id
+                                       calledInstance := some (State.calledInstanceId (state.instanceOf call.scope)
+                                         (program.publicId call.element) call.activation) }]
+          variables := state.variables ++ [{ scope := ⟨state.nextIssue⟩, entries := keyed variables }]
+          slots := { state.slots with
+            instances := state.slots.instances ++ [{ root := ⟨state.nextIssue⟩, definition := some definition }] } },
+        ⟨state.nextIssue⟩) := by
+  simp only [State.enterCalled, State.enterScope, State.issue, List.map_append, List.map_cons, List.map_nil,
+    beq_self_eq_true, ite_true]
+  have same : ∀ named : ScopeOccurrence → ScopeOccurrence, (∀ entry ∈ state.scopes, named entry = entry) →
+      state.scopes.map named = state.scopes := fun _ kept => (List.map_congr_left kept).trans (List.map_id _)
+  rw [same]
+  intro entry member
+  simp [fresh entry member]
+
 theorem recordEnd_eq (state : State) (key : OccurrenceKey) (terminal : Terminal) :
     state.recordEnd key terminal = { state with draft := { state.draft with ended := state.draft.ended ++ [(key, terminal)] } } := by
   simp only [State.recordEnd]

@@ -229,6 +229,18 @@ theorem queueArm_wellFormed {state : State} (formed : Laws.State.WellFormed stat
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
     (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
 
+/-- The arming of a standing scope occurrence's Event Sub-Processes, queued, keeps `WellFormed`. -/
+theorem armScope_wellFormed {state : State} (formed : Laws.State.WellFormed state) {scope : ScopeOccurrenceId}
+    (stands : ∃ entry ∈ state.scopes, entry.id = scope) : Laws.State.WellFormed (state.signal (.armScope scope)) :=
+  Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
+    (fun _ same => by
+      cases same
+      obtain ⟨entry, inside, named⟩ := stands
+      exact named ▸ formed.issued.scopes entry inside)
+    (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
+
 /-- A begin naming no reservation, queued in a scope occurrence that stands, keeps `WellFormed`. -/
 theorem bareBegin_wellFormed {state : State} (formed : Laws.State.WellFormed state) {request : BeginRequest}
     (bare : Laws.State.names request = []) (stands : request.scope ∈ Laws.State.scopeIds state) :
@@ -237,6 +249,18 @@ theorem bareBegin_wellFormed {state : State} (formed : Laws.State.WellFormed sta
     (fun _ same => by simp at same) (fun _ _ _ same => by simp at same) (fun _ _ same => by simp at same))
     (Laws.State.signal_claimed_begin formed bare stands fun _ _ _ _ same => by simp at same)
     (Laws.State.signal_settled_begin formed bare fun _ _ _ _ _ _ same => by simp at same)
+
+/-- Holding an occurrence keeps `WellFormed`: no clause reads the held occurrences. -/
+theorem hold_wellFormed {state : State} (formed : Laws.State.WellFormed state) (held : Held) :
+    Laws.State.WellFormed (state.hold held) := by
+  rw [Laws.Hooks.hold_eq]
+  exact Laws.State.slots_wellFormed formed
+    ⟨formed.settled.parked, formed.settled.bodies, formed.settled.resumed, formed.settled.queued⟩
+
+/-- The scope occurrence an occurrence runs in stands. -/
+theorem housed_of {state : State} (formed : Laws.State.WellFormed state) {occurrence : Occurrence}
+    (member : occurrence ∈ state.occurrences) : ∃ entry ∈ state.scopes, entry.id = occurrence.scope :=
+  List.mem_map.mp (formed.owned.occurrenceScopes occurrence member)
 
 /-- The occurrence that owns a scope occurrence is begun. -/
 theorem owner_begun {state : State} (formed : Laws.State.WellFormed state) {scope : ScopeOccurrence}
@@ -265,6 +289,24 @@ theorem workOps : Laws.Work.WorkOps Laws.State.WellFormed where
     (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
   rekind _ _ formed kept := Laws.State.rekind_wellFormed formed kept
   queued state signal := by rw [Laws.State.signal_eq]
+  kept _ _ := ⟨by rw [Laws.State.signal_eq], by rw [Laws.State.signal_eq]⟩
+  completeBegun _ _ leave writes rule formed member begun := complete_wellFormed formed member begun leave writes rule
+  housed _ _ formed member := housed_of formed member
+  hold _ held formed := hold_wellFormed formed held
+  enter _ element locals occurrence formed member begun :=
+    ⟨Laws.State.enterScope_wellFormed formed element (formed.owned.occurrenceScopes occurrence member) locals
+      fun _ named => ⟨occurrence, member, Option.some.inj named, begun, rfl⟩, by rw [Laws.State.enterScope_eq]⟩
+  openItem _ kind _ formed member begun :=
+    ⟨Laws.State.openItem_wellFormed formed kind member begun, by rw [Laws.State.openItem_eq]⟩
+  arm _ _ element formed member begun := queueArm_wellFormed formed member begun element
+  enterCalled _ program _ variables definition formed member begun := by
+    refine ⟨Laws.State.enterCalled_wellFormed formed program member begun variables definition, ?_, ?_⟩ <;>
+      rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
+    simp
+  armScope _ _ formed stands := armScope_wellFormed formed stands
+  begin _ _ _ formed stands := by
+    obtain ⟨entry, inside, named⟩ := stands
+    exact bareBegin_wellFormed formed (by simp [Laws.State.names]) (List.mem_map.mpr ⟨entry, inside, named⟩)
 
 /-- Flow's operations record (`Laws.Flow.FlowOps`) of `WellFormed`. -/
 theorem flowOps : Laws.Flow.FlowOps Laws.State.WellFormed where
@@ -311,10 +353,7 @@ theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps Laws.State.WellFo
   complete _ _ leave writes rule formed settled := unnamed_wellFormed formed settled.2.2 leave writes rule
   begun _ _ formed member begun := Laws.State.begun_settled formed member begun
   housed _ occurrence formed member := formed.owned.occurrenceScopes occurrence member
-  hold _ _ formed := by
-    rw [Laws.Hooks.hold_eq]
-    exact Laws.State.slots_wellFormed formed
-      ⟨formed.settled.parked, formed.settled.bodies, formed.settled.resumed, formed.settled.queued⟩
+  hold _ held formed := hold_wellFormed formed held
   enter _ element _ locals _ formed stands owned := Laws.State.enterScope_wellFormed formed element stands locals owned
   arm _ _ element formed member begun := queueArm_wellFormed formed member begun element
   begin _ _ formed bare stands := bareBegin_wellFormed formed bare stands
@@ -545,6 +584,14 @@ theorem registered_arriveGateway : ∀ ctx header payload occurrence state after
   intro _ _ _ _ _ _ formed member begun ran
   rw [Laws.Registry.hooks_arriveGateway] at ran
   exact Laws.Flow.arriveGateway_keeps joinOps formed member begun ran
+
+/-- `HookContract.arriveActivity` of the registered hooks. -/
+theorem registered_arriveActivity : ∀ ctx header payload occurrence state after, Laws.State.WellFormed state →
+    occurrence ∈ state.occurrences → occurrence.begun = true →
+    Registry.hooks.arriveActivity ctx header payload occurrence state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ formed member begun ran
+  rw [Laws.Registry.hooks_arriveActivity] at ran
+  exact Laws.Work.arriveActivity_keeps workOps formed member begun ran
 
 /-- `HookContract.arriveMultiInstance` of the registered hooks. -/
 theorem registered_arriveMultiInstance : ∀ ctx header envelope loop occurrence state after, Laws.State.WellFormed state →

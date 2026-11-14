@@ -164,6 +164,34 @@ structure WorkOps (inv : State → Prop) : Prop where
     (∀ item, change item = { item with kind := (change item).kind }) → inv { state with openItems := state.openItems.map change }
   /-- Queuing a signal keeps the open items. -/
   queued : ∀ (state : State) signal, (state.signal signal).openItems = state.openItems
+  /-- Queuing a signal keeps the occurrences and the scope occurrences. -/
+  kept : ∀ (state : State) signal,
+    (state.signal signal).occurrences = state.occurrences ∧ (state.signal signal).scopes = state.scopes
+  /-- The completion of a begun occurrence. -/
+  completeBegun : ∀ state occurrence leave writes rule, inv state → occurrence ∈ state.occurrences →
+    occurrence.begun = true → inv (state.signal (.complete occurrence.id leave writes rule))
+  housed : ∀ state occurrence, inv state → occurrence ∈ state.occurrences →
+    ∃ entry ∈ state.scopes, entry.id = occurrence.scope
+  hold : ∀ state held, inv state → inv (state.hold held)
+  /-- An Activity's own scope occurrence, entered below its occurrence's, which owns it. -/
+  enter : ∀ state element locals occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    inv (state.enterScope element occurrence.scope locals (some occurrence.id)).1 ∧
+      (state.enterScope element occurrence.scope locals (some occurrence.id)).1.occurrences = state.occurrences
+  openItem : ∀ state kind occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    inv (state.openItem kind occurrence) ∧ (state.openItem kind occurrence).occurrences = state.occurrences
+  arm : ∀ state occurrence element, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    inv (state.signal (.arm occurrence.id element occurrence.scope))
+  /-- A begun Call's called root, entered below its scope occurrence. -/
+  enterCalled : ∀ state program call variables definition, inv state → call ∈ state.occurrences →
+    call.begun = true → inv (state.enterCalled program call variables definition).1 ∧
+      (state.enterCalled program call variables definition).1.occurrences = state.occurrences ∧
+      ∃ entry ∈ (state.enterCalled program call variables definition).1.scopes,
+        entry.id = (state.enterCalled program call variables definition).2
+  armScope : ∀ state scope, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
+    inv (state.signal (.armScope scope))
+  /-- A begin that names no reservation. -/
+  begin : ∀ state element scope, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
+    inv (state.signal (.begin { element, scope }))
 
 /-- `reopen` replaces only what the item waits for. -/
 theorem reopen_keeps {inv : State → Prop} (ops : WorkOps inv) {state : State} (holds : inv state) (id : Nat)
@@ -248,5 +276,93 @@ theorem completeCall_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx
     · cases ran
       exact ops.completeOwner _ _ _ _ _ _ holds member owned link
   all_goals cases ran
+
+/-- An Activity's inputs, entered as its own scope occurrence, keep `inv` and its begun occurrence. -/
+theorem enterLocal_keeps {inv : State → Prop} (ops : WorkOps inv) {header : Header} {inputs : List (String × Value)}
+    {occurrence : Occurrence} {state : State} (holds : inv state) (member : occurrence ∈ state.occurrences)
+    (begun : occurrence.begun = true) :
+    inv (Feature.Work.enterLocal header inputs occurrence state) ∧
+      occurrence ∈ (Feature.Work.enterLocal header inputs occurrence state).occurrences := by
+  unfold Feature.Work.enterLocal
+  split
+  · exact ⟨holds, member⟩
+  · obtain ⟨entered, same⟩ := ops.enter state header.id inputs occurrence holds member begun
+    exact ⟨entered, same ▸ member⟩
+
+/-- Opening a begun occurrence's work item, arming its boundaries or not, keeps `inv`. -/
+theorem openWork_keeps {inv : State → Prop} (ops : WorkOps inv) {kind : OpenKind} {header : Header}
+    {payload : ActivityPayload} {occurrence : Occurrence} {state : State} (holds : inv state)
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) :
+    inv (Feature.Work.openWork kind header payload occurrence state) := by
+  obtain ⟨opened, same⟩ := ops.openItem state kind occurrence holds member begun
+  unfold Feature.Work.openWork
+  split
+  · exact opened
+  · exact ops.arm _ _ _ opened (same ▸ member) begun
+
+/-- A decision task's result write and completion keep `inv`. -/
+theorem evaluateDecision_keeps {inv : State → Prop} (ops : WorkOps inv) {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
+    {payload : ActivityPayload} {work : RuleWork} {occurrence : Occurrence} {state after : State} (holds : inv state)
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (ran : Feature.Work.evaluateDecision hooks ctx payload work occurrence state = .ok after) : inv after := by
+  unfold Feature.Work.evaluateDecision at ran
+  simp only [bind, Except.bind] at ran
+  repeat' split at ran
+  all_goals cases ran
+  all_goals first
+    | exact ops.completeBegun _ _ _ _ _ holds member begun
+    | exact ops.completeBegun _ _ _ _ _ (ops.write _ _ _ _ holds) (by rw [(ops.kept _ _).1]; exact member) begun
+
+/-- A begun Call entering its called root, then arming its boundaries or not, its root's Event Sub-Processes and its
+none start keeps `inv`. -/
+theorem called_keeps {inv : State → Prop} (ops : WorkOps inv) {occurrence : Occurrence} {state : State}
+    (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (program : Program)
+    (variables : List (String × Value)) (definition : DefinitionRef) (start : ElementId) (armed : State → State)
+    (arming : ∀ current, inv current → occurrence ∈ current.occurrences →
+      inv (armed current) ∧ (armed current).scopes = current.scopes) :
+    inv (((armed (state.enterCalled program occurrence variables definition).1).signal
+      (.armScope (state.enterCalled program occurrence variables definition).2)).signal
+        (.begin { element := start, scope := (state.enterCalled program occurrence variables definition).2 })) := by
+  obtain ⟨entered, same, root⟩ := ops.enterCalled state program occurrence variables definition holds member begun
+  obtain ⟨armedHolds, armedScopes⟩ := arming _ entered (by rw [same]; exact member)
+  have stands : ∃ entry ∈ (armed (state.enterCalled program occurrence variables definition).1).scopes,
+      entry.id = (state.enterCalled program occurrence variables definition).2 := by
+    rw [armedScopes]
+    exact root
+  exact ops.begin _ _ _ (ops.armScope _ _ armedHolds stands) (by rw [(ops.kept _ _).2]; exact stands)
+
+/-- A Call's invocation keeps `inv`: it enters the called root, arms its boundaries or not, then queues the root's
+Event Sub-Process arming and its none start's begin. -/
+theorem invoke_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {header : Header} {payload : ActivityPayload}
+    {work : CallWork} {occurrence : Occurrence} {state after : State} (holds : inv state)
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (ran : Feature.Work.Call.invoke ctx header payload work occurrence state = .ok after) : inv after := by
+  unfold Feature.Work.Call.invoke at ran
+  simp only [bind, Except.bind] at ran
+  repeat' split at ran
+  all_goals cases ran
+  · exact called_keeps ops holds member begun _ _ _ _ (fun current => current) fun _ held _ => ⟨held, rfl⟩
+  · exact called_keeps ops holds member begun _ _ _ _ (fun current => current.signal (.arm occurrence.id header.id
+      occurrence.scope)) fun _ held present => ⟨ops.arm _ _ _ held present begun, (ops.kept _ _).2⟩
+
+/-- `Hooks.arriveActivity` keeps `inv` for a begun occurrence. -/
+theorem arriveActivity_keeps {inv : State → Prop} (ops : WorkOps inv) {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
+    {header : Header} {payload : ActivityPayload} {occurrence : Occurrence} {state after : State} (holds : inv state)
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (ran : Feature.Work.arriveActivity hooks ctx header payload occurrence state = .ok after) : inv after := by
+  unfold Feature.Work.arriveActivity at ran
+  simp only [bind, Except.bind] at ran
+  repeat' split at ran
+  all_goals first
+    | (cases ran; done)
+    | (cases ran; exact ops.hold _ _ holds)
+    | (cases ran; exact ops.completeBegun _ _ _ _ _ (enterLocal_keeps ops holds member begun).1
+        (enterLocal_keeps ops holds member begun).2 begun)
+    | (cases ran; exact openWork_keeps ops (enterLocal_keeps ops holds member begun).1
+        (enterLocal_keeps ops holds member begun).2 begun)
+    | exact evaluateDecision_keeps ops (enterLocal_keeps ops holds member begun).1
+        (enterLocal_keeps ops holds member begun).2 begun ran
+    | exact invoke_keeps ops (enterLocal_keeps ops holds member begun).1
+        (enterLocal_keeps ops holds member begun).2 begun ran
 
 end Kernel.Laws.Work

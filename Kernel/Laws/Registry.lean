@@ -106,6 +106,10 @@ theorem hooks_completeCall : Registry.hooks.completeCall = Feature.Work.complete
 theorem hooks_completeBody : Registry.hooks.completeBody = Feature.MultiInstance.completeBody := by
   simp only [Registry.hooks]
 
+/-- Work takes every Activity that arrives, with the registry's decision runner. -/
+theorem hooks_arriveActivity : Registry.hooks.arriveActivity = Feature.Work.arriveActivity Registry.workHooks := by
+  simp only [Registry.hooks]
+
 /-- Multi-Instance enters every body that arrives. -/
 theorem hooks_arriveMultiInstance : Registry.hooks.arriveMultiInstance = Feature.MultiInstance.arriveMultiInstance := by
   simp only [Registry.hooks]
