@@ -66,8 +66,10 @@ structure RunsOps (inv : State → Prop) (settled : State → Nat → Prop) : Pr
     inv (state.signal (.begin { element := handler, scope := context, continuation := .compensation scope })) ∧
       ∀ other, settled state other →
         settled (state.signal (.begin { element := handler, scope := context, continuation := .compensation scope })) other
-  /-- A context left, which keeps its parent standing. -/
+  /-- A context left, which keeps its parent standing; it is a running handler's context, so an invariant that
+  keeps every other scope occurrence a hook does not own (a Multi-Instance instance's) is kept by leaving it. -/
   leave : ∀ state entry parent, inv state → entry ∈ state.scopes → entry.parent = some parent →
+    (∃ run ∈ state.slots.compensation.runs, entry.id ∈ run.running.map (·.1)) →
     inv (state.leaveScope entry.id) ∧ parent ∈ (state.leaveScope entry.id).scopes.map (·.id) ∧
       (state.leaveScope entry.id).nextIssue = state.nextIssue ∧ (∀ kept ∈ (state.leaveScope entry.id).scopes, kept ∈ state.scopes) ∧
       ∀ id, settled state id → settled (state.leaveScope entry.id) id

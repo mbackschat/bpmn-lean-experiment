@@ -2,6 +2,7 @@ module
 
 public import Kernel.IL.Types
 import all Kernel.IL.Types
+import all Kernel.IL.Types.Options
 
 /-! # Laws of the IL
 
@@ -16,6 +17,11 @@ public section
 namespace Kernel.Laws.IL
 
 open Kernel
+
+/-- The counter names CIB-INT-0018 binds, in `cibLocals`' order. -/
+theorem multiInstanceCounterNames_eq :
+    multiInstanceCounterNames = ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"] := by
+  simp only [multiInstanceCounterNames]
 
 /-- A Gateway carries no envelope, so no loop or Multi-Instance characteristic wraps its occurrence. -/
 theorem envelope?_gateway (header : Header) (payload : GatewayPayload) :

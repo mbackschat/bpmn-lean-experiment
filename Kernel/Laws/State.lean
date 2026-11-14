@@ -117,6 +117,38 @@ theorem keyed_names (bindings : List (String × Value)) : ((keyed bindings).map 
       obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
       exact List.any_eq_true.mpr ⟨entry, inside, beq_iff_eq.mpr named⟩
 
+/-- `keyed` keeps a binding whose name no later binding repeats. -/
+theorem mem_keyed {binding : String × Value} (earlier : List (String × Value)) {later : List (String × Value)}
+    (last : ∀ other ∈ later, other.1 ≠ binding.1) : binding ∈ keyed (earlier ++ binding :: later) := by
+  induction earlier with
+  | nil =>
+    have step : keyed (binding :: later) =
+        if (keyed later).any (·.1 == binding.1) then keyed later else binding :: keyed later := rfl
+    rw [List.nil_append, step]
+    split
+    · rename_i repeated
+      obtain ⟨other, inside, named⟩ := List.any_eq_true.mp repeated
+      exact absurd (beq_iff_eq.mp named) (last other (keyed_sublist later |>.subset inside))
+    · exact List.mem_cons_self ..
+  | cons first rest held =>
+    have step : keyed (first :: (rest ++ binding :: later)) =
+        if (keyed (rest ++ binding :: later)).any (·.1 == first.1) then keyed (rest ++ binding :: later)
+        else first :: keyed (rest ++ binding :: later) := rfl
+    rw [List.cons_append, step]
+    split
+    · exact held
+    · exact List.mem_cons_of_mem _ held
+where
+  keyed_sublist : ∀ bindings : List (String × Value), (keyed bindings).Sublist bindings
+    | [] => by simp [keyed]
+    | binding :: rest => by
+      have step : keyed (binding :: rest) =
+          if (keyed rest).any (·.1 == binding.1) then keyed rest else binding :: keyed rest := rfl
+      rw [step]
+      split
+      · exact (keyed_sublist rest).cons binding
+      · exact (keyed_sublist rest).cons_cons binding
+
 /-- A fresh instance's variables are keyed, whatever bindings the start supplied (#147). -/
 theorem initial_variablesKeyed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     VariablesKeyed (State.initial instanceId variables businessKey) where

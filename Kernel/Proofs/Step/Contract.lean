@@ -103,7 +103,7 @@ structure RegisteredOps (inv : Program → State → Prop) : Prop where
   work : ∀ program, Laws.Work.WorkOps program (inv program)
   flow : ∀ program, Laws.Flow.FlowOps (inv program)
   join : ∀ program, Laws.Flow.JoinOps (inv program) Laws.State.Settled
-  multiInstance : ∀ program, Laws.MultiInstance.MultiInstanceOps (inv program) Laws.State.Settled
+  multiInstance : ∀ program, Laws.MultiInstance.MultiInstanceOps program (inv program) Laws.State.Settled
   starts : ∀ program, Laws.Starts.StartsOps (inv program)
   scopes : ∀ program, Laws.Scopes.ScopesOps (inv program)
   subscriptions : ∀ program, Laws.Subscriptions.SubscriptionsOps program (inv program)

@@ -229,12 +229,15 @@ theorem joinOps : Laws.Flow.JoinOps (Laws.State.WellFormed program) Laws.State.S
         exact ⟨begun, rfl⟩⟩
 
 /-- The Multi-Instance operations record (`Laws.MultiInstance.MultiInstanceOps`) of `WellFormed`. -/
-theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps (Laws.State.WellFormed program) Laws.State.Settled where
+theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps program (Laws.State.WellFormed program)
+    Laws.State.Settled where
   bodies _ run formed member := formed.settled.bodies run member
   placed _ run formed member := formed.settled.placed run member
   complete _ _ leave writes rule formed settled := settled_wellFormed formed settled leave writes rule
   begun _ _ formed member begun := Laws.State.begun_settled formed member begun
   housed _ occurrence formed member := formed.owned.occurrenceScopes occurrence member
+  issued _ formed := formed.issued.scopes
+  contexts _ formed run member context inside := ((formed.settled.runsPlaced run member).2 context inside).1
   hold _ held formed := hold_wellFormed formed held
   enter _ element parent locals owner formed stands owned :=
     ⟨Laws.State.enterScope_wellFormed formed element stands locals owned,
@@ -246,21 +249,40 @@ theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps (Laws.State.WellF
   begin _ _ formed bare stands := ⟨bareBegin_wellFormed formed bare stands, fun _ settled => settled.begin bare⟩
   defer _ _ formed bare := ⟨Laws.State.deferBegins_wellFormed formed bare,
     fun _ settled => settled.defer fun request member => (bare request member).1⟩
-  runs _ _ formed kept := ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked,
-    fun run member => (kept run member).elim (formed.settled.bodies run) (·.1), formed.settled.resumed,
-    formed.settled.queued, fun run member => (kept run member).elim (formed.settled.placed run) (·.2),
-    formed.settled.runsPlaced, formed.settled.grouped, formed.settled.raised⟩,
-    fun _ settled => settled⟩
-  leave _ run _ formed member active stands := by
-    obtain ⟨below, parentOf⟩ := formed.settled.placed run member _ active
+  record state run index scope output results formed member slot stands _ := by
+    obtain ⟨below, parentOf⟩ := formed.settled.placed run member _ (List.mem_of_getElem? slot)
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp stands
     subst named
     obtain ⟨left, standing, frame⟩ := Laws.State.leaveChild_wellFormed formed inside (parentOf entry inside rfl)
-    exact ⟨left, (formed.settled.bodies run member).transport (Nat.le_of_eq frame.nextIssue.symm)
-      (fun _ present _ => .inl (frame.occurrencesSublist.subset present))
-      (fun _ queued => queued.shrink (by rw [frame.signals]; exact .refl _) frame.tokensSublist), standing,
-      (formed.settled.placed run member).transport (Nat.le_of_eq frame.nextIssue.symm)
-        fun _ present => .inl (frame.scopesSublist.subset present)⟩
+    have body : Laws.State.Settled (state.leaveScope entry.id) run.occurrence :=
+      (formed.settled.bodies run member).transport (Nat.le_of_eq frame.nextIssue.symm)
+        (fun _ present _ => .inl (frame.occurrencesSublist.subset present))
+        (fun _ queued => queued.shrink (by rw [frame.signals]; exact .refl _) frame.tokensSublist)
+    have placed : Laws.State.Placed (state.leaveScope entry.id) (Laws.MultiInstance.recorded run index output results) :=
+      fun inner active => (formed.settled.placed run member).transport (Nat.le_of_eq frame.nextIssue.symm)
+        (fun _ present => .inl (frame.scopesSublist.subset present)) inner
+        ((List.mem_or_eq_of_mem_set active).resolve_right (by simp))
+    rw [Laws.MultiInstance.leftWith, Laws.MultiInstance.setRun_eq]
+    refine ⟨Laws.State.slots_wellFormed left ⟨left.settled.parked, fun other present => ?_, left.settled.resumed,
+      left.settled.queued, fun other present => ?_, left.settled.runsPlaced, left.settled.grouped, left.settled.raised⟩,
+      body, standing, placed⟩
+    · rcases Laws.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
+      · exact left.settled.bodies other old
+      · exact body
+    · rcases Laws.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
+      · exact left.settled.placed other old
+      · exact placed
+  runs state _ next _ formed settledNext placedNext _ _ := by
+    rw [Laws.MultiInstance.setRun_eq]
+    refine ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked, fun other present => ?_, formed.settled.resumed,
+      formed.settled.queued, fun other present => ?_, formed.settled.runsPlaced, formed.settled.grouped,
+      formed.settled.raised⟩, fun _ settled => settled⟩
+    · rcases Laws.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
+      · exact formed.settled.bodies other old
+      · exact settledNext
+    · rcases Laws.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
+      · exact formed.settled.placed other old
+      · exact placedNext
   write _ scope writes rule formed :=
     ⟨queueWrite_wellFormed formed scope writes rule, fun _ settled => settled.signal fun _ same => by simp at same⟩
 
@@ -416,7 +438,7 @@ theorem runsOps : Laws.Compensation.RunsOps (Laws.State.WellFormed program) Laws
   occur _ _ _ _ _ _ formed := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩
   begin _ _ _ _ formed stands := ⟨bareBegin_wellFormed formed (by simp [Laws.State.names]) stands,
     fun _ settled => settled.begin (by simp [Laws.State.names])⟩
-  leave _ _ _ formed member link := by
+  leave _ _ _ formed member link _ := by
     obtain ⟨left, standing, frame⟩ := Laws.State.leaveChild_wellFormed formed member link
     exact ⟨left, standing, frame.nextIssue, fun _ kept => frame.scopesSublist.subset kept, fun _ settled =>
       settled.transport (Nat.le_of_eq frame.nextIssue.symm) (fun _ present _ => .inl (frame.occurrencesSublist.subset present))

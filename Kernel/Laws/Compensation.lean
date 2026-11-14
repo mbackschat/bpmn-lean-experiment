@@ -693,6 +693,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → Nat → Prop} (ops
         have link := ((ops.fits state owner holds member).2.2 entry.id
           (List.mem_map.mpr ⟨pair, running, beq_iff_eq.mp named⟩)).2 entry inside rfl
         obtain ⟨left, parentStands, rest⟩ := ops.leave state entry owner.scope holds inside link
+          ⟨owner, member, List.mem_map.mpr ⟨pair, running, beq_iff_eq.mp named⟩⟩
         obtain ⟨issued, kept, leftSettled⟩ := rest
         have stored := ops.store (state.leaveScope entry.id) { (state.leaveScope entry.id).slots.compensation with
             runs := (state.leaveScope entry.id).slots.compensation.runs.map fun candidate =>
