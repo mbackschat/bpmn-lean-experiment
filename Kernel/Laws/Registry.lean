@@ -70,6 +70,14 @@ theorem hooks_leave : Registry.hooks.leave = Feature.Subscriptions.leave := by
 theorem hooks_written : Registry.hooks.written = Feature.Subscriptions.offerWrites := by
   simp only [Registry.hooks]
 
+/-- Compensation retains every completion's record. -/
+theorem hooks_completed : Registry.hooks.completed = Feature.Compensation.completed := by
+  simp only [Registry.hooks]
+
+/-- Compensation fails every handler left uncaught. -/
+theorem hooks_failCompensation : Registry.hooks.failCompensation = Feature.Compensation.failCompensation := by
+  simp only [Registry.hooks]
+
 /-- Data applies every write. -/
 theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOutputs := by
   simp only [Registry.hooks]

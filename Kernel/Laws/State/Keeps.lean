@@ -243,6 +243,48 @@ theorem rekind_wellFormed {s : State} (formed : WellFormed s) {change : OpenItem
       rw [kept old]
       exact free old oldInside
 
+/-- Issuing an identifier keeps a state well-formed: what stands was issued before, and so before the next. -/
+theorem issue_wellFormed {s : State} (formed : WellFormed s) : WellFormed s.issue.1 := by
+  rw [issue_eq]
+  show WellFormed { s with nextIssue := s.nextIssue + 1 }
+  have later : s.nextIssue ≤ s.nextIssue + 1 := Nat.le_succ _
+  have keys : key { s with nextIssue := s.nextIssue + 1 } = key s :=
+    funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
+  exact {
+  issued := ⟨fun occurrence member => Nat.lt_succ_of_lt (formed.issued.occurrences occurrence member),
+    fun item member => Nat.lt_succ_of_lt (formed.issued.items item member),
+    fun scope member => Nat.lt_succ_of_lt (formed.issued.scopes scope member)⟩
+  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩
+  startedOnce := formed.startedOnce
+  activations := ⟨formed.activations.keys, formed.activations.positive⟩
+  reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations
+  owned := ⟨formed.owned.occurrenceScopes, formed.owned.itemScopes, formed.owned.itemOccurrences,
+    formed.owned.attachments, formed.owned.scopeOwners, formed.owned.variableScopes, formed.owned.tokenScopes⟩
+  rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
+    Within.congr (s := s) (t := { s with nextIssue := s.nextIssue + 1 }) rfl (formed.rooted.2.2 scope member)⟩
+  variables := ⟨formed.variables.scopes, formed.variables.names⟩
+  failure := formed.failure
+  queue := {
+    arm := fun host element scope queued =>
+      have ⟨host_, scope_, rest⟩ := formed.queue.arm host element scope queued
+      ⟨Nat.lt_succ_of_lt host_, Nat.lt_succ_of_lt scope_, rest⟩
+    armScope := fun scope queued => Nat.lt_succ_of_lt (formed.queue.armScope scope queued)
+    armGateway := fun occurrence gateway scope queued =>
+      have ⟨occurrence_, scope_, rest⟩ := formed.queue.armGateway occurrence gateway scope queued
+      ⟨Nat.lt_succ_of_lt occurrence_, Nat.lt_succ_of_lt scope_, rest⟩
+    ends := formed.queue.ends }
+  counted := formed.counted
+  occurrencesCounted := by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted
+  ownedBelow := formed.ownedBelow
+  claimed := formed.claimed.shrink (fun _ member => member) (fun _ member => member) formed.owned.occurrenceScopes
+    (fun _ member => member) (fun _ _ => by apply instanceOf_congr <;> rfl) later (.refl _) (.refl _) }
+
+/-- Replacing the retained compensation records and runs keeps a state well-formed: no clause reads them. -/
+theorem compensation_wellFormed {s : State} (formed : WellFormed s) (compensation : Compensations) :
+    WellFormed { s with slots := { s.slots with compensation } } :=
+  formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _,
+    fun _ => id⟩ rfl formed.startedOnce
+
 /-- Queuing a signal keeps a state well-formed when the queue stays sound and the claims single. -/
 theorem signal_wellFormed {s : State} {signal : Signal} (formed : WellFormed s) (queue : QueueSound (s.signal signal))
     (claimed : ReservationsClaimed (s.signal signal)) : WellFormed (s.signal signal) := by

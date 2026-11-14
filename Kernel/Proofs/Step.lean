@@ -8,6 +8,7 @@ public import Kernel.Laws.Starts
 public import Kernel.Laws.Subscriptions
 public import Kernel.Laws.Data
 public import Kernel.Laws.Work
+public import Kernel.Laws.Compensation
 public import Kernel.Laws.Hooks
 public import Kernel.Proofs.State
 public import Kernel.Laws.State.Removal
@@ -309,6 +310,39 @@ theorem registered_written : ∀ ctx writes state after, Laws.State.WellFormed s
   intro _ _ _ _ formed ran
   rw [Laws.Registry.hooks_written] at ran
   exact Laws.Subscriptions.offerWrites_keeps subscriptionsOps formed ran
+
+/-- The compensation hooks' operations record (`Laws.Compensation.CompensationOps`) of `WellFormed`. -/
+theorem compensationOps : Laws.Compensation.CompensationOps Laws.State.WellFormed where
+  store _ compensation formed := Laws.State.compensation_wellFormed formed compensation
+  issue _ formed := Laws.State.issue_wellFormed formed
+  issued state := by rw [Laws.State.issue_eq]; exact ⟨rfl, rfl, rfl⟩
+  fail _ _ formed := Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed
+      (fun _ _ _ same => by simp at same) (fun _ same => by simp at same) (fun _ _ _ same => by simp at same)
+      (fun _ _ same => by cases same; simp))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+
+/-- A completion's retained record keeps the completion pipeline's frame. -/
+theorem retained_frame {state after : State} (scopes : after.scopes = state.scopes)
+    (occurrences : after.occurrences = state.occurrences) (items : after.openItems = state.openItems) :
+    Laws.Step.PipelineFrame state after :=
+  ⟨scopes, fun _ member _ => occurrences ▸ member, fun _ member => items ▸ member⟩
+
+/-- `HookContract.completed` of the registered hooks. -/
+theorem registered_completed : ∀ ctx occurrence state after, Laws.State.WellFormed state →
+    occurrence ∈ state.occurrences → Registry.hooks.completed ctx occurrence state = .ok after →
+    Laws.State.WellFormed after ∧ Laws.Step.PipelineFrame state after := by
+  intro _ _ _ _ formed _ ran
+  rw [Laws.Registry.hooks_completed] at ran
+  obtain ⟨kept, scopes, occurrences, items⟩ := Laws.Compensation.completed_keeps compensationOps formed ran
+  exact ⟨kept, retained_frame scopes occurrences items⟩
+
+/-- `HookContract.failCompensation` of the registered hooks. -/
+theorem registered_failCompensation : ∀ ctx handler code message origin state after, Laws.State.WellFormed state →
+    Laws.Step.ScopeStands state handler →
+    Registry.hooks.failCompensation ctx handler code message origin state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ _ formed _ ran
+  rw [Laws.Registry.hooks_failCompensation] at ran
+  exact Laws.Compensation.failCompensation_keeps compensationOps formed ran
 
 /-- `HookContract.completeUserTask` of the registered hooks. -/
 theorem registered_completeUserTask : ∀ ctx header payload item values state after, Laws.State.WellFormed state →

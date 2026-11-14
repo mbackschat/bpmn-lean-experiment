@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Feature.Compensation
 import all Kernel.Feature.Compensation
 
 /-! # Laws of compensation and Transaction cancellation
@@ -396,5 +397,47 @@ theorem propagates_from_context_rejected :
     ¬ PropagatesFromTrigger .propagatesFromTrigger false both (some inner) begun := fun law => by
   have := (law rfl rfl).1
   simp [both, inner, outer] at this
+
+/-! ## Preservation
+
+What the compensation hooks keep of an invariant: a completion retains its record, issuing a completion number, and a
+handler's uncaught failure ends the instance failed. -/
+
+/-- What the compensation hooks need of the state operations they apply, for an invariant `inv`. -/
+structure CompensationOps (inv : State → Prop) : Prop where
+  /-- The retained records and runs replaced. -/
+  store : ∀ state compensation, inv state → inv { state with slots := { state.slots with compensation } }
+  issue : ∀ state, inv state → inv state.issue.1
+  /-- Issuing keeps the scope occurrences, the occurrences and the open items. -/
+  issued : ∀ state : State, state.issue.1.scopes = state.scopes ∧ state.issue.1.occurrences = state.occurrences ∧
+    state.issue.1.openItems = state.openItems
+  fail : ∀ state failure, inv state → inv (state.signal (.endInstance .failed (some failure)))
+
+/-- `Hooks.completed` keeps `inv`, the scope occurrences, the occurrences and the open items. -/
+theorem completed_keeps {inv : State → Prop} (ops : CompensationOps inv) {ctx : Ctx} {occurrence : Occurrence}
+    {state after : State} (holds : inv state) (ran : Feature.Compensation.completed ctx occurrence state = .ok after) :
+    inv after ∧ after.scopes = state.scopes ∧ after.occurrences = state.occurrences ∧ after.openItems = state.openItems := by
+  unfold Feature.Compensation.completed at ran
+  split at ran
+  · cases ran
+    exact ⟨holds, rfl, rfl, rfl⟩
+  · have issued := ops.issued state
+    have kept := ops.issue state holds
+    dsimp only at ran
+    split at ran
+    · cases ran
+      exact ⟨ops.store _ _ holds, rfl, rfl, rfl⟩
+    · cases ran
+      exact ⟨ops.store _ _ kept, issued⟩
+
+/-- `Hooks.failCompensation` keeps `inv`. -/
+theorem failCompensation_keeps {inv : State → Prop} (ops : CompensationOps inv) {ctx : Ctx} {handler : ScopeOccurrenceId}
+    {code : String} {message : Option String} {origin : Origin} {state after : State} (holds : inv state)
+    (ran : Feature.Compensation.failCompensation ctx handler code message origin state = .ok after) : inv after := by
+  unfold Feature.Compensation.failCompensation at ran
+  simp only [bind, Except.bind] at ran
+  repeat' split at ran
+  all_goals cases ran
+  all_goals exact ops.fail _ _ holds
 
 end Kernel.Laws.Compensation

@@ -263,6 +263,9 @@ theorem recordEnd_scopes (state : State) (key : OccurrenceKey) (terminal : Termi
 theorem signal_eq (state : State) (signal : Signal) : state.signal signal = { state with signals := state.signals ++ [signal] } := by
   simp only [State.signal]
 
+theorem issue_eq (state : State) : state.issue = ({ state with nextIssue := state.nextIssue + 1 }, state.nextIssue) := by
+  simp only [State.issue]
+
 theorem recordEnd_eq (state : State) (key : OccurrenceKey) (terminal : Terminal) :
     state.recordEnd key terminal = { state with draft := { state.draft with ended := state.draft.ended ++ [(key, terminal)] } } := by
   simp only [State.recordEnd]
