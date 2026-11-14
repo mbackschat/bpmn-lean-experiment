@@ -12,7 +12,10 @@ it (`Alongside`): each feature's operations record of `WellFormed` and the prope
 records, one field per hook, through each feature's lemma, which is generic in the invariant (`registered_contract`).
 The cancellation lane instantiates it at the before-state's scope occurrences (`KeepsScopes`), which closes
 `SubtreeRemoved Registry.hooks` up to the hooks whose feature lemmas the state-invariant lane has not stated yet
-(`PendingHooks`) and one `Laws.State` request (`PendingRemoval`). Nothing executable imports this module.
+(`PendingHooks`) and one `Laws.State` request (`PendingRemoval`), and at an input's end facts from its start
+(`Laws.Step.EndsKept`), which closes `RemovedEndOnce Registry.hooks` up to the same hooks, the `Laws.State` facts of the
+operations' bodies (`Laws.Step.PendingStateEnds`) and the walk with the completion pipeline as a premise
+(`PendingWalk`). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -456,5 +459,25 @@ theorem registered_quiet (ends : Laws.Step.PendingStateEnds) :
     exact empty, fun ctx _ _ _ empty ran => by
     rw [Laws.Registry.hooks_written] at ran
     exact Laws.Subscriptions.offerWrites_keeps (subscriptionsOps_draft ends ctx.program []) empty ran⟩
+
+/-- `MicroStepsKeepEnds` of the registered hooks, up to the pending requests: the `Laws.State` facts of the operations'
+bodies (`Laws.Step.PendingStateEnds`, R15), the walk with the completion pipeline as a premise (`PendingWalk`, R14) and
+the two hooks the state-invariant lane has not proved (`PendingHooks`); `removedEndOnce` then gives `RemovedEndOnce`. -/
+theorem microStepsKeepEnds_registered (ends : Laws.Step.PendingStateEnds) (walk : PendingWalk)
+    (pending : ∀ b x, PendingHooks (Laws.Step.EndsInv b x)) : MicroStepsKeepEnds Registry.hooks := by
+  have kept := fun b => walk.walk Registry.hooks (Laws.Step.EndsKept b none) (endsInv_contract ends pending b none)
+    Proofs.Step.phases (endsKept_stepAlongside ends b) Proofs.State.stateFacts
+    (Laws.Step.complete_ends (endsInv_contract ends pending b) Proofs.Step.phases Proofs.State.stateFacts ends)
+  obtain ⟨cancelled, written⟩ := registered_quiet ends
+  refine ⟨fun ctx cause transition b state after runs holds ran =>
+    ⟨(kept b).1 ctx cause transition state after runs holds ran, Laws.Step.microStep_drafts cancelled written ran⟩,
+    fun ctx b state after holds step => ⟨(kept b).2 ctx state after holds step, ?_⟩⟩
+  obtain ⟨_, _, _, ⟨_, _, ran⟩⟩ := step.microStep
+  exact Laws.Step.microStep_drafts cancelled written ran
+
+/-- `RemovedEndOnce` of the registered hooks, up to the pending requests `microStepsKeepEnds_registered` names. -/
+theorem removedEndOnce_registered (ends : Laws.Step.PendingStateEnds) (walk : PendingWalk)
+    (pending : ∀ b x, PendingHooks (Laws.Step.EndsInv b x)) : RemovedEndOnce Registry.hooks :=
+  removedEndOnce (microStepsKeepEnds_registered ends walk pending)
 
 end Kernel.Proofs.Cancellation

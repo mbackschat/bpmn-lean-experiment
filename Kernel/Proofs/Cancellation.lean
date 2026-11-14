@@ -499,6 +499,52 @@ theorem endsKept_alongside (ends : Laws.Step.PendingStateEnds) (b : State) (x : 
   setVariable _ s target name value formed kept := kept.step formed (Laws.Step.setVariable_frame ends s target name value)
   removeVariable _ s target name formed kept := kept.step formed (Laws.Step.removeVariable_frame ends s target name)
 
+/-- What `Step`'s own phases keep of a property `rel` carried beside `WellFormed`, besides the hooks' state operations
+(`Alongside`): journalling the draft, ordering the journal, beginning an admitted request in a scope occurrence that
+stands and cancelling an occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
+structure StepAlongside (rel : State → Prop) : Prop extends Alongside rel where
+  journal : ∀ program s (transition : Transition), WellFormed program s → rel s → transition.started = s.draft.started →
+    transition.ended = s.draft.ended → rel { s with journal := transition :: s.journal, draft := {}, writes := [] }
+  runOrder : ∀ program s, WellFormed program s → rel s → rel { s with journal := s.journal.reverse }
+  begin : ∀ program s request role sourceType, WellFormed program s → Laws.Step.ScopeStands s request.scope →
+    Laws.Step.Admitted s request → rel s → rel (s.beginOccurrence request role sourceType).1
+  cancel : ∀ program s id, WellFormed program s → rel s → rel (s.cancelOccurrence id)
+
+/-- Each committed micro-step of an input on a running instance keeps `inv`: its transition and every closure
+micro-step. -/
+def MicroStepsKeep (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
+  (∀ (ctx : Ctx) (cause : Cause) (transition : State → Outcome) (state after : State),
+    Laws.Step.RunsTransition hooks ctx transition → inv ctx.program state →
+    Step.microStep hooks ctx cause none State.root transition state = .ok after → inv ctx.program after) ∧
+  ∀ (ctx : Ctx) (state after : State), inv ctx.program state → Laws.Step.ClosureStep hooks ctx state after →
+    inv ctx.program after
+
+/-- Pending lemma request R14 (`Laws.Step.Contract`, `Laws.Step.Keeps`): the walk of `Laws.Step.Keeps` keeps a property
+beside `WellFormed` through each micro-step with the completion pipeline as a premise (`Laws.Step.PipelineKeeps`) and
+without the phases only the pipeline and the input boundary run (`Phases.reset`, `startReserved`, `removeOccurrence`,
+`recordEnd`), which an input's end facts cannot carry one at a time; `Step`'s other phases keep the property by
+`StepAlongside` and `WellFormed` by `Phases WellFormed`. -/
+structure PendingWalk : Prop where
+  walk : ∀ (hooks : Hooks) (rel : State → Prop),
+    Laws.Step.HookContract hooks (fun program s => WellFormed program s ∧ rel s) → Laws.Step.Phases WellFormed →
+    StepAlongside rel → Laws.Step.StateFacts →
+    Laws.Step.PipelineKeeps hooks (fun program s => WellFormed program s ∧ rel s) →
+    MicroStepsKeep hooks fun program s => WellFormed program s ∧ rel s
+
+/-- `Step`'s phases keep an input's end facts from its start: journalling the draft and ordering the journal permute
+them, and beginning and cancelling frame them (`Kernel.Laws.Step.EndsFrames`). -/
+theorem endsKept_stepAlongside (ends : Laws.Step.PendingStateEnds) (b : State) :
+    StepAlongside (Laws.Step.EndsKept b none) where
+  toAlongside := endsKept_alongside ends b none
+  journal _ s transition _ kept _ ended := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (by
+    simp only [Laws.Step.endKeys, List.flatMap_cons, ended, List.map_append]
+    simpa using List.perm_append_comm)
+  runOrder _ s _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _)
+    ((((List.reverse_perm s.journal).flatMap_right _).append_right _).map _)
+  begin _ _ _ role sourceType formed stands admitted kept :=
+    kept.step formed (Laws.Step.beginOccurrence_frame ends formed stands admitted role sourceType)
+  cancel _ _ id formed kept := kept.step formed (Laws.Step.cancelOccurrence_frame ends formed id)
+
 /-- A list whose keys are distinct holds the key `key` once if at all. -/
 theorem once_of_nodup {α β : Type} {facts : List (α × β)} {key : α} (distinct : (facts.map (·.1)).Nodup)
     (member : key ∈ facts.map (·.1)) :

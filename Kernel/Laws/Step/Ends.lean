@@ -251,16 +251,22 @@ theorem EndsKept.unmoved {b s t : State} {x : Option (Nat × OccurrenceKey)} (ke
 
 /-! ### The completion pipeline -/
 
+/-- The completion pipeline keeps `inv`, from a state in which no queued begin names the completing occurrence: what the
+walk of `Laws.Step.Keeps` needs of it once it no longer runs the pipeline's own phases, which an invariant of an input's
+end facts cannot carry one at a time (pending lemma request R14 moves it beside `Laws.Step.Phases`). -/
+def PipelineKeeps (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
+  ∀ (ctx : Ctx) (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) (state after : State),
+    inv ctx.program state → (∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request) →
+    complete hooks ctx id leave writes rule state = .ok after → inv ctx.program after
+
 /-- The completion pipeline keeps an input's end facts, as a unit: its hooks before the removal and its continuation
 keep `EndsInv`, the continuation with the completing occurrence exempt, and the end it journals last lifts the
 exemption (`EndsKept.remove`, `EndsKept.record`). The one obligation `Step`'s phases cannot carry (module
 documentation). -/
 theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContract hooks (EndsInv b x))
-    (phases : Phases WellFormed) (facts : StateFacts) (ends : PendingStateEnds) {ctx : Ctx} {id : Nat}
-    {leave : Leave} {writes : List (String × Value)} {rule : WriteRule} {state after : State}
-    (holds : EndsInv b none ctx.program state)
-    (free : ∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request)
-    (ran : complete hooks ctx id leave writes rule state = .ok after) : EndsInv b none ctx.program after := by
+    (phases : Phases WellFormed) (facts : StateFacts) (ends : PendingStateEnds) :
+    PipelineKeeps hooks (EndsInv b none) := by
+  intro ctx id leave writes rule state after holds free ran
   rcases complete_ok ran with ⟨_, same⟩ | ⟨occurrence, sourceType, begun, pipeline⟩
   · exact same ▸ holds
   obtain ⟨left, selected, written, pipeline⟩ := pipeline
