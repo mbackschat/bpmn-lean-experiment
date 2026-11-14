@@ -140,21 +140,23 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       by simpa [reserves.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, reserves.failure, reserves.status] using formed.failure
   case queue =>
-    obtain ⟨arm, armScope, armGateway, ends⟩ := formed.queue
+    have queue := formed.queue
     refine ⟨fun host element scope queued => ?_, fun scope queued => ?_, fun occurrence gateway scope queued => ?_,
-      fun status failure queued => ends status failure (reserves.signals ▸ queued)⟩
-    · obtain ⟨hostBelow, scopeBelow, facts⟩ := arm host element scope (reserves.signals ▸ queued)
+      fun status failure queued => queue.ends status failure (reserves.signals ▸ queued), fun id leave writes rule queued => ?_⟩
+    · obtain ⟨hostBelow, scopeBelow, facts⟩ := queue.arm host element scope (reserves.signals ▸ queued)
       refine ⟨by omega, by omega, fun found member named => ?_⟩
       rcases members found member with rfl | old
       · omega
       · exact facts found old named
-    · have := armScope scope (reserves.signals ▸ queued)
+    · have := queue.armScope scope (reserves.signals ▸ queued)
       omega
-    · obtain ⟨occurrenceBelow, scopeBelow, facts⟩ := armGateway occurrence gateway scope (reserves.signals ▸ queued)
+    · obtain ⟨occurrenceBelow, scopeBelow, facts⟩ := queue.armGateway occurrence gateway scope (reserves.signals ▸ queued)
       refine ⟨by omega, by omega, fun found member named => ?_⟩
       rcases members found member with rfl | old
       · omega
       · exact facts found old named
+    · have := queue.completes id leave writes rule (reserves.signals ▸ queued)
+      omega
   case counted => exact fun fact started => reserves.activated.counted (formed.counted fact (startsAfter ▸ started))
   case occurrencesCounted =>
     exact fun occurrence member => by
@@ -217,7 +219,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       fun occurrence member flag => (members occurrence member).elim (fun same => by simp [same, reserves.unbegun] at flag) fun old => old
     first
       | exact formed.attachedReserved.shrink (fun _ member => reserves.openItems ▸ member) begun
-      | exact formed.typed.shrink (fun _ member => reserves.openItems ▸ member) begun
+      | exact formed.typed.shrink (fun _ member => reserves.openItems ▸ member) begun fun _ member => reserves.signals ▸ member
 
 /-- What `State.startReserved` makes of `before` for an unbegun `occurrence`: it begins where it stands and its start
 is journalled under its key. Nothing else changes. -/
@@ -354,17 +356,18 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
       by simpa [starts_.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, starts_.failure, starts_.status] using formed.failure
   case queue =>
-    obtain ⟨arm, armScope, armGateway, ends⟩ := formed.queue
+    have queue := formed.queue
     refine ⟨fun host element scope queued => ?_, fun scope queued => ?_, fun found gateway scope queued => ?_,
-      fun status failure queued => ends status failure (starts_.signals ▸ queued)⟩
-    · obtain ⟨hostBelow, scopeBelow, facts⟩ := arm host element scope (starts_.signals ▸ queued)
+      fun status failure queued => queue.ends status failure (starts_.signals ▸ queued),
+      fun id leave writes rule queued => issued ▸ queue.completes id leave writes rule (starts_.signals ▸ queued)⟩
+    · obtain ⟨hostBelow, scopeBelow, facts⟩ := queue.arm host element scope (starts_.signals ▸ queued)
       refine ⟨issued ▸ hostBelow, issued ▸ scopeBelow, fun found inside named => ?_⟩
       rcases members found inside with rfl | ⟨old, _⟩
       · simp [(facts occurrence member named).1] at unbegun
       · exact facts found old named
     · rw [issued]
-      exact armScope scope (starts_.signals ▸ queued)
-    · obtain ⟨foundBelow, scopeBelow, facts⟩ := armGateway found gateway scope (starts_.signals ▸ queued)
+      exact queue.armScope scope (starts_.signals ▸ queued)
+    · obtain ⟨foundBelow, scopeBelow, facts⟩ := queue.armGateway found gateway scope (starts_.signals ▸ queued)
       refine ⟨issued ▸ foundBelow, issued ▸ scopeBelow, fun other inside named => ?_⟩
       rcases members other inside with rfl | ⟨old, _⟩
       · simp [(facts occurrence member named).1] at unbegun
@@ -433,6 +436,6 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
       · exact old
     first
       | exact formed.attachedReserved.transport (fun _ member => starts_.openItems ▸ member) waited
-      | exact formed.typed.transport (fun _ member => starts_.openItems ▸ member) waited
+      | exact formed.typed.transport (fun _ member => starts_.openItems ▸ member) waited fun _ member => starts_.signals ▸ member
 
 end Kernel.Laws.State

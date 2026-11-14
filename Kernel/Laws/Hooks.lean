@@ -55,6 +55,35 @@ theorem item?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : Occurren
   cases same
   exact itemDetail?_mem made
 
+/-- The item an input addresses has the detail it was looked up by. -/
+theorem itemDetail?_view {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef}
+    {detail : WaitView → Option α} {item : OpenItem} {value : α}
+    (found : itemDetail? ctx state occurrence detail = some (item, value)) : detail item.kind.view = some value := by
+  unfold itemDetail? at found
+  obtain ⟨candidate, _, made⟩ := List.exists_of_findSome?_eq_some found
+  split at made
+  · obtain ⟨_, same, pair⟩ := Option.map_eq_some_iff.mp made
+    obtain ⟨rfl, rfl⟩ := Prod.mk.inj pair
+    exact same
+  · simp at made
+
+theorem item?_view {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef} {detail : WaitView → Option α}
+    {item : OpenItem} (found : item? ctx state occurrence detail = some item) : (detail item.kind.view).isSome = true := by
+  unfold item? at found
+  obtain ⟨⟨_, value⟩, made, same⟩ := Option.map_eq_some_iff.mp found
+  cases same
+  simp [itemDetail?_view made]
+
+/-- How a boundary fires (`Boundary.fire`): an interrupting one cancels its host first, if it names one; then the
+reservation completes, or a fresh occurrence occurs. -/
+theorem fire_eq (boundary : Boundary) (host reserved : Option Nat) (scope : ScopeOccurrenceId)
+    (writes : List (String × Value)) (state : State) : boundary.fire host reserved scope writes state =
+      (if boundary.interrupting then host.elim state (state.signal <| .cancel ·) else state).signal
+        (reserved.elim (.occur boundary.id scope (.flows boundary.outgoing) writes .outward)
+          (.complete · (.flows boundary.outgoing) writes .outward)) := by
+  unfold Boundary.fire
+  cases boundary.interrupting <;> cases host <;> cases reserved <;> rfl
+
 /-- No item is found where no item detail is. -/
 theorem item?_none {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef} {detail : WaitView → Option α}
     (none_ : itemDetail? ctx state occurrence detail = none) : item? ctx state occurrence detail = none := by

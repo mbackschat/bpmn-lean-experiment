@@ -191,7 +191,11 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       exact ⟨Nat.lt_succ_of_lt hostBelow, Nat.lt_succ_of_lt scopeBelow, placed⟩,
     fun status failure member => by
       rw [hSignals] at member
-      exact formed.queue.ends status failure member⟩
+      exact formed.queue.ends status failure member,
+    fun id leave writes rule member => by
+      rw [hSignals] at member
+      rw [hNext]
+      exact Nat.lt_succ_of_lt (formed.queue.completes id leave writes rule member)⟩
   have ownedBelow : OwnedBelow after := fun found member occurrence present link => by
     rw [hOcc] at present
     rcases members found member with old | rfl
@@ -261,7 +265,8 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
         rw [same, entryId]
         exact Nat.le_refl _,
     formed.attachedReserved.shrink (fun _ member => enters.openItems ▸ member) fun _ member _ => hOcc ▸ member,
-    formed.typed.shrink (fun _ member => enters.openItems ▸ member) fun _ member _ => hOcc ▸ member⟩
+    formed.typed.shrink (fun _ member => enters.openItems ▸ member) (fun _ member _ => hOcc ▸ member)
+      fun _ member => hSignals ▸ member⟩
 
 /-- Entering a scope occurrence below one that stands, owned, if at all, by a begun occurrence running there, keeps a
 state well-formed. -/
@@ -490,7 +495,7 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
     Within.congr (s := s) (t := { s with tokens := s.tokens ++ added }) rfl (formed.rooted.2.2 scope member)⟩
   variables := ⟨formed.variables.scopes, formed.variables.names⟩
   failure := formed.failure
-  queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends⟩
+  queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends, formed.queue.completes⟩
   counted := formed.counted
   occurrencesCounted := by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted
   ownedBelow := formed.ownedBelow

@@ -137,8 +137,8 @@ theorem complete_keeps (contract : HookContract hooks inv) (phases : Phases inv)
 theorem fireItem_keeps (contract : HookContract hooks inv) {ctx : Ctx} {item : OpenItem} {fired : Fired}
     {state after : State} (holds : inv ctx.program state) (open_ : item ∈ state.openItems)
     (ran : fireItem hooks ctx item fired state = .ok after) : inv ctx.program after := by
-  rcases fireItem_ok ran with ⟨_, _, ran⟩ | ran
-  · exact contract.triggerActivity _ _ _ _ _ _ _ holds open_ ran
+  rcases fireItem_ok ran with ⟨_, _, activity, ran⟩ | ran
+  · exact contract.triggerActivity _ _ _ _ _ _ _ holds open_ activity ran
   · exact contract.trigger _ _ _ _ _ holds open_ ran
 
 /-- A begun occurrence's dispatch to its element's hook keeps `inv`. -/
@@ -246,14 +246,14 @@ theorem transition_keeps (contract : HookContract hooks inv) (phases : Phases in
   rcases runs with ⟨data, same⟩ | ⟨data, same⟩ | fires
   · subst same
     cases command_ok ran with
-    | completeUserTask open_ ran => exact contract.completeUserTask _ _ _ _ _ _ _ holds open_ ran
-    | retryIncident open_ ran => exact contract.retryIncident _ _ _ _ _ _ holds open_ ran
+    | completeUserTask open_ activity ran => exact contract.completeUserTask _ _ _ _ _ _ _ holds open_ activity ran
+    | retryIncident open_ incident ran => exact contract.retryIncident _ _ _ _ _ _ holds open_ incident ran
     | cancelIncidentProcess ran => exact contract.cancelIncidentProcess _ _ _ _ _ holds ran
     | write queued => exact queued ▸ phases.queueWrite _ _ _ _ _ holds
     | remove queued => exact queued ▸ phases.queueRemove _ _ _ _ holds
   · subst same
-    obtain ⟨_, open_, ran⟩ := deliverEffectResult_ok ran
-    exact contract.effectResult _ _ _ _ _ holds open_ ran
+    obtain ⟨_, open_, effect, ran⟩ := deliverEffectResult_ok ran
+    exact contract.effectResult _ _ _ _ _ holds open_ effect ran
   · obtain ⟨_, _, picked, fired⟩ := fires _ _ ran
     rcases picked with open_ | ⟨_, delivered⟩
     · exact fireItem_keeps contract holds open_ fired

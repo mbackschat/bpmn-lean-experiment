@@ -165,6 +165,7 @@ theorem signal_named_wellFormed {s : State} {request : BeginRequest} (formed : W
     WellFormed program (s.signal (.begin request)) :=
   signal_wellFormed formed queue (signal_claimed_named formed stands nodup admitted placed notComplete)
     (signal_settled_named formed (fun id named => (admitted id named).2) notCompensate)
+    fun id leave writes rule same => absurd same (notComplete id leave writes rule)
 
 /-! ## An Event Sub-Process's start Event reservation through its entry -/
 

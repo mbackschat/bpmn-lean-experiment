@@ -171,10 +171,12 @@ inductive Performed (hooks : Hooks) (ctx : Ctx) : Signal → State → State →
 /-- What a committed variable, task or incident command ran (`Step.command`). -/
 inductive Commands (hooks : Hooks) (ctx : Ctx) (state after : State) : Prop where
   | completeUserTask {header : Header} {payload : ActivityPayload} {item : OpenItem} {values : List (String × Value)} :
-      item ∈ state.openItems → hooks.completeUserTask ctx header payload item values state = .ok after →
+      item ∈ state.openItems → (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) →
+      hooks.completeUserTask ctx header payload item values state = .ok after →
       Commands hooks ctx state after
   | retryIncident {item : OpenItem} {detail : IncidentDetail} {generation : Nat} :
-      item ∈ state.openItems → hooks.retryIncident ctx item detail generation state = .ok after →
+      item ∈ state.openItems → item.kind.view.incident = some detail →
+      hooks.retryIncident ctx item detail generation state = .ok after →
       Commands hooks ctx state after
   | cancelIncidentProcess {detail : IncidentDetail} {generation : Nat} :
       hooks.cancelIncidentProcess ctx detail generation state = .ok after → Commands hooks ctx state after

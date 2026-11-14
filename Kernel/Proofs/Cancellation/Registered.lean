@@ -9,13 +9,12 @@ public import Kernel.Laws.Registry
 The registered hooks keep a property carried beside `Laws.State.WellFormed` when the state operations they apply keep
 it (`Alongside`): each feature's operations record of `WellFormed` and the property follows from its record of
 `WellFormed` (`Kernel.Proofs.Step`) and `Alongside`, and the registered hooks' contract follows from the feature
-records, one field per hook, through each feature's lemma, which is generic in the invariant (`registered_contract`).
-The cancellation lane instantiates it at the before-state's scope occurrences (`KeepsScopes`), which closes
-`SubtreeRemoved Registry.hooks` up to the hooks whose feature lemmas the state-invariant lane has not stated yet
-(`PendingHooks`) and one `Laws.State` request (`PendingRemoval`), and at an input's end facts from its start
-(`Laws.Step.EndsKept`), which closes `RemovedEndOnce Registry.hooks` up to the same hooks, the `Laws.State` facts of the
-operations' bodies (`Laws.Step.PendingStateEnds`) and the walk with the completion pipeline as a premise
-(`PendingWalk`). Nothing executable imports this module.
+records (`Proofs.Step.registered_contract`). The cancellation lane instantiates it at the before-state's scope
+occurrences (`KeepsScopes`), which closes `SubtreeRemoved Registry.hooks` up to the `raise` hook, whose feature lemma
+the state-invariant lane has not stated yet (`PendingHooks`), and one `Laws.State` request (`PendingRemoval`), and at
+an input's end facts from its start (`Laws.Step.EndsKept`), which closes `RemovedEndOnce Registry.hooks` up to the same
+hook, the `Laws.State` facts of the operations' bodies (`Laws.Step.PendingStateEnds`) and the walk with the completion
+pipeline as a premise (`PendingWalk`). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -24,7 +23,7 @@ namespace Kernel.Proofs.Cancellation
 
 open Kernel
 open Kernel.Laws.State (WellFormed)
-open Kernel.Laws.Step (Operations StateFacts ScopeStands OccurrenceStands PipelineFrame)
+open Kernel.Laws.Step (Operations)
 
 /-! ## Each feature's operations record beside `WellFormed` -/
 
@@ -53,6 +52,29 @@ theorem Alongside.openSubscription (side : Alongside rel) {program : Program} {s
   rw [Laws.State.openSubscription_eq, Laws.State.issue_eq]
   exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
+/-- Closing an item moves nothing `rel` reads. -/
+theorem Alongside.closeItem (side : Alongside rel) {s : State} (kept : rel s) (id : Nat) : rel (s.closeItem id) := by
+  rw [Laws.State.closeItem_eq]
+  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ kept
+
+/-- Withdrawing the items inside a scope occurrence moves nothing `rel` reads. -/
+theorem Alongside.withdrawInside (side : Alongside rel) {s : State} (kept : rel s) (scope : ScopeOccurrenceId) :
+    rel (s.withdrawInside scope) := by
+  rw [Laws.State.withdrawInside_eq]
+  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ kept
+
+/-- Withdrawing an occurrence's items closes its own, disarms it and withdraws the items inside the scope occurrences
+it owns, which only the disarming may move anything `rel` reads of. -/
+theorem Alongside.withdrawOccurrence (side : Alongside rel) {program : Program} {s : State} (formed : WellFormed program s)
+    (kept : rel s) (id : Nat) : rel (s.withdrawOccurrence id) := by
+  obtain ⟨items, frame⟩ := Laws.State.withdrawAll_frame
+    (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
+  rw [Laws.State.withdrawOccurrence_eq, frame]
+  refine side.frame ((s.closeOwnItems id).disarm id) _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+    (side.disarm program _ id (Laws.State.closeOwnItems_wellFormed formed id) ?_)
+  rw [Laws.State.closeOwnItems_eq]
+  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ kept
+
 theorem operations_alongside (side : Alongside rel) (ops : Operations WellFormed) :
     Operations fun program s => WellFormed program s ∧ rel s where
   variablesHoused program s holds := ops.variablesHoused program s holds.1
@@ -65,13 +87,17 @@ theorem operations_alongside (side : Alongside rel) (ops : Operations WellFormed
 theorem workOps_alongside (side : Alongside rel) {program : Program} (ops : Laws.Work.WorkOps program (WellFormed program)) :
     Laws.Work.WorkOps program fun s => WellFormed program s ∧ rel s where
   write s scope writes rule holds := ⟨ops.write s scope writes rule holds.1, side.signal holds.2 _⟩
-  complete s item leave writes rule holds open_ := ⟨ops.complete s item leave writes rule holds.1 open_, side.signal holds.2 _⟩
+  complete s item leave writes rule holds open_ unstarted :=
+    ⟨ops.complete s item leave writes rule holds.1 open_ unstarted, side.signal holds.2 _⟩
   completeOwner s scope occurrence leave writes rule holds member owned link :=
     ⟨ops.completeOwner s scope occurrence leave writes rule holds.1 member owned link, side.signal holds.2 _⟩
   raise s event origin holds := ⟨ops.raise s event origin holds.1, side.signal holds.2 _⟩
   cancel s holds := ⟨ops.cancel s holds.1, side.signal holds.2 _⟩
-  rekind s change holds kept :=
-    ⟨ops.rekind s change holds.1 kept, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
+  rekind s change holds kept keep :=
+    ⟨ops.rekind s change holds.1 kept keep, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
+  workKind s item holds member waits := ops.workKind s item holds.1 member waits
+  activity := ops.activity
+  distinct s holds := ops.distinct s holds.1
   queued := ops.queued
   kept := ops.kept
   completeBegun s occurrence leave writes rule holds member begun :=
@@ -226,15 +252,38 @@ theorem subscriptionsOps_alongside (side : Alongside rel) {program : Program}
     (ops : Laws.Subscriptions.SubscriptionsOps program (WellFormed program)) :
     Laws.Subscriptions.SubscriptionsOps program fun s => WellFormed program s ∧ rel s where
   fire s item fired holds := ⟨ops.fire s item fired holds.1, side.signal holds.2 _⟩
-  rekind s change holds kept :=
-    ⟨ops.rekind s change holds.1 kept, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
+  rekind s change holds kept waits :=
+    ⟨ops.rekind s change holds.1 kept waits, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
+  awaits := ops.awaits
   disarm s host holds := ⟨ops.disarm s host holds.1, side.disarm program s host holds.1 holds.2⟩
   openItem s kind occurrence holds member begun unstarted :=
     ⟨ops.openItem s kind occurrence holds.1 member begun unstarted, side.openItem holds.2 kind occurrence⟩
-  openSubscription s kind element scope host passive holds stands hangs :=
-    ⟨ops.openSubscription s kind element scope host passive holds.1 stands hangs,
+  openSubscription s kind element scope host passive holds stands hangs waits :=
+    ⟨ops.openSubscription s kind element scope host passive holds.1 stands hangs waits,
       side.openSubscription holds.1 holds.2 kind element scope host passive⟩
   subscribed s kind element scope host passive holds := ops.subscribed s kind element scope host passive holds.1
+  closeComplete s item leave writes holds member :=
+    ⟨ops.closeComplete s item leave writes holds.1 member, side.signal (side.closeItem holds.2 item.id) _⟩
+  gatewayComplete s item gateway leave writes holds member attached :=
+    ⟨ops.gatewayComplete s item gateway leave writes holds.1 member attached, side.signal (side.signal
+      (side.disarm program _ gateway (Laws.State.closeItem_fired holds.1 member).1 (side.closeItem holds.2 item.id)) _) _⟩
+  interruptComplete s item host leave writes holds member :=
+    ⟨ops.interruptComplete s item host leave writes holds.1 member, side.signal (side.signal
+      (side.withdrawOccurrence (Laws.State.closeItem_fired holds.1 member).1 (side.closeItem holds.2 item.id) host) _) _⟩
+  reopenComplete s item detail leave writes holds member :=
+    ⟨ops.reopenComplete s item detail leave writes holds.1 member, side.signal (side.openSubscription
+      (Laws.State.closeItem_fired holds.1 member).1 (side.closeItem holds.2 item.id) _ _ _ _ _) _⟩
+  occur s item element leave writes holds member := ⟨ops.occur s item element leave writes holds.1 member, side.signal holds.2 _⟩
+  insideBegin s item element locals holds member start :=
+    ⟨ops.insideBegin s item element locals holds.1 member start,
+      side.signal (side.withdrawInside (side.closeItem holds.2 item.id) item.scope) _⟩
+  closeBegin s item element locals holds member start :=
+    ⟨ops.closeBegin s item element locals holds.1 member start, side.signal (side.closeItem holds.2 item.id) _⟩
+  reopenBegin s item detail element locals holds member start :=
+    ⟨ops.reopenBegin s item detail element locals holds.1 member start, side.signal (side.openSubscription
+      (Laws.State.closeItem_fired holds.1 member).1 (side.closeItem holds.2 item.id) _ _ _ _ _) _⟩
+  bareBegin s item element locals holds member :=
+    ⟨ops.bareBegin s item element locals holds.1 member, side.signal holds.2 _⟩
 
 theorem compensationOps_alongside (side : Alongside rel) {program : Program}
     (ops : Laws.Compensation.CompensationOps (WellFormed program)) :
@@ -247,160 +296,37 @@ theorem compensationOps_alongside (side : Alongside rel) {program : Program}
 
 end Alongside
 
-/-! ## The registered hooks' contract from the feature records -/
+/-! ## The registered hooks' feature records beside `WellFormed` -/
 
-/-- The operations records of every feature the registered hooks run, of one invariant. -/
-structure RegisteredOps (inv : Program → State → Prop) : Prop where
-  operations : Operations inv
-  work : ∀ program, Laws.Work.WorkOps program (inv program)
-  flow : ∀ program, Laws.Flow.FlowOps (inv program)
-  join : ∀ program, Laws.Flow.JoinOps (inv program) Laws.State.Settled
-  multiInstance : ∀ program, Laws.MultiInstance.MultiInstanceOps (inv program) Laws.State.Settled
-  starts : ∀ program, Laws.Starts.StartsOps (inv program)
-  scopes : ∀ program, Laws.Scopes.ScopesOps (inv program)
-  subscriptions : ∀ program, Laws.Subscriptions.SubscriptionsOps program (inv program)
-  compensation : ∀ program, Laws.Compensation.CompensationOps (inv program)
-  propagation : ∀ program, Laws.Propagation.PropagationOps program (inv program)
-  runs : ∀ program, Laws.Compensation.RunsOps (inv program) Laws.State.Settled
+/-- The feature records of `WellFormed` and a property beside it, from those of `WellFormed`
+(`Proofs.Step.registered_contract` turns them into the registered hooks' contract). -/
+theorem registeredOps_alongside {rel : State → Prop} (ops : Proofs.Step.RegisteredOps WellFormed) (side : Alongside rel) :
+    Proofs.Step.RegisteredOps fun program s => WellFormed program s ∧ rel s where
+  operations := operations_alongside side ops.operations
+  work _ := workOps_alongside side (ops.work _)
+  flow _ := flowOps_alongside side (ops.flow _)
+  join _ := joinOps_alongside side (ops.join _)
+  multiInstance _ := multiInstanceOps_alongside side (ops.multiInstance _)
+  starts _ := startsOps_alongside side (ops.starts _)
+  scopes _ := scopesOps_alongside side (ops.scopes _)
+  subscriptions _ := subscriptionsOps_alongside side (ops.subscriptions _)
+  compensation _ := compensationOps_alongside side (ops.compensation _)
+  propagation _ := propagationOps_alongside side (ops.propagation _)
+  runs _ := runsOps_alongside side (ops.runs _)
 
-/-- The state-invariant lane's records (`Kernel.Proofs.Step`, `Kernel.Proofs.State`). -/
-theorem registeredOps_wellFormed : RegisteredOps WellFormed :=
-  ⟨Proofs.State.operations, fun _ => Proofs.Step.workOps, fun _ => Proofs.Step.flowOps, fun _ => Proofs.Step.joinOps,
-    fun _ => Proofs.Step.multiInstanceOps, fun _ => Proofs.Step.startsOps, fun _ => Proofs.Step.scopesOps,
-    fun _ => Proofs.Step.subscriptionsOps, fun _ => Proofs.Step.compensationOps, fun _ => Proofs.Step.propagationOps,
-    fun _ => Proofs.Step.runsOps⟩
-
-/-- The feature records of `WellFormed` and a property beside it. -/
-theorem RegisteredOps.alongside {rel : State → Prop} (ops : RegisteredOps WellFormed) (side : Alongside rel) :
-    RegisteredOps fun program s => WellFormed program s ∧ rel s :=
-  ⟨operations_alongside side ops.operations, fun _ => workOps_alongside side (ops.work _),
-    fun _ => flowOps_alongside side (ops.flow _), fun _ => joinOps_alongside side (ops.join _),
-    fun _ => multiInstanceOps_alongside side (ops.multiInstance _), fun _ => startsOps_alongside side (ops.starts _),
-    fun _ => scopesOps_alongside side (ops.scopes _), fun _ => subscriptionsOps_alongside side (ops.subscriptions _),
-    fun _ => compensationOps_alongside side (ops.compensation _), fun _ => propagationOps_alongside side (ops.propagation _),
-    fun _ => runsOps_alongside side (ops.runs _)⟩
-
-/-- The fields of `Laws.Step.HookContract Registry.hooks inv` whose feature lemmas the state-invariant lane has not
-stated yet: pending until they land, then each comes from its feature's record as the others do. -/
+/-- The field of `Laws.Step.HookContract Registry.hooks inv` whose feature lemma the state-invariant lane has not
+stated yet: pending until it lands, then it comes from its feature's record as the others do. -/
 structure PendingHooks (inv : Program → State → Prop) : Prop where
-  trigger : ∀ ctx item fired state after, inv ctx.program state → item ∈ state.openItems →
-    Registry.hooks.trigger ctx item fired state = .ok after → inv ctx.program after
   raise : ∀ ctx event origin state after, inv ctx.program state →
     Registry.hooks.raise ctx event origin state = .ok after → inv ctx.program after
-
-/-- The registered hooks keep any invariant every feature's record is filled for, one field per hook from its
-feature's lemma, as `Kernel.Proofs.Step` proves each field of `WellFormed`. -/
-theorem registered_contract {inv : Program → State → Prop} (ops : RegisteredOps inv) (facts : StateFacts)
-    (pending : PendingHooks inv) : Laws.Step.HookContract Registry.hooks inv where
-  arriveStart _ _ _ _ _ _ _ holds member begun ran := by
-    rw [Laws.Registry.hooks_arriveStart] at ran
-    exact Laws.Starts.arriveStart_keeps (ops.starts _) holds member begun ran
-  arriveActivity _ _ _ _ _ _ holds member begun unstarted ran := by
-    rw [Laws.Registry.hooks_arriveActivity] at ran
-    exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted ran
-  arriveMultiInstance _ _ _ _ _ _ _ holds member begun ran := by
-    rw [Laws.Registry.hooks_arriveMultiInstance] at ran
-    exact Laws.MultiInstance.arriveMultiInstance_keeps (ops.multiInstance _) holds member begun ran
-  arriveScope _ _ _ _ _ _ _ holds member begun ready ran := by
-    rw [Laws.Registry.hooks_arriveScope] at ran
-    exact Laws.Scopes.arriveScope_keeps (ops.scopes _) holds member begun ready ran
-  arriveGateway _ _ _ _ _ _ holds member begun ran := by
-    rw [Laws.Registry.hooks_arriveGateway] at ran
-    exact Laws.Flow.arriveGateway_keeps (ops.join _) holds member begun ran
-  arriveCatch _ _ _ _ _ _ _ holds member begun unstarted ran := by
-    rw [Laws.Registry.hooks_arriveCatch] at ran
-    exact Laws.Subscriptions.arriveCatch_keeps (ops.subscriptions _) holds member begun unstarted ran
-  arriveThrow _ _ _ _ _ _ _ holds member begun unstarted ran := by
-    rw [Laws.Registry.hooks_arriveThrow] at ran
-    exact Laws.Propagation.arriveThrow_keeps (ops.propagation _) holds member begun unstarted ran
-  arriveLink _ _ _ _ _ _ holds member begun ran := by
-    rw [Laws.Registry.hooks_arriveLink] at ran
-    exact Laws.Flow.arriveLink_keeps (ops.flow _) holds member begun ran
-  completeScope _ _ _ _ _ _ _ holds member owned link ran := by
-    rw [Laws.Registry.hooks_completeScope] at ran
-    exact Laws.Scopes.completeScope_keeps (ops.scopes _) holds member owned link ran
-  completeCall _ _ _ _ _ _ _ holds member owned link ran := by
-    rw [Laws.Registry.hooks_completeCall] at ran
-    exact Laws.Work.completeCall_keeps (ops.work _) holds member owned link ran
-  completeBody _ _ _ _ _ _ _ holds _ ran := by
-    rw [Laws.Registry.hooks_completeBody] at ran
-    exact Laws.MultiInstance.completeBody_keeps (ops.multiInstance _) holds ran
-  completeUserTask _ _ _ _ _ _ _ holds member ran := by
-    rw [Laws.Registry.hooks_completeUserTask] at ran
-    exact Laws.Work.completeUserTask_keeps (ops.work _) holds member ran
-  effectResult _ _ _ _ _ holds member ran := by
-    rw [Laws.Registry.hooks_effectResult] at ran
-    exact Laws.Work.effectResult_keeps (ops.work _) holds member ran
-  retryIncident _ _ _ _ _ _ holds _ ran := by
-    rw [Laws.Registry.hooks_retryIncident] at ran
-    exact Laws.Work.retryIncident_keeps (ops.work _) holds ran
-  cancelIncidentProcess _ _ _ _ _ holds ran := by
-    rw [Laws.Registry.hooks_cancelIncidentProcess] at ran
-    exact Laws.Work.cancelIncidentProcess_keeps (ops.work _) holds ran
-  triggerActivity _ _ _ _ _ _ _ holds member ran := by
-    rw [Laws.Registry.hooks_triggerActivity] at ran
-    exact Laws.Work.triggerActivity_keeps (ops.work _) holds member ran
-  trigger := pending.trigger
-  arm _ _ _ _ _ _ holds stands placed hosted ran := by
-    rw [Laws.Registry.hooks_arm] at ran
-    exact Laws.Subscriptions.arm_keeps (ops.subscriptions _) holds (Proofs.Step.hosted_of stands placed hosted) ran
-  armScope _ _ _ _ holds placed ran := by
-    rw [Laws.Registry.hooks_armScope] at ran
-    exact Laws.Subscriptions.armScope_keeps (ops.subscriptions _) holds placed ran
-  armGateway _ _ _ _ _ _ holds stands placed hosted ran := by
-    rw [Laws.Registry.hooks_armGateway] at ran
-    exact Laws.Subscriptions.armGateway_keeps (ops.subscriptions _) holds (Proofs.Step.hosted_of stands placed hosted) ran
-  raise := pending.raise
-  compensate _ _ _ _ _ _ _ _ holds stands resumable ran := by
-    rw [Laws.Registry.hooks_compensate] at ran
-    obtain ⟨entry, inside, named⟩ := stands
-    exact Laws.Compensation.compensate_keeps (ops.runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) resumable ran
-  failCompensation _ _ _ _ _ _ _ holds _ ran := by
-    rw [Laws.Registry.hooks_failCompensation] at ran
-    exact Laws.Compensation.failCompensation_keeps (ops.compensation _) holds ran
-  leave _ occurrence state _ holds _ ran := by
-    rw [Laws.Registry.hooks_leave] at ran
-    obtain ⟨kept, disarmed⟩ := Laws.Subscriptions.leave_keeps (ops.subscriptions _) holds ran
-    subst disarmed
-    exact ⟨kept, Proofs.Step.disarm_frame state occurrence.id⟩
-  writeOutputs := Proofs.Step.registered_writeOutputs ops.operations facts
-  removeVariables := Proofs.Step.registered_removeVariables ops.operations facts
-  completed _ _ _ _ holds _ ran := by
-    rw [Laws.Registry.hooks_completed] at ran
-    obtain ⟨kept, scopes, occurrences, items⟩ := Laws.Compensation.completed_keeps (ops.compensation _) holds ran
-    exact ⟨kept, Proofs.Step.retained_frame scopes occurrences items⟩
-  outflow _ _ _ _ _ holds stands ran := by
-    rw [Laws.Registry.hooks_outflow] at ran
-    exact Laws.Flow.outflow_keeps (ops.flow _) holds stands ran
-  instanceCompleted _ _ _ _ _ _ holds stands ran := by
-    rw [Laws.Registry.hooks_instanceCompleted] at ran
-    obtain ⟨entry, inside, named⟩ := stands
-    exact Laws.MultiInstance.instanceCompleted_keeps (ops.multiInstance _) holds (List.mem_map.mpr ⟨entry, inside, named⟩)
-      ran
-  handlerCompleted _ _ _ _ _ holds stands ran := by
-    rw [Laws.Registry.hooks_handlerCompleted] at ran
-    obtain ⟨entry, inside, named⟩ := stands
-    exact Laws.Compensation.handlerCompleted_keeps (ops.runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran
-  handlerEnded _ _ _ _ _ holds stands ran := by
-    rw [Laws.Registry.hooks_handlerEnded] at ran
-    obtain ⟨entry, inside, named⟩ := stands
-    exact Laws.Compensation.handlerEnded_keeps (ops.runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran
-  cancelled _ _ _ _ holds ran := by
-    rw [Laws.Registry.hooks_cancelled] at ran
-    cases ran
-    exact holds
-  written _ _ _ _ holds ran := by
-    rw [Laws.Registry.hooks_written] at ran
-    exact Laws.Subscriptions.offerWrites_keeps (ops.subscriptions _) holds ran
-  delivered := Proofs.Step.registered_delivered
 
 /-! ## Subtree removal of the registered hooks -/
 
 /-- The registered hooks keep the scope occurrences of any before-state beside `WellFormed`. -/
 theorem keepsScopes_contract (removal : PendingRemoval) (pending : ∀ before, PendingHooks (KeepsScopes before))
     (before : State) : Laws.Step.HookContract Registry.hooks (KeepsScopes before) :=
-  registered_contract (registeredOps_wellFormed.alongside (scopesKept_alongside removal before))
-    Proofs.State.stateFacts (pending before)
+  Proofs.Step.registered_contract (registeredOps_alongside Proofs.Step.registeredOps_wellFormed
+    (scopesKept_alongside removal before)) Proofs.State.stateFacts (pending before).raise
 
 /-- `SubtreeRemoved` of the registered hooks, up to the pending hook fields and `Laws.State` request. -/
 theorem subtreeRemoved_registered (removal : PendingRemoval) (pending : ∀ before, PendingHooks (KeepsScopes before)) :
@@ -415,35 +341,68 @@ theorem subtreeRemoved_registered (removal : PendingRemoval) (pending : ∀ befo
 theorem endsInv_contract (ends : Laws.Step.PendingStateEnds)
     (pending : ∀ b x, PendingHooks (Laws.Step.EndsInv b x)) (b : State) (x : Option (Nat × OccurrenceKey)) :
     Laws.Step.HookContract Registry.hooks (Laws.Step.EndsInv b x) :=
-  registered_contract (registeredOps_wellFormed.alongside (endsKept_alongside ends b x)) Proofs.State.stateFacts
-    (pending b x)
+  Proofs.Step.registered_contract (registeredOps_alongside Proofs.Step.registeredOps_wellFormed
+    (endsKept_alongside ends b x)) Proofs.State.stateFacts (pending b x).raise
 
 /-! ## The draft the registered hooks leave -/
 
-/-- Subscriptions' operations keep the draft's end facts: they queue firings, open, close and rekind items, and a
-subscription reserves its occurrence, which journals nothing (`Laws.Step.PendingStateEnds`). -/
+section Draft
+
+private theorem signal_draft (s : State) (signal : Signal) : (s.signal signal).draft = s.draft := by
+  rw [Laws.State.signal_eq]
+
+private theorem closeItem_draft (s : State) (id : Nat) : (s.closeItem id).draft = s.draft := by
+  rw [Laws.State.closeItem_eq]
+
+private theorem disarm_draft (s : State) (host : Nat) : (s.disarm host).draft = s.draft := by
+  rw [Laws.State.disarm_eq]
+
+private theorem withdrawInside_draft (s : State) (scope : ScopeOccurrenceId) : (s.withdrawInside scope).draft = s.draft := by
+  rw [Laws.State.withdrawInside_eq]
+
+private theorem withdrawOccurrence_draft (s : State) (id : Nat) : (s.withdrawOccurrence id).draft = s.draft := by
+  obtain ⟨items, frame⟩ := Laws.State.withdrawAll_frame
+    (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
+  rw [Laws.State.withdrawOccurrence_eq, frame, Laws.State.disarm_eq, Laws.State.closeOwnItems_eq]
+
+/-- Opening a subscription keeps the draft's end facts: its reservation journals nothing (`Laws.Step.PendingStateEnds`). -/
+private theorem openSubscription_ended (ends : Laws.Step.PendingStateEnds) (s : State) (kind : OpenKind)
+    (element : ElementId) (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool) :
+    (s.openSubscription kind element scope host passive).1.draft.ended = s.draft.ended := by
+  rw [Laws.State.openSubscription_eq]
+  exact congrArg (·.ended) ((ends.ends_unmoved s).2.2.1 element scope).2.1
+
+/-- Subscriptions' operations keep the draft's end facts: they queue firings and completions, open, close, withdraw
+and rekind items and disarm hosts, and a subscription reserves its occurrence, which journals nothing. -/
 theorem subscriptionsOps_draft (ends : Laws.Step.PendingStateEnds) (program : Program)
     (ended : List (OccurrenceKey × Terminal)) :
     Laws.Subscriptions.SubscriptionsOps program fun s => s.draft.ended = ended where
-  fire s item fired same := by
-    rw [Laws.State.signal_eq]
-    exact same
-  rekind _ _ same _ := same
-  disarm s host same := by
-    rw [Laws.State.disarm_eq]
-    exact same
+  fire s _ _ same := by rw [signal_draft]; exact same
+  rekind _ _ same _ _ := same
+  awaits := Laws.State.triggers_await
+  disarm s host same := by rw [disarm_draft]; exact same
   openItem s kind occurrence same _ _ _ := by
     rw [Laws.State.openItem_eq]
     exact same
-  openSubscription s kind element scope host passive same _ _ := by
-    rw [Laws.State.openSubscription_eq]
-    show (s.reserve element scope).1.draft.ended = ended
-    rw [((ends.ends_unmoved s).2.2.1 element scope).2.1]
-    exact same
+  openSubscription s kind element scope host passive same _ _ _ :=
+    (openSubscription_ended ends s kind element scope host passive).trans same
   subscribed s kind element scope host passive _ := by
     obtain ⟨_, _, scopes, occurrences⟩ := (ends.ends_unmoved s).2.2.1 element scope
     rw [Laws.State.openSubscription_eq]
     exact ⟨scopes, fun o inside => occurrences ▸ List.mem_append_left _ inside⟩
+  closeComplete s _ _ _ same _ := by rw [signal_draft, closeItem_draft]; exact same
+  gatewayComplete s _ _ _ _ same _ _ := by rw [signal_draft, signal_draft, disarm_draft, closeItem_draft]; exact same
+  interruptComplete s _ _ _ _ same _ := by
+    rw [signal_draft, signal_draft, withdrawOccurrence_draft, closeItem_draft]
+    exact same
+  reopenComplete s _ _ _ _ same _ := by rw [signal_draft, openSubscription_ended ends, closeItem_draft]; exact same
+  occur s _ _ _ _ same _ := by rw [signal_draft]; exact same
+  insideBegin s _ _ _ same _ _ := by rw [signal_draft, withdrawInside_draft, closeItem_draft]; exact same
+  closeBegin s _ _ _ same _ _ := by rw [signal_draft, closeItem_draft]; exact same
+  reopenBegin s _ _ _ _ same _ _ := by rw [signal_draft, openSubscription_ended ends, closeItem_draft]; exact same
+  bareBegin s _ _ _ same _ := by rw [signal_draft]; exact same
+
+end Draft
 
 /-- The registered hooks journal no end when told of a cancellation, which no feature hears, or of variable writes,
 which Subscriptions offers to Conditional items by queueing the firings they decide (`Laws.Subscriptions`), so each
@@ -462,7 +421,7 @@ theorem registered_quiet (ends : Laws.Step.PendingStateEnds) :
 
 /-- `MicroStepsKeepEnds` of the registered hooks, up to the pending requests: the `Laws.State` facts of the operations'
 bodies (`Laws.Step.PendingStateEnds`, R15), the walk with the completion pipeline as a premise (`PendingWalk`, R14) and
-the two hooks the state-invariant lane has not proved (`PendingHooks`); `removedEndOnce` then gives `RemovedEndOnce`. -/
+the `raise` hook the state-invariant lane has not proved (`PendingHooks`); `removedEndOnce` then gives `RemovedEndOnce`. -/
 theorem microStepsKeepEnds_registered (ends : Laws.Step.PendingStateEnds) (walk : PendingWalk)
     (pending : ∀ b x, PendingHooks (Laws.Step.EndsInv b x)) : MicroStepsKeepEnds Registry.hooks := by
   have kept := fun b => walk.walk Registry.hooks (Laws.Step.EndsKept b none) (endsInv_contract ends pending b none)

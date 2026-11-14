@@ -118,6 +118,10 @@ theorem hooks_armGateway : Registry.hooks.armGateway = Feature.Subscriptions.arm
 theorem hooks_triggerActivity : Registry.hooks.triggerActivity = Feature.Work.triggerActivity Registry.workHooks := by
   simp only [Registry.hooks]
 
+/-- Subscriptions fires every other item. -/
+theorem hooks_trigger : Registry.hooks.trigger = Feature.Subscriptions.trigger Registry.subscriptionsHooks := by
+  simp only [Registry.hooks]
+
 /-- Work returns from every called instance. -/
 theorem hooks_completeCall : Registry.hooks.completeCall = Feature.Work.completeCall := by
   simp only [Registry.hooks]

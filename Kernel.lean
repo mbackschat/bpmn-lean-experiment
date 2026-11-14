@@ -68,6 +68,7 @@ public import Kernel.Laws.Starts
 public import Kernel.Laws.State
 public import Kernel.Laws.State.Claim
 public import Kernel.Laws.State.Enter
+public import Kernel.Laws.State.Fire
 public import Kernel.Laws.State.Frames
 public import Kernel.Laws.State.Invariant
 public import Kernel.Laws.State.Issue
@@ -99,6 +100,7 @@ public import Kernel.Proofs.Former
 public import Kernel.Proofs.MultiInstance
 public import Kernel.Proofs.State
 public import Kernel.Proofs.Step
+public import Kernel.Proofs.Step.Queue
 public import Kernel.Publish
 public import Kernel.Registry
 public import Kernel.Run.Fixture

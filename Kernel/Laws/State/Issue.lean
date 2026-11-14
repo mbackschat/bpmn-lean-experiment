@@ -317,21 +317,23 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       by simpa [begins.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, begins.failure, begins.status] using formed.failure
   case queue =>
-    obtain ⟨arm, armScope, armGateway, ends⟩ := formed.queue
+    have queue := formed.queue
     refine ⟨fun host element scope queued => ?_, fun scope queued => ?_, fun occurrence gateway scope queued => ?_,
-      fun status failure queued => ends status failure (begins.signals ▸ queued)⟩
-    · obtain ⟨hostBelow, scopeBelow, facts⟩ := arm host element scope (begins.signals ▸ queued)
+      fun status failure queued => queue.ends status failure (begins.signals ▸ queued), fun id leave writes rule queued => ?_⟩
+    · obtain ⟨hostBelow, scopeBelow, facts⟩ := queue.arm host element scope (begins.signals ▸ queued)
       refine ⟨by omega, by omega, fun found member named => ?_⟩
       rcases members found member with rfl | ⟨old, _⟩
       · exact absurd named (unarmed host hostBelow fun found inside same => (facts found inside same).1)
       · exact facts found old named
-    · have := armScope scope (begins.signals ▸ queued)
+    · have := queue.armScope scope (begins.signals ▸ queued)
       omega
-    · obtain ⟨occurrenceBelow, scopeBelow, facts⟩ := armGateway occurrence gateway scope (begins.signals ▸ queued)
+    · obtain ⟨occurrenceBelow, scopeBelow, facts⟩ := queue.armGateway occurrence gateway scope (begins.signals ▸ queued)
       refine ⟨by omega, by omega, fun found member named => ?_⟩
       rcases members found member with rfl | ⟨old, _⟩
       · exact absurd named (unarmed occurrence occurrenceBelow fun found inside same => (facts found inside same).1)
       · exact facts found old named
+    · have := queue.completes id leave writes rule (begins.signals ▸ queued)
+      omega
   case counted =>
     exact fun fact started => by
       rw [startsAfter] at started
@@ -411,6 +413,6 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       · exact old
     first
       | exact formed.attachedReserved.transport (fun _ member => begins.openItems ▸ member) waited
-      | exact formed.typed.transport (fun _ member => begins.openItems ▸ member) waited
+      | exact formed.typed.transport (fun _ member => begins.openItems ▸ member) waited fun _ member => begins.signals ▸ member
 
 end Kernel.Laws.State

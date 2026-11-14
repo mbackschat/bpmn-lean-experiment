@@ -544,12 +544,11 @@ theorem advanceClock_ok {at? : Option Nat} {state after : State} (ran : advanceC
 /-- A fired item goes back to its Activity's hook, or to `Hooks.trigger`. -/
 theorem fireItem_ok {hooks : Hooks} {ctx : Ctx} {item : OpenItem} {fired : Fired} {state after : State}
     (ran : fireItem hooks ctx item fired state = .ok after) :
-    (∃ header payload, hooks.triggerActivity ctx header payload item fired state = .ok after) ∨
+    (∃ header payload, (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) ∧
+      hooks.triggerActivity ctx header payload item fired state = .ok after) ∨
       hooks.trigger ctx item fired state = .ok after := by
   unfold fireItem at ran
-  split at ran
-  · exact .inl ⟨_, _, ran⟩
-  · exact .inr ran
+  split at ran <;> first | exact .inl ⟨_, _, ‹_›, ran⟩ | exact .inr ran
 
 theorem dispatch_ok {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry} {trigger : StartTrigger}
     {state after : State} (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) :
@@ -802,13 +801,13 @@ theorem command_ok {hooks : Hooks} {ctx : Ctx} {data : CommandInput} {state afte
       simp only [found] at ran
       unfold atActivity at ran
       split at ran
-      · exact .completeUserTask (Laws.Hooks.item?_mem found) ran
+      · exact .completeUserTask (Laws.Hooks.item?_mem found) ‹_› ran
       · simp at ran
   | retryIncident generation =>
     simp only [action] at ran
     split at ran
     · simp at ran
-    · exact .retryIncident (Laws.Hooks.itemDetail?_mem ‹_›) ran
+    · exact .retryIncident (Laws.Hooks.itemDetail?_mem ‹_›) (Laws.Hooks.itemDetail?_view ‹_›) ran
   | cancelIncidentProcess generation =>
     simp only [action] at ran
     split at ran
@@ -828,11 +827,12 @@ theorem command_ok {hooks : Hooks} {ctx : Ctx} {data : CommandInput} {state afte
 
 theorem deliverEffectResult_ok {hooks : Hooks} {ctx : Ctx} {data : EffectInput} {state after : State}
     (ran : deliverEffectResult hooks ctx data state = .ok after) :
-    ∃ item ∈ state.openItems, hooks.effectResult ctx item data.outcome state = .ok after := by
+    ∃ item ∈ state.openItems, item.kind.view.effect.isSome = true ∧
+      hooks.effectResult ctx item data.outcome state = .ok after := by
   unfold deliverEffectResult at ran
   split at ran
   · simp at ran
-  · exact ⟨_, Laws.Hooks.item?_mem ‹_›, ran⟩
+  · exact ⟨_, Laws.Hooks.item?_mem ‹_›, Laws.Hooks.item?_view ‹_›, ran⟩
 
 /-! ## The program of a step and the elements a dispatch reaches
 

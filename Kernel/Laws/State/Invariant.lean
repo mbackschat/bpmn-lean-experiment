@@ -161,7 +161,8 @@ def FailureRecorded (s : State) : Prop :=
 finds them standing, and its host, while it stands, is begun and runs in the named scope occurrence, as every arming is
 queued in its host's scope (`Scopes.enter`, `Work`, `Call.invoke`, `MultiInstance`, `Flow`'s Event-Based Gateway);
 every queued instance end records a failure exactly when it fails (`FailureRecorded`). The other queued work checks
-what it names itself (`Step.requireScope`, `Step.gone`) or does nothing to what is gone. Queued work naming a scope
+what it names itself (`Step.requireScope`, `Step.gone`) or does nothing to what is gone; a queued completion names an
+issued identity, so a reservation made later is never one it completes (`Typed`). Queued work naming a scope
 occurrence an interruption removed (`Kernel/Step/Stale.lean`) keeps this clause: what it names was issued. -/
 structure QueueSound (s : State) : Prop where
   arm : ∀ host element scope, Signal.arm host element scope ∈ s.signals → host < s.nextIssue ∧ scope.value < s.nextIssue ∧
@@ -171,6 +172,7 @@ structure QueueSound (s : State) : Prop where
     occurrence < s.nextIssue ∧ scope.value < s.nextIssue ∧
       ∀ found ∈ s.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
   ends : ∀ status failure, Signal.endInstance status failure ∈ s.signals → (failure.isSome = true ↔ status = .failed)
+  completes : ∀ id leave writes rule, Signal.complete id leave writes rule ∈ s.signals → id < s.nextIssue
 
 /-- Every start fact of the input in progress counts an activation its counter has issued, so a fresh activation never
 repeats one (`StartedOnce`, R8). -/
@@ -347,14 +349,20 @@ standing (`Throw.terminate`). -/
 def AttachedReserved (s : State) : Prop :=
   ∀ item ∈ s.openItems, item.attachedTo.isSome = true → Unbegun s item.occurrence
 
+/-- What an item waits for is a trigger, not work: no effect result or incident command closes it. -/
+def AwaitsTrigger (kind : OpenKind) : Prop := kind.view.effect = none ∧ kind.view.incident = none
+
 /-- An item of an element the program declares a start Event, an Event Sub-Process start's, holds an unbegun
-reservation alone: `Feature.Subscriptions.trigger` reads the program to tell such an item from a boundary's or a catch
-Event's, and begins the Event Sub-Process with the item's reservation (`ReservationsClaimed.named`), while an item for a
-begun occurrence (`State.openItem`) is opened only for an Activity or an intermediate Event, which `Step.dispatch` tells
-from a start Event by the same query. The one clause that reads the program. -/
+reservation alone, which no queued completion completes, and waits for a trigger: `Feature.Subscriptions.trigger`
+reads the program to tell such an item from a boundary's or a catch Event's, and begins the Event Sub-Process with the
+item's reservation (`ReservationsClaimed.named`), while an item for a begun occurrence (`State.openItem`) is opened only
+for an Activity or an intermediate Event, which `Step.dispatch` tells from a start Event by the same query, and only
+such an item is completed while it waits or given an effect or an incident (`Feature.Work`). The one clause that reads
+the program. -/
 def Typed (program : Program) (s : State) : Prop :=
   ∀ item ∈ s.openItems, ((program.element? item.element).bind (·.start?)).isSome = true →
-    Unbegun s item.occurrence ∧ ∀ other ∈ s.openItems, other.occurrence = item.occurrence → other = item
+    Unbegun s item.occurrence ∧ (∀ other ∈ s.openItems, other.occurrence = item.occurrence → other = item) ∧
+      (∀ leave writes rule, Signal.complete item.occurrence leave writes rule ∉ s.signals) ∧ AwaitsTrigger item.kind
 
 /-- The state invariants together: what holds of every committed state and between any two micro-steps of a closure,
 relative to the program the instance runs. -/
@@ -810,6 +818,12 @@ theorem misplaced_owner_rejected (kind : OpenKind) :
 occurrence that is gone, never one that was never issued. -/
 theorem unissued_arming (kind : OpenKind) : ¬ WellFormed program { sample kind with signals := [.armScope ⟨9⟩] } := fun formed => by
   have := formed.queue.armScope ⟨9⟩ (by simp)
+  simp [sample] at this
+
+/-- So does a completion of an identity never issued: a reservation made later would be completed. -/
+theorem unissued_completion (kind : OpenKind) :
+    ¬ WellFormed program { sample kind with signals := [.complete 9 .outgoing [] .outward] } := fun formed => by
+  have := formed.queue.completes 9 .outgoing [] .outward (by simp)
   simp [sample] at this
 
 /-- A boundary item filed in the Sub-Process scope but attached to the root's task 5 breaks `Owned`: an arming opens

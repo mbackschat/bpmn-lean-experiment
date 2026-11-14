@@ -238,13 +238,16 @@ theorem AttachedReserved.transport {before after : State} (reserved : AttachedRe
       occurrence.begun = true → occurrence ∈ before.occurrences) : AttachedReserved after :=
   fun item member attached => (reserved item (items item member) attached).transport (begun item member)
 
-/-- `Typed` holds through a change that adds no open item and begins none of what an open item waits on. -/
+/-- `Typed` holds through a change that adds no open item or queued signal and begins none of what an open item
+waits on. -/
 theorem Typed.transport {program : Program} {before after : State} (typed : Typed program before)
     (items : ∀ item ∈ after.openItems, item ∈ before.openItems)
     (begun : ∀ item ∈ after.openItems, ∀ occurrence ∈ after.occurrences, occurrence.id = item.occurrence →
-      occurrence.begun = true → occurrence ∈ before.occurrences) : Typed program after := fun item member started =>
-  have ⟨unbegun, alone⟩ := typed item (items item member) started
-  ⟨unbegun.transport (begun item member), fun other inside same => alone other (items other inside) same⟩
+      occurrence.begun = true → occurrence ∈ before.occurrences)
+    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) : Typed program after := fun item member started =>
+  have ⟨unbegun, alone, uncompleted, waits⟩ := typed item (items item member) started
+  ⟨unbegun.transport (begun item member), fun other inside same => alone other (items other inside) same,
+    fun leave writes rule queued => uncompleted leave writes rule (signals _ queued), waits⟩
 
 theorem AttachedReserved.shrink {before after : State} (reserved : AttachedReserved before)
     (items : ∀ item ∈ after.openItems, item ∈ before.openItems)
@@ -253,8 +256,16 @@ theorem AttachedReserved.shrink {before after : State} (reserved : AttachedReser
 
 theorem Typed.shrink {program : Program} {before after : State} (typed : Typed program before)
     (items : ∀ item ∈ after.openItems, item ∈ before.openItems)
-    (begun : ∀ occurrence ∈ after.occurrences, occurrence.begun = true → occurrence ∈ before.occurrences) :
-    Typed program after := typed.transport items fun _ _ occurrence member _ flag => begun occurrence member flag
+    (begun : ∀ occurrence ∈ after.occurrences, occurrence.begun = true → occurrence ∈ before.occurrences)
+    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) :
+    Typed program after := typed.transport items (fun _ _ occurrence member _ flag => begun occurrence member flag) signals
+
+/-- What lies within `scope` belongs to every set that holds `scope` and the children of its members. -/
+theorem Within.closed_mem {s : State} {scope x : ScopeOccurrenceId} {set : List ScopeOccurrenceId} (inside : Within s x scope)
+    (start : scope ∈ set) (closed : ∀ p ∈ set, ∀ child ∈ s.scopes, child.parent = some p → child.id ∈ set) : x ∈ set := by
+  induction inside with
+  | refl => exact start
+  | parent child parent _ member link _ ih => exact closed parent (ih start) child member link
 
 /-! ## Narrowing -/
 
@@ -291,7 +302,9 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
     armGateway := fun occurrence gateway scope queued => by
       simpa [narrows.nextIssue, narrows.occurrences] using
         formed.queue.armGateway occurrence gateway scope (narrows.signals.subset queued)
-    ends := fun status failure queued => formed.queue.ends status failure (narrows.signals.subset queued) }
+    ends := fun status failure queued => formed.queue.ends status failure (narrows.signals.subset queued)
+    completes := fun id leave writes rule queued =>
+      narrows.nextIssue ▸ formed.queue.completes id leave writes rule (narrows.signals.subset queued) }
   exact {
   issued := ⟨by simpa [narrows.occurrences, narrows.nextIssue] using formed.issued.occurrences,
     fun item member => narrows.nextIssue ▸ formed.issued.items item (items member),
@@ -337,7 +350,8 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
   settled := settled
   attachedReserved := formed.attachedReserved.shrink (fun _ member => items member)
     fun _ member _ => narrows.occurrences ▸ member
-  typed := formed.typed.shrink (fun _ member => items member) fun _ member _ => narrows.occurrences ▸ member }
+  typed := formed.typed.shrink (fun _ member => items member) (fun _ member _ => narrows.occurrences ▸ member)
+    fun _ member => narrows.signals.subset member }
 
 /-- A state that narrows a well-formed one with the same variable sets is well-formed when it starts no occurrence key
 twice. -/
@@ -530,13 +544,14 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
   · exact ⟨formed.variables.scopes.sublist (cleared.variablesSublist.map _),
       fun variables member => formed.variables.names variables (cleared.variablesSublist.subset member)⟩
   · simpa [FailureRecorded, cleared.status, cleared.failure] using formed.failure
-  · obtain ⟨arm, armScope, armGateway, ends⟩ := formed.queue
-    refine ⟨fun host element scope queued => ?_, by simpa [cleared.signals, cleared.nextIssue] using armScope,
-      fun occurrence gateway scope queued => ?_, by simpa [cleared.signals] using ends⟩
-    · obtain ⟨host_, scope_, facts⟩ := arm host element scope (cleared.signals ▸ queued)
+  · have queue := formed.queue
+    refine ⟨fun host element scope queued => ?_, by simpa [cleared.signals, cleared.nextIssue] using queue.armScope,
+      fun occurrence gateway scope queued => ?_, by simpa [cleared.signals] using queue.ends,
+      by simpa [cleared.signals, cleared.nextIssue] using queue.completes⟩
+    · obtain ⟨host_, scope_, facts⟩ := queue.arm host element scope (cleared.signals ▸ queued)
       exact ⟨cleared.nextIssue ▸ host_, cleared.nextIssue ▸ scope_,
         fun found member => facts found (cleared.occurrencesSublist.subset member)⟩
-    · obtain ⟨occurrence_, scope_, facts⟩ := armGateway occurrence gateway scope (cleared.signals ▸ queued)
+    · obtain ⟨occurrence_, scope_, facts⟩ := queue.armGateway occurrence gateway scope (cleared.signals ▸ queued)
       exact ⟨cleared.nextIssue ▸ occurrence_, cleared.nextIssue ▸ scope_,
         fun found member => facts found (cleared.occurrencesSublist.subset member)⟩
   · intro fact started
@@ -560,7 +575,7 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
   · exact formed.attachedReserved.shrink (fun _ member => cleared.openItemsSublist.subset member)
       fun _ member _ => cleared.occurrencesSublist.subset member
   · exact formed.typed.shrink (fun _ member => cleared.openItemsSublist.subset member)
-      fun _ member _ => cleared.occurrencesSublist.subset member
+      (fun _ member _ => cleared.occurrencesSublist.subset member) fun _ member => cleared.signals ▸ member
 
 /-! ## Pruning occurrences and items -/
 
@@ -636,12 +651,13 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
       by simpa [prunes.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, prunes.failure, prunes.status] using formed.failure
   case queue =>
-    obtain ⟨arm, armScope, armGateway, ends⟩ := formed.queue
-    refine ⟨fun host element scope queued => ?_, by simpa [prunes.signals, prunes.nextIssue] using armScope,
-      fun occurrence gateway scope queued => ?_, by simpa [prunes.signals] using ends⟩
-    · obtain ⟨hostBelow, scopeBelow, facts⟩ := arm host element scope (prunes.signals ▸ queued)
+    have queue := formed.queue
+    refine ⟨fun host element scope queued => ?_, by simpa [prunes.signals, prunes.nextIssue] using queue.armScope,
+      fun occurrence gateway scope queued => ?_, by simpa [prunes.signals] using queue.ends,
+      by simpa [prunes.signals, prunes.nextIssue] using queue.completes⟩
+    · obtain ⟨hostBelow, scopeBelow, facts⟩ := queue.arm host element scope (prunes.signals ▸ queued)
       exact ⟨prunes.nextIssue ▸ hostBelow, prunes.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
-    · obtain ⟨below, scopeBelow, facts⟩ := armGateway occurrence gateway scope (prunes.signals ▸ queued)
+    · obtain ⟨below, scopeBelow, facts⟩ := queue.armGateway occurrence gateway scope (prunes.signals ▸ queued)
       exact ⟨prunes.nextIssue ▸ below, prunes.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
   case counted =>
     exact fun fact started => (formed.counted fact (sameStarts ▸ started)).congr prunes.activations
@@ -662,7 +678,8 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
       (fun _ queued => queued.shrink (by rw [prunes.signals]; exact .refl _) (by rw [prunes.tokens]; exact .refl _))
       (fun _ member => prunes.signals ▸ member) (fun _ member => .inl (prunes.scopes ▸ member))
   case attachedReserved => exact formed.attachedReserved.shrink (fun _ member => items member) fun _ member _ => kept member
-  case typed => exact formed.typed.shrink (fun _ member => items member) fun _ member _ => kept member
+  case typed =>
+    exact formed.typed.shrink (fun _ member => items member) (fun _ member _ => kept member) fun _ member => prunes.signals ▸ member
 
 /-- `s` without the occurrence record `id`: what `State.removeOccurrence` removes first. -/
 def withoutRecord (s : State) (id : Nat) : State := { s with occurrences := s.occurrences.filter (·.id != id) }
@@ -774,12 +791,13 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
       fun variables member => formed.variables.names variables (left.variablesSublist.subset member)⟩
   case failure => simpa [FailureRecorded, left.status, left.failure] using formed.failure
   case queue =>
-    obtain ⟨arm, armScope, armGateway, ends⟩ := formed.queue
-    refine ⟨fun host element scope queued => ?_, by simpa [left.signals, left.nextIssue] using armScope,
-      fun occurrence gateway scope queued => ?_, by simpa [left.signals] using ends⟩
-    · obtain ⟨hostBelow, scopeBelow, facts⟩ := arm host element scope (left.signals ▸ queued)
+    have queue := formed.queue
+    refine ⟨fun host element scope queued => ?_, by simpa [left.signals, left.nextIssue] using queue.armScope,
+      fun occurrence gateway scope queued => ?_, by simpa [left.signals] using queue.ends,
+      by simpa [left.signals, left.nextIssue] using queue.completes⟩
+    · obtain ⟨hostBelow, scopeBelow, facts⟩ := queue.arm host element scope (left.signals ▸ queued)
       exact ⟨left.nextIssue ▸ hostBelow, left.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
-    · obtain ⟨below, scopeBelow, facts⟩ := armGateway occurrence gateway scope (left.signals ▸ queued)
+    · obtain ⟨below, scopeBelow, facts⟩ := queue.armGateway occurrence gateway scope (left.signals ▸ queued)
       exact ⟨left.nextIssue ▸ below, left.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
   case counted =>
     exact fun fact started => (formed.counted fact (sameStarts ▸ started)).congr left.activations
@@ -803,6 +821,7 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
   case attachedReserved =>
     exact formed.attachedReserved.shrink (fun _ member => left.openItemsSublist.subset member) fun _ member _ => kept member
   case typed =>
-    exact formed.typed.shrink (fun _ member => left.openItemsSublist.subset member) fun _ member _ => kept member
+    exact formed.typed.shrink (fun _ member => left.openItemsSublist.subset member) (fun _ member _ => kept member)
+      fun _ member => left.signals ▸ member
 
 end Kernel.Laws.State

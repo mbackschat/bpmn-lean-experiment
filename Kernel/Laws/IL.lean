@@ -39,4 +39,8 @@ theorem start?_scope (header : Header) (payload : ScopePayload) : (Element.scope
 theorem start?_gateway (header : Header) (payload : GatewayPayload) : (Element.gateway header payload).start? = none := by
   simp only [Element.start?]
 
+/-- A start Event is no Activity, so an Activity's item is never a start Event's. -/
+theorem activity?_start (header : Header) (payload : StartPayload) : (Element.start header payload).activity? = none := by
+  simp only [Element.activity?]
+
 end Kernel.Laws.IL

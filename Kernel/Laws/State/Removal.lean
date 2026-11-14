@@ -222,7 +222,7 @@ theorem disarm_wellFormed {s : State} (formed : WellFormed program s) (host : Na
     exact List.mem_filter.mpr ⟨inside, by simp [begunFlag]⟩
 
 /-- Withdrawing the items inside scope occurrences keeps a state well-formed and its occurrences. -/
-private theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), WellFormed program t →
+theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), WellFormed program t →
     WellFormed program (scopes.foldl (fun state entry => state.withdrawInside entry.id) t) ∧
       (scopes.foldl (fun state entry => state.withdrawInside entry.id) t).openItems.Sublist t.openItems ∧
       (scopes.foldl (fun state entry => state.withdrawInside entry.id) t).occurrences = t.occurrences

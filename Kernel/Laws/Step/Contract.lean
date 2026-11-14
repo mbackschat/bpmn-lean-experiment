@@ -98,16 +98,18 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
   completeBody : ∀ ctx header envelope loop occurrence state after, inv ctx.program state →
     occurrence ∈ state.occurrences →
     hooks.completeBody ctx header envelope loop occurrence state = .ok after → inv ctx.program after
+  /-- A task command, effect result, incident retry or Activity delivery addresses an item of an Activity, or one that
+  waits for an effect or an incident, as `Step` finds it. -/
   completeUserTask : ∀ ctx header payload item values state after, inv ctx.program state → item ∈ state.openItems →
-    hooks.completeUserTask ctx header payload item values state = .ok after → inv ctx.program after
+    (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) → hooks.completeUserTask ctx header payload item values state = .ok after → inv ctx.program after
   effectResult : ∀ ctx item outcome state after, inv ctx.program state → item ∈ state.openItems →
-    hooks.effectResult ctx item outcome state = .ok after → inv ctx.program after
+    item.kind.view.effect.isSome = true → hooks.effectResult ctx item outcome state = .ok after → inv ctx.program after
   retryIncident : ∀ ctx item detail generation state after, inv ctx.program state → item ∈ state.openItems →
-    hooks.retryIncident ctx item detail generation state = .ok after → inv ctx.program after
+    item.kind.view.incident = some detail → hooks.retryIncident ctx item detail generation state = .ok after → inv ctx.program after
   cancelIncidentProcess : ∀ ctx detail generation state after, inv ctx.program state →
     hooks.cancelIncidentProcess ctx detail generation state = .ok after → inv ctx.program after
   triggerActivity : ∀ ctx header payload item fired state after, inv ctx.program state → item ∈ state.openItems →
-    hooks.triggerActivity ctx header payload item fired state = .ok after → inv ctx.program after
+    (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) → hooks.triggerActivity ctx header payload item fired state = .ok after → inv ctx.program after
   trigger : ∀ ctx item fired state after, inv ctx.program state → item ∈ state.openItems →
     hooks.trigger ctx item fired state = .ok after → inv ctx.program after
   arm : ∀ ctx host element scope state after, inv ctx.program state → OccurrenceStands state host →

@@ -5,6 +5,7 @@ public import Kernel.State.Removal
 import all Kernel.State
 import all Kernel.State.Removal
 import all Kernel.State.Slots
+import all Kernel.State.Wait
 
 /-! # Laws of the kernel state: the operations
 
@@ -342,6 +343,14 @@ theorem emit_eq (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId
     state.emit flows scope = { state with tokens := state.tokens ++ flows.map (Token.flow · scope) } := by
   simp only [State.emit]
 
+theorem closeItem_eq (state : State) (id : Nat) :
+    state.closeItem id = { state with openItems := state.openItems.filter (·.id != id) } := by simp only [State.closeItem]
+
+/-- A subscription's item waits for a trigger: no effect result or incident command closes it. -/
+theorem triggers_await : (∀ detail, AwaitsTrigger (.timer detail)) ∧ (∀ detail, AwaitsTrigger (.message detail)) ∧
+    (∀ detail, AwaitsTrigger (.signal detail)) ∧ ∀ detail, AwaitsTrigger (.conditional detail) :=
+  ⟨fun _ => ⟨rfl, rfl⟩, fun _ => ⟨rfl, rfl⟩, fun _ => ⟨rfl, rfl⟩, fun _ => ⟨rfl, rfl⟩⟩
+
 theorem closeOwnItems_eq (state : State) (id : Nat) :
     state.closeOwnItems id = { state with openItems := state.openItems.filter (·.occurrence != id) } := by
   simp only [State.closeOwnItems]
@@ -459,7 +468,8 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
     subst member
     exact keyed_names variables⟩
   failure := by simp [FailureRecorded, State.initial]
-  queue := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial]⟩
+  queue := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial],
+    by simp [State.initial]⟩
   counted := by simp [StartsCounted, starts, State.initial]
   occurrencesCounted := by simp [OccurrencesCounted, State.initial]
   ownedBelow := by simp [OwnedBelow, State.initial]
@@ -568,13 +578,6 @@ private theorem search_go {s : State} (formed : WellFormed program s) {scope : S
     · rcases List.mem_cons.mp here with rfl | later
       · exact List.mem_append_left _ (List.mem_append_right _ (List.mem_singleton.mpr rfl))
       · exact List.mem_append_right _ (List.mem_append_left _ later)
-
-/-- What lies within `scope` belongs to every set that holds `scope` and the children of its members. -/
-theorem Within.closed_mem {s : State} {scope x : ScopeOccurrenceId} {set : List ScopeOccurrenceId} (inside : Within s x scope)
-    (start : scope ∈ set) (closed : ∀ p ∈ set, ∀ child ∈ s.scopes, child.parent = some p → child.id ∈ set) : x ∈ set := by
-  induction inside with
-  | refl => exact start
-  | parent child parent _ member link _ ih => exact closed parent (ih start) child member link
 
 /-- In a well-formed state, the subtree of a present scope occurrence is exactly what lies within it. -/
 theorem subtree_iff {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
