@@ -26,17 +26,27 @@ theorem hold_eq (state : State) (held : Held) :
     state.hold held = { state with slots := { state.slots with held := state.slots.held ++ [held] } } := by
   simp only [State.hold]
 
-/-- The item an input addresses is one of the state's open items. -/
-theorem itemDetail?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef}
-    {detail : WaitView → Option α} {item : OpenItem} {value : α}
-    (found : itemDetail? ctx state occurrence detail = some (item, value)) : item ∈ state.openItems := by
+/-- The item an input addresses is one of the state's open items, and its element, its occurrence's activation and
+its instance are the ones the input's reference names. -/
+theorem itemDetail?_some {α : Type} {ctx : Ctx} {state : State} {ref : OccurrenceRef} {detail : WaitView → Option α}
+    {item : OpenItem} {value : α} (found : itemDetail? ctx state ref detail = some (item, value)) :
+    item ∈ state.openItems ∧ ctx.program.publicId item.element = ref.element ∧
+      (state.occurrence? item.occurrence).map (·.activation) = some ref.activation ∧
+      state.instanceOf item.scope = ref.processInstanceId := by
   unfold itemDetail? at found
   obtain ⟨candidate, member, made⟩ := List.exists_of_findSome?_eq_some found
   split at made
-  · obtain ⟨_, _, same⟩ := Option.map_eq_some_iff.mp made
+  · rename_i matches_
+    obtain ⟨_, _, same⟩ := Option.map_eq_some_iff.mp made
     obtain ⟨rfl, _⟩ := Prod.mk.inj same
-    exact member
+    simp only [Bool.and_eq_true, beq_iff_eq] at matches_
+    exact ⟨member, matches_.1.1, matches_.1.2, matches_.2⟩
   · simp at made
+
+theorem itemDetail?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef}
+    {detail : WaitView → Option α} {item : OpenItem} {value : α}
+    (found : itemDetail? ctx state occurrence detail = some (item, value)) : item ∈ state.openItems :=
+  (itemDetail?_some found).1
 
 theorem item?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef} {detail : WaitView → Option α}
     {item : OpenItem} (found : item? ctx state occurrence detail = some item) : item ∈ state.openItems := by
@@ -44,5 +54,18 @@ theorem item?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : Occurren
   obtain ⟨⟨_, value⟩, made, same⟩ := Option.map_eq_some_iff.mp found
   cases same
   exact itemDetail?_mem made
+
+/-- No item is found where no item detail is. -/
+theorem item?_none {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef} {detail : WaitView → Option α}
+    (none_ : itemDetail? ctx state occurrence detail = none) : item? ctx state occurrence detail = none := by
+  simp [item?, none_]
+
+/-- Admitting command values fails only by rejecting a value outside the value domain. -/
+theorem admitValues_error {values : List Value} {failure : Failure} (refused : admitValues values = .error failure) :
+    failure = .rejected "value-outside-domain" := by
+  unfold admitValues at refused
+  split at refused
+  · cases refused
+  · exact (Except.error.inj refused).symm
 
 end Kernel.Laws.Hooks

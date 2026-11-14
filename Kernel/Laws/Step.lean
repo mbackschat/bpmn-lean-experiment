@@ -384,6 +384,158 @@ theorem fire_absent {hooks : Hooks} {ctx : Ctx} {item : Nat} {fired : Fired} {st
     (absent : state.openItems.find? (·.id == item) = none) : (signalWork hooks ctx (.fire item fired)).run state = .ok state := by
   simp [signalWork, absent]
 
+/-- A queued arming, Event-Based Gateway arming, scope arming, begin or `occur` whose scope occurrence was issued and is
+gone fails the input (`perform_stale`): these are the signals `Step.stale` reads a scope occurrence of. -/
+theorem arm_scope_stale {hooks : Hooks} {ctx : Ctx} {host : Nat} {element : ElementId} {scope : ScopeOccurrenceId}
+    {state : State} (issued : scope.value < state.nextIssue) (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
+    (signalWork hooks ctx (.arm host element scope)).perform state = .error (.unsupported "interrupted-before-wait") :=
+  perform_stale (by simp_all [stale, signalWork])
+
+theorem armScope_stale {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrenceId} {state : State}
+    (issued : scope.value < state.nextIssue) (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
+    (signalWork hooks ctx (.armScope scope)).perform state = .error (.unsupported "interrupted-before-wait") :=
+  perform_stale (by simp_all [stale, signalWork])
+
+theorem armGateway_scope_stale {hooks : Hooks} {ctx : Ctx} {occurrence : Nat} {gateway : ElementId}
+    {scope : ScopeOccurrenceId} {state : State} (issued : scope.value < state.nextIssue)
+    (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
+    (signalWork hooks ctx (.armGateway occurrence gateway scope)).perform state =
+      .error (.unsupported "interrupted-before-wait") :=
+  perform_stale (by simp_all [stale, signalWork])
+
+theorem begin_scope_stale {hooks : Hooks} {ctx : Ctx} {request : BeginRequest} {state : State}
+    (issued : request.scope.value < state.nextIssue) (absent : ∀ entry ∈ state.scopes, entry.id ≠ request.scope) :
+    (signalWork hooks ctx (.begin request)).perform state = .error (.unsupported "interrupted-before-wait") :=
+  perform_stale (by simp_all [stale, signalWork])
+
+theorem occur_scope_stale {hooks : Hooks} {ctx : Ctx} {element : ElementId} {scope : ScopeOccurrenceId} {leave : Leave}
+    {writes : List (String × Value)} {rule : WriteRule} {state : State} (issued : scope.value < state.nextIssue)
+    (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
+    (signalWork hooks ctx (.occur element scope leave writes rule)).perform state =
+      .error (.unsupported "interrupted-before-wait") :=
+  perform_stale (by simp_all [stale, signalWork])
+
+/-! ### Inputs no lookup addresses
+
+An addressed input (a command, a timer firing, an effect result) whose occurrence reference no lookup finds is rejected
+(`step_unknown`). The lookups run on the transition's start state, which is the before-state with an emptied journal
+and outbox and an advanced clock, so the premise speaks of every state agreeing with the before-state on what a lookup
+reads (`Agrees`). -/
+
+/-- The fields an addressed lookup reads agree with `state`'s. -/
+def Agrees (state s : State) : Prop :=
+  s.occurrences = state.occurrences ∧ s.openItems = state.openItems ∧ s.scopes = state.scopes ∧
+    s.instanceId = state.instanceId
+
+/-- What `Step.occurrenceOf?` finds is an occurrence of the state with the reference's element, activation and
+instance. -/
+theorem occurrenceOf?_some {ctx : Ctx} {state : State} {ref : OccurrenceRef} {occurrence : Occurrence}
+    (found : occurrenceOf? ctx state ref = some occurrence) :
+    occurrence ∈ state.occurrences ∧ ctx.program.publicId occurrence.element = ref.element ∧
+      occurrence.activation = ref.activation ∧ state.instanceOf occurrence.scope = ref.processInstanceId := by
+  unfold occurrenceOf? at found
+  have holds := List.find?_some found
+  simp only [Bool.and_eq_true, beq_iff_eq] at holds
+  exact ⟨List.mem_of_find?_eq_some found, holds.1.2, holds.1.1.2, holds.2⟩
+
+theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : State} {transition : State → Outcome}
+    (rejects : ∀ s : State, Agrees state s → ∃ code, transition s = .error (.rejected code)) :
+    ∃ code, onRunning hooks ctx input (some state) transition = .error (.rejected code) := by
+  simp only [onRunning]
+  split
+  · exact ⟨_, rfl⟩
+  · have clocked : ∀ at? : Option Nat, (∃ code, advanceClock at? { state with journal := [], outbox := [] } = .error (.rejected code)) ∨
+        ∃ start, advanceClock at? { state with journal := [], outbox := [] } = .ok start ∧ Agrees state start := by
+      intro at?
+      unfold advanceClock
+      split
+      · exact .inr ⟨_, rfl, rfl, rfl, rfl, rfl⟩
+      · split
+        · exact .inl ⟨_, rfl⟩
+        · exact .inr ⟨_, rfl, rfl, rfl, rfl, rfl⟩
+    have chosen : (∃ code, admitChoices hooks ctx = .error (.rejected code)) ∨ admitChoices hooks ctx = .ok () := by
+      unfold admitChoices
+      dsimp only
+      split
+      · exact .inl ⟨_, rfl⟩
+      · split
+        · exact .inr rfl
+        · exact .inl ⟨_, rfl⟩
+    rcases clocked (inputHead input).2.1 with ⟨code, clock⟩ | ⟨start, clock, agrees⟩
+    · exact ⟨code, by simp [bind, Except.bind, clock]⟩
+    · rcases chosen with ⟨code, chose⟩ | chose
+      · exact ⟨code, by simp [bind, Except.bind, clock, chose]⟩
+      · obtain ⟨code, rejected⟩ := rejects start agrees
+        exact ⟨code, by simp [bind, Except.bind, clock, chose, microStep, rejected, deferred]⟩
+
+theorem rejected_timerJob {failure : ContinuationFailure} {outcome : Outcome}
+    (rejected : ∃ code, outcome = .error (.rejected code)) : ∃ code, timerJob failure outcome = .error (.rejected code) := by
+  obtain ⟨code, same⟩ := rejected
+  exact ⟨code, by subst same; cases failure <;> rfl⟩
+
+theorem rejected_effectContinuation {ctx : Ctx} {data : EffectInput} {run : EffectInput → Outcome}
+    (rejected : ∀ reported : EffectInput, reported.occurrence = data.occurrence → ∃ code, run reported = .error (.rejected code)) :
+    ∃ code, effectContinuation ctx data run = .error (.rejected code) := by
+  obtain ⟨code, same⟩ := rejected data rfl
+  refine ⟨code, ?_⟩
+  unfold effectContinuation
+  split <;> simp_all
+
+/-- An addressed input whose occurrence reference neither `occurrenceOf?` nor `itemDetail?` finds, on any state that
+agrees with the before-state on what they read, is rejected. -/
+theorem step_unknown {hooks : Hooks} {program : Program} {state : State} {input : Input} {ref : OccurrenceRef}
+    (addressed : (∃ data : CommandInput, input = .command data ∧ data.occurrence = ref) ∨
+      (∃ data : TimerInput, input = .timerFire data ∧ data.occurrence = ref) ∨
+      ∃ data : EffectInput, input = .effectResult data ∧ data.occurrence = ref)
+    (unknown : ∀ (ctx : Ctx) (s : State), ctx.program = program → s.occurrences = state.occurrences →
+      s.openItems = state.openItems → s.scopes = state.scopes → s.instanceId = state.instanceId →
+      occurrenceOf? ctx s ref = none ∧ ∀ {α : Type} (detail : WaitView → Option α), itemDetail? ctx s ref detail = none) :
+    ∃ code, step hooks program (some state) input = .error (.rejected code) := by
+  have lookups : ∀ s, Agrees state s → occurrenceOf? (inputCtx hooks program input) s ref = none ∧
+      ∀ {α : Type} (detail : WaitView → Option α), itemDetail? (inputCtx hooks program input) s ref detail = none :=
+    fun s ⟨o, i, sc, id⟩ => unknown _ s rfl o i sc id
+  have itemNone : ∀ s, Agrees state s → ∀ {α : Type} (detail : WaitView → Option α),
+      item? (inputCtx hooks program input) s ref detail = none := fun s agrees _ detail =>
+    Laws.Hooks.item?_none ((lookups s agrees).2 detail)
+  rcases addressed with ⟨data, rfl, rfl⟩ | ⟨data, rfl, rfl⟩ | ⟨data, rfl, rfl⟩
+  · unfold step
+    refine onRunning_rejects fun s agrees => ?_
+    unfold command
+    have items : ∀ {α : Type} (detail : WaitView → Option α),
+        item? (inputCtx hooks program (.command data)) s data.occurrence detail = none := itemNone s agrees
+    have details : ∀ {α : Type} (detail : WaitView → Option α),
+        itemDetail? (inputCtx hooks program (.command data)) s data.occurrence detail = none := (lookups s agrees).2
+    have occurrences := (lookups s agrees).1
+    simp only [inputCtx] at items details occurrences
+    cases data.action with
+    | completeUserTask values => simp [items]
+    | retryIncident generation => simp [details]
+    | cancelIncidentProcess generation => simp [details]
+    | setVariables values =>
+      simp only [occurrences, SeqRight.seqRight, Except.bind]
+      split
+      · rename_i failure failed
+        exact ⟨"value-outside-domain", by rw [Laws.Hooks.admitValues_error failed]⟩
+      · simp
+    | removeVariables names => simp [occurrences]
+  · unfold step
+    apply rejected_timerJob
+    apply onRunning_rejects
+    intro s agrees
+    have items : ∀ {α : Type} (detail : WaitView → Option α),
+        item? (inputCtx hooks program (.timerFire data)) s data.occurrence detail = none := itemNone s agrees
+    simp only [inputCtx] at items
+    simp [items]
+  · unfold step
+    apply rejected_effectContinuation
+    intro reported addressed
+    apply onRunning_rejects
+    intro s agrees
+    have items : ∀ {α : Type} (detail : WaitView → Option α),
+        item? (inputCtx hooks program (.effectResult data)) s data.occurrence detail = none := itemNone s agrees
+    simp only [inputCtx] at items
+    simp [deliverEffectResult, addressed, items]
+
 
 /-! ### What each body ran
 
