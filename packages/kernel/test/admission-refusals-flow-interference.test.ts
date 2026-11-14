@@ -12,7 +12,7 @@ import { test } from "node:test";
 
 import {
   activity, append, base, boundary, catchEvent, end, errorTrigger, eventSubProcess, escalationTrigger, flow, gateway, loop, refusalOf, refusalTests,
-  replace, scope, signal, start, userWork, variable, withOptions,
+  replace, scope, signal, start, terminateThrow, userWork, variable, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -123,7 +123,7 @@ const rootFork = (first: Json) => (program: Json): Json => ({
 });
 
 test("flow interference: a process-level Terminate End beside a sibling's User Task is refused", () => {
-  assert.equal(refusalOf(rootFork(end("A", "terminate"))(base())), "flow.concurrentInterference");
+  assert.equal(refusalOf(rootFork(end("A", terminateThrow))(base())), "flow.concurrentInterference");
   assert.equal(refusalOf(rootFork(end("A", "none"))(base())), null);
 });
 

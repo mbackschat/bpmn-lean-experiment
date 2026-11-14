@@ -12,9 +12,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { admit, decodeProgram } from "./lean-paired.ts";
+import { admit, decodeProgram, ThrowTag } from "./lean-paired.ts";
 
 export type Json = Record<string, unknown>;
+
+/** The wire record of a Terminate End Event's throw, spelled once by the IL that owns it. */
+export const terminateThrow: string = ThrowTag.Terminate;
 
 const slice = JSON.parse(readFileSync(new URL("./fixtures/simple-boolean.program.json", import.meta.url), "utf8")) as Json;
 

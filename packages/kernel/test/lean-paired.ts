@@ -26,7 +26,7 @@ import type {
 export {
   CodecRefusalCode, CommandTag, DefinitionSelectorTag, DeliveryTriggerTag, DeploymentOutcomeTag, EffectOutcomeTag,
   FailureTag, FanOutEntryTag, FanOutNextTag, InputTag, MessageAddressTag, PendingTag, PublishMode, ReceiverTag,
-  ResolutionTag, ScopeKindTag, SignalAddressTag, SignalReach, StartTriggerTag, StimulusTag, VisitTag, WorkTag,
+  ResolutionTag, ScopeKindTag, SignalAddressTag, SignalReach, StartTriggerTag, StimulusTag, ThrowTag, VisitTag, WorkTag,
 } from "@bpmn-lean/kernel";
 
 type Json = Record<string, unknown>;

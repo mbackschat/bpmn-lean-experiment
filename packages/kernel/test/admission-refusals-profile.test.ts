@@ -6,7 +6,7 @@
  * change, so their controls select the alternative for the base program.
  */
 import {
-  activity, append, definitionRef, duration, end, eventSubProcess, flow, loop, refusalTests, scope, start, task, userWork,
+  activity, append, definitionRef, duration, end, eventSubProcess, flow, loop, refusalTests, scope, start, task, terminateThrow, userWork,
   withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
@@ -15,7 +15,7 @@ const option = (over: Json) => (program: Json): Json => withOptions(program, ove
 
 /** `T` becomes a Sub-Process whose start `XS` reaches an End Event that terminates it. */
 const terminatingScope = (program: Json): Json =>
-  withFlows(append(task(scope("T", "embedded"))(program), start("XS", null, [], "T"), end("X", "terminate", "T")),
+  withFlows(append(task(scope("T", "embedded"))(program), start("XS", null, [], "T"), end("X", terminateThrow, "T")),
     flow("fx", "XS", "X"));
 
 /** `T` becomes an interrupting Event Sub-Process. */
@@ -23,7 +23,7 @@ const interruptingScope = task(scope("T", eventSubProcess(duration("PT1S"), true
 
 /** The called process `Called` reaches, at its process level, an End Event `CX` that terminates its instance. */
 const terminatingCalledProcess = (program: Json): Json =>
-  withFlows({ ...append(program, start("CS"), end("CX", "terminate")),
+  withFlows({ ...append(program, start("CS"), end("CX", terminateThrow)),
     processes: [{ definition: definitionRef("Called"), children: ["CS", "CX"], variables: [], executable: true }] },
   flow("fc", "CS", "CX"));
 
