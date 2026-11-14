@@ -225,7 +225,7 @@ in run order. -/
 theorem onRunning_ok {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Option State}
     {transition : State → Outcome} {after : State} (ran : onRunning hooks ctx input before transition = .ok after) :
     ∃ state start moved settled, before = some state ∧ state.status = .running ∧
-      advanceClock (inputHead input).2.1 { state with journal := [], outbox := [] } = .ok start ∧
+      advanceClock (inputHead input).2.1 { state with journal := [], outbox := [], draft := {}, writes := [] } = .ok start ∧
       microStep hooks ctx (.input (inputHead input).1) none State.root transition start = .ok moved ∧
       settle hooks ctx closureBound closureWorkBound moved = .ok settled ∧
       after = { settled with journal := settled.journal.reverse } := by
@@ -444,8 +444,8 @@ theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : S
   simp only [onRunning]
   split
   · exact ⟨_, rfl⟩
-  · have clocked : ∀ at? : Option Nat, (∃ code, advanceClock at? { state with journal := [], outbox := [] } = .error (.rejected code)) ∨
-        ∃ start, advanceClock at? { state with journal := [], outbox := [] } = .ok start ∧ Agrees state start := by
+  · have clocked : ∀ at? : Option Nat, (∃ code, advanceClock at? { state with journal := [], outbox := [], draft := {}, writes := [] } = .error (.rejected code)) ∨
+        ∃ start, advanceClock at? { state with journal := [], outbox := [], draft := {}, writes := [] } = .ok start ∧ Agrees state start := by
       intro at?
       unfold advanceClock
       split

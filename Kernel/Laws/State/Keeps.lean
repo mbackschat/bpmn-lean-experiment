@@ -135,11 +135,12 @@ theorem removeVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {
 That each phase `Step` runs itself keeps `WellFormed` (`Laws.Step.Phases`, which `Kernel.Proofs.State` assembles). -/
 
 /-- `Step.onRunning` starts an input from an empty journal and outbox. -/
-theorem reset_wellFormed {s : State} (formed : WellFormed s) : WellFormed { s with journal := [], outbox := [] } :=
+theorem reset_wellFormed {s : State} (formed : WellFormed s) :
+    WellFormed { s with journal := [], outbox := [], draft := {}, writes := [] } :=
   formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, id, .refl _, .refl _, .refl _, fun fact member => by
-      simp only [starts, List.flatMap_nil, List.nil_append] at member; exact List.mem_append_right _ member,
+      simp [starts] at member,
     .same rfl⟩ rfl
-    (formed.startedOnce.sublist ((List.sublist_append_right _ _).map _))
+    (by simp [StartedOnce, starts])
 
 /-- `Step.advanceClock` moves the logical time. -/
 theorem clock_wellFormed {s : State} (formed : WellFormed s) (atMs : Nat) : WellFormed { s with logicalTimeMs := atMs } :=

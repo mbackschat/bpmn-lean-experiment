@@ -137,7 +137,7 @@ structure Phases (inv : State → Prop) : Prop where
   initial : ∀ instanceId variables businessKey,
     inv ((State.initial instanceId variables businessKey).signal (.armScope State.root))
   /-- An input on a running instance starts from an empty journal and outbox. -/
-  reset : ∀ state, inv state → inv { state with journal := [], outbox := [] }
+  reset : ∀ state, inv state → inv { state with journal := [], outbox := [], draft := {}, writes := [] }
   clock : ∀ state atMs, inv state → inv { state with logicalTimeMs := atMs }
   /-- `Step.conclude` journals the draft and empties it and the write log. -/
   journal : ∀ state (transition : Transition), inv state → transition.started = state.draft.started →

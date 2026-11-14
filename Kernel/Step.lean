@@ -399,7 +399,10 @@ def deliverEffectResult (hooks : Hooks) (ctx : Ctx) (input : EffectInput) (state
   | none => .error (.rejected "unknown-effect")
   | some item => hooks.effectResult ctx item input.outcome state
 
-/-- Run an input's transition on a running instance, then settle. -/
+/-- Run an input's transition on a running instance, then settle. The input starts from an empty per-input record
+(journal, outbox, draft and write log). A committed state holds no draft or write log, since every micro-step's
+`conclude` empties them, so emptying them here changes no run; it makes the input's journal its own by the step's
+construction rather than by a property of every state a step is given. -/
 def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State) (transition : State → Outcome) : Outcome :=
   match before with
   | none => .error (.rejected "instance-not-started")
@@ -407,7 +410,7 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
     if state.status != .running then .error (.rejected "instance-not-running")
     else do
       let (tag, at?, _) := inputHead input
-      let start ← advanceClock at? { state with journal := [], outbox := [] }
+      let start ← advanceClock at? { state with journal := [], outbox := [], draft := {}, writes := [] }
       admitChoices hooks ctx
       orderJournal (settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input tag) none State.root transition start))
 
