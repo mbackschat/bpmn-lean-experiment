@@ -447,4 +447,35 @@ theorem removedEndOnce_registered (ops : Proofs.Step.RegisteredOps WellFormed) (
     (pipeline : Laws.Step.PipelinePhases WellFormed) : RemovedEndOnce Registry.hooks :=
   removedEndOnce (microStepsKeepEnds_registered ops phases pipeline)
 
+/-! ## The clearings of the registered hooks
+
+A Terminate End's and an interrupting Event Sub-Process start's clearings are `Laws.State.ClearsInside` transitions of a
+well-formed state (`Laws.Scopes.clearInside_clears`). -/
+
+/-- `Laws.Scopes.TerminateClears` of the registered hooks: a Terminate End arriving as an occurrence of a well-formed
+state clears its scope occurrence, keeping only that occurrence, and queues its completion, which the clearing does not
+read (TEND-REGION-01, BPMN 2.0.2 §13.5.6). -/
+theorem registered_terminateClears {ctx : Ctx} {header : Header} {payload : EventPayload} {occurrence : Occurrence}
+    {state after : State} (formed : WellFormed ctx.program state) (member : occurrence ∈ state.occurrences)
+    (ran : Registry.hooks.arriveThrow ctx header payload .terminate occurrence state = .ok after) :
+    Laws.Scopes.TerminateClears true occurrence.scope occurrence.id state after := fun _ => by
+  rw [Laws.Registry.hooks_arriveThrow, Laws.Propagation.arriveThrow_terminate] at ran
+  cases ran
+  exact Laws.Scopes.clearsInside_signal
+    (Laws.Scopes.clearInside_clears formed (formed.owned.occurrenceScopes occurrence member) _) _
+
+/-- `Laws.Scopes.InterruptingStart` of the registered hooks: an Event Sub-Process arriving as an occurrence of a
+well-formed state enters its Scope on the clearing of its parent scope occurrence that keeps only its own occurrence and
+its start Event's reservation when its start interrupts, and on the arrival's state otherwise (§13.5.4, IMESP). -/
+theorem registered_interruptingStart {ctx : Ctx} {header : Header} {payload : ScopePayload} {occurrence : Occurrence}
+    {entry : ScopeEntry} {state after : State} {start : Subscription} {interrupting : Bool}
+    (formed : WellFormed ctx.program state) (member : occurrence ∈ state.occurrences)
+    (kind : payload.kind = .eventSubProcess start interrupting)
+    (ran : Registry.hooks.arriveScope ctx header payload occurrence entry state = .ok after) :
+    ∃ cleared, Laws.Scopes.InterruptingStart interrupting occurrence.scope (occurrence.id :: entry.inner.toList) state
+      cleared ∧ (interrupting = false → cleared = state) ∧
+      Feature.Scopes.enter ctx header payload occurrence entry cleared = .ok after := by
+  rw [Laws.Registry.hooks_arriveScope] at ran
+  exact Laws.Scopes.arriveScope_interrupts formed member kind ran
+
 end Kernel.Proofs.Cancellation

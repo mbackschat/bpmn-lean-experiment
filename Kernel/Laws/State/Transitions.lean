@@ -6,10 +6,12 @@ public import Kernel.Laws.State.Invariant
 
 The transitions the invariant (`Kernel.Laws.State.Invariant`) permits between two states, stated over the state's
 fields: identities are never reused, activation counters only grow, the removal a cancelled scope occurrence permits
-(`ClearsInside`), the work a hook leaves to `Step` and the cancellations it journals. The proof wave proves that `Step`'s
-cancellations are `ClearsInside` transitions. Each law is followed by its non-vacuity witness over the invariant's
-sample instance; `cleared` is that instance once its Sub-Process scope occurrence is cleared. Nothing executable imports
-this module.
+(`ClearsInside`), the work a hook leaves to `Step` and the cancellations it journals. `State.clearInside` of a scope
+occurrence that stands in a well-formed state is a `ClearsInside` transition (`Laws.Scopes.clearInside_clears`), which
+makes a Terminate End's and an interrupting Event Sub-Process start's clearings under the registered hooks ones
+(`Proofs.Cancellation.registered_terminateClears`, `registered_interruptingStart`). Each law is followed by its
+non-vacuity witness over the invariant's sample instance; `cleared` is that instance once its Sub-Process scope
+occurrence is cleared. Nothing executable imports this module.
 -/
 
 @[expose] public section

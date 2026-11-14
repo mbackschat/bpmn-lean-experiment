@@ -261,6 +261,74 @@ theorem arriveScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ct
       · obtain ⟨cleared, stays, clearedReady⟩ := ops.clear state occurrence entry.inner holds member begun ready
         exact enter_keeps ops cleared stays begun clearedReady ran
 
+/-! ## Cancellation
+
+The cancellation lane's (P3) share: `State.clearInside` of a scope occurrence that stands in a well-formed state is a
+`ClearsInside` transition, and an interrupting Event Sub-Process's arrival enters its Scope on the clearing of its
+parent (`InterruptingStart`). A Terminate End's clearing is `Kernel.Feature.Propagation`'s, so `TerminateClears` is proved of
+the registered hooks in `Kernel.Proofs.Cancellation.Registered`, from `Laws.Propagation.arriveThrow_terminate`. -/
+
+/-- A clearing that keeps the instance identity is a `ClearsInside` transition: what `Laws.State.Cleared` keeps is what
+lies outside `scope` or is kept, and it adds nothing. -/
+theorem cleared_clears {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat}
+    (cleared : Laws.State.Cleared before after scope keep) (named : after.instanceId = before.instanceId) :
+    ClearsInside before after scope keep where
+  scopeStays entry member same := (cleared.scopes entry).mpr ⟨member, fun strictly => strictly.2 same⟩
+  scopesOutside entry member outside := (cleared.scopes entry).mpr ⟨member, outside⟩
+  occurrencesOutside occurrence member outside := (cleared.occurrences occurrence).mpr ⟨member, .inl outside⟩
+  itemsOutside item member outside := (cleared.openItems item).mpr ⟨member, .inl outside⟩
+  variablesOutside variables member outside :=
+    (cleared.variables variables).mpr ⟨member, fun strictly => outside strictly.1⟩
+  variablesOwn variables member same := (cleared.variables variables).mpr ⟨member, fun strictly => strictly.2 same⟩
+  tokensOutside token member outside := (cleared.tokens token).mpr ⟨member, outside⟩
+  scopesInside entry member strictly := absurd strictly ((cleared.scopes entry).mp member).2
+  occurrencesInside occurrence member within :=
+    ((cleared.occurrences occurrence).mp member).2.resolve_left (· within)
+  itemsInside item member within := ((cleared.openItems item).mp member).2.resolve_left (· within)
+  variablesInside variables member strictly := absurd strictly ((cleared.variables variables).mp member).2
+  tokensInside token member := ((cleared.tokens token).mp member).2
+  noNewScopes _ member := cleared.scopesSublist.subset member
+  noNewOccurrences _ member := cleared.occurrencesSublist.subset member
+  noNewItems _ member := cleared.openItemsSublist.subset member
+  noNewVariables _ member := cleared.variablesSublist.subset member
+  noIssue := cleared.nextIssue
+  instanceKept := named
+
+/-- `State.clearInside` of a scope occurrence that stands in a well-formed state is a `ClearsInside` transition. -/
+theorem clearInside_clears {program : Program} {s : State} {scope : ScopeOccurrenceId}
+    (formed : Laws.State.WellFormed program s) (present : scope ∈ Laws.State.scopeIds s) (keep : List Nat) :
+    ClearsInside s (s.clearInside scope keep) scope keep :=
+  cleared_clears (Laws.State.clearInside_cleared formed present keep) (Laws.State.clearInside_instanceId s scope keep)
+
+/-- A queued signal leaves a `ClearsInside` transition one, since the transition reads no queued signal. -/
+theorem clearsInside_signal {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat}
+    (clears : ClearsInside before after scope keep) (signal : Signal) :
+    ClearsInside before (after.signal signal) scope keep := by
+  rw [Laws.State.signal_eq]
+  cases clears
+  constructor <;> assumption
+
+/-- An Event Sub-Process's arrival at its occurrence, which stands in a well-formed state, enters its Scope on a state
+that its start's interruption made from the arrival's: interrupting, the clearing of the parent scope occurrence keeping
+the handler's occurrence and its start Event's reservation (`InterruptingStart`); otherwise the arrival's state. -/
+theorem arriveScope_interrupts {ctx : Ctx} {header : Header} {payload : ScopePayload} {occurrence : Occurrence}
+    {entry : ScopeEntry} {state after : State} {start : Subscription} {interrupting : Bool}
+    (formed : Laws.State.WellFormed ctx.program state) (member : occurrence ∈ state.occurrences)
+    (kind : payload.kind = .eventSubProcess start interrupting)
+    (ran : Feature.Scopes.arriveScope ctx header payload occurrence entry state = .ok after) :
+    ∃ cleared, InterruptingStart interrupting occurrence.scope (occurrence.id :: entry.inner.toList) state cleared ∧
+      (interrupting = false → cleared = state) ∧
+      Feature.Scopes.enter ctx header payload occurrence entry cleared = .ok after := by
+  unfold Feature.Scopes.arriveScope at ran
+  rw [kind] at ran
+  dsimp only at ran
+  split at ran
+  · cases ran
+  · cases interrupting
+    · exact ⟨state, (nomatch ·), fun _ => rfl, ran⟩
+    · exact ⟨_, fun _ => clearInside_clears formed (formed.owned.occurrenceScopes occurrence member) _,
+        (nomatch ·), ran⟩
+
 /-! ## Non-vacuity
 
 The states of `Kernel.Laws.State`: the root scope 0 holds the Sub-Process occurrence 1, whose scope occurrence 2 holds

@@ -667,4 +667,18 @@ theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagat
     exact (boundaryFire_keeps ops _ _ _ _ (search.mappedErrorOutputs _ _ _ _ holds settled leaves).1).1
   · exact searchScopes_keeps ops search _ _ _ _ holds settled thrown ran
 
+/-! ## Cancellation
+
+The cancellation lane's (P3) share: what a Terminate End's arrival does, from which
+`Kernel.Proofs.Cancellation.Registered` proves `Laws.Scopes.TerminateClears` of the registered hooks. -/
+
+/-- A Terminate End's arrival clears its scope occurrence, keeping its own occurrence, and then completes it on no
+flow. -/
+theorem arriveThrow_terminate (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrence : Occurrence)
+    (state : State) : Feature.Propagation.arriveThrow ctx header payload .terminate occurrence state =
+      .ok ((state.clearInside occurrence.scope [occurrence.id]).signal
+        (.complete occurrence.id (.flows []) [] .outward)) := by
+  unfold Feature.Propagation.arriveThrow
+  rfl
+
 end Kernel.Laws.Propagation

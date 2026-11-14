@@ -28,7 +28,7 @@ premise is `Laws.State.WellFormed`.
 | PC-SCOPE-05 | invocation keeps call associations valid and creates exactly the derived identity | restated: `CalledIdentityUnique` |
 | PC-SCOPE-05 | return continues exactly its caller and keeps every other record, root, wait and token (`CALLN-RETURN-01`, `CALLN-OUTSIDE-01`) | restated: `ReturnContinuesCaller` |
 | PC-SCOPE-05 | a called root with a live nested record is not quiescent (`CALLN-NEST-01`) | restated: `NestedCallKeepsRootBusy` |
-| PC-SCOPE-05 | removing a returned called tree keeps everything outside it | restated as P3's `SubtreeRemoved` with `Laws.State.ClearsInside`'s outside clauses |
+| PC-SCOPE-05 | removing a returned called tree keeps everything outside it | restated as P3's `Proofs.Cancellation.SubtreeRemoved` of the called root; removing the Call's occurrence leaves the called root by `State.leaveScope`, which keeps what lies outside it (`Laws.State.leaveScope_left`) |
 | PC-SCOPE-05 | the Stage B lift of the parentless-caller premise | not applicable: the kernel derives called identities from the caller's identity (`State.calledInstanceId`) and has no parentless-root premise |
 
 Model premises cite their refusal codes where admission enforces one; that admission enforces them stays scenario
