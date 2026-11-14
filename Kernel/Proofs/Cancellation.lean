@@ -302,9 +302,10 @@ theorem subtreeRemoved_of_keeps {hooks : Hooks} (contract : ∀ before, Laws.Ste
 
 A hook or phase keeps `KeepsScopes before` when it keeps `WellFormed` (the state-invariant lane's records) and each
 state operation it applies keeps `ScopesKept before`: it adds only a scope occurrence issued at the counter, drops
-some, or leaves them, and never lowers the counter. The hooks' operations are gathered in `Alongside`, which any
-property carried beside `WellFormed` fills; `Kernel.Proofs.Cancellation.Registered` turns it into each feature's
-operations record and the registered hooks' contract. -/
+some, or leaves them, and never lowers the counter. The hooks' primitive operations are gathered in `FrameAlongside`,
+which any property carried beside `WellFormed` fills, and those whose records carry no premise for it in `Alongside`;
+`Kernel.Proofs.Cancellation.Registered` turns them into each feature's operations record and the registered hooks'
+contract. -/
 
 /-- `t` keeps the scope occurrences `before` held at `s`: those of `s` or ones issued at or above `s`'s counter, under
 a counter that has not moved back. -/
@@ -331,7 +332,8 @@ theorem ScopesKept.enter {before s t : State} (kept : ScopesKept before s) (issu
     exact Nat.le_refl _
 
 /-- `t` agrees with `s` on everything a property carried beside `WellFormed` may read: the scope occurrences, the
-occurrences, the issue and activation counters, the journal, the draft and the instance identity. -/
+occurrences, the issue and activation counters, the journal, the draft, the instance identity, the Multi-Instance runs
+and the compensation runs. -/
 structure Unmoved (s t : State) : Prop where
   scopes : t.scopes = s.scopes
   occurrences : t.occurrences = s.occurrences
@@ -340,13 +342,50 @@ structure Unmoved (s t : State) : Prop where
   journal : t.journal = s.journal
   draft : t.draft = s.draft
   instanceId : t.instanceId = s.instanceId
+  multiInstances : t.slots.multiInstances = s.slots.multiInstances
+  runs : t.slots.compensation.runs = s.slots.compensation.runs
+
+/-- `scope` is the context of a handler or group a compensation run of `s` holds running. -/
+def RunningContext (s : State) (scope : ScopeOccurrenceId) : Prop :=
+  ∃ run ∈ s.slots.compensation.runs, scope ∈ run.running.map (·.1)
+
+/-- `scope` is the scope occurrence of an active instance of a Multi-Instance run of `s`. -/
+def ActiveInstance (s : State) (scope : ScopeOccurrenceId) : Prop :=
+  ∃ run ∈ s.slots.multiInstances, Iteration.active scope ∈ run.instances
+
+/-- The scope occurrence `scope` of `s` that an operation other than a Multi-Instance instance's completion leaves:
+it is owned by an occurrence (`State.removeOccurrence` leaves only such, `removeOccurrence_leavesOwned`), or is a
+running compensation context (`Feature.Compensation.release`). -/
+def LeavesOwned (s : State) (scope : ScopeOccurrenceId) : Prop :=
+  (∃ entry ∈ s.scopes, entry.id = scope ∧ ∃ owner, entry.occurrence = some owner) ∨ RunningContext s scope
+
+/-- Each context the runs of `compensation`, stored in place of `s`'s, hold running was a running context of `s` or
+is no active Multi-Instance instance scope occurrence of `s`. -/
+def StoresHeldOrFresh (s : State) (compensation : Compensations) : Prop :=
+  ∀ run ∈ compensation.runs, ∀ context ∈ run.running.map (·.1),
+    RunningContext s context ∨ ¬ ActiveInstance s context
+
+/-- A scope occurrence `State.removeOccurrence` leaves (one owned by the removed occurrence, of the state it removes
+from) is, while it stands in a state whose scope occurrences are some of those, still owned: leaving keeps each
+record it does not drop. -/
+theorem removeOccurrence_leavesOwned {s t : State} {id : Nat} (distinct : (s.scopes.map (·.id)).Nodup)
+    (fewer : t.scopes.Sublist s.scopes) {entry : ScopeOccurrence}
+    (member : entry ∈ s.scopes.filter (·.occurrence == some id)) (stands : entry.id ∈ scopeIds t) :
+    LeavesOwned t entry.id := by
+  obtain ⟨held, inside, same⟩ := List.mem_map.mp stands
+  obtain ⟨original, owned⟩ := List.mem_filter.mp member
+  obtain rfl := Laws.State.nodup_map_eq distinct (fewer.subset inside) original same
+  exact .inl ⟨held, inside, rfl, id, by simpa using owned⟩
 
 /-- What the state operations the hooks apply keep of a property `rel` carried beside `WellFormed`: an update of
 nothing `rel` may read (`Unmoved`), issuing an identity, entering a scope occurrence or a Call's called root,
-reserving an occurrence, leaving or clearing a scope occurrence that stands, keeping only occurrences that lie in no
-scope occurrence strictly within it, disarming a host and a variable write or removal. A feature's
-operations record of `WellFormed` and `rel` follows from its record of `WellFormed` and this one. -/
-structure Alongside (rel : State → Prop) : Prop where
+reserving an occurrence, leaving a scope occurrence that stands and is owned or a running compensation context
+(`LeavesOwned`), clearing one that stands, keeping only occurrences that lie in no scope occurrence strictly within it,
+disarming a host, a variable write or removal, and storing compensation runs whose running contexts were held or are
+no active Multi-Instance instance (`StoresHeldOrFresh`). Every feature's operations record of `WellFormed` and `rel`
+but `Laws.MultiInstance.MultiInstanceOps` and `Laws.Compensation.RunsOps` follows from its record of `WellFormed` and
+this one. -/
+structure FrameAlongside (rel : State → Prop) : Prop where
   frame : ∀ s t, Unmoved s t → rel s → rel t
   issue : ∀ s, rel s → rel s.issue.1
   enterScope : ∀ program s element parent locals owner, WellFormed program s → rel s →
@@ -354,13 +393,32 @@ structure Alongside (rel : State → Prop) : Prop where
   enterCalled : ∀ program s called call variables definition, WellFormed program s → rel s →
     rel (s.enterCalled called call variables definition).1
   reserve : ∀ program s element scope, WellFormed program s → rel s → rel (s.reserve element scope).1
-  leaveScope : ∀ program s scope, WellFormed program s → scope ∈ scopeIds s → rel s → rel (s.leaveScope scope)
+  leaveScope : ∀ program s scope, WellFormed program s → scope ∈ scopeIds s → LeavesOwned s scope → rel s →
+    rel (s.leaveScope scope)
   clearInside : ∀ program s scope keep, WellFormed program s → scope ∈ scopeIds s →
     (∀ o ∈ s.occurrences, o.id ∈ keep → ¬ Laws.State.StrictlyWithin s o.scope scope) → rel s →
     rel (s.clearInside scope keep)
   disarm : ∀ program s host, WellFormed program s → rel s → rel (s.disarm host)
   setVariable : ∀ program s target name value, WellFormed program s → rel s → rel (s.setVariable target name value)
   removeVariable : ∀ program s target name, WellFormed program s → rel s → rel (s.removeVariable target name)
+  storeRuns : ∀ program s (compensation : Compensations), WellFormed program s →
+    StoresHeldOrFresh s compensation → rel s → rel { s with slots := { s.slots with compensation } }
+
+/-- `FrameAlongside` with the operations of the records that carry none of its premises: leaving an active
+Multi-Instance instance's scope occurrence and replacing the Multi-Instance runs
+(`Laws.MultiInstance.MultiInstanceOps`), and leaving a scope occurrence that stands below a parent and storing
+compensation runs, as `Laws.Compensation.RunsOps` states them, with no premise that the context left runs or that a
+stored running context is held or fresh. The scope occurrences kept and an input's end facts read neither runs nor
+contexts. -/
+structure Alongside (rel : State → Prop) : Prop extends FrameAlongside rel where
+  leaveInstance : ∀ program s run scope, WellFormed program s → run ∈ s.slots.multiInstances →
+    Iteration.active scope ∈ run.instances → scope ∈ scopeIds s → rel s → rel (s.leaveScope scope)
+  runs : ∀ program s (runs : List MultiInstanceRun), WellFormed program s → rel s →
+    rel { s with slots := { s.slots with multiInstances := runs } }
+  leaveContext : ∀ program s (entry : ScopeOccurrence) parent, WellFormed program s → entry ∈ s.scopes →
+    entry.parent = some parent → rel s → rel (s.leaveScope entry.id)
+  storeContexts : ∀ program s (compensation : Compensations), WellFormed program s → rel s →
+    rel { s with slots := { s.slots with compensation } }
 
 /-- The state operations the hooks apply keep the scope occurrences of any before-state. -/
 theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) where
@@ -383,7 +441,7 @@ theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) wh
   reserve _ s element scope _ kept :=
     have reserves := Laws.State.reserve_reserves s element scope
     kept.enter reserves.nextIssue fun _ member => .inl (reserves.scopes ▸ member)
-  leaveScope _ s scope _ _ kept :=
+  leaveScope _ s scope _ _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2
   clearInside _ s scope keep _ _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).1 scope keep).1 ((Laws.State.removal_shrinks s).1 scope keep).2
@@ -396,17 +454,24 @@ theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) wh
   removeVariable _ s target name _ kept :=
     have same := Laws.State.removeVariable_same s target name
     kept.shrink (by rw [same.scopes]; exact .refl _) same.nextIssue
+  storeRuns _ _ _ _ _ kept := kept.shrink (.refl _) rfl
+  leaveInstance _ s _ scope _ _ _ _ kept :=
+    kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2
+  runs _ _ _ _ kept := kept.shrink (.refl _) rfl
+  leaveContext _ s entry _ _ _ _ kept :=
+    kept.shrink ((Laws.State.removal_shrinks s).2.1 entry.id).1 ((Laws.State.removal_shrinks s).2.1 entry.id).2
+  storeContexts _ _ _ _ kept := kept.shrink (.refl _) rfl
 
 /-- A queued signal moves nothing `rel` reads. -/
-theorem Alongside.signal {rel : State → Prop} (side : Alongside rel) {s : State} (kept : rel s) (signal : Signal) :
-    rel (s.signal signal) := by
+theorem FrameAlongside.signal {rel : State → Prop} (side : FrameAlongside rel) {s : State} (kept : rel s)
+    (signal : Signal) : rel (s.signal signal) := by
   rw [Laws.State.signal_eq]
-  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ kept
+  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ kept
 
 /-- What `Step`'s own phases keep of a property `rel` carried beside `WellFormed`, besides the hooks' state operations
-(`Alongside`): journalling the draft, ordering the journal, beginning an admitted request in a scope occurrence that
-stands and cancelling an occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
-structure StepAlongside (rel : State → Prop) : Prop extends Alongside rel where
+(`FrameAlongside`): journalling the draft, ordering the journal, beginning an admitted request in a scope occurrence
+that stands and cancelling an occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
+structure StepAlongside (rel : State → Prop) : Prop extends FrameAlongside rel where
   journal : ∀ program s (transition : Transition), WellFormed program s → rel s → transition.started = s.draft.started →
     transition.ended = s.draft.ended → rel { s with journal := transition :: s.journal, draft := {}, writes := [] }
   runOrder : ∀ program s, WellFormed program s → rel s → rel { s with journal := s.journal.reverse }
@@ -418,17 +483,21 @@ structure StepAlongside (rel : State → Prop) : Prop extends Alongside rel wher
 `WellFormed` alone read its first half, and the others keep the second by `StepAlongside`. -/
 theorem phases_alongside {rel : State → Prop} (phases : Laws.Step.Phases WellFormed) (side : StepAlongside rel) :
     Laws.Step.Phases fun program s => WellFormed program s ∧ rel s where
-  clock _ s atMs holds := ⟨phases.clock _ _ atMs holds.1, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
+  clock _ s atMs holds :=
+    ⟨phases.clock _ _ atMs holds.1, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
   journal _ s transition holds started ended :=
     ⟨phases.journal _ _ transition holds.1 started ended, side.journal _ s transition holds.1 holds.2 started ended⟩
   runOrder _ s holds := ⟨phases.runOrder _ _ holds.1, side.runOrder _ s holds.1 holds.2⟩
   dequeue _ s signals holds fewer :=
-    ⟨phases.dequeue _ _ signals holds.1 fewer, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
+    ⟨phases.dequeue _ _ signals holds.1 fewer,
+      side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
   untoken _ s tokens holds fewer :=
-    ⟨phases.untoken _ _ tokens holds.1 fewer, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
+    ⟨phases.untoken _ _ tokens holds.1 fewer,
+      side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ holds.2⟩
   queueWrite _ _ scope writes rule holds :=
-    ⟨phases.queueWrite _ _ scope writes rule holds.1, side.toAlongside.signal holds.2 _⟩
-  queueRemove _ _ scope names holds := ⟨phases.queueRemove _ _ scope names holds.1, side.toAlongside.signal holds.2 _⟩
+    ⟨phases.queueWrite _ _ scope writes rule holds.1, side.toFrameAlongside.signal holds.2 _⟩
+  queueRemove _ _ scope names holds :=
+    ⟨phases.queueRemove _ _ scope names holds.1, side.toFrameAlongside.signal holds.2 _⟩
   armIssued _ _ host element scope holds := phases.armIssued _ _ host element scope holds.1
   armScopeIssued _ _ scope holds := phases.armScopeIssued _ _ scope holds.1
   armGatewayIssued _ _ occurrence gateway scope holds :=
@@ -446,7 +515,7 @@ theorem phases_alongside {rel : State → Prop} (phases : Laws.Step.Phases WellF
   endInstance _ s status failure holds recorded := by
     refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩
     rw [Laws.Step.endInstance_eq]
-    exact side.frame (s.clearInside State.root) _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+    exact side.frame (s.clearInside State.root) _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
       (side.clearInside _ s State.root [] holds.1 holds.1.rooted.1 (fun _ _ none => by cases none) holds.2)
   begin _ s request role sourceType holds stands admitted roled bodied :=
     have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled bodied
@@ -460,7 +529,7 @@ theorem phases_alongside {rel : State → Prop} (phases : Laws.Step.Phases WellF
 nor the counter, beginning issues at most one identity and enters no scope occurrence, and cancelling drops some
 (`Laws.State.removal_shrinks`). -/
 theorem scopesKept_stepAlongside (before : State) : StepAlongside (ScopesKept before) where
-  toAlongside := scopesKept_alongside before
+  toFrameAlongside := (scopesKept_alongside before).toFrameAlongside
   journal _ _ _ _ kept _ _ := kept
   runOrder _ _ _ kept := kept
   begin _ s request role sourceType formed _ _ kept :=
@@ -535,11 +604,17 @@ theorem endsKept_alongside (b : State) (x : Option (Nat × OccurrenceKey)) :
   enterCalled _ s called call variables definition formed kept :=
     kept.step formed (Laws.Step.enterCalled_frame formed called call variables definition)
   reserve _ _ element scope formed kept := kept.step formed (Laws.Step.reserve_frame formed element scope)
-  leaveScope _ _ _ formed present kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
+  leaveScope _ _ _ formed present _ kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
   clearInside _ _ _ _ formed present inside kept := kept.step formed (Laws.Step.clearInside_frame formed present inside)
   disarm _ s host formed kept := kept.step formed (Laws.Step.disarm_frame s host)
   setVariable _ s target name value formed kept := kept.step formed (Laws.Step.setVariable_frame s target name value)
   removeVariable _ s target name formed kept := kept.step formed (Laws.Step.removeVariable_frame s target name)
+  storeRuns _ _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+  leaveInstance _ _ _ _ formed _ _ present kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
+  runs _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+  leaveContext _ _ entry _ formed member _ kept :=
+    kept.step formed (Laws.Step.leaveScope_frame formed (List.mem_map.mpr ⟨entry, member, rfl⟩))
+  storeContexts _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
 
 /-- Each committed micro-step of an input on a running instance keeps `inv`: its transition and every closure
 micro-step. -/
@@ -565,7 +640,7 @@ theorem microStepsKeep_alongside {hooks : Hooks} {rel : State → Prop}
 them, and beginning and cancelling frame them (`Kernel.Laws.Step.EndsFrames`). -/
 theorem endsKept_stepAlongside (b : State) :
     StepAlongside (Laws.Step.EndsKept b none) where
-  toAlongside := endsKept_alongside b none
+  toFrameAlongside := (endsKept_alongside b none).toFrameAlongside
   journal _ s transition _ kept _ ended := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (by
     simp only [Laws.Step.endKeys, List.flatMap_cons, ended, List.map_append]
     simpa using List.perm_append_comm)
