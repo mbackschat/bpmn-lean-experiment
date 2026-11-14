@@ -14,13 +14,22 @@ the input's ranking decides it by design. Stated over a hooks parameter; the lan
 proves it of `Registry.hooks`.
 
 Model premises: the profile option `branchSchedule = .orderInvariant`, and `apart`, the order-invariance condition
-that admission enforces with `flow.concurrentWrite`, `flow.concurrentInterference` and
-`multiInstance.concurrentInstances` (and the refusal P1 adds for #81), over the read and write account of
-`Kernel.IL.Footprint`. `apart` is a draft parameter: P1's fix of #81 settles it, since today's admission admits
-schedules that wake races and item-dependent exits tell apart, and the fixed refusal fixes what `apart` compares, the
-footprints of concurrent branch closures that stop where a branch waits or joins. P1's interpretation review approves
-its declarative form. That admission enforces it stays scenario evidence. `Laws.Data` is this module's path to `Laws.State`, whose
-importers are all feature `Laws` modules. Nothing executable imports this module.
+admission enforces with `flow.concurrentWrite`, `flow.concurrentInterference` and `multiInstance.concurrentInstances`
+(#81): two units of work one closure may hold together neither race on a name, by the read and write account of
+`Kernel.IL.Footprint`, nor act on each other's work, by removing a region that holds it, resuming a subscription it
+opens or compensating a record it leaves. The units are those of the mechanisms that queue more than one work item, one
+case each: a split's emission (BPMN 2.0.2 §13.3.1, Table 13.1), a parallel body's instances (§13.3.7), a Signal throw's
+firings beside its continuation (§10.5.1: a Signal reaches every catcher), a non-interrupting catch beside its thrower,
+which goes on (§10.5.1), the Conditional firings one write offers (`Feature.Subscriptions.offerWrites`), and the handlers
+one Compensation throw begins (§13.5.5); an Error no catcher takes ends every unit (Table 10.88). P6's provenance lemma,
+that two items queued together at a reachable closure state lie in distinct units of one such fan-out, has exactly
+these cases, and they must match the levels `Admission.Flow.Concurrency.concurrentLevel` counts as concurrent.
+
+`apart` is a parameter: a `Laws` module may not import the admission's closure walk, and a `Proofs` module neither the
+registry nor an admission, so its declarative statement, `Laws.Flow.Concurrent` over an inductive unit reach, is P6's
+to write beside the provenance lemma, which reads the same cases. That admission enforces it stays scenario evidence
+(`scenarios/open-rows/split-branch-order`, `scenarios/open-rows/branch-fan-out-order`). `Laws.Data` is this module's
+path to `Laws.State`, whose importers are all feature `Laws` modules. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -36,12 +45,22 @@ inductive Reaches (hooks : Hooks) (ctx : Ctx) : State → State → Prop where
   | step {before middle after : State} : Laws.Step.ClosureStep hooks ctx before middle → Reaches hooks ctx middle after →
       Reaches hooks ctx before after
 
-/-- Two schedules of one closure state: the same state with its queued tokens in another order and, when its queue
-holds only firings (the items one Signal broadcast wakes), those firings in another order. -/
+/-- Two schedules of one closure state: the same state with its queued tokens, a split's branches, in another order,
+and one contiguous block of Signal firings, the receivers one Signal throw queues, in another order, every other queued
+signal in place, the ones before the block included.
+
+It does not vary the `begin` signals of a parallel body's instances (under `orderInvariant` no begin is deferred onto
+the tokens), the begins of the handlers one Compensation throw starts, or the order of idle scope completions, which
+`Step.settle` fixes: that those orders are immaterial rests on admission alone (`multiInstance.concurrentInstances`,
+the compensation pairs of `flow.concurrentWrite` and `flow.concurrentInterference`, a Scope's completion followed as
+its thrower's continuation). The Conditional firings one write offers stay in place too: admission refuses a write
+whose firings race a sibling unit, and an uncontested firing's effects reach the other units only through the tokens it
+emits, which `tokens` reorders. -/
 structure Reordered (left right : State) : Prop where
   tokens : right.tokens.Perm left.tokens
-  signals : right.signals.Perm left.signals
-  firings : left.signals ≠ right.signals → ∀ queued ∈ left.signals, ∃ item fired, queued = .fire item fired
+  firings : ∃ before block block' after, left.signals = before ++ block ++ after ∧
+    right.signals = before ++ block' ++ after ∧ block'.Perm block ∧
+    ∀ queued ∈ block, ∃ item delivery, queued = .fire item (.signal delivery)
   rest : { right with tokens := left.tokens, signals := left.signals } = left
 
 /-- A bijection of the identities issued at or above `from`, fixing every identity below it. -/
@@ -81,9 +100,7 @@ structure Alike (ids : Nat → Nat) (keys : OccurrenceKey → OccurrenceKey) (le
     (right.outbox.map fun intent => (intent.address, intent.variables, intent.businessKey))
 
 /-- P6: from a closure state reached from a well-formed state, any two schedules of its enabled work that both settle
-commit results alike up to a bijection of the identities and activations issued from that state on. `apart` is a draft
-that P1's fix of #81 settles and P1's interpretation review approves; with today's admission as `apart` the statement
-is false (#81). -/
+commit results alike up to a bijection of the identities and activations issued from that state on. -/
 def SchedulesAgree (hooks : Hooks) (apart : Program → Prop) : Prop :=
   ∀ (ctx : Ctx) (start state reordered left right : State) (fuel work fuel' work' : Nat),
     ctx.program.options.branchSchedule = .orderInvariant → apart ctx.program →
