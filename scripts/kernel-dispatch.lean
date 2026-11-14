@@ -6,7 +6,8 @@ closed dispatch and no catch-all, read from the built environment because only t
 type a `match`, `if let` or `matches` discriminates and which alternatives cover which constructors.
 
 - Closed dispatch: a guarded type is matched (`match`, `casesOn`, `rec`, `ctorIdx`) only in its owner module, the
-  module that defines it, `Kernel.IL.Codec`, the owner's own `Admission` and `Laws` modules, and `Kernel.Proofs.Step`;
+  module that defines it, `Kernel.IL.Codec`, the owner's own `Admission` and `Laws` modules, the defining module's own
+  `Laws` module (`Kernel.Laws.IL` for the IL's types), which sees the defining module's matches, and `Kernel.Proofs.Step`;
   `Element` and `EventRole` also in `Kernel.AdmissionRegistry`. Nothing compares one with `==` or
   `decide`: no guarded type has a `DecidableEq` or `BEq` instance outside its defining module.
 - No catch-all: no match alternative binds a guarded-type discriminant to a variable, so every alternative names
@@ -48,9 +49,17 @@ def owners : List (Name × List Name) := [
 
 def guarded (type : Name) : Bool := owners.any (·.1 == type)
 
+/-- The `Laws` module that sees the bodies of the executable module `defining`: `Kernel.Laws.X` for
+`Kernel.Feature.X`, `Kernel.X` and their submodules. -/
+def ownLaws (defining : Name) : Option Name :=
+  match defining.components.map (·.toString) with
+  | "Kernel" :: "Feature" :: family :: _ => some (.str `Kernel.Laws family)
+  | "Kernel" :: family :: _ => some (.str `Kernel.Laws family)
+  | _ => none
+
 def allowed (env : Environment) (type module : Name) : Bool :=
   let defining := (env.getModuleIdxFor? type).bind fun idx => env.header.moduleNames[idx.toNat]?
-  defining == some module || module == `Kernel.IL.Codec ||
+  defining == some module || module == `Kernel.IL.Codec || (defining.bind ownLaws) == some module ||
     ((owners.find? (·.1 == type)).map (·.2.any (·.isPrefixOf module))).getD false
 
 /-- The guarded type a constant inspects directly, other than through a matcher. -/
