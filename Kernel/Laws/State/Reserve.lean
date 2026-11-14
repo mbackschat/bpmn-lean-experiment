@@ -15,9 +15,9 @@ namespace Kernel.Laws.State
 
 open Kernel
 
-/-- What `State.reserve` makes of `before`: an unbegun occurrence of `element` in `scope`, issued at the counter and
-numbered as an element activation, above every count its counter had when the counters are keyed, joins the
-occurrences. Nothing else changes. -/
+/-- What `State.reserve` makes of `before`: an unbegun occurrence of `element` in `scope` that continues by its
+flows, issued at the counter and numbered as an element activation, above every count its counter had when the
+counters are keyed, joins the occurrences. Nothing else changes. -/
 structure Reserves (before after : State) (element : ElementId) (scope : ScopeOccurrenceId) (reserved : Occurrence) :
     Prop where
   occurrences : after.occurrences = before.occurrences ++ [reserved]
@@ -41,6 +41,7 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   status : after.status = before.status
   failure : after.failure = before.failure
   slots : after.slots = before.slots
+  continued : reserved.continuation = .flow
 
 /-- A reservation in a scope occurrence that stands keeps a state well-formed, and nothing queued names it: it is
 issued above every identity a queued begin names. -/

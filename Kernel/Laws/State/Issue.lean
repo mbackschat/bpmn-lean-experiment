@@ -95,8 +95,9 @@ structure Issued (before after : State) (request : BeginRequest) (role : Activat
   activated : Activated before after (before.instanceOf request.scope) request.element role begun.activation
 
 /-- What `State.beginOccurrence` makes of `before`: the occurrence `begun` replaces the record of its identity, begun in
-the request's scope occurrence, and its start is journalled under its key; it is the reservation the request names, if
-that stands, or a fresh occurrence issued at the counter and numbered under `role`. Nothing else changes. -/
+the request's scope occurrence and continuing as the request says, and its start is journalled under its key; it is the
+reservation the request names, if that stands, or a fresh occurrence issued at the counter and numbered under `role`.
+Nothing else changes. -/
 structure Begins (before after : State) (request : BeginRequest) (role : ActivationRole) (sourceType : String)
     (begun : Occurrence) : Prop where
   occurrences : after.occurrences = before.occurrences.filter (·.id != begun.id) ++ [begun]
@@ -117,6 +118,7 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   status : after.status = before.status
   failure : after.failure = before.failure
   slots : after.slots = before.slots
+  continued : begun.continuation = request.continuation
 
 /-- The begun occurrence takes a key no other occurrence and no start fact of `before` has: a reservation's own, or a
 fresh activation. -/

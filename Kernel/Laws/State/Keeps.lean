@@ -18,6 +18,69 @@ namespace Kernel.Laws.State
 
 open Kernel
 
+/-! ## The fresh instance -/
+
+/-- A fresh instance's variables are keyed, whatever bindings the start supplied (#147). -/
+theorem initial_variablesKeyed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
+    VariablesKeyed (State.initial instanceId variables businessKey) where
+  scopes := by simp [initial_eq]
+  names := by
+    intro vars member
+    simp only [initial_eq, List.mem_singleton] at member
+    subst member
+    exact keyed_names variables
+
+/-- A start's fresh instance; `Kernel.Proofs.Step` queues its root's arming (`signal_queueSound`). -/
+theorem initial_wellFormed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
+    WellFormed program (State.initial instanceId variables businessKey) where
+  issued := ⟨by simp [initial_eq], by simp [initial_eq], by simp [initial_eq, root_eq]⟩
+  distinct := ⟨by simp [occurrenceIds, initial_eq], by simp [initial_eq],
+    by simp [scopeIds, initial_eq], by simp [initial_eq]⟩
+  startedOnce := by simp [StartedOnce, starts, initial_eq]
+  activations := ⟨by simp [initial_eq], by simp [initial_eq]⟩
+  reservations := by simp [ReservationsUnstarted, initial_eq]
+  owned := ⟨by simp [initial_eq], by simp [initial_eq], by simp [initial_eq], by simp [initial_eq],
+    by simp [initial_eq], by simp [scopeIds, initial_eq], by simp [initial_eq]⟩
+  rooted := ⟨by simp [scopeIds, initial_eq], by simp [initial_eq], by
+    simp only [initial_eq, List.mem_singleton]; rintro scope rfl; exact .refl _⟩
+  variables := ⟨by simp [initial_eq], fun vars member => by
+    simp only [initial_eq, List.mem_singleton] at member
+    subst member
+    exact keyed_names variables⟩
+  failure := by simp [FailureRecorded, initial_eq]
+  queue := ⟨by simp [initial_eq], by simp [initial_eq], by simp [initial_eq], by simp [initial_eq],
+    by simp [initial_eq]⟩
+  counted := by simp [StartsCounted, starts, initial_eq]
+  occurrencesCounted := by simp [OccurrencesCounted, initial_eq]
+  ownedBelow := by simp [OwnedBelow, initial_eq]
+  claimed := ⟨by simp [initial_eq], by simp [Queued, initial_eq], by simp [Precedes, initial_eq],
+    by simp [Precedes, initial_eq], by simp [initial_eq], by simp [Queued, initial_eq],
+    by simp [Queued, initial_eq], by simp [Queued, initial_eq]⟩
+  settled := ⟨by simp [initial_eq], by simp [initial_eq], by simp [initial_eq], by simp [initial_eq],
+    by simp [initial_eq], by simp [initial_eq], by simp [initial_eq], by simp [initial_eq]⟩
+  attachedReserved := by simp [AttachedReserved, initial_eq]
+  typed := by simp [Typed, initial_eq]
+  worked := by simp [Worked, initial_eq]
+  roles := by simp [EventRoles, initial_eq]
+  bodyRoles := by simp [BodyRoles, initial_eq]
+  itemRoles := by simp [ItemRoles, initial_eq]
+  raises := by simp [RaisesSound, initial_eq]
+
+/-- The fresh instance's root was issued. -/
+theorem initial_rootIssued (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
+    State.root.value < (State.initial instanceId variables businessKey).nextIssue := by
+  simp [initial_eq, root_eq]
+
+/-- The fresh instance runs no Multi-Instance body. -/
+theorem initial_bodies (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
+    (State.initial instanceId variables businessKey).slots.multiInstances = [] := by simp [initial_eq]
+
+/-- The fresh instance holds no occurrence, queued signal or token, and no compensation run. -/
+theorem initial_empty (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
+    let s := State.initial instanceId variables businessKey
+    s.occurrences = [] ∧ s.signals = [] ∧ s.tokens = [] ∧ s.slots.compensation.runs = [] := by
+  simp [initial_eq]
+
 /-! ## The phases of `Step`
 
 That each phase `Step` runs itself keeps `WellFormed` (`Laws.Step.Phases`, which `Kernel.Proofs.State` assembles). -/

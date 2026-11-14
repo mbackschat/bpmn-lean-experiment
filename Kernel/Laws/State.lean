@@ -149,16 +149,6 @@ where
       · exact (keyed_sublist rest).cons binding
       · exact (keyed_sublist rest).cons_cons binding
 
-/-- A fresh instance's variables are keyed, whatever bindings the start supplied (#147). -/
-theorem initial_variablesKeyed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
-    VariablesKeyed (State.initial instanceId variables businessKey) where
-  scopes := by simp [State.initial]
-  names := by
-    intro vars member
-    simp only [State.initial, List.mem_singleton] at member
-    subst member
-    exact keyed_names variables
-
 /-- The variable set a new scope occurrence installs binds each name at most once, whatever locals it was given (#147). -/
 theorem enterScope_names (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (occurrence : Option Nat)
@@ -440,50 +430,14 @@ theorem instanceRoot_stands (state : State) (scope : ScopeOccurrenceId) :
       · exact ih _
       · exact .inl rfl
 
-/-- A start's fresh instance; `Kernel.Proofs.Step` queues its root's arming (`signal_queueSound`). -/
-theorem initial_wellFormed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
-    WellFormed program (State.initial instanceId variables businessKey) where
-  issued := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial, State.root]⟩
-  distinct := ⟨by simp [occurrenceIds, State.initial], by simp [State.initial],
-    by simp [scopeIds, State.initial], by simp [State.initial]⟩
-  startedOnce := by simp [StartedOnce, starts, State.initial]
-  activations := ⟨by simp [State.initial], by simp [State.initial]⟩
-  reservations := by simp [ReservationsUnstarted, State.initial]
-  owned := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial],
-    by simp [State.initial], by simp [scopeIds, State.initial], by simp [State.initial]⟩
-  rooted := ⟨by simp [scopeIds, State.initial], by simp [State.initial], by
-    simp only [State.initial, List.mem_singleton]; rintro scope rfl; exact .refl _⟩
-  variables := ⟨by simp [State.initial], fun vars member => by
-    simp only [State.initial, List.mem_singleton] at member
-    subst member
-    exact keyed_names variables⟩
-  failure := by simp [FailureRecorded, State.initial]
-  queue := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial],
-    by simp [State.initial]⟩
-  counted := by simp [StartsCounted, starts, State.initial]
-  occurrencesCounted := by simp [OccurrencesCounted, State.initial]
-  ownedBelow := by simp [OwnedBelow, State.initial]
-  claimed := ⟨by simp [State.initial], by simp [Queued, State.initial], by simp [Precedes, State.initial],
-    by simp [Precedes, State.initial], by simp [State.initial], by simp [Queued, State.initial],
-    by simp [Queued, State.initial], by simp [Queued, State.initial]⟩
-  settled := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial],
-    by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial]⟩
-  attachedReserved := by simp [AttachedReserved, State.initial]
-  typed := by simp [Typed, State.initial]
-  worked := by simp [Worked, State.initial]
-  roles := by simp [EventRoles, State.initial]
-  bodyRoles := by simp [BodyRoles, State.initial]
-  itemRoles := by simp [ItemRoles, State.initial]
-  raises := by simp [RaisesSound, State.initial]
-
-/-- The fresh instance's root was issued. -/
-theorem initial_rootIssued (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
-    State.root.value < (State.initial instanceId variables businessKey).nextIssue := by
-  simp [State.initial, State.root]
-
-/-- The fresh instance runs no Multi-Instance body. -/
-theorem initial_bodies (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
-    (State.initial instanceId variables businessKey).slots.multiInstances = [] := by simp [State.initial]
+/-- A start's fresh instance, which `Kernel.Laws.State.Keeps` reads through this lemma alone. -/
+theorem initial_eq (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
+    State.initial instanceId variables businessKey =
+      { instanceId
+        scopes := [{ id := State.root, element := none, parent := none }]
+        variables := [{ scope := State.root, entries := keyed variables }]
+        slots := { instances := [{ root := State.root, businessKey }] } } := by
+  simp only [State.initial]
 
 /-! ## The subtree of a scope occurrence -/
 
@@ -623,7 +577,7 @@ theorem reserve_reserves (state : State) (element : ElementId) (scope : ScopeOcc
     by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
     by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
     by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
-    by simp [State.reserve, State.activate, State.issue]⟩
+    by simp [State.reserve, State.activate, State.issue], rfl⟩
   obtain ⟨activations, above, positive⟩ := activate_activated keyed (state.instanceOf scope) element .element
   exact ⟨by simpa [State.reserve, State.issue] using activations, by simpa [State.reserve, State.issue] using above,
     by simpa [State.reserve] using positive⟩
@@ -681,7 +635,7 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
       .inl ⟨reserved, member, same ▸ named, rfl, rfl, rfl, rfl, by simp [State.recordStart], by simp [State.recordStart]⟩,
       keeps.1, instances, by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
       by simp [State.recordStart], keeps.2.1, by simp [State.recordStart], by simp [State.recordStart],
-      by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart]⟩
+      by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart], rfl⟩
   · rename_i found
     have shape : (state.activate (state.instanceOf request.scope) request.element role).1 =
         { state with activations := (state.activate (state.instanceOf request.scope) request.element role).1.activations } := by
@@ -702,7 +656,7 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
       by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue], keeps.2.1,
       by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue],
       by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue],
-      by simp [State.recordStart, State.issue]⟩
+      by simp [State.recordStart, State.issue], rfl⟩
     exact ⟨by simpa [State.recordStart, State.issue] using activated.activations, activated.above, activated.positive⟩
 
 /-! ## Clearing a scope occurrence -/
