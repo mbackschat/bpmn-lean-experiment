@@ -54,7 +54,7 @@ def RunsFormed (program : Program) (s : State) : Prop :=
 
 /-- A committed input from `before` to `after`, from a well-formed before-state that keeps the lane's slot invariant. -/
 def Commits (hooks : Hooks) (program : Program) (before after : State) : Prop :=
-  WellFormed before ∧ RunsFormed program before ∧ ∃ input, Step.step hooks program (some before) input = .ok after
+  WellFormed program before ∧ RunsFormed program before ∧ ∃ input, Step.step hooks program (some before) input = .ok after
 
 /-- A committed start keeps the lane's slot invariant. -/
 def RunsFormedAtStart (hooks : Hooks) : Prop :=

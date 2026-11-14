@@ -31,7 +31,7 @@ open Kernel.Laws.State (WellFormed Within scopeIds occurrenceIds)
 removed: no token, open item, occurrence or variable set (BPMN 2.0.2 §13.5.3, §10.5.6; `Laws.State.ClearsInside`). -/
 def SubtreeRemoved (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before after : State) (removed : ScopeOccurrenceId),
-    WellFormed before → Step.step hooks program (some before) input = .ok after →
+    WellFormed program before → Step.step hooks program (some before) input = .ok after →
     removed ∈ scopeIds before → removed ∉ scopeIds after →
     (∀ token ∈ after.tokens, ¬ Within before token.busyScope removed) ∧
     (∀ item ∈ after.openItems, ¬ Within before item.scope removed) ∧
@@ -53,7 +53,7 @@ def AddressedTo (input : Input) (ref : OccurrenceRef) : Prop :=
 (`unknown-user-task`, `unknown-incident`, `unknown-occurrence`, `unknown-timer`, `unknown-effect`). -/
 def LateInputRejected (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before : State) (ref : OccurrenceRef),
-    WellFormed before → AddressedTo input ref → (∀ occurrence ∈ before.occurrences, ¬ Designates program before ref occurrence) →
+    WellFormed program before → AddressedTo input ref → (∀ occurrence ∈ before.occurrences, ¬ Designates program before ref occurrence) →
     ∃ code, Step.step hooks program (some before) input = .error (.rejected code)
 
 /-- The queued signal acts in the scope occurrence `scope`: it arms, begins, writes, removes, occurs or compensates
@@ -102,7 +102,7 @@ facts are made together (`Laws.State.removal_cancels_with_ends` of `State.clearI
 the input's other end facts come from `State.recordEnd`. -/
 def RemovedEndOnce (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before after : State) (occurrence : Occurrence),
-    WellFormed before → Step.step hooks program (some before) input = .ok after →
+    WellFormed program before → Step.step hooks program (some before) input = .ok after →
     occurrence ∈ before.occurrences → occurrence.begun = true → occurrence.id ∉ occurrenceIds after →
     ∃ earlier terminal later, after.journal.flatMap (·.ended) = earlier ++ (before.keyOf occurrence, terminal) :: later ∧
       ∀ fact ∈ earlier ++ later, fact.1 ≠ before.keyOf occurrence
@@ -193,7 +193,7 @@ identity waits for an occurrence of the before-state that the lookup's reference
 open item an occurrence of its own element in its own scope occurrence (`Laws.State.Owned.itemOccurrences`), and the
 distinct identifiers make it the one the item's activation was read from. -/
 theorem item_designates {program : Program} {before s : State} {ref : OccurrenceRef} {item : OpenItem}
-    (formed : WellFormed before) (occurrences : s.occurrences = before.occurrences)
+    (formed : WellFormed program before) (occurrences : s.occurrences = before.occurrences)
     (items : s.openItems = before.openItems) (sameInstance : s.instanceOf = before.instanceOf)
     (member : item ∈ s.openItems) (named : program.publicId item.element = ref.element)
     (activation : (s.occurrence? item.occurrence).map (·.activation) = some ref.activation)
@@ -245,7 +245,7 @@ def ScopesKept (before s : State) : Prop :=
 /-- A committed input keeps its well-formed before-state's scope occurrences (`ScopesKept`). -/
 def StepKeepsScopes (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before after : State),
-    WellFormed before → Step.step hooks program (some before) input = .ok after → ScopesKept before after
+    WellFormed program before → Step.step hooks program (some before) input = .ok after → ScopesKept before after
 
 /-- One link up: `inner` is `outer`, or a scope occurrence of `s` whose parent lies within `outer`. -/
 theorem Within.up {s : State} {inner outer : ScopeOccurrenceId} (within : Within s inner outer) :
@@ -255,7 +255,7 @@ theorem Within.up {s : State} {inner outer : ScopeOccurrenceId} (within : Within
   | parent child parent _ member link above => exact .inr ⟨child, member, rfl, parent, link, above⟩
 
 /-- In a well-formed state the parent of a scope occurrence is one of its scope occurrences. -/
-theorem parent_stands {s : State} (formed : WellFormed s) {entry : ScopeOccurrence} (member : entry ∈ s.scopes)
+theorem parent_stands {s : State} (formed : WellFormed program s) {entry : ScopeOccurrence} (member : entry ∈ s.scopes)
     {parent : ScopeOccurrenceId} (link : entry.parent = some parent) : parent ∈ scopeIds s := by
   rcases Within.up (formed.rooted.2.2 entry member) with isRoot | ⟨child, inside, same, above⟩
   · simp [(formed.rooted.2.1 entry member).mpr isRoot] at link
@@ -268,7 +268,7 @@ theorem parent_stands {s : State} (formed : WellFormed s) {entry : ScopeOccurren
 
 /-- No scope occurrence of a well-formed after-state that keeps its well-formed before-state's scope occurrences lies,
 in the before-state, within one the after-state no longer holds. -/
-theorem outside_removed {before after : State} (formedBefore : WellFormed before) (formedAfter : WellFormed after)
+theorem outside_removed {before after : State} (formedBefore : WellFormed program before) (formedAfter : WellFormed program after)
     (kept : ScopesKept before after) {removed : ScopeOccurrenceId} (gone : removed ∉ scopeIds after)
     {scope : ScopeOccurrenceId} (member : scope ∈ scopeIds after) : ¬ Within before scope removed := by
   intro within
@@ -288,7 +288,7 @@ after-state's tokens, open items, occurrences and variable sets lie in its scope
 of which lies within a removed one (`outside_removed`). -/
 theorem subtreeRemoved {hooks : Hooks}
     (wellFormed : ∀ (program : Program) (input : Input) (before after : State),
-      WellFormed before → Step.step hooks program (some before) input = .ok after → WellFormed after)
+      WellFormed program before → Step.step hooks program (some before) input = .ok after → WellFormed program after)
     (scopes : StepKeepsScopes hooks) : SubtreeRemoved hooks := by
   intro program input before after removed formed ran _ gone
   have formedAfter := wellFormed program input before after formed ran

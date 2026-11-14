@@ -108,7 +108,7 @@ commit results alike up to a bijection of the identities and activations issued 
 def SchedulesAgree (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (start state reordered left right : State) (fuel work fuel' work' : Nat),
     ctx.program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart ctx.program →
-    WellFormed start → Reaches hooks ctx start state → Reordered state reordered →
+    WellFormed ctx.program start → Reaches hooks ctx start state → Reordered state reordered →
     Step.settle hooks ctx fuel work state = .ok left → Step.settle hooks ctx fuel' work' reordered = .ok right →
     ∃ ids keys, Issued ids state.nextIssue ∧ Activations state keys ∧ Alike ids keys left right
 

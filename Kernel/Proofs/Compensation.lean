@@ -59,7 +59,7 @@ def CompensationsFormedInPopulation (hooks : Hooks) : Prop :=
 
 /-- A committed input from `before` to `after`, from a well-formed before-state that keeps the lane's slot invariant. -/
 def Commits (hooks : Hooks) (program : Program) (before after : State) : Prop :=
-  WellFormed before ∧ CompensationsFormed before ∧ ∃ input, Step.step hooks program (some before) input = .ok after
+  WellFormed program before ∧ CompensationsFormed before ∧ ∃ input, Step.step hooks program (some before) input = .ok after
 
 /-- Single take-out across triggers: no record a run claimed is retained again, so no second trigger compensates it
 (§13.5.5, Figure 13.2, #103). -/

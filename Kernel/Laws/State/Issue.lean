@@ -119,7 +119,7 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
 /-- The begun occurrence takes a key no other occurrence and no start fact of `before` has: a reservation's own, or a
 fresh activation. -/
 private theorem Begins.keyNew {before after : State} {request : BeginRequest} {role : ActivationRole}
-    {sourceType : String} {begun : Occurrence} (formed : WellFormed before)
+    {sourceType : String} {begun : Occurrence} (formed : WellFormed program before)
     (begins : Begins before after request role sourceType begun) (stands : request.scope ∈ scopeIds before)
     (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id) :
     (∀ occurrence ∈ before.occurrences, occurrence.id ≠ begun.id → key before occurrence ≠ key before begun) ∧
@@ -147,7 +147,7 @@ private theorem Begins.keyNew {before after : State} {request : BeginRequest} {r
 /-- The begun occurrence's identity is no other standing occurrence's, item's or claim's: a reservation's is claimed by
 nothing else, a fresh one is above every identity issued. -/
 private theorem Begins.idNew {before after : State} {request : BeginRequest} {role : ActivationRole}
-    {sourceType : String} {begun : Occurrence} (formed : WellFormed before)
+    {sourceType : String} {begun : Occurrence} (formed : WellFormed program before)
     (begins : Begins before after request role sourceType begun)
     (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id) :
     (∀ item ∈ before.openItems, item.occurrence ≠ begun.id ∧ item.attachedTo ≠ some begun.id) ∧
@@ -178,9 +178,9 @@ private theorem Begins.idNew {before after : State} {request : BeginRequest} {ro
 
 /-- The begin of an admitted request in a scope occurrence that stands keeps a state well-formed. -/
 theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role : ActivationRole}
-    {sourceType : String} {begun : Occurrence} (formed : WellFormed before)
+    {sourceType : String} {begun : Occurrence} (formed : WellFormed program before)
     (begins : Begins before after request role sourceType begun) (stands : request.scope ∈ scopeIds before)
-    (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id) : WellFormed after := by
+    (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id) : WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (begins.instances _)
   obtain ⟨keyNew, factNew, keyCounted⟩ := begins.keyNew formed stands admitted
   obtain ⟨itemsFree, unbegunOnly, unclaimed, issued⟩ := begins.idNew formed admitted
@@ -232,7 +232,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     · exact begins.scope ▸ stands
     · exact formed.owned.occurrenceScopes occurrence old
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
-    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled⟩
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed⟩
   case issued =>
     exact ⟨fun occurrence member => by
         rcases members occurrence member with rfl | ⟨old, _⟩
@@ -397,6 +397,16 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
         · exact .inl old)
       (fun _ queued => by simpa [Queued, begins.signals, begins.tokens] using queued)
       (fun _ member => begins.signals ▸ member) (fun _ member => .inl (begins.scopes ▸ member))
+  -- No open item waits on the begun occurrence: a reservation's item went before it began, a fresh one has none.
+  case attachedReserved | typed =>
+    have waited : ∀ item ∈ after.openItems, ∀ occurrence ∈ after.occurrences, occurrence.id = item.occurrence →
+        occurrence.begun = true → occurrence ∈ before.occurrences := fun item member occurrence inside named _ => by
+      rcases members occurrence inside with rfl | ⟨old, _⟩
+      · exact absurd named.symm (itemsFree item (begins.openItems ▸ member)).1
+      · exact old
+    first
+      | exact formed.attachedReserved.transport (fun _ member => begins.openItems ▸ member) waited
+      | exact formed.typed.transport (fun _ member => begins.openItems ▸ member) waited
 
 /-! ## Reserving and starting where it stands -/
 
@@ -427,9 +437,9 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
 /-- A reservation in a scope occurrence that stands keeps a state well-formed, and nothing queued names it: it is
 issued above every identity a queued begin names. -/
 theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope : ScopeOccurrenceId}
-    {reserved : Occurrence} (formed : WellFormed before) (reserves : Reserves before after element scope reserved)
+    {reserved : Occurrence} (formed : WellFormed program before) (reserves : Reserves before after element scope reserved)
     (stands : scope ∈ scopeIds before) :
-    WellFormed after ∧ ∀ request, Queued after request → reserved.id ∉ names request := by
+    WellFormed program after ∧ ∀ request, Queued after request → reserved.id ∉ names request := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (reserves.instances _)
   have issuedAt := reserves.id
   have next := reserves.nextIssue
@@ -456,7 +466,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
   · have := ((formed.claimed.named request (queuedBefore request queued)).2 _ named).1
     omega
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
-    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled⟩
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed⟩
   case issued =>
     exact ⟨fun occurrence member => by
         rcases members occurrence member with rfl | old
@@ -591,6 +601,12 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
         · exact .inr (by omega)
         · exact .inl old)
       queuedBefore (fun _ member => reserves.signals ▸ member) (fun _ member => .inl (reserves.scopes ▸ member))
+  case attachedReserved | typed =>
+    have begun : ∀ occurrence ∈ after.occurrences, occurrence.begun = true → occurrence ∈ before.occurrences :=
+      fun occurrence member flag => (members occurrence member).elim (fun same => by simp [same, reserves.unbegun] at flag) fun old => old
+    first
+      | exact formed.attachedReserved.shrink (fun _ member => reserves.openItems ▸ member) begun
+      | exact formed.typed.shrink (fun _ member => reserves.openItems ▸ member) begun
 
 /-- What `State.startReserved` makes of `before` for an unbegun `occurrence`: it begins where it stands and its start
 is journalled under its key. Nothing else changes. -/
@@ -612,11 +628,12 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
   failure : after.failure = before.failure
   slots : after.slots = before.slots
 
-/-- Starting an unbegun reservation that no queued begin names keeps a state well-formed. -/
+/-- Starting an unbegun reservation that no queued begin names and no open item waits on keeps a state well-formed. -/
 theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrence} {sourceType : String}
-    (formed : WellFormed before) (starts_ : StartsReserved before after occurrence sourceType)
+    (formed : WellFormed program before) (starts_ : StartsReserved before after occurrence sourceType)
     (member : occurrence ∈ before.occurrences) (unbegun : occurrence.begun = false)
-    (unnamed : ∀ request, Queued before request → occurrence.id ∉ names request) : WellFormed after := by
+    (unnamed : ∀ request, Queued before request → occurrence.id ∉ names request)
+    (waitless : ∀ item ∈ before.openItems, item.occurrence ≠ occurrence.id) : WellFormed program after := by
   have keys : ∀ other, key after other = key before other := fun _ => key_congr (starts_.instances _)
   have issued := starts_.nextIssue
   have queuedBefore : ∀ request, Queued after request → Queued before request := fun request queued => by
@@ -645,7 +662,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
   have keysOther : ∀ old ∈ before.occurrences, old.id ≠ occurrence.id → key before old ≠ key before occurrence :=
     fun old held other same => other (by rw [nodup_map_eq formed.distinct.keys held member same])
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
-    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled⟩
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed⟩
   case issued =>
     exact ⟨fun found inside => by
         rw [issued]
@@ -793,5 +810,14 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         · simp at unbegun
         · exact .inl old)
       queuedBefore (fun _ member => starts_.signals ▸ member) (fun _ member => .inl (starts_.scopes ▸ member))
+  case attachedReserved | typed =>
+    have waited : ∀ item ∈ after.openItems, ∀ found ∈ after.occurrences, found.id = item.occurrence →
+        found.begun = true → found ∈ before.occurrences := fun item inside found present named _ => by
+      rcases members found present with rfl | ⟨old, _⟩
+      · exact absurd named.symm (waitless item (starts_.openItems ▸ inside))
+      · exact old
+    first
+      | exact formed.attachedReserved.transport (fun _ member => starts_.openItems ▸ member) waited
+      | exact formed.typed.transport (fun _ member => starts_.openItems ▸ member) waited
 
 end Kernel.Laws.State

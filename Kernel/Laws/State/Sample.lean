@@ -28,8 +28,10 @@ private theorem sample_instance (kind : OpenKind) :
   exact ⟨instanceOf_eq nodup parentless root (by simp), instanceOf_eq nodup parentless sub
     (by simp [rootScope, childScope, processRoot, subScope])⟩
 
-/-- The sample instance is well-formed. -/
-theorem sample_wellFormed (kind : OpenKind) : WellFormed (sample kind) where
+/-- The sample instance is well-formed under a program that declares neither of its waiting elements a start Event. -/
+theorem sample_wellFormed (kind : OpenKind) {program : Program}
+    (unstarted : ∀ item ∈ (sample kind).openItems, ((program.element? item.element).bind (·.start?)).isSome = false) :
+    WellFormed program (sample kind) where
   issued := ⟨by simp [sample, subProcess, innerTask, outerTask], by simp [sample, innerItem, outerItem],
     by simp [sample, rootScope, childScope, processRoot, subScope]⟩
   distinct := ⟨by simp [occurrenceIds, sample, subProcess, innerTask, outerTask], by simp [sample, innerItem, outerItem],
@@ -69,6 +71,8 @@ theorem sample_wellFormed (kind : OpenKind) : WellFormed (sample kind) where
   claimed := ⟨by simp [sample, innerItem, outerItem], by simp [Queued, sample], by simp [Precedes, sample],
     by simp [Precedes, sample], by simp [sample], by simp [Queued, sample], by simp [Queued, sample]⟩
   settled := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample], by simp [sample]⟩
+  attachedReserved := by simp [AttachedReserved, sample, innerItem, outerItem]
+  typed := fun item member started => by simp [unstarted item member] at started
 
 /-- A start fact carrying the armed reservation's key breaks `ReservationsUnstarted`. -/
 theorem early_start_rejected (kind : OpenKind) :

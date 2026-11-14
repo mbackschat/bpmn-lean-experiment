@@ -486,16 +486,17 @@ theorem cron_open_range_malformed : CertifiedSecondsRule ['5', '-'] :=
 What the subscription hooks keep of an invariant: a completing occurrence's leaving disarms it, and an offered write
 records a Conditional item's last value and queues the firings its contests resolve to. -/
 
-/-- What the subscription hooks need of the state operations they apply, for an invariant `inv`. -/
-structure SubscriptionsOps (inv : State → Prop) : Prop where
+/-- What the subscription hooks need of the state operations they apply, for an invariant `inv` of an instance that
+runs `program`. -/
+structure SubscriptionsOps (program : Program) (inv : State → Prop) : Prop where
   fire : ∀ state item fired, inv state → inv (state.signal (.fire item fired))
   /-- What open items wait for replaced, each keeping everything else. -/
   rekind : ∀ state (change : OpenItem → OpenItem), inv state →
     (∀ item, change item = { item with kind := (change item).kind }) → inv { state with openItems := state.openItems.map change }
   disarm : ∀ state host, inv state → inv (state.disarm host)
-  /-- An item opened for a begun occurrence that stands. -/
+  /-- An item opened for a begun occurrence that stands, of an element the program declares no start Event. -/
   openItem : ∀ state kind occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
-    inv (state.openItem kind occurrence)
+    (program.element? occurrence.element).bind (·.start?) = none → inv (state.openItem kind occurrence)
   /-- A subscription opened in a scope occurrence that stands, hanging, if at all, on a begun occurrence there. -/
   openSubscription : ∀ state kind element scope host passive, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
     (∀ id, host = some id → ∃ occurrence ∈ state.occurrences, occurrence.id = id ∧ occurrence.begun = true ∧
@@ -523,14 +524,14 @@ private theorem foldlM_holds {α β : Type} {holds : β → Prop} {f : β → α
     exact foldlM_holds each rest mid after (each _ _ _ start stepped) ran
 
 /-- `Hooks.leave` keeps `inv` and is the completing occurrence's disarming. -/
-theorem leave_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {occurrence : Occurrence}
+theorem leave_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx} {occurrence : Occurrence}
     {state after : State} (holds : inv state) (ran : Feature.Subscriptions.leave ctx occurrence state = .ok after) :
     inv after ∧ after = state.disarm occurrence.id := by
   unfold Feature.Subscriptions.leave at ran
   cases ran
   exact ⟨ops.disarm _ _ holds, rfl⟩
 
-theorem fireAll_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) (write : Option WriteEvent) :
+theorem fireAll_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) (write : Option WriteEvent) :
     ∀ (items : List OpenItem) (state : State), inv state → inv (Feature.Subscriptions.fireAll write items state)
   | [], _, holds => holds
   | item :: rest, state, holds => by
@@ -538,7 +539,7 @@ theorem fireAll_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) (write
     exact fireAll_keeps ops write rest _ (ops.fire _ _ _ holds)
 
 /-- An evaluated Conditional item records at most its last value. -/
-theorem evaluateItem_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {item : OpenItem}
+theorem evaluateItem_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx} {item : OpenItem}
     {trigger : ConditionTrigger} {state after : State} {fires : Bool} (holds : inv state)
     (ran : Feature.Subscriptions.evaluateItem ctx item trigger state = .ok (after, fires)) : inv after := by
   unfold Feature.Subscriptions.evaluateItem at ran
@@ -550,7 +551,7 @@ theorem evaluateItem_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {
     | exact ops.rekind _ _ holds fun open_ => by split <;> rfl
 
 /-- An item's evaluation at arming keeps `inv`. -/
-theorem armed_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {subscription : Subscription}
+theorem armed_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx} {subscription : Subscription}
     {item : OpenItem} {state after : State} {fires : Bool} (holds : inv state)
     (ran : Feature.Subscriptions.armed ctx subscription item state = .ok (after, fires)) : inv after := by
   unfold Feature.Subscriptions.armed at ran
@@ -560,15 +561,16 @@ theorem armed_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : C
     exact holds
 
 /-- `Hooks.arriveCatch` keeps `inv` for a begun occurrence that stands. -/
-theorem arriveCatch_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {header : Header}
+theorem arriveCatch_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv) {header : Header}
     {payload : EventPayload} {subscription : Subscription} {occurrence : Occurrence} {state after : State}
     (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (unstarted : (ctx.program.element? occurrence.element).bind (·.start?) = none)
     (ran : Feature.Subscriptions.arriveCatch ctx header payload subscription occurrence state = .ok after) :
     inv after := by
   unfold Feature.Subscriptions.arriveCatch at ran
   obtain ⟨kind?, _, ran⟩ := ok_bind ran
   split at ran
-  · have opened := ops.openItem state ‹_› occurrence holds member begun
+  · have opened := ops.openItem state ‹_› occurrence holds member begun unstarted
     dsimp only at ran
     split at ran
     · obtain ⟨⟨evaluated, fires⟩, evaluation, ran⟩ := ok_bind ran
@@ -616,7 +618,7 @@ theorem Hosted.congr {scope : ScopeOccurrenceId} {host : Option Nat} {state afte
     ⟨occurrence, occurrences occurrence present, rest⟩⟩
 
 /-- `subscribe` keeps `inv` and the arming's scope occurrence and host. -/
-theorem subscribe_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {arming : Feature.Subscriptions.Arming}
+theorem subscribe_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx} {arming : Feature.Subscriptions.Arming}
     {state after : State} {subscription : Subscription} {element : ElementId} {scope : ScopeOccurrenceId}
     {host : Option Nat} {passive evaluate : Bool} {fired : Option OpenItem} (holds : inv state)
     (hosted : Hosted scope host state)
@@ -640,7 +642,7 @@ theorem subscribe_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx
       exact ⟨opened, kept⟩
 
 /-- `subscribeAll` keeps `inv` when each subscription keeps it and what the arming keeps beside it. -/
-theorem subscribeAll_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {α : Type} {ctx : Ctx}
+theorem subscribeAll_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {α : Type} {ctx : Ctx}
     {state after : State} {prior : List OpenItem} {entries : List α}
     {each : State → α → Except Failure (State × Option OpenItem)} (stable : State → Prop)
     (holds : inv state ∧ stable state)
@@ -658,7 +660,7 @@ theorem subscribeAll_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {
   exact step _ _ _ _ kept subscribing
 
 /-- `Hooks.arm` keeps `inv` for a host begun in a scope occurrence that stands. -/
-theorem arm_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {host : Nat} {element : ElementId}
+theorem arm_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx} {host : Nat} {element : ElementId}
     {scope : ScopeOccurrenceId} {state after : State} (holds : inv state) (hosted : Hosted scope (some host) state)
     (ran : Feature.Subscriptions.arm ctx host element scope state = .ok after) : inv after := by
   unfold Feature.Subscriptions.arm at ran
@@ -668,7 +670,7 @@ theorem arm_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx
       (fun _ _ _ _ kept subscribing => subscribe_keeps ops kept.1 kept.2 subscribing) ran
 
 /-- `Hooks.armGateway` keeps `inv` for a gateway occurrence begun in a scope occurrence that stands. -/
-theorem armGateway_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {occurrence : Nat}
+theorem armGateway_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx} {occurrence : Nat}
     {gateway : ElementId} {scope : ScopeOccurrenceId} {state after : State} (holds : inv state)
     (hosted : Hosted scope (some occurrence) state)
     (ran : Feature.Subscriptions.armGateway ctx occurrence gateway scope state = .ok after) : inv after := by
@@ -683,7 +685,7 @@ theorem armGateway_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ct
     · cases subscribing
 
 /-- The Conditional boundaries evaluated at a scope's arming keep `inv` and the scope occurrences and occurrences. -/
-theorem enabledBoundaries_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx}
+theorem enabledBoundaries_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx}
     {scope : ScopeOccurrenceId} {state after : State} {fired : List OpenItem} (holds : inv state)
     (ran : Feature.Subscriptions.enabledBoundaries ctx scope state = .ok (after, fired)) :
     inv after ∧ after.scopes = state.scopes ∧ after.occurrences = state.occurrences := by
@@ -707,7 +709,7 @@ theorem enabledBoundaries_keeps {inv : State → Prop} (ops : SubscriptionsOps i
     exact ⟨holds, rfl, rfl⟩
 
 /-- `Hooks.armScope` keeps `inv` for a scope occurrence that stands. -/
-theorem armScope_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {scope : ScopeOccurrenceId}
+theorem armScope_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx} {scope : ScopeOccurrenceId}
     {state after : State} (holds : inv state) (stands : ∃ entry ∈ state.scopes, entry.id = scope)
     (ran : Feature.Subscriptions.armScope ctx scope state = .ok after) : inv after := by
   unfold Feature.Subscriptions.armScope at ran
@@ -727,7 +729,7 @@ theorem armScope_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx 
     · cases subscribing
 
 /-- `Hooks.written` keeps `inv`. -/
-theorem offerWrites_keeps {inv : State → Prop} (ops : SubscriptionsOps inv) {ctx : Ctx} {writes : List WriteEvent}
+theorem offerWrites_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx} {writes : List WriteEvent}
     {state after : State} (holds : inv state) (ran : Feature.Subscriptions.offerWrites ctx writes state = .ok after) :
     inv after := by
   unfold Feature.Subscriptions.offerWrites at ran

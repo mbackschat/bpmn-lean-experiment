@@ -22,4 +22,21 @@ theorem envelope?_gateway (header : Header) (payload : GatewayPayload) :
     (Element.gateway header payload).envelope? = none := by
   simp only [Element.envelope?]
 
+/-! ## Start Events
+
+Which elements are start Events, for `Laws.State.Typed`, which tells an Event Sub-Process start's item from an
+Activity's or an intermediate Event's by `Element.start?`. -/
+
+theorem start?_activity (header : Header) (payload : ActivityPayload) : (Element.activity header payload).start? = none := by
+  simp only [Element.start?]
+
+theorem start?_event (header : Header) (payload : EventPayload) : (Element.event header payload).start? = none := by
+  simp only [Element.start?]
+
+theorem start?_scope (header : Header) (payload : ScopePayload) : (Element.scope header payload).start? = none := by
+  simp only [Element.start?]
+
+theorem start?_gateway (header : Header) (payload : GatewayPayload) : (Element.gateway header payload).start? = none := by
+  simp only [Element.start?]
+
 end Kernel.Laws.IL

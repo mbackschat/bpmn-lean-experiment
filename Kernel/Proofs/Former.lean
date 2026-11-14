@@ -48,7 +48,7 @@ def ValuesRejectedWhole (hooks : Hooks) : Prop :=
   ∀ (program : Program) (before : Option State) (input : Input) (values : List (String × Value)),
     ((∃ payload : StartInput, input = .start payload ∧ payload.variables = values) ∨
       ∃ payload : CommandInput, input = .command payload ∧ payload.action = .setVariables values) →
-    (∀ formed, before = some formed → WellFormed formed) →
+    (∀ formed, before = some formed → WellFormed program formed) →
     (∃ binding ∈ values, ¬ Laws.Data.InDomain binding.2) →
     ∃ code, Step.step hooks program before input = .error (.rejected code)
 
@@ -59,7 +59,7 @@ theorem endBesideEntry {hooks : Hooks} (agree : Proofs.Concurrency.SchedulesAgre
     (ctx : Ctx) (start state reordered left right : State) (fuel work fuel' work' : Nat) (toEnd toEntry : FlowId)
     (scope : ScopeOccurrenceId) (_pair : state.tokens = [.flow toEnd scope, .flow toEntry scope])
     (invariant : ctx.program.options.branchSchedule = .orderInvariant) (separate : Laws.Flow.Apart ctx.program)
-    (formed : WellFormed start) (reached : Proofs.Concurrency.Reaches hooks ctx start state)
+    (formed : WellFormed ctx.program start) (reached : Proofs.Concurrency.Reaches hooks ctx start state)
     (swapped : Proofs.Concurrency.Reordered state reordered) (settled : Step.settle hooks ctx fuel work state = .ok left)
     (settled' : Step.settle hooks ctx fuel' work' reordered = .ok right) :
     ∃ ids keys, Proofs.Concurrency.Issued ids state.nextIssue ∧ Proofs.Concurrency.Activations state keys ∧
@@ -85,14 +85,14 @@ def CallInstallsSnapshot (hooks : Hooks) : Prop :=
 (`Laws.Data.Reads` over the visible bindings). -/
 def CalledReadsIsolated : Prop :=
   ∀ (program : Program) (state : State) (scope root : ScopeOccurrenceId) (binding : String × Value),
-    WellFormed state → CalledRoot state root → Within state scope root → binding ∈ state.visible program scope →
+    WellFormed program state → CalledRoot state root → Within state scope root → binding ∈ state.visible program scope →
     ∃ frame ∈ state.variables, Within state scope frame.scope ∧ Within state frame.scope root ∧ binding ∈ frame.entries
 
 /-- PC-SCOPE-04 (`CVM-ISOLATE-01`): a write from inside a called instance changes no frame outside it
 (`Laws.Data.OthersKept`). Stated of `Hooks.writeOutputs`. -/
 def CalledWritesIsolated (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (scope root : ScopeOccurrenceId) (writes : List (String × Value)) (rule : WriteRule) (state after : State),
-    WellFormed state → CalledRoot state root → Within state scope root →
+    WellFormed ctx.program state → CalledRoot state root → Within state scope root →
     hooks.writeOutputs ctx scope writes rule state = .ok after →
     ∀ frame ∈ state.variables, ¬ Within state frame.scope root → frame ∈ after.variables
 
@@ -101,7 +101,7 @@ the writer's instance (`Laws.Data.WritesNearest`). Stated of `Hooks.writeOutputs
 makes from the caller's position. -/
 def OutputsAtNearestOwner (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (scope root owner : ScopeOccurrenceId) (name : String) (value : Value) (state after : State),
-    WellFormed state → Laws.Data.NearestOwner state root scope name owner →
+    WellFormed ctx.program state → Laws.Data.NearestOwner state root scope name owner →
     hooks.writeOutputs ctx scope [(name, value)] .outward state = .ok after →
     Laws.Data.WritesNearest root scope name value owner state after
 
@@ -111,7 +111,7 @@ instance, the Call's authored identifier and its activation; and two called root
 identifier are one scope occurrence, so each derived identity names exactly one instance. -/
 def CalledIdentityUnique (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before after : State),
-    WellFormed before → Step.step hooks program (some before) input = .ok after →
+    WellFormed program before → Step.step hooks program (some before) input = .ok after →
     (∀ root ∈ after.scopes, root ∉ before.scopes → root.calledInstance.isSome →
       ∃ call ∈ after.occurrences, root.occurrence = some call.id ∧ root.calledInstance =
         some (State.calledInstanceId (after.instanceOf call.scope) (program.publicId call.element) call.activation)) ∧

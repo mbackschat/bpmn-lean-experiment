@@ -21,7 +21,7 @@ open Kernel
 /-! ## Leaving a scope occurrence -/
 
 /-- Leaving a present scope occurrence of a well-formed state. -/
-theorem leaveScope_left {s : State} (formed : WellFormed s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) :
+theorem leaveScope_left {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) :
     Left s (s.leaveScope scope) scope := by
   have cleared := clearInside_cleared formed present []
   have shape := (leaveScope_eq s scope).1
@@ -64,16 +64,16 @@ theorem leaveScope_left {s : State} (formed : WellFormed s) {scope : ScopeOccurr
     exact outside (within.trans inner)
 
 /-- A scope occurrence with a depth stands. -/
-theorem Depth.present {s : State} (formed : WellFormed s) {scope : ScopeOccurrenceId} {n : Nat} (depth : Depth s scope n) :
+theorem Depth.present {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} {n : Nat} (depth : Depth s scope n) :
     scope ∈ scopeIds s := by
   cases depth with
   | root => exact formed.rooted.1
   | child child _ _ member => exact List.mem_map.mpr ⟨child, member, rfl⟩
 
 /-- Leaving a scope occurrence that has a parent keeps a state well-formed and its parent standing. -/
-theorem leaveChild_wellFormed {s : State} (formed : WellFormed s) {child : ScopeOccurrence} (member : child ∈ s.scopes)
+theorem leaveChild_wellFormed {s : State} (formed : WellFormed program s) {child : ScopeOccurrence} (member : child ∈ s.scopes)
     {parent : ScopeOccurrenceId} (link : child.parent = some parent) :
-    WellFormed (s.leaveScope child.id) ∧ parent ∈ scopeIds (s.leaveScope child.id) ∧
+    WellFormed program (s.leaveScope child.id) ∧ parent ∈ scopeIds (s.leaveScope child.id) ∧
       Left s (s.leaveScope child.id) child.id := by
   have present : child.id ∈ scopeIds s := List.mem_map.mpr ⟨child, member, rfl⟩
   have notRoot : child.id ≠ State.root := fun same => by
@@ -87,7 +87,7 @@ theorem leaveChild_wellFormed {s : State} (formed : WellFormed s) {child : Scope
     ⟨inside, fun within => parent_not_within formed member link (named ▸ within)⟩, named⟩, left⟩
 
 /-- Two scope occurrences below one parent lie outside each other. -/
-private theorem sibling_outside {s : State} (formed : WellFormed s) {first second : ScopeOccurrence}
+private theorem sibling_outside {s : State} (formed : WellFormed program s) {first second : ScopeOccurrence}
     {parent : ScopeOccurrenceId} (one : first ∈ s.scopes) (two : second ∈ s.scopes) (firstLink : first.parent = some parent)
     (secondLink : second.parent = some parent) (other : second.id ≠ first.id) : ¬ Within s second.id first.id := by
   intro within
@@ -103,9 +103,9 @@ private theorem sibling_outside {s : State} (formed : WellFormed s) {first secon
 /-! ## Removing an occurrence record -/
 
 /-- Removing a record on which no item waits or hangs and which owns no scope occurrence keeps a state well-formed. -/
-theorem withoutRecord_wellFormed {s : State} (formed : WellFormed s) {id : Nat}
+theorem withoutRecord_wellFormed {s : State} (formed : WellFormed program s) {id : Nat}
     (free : ∀ item ∈ s.openItems, item.occurrence ≠ id ∧ item.attachedTo ≠ some id)
-    (unowned : ∀ entry ∈ s.scopes, entry.occurrence ≠ some id) : WellFormed (withoutRecord s id) := by
+    (unowned : ∀ entry ∈ s.scopes, entry.occurrence ≠ some id) : WellFormed program (withoutRecord s id) := by
   have kept : ∀ occurrence ∈ s.occurrences, occurrence.id ≠ id → occurrence ∈ (withoutRecord s id).occurrences :=
     fun occurrence member other => List.mem_filter.mpr ⟨member, by simpa using other⟩
   refine Prunes.wellFormed formed ⟨rfl, instanceOf_congr rfl rfl, List.filter_sublist, .refl _, rfl, rfl, rfl, rfl, rfl,
@@ -120,13 +120,13 @@ theorem withoutRecord_wellFormed {s : State} (formed : WellFormed s) {id : Nat}
 well-formed, keeps the record and its scope occurrence, leaves no scope occurrence it owns, and commutes with removing
 its record. -/
 private theorem leaveOwned {id : Nat} {record : Occurrence} :
-    ∀ (owned : List ScopeOccurrence) (t : State), WellFormed t → record ∈ t.occurrences →
+    ∀ (owned : List ScopeOccurrence) (t : State), WellFormed program t → record ∈ t.occurrences →
       (∀ occurrence ∈ t.occurrences, occurrence.id = id → occurrence = record) → owned.Nodup →
       (∀ entry ∈ owned, entry ∈ t.scopes ∧ entry.parent = some record.scope) →
       (∀ entry ∈ t.scopes, entry.occurrence = some id → entry ∈ owned) →
       owned.foldl (fun state entry => state.leaveScope entry.id) (withoutRecord t id) =
         withoutRecord (owned.foldl (fun state entry => state.leaveScope entry.id) t) id ∧
-      WellFormed (owned.foldl (fun state entry => state.leaveScope entry.id) t) ∧
+      WellFormed program (owned.foldl (fun state entry => state.leaveScope entry.id) t) ∧
       record.scope ∈ scopeIds (owned.foldl (fun state entry => state.leaveScope entry.id) t) ∧
       (owned.foldl (fun state entry => state.leaveScope entry.id) t).openItems.Sublist t.openItems ∧
       ∀ entry ∈ (owned.foldl (fun state entry => state.leaveScope entry.id) t).scopes, entry.occurrence ≠ some id := by
@@ -172,10 +172,10 @@ private theorem leaveOwned {id : Nat} {record : Occurrence} :
 
 /-- Removing an occurrence on which no item waits or hangs keeps a state well-formed and leaves its scope occurrence
 standing. -/
-theorem removeOccurrence_wellFormed {s : State} (formed : WellFormed s) {record : Occurrence}
+theorem removeOccurrence_wellFormed {s : State} (formed : WellFormed program s) {record : Occurrence}
     (member : record ∈ s.occurrences)
     (free : ∀ item ∈ s.openItems, item.occurrence ≠ record.id ∧ item.attachedTo ≠ some record.id) :
-    WellFormed (s.removeOccurrence record.id) ∧ record.scope ∈ scopeIds (s.removeOccurrence record.id) := by
+    WellFormed program (s.removeOccurrence record.id) ∧ record.scope ∈ scopeIds (s.removeOccurrence record.id) := by
   have owned : ∀ entry ∈ s.scopes.filter (·.occurrence == some record.id), entry ∈ s.scopes ∧
       entry.parent = some record.scope := fun entry inside => by
     obtain ⟨entryMember, owns⟩ := List.mem_filter.mp inside
@@ -195,7 +195,7 @@ theorem removeOccurrence_wellFormed {s : State} (formed : WellFormed s) {record 
 
 /-- `State.disarm` keeps a state well-formed: an item attached to the host holds its reservation alone, and a
 reservation hosts no item and owns no scope occurrence, so what stays refers only to occurrences that stay. -/
-theorem disarm_wellFormed {s : State} (formed : WellFormed s) (host : Nat) : WellFormed (s.disarm host) := by
+theorem disarm_wellFormed {s : State} (formed : WellFormed program s) (host : Nat) : WellFormed program (s.disarm host) := by
   rw [disarm_eq]
   refine Prunes.wellFormed formed ⟨rfl, instanceOf_congr rfl rfl, List.filter_sublist, List.filter_sublist, rfl, rfl,
     rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun item member occurrence inside link => ?_,
@@ -222,14 +222,14 @@ theorem disarm_wellFormed {s : State} (formed : WellFormed s) (host : Nat) : Wel
     exact List.mem_filter.mpr ⟨inside, by simp [begunFlag]⟩
 
 /-- Withdrawing the items inside scope occurrences keeps a state well-formed and its occurrences. -/
-private theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), WellFormed t →
-    WellFormed (scopes.foldl (fun state entry => state.withdrawInside entry.id) t) ∧
+private theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), WellFormed program t →
+    WellFormed program (scopes.foldl (fun state entry => state.withdrawInside entry.id) t) ∧
       (scopes.foldl (fun state entry => state.withdrawInside entry.id) t).openItems.Sublist t.openItems ∧
       (scopes.foldl (fun state entry => state.withdrawInside entry.id) t).occurrences = t.occurrences
   | [], _, formed => ⟨formed, .refl _, rfl⟩
   | first :: rest, t, formed => by
     simp only [List.foldl_cons]
-    have step : WellFormed (t.withdrawInside first.id) := by
+    have step : WellFormed program (t.withdrawInside first.id) := by
       rw [withdrawInside_eq]
       exact formed.narrow ⟨rfl, rfl, rfl, rfl, instanceOf_congr rfl rfl, id, List.filter_sublist, .refl _, .refl _,
         fun _ => id, .same rfl⟩ rfl formed.startedOnce
@@ -240,14 +240,14 @@ private theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), W
     · rw [withdrawInside_eq]
 
 /-- Journalling end and cancelled facts keeps a state well-formed. -/
-theorem draftEnds_wellFormed {s : State} (formed : WellFormed s) (ended : List (OccurrenceKey × Terminal))
-    (cancelled : List Occurrence) : WellFormed { s with draft := { s.draft with ended, cancelled } } :=
+theorem draftEnds_wellFormed {s : State} (formed : WellFormed program s) (ended : List (OccurrenceKey × Terminal))
+    (cancelled : List Occurrence) : WellFormed program { s with draft := { s.draft with ended, cancelled } } :=
   formed.narrow ⟨rfl, rfl, rfl, rfl, instanceOf_congr rfl rfl, id, .refl _, .refl _, .refl _, fun _ => id, .same rfl⟩
     rfl formed.startedOnce
 
 /-- Cancelling an occurrence keeps a state well-formed: its items and the subscriptions on it are withdrawn first, so
 its record goes with nothing left waiting for it or hanging on it. -/
-theorem cancel_wellFormed {s : State} (formed : WellFormed s) (id : Nat) : WellFormed (s.cancelOccurrence id) := by
+theorem cancel_wellFormed {s : State} (formed : WellFormed program s) (id : Nat) : WellFormed program (s.cancelOccurrence id) := by
   cases found : s.occurrence? id with
   | none =>
     rw [cancelOccurrence_absent found]

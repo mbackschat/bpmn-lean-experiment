@@ -147,8 +147,9 @@ completion of the occurrence their item waits for, or raise its business error; 
 profile and a retry change only what the item waits for; cancelling an incident's process queues the instance's
 cancelled end. -/
 
-/-- What Work's completion and incident hooks need of the state operations they apply, for an invariant `inv`. -/
-structure WorkOps (inv : State → Prop) : Prop where
+/-- What Work's completion and incident hooks need of the state operations they apply, for an invariant `inv` of an
+instance that runs `program`. -/
+structure WorkOps (program : Program) (inv : State → Prop) : Prop where
   write : ∀ state scope writes rule, inv state → inv (state.signal (.write scope writes rule))
   /-- The completion of the occurrence an open item waits for. -/
   complete : ∀ state item leave writes rule, inv state → item ∈ state.openItems →
@@ -177,8 +178,9 @@ structure WorkOps (inv : State → Prop) : Prop where
   enter : ∀ state element locals occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
     inv (state.enterScope element occurrence.scope locals (some occurrence.id)).1 ∧
       (state.enterScope element occurrence.scope locals (some occurrence.id)).1.occurrences = state.occurrences
+  /-- An item for a begun occurrence of an element the program declares no start Event. -/
   openItem : ∀ state kind occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
-    inv (state.openItem kind occurrence) ∧ (state.openItem kind occurrence).occurrences = state.occurrences
+    (program.element? occurrence.element).bind (·.start?) = none → inv (state.openItem kind occurrence) ∧ (state.openItem kind occurrence).occurrences = state.occurrences
   arm : ∀ state occurrence element, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
     inv (state.signal (.arm occurrence.id element occurrence.scope))
   /-- A begun Call's called root, entered below its scope occurrence. -/
@@ -194,19 +196,19 @@ structure WorkOps (inv : State → Prop) : Prop where
     inv (state.signal (.begin { element, scope }))
 
 /-- `reopen` replaces only what the item waits for. -/
-theorem reopen_keeps {inv : State → Prop} (ops : WorkOps inv) {state : State} (holds : inv state) (id : Nat)
+theorem reopen_keeps {inv : State → Prop} (ops : WorkOps program inv) {state : State} (holds : inv state) (id : Nat)
     (kind : OpenKind) : inv (Feature.Work.reopen state id kind) :=
   ops.rekind state _ holds fun item => by split <;> rfl
 
 /-- A completion of the item's occurrence after a write. -/
-theorem installed_keeps {inv : State → Prop} (ops : WorkOps inv) {state : State} {item : OpenItem}
+theorem installed_keeps {inv : State → Prop} (ops : WorkOps program inv) {state : State} {item : OpenItem}
     (holds : inv state) (member : item ∈ state.openItems) (scope : ScopeOccurrenceId)
     (values writes : List (String × Value)) (rule : WriteRule) (leave : Leave) (completion : WriteRule) :
     inv ((state.signal (.write scope values rule)).signal (.complete item.occurrence leave writes completion)) :=
   ops.complete _ _ _ _ _ (ops.write _ _ _ _ holds) (by rw [ops.queued]; exact member)
 
 /-- `Hooks.completeUserTask` keeps `inv` for an open item. -/
-theorem completeUserTask_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {header : Header}
+theorem completeUserTask_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {header : Header}
     {payload : ActivityPayload} {item : OpenItem} {values : List (String × Value)} {state after : State}
     (holds : inv state) (member : item ∈ state.openItems)
     (ran : Feature.Work.completeUserTask ctx header payload item values state = .ok after) : inv after := by
@@ -219,7 +221,7 @@ theorem completeUserTask_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx :
     | exact ops.complete _ _ _ _ _ holds member
 
 /-- `Hooks.effectResult` keeps `inv` for an open item. -/
-theorem effectResult_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {item : OpenItem}
+theorem effectResult_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {item : OpenItem}
     {outcome : EffectOutcome} {state after : State} (holds : inv state) (member : item ∈ state.openItems)
     (ran : Feature.Work.effectResult ctx item outcome state = .ok after) : inv after := by
   unfold Feature.Work.effectResult Feature.Work.effectCompletion at ran
@@ -233,7 +235,7 @@ theorem effectResult_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx
     | exact reopen_keeps ops holds _ _
 
 /-- `Hooks.retryIncident` keeps `inv`. -/
-theorem retryIncident_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {item : OpenItem}
+theorem retryIncident_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {item : OpenItem}
     {incident : IncidentDetail} {generation : Nat} {state after : State} (holds : inv state)
     (ran : Feature.Work.retryIncident ctx item incident generation state = .ok after) : inv after := by
   unfold Feature.Work.retryIncident Feature.Work.staleIncident at ran
@@ -243,7 +245,7 @@ theorem retryIncident_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ct
     exact reopen_keeps ops holds _ _
 
 /-- `Hooks.cancelIncidentProcess` keeps `inv`. -/
-theorem cancelIncidentProcess_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {incident : IncidentDetail}
+theorem cancelIncidentProcess_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {incident : IncidentDetail}
     {generation : Nat} {state after : State} (holds : inv state)
     (ran : Feature.Work.cancelIncidentProcess ctx incident generation state = .ok after) : inv after := by
   unfold Feature.Work.cancelIncidentProcess Feature.Work.staleIncident at ran
@@ -252,7 +254,7 @@ theorem cancelIncidentProcess_keeps {inv : State → Prop} (ops : WorkOps inv) {
   exact ops.cancel _ holds
 
 /-- `Hooks.triggerActivity` keeps `inv` for an open item: a delivery completes the Receive Task its item waits for. -/
-theorem triggerActivity_keeps {inv : State → Prop} (ops : WorkOps inv) {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
+theorem triggerActivity_keeps {inv : State → Prop} (ops : WorkOps program inv) {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
     {header : Header} {payload : ActivityPayload} {item : OpenItem} {fired : Fired} {state after : State}
     (holds : inv state) (member : item ∈ state.openItems)
     (ran : Feature.Work.triggerActivity hooks ctx header payload item fired state = .ok after) : inv after := by
@@ -263,7 +265,7 @@ theorem triggerActivity_keeps {inv : State → Prop} (ops : WorkOps inv) {hooks 
   all_goals exact ops.complete _ _ _ _ _ holds member
 
 /-- `Hooks.completeCall` keeps `inv`: a called instance's end completes the Call that owns its root. -/
-theorem completeCall_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {header : Header}
+theorem completeCall_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {header : Header}
     {payload : ActivityPayload} {root : ScopeOccurrence} {owner : Occurrence} {state after : State} (holds : inv state)
     (member : root ∈ state.scopes) (owned : owner ∈ state.occurrences) (link : root.occurrence = some owner.id)
     (ran : Feature.Work.completeCall ctx header payload root owner state = .ok after) : inv after := by
@@ -278,7 +280,7 @@ theorem completeCall_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx
   all_goals cases ran
 
 /-- An Activity's inputs, entered as its own scope occurrence, keep `inv` and its begun occurrence. -/
-theorem enterLocal_keeps {inv : State → Prop} (ops : WorkOps inv) {header : Header} {inputs : List (String × Value)}
+theorem enterLocal_keeps {inv : State → Prop} (ops : WorkOps program inv) {header : Header} {inputs : List (String × Value)}
     {occurrence : Occurrence} {state : State} (holds : inv state) (member : occurrence ∈ state.occurrences)
     (begun : occurrence.begun = true) :
     inv (Feature.Work.enterLocal header inputs occurrence state) ∧
@@ -290,18 +292,19 @@ theorem enterLocal_keeps {inv : State → Prop} (ops : WorkOps inv) {header : He
     exact ⟨entered, same ▸ member⟩
 
 /-- Opening a begun occurrence's work item, arming its boundaries or not, keeps `inv`. -/
-theorem openWork_keeps {inv : State → Prop} (ops : WorkOps inv) {kind : OpenKind} {header : Header}
+theorem openWork_keeps {inv : State → Prop} (ops : WorkOps program inv) {kind : OpenKind} {header : Header}
     {payload : ActivityPayload} {occurrence : Occurrence} {state : State} (holds : inv state)
-    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) :
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (unstarted : (program.element? occurrence.element).bind (·.start?) = none) :
     inv (Feature.Work.openWork kind header payload occurrence state) := by
-  obtain ⟨opened, same⟩ := ops.openItem state kind occurrence holds member begun
+  obtain ⟨opened, same⟩ := ops.openItem state kind occurrence holds member begun unstarted
   unfold Feature.Work.openWork
   split
   · exact opened
   · exact ops.arm _ _ _ opened (same ▸ member) begun
 
 /-- A decision task's result write and completion keep `inv`. -/
-theorem evaluateDecision_keeps {inv : State → Prop} (ops : WorkOps inv) {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
+theorem evaluateDecision_keeps {inv : State → Prop} (ops : WorkOps program inv) {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
     {payload : ActivityPayload} {work : RuleWork} {occurrence : Occurrence} {state after : State} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
     (ran : Feature.Work.evaluateDecision hooks ctx payload work occurrence state = .ok after) : inv after := by
@@ -315,7 +318,7 @@ theorem evaluateDecision_keeps {inv : State → Prop} (ops : WorkOps inv) {hooks
 
 /-- A begun Call entering its called root, then arming its boundaries or not, its root's Event Sub-Processes and its
 none start keeps `inv`. -/
-theorem called_keeps {inv : State → Prop} (ops : WorkOps inv) {occurrence : Occurrence} {state : State}
+theorem called_keeps {inv : State → Prop} (ops : WorkOps program inv) {occurrence : Occurrence} {state : State}
     (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (program : Program)
     (variables : List (String × Value)) (definition : DefinitionRef) (start : ElementId) (armed : State → State)
     (arming : ∀ current, inv current → occurrence ∈ current.occurrences →
@@ -333,7 +336,7 @@ theorem called_keeps {inv : State → Prop} (ops : WorkOps inv) {occurrence : Oc
 
 /-- A Call's invocation keeps `inv`: it enters the called root, arms its boundaries or not, then queues the root's
 Event Sub-Process arming and its none start's begin. -/
-theorem invoke_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {header : Header} {payload : ActivityPayload}
+theorem invoke_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {header : Header} {payload : ActivityPayload}
     {work : CallWork} {occurrence : Occurrence} {state after : State} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
     (ran : Feature.Work.Call.invoke ctx header payload work occurrence state = .ok after) : inv after := by
@@ -346,9 +349,10 @@ theorem invoke_keeps {inv : State → Prop} (ops : WorkOps inv) {ctx : Ctx} {hea
       occurrence.scope)) fun _ held present => ⟨ops.arm _ _ _ held present begun, (ops.kept _ _).2⟩
 
 /-- `Hooks.arriveActivity` keeps `inv` for a begun occurrence. -/
-theorem arriveActivity_keeps {inv : State → Prop} (ops : WorkOps inv) {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
-    {header : Header} {payload : ActivityPayload} {occurrence : Occurrence} {state after : State} (holds : inv state)
-    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+theorem arriveActivity_keeps {inv : State → Prop} {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
+    (ops : WorkOps ctx.program inv) {header : Header} {payload : ActivityPayload} {occurrence : Occurrence}
+    {state after : State} (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (unstarted : (ctx.program.element? occurrence.element).bind (·.start?) = none)
     (ran : Feature.Work.arriveActivity hooks ctx header payload occurrence state = .ok after) : inv after := by
   unfold Feature.Work.arriveActivity at ran
   simp only [bind, Except.bind] at ran
@@ -359,7 +363,7 @@ theorem arriveActivity_keeps {inv : State → Prop} (ops : WorkOps inv) {hooks :
     | (cases ran; exact ops.completeBegun _ _ _ _ _ (enterLocal_keeps ops holds member begun).1
         (enterLocal_keeps ops holds member begun).2 begun)
     | (cases ran; exact openWork_keeps ops (enterLocal_keeps ops holds member begun).1
-        (enterLocal_keeps ops holds member begun).2 begun)
+        (enterLocal_keeps ops holds member begun).2 begun unstarted)
     | exact evaluateDecision_keeps ops (enterLocal_keeps ops holds member begun).1
         (enterLocal_keeps ops holds member begun).2 begun ran
     | exact invoke_keeps ops (enterLocal_keeps ops holds member begun).1

@@ -434,7 +434,7 @@ theorem instanceRoot_stands (state : State) (scope : ScopeOccurrenceId) :
 
 /-- A start's fresh instance; `Kernel.Proofs.Step` queues its root's arming (`signal_queueSound`). -/
 theorem initial_wellFormed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
-    WellFormed (State.initial instanceId variables businessKey) where
+    WellFormed program (State.initial instanceId variables businessKey) where
   issued := ⟨by simp [State.initial], by simp [State.initial],
     by simp [State.initial, State.root]⟩
   distinct := ⟨by simp [occurrenceIds, State.initial], by simp [State.initial],
@@ -468,6 +468,8 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
     by simp [Queued, State.initial]⟩
   settled := ⟨by simp [State.initial], by simp [State.initial], by simp [State.initial], by simp [State.initial],
     by simp [State.initial]⟩
+  attachedReserved := by simp [AttachedReserved, State.initial]
+  typed := by simp [Typed, State.initial]
 
 /-- The fresh instance's root was issued. -/
 theorem initial_rootIssued (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
@@ -485,7 +487,7 @@ private structure Search (s : State) (scope : ScopeOccurrenceId) (seen frontier 
   closed : ∀ p ∈ seen, ∀ child ∈ s.scopes, child.parent = some p → child.id ∈ seen ++ frontier
   reached : ∀ x ∈ seen ++ frontier, x = scope ∨ ∃ p ∈ seen, ∃ child ∈ s.scopes, child.id = x ∧ child.parent = some p
 
-private theorem search_step {s : State} (formed : WellFormed s) {scope next : ScopeOccurrenceId}
+private theorem search_step {s : State} (formed : WellFormed program s) {scope next : ScopeOccurrenceId}
     {seen rest : List ScopeOccurrenceId} (search : Search s scope seen (next :: rest)) :
     Search s scope (seen ++ [next]) (rest ++ (s.scopes.filter (·.parent == some next)).map (·.id)) := by
   have perm : ((seen ++ [next]) ++ (rest ++ (s.scopes.filter (·.parent == some next)).map (·.id))).Perm
@@ -540,7 +542,7 @@ private theorem search_step {s : State} (formed : WellFormed s) {scope next : Sc
 
 /-- The search ends with everything it met, closed under children: its fuel outlasts the scope occurrences, since it
 meets each at most once. -/
-private theorem search_go {s : State} (formed : WellFormed s) {scope : ScopeOccurrenceId} :
+private theorem search_go {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} :
     ∀ (fuel : Nat) (seen frontier : List ScopeOccurrenceId), Search s scope seen frontier →
       s.scopes.length < fuel + seen.length →
       (∀ x ∈ seen ++ frontier, x ∈ State.subtree.go s fuel frontier seen) ∧
@@ -575,7 +577,7 @@ theorem Within.closed_mem {s : State} {scope x : ScopeOccurrenceId} {set : List 
   | parent child parent _ member link _ ih => exact closed parent (ih start) child member link
 
 /-- In a well-formed state, the subtree of a present scope occurrence is exactly what lies within it. -/
-theorem subtree_iff {s : State} (formed : WellFormed s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
+theorem subtree_iff {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
     (x : ScopeOccurrenceId) : x ∈ s.subtree scope ↔ Within s x scope := by
   have initial : Search s scope [] [scope] :=
     ⟨by simpa using present, by simp, by simpa using Within.refl scope, by simp, by simp⟩
@@ -634,7 +636,7 @@ theorem instanceOf_eq {s : State} (nodup : (scopeIds s).Nodup)
 /-- A scope occurrence keeps its process instance through a change that keeps the instance identifier and the scope
 occurrences it lies within, into a state whose scope identifiers are distinct and whose parentless scope occurrences
 are the root. -/
-theorem instanceOf_kept {s t : State} (formed : WellFormed s) (nodup : (scopeIds t).Nodup)
+theorem instanceOf_kept {s t : State} (formed : WellFormed program s) (nodup : (scopeIds t).Nodup)
     (parentless : ∀ entry ∈ t.scopes, entry.parent = none → entry.id = State.root) (same : t.instanceId = s.instanceId)
     {x : ScopeOccurrenceId} (present : x ∈ scopeIds s) (above : ∀ entry ∈ s.scopes, Within s x entry.id → entry ∈ t.scopes) :
     t.instanceOf x = s.instanceOf x := by
@@ -766,7 +768,7 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
 /-! ## Clearing a scope occurrence -/
 
 /-- `State.clearInside` of a present scope occurrence of a well-formed state is `Cleared`. -/
-theorem clearInside_cleared {s : State} (formed : WellFormed s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
+theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
     (keep : List Nat) : Cleared s (s.clearInside scope keep) scope keep := by
   have mem := subtree_iff formed present
   have scopes : ∀ entry, entry ∈ (s.clearInside scope keep).scopes ↔ entry ∈ s.scopes ∧ ¬ StrictlyWithin s entry.id scope := by

@@ -4,10 +4,13 @@ public import Kernel.State
 
 /-! # Laws of the kernel state: the invariant
 
-The invariant every reachable `State` keeps and the transitions it permits, stated over the state's fields alone and
+The invariant every reachable `State` keeps and the transitions it permits, stated over the state's fields and
 independent of the operations that produce them: occurrence identity, ownership, the scope tree, the work a closure has
-queued, and the removal a cancelled scope occurrence permits. Nothing executable imports this module; the proof wave
-proves `Step` preserves `WellFormed` and that its cancellations are `ClearsInside` transitions
+queued, and the removal a cancelled scope occurrence permits. The invariant is relative to the program the instance runs
+(`WellFormed program s`), since which kind of item an element opens only the program says (`Typed`); every other clause
+reads the state's fields alone. No instance migrates between programs: `Population` runs each under its deployment's.
+Nothing executable imports this module; the proof wave proves `Step` preserves `WellFormed` and that its cancellations
+are `ClearsInside` transitions
 ([kernel architecture](../../../docs/kernel/ARCHITECTURE-SPEC.md#lean-assurance-lane)).
 
 Besides the state's fields a law names only `Token.busyScope`, a total projection of one work-stack entry whose result
@@ -269,8 +272,31 @@ structure SlotsSettled (s : State) : Prop where
     Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ s.signals → Settled s occurrence
   placed : ∀ run ∈ s.slots.multiInstances, Placed s run
 
-/-- The state invariants together: what holds of every committed state and between any two micro-steps of a closure. -/
-structure WellFormed (s : State) : Prop where
+/-! ## What an open item waits on -/
+
+/-- No occurrence of `s` with the identity `id` has begun: it is an unbegun reservation, or it is absent. -/
+def Unbegun (s : State) (id : Nat) : Prop :=
+  ∀ occurrence ∈ s.occurrences, occurrence.id = id → occurrence.begun = false
+
+/-- An item attached to a host holds an unbegun reservation: only `State.openSubscription` attaches an item, and it
+reserves afresh for it, while `State.openItem` opens an unattached item for a begun occurrence; the reservation begins
+only once its item has gone. So nothing attached waits on a begun occurrence, which a clearing that keeps one leaves
+standing (`Throw.terminate`). -/
+def AttachedReserved (s : State) : Prop :=
+  ∀ item ∈ s.openItems, item.attachedTo.isSome = true → Unbegun s item.occurrence
+
+/-- An item of an element the program declares a start Event, an Event Sub-Process start's, holds an unbegun
+reservation alone: `Feature.Subscriptions.trigger` reads the program to tell such an item from a boundary's or a catch
+Event's, and begins the Event Sub-Process with the item's reservation (`ReservationsClaimed.named`), while an item for a
+begun occurrence (`State.openItem`) is opened only for an Activity or an intermediate Event, which `Step.dispatch` tells
+from a start Event by the same query. The one clause that reads the program. -/
+def Typed (program : Program) (s : State) : Prop :=
+  ∀ item ∈ s.openItems, ((program.element? item.element).bind (·.start?)).isSome = true →
+    Unbegun s item.occurrence ∧ ∀ other ∈ s.openItems, other.occurrence = item.occurrence → other = item
+
+/-- The state invariants together: what holds of every committed state and between any two micro-steps of a closure,
+relative to the program the instance runs. -/
+structure WellFormed (program : Program) (s : State) : Prop where
   issued : IssuedBelow s
   distinct : Distinct s
   startedOnce : StartedOnce s
@@ -286,6 +312,8 @@ structure WellFormed (s : State) : Prop where
   ownedBelow : OwnedBelow s
   claimed : ReservationsClaimed s
   settled : SlotsSettled s
+  attachedReserved : AttachedReserved s
+  typed : Typed program s
 
 /-! ## The scope tree of a well-formed state
 
@@ -326,7 +354,7 @@ theorem scope_unique {s : State} (distinct : Distinct s) {first second : ScopeOc
   nodup_map_eq distinct.scopes one two same
 
 /-- A scope occurrence's depth is one more than its parent's. -/
-theorem Depth.parent {s : State} (formed : WellFormed s) {child : ScopeOccurrence} {parent : ScopeOccurrenceId}
+theorem Depth.parent {s : State} (formed : WellFormed program s) {child : ScopeOccurrence} {parent : ScopeOccurrenceId}
     {n : Nat} (member : child ∈ s.scopes) (link : child.parent = some parent) (depth : Depth s child.id n) :
     ∃ m, n = m + 1 ∧ Depth s parent m := by
   generalize named : child.id = id at depth
@@ -342,7 +370,7 @@ theorem Depth.parent {s : State} (formed : WellFormed s) {child : ScopeOccurrenc
     exact ⟨m, rfl, depth'⟩
 
 /-- Depths are unique. -/
-theorem Depth.unique {s : State} (formed : WellFormed s) {scope : ScopeOccurrenceId} {n m : Nat}
+theorem Depth.unique {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} {n m : Nat}
     (first : Depth s scope n) (second : Depth s scope m) : n = m := by
   induction first generalizing m with
   | root =>
@@ -357,7 +385,7 @@ theorem Depth.unique {s : State} (formed : WellFormed s) {scope : ScopeOccurrenc
     rw [ih depth]
 
 /-- A scope occurrence lies no higher than one it is within, and strictly lower when it is another. -/
-theorem Within.deeper {s : State} (formed : WellFormed s) {inner outer : ScopeOccurrenceId} (within : Within s inner outer)
+theorem Within.deeper {s : State} (formed : WellFormed program s) {inner outer : ScopeOccurrenceId} (within : Within s inner outer)
     {n m : Nat} (innerDepth : Depth s inner n) (outerDepth : Depth s outer m) : m ≤ n ∧ (inner ≠ outer → m < n) := by
   induction within generalizing n with
   | refl => exact ⟨Nat.le_of_eq (Depth.unique formed outerDepth innerDepth), fun distinct => absurd rfl distinct⟩
@@ -367,7 +395,7 @@ theorem Within.deeper {s : State} (formed : WellFormed s) {inner outer : ScopeOc
     exact ⟨by omega, fun _ => by omega⟩
 
 /-- No scope occurrence's parent lies within it. -/
-theorem parent_not_within {s : State} (formed : WellFormed s) {child : ScopeOccurrence} {parent : ScopeOccurrenceId}
+theorem parent_not_within {s : State} (formed : WellFormed program s) {child : ScopeOccurrence} {parent : ScopeOccurrenceId}
     (member : child ∈ s.scopes) (link : child.parent = some parent) : ¬ Within s parent child.id := fun within => by
   obtain ⟨n, depth⟩ := (formed.rooted.2.2 child member).depth
   obtain ⟨m, rfl, parentDepth⟩ := Depth.parent formed member link depth
@@ -375,7 +403,7 @@ theorem parent_not_within {s : State} (formed : WellFormed s) {child : ScopeOccu
   omega
 
 /-- What a scope occurrence with a depth lies within has a depth. -/
-theorem Within.depthUp {s : State} (formed : WellFormed s) {inner outer : ScopeOccurrenceId}
+theorem Within.depthUp {s : State} (formed : WellFormed program s) {inner outer : ScopeOccurrenceId}
     (within : Within s inner outer) {n : Nat} (depth : Depth s inner n) : ∃ m, Depth s outer m := by
   induction within generalizing n with
   | refl => exact ⟨n, depth⟩
@@ -384,7 +412,7 @@ theorem Within.depthUp {s : State} (formed : WellFormed s) {inner outer : ScopeO
     exact ih parentDepth
 
 /-- Two scope occurrences within each other are one. -/
-theorem Within.antisymm {s : State} (formed : WellFormed s) {first second : ScopeOccurrenceId}
+theorem Within.antisymm {s : State} (formed : WellFormed program s) {first second : ScopeOccurrenceId}
     (present : first ∈ scopeIds s) (down : Within s first second) (up : Within s second first) : first = second := by
   obtain ⟨entry, member, same⟩ := List.mem_map.mp present
   obtain ⟨n, firstDepth⟩ := (same ▸ formed.rooted.2.2 entry member).depth
@@ -718,7 +746,7 @@ theorem misplaced_owner_rejected (kind : OpenKind) :
 
 /-- An arming of a scope occurrence never issued breaks `QueueSound`, and so `WellFormed`: queued work may name a scope
 occurrence that is gone, never one that was never issued. -/
-theorem unissued_arming (kind : OpenKind) : ¬ WellFormed { sample kind with signals := [.armScope ⟨9⟩] } := fun formed => by
+theorem unissued_arming (kind : OpenKind) : ¬ WellFormed program { sample kind with signals := [.armScope ⟨9⟩] } := fun formed => by
   have := formed.queue.armScope ⟨9⟩ (by simp)
   simp [sample] at this
 
@@ -817,5 +845,57 @@ theorem nested_instance_placed (kind : OpenKind) : Placed (sample kind) (instanc
 theorem misplaced_instance_rejected (kind : OpenKind) : ¬ Placed (sample kind) (instanceRun subScope) := fun placed => by
   have := (placed subScope (by simp [instanceRun])).2 childScope (by simp [sample]) rfl
   simp [childScope, processRoot, subScope, instanceRun] at this
+
+/-- An item of `Outer` holding the reservation 7, for a program that declares `Outer` a start Event, as an Event
+Sub-Process's is, and `Inner` none. -/
+def startItem (kind : OpenKind) : OpenItem :=
+  { id := 8, kind, element := ⟨"Outer"⟩, scope := processRoot, occurrence := 7, passive := true }
+
+theorem start_item_typed (kind : OpenKind) {program : Program}
+    (inner : ((program.element? ⟨"Inner"⟩).bind (·.start?)).isSome = false) :
+    Typed program { armedState kind with openItems := [innerItem kind, startItem kind] } := by
+  intro item member started
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl
+  · simp [innerItem, inner] at started
+  · refine ⟨fun occurrence present named => ?_, fun other inside same => ?_⟩
+    · simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at present
+      rcases present with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation, startItem]
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at inside
+      rcases inside with rfl | rfl <;> simp_all [innerItem, startItem]
+
+/-- Under such a program, the item of `Outer` waiting for the begun occurrence 5 breaks `Typed`: its firing would begin
+5 again; so do two items of `Outer` holding the reservation 7, since the firing of one would leave the other waiting on
+a begun occurrence. -/
+theorem begun_start_rejected (kind : OpenKind) {program : Program}
+    (outer : ((program.element? ⟨"Outer"⟩).bind (·.start?)).isSome = true) : ¬ Typed program (sample kind) :=
+  fun typed => by
+    have := (typed (outerItem kind) (by simp [sample]) (by simpa [outerItem] using outer)).1 outerTask
+      (by simp [sample]) rfl
+    simp [outerTask] at this
+
+theorem shared_start_rejected (kind : OpenKind) {program : Program}
+    (outer : ((program.element? ⟨"Outer"⟩).bind (·.start?)).isSome = true) :
+    ¬ Typed program { armedState kind with openItems := [startItem kind, { startItem kind with id := 9 }] } :=
+  fun typed => by
+    have := (typed (startItem kind) (by simp) (by simpa [startItem] using outer)).2 { startItem kind with id := 9 }
+      (by simp) rfl
+    simp [startItem] at this
+
+/-- An item attached to the root's task 5 holding the reservation 7 is reserved; one waiting for the begun occurrence 5
+itself breaks `AttachedReserved`. -/
+theorem attached_reserved (kind : OpenKind) :
+    AttachedReserved { armedState kind with openItems := [{ startItem kind with attachedTo := some 5 }] } := by
+  intro item member _ occurrence present named
+  simp only [List.mem_singleton] at member
+  subst member
+  simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at present
+  rcases present with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation, startItem]
+
+theorem attached_begun_rejected (kind : OpenKind) :
+    ¬ AttachedReserved { sample kind with openItems := [{ outerItem kind with attachedTo := some 1 }] } :=
+  fun reserved => by
+    have := reserved { outerItem kind with attachedTo := some 1 } (by simp) rfl outerTask (by simp [sample]) rfl
+    simp [outerTask] at this
 
 end Kernel.Laws.State

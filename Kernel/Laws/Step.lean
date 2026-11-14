@@ -863,4 +863,45 @@ theorem deliverEffectResult_ok {hooks : Hooks} {ctx : Ctx} {data : EffectInput} 
   · simp at ran
   · exact ⟨_, Laws.Hooks.item?_mem ‹_›, ran⟩
 
+/-! ## The program of a step and the elements a dispatch reaches
+
+The context `Step.step` builds runs the step's program, so an invariant relative to the program (`Laws.State.WellFormed`)
+passes through the closure; and an occurrence that a dispatch hands to an Activity's or an intermediate Event's hook is
+of an element the program declares no start Event, which `Laws.State.Typed` reads. -/
+
+theorem inputCtx_program {hooks : Hooks} {program : Program} {input : Input} :
+    (inputCtx hooks program input).program = program := by
+  simp only [inputCtx, context]
+
+/-- A committed dispatch ran a start Event's or a Multi-Instance body's hook, or its element is no start Event. -/
+theorem dispatch_unstarted {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}
+    {trigger : StartTrigger} {state after : State} (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) :
+    (∃ header payload, hooks.arriveStart ctx header payload trigger occurrence state = .ok after) ∨
+      (∃ header envelope loop, hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after) ∨
+      ((ctx.program.element? occurrence.element).bind (·.start?) = none ∧
+        Arrives hooks ctx occurrence entry trigger state after) := by
+  have arrives := dispatch_ok ran
+  unfold dispatch at ran
+  dsimp only at ran
+  cases known : ctx.program.element? occurrence.element with
+  | none => simp [known] at ran
+  | some element =>
+    simp only [known] at ran
+    cases loop : bodyLoop? element occurrence with
+    | some pair =>
+      simp only [loop] at ran
+      exact .inr (.inl ⟨_, _, _, ran⟩)
+    | none =>
+      simp only [loop] at ran
+      cases element with
+      | start header payload =>
+        dsimp only at ran
+        split at ran
+        · simp at ran
+        · exact .inl ⟨_, _, ran⟩
+      | activity header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_activity], arrives⟩)
+      | event header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_event], arrives⟩)
+      | scope header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_scope], arrives⟩)
+      | gateway header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_gateway], arrives⟩)
+
 end Kernel.Laws.Step

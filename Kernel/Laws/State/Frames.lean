@@ -158,7 +158,7 @@ theorem InstanceIn.transport {s t : State} {x : ScopeOccurrenceId} {name : Strin
 
 /-- Every scope occurrence of a well-formed state reads a process instance, up a chain of distinct scope occurrences it
 lies within. -/
-theorem instanceIn_exists {s : State} (formed : WellFormed s) {x : ScopeOccurrenceId} (present : x ∈ scopeIds s) :
+theorem instanceIn_exists {s : State} (formed : WellFormed program s) {x : ScopeOccurrenceId} (present : x ∈ scopeIds s) :
     ∃ name chain, InstanceIn s x name chain ∧ (chain.map (·.id)).Nodup ∧ ∀ entry ∈ chain, Within s x entry.id := by
   obtain ⟨entry, member, named⟩ := List.mem_map.mp present
   have reach := named ▸ formed.rooted.2.2 entry member
@@ -203,6 +203,41 @@ theorem Beginnable.congr {before after : State} {scope : ScopeOccurrenceId} {id 
   rw [instances, instances]
   exact instance_ (by simpa [scopeIds, scopes] using present)
 
+/-! ## What an open item waits on -/
+
+/-- An occurrence stays unbegun through a change that begins none of its identity: every begun occurrence of the
+identity after it was one before. -/
+theorem Unbegun.transport {before after : State} {id : Nat} (unbegun : Unbegun before id)
+    (begun : ∀ occurrence ∈ after.occurrences, occurrence.id = id → occurrence.begun = true →
+      occurrence ∈ before.occurrences) : Unbegun after id := fun occurrence member named =>
+  Bool.eq_false_iff.mpr fun flag => by simp [unbegun occurrence (begun occurrence member named flag) named] at flag
+
+/-- What an attached item waits on stays unbegun through a change that adds no open item and begins none of what an
+open item waits on. -/
+theorem AttachedReserved.transport {before after : State} (reserved : AttachedReserved before)
+    (items : ∀ item ∈ after.openItems, item ∈ before.openItems)
+    (begun : ∀ item ∈ after.openItems, ∀ occurrence ∈ after.occurrences, occurrence.id = item.occurrence →
+      occurrence.begun = true → occurrence ∈ before.occurrences) : AttachedReserved after :=
+  fun item member attached => (reserved item (items item member) attached).transport (begun item member)
+
+/-- `Typed` holds through a change that adds no open item and begins none of what an open item waits on. -/
+theorem Typed.transport {program : Program} {before after : State} (typed : Typed program before)
+    (items : ∀ item ∈ after.openItems, item ∈ before.openItems)
+    (begun : ∀ item ∈ after.openItems, ∀ occurrence ∈ after.occurrences, occurrence.id = item.occurrence →
+      occurrence.begun = true → occurrence ∈ before.occurrences) : Typed program after := fun item member started =>
+  have ⟨unbegun, alone⟩ := typed item (items item member) started
+  ⟨unbegun.transport (begun item member), fun other inside same => alone other (items other inside) same⟩
+
+theorem AttachedReserved.shrink {before after : State} (reserved : AttachedReserved before)
+    (items : ∀ item ∈ after.openItems, item ∈ before.openItems)
+    (begun : ∀ occurrence ∈ after.occurrences, occurrence.begun = true → occurrence ∈ before.occurrences) :
+    AttachedReserved after := reserved.transport items fun _ _ occurrence member _ flag => begun occurrence member flag
+
+theorem Typed.shrink {program : Program} {before after : State} (typed : Typed program before)
+    (items : ∀ item ∈ after.openItems, item ∈ before.openItems)
+    (begun : ∀ occurrence ∈ after.occurrences, occurrence.begun = true → occurrence ∈ before.occurrences) :
+    Typed program after := typed.transport items fun _ _ occurrence member _ flag => begun occurrence member flag
+
 /-! ## Narrowing -/
 
 /-- `after` holds what `before` holds, with no more open items, tokens, queued signals or start facts of the input in
@@ -223,14 +258,22 @@ structure Narrows (before after : State) : Prop where
 
 /-- A state that narrows a well-formed one is well-formed when it starts no occurrence key twice and its variable sets
 belong to scope occurrences that stand, one per scope occurrence. -/
-theorem WellFormed.reshape {before after : State} (formed : WellFormed before) (narrows : Narrows before after)
+theorem WellFormed.reshape {before after : State} (formed : WellFormed program before) (narrows : Narrows before after)
     (once : StartedOnce after) (located : ∀ variables ∈ after.variables, variables.scope ∈ scopeIds after)
-    (keyed : VariablesKeyed after) : WellFormed after := by
+    (keyed : VariablesKeyed after) : WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (narrows.instances _)
   have items := narrows.openItems.subset
   have settled := formed.settled.transport narrows.slots (Nat.le_of_eq narrows.nextIssue.symm)
     (fun _ member _ => .inl (narrows.occurrences ▸ member)) (fun _ queued => queued.shrink narrows.signals narrows.tokens)
     (fun _ member => narrows.signals.subset member) (fun _ member => .inl (narrows.scopes ▸ member))
+  have queue : QueueSound after := {
+    arm := fun host element scope queued => by
+      simpa [narrows.nextIssue, narrows.occurrences] using formed.queue.arm host element scope (narrows.signals.subset queued)
+    armScope := fun scope queued => narrows.nextIssue ▸ formed.queue.armScope scope (narrows.signals.subset queued)
+    armGateway := fun occurrence gateway scope queued => by
+      simpa [narrows.nextIssue, narrows.occurrences] using
+        formed.queue.armGateway occurrence gateway scope (narrows.signals.subset queued)
+    ends := fun status failure queued => formed.queue.ends status failure (narrows.signals.subset queued) }
   exact {
   issued := ⟨by simpa [narrows.occurrences, narrows.nextIssue] using formed.issued.occurrences,
     fun item member => narrows.nextIssue ▸ formed.issued.items item (items member),
@@ -263,14 +306,7 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed before) (
     exact Within.congr narrows.scopes (reach scope (narrows.scopes ▸ member))
   variables := keyed
   failure := narrows.recorded formed.failure
-  queue := {
-    arm := fun host element scope queued => by
-      simpa [narrows.nextIssue, narrows.occurrences] using formed.queue.arm host element scope (narrows.signals.subset queued)
-    armScope := fun scope queued => narrows.nextIssue ▸ formed.queue.armScope scope (narrows.signals.subset queued)
-    armGateway := fun occurrence gateway scope queued => by
-      simpa [narrows.nextIssue, narrows.occurrences] using
-        formed.queue.armGateway occurrence gateway scope (narrows.signals.subset queued)
-    ends := fun status failure queued => formed.queue.ends status failure (narrows.signals.subset queued) }
+  queue := queue
   counted := fun fact started => (formed.counted fact (narrows.starts fact started)).congr narrows.activations
   occurrencesCounted := fun occurrence member => by
     rw [keys]
@@ -280,26 +316,29 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed before) (
     (by simpa [scopeIds, narrows.occurrences, narrows.scopes] using formed.owned.occurrenceScopes)
     (by simp [scopeIds, narrows.scopes]) (fun x _ => narrows.instances x) (Nat.le_of_eq narrows.nextIssue.symm)
     narrows.signals narrows.tokens
-  settled := settled }
+  settled := settled
+  attachedReserved := formed.attachedReserved.shrink (fun _ member => items member)
+    fun _ member _ => narrows.occurrences ▸ member
+  typed := formed.typed.shrink (fun _ member => items member) fun _ member _ => narrows.occurrences ▸ member }
 
 /-- A state that narrows a well-formed one with the same variable sets is well-formed when it starts no occurrence key
 twice. -/
-theorem WellFormed.narrow {before after : State} (formed : WellFormed before) (narrows : Narrows before after)
-    (variables : after.variables = before.variables) (once : StartedOnce after) : WellFormed after :=
+theorem WellFormed.narrow {before after : State} (formed : WellFormed program before) (narrows : Narrows before after)
+    (variables : after.variables = before.variables) (once : StartedOnce after) : WellFormed program after :=
   formed.reshape narrows once (by simpa [scopeIds, variables, narrows.scopes] using formed.owned.variableScopes)
     ⟨by simpa [variables] using formed.variables.scopes, by simpa [variables] using formed.variables.names⟩
 
 /-- Start facts that are a permutation of a well-formed state's, with nothing else but the journal and the draft
 changed, keep it well-formed. -/
-theorem WellFormed.permuted {before after : State} (formed : WellFormed before) (narrows : Narrows before after)
-    (variables : after.variables = before.variables) (perm : (starts after).Perm (starts before)) : WellFormed after :=
+theorem WellFormed.permuted {before after : State} (formed : WellFormed program before) (narrows : Narrows before after)
+    (variables : after.variables = before.variables) (perm : (starts after).Perm (starts before)) : WellFormed program after :=
   formed.narrow narrows variables ((perm.map _).nodup_iff.mpr formed.startedOnce)
 
 /-- A well-formed state with its status and failure changed together stays well-formed; changing them keeps every
 process instance (`Laws.State`). -/
-theorem WellFormed.withStatus {s : State} (formed : WellFormed s) {status : InstanceStatus}
+theorem WellFormed.withStatus {s : State} (formed : WellFormed program s) {status : InstanceStatus}
     {failure : Option InstanceFailure} (instances : ∀ scope, { s with status, failure }.instanceOf scope = s.instanceOf scope)
-    (recorded : failure.isSome = true ↔ status = .failed) : WellFormed { s with status, failure } :=
+    (recorded : failure.isSome = true ↔ status = .failed) : WellFormed program { s with status, failure } :=
   formed.narrow ⟨rfl, rfl, rfl, rfl, instances, fun _ => recorded, .refl _, .refl _, .refl _, fun _ => id, .same rfl⟩ rfl
     formed.startedOnce
 
@@ -321,9 +360,9 @@ structure SameButVariables (before after : State) : Prop where
 
 /-- A state that differs from a well-formed one only in its variable sets is well-formed when every set belongs to a
 present scope occurrence and the sets stay keyed. -/
-theorem WellFormed.ofVariables {before after : State} (formed : WellFormed before) (same : SameButVariables before after)
+theorem WellFormed.ofVariables {before after : State} (formed : WellFormed program before) (same : SameButVariables before after)
     (located : ∀ variables ∈ after.variables, variables.scope ∈ scopeIds after) (keyed : VariablesKeyed after) :
-    WellFormed after :=
+    WellFormed program after :=
   formed.reshape ⟨same.scopes, same.occurrences, same.activations, same.nextIssue, same.instances,
     by simp [FailureRecorded, same.failure, same.status], by rw [same.openItems]; exact .refl _,
     by rw [same.tokens]; exact .refl _, by rw [same.signals]; exact .refl _,
@@ -363,7 +402,7 @@ structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : Lis
 /-- A scope occurrence that lies within `State.root` and not strictly within a cleared `scope` still does after the
 clearing: nothing on its way up lies strictly within `scope`, or it would itself. -/
 private theorem Cleared.reaches {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat}
-    (formed : WellFormed before) (cleared : Cleared before after scope keep) {x : ScopeOccurrenceId}
+    (formed : WellFormed program before) (cleared : Cleared before after scope keep) {x : ScopeOccurrenceId}
     (within : Within before x State.root) : ¬ StrictlyWithin before x scope → Within after x State.root := by
   generalize rooted : State.root = root at within
   induction within with
@@ -377,13 +416,13 @@ private theorem Cleared.reaches {before after : State} {scope : ScopeOccurrenceI
 
 /-- A cleared well-formed state is well-formed when every occurrence the clearing keeps lies in no scope occurrence
 strictly within the cleared one, and every open item the clearing leaves hangs on an occurrence it leaves. -/
-theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat} (formed : WellFormed before)
+theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat} (formed : WellFormed program before)
     (cleared : Cleared before after scope keep) (present : scope ∈ scopeIds before)
     (kept : ∀ occurrence ∈ before.occurrences, occurrence.id ∈ keep → ¬ StrictlyWithin before occurrence.scope scope)
     (attached : ∀ item ∈ before.openItems, (¬ Within before item.scope scope ∨ item.occurrence ∈ keep) → ∀ host,
       item.attachedTo = some host → ∀ occurrence ∈ before.occurrences, occurrence.id = host →
         ¬ Within before occurrence.scope scope ∨ host ∈ keep) :
-    WellFormed after := by
+    WellFormed program after := by
   have sameStarts : starts after = starts before := by simp [starts, cleared.journal, cleared.started]
   -- A scope occurrence of `before` that is no strict descendant of `scope` stands after the clearing.
   have stays : ∀ id, id ∈ scopeIds before → ¬ StrictlyWithin before id scope → id ∈ scopeIds after := fun id member outside => by
@@ -500,6 +539,10 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
       (fun _ member _ => .inl (cleared.occurrencesSublist.subset member))
       (fun _ queued => queued.shrink (by rw [cleared.signals]; exact .refl _) cleared.tokensSublist)
       (fun _ member => cleared.signals ▸ member) (fun _ member => .inl (cleared.scopesSublist.subset member))
+  · exact formed.attachedReserved.shrink (fun _ member => cleared.openItemsSublist.subset member)
+      fun _ member _ => cleared.occurrencesSublist.subset member
+  · exact formed.typed.shrink (fun _ member => cleared.openItemsSublist.subset member)
+      fun _ member _ => cleared.occurrencesSublist.subset member
 
 /-! ## Pruning occurrences and items -/
 
@@ -526,8 +569,8 @@ structure Prunes (before after : State) : Prop where
   owners : ∀ entry ∈ after.scopes, ∀ occurrence ∈ before.occurrences, entry.occurrence = some occurrence.id →
     occurrence ∈ after.occurrences
 
-theorem Prunes.wellFormed {before after : State} (formed : WellFormed before) (prunes : Prunes before after) :
-    WellFormed after := by
+theorem Prunes.wellFormed {before after : State} (formed : WellFormed program before) (prunes : Prunes before after) :
+    WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (prunes.instances _)
   have sameStarts : starts after = starts before := by simp [starts, prunes.journal, prunes.started]
   have kept := prunes.occurrences.subset
@@ -535,7 +578,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed before) (p
   have housed : ∀ occurrence ∈ after.occurrences, occurrence.scope ∈ scopeIds after := fun occurrence member => by
     simpa [scopeIds, prunes.scopes] using formed.owned.occurrenceScopes occurrence (kept member)
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
-    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled⟩
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed⟩
   case issued =>
     exact ⟨fun occurrence member => prunes.nextIssue ▸ formed.issued.occurrences occurrence (kept member),
       fun item member => prunes.nextIssue ▸ formed.issued.items item (items member),
@@ -600,6 +643,8 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed before) (p
       (fun _ member _ => .inl (kept member))
       (fun _ queued => queued.shrink (by rw [prunes.signals]; exact .refl _) (by rw [prunes.tokens]; exact .refl _))
       (fun _ member => prunes.signals ▸ member) (fun _ member => .inl (prunes.scopes ▸ member))
+  case attachedReserved => exact formed.attachedReserved.shrink (fun _ member => items member) fun _ member _ => kept member
+  case typed => exact formed.typed.shrink (fun _ member => items member) fun _ member _ => kept member
 
 /-- `s` without the occurrence record `id`: what `State.removeOccurrence` removes first. -/
 def withoutRecord (s : State) (id : Nat) : State := { s with occurrences := s.occurrences.filter (·.id != id) }
@@ -648,9 +693,9 @@ private theorem Left.reaches {before after : State} {scope : ScopeOccurrenceId} 
 /-- Leaving a present scope occurrence other than the root keeps a state well-formed: whatever stands outside it waits
 for, hangs on and is owned by occurrences outside it, since an item hangs on an occurrence of its own scope occurrence
 and a scope occurrence lies directly below its owner's. -/
-theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (formed : WellFormed before)
+theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (formed : WellFormed program before)
     (left : Left before after scope) (present : scope ∈ scopeIds before) (notRoot : scope ≠ State.root) :
-    WellFormed after := by
+    WellFormed program after := by
   have sameStarts : starts after = starts before := by simp [starts, left.journal, left.started]
   have stays : ∀ id, id ∈ scopeIds before → ¬ Within before id scope → id ∈ scopeIds after := fun id member outside => by
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
@@ -662,7 +707,7 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
     key_congr (left.instances _ (housed occurrence member))
   have kept := left.occurrencesSublist.subset
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
-    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled⟩
+    ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed⟩
   case issued =>
     exact ⟨fun occurrence member => left.nextIssue ▸ formed.issued.occurrences occurrence (kept member),
       fun item member => left.nextIssue ▸ formed.issued.items item (left.openItemsSublist.subset member),
@@ -737,5 +782,9 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
     exact formed.settled.transport left.slots (Nat.le_of_eq left.nextIssue.symm) (fun _ member _ => .inl (kept member))
       (fun _ queued => queued.shrink (by rw [left.signals]; exact .refl _) left.tokensSublist)
       (fun _ member => left.signals ▸ member) (fun _ member => .inl (left.scopesSublist.subset member))
+  case attachedReserved =>
+    exact formed.attachedReserved.shrink (fun _ member => left.openItemsSublist.subset member) fun _ member _ => kept member
+  case typed =>
+    exact formed.typed.shrink (fun _ member => left.openItemsSublist.subset member) fun _ member _ => kept member
 
 end Kernel.Laws.State

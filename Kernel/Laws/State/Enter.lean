@@ -48,11 +48,11 @@ structure Enters (before after : State) (entry : ScopeOccurrence) (locals : List
 /-- Entering a scope occurrence below one that stands, owned, if at all, by a begun occurrence running there, keeps a
 state well-formed. -/
 theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : List (String × Value)}
-    (formed : WellFormed s) (enters : Enters s after entry locals) {parent : ScopeOccurrenceId}
+    (formed : WellFormed program s) (enters : Enters s after entry locals) {parent : ScopeOccurrenceId}
     (stands : parent ∈ scopeIds s) (entryParent : entry.parent = some parent)
     (ownerBegun : ∀ id, entry.occurrence = some id → ∃ occurrence ∈ s.occurrences, occurrence.id = id ∧
       occurrence.begun = true ∧ occurrence.scope = parent) :
-    WellFormed after := by
+    WellFormed program after := by
   have entryId := enters.id
   have scopes := enters.scopes
   have members : ∀ found ∈ after.scopes, found ∈ s.scopes ∨ found = entry := fun found inside => by
@@ -256,21 +256,23 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       (fun request queued => (queuedEq request).mp queued) (fun signal member => hSignals ▸ member)
       fun found member => (members found member).imp (fun old => old) fun same => by
         rw [same, entryId]
-        exact Nat.le_refl _⟩
+        exact Nat.le_refl _,
+    formed.attachedReserved.shrink (fun _ member => enters.openItems ▸ member) fun _ member _ => hOcc ▸ member,
+    formed.typed.shrink (fun _ member => enters.openItems ▸ member) fun _ member _ => hOcc ▸ member⟩
 
 /-- Entering a scope occurrence below one that stands, owned, if at all, by a begun occurrence running there, keeps a
 state well-formed. -/
-theorem enterScope_wellFormed {s : State} (formed : WellFormed s) (element : ElementId) {parent : ScopeOccurrenceId}
+theorem enterScope_wellFormed {s : State} (formed : WellFormed program s) (element : ElementId) {parent : ScopeOccurrenceId}
     (stands : parent ∈ scopeIds s) (locals : List (String × Value)) {owner : Option Nat}
     (ownerBegun : ∀ id, owner = some id → ∃ occurrence ∈ s.occurrences, occurrence.id = id ∧ occurrence.begun = true ∧
       occurrence.scope = parent) :
-    WellFormed (s.enterScope element parent locals owner).1 := by
+    WellFormed program (s.enterScope element parent locals owner).1 := by
   rw [enterScope_eq]
   exact Enters.wellFormed formed ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, .same rfl⟩
     stands rfl ownerBegun
 
 /-- No scope occurrence holds the counter's identity. -/
-theorem scopes_fresh {s : State} (formed : WellFormed s) : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ :=
+theorem scopes_fresh {s : State} (formed : WellFormed program s) : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ :=
   fun entry inside same => by
     have := formed.issued.scopes entry inside
     rw [same] at this
@@ -278,9 +280,9 @@ theorem scopes_fresh {s : State} (formed : WellFormed s) : ∀ entry ∈ s.scope
 
 /-- A begun Call entering its called root below its own scope occurrence keeps a state well-formed: the root's recorded
 instance names no occurrence, item or queued begin, since all were issued before it. -/
-theorem enterCalled_wellFormed {s : State} (formed : WellFormed s) (program : Program) {call : Occurrence}
+theorem enterCalled_wellFormed {s : State} (formed : WellFormed program s) (called : Program) {call : Occurrence}
     (member : call ∈ s.occurrences) (begun : call.begun = true) (variables : List (String × Value))
-    (definition : DefinitionRef) : WellFormed (s.enterCalled program call variables definition).1 := by
+    (definition : DefinitionRef) : WellFormed program (s.enterCalled called call variables definition).1 := by
   rw [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)]
   exact Enters.wellFormed formed ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl,
     ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩⟩ (formed.owned.occurrenceScopes call member)
@@ -349,7 +351,7 @@ theorem SlotsSettled.bare {s t : State} (settled : SlotsSettled s) (slots : t.sl
 
 /-- Queuing a bare begin in a scope occurrence that stands keeps the claims single. That the begin is no completion,
 `Kernel.Proofs.Step` tells. -/
-theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : WellFormed s) (bare : names request = [])
+theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : WellFormed program s) (bare : names request = [])
     (stands : request.scope ∈ scopeIds s)
     (notComplete : ∀ id leave writes rule, Signal.begin request ≠ .complete id leave writes rule) :
     ReservationsClaimed (s.signal (.begin request)) := by
@@ -392,7 +394,7 @@ theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : Well
 
 /-- Queuing a bare begin keeps the slots settled: it claims nothing. That the begin is no compensation,
 `Kernel.Proofs.Step` tells. -/
-theorem signal_settled_begin {s : State} {request : BeginRequest} (formed : WellFormed s) (bare : names request = [])
+theorem signal_settled_begin {s : State} {request : BeginRequest} (formed : WellFormed program s) (bare : names request = [])
     (notCompensate : ∀ scope activity trigger leave occurrence resume,
       Signal.begin request ≠ .compensate scope activity trigger leave (some (.complete occurrence resume))) :
     SlotsSettled (s.signal (.begin request)) := by
@@ -410,9 +412,9 @@ theorem signal_settled_begin {s : State} {request : BeginRequest} (formed : Well
     · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave occurrence resume)
 
 /-- Deferring bare begins, each in a scope occurrence that stands, keeps a state well-formed. -/
-theorem deferBegins_wellFormed {s : State} (formed : WellFormed s) {requests : List BeginRequest}
+theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requests : List BeginRequest}
     (bare : ∀ request ∈ requests, names request = [] ∧ request.scope ∈ scopeIds s) :
-    WellFormed (s.deferBegins requests) := by
+    WellFormed program (s.deferBegins requests) := by
   rw [deferBegins_eq]
   have fresh : ∀ request, Token.begin request ∈ (requests.map Token.begin).reverse → request ∈ requests :=
     fun request member => by simpa using member
@@ -479,4 +481,6 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed s) {requests : L
   ownedBelow := formed.ownedBelow
   claimed := claimed
   settled := formed.settled.bare rfl rfl (Nat.le_refl _) rfl (fun request named =>
-    (queued request named).imp id fun new => (bare request new).1) fun _ _ _ _ _ _ member => member }
+    (queued request named).imp id fun new => (bare request new).1) fun _ _ _ _ _ _ member => member
+  attachedReserved := formed.attachedReserved
+  typed := formed.typed }
