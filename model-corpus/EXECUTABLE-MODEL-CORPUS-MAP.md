@@ -8,7 +8,7 @@ The first tranche contains 113 retained executable models and 7 exact external c
 The retained MVP suite covers all 74 registered executable BPMN element or semantic variants.
 Browser eligibility separates 3 human-work journeys from 9 guided simulations with explicit host participants.
 107 of the 120 models bind at least one coverage row through the kernel status map's scenario links, and 13 bind none.
-60 of the 115 coverage rows bind at least one retained model, 43 link scenarios but bind no model, and 12 link no scenario.
+61 of the 115 coverage rows bind at least one retained model, 43 link scenarios but bind no model, and 11 link no scenario.
 
 ## Coverage rows
 
@@ -111,7 +111,7 @@ Each row of the kernel status map's Row status table, in its order, with its ker
 | PC-BASIC-02 | accepted | 17 | employee-onboarding-links, warranty-repair-links | embeddedSubProcess, exclusiveGateway, linkIntermediateEventPair, noneEndEvent, noneIntermediateThrowEvent, noneStartEvent, parallelGateway, process, sequenceFlow, serviceTask, userTask | gateway.eventBased.linkArm, link.catch, link.duplicateCatch |
 | PC-BASIC-03 | accepted | 70 | — | — | gateway.eventBased.instantiate, gateway.eventBased.linkArm, gateway.eventBased.receiveArm, gateway.exclusive.singleConditionWithoutDefault, gateway.exclusive.unconditionedFlow, link.catch, link.duplicateCatch |
 | PC-BASIC-04 | accepted | 15 | — | — | event.multipleDefinitions, event.parallelMultiple, reader.eventDefinitionRef, source.reference, work.receive.instantiate |
-| PC-DELIVERY-01 | slice (held) | 3 | — | — | — |
+| PC-DELIVERY-01 | accepted | 16 | invoice-business-error-recovery, invoice-validation-classification, invoice-validation-rework | errorBoundaryEvent, exclusiveGateway, noneEndEvent, noneStartEvent, process, sequenceFlow, serviceTask, serviceTaskBoundaryErrorEvent, userTask | — |
 | PC-JOURNEY-01 | accepted | 8 | — | — | — |
 | PC-JOURNEY-02 | accepted | 7 | — | — | — |
 | PC-JOURNEY-03 | accepted | 7 | — | — | — |
@@ -119,16 +119,16 @@ Each row of the kernel status map's Row status table, in its order, with its ker
 | PC-JOURNEY-05 | accepted | 11 | — | — | — |
 | PC-JOURNEY-06 | accepted | 6 | — | — | — |
 | PC-JOURNEY-07 | accepted | 9 | — | — | — |
-| PC-QUALIFY-01 | absent | 0 | — | — | — |
-| PC-QUALIFY-02 | absent | 0 | — | — | — |
-| PC-QUALIFY-03 | absent (held) | 0 | — | — | — |
-| PC-QUALIFY-04 | absent | 0 | — | — | — |
-| PC-QUALIFY-05 | absent | 0 | — | — | — |
-| PC-QUALIFY-06 | absent | 0 | — | — | — |
-| PC-QUALIFY-07 | absent | 0 | — | — | — |
-| PC-QUALIFY-08 | absent | 0 | — | — | — |
-| PC-QUALIFY-09 | absent | 0 | — | — | — |
-| PC-QUALIFY-10 | absent | 0 | — | — | — |
+| PC-QUALIFY-01 | integration | 0 | — | — | — |
+| PC-QUALIFY-02 | integration | 0 | — | — | — |
+| PC-QUALIFY-03 | integration | 0 | — | — | — |
+| PC-QUALIFY-04 | integration | 0 | — | — | — |
+| PC-QUALIFY-05 | integration | 0 | — | — | — |
+| PC-QUALIFY-06 | integration | 0 | — | — | — |
+| PC-QUALIFY-07 | integration | 0 | — | — | — |
+| PC-QUALIFY-08 | integration | 0 | — | — | — |
+| PC-QUALIFY-09 | integration | 0 | — | — | — |
+| PC-QUALIFY-10 | integration | 1 | — | — | — |
 | PC-ACCEPT-01 | absent | 0 | — | — | — |
 | PC-ACCEPT-02 | absent | 0 | — | — | — |
 
@@ -235,9 +235,9 @@ Each row of the kernel status map's Row status table, in its order, with its ker
 | Receive application documents during review | retainedScenario | subprocess-termination | accepted | subscription-receive-task-resume | PC-MESSAGE-05, PC-TIMER-06 | retainedEvidence | notCatalogReady |
 | Cancel a confirmed travel itinerary | retainedScenario | dependency-aware-travel-compensation | accepted | compensation-success-b-c-a | PC-COMPENSATION-01, PC-COMPENSATION-02, PC-COMPENSATION-03 | notSelected | guidedJourneyBacked |
 | Withdraw a resource reservation | retainedScenario | transaction-reservation-withdrawal | accepted | transaction-cancellation-retained-active | PC-TX-02 | notSelected | guidedJourneyBacked |
-| Validate and classify an invoice | retainedScenario | invoice-validation-classification | accepted | classification | PC-AUTO-01, PC-DATA-05, PC-DATA-06 | retainedEvidence | notCatalogReady |
-| Review and rework an invoice | retainedScenario | invoice-validation-rework | accepted | invoice-rework | PC-CF-02, PC-CF-06 | retainedEvidence | notCatalogReady |
-| Recover from invoice business Errors | retainedScenario | invoice-business-error-recovery | accepted | invoice-business-error-recovery | PC-AUTO-02, PC-ERROR-01 | retainedEvidence | notCatalogReady |
+| Validate and classify an invoice | retainedScenario | invoice-validation-classification | accepted | classification | PC-AUTO-01, PC-DATA-05, PC-DATA-06, PC-DELIVERY-01 | retainedEvidence | notCatalogReady |
+| Review and rework an invoice | retainedScenario | invoice-validation-rework | accepted | invoice-rework | PC-CF-02, PC-CF-06, PC-DELIVERY-01 | retainedEvidence | notCatalogReady |
+| Recover from invoice business Errors | retainedScenario | invoice-business-error-recovery | accepted | invoice-business-error-recovery | PC-AUTO-02, PC-DELIVERY-01, PC-ERROR-01 | retainedEvidence | notCatalogReady |
 | Debounce an alarm before paging | retainedScenario | timer-then-human-review | accepted | intermediate-catch-timer-alarm-debounce | PC-TIMER-01 | retainedEvidence | notCatalogReady |
 | CIB Seven order goods | externalGit | cib-order-goods | rejected | none | — | notApplicable | notCatalogReady |
 | CIB Seven review invoice | externalGit | cib-review-invoice | rejected | none | — | notApplicable | notCatalogReady |
