@@ -35,7 +35,11 @@ def Queueable (program : Program) (s : State) : Signal → Prop
   | .endInstance status failure => failure.isSome = true ↔ status = .failed
   | .compensate scope _ _ _ resume => ∀ next, resume = some next → Laws.State.Resumable s scope next
   | .raise _ origin => Laws.State.Raisable program s origin ∧ ∀ host, origin.host = some host → Laws.State.Settled s host
-  | .write _ _ _ | .remove _ _ | .occur _ _ _ _ _ | .cancel _ | .fire _ _
+  | .write _ _ _ => True
+  | .remove _ _ => True
+  | .occur _ _ _ _ _ => True
+  | .cancel _ => True
+  | .fire _ _ => True
   | .compensationFailed _ _ _ _ => True
 
 /-- Queuing a signal a well-formed state is ready for keeps it well-formed. -/

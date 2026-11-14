@@ -14,8 +14,8 @@ The lemmas about `Kernel.State`'s operations that the proof wave composes: what 
 (`Kernel.Laws.State.Invariant`) reads, as the frames of `Kernel.Laws.State.Frames`, `Kernel.Laws.State.Clear` and
 `Kernel.Laws.State.Issue` state it; `Kernel.Laws.State.Keeps` composes them into what each keeps of `WellFormed`. This is
 the one module that sees their bodies ([module table](../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)),
-so the witness that the sample instance is well-formed, which reads `State.root`'s value, is here too. Nothing executable
-imports this module.
+so `State.root`'s value is stated here (`root_eq`), and `Kernel.Laws.State.Sample`'s witness that the sample instance
+is well-formed reads it through that lemma. Nothing executable imports this module.
 -/
 
 @[expose] public section

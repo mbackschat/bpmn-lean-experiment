@@ -21,8 +21,9 @@ Besides the laws, it holds what follows from them over the fields alone: that a 
 form a tree (`Depth`). The frames through which a change of the fields keeps `WellFormed` are
 `Kernel.Laws.State.Frames`', `Kernel.Laws.State.Clear`'s and `Kernel.Laws.State.Issue`'s. Each law is followed by
 its non-vacuity witness: a small state that satisfies it and, where the law could otherwise hold of everything, one that
-violates it. Nothing here reads a `State` operation's body, so this module sees none; the lemmas about the operations,
-and the witness that the sample instance is well-formed, which reads `State.root`'s value, are `Kernel.Laws.State`'s.
+violates it. Nothing here reads a `State` operation's body, so this module sees none; the lemmas about the operations
+are `Kernel.Laws.State`'s, and the witnesses that read `State.root`'s value or the program, the sample instance's
+well-formedness among them, `Kernel.Laws.State.Sample`'s.
 -/
 
 @[expose] public section
@@ -648,6 +649,25 @@ theorem unissued_completion (kind : OpenKind) :
   have := formed.queue.completes 9 .outgoing [] .outward (by simp)
   simp [sample] at this
 
+/-- An arming of the Sub-Process occurrence 1's boundaries in its own scope occurrence 2 breaks `QueueSound`: its host
+runs in the root, and an arming opens its items in its host's scope occurrence. -/
+theorem misplaced_arming_rejected (kind : OpenKind) :
+    ¬ QueueSound { sample kind with signals := [.arm 1 ⟨"Sub"⟩ subScope] } := fun queue => by
+  have := ((queue.arm 1 ⟨"Sub"⟩ subScope (by simp)).2.2 subProcess (by simp [sample]) rfl).2
+  simp [subProcess, processRoot, subScope] at this
+
+/-- An Event-Based Gateway arming whose gateway occurrence is the unbegun reservation 7 breaks `QueueSound`. -/
+theorem reserved_gateway_rejected (kind : OpenKind) :
+    ¬ QueueSound { armedState kind with signals := [.armGateway 7 ⟨"Timer"⟩ processRoot] } := fun queue => by
+  have := ((queue.armGateway 7 ⟨"Timer"⟩ processRoot (by simp)).2.2 reservation (by simp [armedState]) rfl).1
+  simp [reservation] at this
+
+/-- A queued failing instance end without a failure breaks `QueueSound`: it would leave `FailureRecorded` broken. -/
+theorem unrecorded_failure_rejected (kind : OpenKind) :
+    ¬ QueueSound { sample kind with signals := [.endInstance .failed none] } := fun queue => by
+  have := queue.ends .failed none (by simp)
+  simp at this
+
 /-- A boundary item filed in the Sub-Process scope but attached to the root's task 5 breaks `Owned`: an arming opens
 its items in its host's scope occurrence. -/
 theorem misattached_rejected (kind : OpenKind) :
@@ -704,6 +724,38 @@ theorem shared_reservation_rejected (kind : OpenKind) :
     (List.mem_cons_of_mem _ (List.mem_singleton.mpr rfl)) rfl
   simp at this
 
+/-- A begin of the reservation 7 in the root. -/
+def reservedBegin : BeginRequest := { element := ⟨"Timer"⟩, scope := processRoot, reserved := some 7 }
+
+/-- Two deferred begins of the reservation 7 break `ReservationsClaimed`, as do a queued and a deferred one. -/
+theorem deferred_twice_rejected (kind : OpenKind) :
+    ¬ ReservationsClaimed { armedState kind with tokens := [.begin reservedBegin, .begin reservedBegin] } :=
+  fun claimed => by
+    have := claimed.tokensApart _ _ (List.Sublist.refl _) 7 (by simp [names, reservedBegin])
+    simp [names, reservedBegin] at this
+
+theorem queued_and_deferred_rejected (kind : OpenKind) :
+    ¬ ReservationsClaimed { armedState kind with signals := [.begin reservedBegin], tokens := [.begin reservedBegin] } :=
+  fun claimed => by
+    have := claimed.queuesApart reservedBegin reservedBegin (List.mem_singleton_self _) (List.mem_singleton_self _) 7
+      (by simp [names, reservedBegin])
+    simp [names, reservedBegin] at this
+
+/-- A completion of the reservation 7 queued beside its begin breaks `ReservationsClaimed`: it would complete the
+occurrence before it begins. -/
+theorem completed_reservation_rejected (kind : OpenKind) :
+    ¬ ReservationsClaimed { armedState kind with signals := [.begin reservedBegin, .complete 7 .outgoing [] .outward] } :=
+  fun claimed => claimed.uncompleted reservedBegin 7 .outgoing [] .outward (.inl (by simp))
+    (by simp [names, reservedBegin]) (by simp)
+
+/-- A begin queued in the scope occurrence 9, never issued, breaks `ReservationsClaimed`: a scope occurrence entered
+later would be the one it begins in. -/
+theorem unissued_begin_scope_rejected (kind : OpenKind) :
+    ¬ ReservationsClaimed { sample kind with signals := [.begin { element := ⟨"Outer"⟩, scope := ⟨9⟩ }] } :=
+  fun claimed => by
+    have := claimed.scopesIssued _ (.inl (List.mem_singleton.mpr rfl))
+    simp [sample] at this
+
 /-- An unbegun reservation parked at a join breaks `SlotsSettled`: the join's firing would complete it. -/
 theorem parked_reservation_rejected (kind : OpenKind) :
     ¬ SlotsSettled { armedState kind with slots := { parked := [{ occurrence := 7, flow := ⟨"F"⟩, scope := processRoot }] } } :=
@@ -746,5 +798,61 @@ theorem nested_instance_placed (kind : OpenKind) : Placed (sample kind) (instanc
 theorem misplaced_instance_rejected (kind : OpenKind) : ¬ Placed (sample kind) (instanceRun subScope) := fun placed => by
   have := (placed subScope (by simp [instanceRun])).2 childScope (by simp [sample]) rfl
   simp [childScope, processRoot, subScope, instanceRun] at this
+
+/-- The Sub-Process occurrence's public identity, a compensation's trigger. -/
+def subTrigger : OccurrenceRef := { processInstanceId := "p", element := ⟨"Sub"⟩, activation := 1 }
+
+/-- A compensation run in `scope` whose one handler runs in the context `subScope`. -/
+def handlerRun (scope : ScopeOccurrenceId) : CompensationRun :=
+  { trigger := subTrigger, scope, pending := [], leave := none, resume := none,
+    running := [(subScope, { subject := ⟨"Sub"⟩, handler := some ⟨"Undo"⟩, scope := processRoot })] }
+
+/-- A handler context standing below another scope occurrence than its run's breaks `RunPlaced`. -/
+theorem misplaced_handler_rejected (kind : OpenKind) : ¬ RunPlaced (sample kind) (handlerRun subScope) := fun placed => by
+  have := (placed.2 subScope (by simp [handlerRun])).2 childScope (by simp [sample]) rfl
+  simp [childScope, processRoot, subScope, handlerRun] at this
+
+/-- A compensation that ends by completing the unbegun reservation 7 breaks `Resumable`. -/
+theorem unsettled_resume_rejected (kind : OpenKind) :
+    ¬ Resumable (armedState kind) processRoot (.complete 7 .outgoing) := fun resumable => by
+  have := (resumable.1 7 .outgoing rfl).2.1 reservation (by simp [armedState]) rfl
+  simp [reservation] at this
+
+/-- The unbegun reservation 7 as a Multi-Instance body breaks `SlotsSettled`, as it does as what a compensation run, or
+a queued one, completes once it ends, and as the host a queued raise leaves. -/
+theorem reserved_body_rejected (kind : OpenKind) :
+    ¬ SlotsSettled { armedState kind with slots := { multiInstances := [{ instanceRun processRoot with occurrence := 7 }] } } :=
+  fun settled => by
+    have := (settled.bodies _ (List.mem_singleton.mpr rfl)).2.1 reservation (by simp [armedState]) rfl
+    simp [reservation] at this
+
+theorem reserved_resume_rejected (kind : OpenKind) :
+    ¬ SlotsSettled { armedState kind with
+      slots := { compensation := { runs := [{ handlerRun processRoot with resume := some (.complete 7 .outgoing) }] } } } :=
+  fun settled => by
+    have := (settled.resumed _ (List.mem_singleton.mpr rfl) 7 .outgoing rfl).2.1 reservation (by simp [armedState]) rfl
+    simp [reservation] at this
+
+theorem queued_resume_rejected (kind : OpenKind) :
+    ¬ SlotsSettled { armedState kind with
+      signals := [.compensate processRoot none subTrigger none (some (.complete 7 .outgoing))] } := fun settled => by
+  have := (settled.queued processRoot none subTrigger none 7 .outgoing (by simp)).2.1 reservation
+    (by simp [armedState]) rfl
+  simp [reservation] at this
+
+theorem reserved_raise_host_rejected (kind : OpenKind) :
+    ¬ SlotsSettled { armedState kind with
+      signals := [.raise .cancel { element := ⟨"Timer"⟩, scope := processRoot, activation := 1, host := some 7 }] } :=
+  fun settled => by
+    have := (settled.raised .cancel _ 7 (List.mem_singleton.mpr rfl) rfl).2.1 reservation (by simp [armedState]) rfl
+    simp [reservation] at this
+
+/-- A queued compensation in the Sub-Process's scope occurrence that releases the root as its group context breaks
+`SlotsSettled`. -/
+theorem foreign_group_rejected (kind : OpenKind) :
+    ¬ SlotsSettled { sample kind with
+      signals := [.compensate subScope none subTrigger none (some (.group processRoot processRoot))] } := fun settled => by
+  have := settled.grouped subScope none subTrigger none processRoot processRoot (by simp)
+  simp [processRoot, subScope] at this
 
 end Kernel.Laws.State
