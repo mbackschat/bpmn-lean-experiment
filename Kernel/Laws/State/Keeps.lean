@@ -552,6 +552,45 @@ theorem openSubscription_wellFormed {s : State} (formed : WellFormed s) (kind : 
   obtain ⟨occurrence, present, rest⟩ := hangs id hung
   exact ⟨occurrence, by rw [reserves.occurrences]; exact List.mem_append_left _ present, rest⟩
 
+/-- A begun occurrence that stands has settled. -/
+theorem begun_settled {s : State} (formed : WellFormed s) {occurrence : Occurrence} (member : occurrence ∈ s.occurrences)
+    (begun : occurrence.begun = true) : Settled s occurrence.id :=
+  ⟨formed.issued.occurrences occurrence member, fun other inside same => by
+    rw [nodup_map_eq formed.distinct.occurrences inside member same]
+    exact begun, begun_unnamed formed member begun⟩
+
+/-- A queued signal other than a begin keeps what has settled. -/
+theorem Settled.signal {s : State} {id : Nat} (settled : Settled s id) {signal : Signal}
+    (notBegin : ∀ request, signal ≠ .begin request) : Settled (s.signal signal) id := by
+  rw [signal_eq]
+  exact settled.transport (Nat.le_refl _) (fun _ member _ => .inl member) fun request queued =>
+    queued.elim (fun queued => .inl ((List.mem_append.mp queued).resolve_right fun new =>
+      notBegin request (List.mem_singleton.mp new).symm)) .inr
+
+/-- Replacing the slots keeps a state well-formed when what they complete has settled: no other clause reads them. -/
+theorem slots_wellFormed {s : State} (formed : WellFormed s) {slots : FeatureSlots}
+    (settled : SlotsSettled { s with slots }) : WellFormed { s with slots } := by
+  have keys : key { s with slots } = key s := funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
+  exact {
+  issued := ⟨formed.issued.occurrences, formed.issued.items, formed.issued.scopes⟩
+  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩
+  startedOnce := formed.startedOnce
+  activations := ⟨formed.activations.keys, formed.activations.positive⟩
+  reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations
+  owned := ⟨formed.owned.occurrenceScopes, formed.owned.itemScopes, formed.owned.itemOccurrences,
+    formed.owned.attachments, formed.owned.scopeOwners, formed.owned.variableScopes, formed.owned.tokenScopes⟩
+  rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
+    Within.congr (s := s) (t := { s with slots }) rfl (formed.rooted.2.2 scope member)⟩
+  variables := ⟨formed.variables.scopes, formed.variables.names⟩
+  failure := formed.failure
+  queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends⟩
+  counted := formed.counted
+  occurrencesCounted := by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted
+  ownedBelow := formed.ownedBelow
+  claimed := formed.claimed.shrink (fun _ member => member) (fun _ member => member) formed.owned.occurrenceScopes
+    (fun _ member => member) (fun _ _ => by apply instanceOf_congr <;> rfl) (Nat.le_refl _) (.refl _) (.refl _)
+  settled := settled }
+
 private theorem pair_of_append_absent {α : Type} {a b : α} {l m : List α} (pair : [a, b].Sublist (l ++ m))
     (first : a ∉ m) (second : b ∉ m) : [a, b].Sublist l := by
   obtain ⟨front, back, split, rest⟩ := List.sublist_append_iff.mp pair

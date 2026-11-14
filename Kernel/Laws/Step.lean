@@ -557,11 +557,12 @@ private theorem foldlM_finds {α β : Type} {f : Option β → α → Except Fai
 /-- A parked join offered again ran its gateway's hook on the state the closure reached, for an occurrence it found. -/
 theorem reoffer_ok {hooks : Hooks} {ctx : Ctx} {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId}
     {offered : State} (ran : reoffer? hooks ctx state = .ok (some (gateway, scope, offered))) :
-    ∃ id occurrence header payload, state.occurrence? id = some occurrence ∧
-      hooks.arriveGateway ctx header payload occurrence state = .ok offered := by
+    ∃ id occurrence header payload, (∃ waiting ∈ state.slots.parked, waiting.occurrence = id) ∧
+      state.occurrence? id = some occurrence ∧ hooks.arriveGateway ctx header payload occurrence state = .ok offered := by
   unfold reoffer? at ran
-  refine foldlM_finds (fun found => ∃ id occurrence header payload, state.occurrence? id = some occurrence ∧
-    hooks.arriveGateway ctx header payload occurrence state = .ok found.2.2)
+  refine foldlM_finds (fun found => ∃ id occurrence header payload, (∃ waiting ∈ state.slots.parked,
+    waiting.occurrence = id) ∧ state.occurrence? id = some occurrence ∧
+      hooks.arriveGateway ctx header payload occurrence state = .ok found.2.2)
     (fun found waiting result kept stepped => ?_) _ none _ (by simp) ran _ rfl
   split at stepped
   · exact (Except.ok.inj stepped) ▸ kept
@@ -569,13 +570,13 @@ theorem reoffer_ok {hooks : Hooks} {ctx : Ctx} {state : State} {gateway : Elemen
   · split at stepped
     · rename_i occurrence lookup
       obtain ⟨offeredState, offering, made⟩ := bind_ok stepped
-      obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp lookup
+      obtain ⟨last, isLast, found⟩ := Option.bind_eq_some_iff.mp lookup
       intro result same
       rw [← Except.ok.inj made] at same
       split at same
       · simp at same
       · rw [← Option.some.inj same]
-        exact ⟨_, _, _, _, found, offering⟩
+        exact ⟨_, _, _, _, ⟨last, (List.mem_filter.mp (List.mem_of_getLast? isLast)).1, rfl⟩, found, offering⟩
     · simp at stepped
 
 private theorem perform_ok {work : SignalWork} {state after : State} (ran : work.perform state = .ok after) :

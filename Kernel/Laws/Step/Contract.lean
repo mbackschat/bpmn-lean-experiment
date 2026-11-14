@@ -47,8 +47,8 @@ structure PipelineFrame (before after : State) : Prop where
 
 /-- What each hook must keep of `inv`, given what `Step` establishes before it calls the hook: the occurrence it hands
 over stands (a begun occurrence, an idle scope occurrence's owner, a parked join's latest occurrence, the completing
-occurrence), and an arrival's is begun, as `Step.begin` hands it over, but a Gateway's, which a parked join's offer
-may reach; the item it hands over is open; the scope occurrence and occurrence a queued signal names stand
+occurrence), and an arrival's is begun, as `Step.begin` hands it over and as a parked join's offer finds it; the item
+it hands over is open; the scope occurrence and occurrence a queued signal names stand
 (`Step.stale`, `Step.gone`), and an arming's host is begun in the scope occurrence the arming names; a completed occurrence's continuation runs while its scope occurrence stands; an Event
 Sub-Process's start Event reservation (`ScopeEntry.inner`) is beginnable in the scope occurrence its occurrence began
 in, and claimed by nothing queued. The completion pipeline's hooks also keep its frame (`PipelineFrame`), and
@@ -65,7 +65,7 @@ structure HookContract (hooks : Hooks) (inv : State → Prop) : Prop where
     (∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id) →
     hooks.arriveScope ctx header payload occurrence entry state = .ok after → inv after
   arriveGateway : ∀ ctx header payload occurrence state after, inv state → occurrence ∈ state.occurrences →
-    hooks.arriveGateway ctx header payload occurrence state = .ok after → inv after
+    occurrence.begun = true → hooks.arriveGateway ctx header payload occurrence state = .ok after → inv after
   arriveCatch : ∀ ctx header payload subscription occurrence state after, inv state → occurrence ∈ state.occurrences →
     occurrence.begun = true → hooks.arriveCatch ctx header payload subscription occurrence state = .ok after → inv after
   arriveThrow : ∀ ctx header payload thrown occurrence state after, inv state → occurrence ∈ state.occurrences →
@@ -170,6 +170,9 @@ structure Phases (inv : State → Prop) : Prop where
     ∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request
   /-- An occurrence's scope occurrence stands. -/
   housed : ∀ state occurrence, inv state → occurrence ∈ state.occurrences → ScopeStands state occurrence.scope
+  /-- An occurrence parked at a join is begun while it stands, so a join offered again hands over a begun one. -/
+  parkedBegun : ∀ state waiting occurrence, inv state → waiting ∈ state.slots.parked → occurrence ∈ state.occurrences →
+    occurrence.id = waiting.occurrence → occurrence.begun = true
   /-- `Step.endInstance`, with a failure exactly when the instance fails. -/
   endInstance : ∀ state status failure, inv state → (failure.isSome = true ↔ status = .failed) →
     inv (endInstance status failure state)

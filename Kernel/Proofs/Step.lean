@@ -169,6 +169,8 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
     admittedToken := fun _ _ _ formed taken => Laws.State.admitted_token formed taken
     completeQueued := fun _ _ _ _ _ formed completed => Laws.State.complete_unnamed formed completed
     housed := fun _ _ formed member => Laws.State.housed_wellFormed formed member
+    parkedBegun := fun _ waiting _ formed parked member named =>
+      (formed.settled.parked waiting parked).2.1 _ member named
     endInstance := fun _ _ _ formed recorded => by
       rw [Laws.Step.endInstance_eq]
       exact Laws.State.endInstance_wellFormed formed recorded
@@ -243,6 +245,38 @@ theorem flowOps : Laws.Flow.FlowOps Laws.State.WellFormed where
     obtain ⟨entry, inside, named⟩ := stands
     exact Laws.State.emit_wellFormed formed flows (List.mem_map.mpr ⟨entry, inside, named⟩)
   complete _ _ leave writes rule formed member begun := complete_wellFormed formed member begun leave writes rule
+
+/-- Flow's join operations record (`Laws.Flow.JoinOps`) of `WellFormed`, what a join completes having settled. -/
+theorem joinOps : Laws.Flow.JoinOps Laws.State.WellFormed Laws.State.Settled where
+  park state waiting formed waits := by
+    obtain ⟨occurrence, member, named, begun⟩ := waits
+    refine Laws.State.slots_wellFormed formed ⟨fun found inside => ?_, formed.settled.bodies, formed.settled.resumed,
+      formed.settled.queued⟩
+    rcases List.mem_append.mp inside with old | new
+    · exact formed.settled.parked found old
+    · rw [List.mem_singleton.mp new, ← named]
+      exact Laws.State.begun_settled formed member begun
+  unpark _ _ formed := Laws.State.slots_wellFormed formed ⟨fun found inside =>
+    formed.settled.parked found (List.mem_filter.mp inside).1, formed.settled.bodies, formed.settled.resumed,
+    formed.settled.queued⟩
+  parked _ waiting formed member := formed.settled.parked waiting member
+  begun _ _ formed member begun := Laws.State.begun_settled formed member begun
+  reparked _ _ _ settled := settled
+  complete _ _ leave writes rule formed settled := unnamed_wellFormed formed settled.2.2 leave writes rule
+  completed _ _ _ _ _ _ settled := settled.signal fun _ same => by simp at same
+  armGateway state occurrence gateway formed member begun :=
+    Laws.State.signal_wellFormed formed (Laws.State.signal_queueSound formed (fun _ _ _ same => by simp at same)
+      (fun _ same => by simp at same)
+      (fun _ _ _ same => by
+        cases same
+        obtain ⟨entry, inside, named⟩ := List.mem_map.mp (formed.owned.occurrenceScopes occurrence member)
+        refine ⟨formed.issued.occurrences occurrence member, named ▸ formed.issued.scopes entry inside,
+          fun found present same => ?_⟩
+        rw [Laws.State.nodup_map_eq formed.distinct.occurrences present member same]
+        exact ⟨begun, rfl⟩)
+      (fun _ _ same => by simp at same))
+    (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
+    (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
 
 /-- Starts' operations record (`Laws.Starts.StartsOps`) of `WellFormed`. -/
 theorem startsOps : Laws.Starts.StartsOps Laws.State.WellFormed where
@@ -457,6 +491,14 @@ theorem registered_completeCall : ∀ ctx header payload scope occurrence state 
   intro _ _ _ _ _ _ _ formed member owned link ran
   rw [Laws.Registry.hooks_completeCall] at ran
   exact Laws.Work.completeCall_keeps workOps formed member owned link ran
+
+/-- `HookContract.arriveGateway` of the registered hooks. -/
+theorem registered_arriveGateway : ∀ ctx header payload occurrence state after, Laws.State.WellFormed state →
+    occurrence ∈ state.occurrences → occurrence.begun = true →
+    Registry.hooks.arriveGateway ctx header payload occurrence state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ formed member begun ran
+  rw [Laws.Registry.hooks_arriveGateway] at ran
+  exact Laws.Flow.arriveGateway_keeps joinOps formed member begun ran
 
 /-- `HookContract.cancelled` of the registered hooks: no feature is told, so nothing changes. -/
 theorem registered_cancelled : ∀ ctx occurrence state after, Laws.State.WellFormed state →

@@ -473,4 +473,117 @@ theorem arriveLink_keeps {inv : State → Prop} (ops : FlowOps inv) {ctx : Ctx} 
   · cases ran
     exact ops.complete _ _ _ _ _ holds member begun
 
+
+/-! ### Joins
+
+A join completes occurrences it parked earlier, which may since have left the state; `JoinOps` names what such an
+occurrence keeps as `settled`, which `Kernel.Proofs.Step` fills with `Laws.State.Settled`. -/
+
+/-- What Flow's gateway arrival needs of the state operations it applies, for an invariant `inv` and what an
+occurrence a join may complete keeps, `settled`. -/
+structure JoinOps (inv : State → Prop) (settled : State → Nat → Prop) : Prop where
+  /-- A begun occurrence that stands parked at a join. -/
+  park : ∀ state waiting, inv state → (∃ occurrence ∈ state.occurrences, occurrence.id = waiting.occurrence ∧
+    occurrence.begun = true) → inv { state with slots := { state.slots with parked := state.slots.parked ++ [waiting] } }
+  /-- Some join waits taken off. -/
+  unpark : ∀ state (keep : Parked → Bool), inv state →
+    inv { state with slots := { state.slots with parked := state.slots.parked.filter keep } }
+  parked : ∀ state waiting, inv state → waiting ∈ state.slots.parked → settled state waiting.occurrence
+  begun : ∀ state occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    settled state occurrence.id
+  /-- Changing the join waits keeps what has settled. -/
+  reparked : ∀ state parked id, settled state id → settled { state with slots := { state.slots with parked } } id
+  complete : ∀ state id leave writes rule, inv state → settled state id →
+    inv (state.signal (.complete id leave writes rule))
+  /-- Queuing a completion keeps what has settled. -/
+  completed : ∀ state id other leave writes rule, settled state id →
+    settled (state.signal (.complete other leave writes rule)) id
+  /-- A begun occurrence that stands arms its Event-Based Gateway in its own scope occurrence. -/
+  armGateway : ∀ state occurrence gateway, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    inv (state.signal (.armGateway occurrence.id gateway occurrence.scope))
+
+/-- Completing occurrences that have settled keeps `inv` and what has settled. -/
+theorem completeAll_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : JoinOps inv settled)
+    (leave : Leave) : ∀ (ids : List Nat) (state : State), inv state → (∀ id ∈ ids, settled state id) →
+      inv (ids.foldl (Feature.Flow.signalComplete · · leave) state) ∧
+        ∀ id, settled state id → settled (ids.foldl (Feature.Flow.signalComplete · · leave) state) id
+  | [], _, holds, _ => ⟨holds, fun _ kept => kept⟩
+  | id :: rest, state, holds, all => by
+    simp only [List.foldl_cons]
+    have next : inv (Feature.Flow.signalComplete state id leave) :=
+      ops.complete state id leave [] .outward holds (all id (List.mem_cons_self ..))
+    obtain ⟨kept, carried⟩ := completeAll_keeps ops leave rest _ next fun other member =>
+      ops.completed state other id leave [] .outward (all other (List.mem_cons_of_mem _ member))
+    exact ⟨kept, fun other held => carried other (ops.completed state other id leave [] .outward held)⟩
+
+/-- A join keeps `inv` for a begun occurrence that stands: it parks it, and a firing completes occurrences parked. -/
+theorem join_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : JoinOps inv settled)
+    {occurrence : Occurrence} {incoming : List FlowId} {state after : State} {ready : State → Bool}
+    {flows : State → Except Failure (List FlowId)} (holds : inv state) (member : occurrence ∈ state.occurrences)
+    (begun : occurrence.begun = true) (ran : Feature.Flow.join occurrence incoming state ready flows = .ok after) :
+    inv after := by
+  unfold Feature.Flow.join at ran
+  have own := ops.begun _ _ holds member begun
+  cases arrived : occurrence.incoming with
+  | none => simp [arrived] at ran
+  | some flow =>
+  simp only [arrived, bind, Except.bind] at ran
+  by_cases short : incoming.length ≤ 1
+  · rw [ite_eq_left short] at ran
+    split at ran
+    · cases ran
+    · cases ran
+      exact ops.complete _ _ _ _ _ holds own
+  rw [ite_eq_right short] at ran
+  -- The parked state: the occurrence was parked already, or is parked now.
+  generalize parkedState : (if state.slots.parked.any (·.occurrence == occurrence.id) = true then state
+    else Feature.Flow.park state { occurrence := occurrence.id, flow, scope := occurrence.scope }) = parked at ran
+  have parkedHolds : inv parked ∧ settled parked occurrence.id := by
+    rw [← parkedState]
+    split
+    · exact ⟨holds, own⟩
+    · exact ⟨ops.park _ _ holds ⟨occurrence, member, rfl, begun⟩, ops.reparked _ _ _ own⟩
+  split at ran
+  · cases ran
+    exact parkedHolds.1
+  generalize consumedList : Feature.Flow.consumed parked incoming occurrence.scope = consumed at ran
+  have taken : ∀ waiting ∈ consumed, settled parked waiting.occurrence := fun waiting inside => by
+    rw [← consumedList] at inside
+    obtain ⟨flow, _, found⟩ := List.mem_filterMap.mp inside
+    exact ops.parked _ _ parkedHolds.1 (List.mem_of_find?_eq_some found)
+  have unparkedHolds := ops.unpark parked (!consumed.contains ·) parkedHolds.1
+  have carry : ∀ id, settled parked id → settled (Feature.Flow.unpark parked consumed) id :=
+    fun id kept => ops.reparked _ _ _ kept
+  split at ran
+  · cases ran
+  rename_i selected _
+  cases ran
+  obtain ⟨kept, carried⟩ := completeAll_keeps ops (.flows []) _ (Feature.Flow.unpark parked consumed)
+    unparkedHolds fun id inside => by
+      obtain ⟨waiting, held, rfl⟩ := List.mem_map.mp (List.mem_filter.mp inside).1
+      exact carry _ (taken waiting held)
+  refine ops.complete _ _ _ _ _ kept (carried _ (carry _ ?_))
+  split
+  · exact parkedHolds.2
+  · cases last : consumed.getLast? with
+    | none => exact parkedHolds.2
+    | some waiting => exact taken waiting (List.mem_of_getLast? last)
+
+/-- `Hooks.arriveGateway` keeps `inv` for a begun occurrence that stands. -/
+theorem arriveGateway_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : JoinOps inv settled)
+    {ctx : Ctx} {header : Header} {payload : GatewayPayload} {occurrence : Occurrence} {state after : State}
+    (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (ran : Feature.Flow.arriveGateway ctx header payload occurrence state = .ok after) : inv after := by
+  unfold Feature.Flow.arriveGateway at ran
+  split at ran
+  · unfold Feature.Flow.exclusive at ran
+    simp only [bind, Except.bind] at ran
+    repeat' split at ran
+    all_goals cases ran
+    exact ops.complete _ _ _ _ _ holds (ops.begun _ _ holds member begun)
+  · exact join_keeps ops holds member begun ran
+  · exact join_keeps ops holds member begun ran
+  · cases ran
+    exact ops.armGateway _ _ _ holds member begun
+
 end Kernel.Laws.Flow

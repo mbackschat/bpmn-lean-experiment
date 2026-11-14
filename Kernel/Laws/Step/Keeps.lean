@@ -153,7 +153,7 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
   | atActivity ran => exact contract.arriveActivity _ _ _ _ _ _ holds member begun ran
   | atMultiInstance ran => exact contract.arriveMultiInstance _ _ _ _ _ _ _ holds member begun ran
   | atScope ran => exact contract.arriveScope _ _ _ _ _ _ _ holds member begun inner ran
-  | atGateway ran => exact contract.arriveGateway _ _ _ _ _ _ holds member ran
+  | atGateway ran => exact contract.arriveGateway _ _ _ _ _ _ holds member begun ran
   | atCatch ran => exact contract.arriveCatch _ _ _ _ _ _ _ holds member begun ran
   | atThrow ran => exact contract.arriveThrow _ _ _ _ _ _ _ holds member begun ran
   | atLink ran => exact contract.arriveLink _ _ _ _ _ _ holds member begun ran
@@ -226,11 +226,14 @@ theorem completeIdleScope_keeps (contract : HookContract hooks inv) (facts : Sta
 
 /-- A parked join offered again keeps `inv`: its gateway's hook ran on the state the closure reached, for an occurrence
 that stands. -/
-theorem reoffer_keeps (contract : HookContract hooks inv) (facts : StateFacts) {ctx : Ctx} {state : State}
-    {gateway : ElementId} {scope : ScopeOccurrenceId} {offered : State} (holds : inv state)
+theorem reoffer_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts) {ctx : Ctx}
+    {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId} {offered : State} (holds : inv state)
     (ran : reoffer? hooks ctx state = .ok (some (gateway, scope, offered))) : inv offered := by
-  obtain ⟨_, _, _, ⟨_, found, offering⟩⟩ := reoffer_ok ran
-  exact contract.arriveGateway _ _ _ _ _ _ holds (facts.found _ _ _ found).1 offering
+  obtain ⟨_, occurrence, _, rest⟩ := reoffer_ok ran
+  obtain ⟨_, ⟨waiting, parked, named⟩, found, offering⟩ := rest
+  obtain ⟨member, same⟩ := facts.found _ _ _ found
+  exact contract.arriveGateway _ _ _ _ _ _ holds member
+    (phases.parkedBegun _ _ _ holds parked member (same.trans named.symm)) offering
 
 theorem transition_keeps (contract : HookContract hooks inv) (phases : Phases inv) {ctx : Ctx}
     {transition : State → Outcome} (runs : RunsTransition hooks ctx transition) {state after : State}
@@ -322,7 +325,7 @@ theorem settle_keeps (contract : HookContract hooks inv) (phases : Phases inv) (
       refine microStep_keeps contract phases facts ?_ ran
       intro next made
       simp only [Except.ok.injEq] at made
-      exact made ▸ reoffer_keeps contract facts holds offered)
+      exact made ▸ reoffer_keeps contract phases facts holds offered)
     (fun _ _ holds _ ran => by
       refine microStep_keeps contract phases facts ?_ ran
       intro next ended
