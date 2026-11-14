@@ -14,7 +14,8 @@ only what is fresh. Removal keeps it because a body that stays has its scope occ
 (`Laws.State.Cleared.bodies`), so its body occurrence, which owns that scope occurrence and lies directly above it,
 stays, and so do its instances' scope occurrences, which lie directly below it, but for one the removal leaves itself,
 which `LeavesOwned` excludes: an active instance's scope occurrence is owned by no occurrence and holds no handler.
-Instances lie `Apart` in every well-formed state, so the lane carries `Owned` instead. `Kernel.Proofs.MultiInstance.Formed`
+Instances lie `Apart` in every well-formed state, so the lane carries `Owned` instead. The state operations and phases
+also keep what an input keeps of its start's bodies (`Since`), which gives `RunsGenerated`. `Kernel.Proofs.MultiInstance.Formed`
 carries it through the registered hooks. It reaches the Laws modules of Multi-Instance and Scopes, so it imports the
 registry's Laws module, which puts it in every feature's rebuild cone (guard 15). Nothing executable imports this
 module.
@@ -415,5 +416,370 @@ theorem runsFramed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellForme
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
     rw [Laws.State.recordEnd_eq]
     exact holds.2.carry (.equal rfl rfl rfl rfl)⟩
+
+/-! ## What an input keeps of its start's bodies
+
+Only an arrival sets a body's slot record afresh, and it arrives on the occurrence whose start the input's draft
+journalled last (`Laws.Step.HookContract.arriveMultiInstance`), so an input carries, from its start `b`, that no
+occurrence keyed by a body of `b` has a start in the draft (`Unstarted`): such an occurrence was begun at `b`, and a
+begin starts an unbegun reservation or a fresh occurrence, under a key no begun one has. Beside it the input carries
+what it keeps of the bodies of `b` (`Snapshots`): every other operation keeps a body's record, removes it or records an
+instance's output in it. `Unstarted` reads no body's record, so the Multi-Instance hooks keep it through their feature
+record (`Proofs.Cancellation.Alongside`); `Snapshots` reads only the records, so each hook keeps it by what it sets
+(`Kernel.Proofs.MultiInstance.Formed`). -/
+
+section Since
+
+open Kernel.Laws.State (key)
+open Kernel.Laws.MultiInstance (SnapshotFixed Opens recorded)
+open Kernel.Laws.Step (EndsStep)
+open Kernel.Proofs.Cancellation (Alongside)
+
+/-! ### The invariant -/
+
+/-- What an input keeps of the occurrences its start `b`'s bodies are keyed by: each was issued and begun, and none has
+a start in the draft. -/
+structure Unstarted (b s : State) : Prop where
+  below : ∀ earlier ∈ b.slots.multiInstances, earlier.occurrence < s.nextIssue
+  begun : ∀ earlier ∈ b.slots.multiInstances, ∀ o ∈ s.occurrences, o.id = earlier.occurrence → o.begun = true
+  unstarted : ∀ earlier ∈ b.slots.multiInstances, ∀ o ∈ s.occurrences, o.id = earlier.occurrence →
+    key s o ∉ s.draft.started.map (·.occurrence)
+
+/-- What an input keeps of its start `b`'s bodies: a record keyed by one of them keeps its snapshot, and any other has
+a slot. -/
+structure Snapshots (b s : State) : Prop where
+  fixed : ∀ earlier ∈ b.slots.multiInstances, ∀ run ∈ s.slots.multiInstances, run.occurrence = earlier.occurrence →
+    SnapshotFixed earlier run
+  generated : ∀ run ∈ s.slots.multiInstances, (∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ run.occurrence) →
+    0 < run.instances.length
+
+/-- `WellFormed` and what the input from `b` keeps of `b`'s bodies. -/
+def Since (b : State) (program : Program) (s : State) : Prop :=
+  WellFormed program s ∧ Unstarted b s ∧ Snapshots b s
+
+/-- What an operation from `s` to `t` keeps of what `Unstarted` reads: every occurrence `t` holds is one of `s` under
+the same key, unchanged if begun, or issued since, and the draft's starts stay. -/
+structure Moves (s t : State) : Prop where
+  issued : s.nextIssue ≤ t.nextIssue
+  held : ∀ o' ∈ t.occurrences, (∃ o ∈ s.occurrences, o'.id = o.id ∧ key t o' = key s o ∧ (o.begun = true → o' = o)) ∨
+    s.nextIssue ≤ o'.id
+  started : t.draft.started = s.draft.started
+
+theorem Moves.ofEnds {s t : State} {spare : Option Nat} (step : EndsStep s t spare)
+    (started : t.draft.started = s.draft.started) : Moves s t :=
+  ⟨step.issued, fun o' inside => (step.held o' inside).imp_right (·.1), started⟩
+
+theorem Moves.same {s t : State} (occurrences : t.occurrences = s.occurrences) (scopes : t.scopes = s.scopes)
+    (named : t.instanceId = s.instanceId) (issued : s.nextIssue ≤ t.nextIssue)
+    (started : t.draft.started = s.draft.started) : Moves s t :=
+  ⟨issued, fun o' inside => .inl ⟨o', occurrences ▸ inside, rfl,
+    Laws.State.key_congr (Laws.State.instanceOf_congr scopes named _), fun _ => rfl⟩, started⟩
+
+/-- An occurrence keyed by a body of `b` that `t` holds is the record `s` held, under the same key. -/
+theorem Unstarted.record {b s t : State} (kept : Unstarted b s)
+    (held : ∀ o' ∈ t.occurrences, (∃ o ∈ s.occurrences, o'.id = o.id ∧ key t o' = key s o ∧ (o.begun = true → o' = o)) ∨
+      s.nextIssue ≤ o'.id)
+    {earlier : MultiInstanceRun} (member : earlier ∈ b.slots.multiInstances) {o' : Occurrence}
+    (inside : o' ∈ t.occurrences) (named : o'.id = earlier.occurrence) : o' ∈ s.occurrences ∧ key t o' = key s o' := by
+  rcases held o' inside with ⟨o, old, same, ⟨keyed, unchanged⟩⟩ | fresh
+  · obtain rfl := unchanged (kept.begun earlier member o old (same.symm.trans named))
+    exact ⟨old, keyed⟩
+  · have := kept.below earlier member
+    omega
+
+theorem Unstarted.move {b s t : State} (kept : Unstarted b s) (moves : Moves s t) : Unstarted b t := by
+  refine ⟨fun earlier member => Nat.lt_of_lt_of_le (kept.below earlier member) moves.issued,
+    fun earlier member o inside named => ?_, fun earlier member o inside named => ?_⟩
+  · exact kept.begun earlier member o (kept.record moves.held member inside named).1 named
+  · obtain ⟨old, keyed⟩ := kept.record moves.held member inside named
+    rw [keyed, moves.started]
+    exact kept.unstarted earlier member o old named
+
+/-- A start journalled for an occurrence `t` holds that was no begun occurrence of `s` keeps `Unstarted`: it is a
+reservation of `s`, under its key, which no other occurrence has, or fresh, under a key the counters had not issued. -/
+theorem Unstarted.start {program : Program} {b s t : State} {spare : Option Nat} {fact : StartedFact}
+    {begun : Occurrence} (formed : WellFormed program s) (kept : Unstarted b s) (step : EndsStep s t spare)
+    (started : t.draft.started = s.draft.started ++ [fact]) (named : fact.occurrence = key t begun)
+    (present : begun ∈ t.occurrences) (unbegun : ∀ o ∈ s.occurrences, o.id = begun.id → o.begun = false) :
+    Unstarted b t := by
+  have held : ∀ o' ∈ t.occurrences, (∃ o ∈ s.occurrences, o'.id = o.id ∧ key t o' = key s o ∧ (o.begun = true → o' = o)) ∨
+      s.nextIssue ≤ o'.id := fun o' inside => (step.held o' inside).imp_right (·.1)
+  refine ⟨fun earlier member => Nat.lt_of_lt_of_le (kept.below earlier member) step.issued,
+    fun earlier member o inside same => ?_, fun earlier member o inside same => ?_⟩
+  · exact kept.begun earlier member o (kept.record held member inside same).1 same
+  obtain ⟨old, keyed⟩ := kept.record held member inside same
+  rw [started, List.map_append, List.mem_append, keyed]
+  rintro (inDraft | newest)
+  · exact kept.unstarted earlier member o old same inDraft
+  rw [List.map_singleton, List.mem_singleton, named] at newest
+  rcases step.held begun present with ⟨r, inS, ids, ⟨rekeyed, _⟩⟩ | ⟨_, uncounted⟩
+  · obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys old inS (newest.trans rekeyed)
+    have := unbegun o old ids.symm
+    rw [kept.begun earlier member o old same] at this
+    cases this
+  · exact uncounted (newest ▸ formed.occurrencesCounted o old)
+
+theorem Snapshots.shrink {b s t : State} (kept : Snapshots b s)
+    (bodies : ∀ run ∈ t.slots.multiInstances, run ∈ s.slots.multiInstances) : Snapshots b t :=
+  ⟨fun earlier member run inside same => kept.fixed earlier member run (bodies run inside) same,
+    fun run inside apart => kept.generated run (bodies run inside) apart⟩
+
+/-- A record no body of `b` is keyed by is `Generated` with its slot count. -/
+theorem Snapshots.generatedOf {b s : State} {run : MultiInstanceRun} (kept : Snapshots b s)
+    (member : run ∈ s.slots.multiInstances) :
+    (∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ run.occurrence) →
+      Laws.MultiInstance.Generated run run.instances.length :=
+  fun apart => ⟨rfl, kept.generated run member apart⟩
+
+theorem Snapshots.same {b s t : State} (kept : Snapshots b s)
+    (same : t.slots.multiInstances = s.slots.multiInstances) : Snapshots b t :=
+  kept.shrink fun _ inside => same ▸ inside
+
+/-- Setting a body's record that keeps the snapshot of a body of `b` it is keyed by, or has a slot, keeps
+`Snapshots`. -/
+theorem Snapshots.setRun {b s : State} {next : MultiInstanceRun} (kept : Snapshots b s)
+    (fixed : ∀ earlier ∈ b.slots.multiInstances, earlier.occurrence = next.occurrence → SnapshotFixed earlier next)
+    (generated : (∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ next.occurrence) → 0 < next.instances.length) :
+    Snapshots b (Feature.MultiInstance.setRun s next) := by
+  refine ⟨fun earlier member run inside same => ?_, fun run inside apart => ?_⟩
+  · rcases Laws.MultiInstance.mem_setRun inside with ⟨old, _⟩ | rfl
+    · exact kept.fixed earlier member run old same
+    · exact fixed earlier member same.symm
+  · rcases Laws.MultiInstance.mem_setRun inside with ⟨old, _⟩ | rfl
+    · exact kept.generated run old apart
+    · exact generated apart
+
+/-! ### Snapshots -/
+
+theorem snapshotFixed_refl (run : MultiInstanceRun) : SnapshotFixed run run :=
+  ⟨rfl, rfl, rfl, rfl, rfl, fun _ _ filled => filled⟩
+
+theorem snapshotFixed_trans {first second third : MultiInstanceRun} (one : SnapshotFixed first second)
+    (two : SnapshotFixed second third) : SnapshotFixed first third :=
+  ⟨two.collection.trans one.collection, two.count.trans one.count, two.scope.trans one.scope,
+    two.element.trans one.element, two.occurrence.trans one.occurrence,
+    fun index output filled => two.filledStays index output (one.filledStays index output filled)⟩
+
+/-- Recording an active instance's output keeps the body's snapshot. -/
+theorem recorded_fixed {run : MultiInstanceRun} {index : Nat} {scope : ScopeOccurrenceId} {output : Option Value}
+    (results : List String) (slot : run.instances[index]? = some (.active scope)) :
+    SnapshotFixed run (recorded run index output results) := by
+  refine ⟨rfl, List.length_set .., rfl, rfl, rfl, fun other filled completed => ?_⟩
+  by_cases same : index = other
+  · subst same
+    rw [slot] at completed
+    cases completed
+  · simp only [recorded, List.getElem?_set_ne same]
+    exact completed
+
+/-- Entering instances keeps the body's snapshot: they open waiting slots only. -/
+theorem opens_fixed {s : State} {base next : MultiInstanceRun} {loop : MultiInstance} (opens : Opens s base next loop) :
+    SnapshotFixed base next := by
+  have field : ∀ {α : Type} (read : MultiInstanceRun → α), (∀ instances, read { base with instances } = read base) →
+      read next = read base := fun read keeps => by rw [opens.kept]; exact keeps _
+  refine ⟨field (·.collection) fun _ => rfl, opens.length, field (·.scope) fun _ => rfl, field (·.element) fun _ => rfl,
+    field (·.occurrence) fun _ => rfl, fun index output filled => ?_⟩
+  by_cases named : index ∈ Feature.MultiInstance.opening loop.mode base.instances
+  · rw [Laws.MultiInstance.opening_waiting named] at filled
+    cases filled
+  · rw [opens.unopened index named]
+    exact filled
+
+/-! ### The state operations -/
+
+/-- The state operations keep `Unstarted`: each moves the occurrences and keys as `Laws.Step.EndsStep` says and keeps
+the draft's starts; the Multi-Instance ones as well, since it reads no body's record. -/
+theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
+  frame s _ moved kept := kept.move (.same moved.occurrences moved.scopes moved.instanceId
+    (Nat.le_of_eq moved.nextIssue.symm) (by rw [moved.draft]))
+  signalBegin s _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+  issue s kept := by
+    rw [Laws.State.issue_eq]
+    exact kept.move (.same rfl rfl rfl (Nat.le_succ _) rfl)
+  enterScope _ s element parent locals owner formed kept :=
+    kept.move (.ofEnds (Laws.Step.enterScope_frame formed element parent locals owner) (by rw [Laws.State.enterScope_eq]))
+  enterCalled _ s called call variables definition formed kept :=
+    kept.move (.ofEnds (Laws.Step.enterCalled_frame formed called call variables definition)
+      (by rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]))
+  reserve _ s element scope formed kept :=
+    kept.move (.ofEnds (Laws.Step.reserve_frame formed element scope)
+      (congrArg (·.started) (Laws.State.reserve_reserves s element scope).draft))
+  leaveScope _ _ _ formed present _ kept :=
+    kept.move (.ofEnds (Laws.Step.leaveScope_frame formed present) (Laws.State.leaveScope_left formed present).started)
+  clearInside _ _ _ keep formed present inside kept :=
+    kept.move (.ofEnds (Laws.Step.clearInside_frame formed present inside)
+      (Laws.State.clearInside_cleared formed present keep).started)
+  disarm _ s host _ kept := kept.move (.ofEnds (Laws.Step.disarm_frame s host) (by rw [Laws.State.disarm_eq]))
+  setVariable _ s target name value _ kept :=
+    kept.move (.ofEnds (Laws.Step.setVariable_frame s target name value)
+      (congrArg (·.started) (Laws.State.setVariable_same s target name value).draft))
+  removeVariable _ s target name _ kept :=
+    kept.move (.ofEnds (Laws.Step.removeVariable_frame s target name)
+      (congrArg (·.started) (Laws.State.removeVariable_same s target name).draft))
+  storeRuns _ _ _ _ _ kept := kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+  instanceBegin s _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+  defer s _ kept := by
+    rw [Laws.State.deferBegins_eq]
+    exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+  leaveInstance _ _ _ _ formed _ _ present kept :=
+    kept.move (.ofEnds (Laws.Step.leaveScope_frame formed present) (Laws.State.leaveScope_left formed present).started)
+  runs _ _ kept := kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+
+/-- The state operations the hooks apply keep `Snapshots`: none sets a body's record, and each keeps or removes
+some. -/
+theorem snapshots_frameAlongside (b : State) : FrameAlongside (Snapshots b) where
+  frame _ _ moved kept := kept.shrink fun _ inside => moved.multiInstances ▸ inside
+  signalBegin s _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.same rfl
+  issue s kept := by
+    rw [Laws.State.issue_eq]
+    exact kept.same rfl
+  enterScope _ s element parent locals owner _ kept := by
+    rw [Laws.State.enterScope_eq]
+    exact kept.same rfl
+  enterCalled _ s called call variables definition formed kept := by
+    rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
+    exact kept.same rfl
+  reserve _ s element scope _ kept :=
+    kept.shrink fun _ inside => (Laws.State.reserve_reserves s element scope).slots ▸ inside
+  leaveScope _ _ _ formed present _ kept := kept.shrink (Laws.State.leaveScope_left formed present).slots.bodies
+  clearInside _ _ _ keep formed present _ kept :=
+    kept.shrink (Laws.State.clearInside_cleared formed present keep).slots.bodies
+  disarm _ s host _ kept := by
+    rw [Laws.State.disarm_eq]
+    exact kept.same rfl
+  setVariable _ s target name value _ kept :=
+    kept.shrink fun _ inside => (Laws.State.setVariable_same s target name value).slots ▸ inside
+  removeVariable _ s target name _ kept :=
+    kept.shrink fun _ inside => (Laws.State.removeVariable_same s target name).slots ▸ inside
+  storeRuns _ _ _ _ _ kept := kept.same rfl
+
+/-- The state operations keep `Unstarted` and `Snapshots` together. -/
+theorem since_frameAlongside (b : State) : FrameAlongside fun s => Unstarted b s ∧ Snapshots b s :=
+  have one := (unstarted_alongside b).toFrameAlongside
+  have two := snapshots_frameAlongside b
+  { frame := fun s t moved kept => ⟨one.frame s t moved kept.1, two.frame s t moved kept.2⟩
+    signalBegin := fun s request fits kept => ⟨one.signalBegin s request fits kept.1, two.signalBegin s request fits kept.2⟩
+    issue := fun s kept => ⟨one.issue s kept.1, two.issue s kept.2⟩
+    enterScope := fun program s element parent locals owner formed kept =>
+      ⟨one.enterScope program s element parent locals owner formed kept.1,
+        two.enterScope program s element parent locals owner formed kept.2⟩
+    enterCalled := fun program s called call variables definition formed kept =>
+      ⟨one.enterCalled program s called call variables definition formed kept.1,
+        two.enterCalled program s called call variables definition formed kept.2⟩
+    reserve := fun program s element scope formed kept =>
+      ⟨one.reserve program s element scope formed kept.1, two.reserve program s element scope formed kept.2⟩
+    leaveScope := fun program s scope formed present leaves kept =>
+      ⟨one.leaveScope program s scope formed present leaves kept.1, two.leaveScope program s scope formed present leaves kept.2⟩
+    clearInside := fun program s scope keep formed present inside kept =>
+      ⟨one.clearInside program s scope keep formed present inside kept.1,
+        two.clearInside program s scope keep formed present inside kept.2⟩
+    disarm := fun program s host formed kept => ⟨one.disarm program s host formed kept.1, two.disarm program s host formed kept.2⟩
+    setVariable := fun program s target name value formed kept =>
+      ⟨one.setVariable program s target name value formed kept.1, two.setVariable program s target name value formed kept.2⟩
+    removeVariable := fun program s target name formed kept =>
+      ⟨one.removeVariable program s target name formed kept.1, two.removeVariable program s target name formed kept.2⟩
+    storeRuns := fun program s compensation formed fresh kept =>
+      ⟨one.storeRuns program s compensation formed fresh kept.1, two.storeRuns program s compensation formed fresh kept.2⟩ }
+
+/-- Dropping a record keeps both: it moves no key and no body's record. -/
+theorem since_withoutRecord {b t : State} (id : Nat) (kept : Unstarted b t ∧ Snapshots b t) :
+    Unstarted b (Laws.State.withoutRecord t id) ∧ Snapshots b (Laws.State.withoutRecord t id) :=
+  ⟨kept.1.move (.ofEnds (Laws.Step.withoutRecord_frame t id) rfl), kept.2.same rfl⟩
+
+/-- The start of a begun reservation or a fresh occurrence of a well-formed `s`, which keeps every body's record. -/
+theorem since_start {program : Program} {b s t : State} {spare : Option Nat} {fact : StartedFact} {begun : Occurrence}
+    (formed : WellFormed program s) (kept : Unstarted b s ∧ Snapshots b s) (step : EndsStep s t spare)
+    (started : t.draft.started = s.draft.started ++ [fact]) (named : fact.occurrence = key t begun)
+    (present : begun ∈ t.occurrences) (unbegun : ∀ o ∈ s.occurrences, o.id = begun.id → o.begun = false)
+    (slots : t.slots = s.slots) : Unstarted b t ∧ Snapshots b t :=
+  ⟨kept.1.start formed step started named present unbegun, kept.2.shrink fun _ inside => slots ▸ inside⟩
+
+/-! ### `Step`'s phases -/
+
+/-- `Step`'s phases keep both: journalling empties the draft, a begin starts an admitted reservation, which is unbegun,
+or a fresh occurrence, and cancelling withdraws items and removes an occurrence (`FrameAlongside.removeOccurrence`). -/
+theorem since_stepAlongside (b : State) : StepAlongside fun s => Unstarted b s ∧ Snapshots b s where
+  toFrameAlongside := since_frameAlongside b
+  journal _ _ _ _ kept _ _ := ⟨⟨kept.1.below, kept.1.begun, fun _ _ _ _ _ => by simp⟩, kept.2.same rfl⟩
+  runOrder _ _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
+  dequeue _ _ _ _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
+  untoken _ _ _ _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
+  begin _ s request role sourceType formed stands admitted _ _ kept := by
+    have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
+    have present : (s.beginOccurrence request role sourceType).2 ∈ (s.beginOccurrence request role sourceType).1.occurrences := by
+      rw [begins.occurrences]
+      exact List.mem_append_right _ (List.mem_singleton_self _)
+    refine since_start formed kept (Laws.Step.beginOccurrence_frame formed stands admitted role sourceType) begins.started
+      rfl present (fun o member same => ?_) begins.slots
+    rcases begins.source with ⟨reserved, source⟩ | fresh
+    · have named : reserved.id ∈ Laws.State.names request := by simp [Laws.State.names, source.named]
+      exact ((admitted.2.1 reserved.id named).1.2 o member (same.trans source.id)).1
+    · have below := formed.issued.occurrences o member
+      rw [same, fresh.id] at below
+      exact absurd below (Nat.lt_irrefl _)
+  cancel _ s id formed kept := by
+    have side := since_frameAlongside b
+    cases found : s.occurrence? id with
+    | none =>
+      rw [Laws.State.cancelOccurrence_absent found]
+      exact kept
+    | some occurrence =>
+      obtain ⟨ended, cancelled, cancels⟩ := Laws.State.cancelOccurrence_some found
+      have formedWithdrawn := (Laws.State.withdrawAll
+        (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) _
+        (Laws.State.disarm_wellFormed (Laws.State.closeOwnItems_wellFormed formed id) id)).1
+      obtain ⟨items, withdrawn⟩ := Laws.State.withdrawAll_frame
+        (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
+      rw [← Laws.State.withdrawOccurrence_eq] at formedWithdrawn withdrawn
+      have closed : Unstarted b (s.closeOwnItems id) ∧ Snapshots b (s.closeOwnItems id) := by
+        rw [Laws.State.closeOwnItems_eq]
+        exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
+      have disarmed := side.disarm _ _ id (Laws.State.closeOwnItems_wellFormed formed id) closed
+      have withdrawnKept : Unstarted b (s.withdrawOccurrence id) ∧ Snapshots b (s.withdrawOccurrence id) := by
+        rw [withdrawn]
+        exact ⟨disarmed.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), disarmed.2.same rfl⟩
+      have removed := side.removeOccurrence (fun _ id _ kept => since_withoutRecord id kept) (id := id) formedWithdrawn
+        withdrawnKept
+      rw [cancels]
+      exact ⟨removed.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), removed.2.same rfl⟩
+
+/-- The completion pipeline's own phases keep `Since` where they keep `WellFormed`: starting a reservation starts an
+unbegun occurrence, removing one is `FrameAlongside.removeOccurrence`, and journalling an end moves nothing either
+reads. -/
+theorem since_pipelinePhases (b : State) (pipeline : Laws.Step.PipelinePhases WellFormed) :
+    Laws.Step.PipelinePhases (Since b) where
+  startReserved program s occurrence sourceType holds member unnamed := by
+    refine ⟨pipeline.startReserved _ _ occurrence sourceType holds.1 member unnamed, ?_⟩
+    rw [Laws.State.closeOwnItems_eq]
+    suffices started : Unstarted b (s.startReserved occurrence sourceType).1 ∧
+        Snapshots b (s.startReserved occurrence sourceType).1 from
+      ⟨started.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), started.2.same rfl⟩
+    cases begun : occurrence.begun
+    · have starts := Laws.State.startReserved_starts s sourceType begun
+      have present : { occurrence with begun := true } ∈ (s.startReserved occurrence sourceType).1.occurrences := by
+        rw [starts.occurrences]
+        exact List.mem_map.mpr ⟨occurrence, member, by simp⟩
+      refine since_start (begun := { occurrence with begun := true }) holds.1 holds.2
+        (Laws.Step.startReserved_frame holds.1 member sourceType) starts.started rfl present (fun o inside same => ?_)
+        starts.slots
+      obtain rfl := Laws.State.nodup_map_eq holds.1.distinct.occurrences inside member same
+      exact begun
+    · rw [Laws.State.startReserved_begun s sourceType begun]
+      exact holds.2
+  removeOccurrence program _ occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
+    ⟨⟨removed.1, (since_frameAlongside b).removeOccurrence (fun _ id _ kept => since_withoutRecord id kept) holds.1
+      holds.2⟩, removed.2⟩
+  recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
+    rw [Laws.State.recordEnd_eq]
+    exact ⟨holds.2.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), holds.2.2.same rfl⟩⟩
+
+end Since
 
 end Kernel.Proofs.MultiInstance

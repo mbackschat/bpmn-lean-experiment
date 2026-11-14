@@ -123,7 +123,7 @@ structure MultiInstanceKeeps (inv : Program → State → Prop) : Prop where
   arrive : ∀ ctx header envelope loop occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     occurrence.begun = true → occurrence.role = .multiInstanceBody → header.id = occurrence.element →
     ((ctx.program.element? header.id).bind (·.envelope?)).bind (·.multiInstance) = some loop →
-    (∀ run ∈ state.slots.multiInstances, run.occurrence ≠ occurrence.id) →
+    state.draft.started.getLast?.map (·.occurrence) = some (Laws.State.key state occurrence) →
     Feature.MultiInstance.arriveMultiInstance ctx header envelope loop occurrence state = .ok after →
     inv ctx.program after
   completeBody : ∀ ctx header envelope loop occurrence state after, inv ctx.program state →
@@ -201,9 +201,9 @@ theorem registered_contract_of {inv : Program → State → Prop} (ops : Feature
   arriveActivity _ _ _ _ _ _ holds member begun unstarted role ran := by
     rw [Laws.Registry.hooks_arriveActivity] at ran
     exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted role ran
-  arriveMultiInstance _ _ _ _ _ _ _ holds member begun body named looped unrun ran := by
+  arriveMultiInstance _ _ _ _ _ _ _ holds member begun body named looped newest ran := by
     rw [Laws.Registry.hooks_arriveMultiInstance] at ran
-    exact multiInstance.arrive _ _ _ _ _ _ _ holds member begun body named looped unrun ran
+    exact multiInstance.arrive _ _ _ _ _ _ _ holds member begun body named looped newest ran
   arriveScope _ _ _ _ _ _ _ holds member begun ready ran := by
     rw [Laws.Registry.hooks_arriveScope] at ran
     exact Laws.Scopes.arriveScope_keeps (ops.scopes _) holds member begun ready ran
