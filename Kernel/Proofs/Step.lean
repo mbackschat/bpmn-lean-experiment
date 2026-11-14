@@ -9,6 +9,7 @@ public import Kernel.Laws.Subscriptions
 public import Kernel.Laws.Data
 public import Kernel.Laws.Work
 public import Kernel.Laws.Compensation
+public import Kernel.Laws.MultiInstance
 public import Kernel.Laws.Hooks
 public import Kernel.Proofs.State
 public import Kernel.Laws.State.Removal
@@ -278,6 +279,11 @@ theorem joinOps : Laws.Flow.JoinOps Laws.State.WellFormed Laws.State.Settled whe
     (Laws.State.signal_claimed formed (fun _ same => by simp at same) (fun _ _ _ _ same => by simp at same))
     (Laws.State.signal_settled formed (fun _ same => by simp at same) (fun _ _ _ _ _ _ same => by simp at same))
 
+/-- The Multi-Instance operations record (`Laws.MultiInstance.MultiInstanceOps`) of `WellFormed`. -/
+theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps Laws.State.WellFormed Laws.State.Settled where
+  bodies _ run formed member := formed.settled.bodies run member
+  complete _ _ leave writes rule formed settled := unnamed_wellFormed formed settled.2.2 leave writes rule
+
 /-- Starts' operations record (`Laws.Starts.StartsOps`) of `WellFormed`. -/
 theorem startsOps : Laws.Starts.StartsOps Laws.State.WellFormed where
   clock _ atMs formed := Laws.State.clock_wellFormed formed atMs
@@ -499,6 +505,14 @@ theorem registered_arriveGateway : ∀ ctx header payload occurrence state after
   intro _ _ _ _ _ _ formed member begun ran
   rw [Laws.Registry.hooks_arriveGateway] at ran
   exact Laws.Flow.arriveGateway_keeps joinOps formed member begun ran
+
+/-- `HookContract.completeBody` of the registered hooks. -/
+theorem registered_completeBody : ∀ ctx header envelope loop occurrence state after, Laws.State.WellFormed state →
+    occurrence ∈ state.occurrences →
+    Registry.hooks.completeBody ctx header envelope loop occurrence state = .ok after → Laws.State.WellFormed after := by
+  intro _ _ _ _ _ _ _ formed _ ran
+  rw [Laws.Registry.hooks_completeBody] at ran
+  exact Laws.MultiInstance.completeBody_keeps multiInstanceOps formed ran
 
 /-- `HookContract.cancelled` of the registered hooks: no feature is told, so nothing changes. -/
 theorem registered_cancelled : ∀ ctx occurrence state after, Laws.State.WellFormed state →

@@ -2,6 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Laws.State
+public import Kernel.Feature.MultiInstance
 import all Kernel.Feature.MultiInstance
 
 /-! # Laws of Multi-Instance Activities
@@ -323,5 +324,29 @@ theorem partial_output_rejected :
     early.noOutput "out" rfl { scope := root, entries := [("out", .list [])] } (by simp) (.list []) (by simp)
   simp only [entered, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl <;> simp [firstLocals, secondLocals] at entry
+
+/-! ## Preservation
+
+A body that completes completes the occurrence its run holds, which may since have left the state; `MultiInstanceOps`
+names what such an occurrence keeps as `settled`, which `Kernel.Proofs.Step` fills with `Laws.State.Settled`. -/
+
+/-- What the Multi-Instance hooks need of the state operations they apply, for an invariant `inv` and what the
+occurrence a body completes keeps, `settled`. -/
+structure MultiInstanceOps (inv : State → Prop) (settled : State → Nat → Prop) : Prop where
+  bodies : ∀ state run, inv state → run ∈ state.slots.multiInstances → settled state run.occurrence
+  complete : ∀ state id leave writes rule, inv state → settled state id →
+    inv (state.signal (.complete id leave writes rule))
+
+/-- `Hooks.completeBody` keeps `inv`: an idle body completes its run's occurrence. -/
+theorem completeBody_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : MultiInstanceOps inv settled)
+    {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance} {occurrence : Occurrence}
+    {state after : State} (holds : inv state)
+    (ran : Feature.MultiInstance.completeBody ctx header envelope loop occurrence state = .ok after) : inv after := by
+  unfold Feature.MultiInstance.completeBody Feature.MultiInstance.runOf? at ran
+  split at ran
+  · cases ran
+  · rename_i run found
+    cases ran
+    exact ops.complete _ _ _ _ _ holds (ops.bodies _ _ holds (List.mem_of_find?_eq_some found))
 
 end Kernel.Laws.MultiInstance

@@ -102,6 +102,10 @@ theorem hooks_triggerActivity : Registry.hooks.triggerActivity = Feature.Work.tr
 theorem hooks_completeCall : Registry.hooks.completeCall = Feature.Work.completeCall := by
   simp only [Registry.hooks]
 
+/-- Multi-Instance completes every idle body. -/
+theorem hooks_completeBody : Registry.hooks.completeBody = Feature.MultiInstance.completeBody := by
+  simp only [Registry.hooks]
+
 /-- Data applies every write. -/
 theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOutputs := by
   simp only [Registry.hooks]
