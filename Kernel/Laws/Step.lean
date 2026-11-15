@@ -266,6 +266,11 @@ theorem step_eq {hooks : Hooks} {program : Program} {before : Option State} {inp
           onRunning hooks ctx (.effectResult data) before (deliverEffectResult hooks ctx data) := by
   unfold step; rfl
 
+/-- `Step.admittedStartsFired` restated: a start's submitted values are admitted before its starts are fired. -/
+theorem admittedStartsFired_eq {hooks : Hooks} {ctx : Ctx} {input : StartInput} :
+    admittedStartsFired hooks ctx input = (admitValues (input.variables.map (·.2)) *> hooks.startsFired ctx input) := by
+  unfold admittedStartsFired; rfl
+
 theorem onRunning_eq {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Option State}
     {transition : State → Outcome} :
     onRunning hooks ctx input before transition =

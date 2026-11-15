@@ -40,4 +40,15 @@ def FailedSourcesRead : Prop :=
     Laws.Data.FailedSource mapping.dialect code
       ((fun read => read.bind (·.lookup mapping.target)) <$> ctx.evaluateMappings context [mapping])
 
+/-! ## Proofs -/
+
+/-- `ValuesRejectedWhole`, for every hooks record: the values are admitted before any hook runs
+(`Laws.Step.step_refusesValues`), and admission refuses every value outside the domain
+(`Laws.Hooks.inValueDomain_sound`). -/
+theorem valuesRejectedWhole (hooks : Hooks) : ValuesRejectedWhole hooks := by
+  intro program before input values submits _ outside
+  obtain ⟨binding, mem, notIn⟩ := outside
+  exact Laws.Step.step_refusesValues submits
+    (Laws.Hooks.admitValues_rejects ⟨binding.2, List.mem_map_of_mem mem, notIn⟩)
+
 end Kernel.Proofs.Former

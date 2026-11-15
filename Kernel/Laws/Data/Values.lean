@@ -126,6 +126,100 @@ def AdmitsWhole (values : List Value) (result : Except Failure Unit) : Prop :=
   ((∃ value ∈ values, ¬ InDomain value) → result = .error (.rejected "value-outside-domain")) ∧
   ((∀ value ∈ values, InDomain value) → result = .ok ())
 
+/-! ## The measures, character by character
+
+What the measures above count for one character and for an Integer's spelling, read from the core library's UTF-8
+encoding and decimal digits, so `Kernel.Laws.Hooks` checks the executable byte census against them by proof. -/
+
+/-- `charBytes` by code point. -/
+theorem charBytes_eq (character : Char) : charBytes character =
+    if character.toNat = 0x22 ∨ character.toNat = 0x5c ∨ character.toNat = 0x08 ∨ character.toNat = 0x09 ∨
+      character.toNat = 0x0a ∨ character.toNat = 0x0c ∨ character.toNat = 0x0d then 2
+    else if character.toNat < 0x20 then 6 else character.utf8Size := by
+  simp only [charBytes, ← Char.toNat_inj]
+  rfl
+
+/-- A String's UTF-8 bytes are its characters' UTF-8 sizes. -/
+theorem utf8ByteSize_eq (text : String) : text.utf8ByteSize = (text.toList.map Char.utf8Size).sum := by
+  rw [← String.size_toByteArray, ← String.utf8Encode_toList, List.utf8Encode, List.size_toByteArray,
+    List.length_flatMap]
+  simp
+
+theorem sum_map_ones {α : Type} (items : List α) (measure : α → Nat)
+    (ones : ∀ item ∈ items, measure item = 1) :
+    (items.map measure).sum = items.length := by
+  induction items with
+  | nil => rfl
+  | cons item rest step =>
+    simp only [List.map_cons, List.sum_cons, List.length_cons, ones item (by simp),
+      step fun other mem => ones other (by simp [mem])]
+    omega
+
+/-- With fuel at least the value, `digitsWithin` counts the core library's decimal digits. -/
+theorem digitsWithin_eq {fuel value : Nat} (enough : value ≤ fuel) :
+    digitsWithin fuel value = (Nat.toDigits 10 value).length := by
+  induction fuel generalizing value with
+  | zero => cases Nat.le_zero.mp enough; rw [Nat.toDigits_zero]; rfl
+  | succ fuel step =>
+    rw [Nat.toDigits_eq_ite (by decide +kernel)]
+    unfold digitsWithin
+    split
+    · rfl
+    · rw [step (by omega)]; simp; omega
+
+/-- An Integer's spelling: a minus sign for a negative one, then the decimal digits of its magnitude. -/
+theorem toString_int_toList (value : Int) :
+    (toString value).toList = (if value < 0 then ['-'] else []) ++ Nat.toDigits 10 value.natAbs := by
+  rw [Int.toString_eq_repr, Int.repr_eq_ite]
+  split
+  · rename_i nonnegative
+    simp [Int.not_lt.mpr nonnegative, show value.toNat = value.natAbs by omega]
+  · rename_i negative
+    simp [Int.not_le.mp negative, show (-value).toNat = value.natAbs by omega]
+
+theorem spelled_length (value : Int) : (toString value).toList.length = digitBytes value := by
+  rw [toString_int_toList, digitBytes, digitsWithin_eq (Nat.le_refl _)]
+  split <;> simp <;> omega
+
+/-- Every character of an Integer's spelling, a digit or the minus sign, takes one byte in UTF-8 and in a JSON
+string literal. -/
+theorem spelled_chars (value : Int) :
+    ∀ character ∈ (toString value).toList, charBytes character = 1 ∧ character.utf8Size = 1 := by
+  intro character mem
+  have bounds : 0x2d ≤ character.toNat ∧ character.toNat ≤ 0x39 ∧ character.toNat ≠ 0x2e ∧
+      character.toNat ≠ 0x2f := by
+    rw [toString_int_toList] at mem
+    have digit : character ∈ Nat.toDigits 10 value.natAbs → 0x30 ≤ character.toNat ∧ character.toNat ≤ 0x39 :=
+      fun digits => by
+        have spelled := Nat.isDigit_of_mem_toDigits (b := 10) (by decide +kernel) (by decide +kernel) digits
+        simp only [Char.isDigit, Bool.and_eq_true, decide_eq_true_eq] at spelled
+        exact ⟨spelled.1, spelled.2⟩
+    split at mem
+    · simp only [List.cons_append, List.nil_append, List.mem_cons] at mem
+      rcases mem with rfl | digits
+      · decide +kernel
+      · have := digit digits; omega
+    · have := digit (by simpa using mem); omega
+  have one : character.utf8Size = 1 := Char.utf8Size_eq_one_iff.mpr (show character.toNat ≤ 0x7f by omega)
+  refine ⟨?_, one⟩
+  rw [charBytes_eq, one]
+  split
+  · omega
+  · split <;> omega
+
+/-- An Integer's spelling takes `digitBytes` UTF-8 bytes. -/
+theorem toString_int_bytes (value : Int) : (toString value).utf8ByteSize = digitBytes value := by
+  rw [utf8ByteSize_eq, sum_map_ones _ _ fun character mem => (spelled_chars value character mem).2, spelled_length]
+
+theorem toString_nat_bytes (value : Nat) : (toString value).utf8ByteSize = digitBytes value := by
+  have spelled := toString_int_bytes value
+  rw [Int.toString_eq_repr, Int.repr_eq_ite] at spelled
+  simpa using spelled
+
+/-- An Integer's spelling as a JSON string literal takes its digits and two quotes. -/
+theorem textBytes_int (value : Int) : textBytes (toString value) = 2 + digitBytes value := by
+  rw [textBytes, sum_map_ones _ _ fun character mem => (spelled_chars value character mem).1, spelled_length]
+
 /-! ## Mapping sources -/
 
 /-- How a mapping whose source fails to evaluate with `code` reads, by its dialect: a Data Association's source is

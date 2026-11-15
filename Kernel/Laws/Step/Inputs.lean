@@ -158,6 +158,30 @@ theorem step_unknown {hooks : Hooks} {program : Program} {state : State} {input 
     simp only [inputCtx] at items
     simp [deliverEffectResult_eq, addressed, items]
 
+/-- An input submitting values `admitValues` refuses, a start's variables or a variable command's values, is rejected
+whatever the hooks and the before-state: the values are admitted before any hook or lookup runs. -/
+theorem step_refusesValues {hooks : Hooks} {program : Program} {before : Option State} {input : Input}
+    {values : List (String × Value)} {failure : Failure}
+    (submits : (∃ payload : StartInput, input = .start payload ∧ payload.variables = values) ∨
+      ∃ payload : CommandInput, input = .command payload ∧ payload.action = .setVariables values)
+    (refused : admitValues (values.map (·.2)) = .error failure) :
+    ∃ code, step hooks program before input = .error (.rejected code) := by
+  have rejected := Laws.Hooks.admitValues_error refused
+  subst rejected
+  rcases submits with ⟨payload, rfl, rfl⟩ | ⟨payload, rfl, action⟩
+  · rw [step_eq]
+    cases before with
+    | some _ => exact ⟨_, rfl⟩
+    | none => exact ⟨"value-outside-domain", by simp [admittedStartsFired_eq, refused, SeqRight.seqRight, bind,
+        Except.bind]⟩
+  · rw [step_eq]
+    cases before with
+    | none => exact ⟨_, by dsimp only; rw [onRunning_eq]⟩
+    | some state =>
+      refine onRunning_rejects fun s _ => ⟨"value-outside-domain", ?_⟩
+      rw [command_eq]
+      simp [action, refused, SeqRight.seqRight, Except.bind]
+
 theorem command_ok {hooks : Hooks} {ctx : Ctx} {data : CommandInput} {state after : State}
     (ran : command hooks ctx data state = .ok after) : Commands hooks ctx state after := by
   rw [command_eq] at ran
