@@ -66,6 +66,21 @@ structure Unmoved (s t : State) : Prop where
   deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens
   pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element
 
+/-- `Unmoved` stating only the fields a change moves: every other field holds by definition, so a field added to
+`Unmoved` is one edit here. -/
+theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl)
+    (occurrences : t.occurrences = s.occurrences := by exact rfl) (nextIssue : t.nextIssue = s.nextIssue := by exact rfl)
+    (activations : t.activations = s.activations := by exact rfl) (journal : t.journal = s.journal := by exact rfl)
+    (draft : t.draft = s.draft := by exact rfl) (instanceId : t.instanceId = s.instanceId := by exact rfl)
+    (multiInstances : t.slots.multiInstances = s.slots.multiInstances := by exact rfl)
+    (runs : t.slots.compensation.runs = s.slots.compensation.runs := by exact rfl)
+    (begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals := by exact rfl)
+    (deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens := by exact rfl)
+    (pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element :=
+      by exact fun _ held => held) : Unmoved s t :=
+  ⟨scopes, occurrences, nextIssue, activations, journal, draft, instanceId, multiInstances, runs, begins, deferred,
+    pending⟩
+
 /-- `scope` is the context of a handler or group a compensation run of `s` holds running. -/
 def RunningContext (s : State) (scope : ScopeOccurrenceId) : Prop :=
   ∃ run ∈ s.slots.compensation.runs, scope ∈ run.running.map (·.1)
@@ -174,8 +189,8 @@ theorem FrameAlongside.signal {rel : State → Prop} (side : FrameAlongside rel)
   have pending := fun pending => Laws.Step.occurPending_of (s := s) (t := { s with signals := s.signals ++ [signal] })
     (fun element inside => by rwa [Laws.Step.occursOf_append, quiet.2, List.append_nil] at inside)
     (fun _ member => member) (element := pending)
-  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl,
-    by rw [Laws.Step.beginsOf_append, quiet.1, List.append_nil], rfl, pending⟩ kept
+  exact side.frame s _ (.same (begins := by rw [Laws.Step.beginsOf_append, quiet.1, List.append_nil])
+    (pending := pending)) kept
 
 /-- Removing an occurrence of a well-formed state keeps what the state operations keep and dropping a record that owns
 no scope occurrence keeps: `State.removeOccurrence` drops the record and then leaves the scope occurrences it owns,
@@ -256,10 +271,10 @@ theorem FrameAlongside.withdrawOccurrence {rel : State → Prop} (side : FrameAl
   obtain ⟨items, frame⟩ := Laws.State.withdrawAll_frame
     (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
   rw [Laws.State.withdrawOccurrence_eq, frame]
-  refine side.frame ((s.closeOwnItems id).disarm id) _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩
+  refine side.frame ((s.closeOwnItems id).disarm id) _ .same
     (side.disarm program _ id (Laws.State.closeOwnItems_wellFormed formed id) ?_)
   rw [Laws.State.closeOwnItems_eq]
-  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ kept
+  exact side.frame s _ .same kept
 
 /-- Cancelling an occurrence of a well-formed state withdraws its items (`FrameAlongside.withdrawOccurrence`), removes
 it (`FrameAlongside.removeOccurrence`, given what dropping a record that owns no scope occurrence keeps) and journals
@@ -311,7 +326,7 @@ theorem closurePhases_alongside {rel : Program → State → Prop} (phases : Law
     Laws.Step.ClosurePhases fun program s => WellFormed program s ∧ rel program s where
   clock _ s atMs holds :=
     ⟨phases.clock _ _ atMs holds.1,
-      (side _).frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ holds.2⟩
+      (side _).frame s _ .same holds.2⟩
   journal _ s transition holds started ended :=
     ⟨phases.journal _ _ transition holds.1 started ended, (side _).journal _ s transition holds.1 holds.2 started ended⟩
   dequeue _ s signals holds fewer :=
@@ -341,8 +356,7 @@ theorem closurePhases_alongside {rel : Program → State → Prop} (phases : Law
   endInstance _ s status failure holds recorded := by
     refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩
     rw [Laws.Step.endInstance_eq]
-    exact (side _).frame (s.clearInside State.root) _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl,
-      fun _ held => held⟩
+    exact (side _).frame (s.clearInside State.root) _ .same
       ((side _).clearInside _ s State.root [] holds.1 holds.1.rooted.1 (fun _ _ none => by cases none) holds.2)
   begin _ s request role sourceType holds stands admitted roled bodied assigned origin :=
     have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled bodied assigned
@@ -370,14 +384,14 @@ variable {rel : State → Prop}
 theorem FrameAlongside.hold (side : FrameAlongside rel) {s : State} (kept : rel s) (held : Held) :
     rel (s.hold held) := by
   rw [Laws.Hooks.hold_eq]
-  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ kept
+  exact side.frame s _ .same kept
 
 /-- An open item is an issue and an added item. -/
 theorem FrameAlongside.openItem (side : FrameAlongside rel) {s : State} (kept : rel s) (kind : OpenKind)
     (occurrence : Occurrence) : rel (s.openItem kind occurrence) := by
   refine side.frame s.issue.1 _ ?_ (side.issue s kept)
   rw [Laws.State.openItem_eq, Laws.State.issue_eq]
-  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩
+  exact .same
 
 /-- A subscription is a reservation of a reservable element, an issue and an added item. -/
 theorem FrameAlongside.openSubscription (side : FrameAlongside rel) {program : Program}
@@ -387,19 +401,19 @@ theorem FrameAlongside.openSubscription (side : FrameAlongside rel) {program : P
   refine side.frame (s.reserve element scope).1.issue.1 _ ?_
     (side.issue _ (occurs.reserve s element scope formed reservable kept))
   rw [Laws.State.openSubscription_eq, Laws.State.issue_eq]
-  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩
+  exact .same
 
 /-- Closing an item moves nothing `rel` reads. -/
 theorem FrameAlongside.closeItem (side : FrameAlongside rel) {s : State} (kept : rel s) (id : Nat) :
     rel (s.closeItem id) := by
   rw [Laws.State.closeItem_eq]
-  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ kept
+  exact side.frame s _ .same kept
 
 /-- Withdrawing the items inside a scope occurrence moves nothing `rel` reads. -/
 theorem FrameAlongside.withdrawInside (side : FrameAlongside rel) {s : State} (kept : rel s)
     (scope : ScopeOccurrenceId) : rel (s.withdrawInside scope) := by
   rw [Laws.State.withdrawInside_eq]
-  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ kept
+  exact side.frame s _ .same kept
 
 end Items
 

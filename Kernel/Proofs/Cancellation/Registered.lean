@@ -55,7 +55,7 @@ theorem workOps_alongside (side : FrameAlongside rel) {program : Program}
   cancel s holds := ⟨ops.cancel s holds.1, side.signal holds.2 _⟩
   rekind s change holds kept keep :=
     ⟨ops.rekind s change holds.1 kept keep,
-      side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ holds.2⟩
+      side.frame s _ .same holds.2⟩
   workKind s item holds member waits := ops.workKind s item holds.1 member waits
   activity := ops.activity
   distinct s holds := ops.distinct s holds.1
@@ -84,8 +84,8 @@ theorem flowOps_alongside (side : FrameAlongside rel) {program : Program}
     Laws.Flow.FlowOps fun s => WellFormed program s ∧ rel s where
   emit s flows scope holds stands := ⟨ops.emit s flows scope holds.1 stands, by
     rw [Laws.State.emit_eq]
-    exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl,
-      by rw [Laws.Step.deferredOf_append, Laws.Step.deferredOf_flows, List.append_nil], fun _ held => held⟩ holds.2⟩
+    exact side.frame s _ (.same (deferred := by
+      rw [Laws.Step.deferredOf_append, Laws.Step.deferredOf_flows, List.append_nil])) holds.2⟩
   complete s occurrence leave writes rule holds member begun :=
     ⟨ops.complete s occurrence leave writes rule holds.1 member begun, side.signal holds.2 _⟩
 
@@ -93,9 +93,9 @@ theorem joinOps_alongside (side : FrameAlongside rel) {program : Program}
     (ops : Laws.Flow.JoinOps (WellFormed program) Laws.State.Settled) :
     Laws.Flow.JoinOps (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
   park s waiting holds waits :=
-    ⟨ops.park s waiting holds.1 waits, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ holds.2⟩
+    ⟨ops.park s waiting holds.1 waits, side.frame s _ .same holds.2⟩
   unpark s keep holds :=
-    ⟨ops.unpark s keep holds.1, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ holds.2⟩
+    ⟨ops.unpark s keep holds.1, side.frame s _ .same holds.2⟩
   parked s waiting holds member := ops.parked s waiting holds.1 member
   begun s occurrence holds member begun := ops.begun s occurrence holds.1 member begun
   reparked := ops.reparked
@@ -145,7 +145,7 @@ theorem startsOps_alongside (side : FrameAlongside rel) {program : Program}
     (ops : Laws.Starts.StartsOps (WellFormed program)) :
     Laws.Starts.StartsOps fun s => WellFormed program s ∧ rel s where
   clock s atMs holds :=
-    ⟨ops.clock s atMs holds.1, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ holds.2⟩
+    ⟨ops.clock s atMs holds.1, side.frame s _ .same holds.2⟩
   complete s occurrence leave writes rule holds member begun :=
     ⟨ops.complete s occurrence leave writes rule holds.1 member begun, side.signal holds.2 _⟩
 
@@ -186,7 +186,7 @@ theorem propagationOps_alongside (side : FrameAlongside rel) {program : Program}
     ⟨ops.raise s raised occurrence holds.1 member begun, side.signal holds.2 _⟩
   fire s item fired holds := ⟨ops.fire s item fired holds.1, side.signal holds.2 _⟩
   outbox s outbox holds :=
-    ⟨ops.outbox s outbox holds.1, side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ holds.2⟩
+    ⟨ops.outbox s outbox holds.1, side.frame s _ .same holds.2⟩
   compensate s occurrence scope activity trigger leave holds member begun :=
     ⟨ops.compensate s occurrence scope activity trigger leave holds.1 member begun, side.signal holds.2 _⟩
   terminate s occurrence holds member begun :=
@@ -258,7 +258,7 @@ theorem subscriptionsOps_alongside (side : FrameAlongside rel) {program : Progra
   fire s item fired holds := ⟨ops.fire s item fired holds.1, side.signal holds.2 _⟩
   rekind s change holds kept waits :=
     ⟨ops.rekind s change holds.1 kept waits,
-      side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ holds.2⟩
+      side.frame s _ .same holds.2⟩
   awaits := ops.awaits
   disarm s host holds := ⟨ops.disarm s host holds.1, side.disarm program s host holds.1 holds.2⟩
   openItem s kind occurrence holds member begun unstarted role :=
