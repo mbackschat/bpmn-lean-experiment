@@ -249,6 +249,14 @@ theorem opening_running {instances : List Iteration} (running : ∃ scope, Itera
   · rename_i quiet
     exact absurd (List.any_eq_true.mpr ⟨_, active, rfl⟩) quiet
 
+/-- A body that opens a slot runs in parallel or has no running instance. -/
+theorem opening_quiet {mode : MultiInstanceMode} {instances : List Iteration}
+    (opened : Feature.MultiInstance.opening mode instances ≠ []) :
+    mode = .parallel ∨ ∀ scope, Iteration.active scope ∉ instances := by
+  cases mode with
+  | parallel => exact .inl rfl
+  | sequential => exact .inr fun scope active => opened (opening_running ⟨scope, active⟩)
+
 /-- A sequential body with no running instance opens its first waiting slot. -/
 theorem opening_idle {instances : List Iteration} (idle : ∀ scope, Iteration.active scope ∉ instances) {index : Nat} :
     index ∈ Feature.MultiInstance.opening .sequential instances ↔

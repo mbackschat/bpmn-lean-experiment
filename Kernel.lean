@@ -110,6 +110,7 @@ public import Kernel.Proofs.MultiInstance
 public import Kernel.Proofs.MultiInstance.Formed
 public import Kernel.Proofs.MultiInstance.Framed
 public import Kernel.Proofs.MultiInstance.Hooks
+public import Kernel.Proofs.MultiInstance.Instances
 public import Kernel.Proofs.MultiInstance.Numbered
 public import Kernel.Proofs.MultiInstance.Occurs
 public import Kernel.Proofs.MultiInstance.Records
