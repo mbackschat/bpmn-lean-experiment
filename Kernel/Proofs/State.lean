@@ -78,6 +78,7 @@ theorem stateFacts : Laws.Step.StateFacts where
   declaring _ _ _ _ found := Laws.State.declaring?_stands found
   owner _ _ _ _ found := Laws.State.owner?_holds found
   instanceRoot := Laws.State.instanceRoot_stands
+  parentBusy := Laws.State.busyScopes_parent
 
 /-- What the state operations the hooks apply keep of `WellFormed` (`Laws.State`). -/
 theorem operations : Laws.Step.Operations WellFormed where

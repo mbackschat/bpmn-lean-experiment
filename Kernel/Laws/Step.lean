@@ -618,6 +618,58 @@ theorem idleScope_mem {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
   · simp at idle
   · exact List.mem_of_find?_eq_some idle
 
+/-- The idle scope occurrence the closure completes has no child scope occurrence, since a parent is busy
+(`StateFacts.parentBusy`): a nested Call's root keeps the scope occurrence it lies in from completing. -/
+theorem idleScope?_childless (facts : StateFacts) {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
+    (idle : idleScope? ctx state = some scope) : ∀ child ∈ state.scopes, child.parent ≠ some scope.id := by
+  intro child member linked
+  unfold idleScope? at idle
+  split at idle
+  · simp at idle
+  · have chosen := List.find?_some idle
+    simp only [Bool.and_eq_true, Bool.not_eq_true'] at chosen
+    have busy := facts.parentBusy state child member scope.id linked
+    simp [busy] at chosen
+
+/-- An idle scope occurrence completes through the hook of the occurrence its own `occurrence` names, which stands,
+never one found otherwise, and through `Hooks.completeCall` only as a called instance's root (`CALLN-RETURN-01`). -/
+theorem completeIdleScope_called (facts : StateFacts) {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrence}
+    {state after : State} (ran : completeIdleScope hooks ctx scope state = .ok after) :
+    ∃ occurrence ∈ state.occurrences, scope.occurrence = some occurrence.id ∧
+      ((∃ header payload, hooks.completeScope ctx header payload scope occurrence state = .ok after) ∨
+        (∃ header payload, scope.calledInstance.isSome = true ∧
+          hooks.completeCall ctx header payload scope occurrence state = .ok after) ∨
+        ∃ header envelope loop, hooks.completeBody ctx header envelope loop occurrence state = .ok after) := by
+  unfold completeIdleScope at ran
+  dsimp only at ran
+  cases owner : scope.occurrence.bind state.occurrence? with
+  | none => simp [owner] at ran
+  | some occurrence =>
+    simp only [owner] at ran
+    obtain ⟨id, owned, found⟩ := Option.bind_eq_some_iff.mp owner
+    obtain ⟨member, named⟩ := facts.found _ _ _ found
+    refine ⟨occurrence, member, named ▸ owned, ?_⟩
+    cases known : ctx.program.element? occurrence.element with
+    | none => simp [known] at ran
+    | some element =>
+      simp only [known] at ran
+      cases loop : bodyLoop? element occurrence with
+      | some pair =>
+        simp only [loop] at ran
+        exact .inr (.inr ⟨_, _, _, ran⟩)
+      | none =>
+        simp only [loop] at ran
+        cases element with
+        | scope header payload => exact .inl ⟨_, _, ran⟩
+        | activity header payload =>
+          dsimp only at ran
+          split at ran
+          · exact .inr (.inl ⟨_, _, ‹_›, ran⟩)
+          · simp at ran
+        | event header payload => simp at ran
+        | gateway header payload => simp at ran
+        | start header payload => simp at ran
+
 /-- A parked join offered again ran its gateway's hook on the state the closure reached, for an occurrence it found. -/
 theorem reoffer_ok {hooks : Hooks} {ctx : Ctx} {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId}
     {offered : State} (ran : reoffer? hooks ctx state = .ok (some (gateway, scope, offered))) :

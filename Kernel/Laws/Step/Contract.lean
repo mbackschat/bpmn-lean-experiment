@@ -664,6 +664,9 @@ structure StateFacts : Prop where
     ∃ variables ∈ state.variables, variables.scope = found
   /-- An instance root is the process root or a scope occurrence that stands. -/
   instanceRoot : ∀ (state : State) scope, state.instanceRoot scope = State.root ∨ ScopeStands state (state.instanceRoot scope)
+  /-- A scope occurrence with a child is busy. -/
+  parentBusy : ∀ (state : State) child, child ∈ state.scopes → ∀ parent, child.parent = some parent →
+    parent ∈ state.busyScopes
 
 /-- What the state operations the hooks' bodies apply must keep of `inv`, under the conditions a hook establishes, and
 what `inv` tells a hook of the state it runs on: the obligations each feature's operations record draws on (see the

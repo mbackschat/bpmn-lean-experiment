@@ -69,6 +69,13 @@ theorem enterScope_names (state : State) (element : ElementId) (parent : ScopeOc
   · subst fresh
     exact keyed_names locals
 
+/-- A scope occurrence with a child is busy (`State.busyScopes`). -/
+theorem busyScopes_parent (state : State) (child : ScopeOccurrence) (member : child ∈ state.scopes)
+    (parent : ScopeOccurrenceId) (linked : child.parent = some parent) : parent ∈ state.busyScopes := by
+  rw [busyScopes_eq]
+  simp only [List.mem_append]
+  exact .inl (.inr (List.mem_filterMap.mpr ⟨child, member, linked⟩))
+
 /-! ## Clearing and leaving -/
 
 /-- Clearing a scope occurrence keeps the instance identity. -/

@@ -30,6 +30,12 @@ theorem compensate_ne_begin {scope : ScopeOccurrenceId} {activity : Option Eleme
 theorem begin_inj {request other : BeginRequest} (same : Signal.begin request = .begin other) : request = other :=
   Signal.begin.inj same
 
+/-- Queued completions that are one complete one occurrence, by one leave, with one set of writes under one rule. -/
+theorem complete_inj {id other : Nat} {leave leave' : Leave} {writes writes' : List (String × Value)}
+    {rule rule' : WriteRule} (same : Signal.complete id leave writes rule = .complete other leave' writes' rule') :
+    id = other ∧ leave = leave' ∧ writes = writes' ∧ rule = rule' :=
+  Signal.complete.inj same
+
 /-- A queued completion is no begin, reservation or compensation. -/
 theorem complete_apart {id : Nat} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule} :
     (∀ request, Signal.begin request ≠ .complete id leave writes rule) ∧
