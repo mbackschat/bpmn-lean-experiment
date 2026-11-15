@@ -368,7 +368,8 @@ that pair the same way, or `a` runs once along one token's path (`runsOnce`) and
 `runsOnce` a second token completes `a` after `b` (a conditioned path from `a` to `b` beside a fork, the review's
 witness; a fork sending a second token to `a`, though every path to `b` passes `a`); without `reaches` one token
 returns to `a` through an Activity or a boundary flow; and a Scope around `a` entered again hands its parent the records
-of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading. -/
+of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading. A handler runs once
+per record, so one that two subjects name is held against itself too, unless their records are ordered (#155). -/
 def compensationFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
   if !reading.compensates element then none
   else
@@ -393,7 +394,8 @@ def compensationFanOut (reading : Reading) (program : Program) (element : Elemen
     let rec pairs : List Element → Option String
       | [] => none
       | handler :: rest =>
-        (rest.filter (!ordered handler ·)).findSome? (fun other => conflict program (unit handler) (unit other)) <|>
+        let against := (if (subjectsOf program handler).length ≥ 2 then [handler] else []) ++ rest
+        (against.filter (!ordered handler ·)).findSome? (fun other => conflict program (unit handler) (unit other)) <|>
           pairs rest
     pairs (handlersOf reading program element)
 

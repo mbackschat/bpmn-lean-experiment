@@ -14,7 +14,7 @@ import { test } from "node:test";
 import {
   activity, append, base, boundary, callWork, catchEvent, compensationTrigger, definitionRef, end, errorTrigger,
   escalationTrigger, eventSubProcess, flow, gateway, literalValue, loop, mapping, refusalOf, refusalTests, replace, scope,
-  signal, simpleBoolean, start, terminateThrow, text, userWork, withOptions,
+  signal, simpleBoolean, start, terminateThrow, text, userWork, variable, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -225,6 +225,27 @@ const handlersInReenteredScope = (reenters: boolean) => {
     undoAll()));
 };
 
+/**
+ * #155's witness as IL, since the reader refuses its BPMN source, which names one handler from two subjects, as
+ * `il.reference`: a root fork into the User Tasks `A` and `B`, joined before the Compensation throw `X`, whose
+ * Compensation boundaries name the handler `H`, `B`'s only when `shared`. When `writes`, `H` runs `HR`, which reads
+ * `outcome` into `seen`, then `HW`, which writes `outcome`, so the two runs of `H` one throw begins, one per record
+ * (BPMN 2.0.2 §13.5.5), interleave in an order no input states; else both write nothing.
+ */
+const sharedHandler = (shared: boolean, writes = true) => {
+  const subject = (id: string, named: boolean): Json => activity(id, userWork(), named
+    ? { compensationHandlers: ["H"], boundaries: [boundary(`C${id}`, compensationTrigger, { interrupting: false })] } : {});
+  const [read, readInner] = writer("HR", "seen", "", "H", { outputs: writes ? [mapping("seen", variable("outcome"))] : [] });
+  const [written, writtenInner] = writer("HW", "outcome", "undone", "H", writes ? {} : { outputs: [] });
+  const [tail, tailFlows] = undoAll();
+  return model([start("S"), gateway("F", "parallel"), subject("A", true), subject("B", shared), gateway("J", "parallel"),
+    scope("H", "embedded", {}, { forCompensation: true, incoming: [], outgoing: [] }), start("HS", null, [], "H"), ...read,
+    ...written, end("HE", "none", "H"), ...tail],
+  [flow("f1", "S", "F"), flow("fa", "F", "A"), flow("fb", "F", "B"), flow("aj", "A", "J"), flow("bj", "B", "J"),
+    flow("jx", "J", "X"), flow("hs", "HS", "HR"), flow("hr", "HR", "HW"), flow("hw", "HW", "HE"), ...readInner,
+    ...writtenInner, ...tailFlows]);
+};
+
 /** A root Parallel fork into `first` and the User Task `B`, each to its own End. */
 const forkBeside = (first: Json[], firstFlows: Json[], into: string) => model(
   [start("S"), gateway("F", "parallel"), ...first, activity("B", userWork()), end("BE")],
@@ -405,6 +426,12 @@ const rows: Row[] = [
     control: handlersInReenteredScope(false),
   },
   {
+    code: "flow.concurrentWrite",
+    description: "one handler's two runs, one per subject naming it, writing what the other reads",
+    mutate: sharedHandler(true),
+    control: sharedHandler(false),
+  },
+  {
     code: "flow.concurrentInterference",
     description: "an Error End no catcher takes beside a sibling branch",
     mutate: forkBeside([end("A", raiseError)], [], "A"),
@@ -500,6 +527,10 @@ test("flow fan-out: compensation handlers whose subjects a Sequence Flow orders 
     [flow("f1", "S", "F"), flow("fa", "F", "A"), flow("fu", "F", "U"), flow("u", "U", "UE"), flow("ab", "A", "B"),
       flow("bg", "B", "G"), flow("ga", "G", "A", simpleBoolean()), flow("gx", "G", "X")]], undoAll()));
   assert.equal(refusalOf(looping(base())), null);
+});
+
+test("flow fan-out: a handler serving two subjects whose runs write nothing is not held against itself", () => {
+  assert.equal(refusalOf(sharedHandler(true, false)(base())), null);
 });
 
 test("flow fan-out: a parallel Multi-Instance Call whose called process lets an Error escape is refused", () => {
