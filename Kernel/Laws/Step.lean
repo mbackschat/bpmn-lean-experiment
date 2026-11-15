@@ -90,6 +90,42 @@ theorem settle_induction {hooks : Hooks} {ctx : Ctx} (invariant : State → Prop
               (.finish running (by assumption) (by assumption) (by assumption) offered (by assumption) ran)
           · cases ran; exact holds
 
+/-- The closure has nothing left to run in `state` but, once its root is idle, the instance's completion: no queued
+signal, no token to move, no idle scope occurrence and no parked join that fires when it is offered again. -/
+@[expose] def Quiescent (hooks : Hooks) (ctx : Ctx) (state : State) : Prop :=
+  state.signals = [] ∧ nextToken ctx state = none ∧ idleScope? ctx state = none ∧ reoffer? hooks ctx state = .ok none
+
+/-- A committed closure stopped where `Step.settle` stops: at a state that is not running, at a quiescent state whose
+root is busy, or with the instance's completion micro-step from a quiescent state whose root is idle. Which hooks
+`Step.conclude` then runs decides the completed state's status, so it is not stated here. -/
+theorem settle_ok_settled {hooks : Hooks} {ctx : Ctx} : ∀ {fuel work : Nat} {state after : State},
+    settle hooks ctx fuel work state = .ok after → after.status ≠ .running ∨
+      (Quiescent hooks ctx after ∧ after.idle State.root = false) ∨ ∃ last, Quiescent hooks ctx last ∧
+        last.idle State.root = true ∧ microStep hooks ctx (.idle State.root) none State.root
+          (fun state => .ok (endInstance .completed none state)) last = .ok after := by
+  intro fuel
+  induction fuel with
+  | zero => intro _ _ _ ran; simp [settle] at ran
+  | succ fuel ih =>
+    intro work state after ran
+    unfold settle at ran
+    split at ran
+    · simp at ran
+    split at ran
+    · cases ran; exact .inl (by simpa using ‹(state.status != .running) = true›)
+    split at ran
+    · obtain ⟨_, _, ran⟩ := bind_ok ran; exact ih ran
+    · obtain ⟨_, _, ran⟩ := bind_ok ran; exact ih ran
+    · split at ran
+      · obtain ⟨_, _, ran⟩ := bind_ok ran; exact ih ran
+      · obtain ⟨found, offered, ran⟩ := bind_ok ran
+        split at ran
+        · obtain ⟨_, _, ran⟩ := bind_ok ran; exact ih ran
+        · have quiet : Quiescent hooks ctx state := ⟨by assumption, by assumption, by assumption, offered⟩
+          split at ran
+          · exact .inr (.inr ⟨state, quiet, by assumption, ran⟩)
+          · cases ran; exact .inr (.inl ⟨quiet, by simpa using ‹¬state.idle State.root = true›⟩)
+
 /-! ## Routing a flow token -/
 
 /-- A committed move of a flow token is one micro-step whose body routes the token along its flow. -/
