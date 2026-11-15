@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, append, base, boundary, callWork, catchEvent, compensationTrigger, definitionRef, end, errorTrigger,
+  activity, append, base, boundary, callWork, catchEvent, compensationTrigger, definitionRef, elementId, end, errorTrigger,
   escalationTrigger, eventSubProcess, flow, gateway, literalValue, loop, mapping, refusalOf, refusalTests, replace, scope,
   signal, simpleBoolean, start, terminateThrow, text, userWork, variable, withOptions,
 } from "./admission-refusal-support.ts";
@@ -531,6 +531,17 @@ test("flow fan-out: compensation handlers whose subjects a Sequence Flow orders 
 
 test("flow fan-out: a handler serving two subjects whose runs write nothing is not held against itself", () => {
   assert.equal(refusalOf(sharedHandler(true, false)(base())), null);
+});
+
+test("flow fan-out: an Event Sub-Process handler whose one subject subjectsOf lists twice is not held against itself", () => {
+  // As the reader emits it, the Sub-Process `A` names its Compensation Event Sub-Process `AK` as a handler, so `AK`'s
+  // subject `A` is both its namer and its parent; `AK`'s run writes `outcome`, which a self-pair would refuse.
+  const [handled, inner] = selfHandled("A", "outcome", "a");
+  const named = handled.map((element) => (elementId(element) === "A"
+    ? scope("A", "embedded", {}, { compensationHandlers: ["AK"] }) : element));
+  const [tail, tailFlows] = undoAll();
+  const shape = model([start("S"), ...named, ...tail], [flow("f1", "S", "A"), flow("ax", "A", "X"), ...inner, ...tailFlows]);
+  assert.equal(refusalOf(shape(base())), null);
 });
 
 test("flow fan-out: a parallel Multi-Instance Call whose called process lets an Error escape is refused", () => {

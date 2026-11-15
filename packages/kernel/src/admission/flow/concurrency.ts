@@ -552,8 +552,8 @@ function writeFanOut(reading: Reading, program: Program, element: Element): stri
  * review's witness; a fork sending a second token to `a`, though every path to `b` passes `a`); without `reaches` one
  * token returns to `a` through an Activity or a boundary flow; and a Scope around `a` entered again hands its parent the
  * records of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading. A handler
- * runs once per record, so one that two subjects name is held against itself too, unless their records are ordered
- * (#155).
+ * runs once per record, so one that two distinct subjects name is held against itself too, unless their records are
+ * ordered (#155); an Event Sub-Process handler, whose one subject `subjectsOf` lists twice, is not.
  */
 function compensationFanOut(reading: Reading, program: Program, element: Element): string | null {
   if (!reading.compensates(element)) return null;
@@ -582,7 +582,8 @@ function compensationFanOut(reading: Reading, program: Program, element: Element
       first === second || joinedBy(first, second) || joinedBy(second, first)));
   const handlers = handlersOf(reading, program, element);
   for (const [index, handlerElement] of handlers.entries()) {
-    const against = [...(subjectsOf(program, handlerElement).length >= 2 ? [handlerElement] : []), ...handlers.slice(index + 1)];
+    const distinct = new Set(subjectsOf(program, handlerElement)).size;
+    const against = [...(distinct >= 2 ? [handlerElement] : []), ...handlers.slice(index + 1)];
     const found = firstOf(against.filter((other) => !ordered(handlerElement, other)),
       (other) => conflict(program, unit(handlerElement), unit(other)));
     if (found !== null) return found;
