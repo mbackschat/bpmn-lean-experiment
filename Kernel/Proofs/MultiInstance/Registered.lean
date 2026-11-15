@@ -398,7 +398,8 @@ theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside pro
   compensate s scope activity trigger leave element at_ resumed source rolls kept :=
     ⟨(runsFramed_occursAlongside program).compensate s scope activity trigger leave element at_ resumed
       (source.imp_right fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩)
-      (rolls.imp fun _ => And.imp_right (Laws.State.RollsBack.imp fun _ => And.imp_right And.left)) kept.1, fun apart =>
+      (rolls.imp fun _ => And.imp_right (And.imp_right (And.imp_right
+        (Laws.State.RollsBack.imp fun _ => And.imp_right And.left)))) kept.1, fun apart =>
       (kept.2 apart).signalPending rfl fun named inside => by
         rw [List.mem_singleton.mp inside]
         exact source_unlooped apart source⟩

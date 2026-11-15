@@ -214,7 +214,7 @@ theorem propagationOps_alongside (side : FrameAlongside rel) {program : Program}
     ⟨⟨disarmed.1, side.disarm program s host holds.1 holds.2⟩, disarmed.2⟩
   rollBack s scope trigger leave element parent flows holds stands bounded rolls :=
     ⟨ops.rollBack s scope trigger leave element parent flows holds.1 stands bounded (rolls.imp fun _ => And.left),
-      occurs.compensate _ _ _ _ _ _ _ _ (.inl bounded) ⟨s, rfl, rolls⟩
+      occurs.compensate _ _ _ _ _ _ _ _ (.inl bounded) ⟨s, rfl, holds.1, List.mem_map.mpr stands, rolls⟩
         (side.clearInside program s scope [] holds.1 (List.mem_map.mpr stands) (fun _ _ none => by simp at none) holds.2)⟩
 
 /-- Compensation runs' record beside `WellFormed`: a context `Laws.Compensation.RunsOps` leaves is a running one

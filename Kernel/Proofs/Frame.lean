@@ -32,9 +32,10 @@ theorem Within.up {s : State} {inner outer : ScopeOccurrenceId} (within : Within
 
 /-- What the features' records supply, for a property `rel` carried beside `WellFormed` under `program`, where they
 make or queue a reservation or a trigger: a subscription reserves a `Reservable` element; a queued `Signal.occur` or
-compensation resume names a boundary or one pending in a state that kept `rel`; a caught Cancel's compensation takes the
-trigger of the raise it was taken off (`Laws.State.RollsBack`), and a throw's compensation and raise name an occurrence
-begun from a state that kept `WellFormed` and `rel` (`Laws.State.BegunFrom`, `Laws.State.RaisesFrom`). -/
+compensation resume names a boundary or one pending in a state that kept `rel`; a caught Cancel's compensation, queued
+once a well-formed state's standing scope occurrence is cleared, takes the trigger of the raise it was taken off
+(`Laws.State.RollsBack`), and a throw's compensation and raise name an occurrence begun from a state that kept
+`WellFormed` and `rel` (`Laws.State.BegunFrom`, `Laws.State.RaisesFrom`). -/
 structure OccursAlongside (program : Program) (rel : State → Prop) : Prop where
   reserve : ∀ s element scope, WellFormed program s → Reservable program element → rel s →
     rel (s.reserve element scope).1
@@ -42,7 +43,7 @@ structure OccursAlongside (program : Program) (rel : State → Prop) : Prop wher
     rel (s.signal (.occur element scope leave writes rule))
   compensate : ∀ s scope activity trigger leave element at_ resumed,
     (BoundaryOf program element ∨ PendingIn rel element) →
-    (∃ before, s = before.clearInside scope ∧
+    (∃ before, s = before.clearInside scope ∧ WellFormed program before ∧ scope ∈ scopeIds before ∧
       Laws.State.RollsBack (fun t => WellFormed program t ∧ rel t) trigger before) → rel s →
     rel (s.signal (.compensate scope activity trigger leave (some (.occur element at_ resumed))))
   throwCompensate : ∀ s occurrence scope activity trigger leave, WellFormed program s →
