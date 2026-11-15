@@ -2,6 +2,7 @@ module
 
 public import Kernel.Laws.Step.Keeps
 public import Kernel.Laws.State.Begin
+public import Kernel.Laws.State.Chain
 public import Kernel.Laws.State.Variables
 public import Kernel.Laws.Data
 public import Kernel.Laws.Population

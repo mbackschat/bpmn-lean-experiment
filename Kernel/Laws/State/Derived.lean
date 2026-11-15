@@ -2,12 +2,12 @@ module
 
 public import Kernel.Laws.State
 
-/-! # Laws of the kernel state: what clearing and leaving a scope occurrence give
+/-! # Laws of the kernel state: what keying, clearing and leaving give
 
-The consequences of the clearing and leaving equations (`Laws.State.clearInside_eq`, `leaveScope_eq`,
-`leaveScope_slots_eq`) that the laws above read, stated over those equations without opening `Kernel.State`'s bodies,
-so `Kernel.Laws.State` keeps only what needs them. Every module that read `Kernel.Laws.State` reads it through this
-one. Nothing executable imports this module.
+The consequences of the keying, entering, clearing and leaving equations (`Laws.State.keyed_eq`, `enterScope_eq`,
+`clearInside_eq`, `leaveScope_eq`, `leaveScope_slots_eq`) that the laws above read, stated over those equations without
+opening `Kernel.State`'s bodies, so `Kernel.Laws.State` keeps only what needs them. Every module that read
+`Kernel.Laws.State` reads it through this one. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -15,6 +15,61 @@ one. Nothing executable imports this module.
 namespace Kernel.Laws.State
 
 open Kernel
+
+/-! ## Keyed variable sets -/
+
+/-- `keyed` binds each name at most once, whatever bindings it was given. -/
+theorem keyed_names (bindings : List (String × Value)) : ((keyed bindings).map (·.1)).Nodup := by
+  induction bindings with
+  | nil => simp [keyed_eq.1]
+  | cons binding rest held =>
+    rw [keyed_eq.2]
+    split
+    · exact held
+    · rename_i absent
+      refine List.nodup_cons.mpr ⟨fun member => absent ?_, held⟩
+      obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
+      exact List.any_eq_true.mpr ⟨entry, inside, beq_iff_eq.mpr named⟩
+
+/-- `keyed` keeps a binding whose name no later binding repeats. -/
+theorem mem_keyed {binding : String × Value} (earlier : List (String × Value)) {later : List (String × Value)}
+    (last : ∀ other ∈ later, other.1 ≠ binding.1) : binding ∈ keyed (earlier ++ binding :: later) := by
+  induction earlier with
+  | nil =>
+    rw [List.nil_append, keyed_eq.2]
+    split
+    · rename_i repeated
+      obtain ⟨other, inside, named⟩ := List.any_eq_true.mp repeated
+      exact absurd (beq_iff_eq.mp named) (last other (keyed_sublist later |>.subset inside))
+    · exact List.mem_cons_self ..
+  | cons first rest held =>
+    rw [List.cons_append, keyed_eq.2]
+    split
+    · exact held
+    · exact List.mem_cons_of_mem _ held
+where
+  keyed_sublist : ∀ bindings : List (String × Value), (keyed bindings).Sublist bindings
+    | [] => by simp [keyed_eq.1]
+    | binding :: rest => by
+      rw [keyed_eq.2]
+      split
+      · exact (keyed_sublist rest).cons binding
+      · exact (keyed_sublist rest).cons_cons binding
+
+/-- The variable set a new scope occurrence installs binds each name at most once, whatever locals it was given (#147). -/
+theorem enterScope_names (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
+    (locals : List (String × Value)) (occurrence : Option Nat)
+    (names : ∀ vars ∈ state.variables, (vars.entries.map (·.1)).Nodup) :
+    ∀ vars ∈ (state.enterScope element parent locals occurrence).1.variables, (vars.entries.map (·.1)).Nodup := by
+  intro vars member
+  rw [enterScope_eq] at member
+  simp only [List.mem_append, List.mem_singleton] at member
+  rcases member with old | fresh
+  · exact names vars old
+  · subst fresh
+    exact keyed_names locals
+
+/-! ## Clearing and leaving -/
 
 /-- Clearing a scope occurrence keeps the instance identity. -/
 theorem clearInside_instanceId (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
