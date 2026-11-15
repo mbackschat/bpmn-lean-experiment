@@ -99,7 +99,7 @@ theorem heldTriggers_eq (s : State) : heldTriggers s = ungroupedTriggers s ++ qu
 
 /-- What a compensation hook's state `t` keeps of an earlier one `s`: it issues on, its scope occurrences stood or were
 issued since, its counters, instance and queued signals but untriggered ones are `s`'s, it holds no trigger of a run
-that is no group's more often, and every run's trigger is one of a run of `s`. -/
+that is no group's more often, every run's trigger is one of a run of `s`, and every occurrence is one of `s`'s. -/
 structure Moves (s t : State) : Prop where
   issued : s.nextIssue ≤ t.nextIssue
   scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ s.nextIssue ≤ entry.id.value
@@ -108,17 +108,19 @@ structure Moves (s t : State) : Prop where
   signals : ∃ more, t.signals = s.signals ++ more ∧ ∀ signal ∈ more, Untriggered signal
   ungrouped : ∀ trigger, (ungroupedTriggers t).count trigger ≤ (ungroupedTriggers s).count trigger
   sources : ∀ run ∈ t.slots.compensation.runs, ∃ source ∈ s.slots.compensation.runs, source.trigger = run.trigger
+  occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences
 
 theorem Moves.refl (s : State) : Moves s s :=
   ⟨Nat.le_refl _, fun _ member => .inl member, rfl, rfl, ⟨[], by simp, by simp⟩, fun _ => Nat.le_refl _,
-    fun run member => ⟨run, member, rfl⟩⟩
+    fun run member => ⟨run, member, rfl⟩, fun _ inside => inside⟩
 
 theorem Moves.trans {s t u : State} (first : Moves s t) (second : Moves t u) : Moves s u := by
   obtain ⟨more, signals, quiet⟩ := first.signals
   obtain ⟨further, signals', quiet'⟩ := second.signals
   refine ⟨Nat.le_trans first.issued second.issued, fun entry member => ?_, second.activations.trans first.activations,
     second.named.trans first.named, ⟨more ++ further, by rw [signals', signals, List.append_assoc], fun signal inside => ?_⟩,
-    fun trigger => Nat.le_trans (second.ungrouped trigger) (first.ungrouped trigger), fun run member => ?_⟩
+    fun trigger => Nat.le_trans (second.ungrouped trigger) (first.ungrouped trigger), fun run member => ?_,
+    fun o inside => first.occurrences o (second.occurrences o inside)⟩
   · rcases second.scopes entry member with old | fresh
     · rcases first.scopes entry old with older | later
       · exact .inl older
@@ -135,7 +137,7 @@ theorem Moves.trans {s t u : State} (first : Moves s t) (second : Moves t u) : M
 theorem moves_signal (s : State) {signal : Signal} (quiet : Untriggered signal) : Moves s (s.signal signal) := by
   rw [Laws.State.signal_eq]
   exact ⟨Nat.le_refl _, fun _ member => .inl member, rfl, rfl, ⟨[signal], rfl, by simpa using quiet⟩,
-    fun _ => Nat.le_refl _, fun run member => ⟨run, member, rfl⟩⟩
+    fun _ => Nat.le_refl _, fun run member => ⟨run, member, rfl⟩, fun _ inside => inside⟩
 
 theorem tame_signal {s : State} (tame : Tame s) (signal : Signal) : Tame (s.signal signal) := by
   rw [Laws.State.signal_eq]
@@ -236,7 +238,8 @@ theorem moves_withRun (s : State) (element : ElementId) (parent : ScopeOccurrenc
   obtain ⟨_, slots, next, rest⟩ := entered_eq s element parent locals
   obtain ⟨scopes, activations, named, signals⟩ := rest
   refine ⟨by simp only [withRun, stored, next]; exact Nat.le_succ _, fun entry inside => ?_, activations, named,
-    ⟨[], by simp [withRun, stored, signals], by simp⟩, fun trigger => ?_, fun other inside => ?_⟩
+    ⟨[], by simp [withRun, stored, signals], by simp⟩, fun trigger => ?_, fun other inside => ?_,
+    fun _ inside => by simpa [withRun, stored, Laws.State.enterScope_eq] using inside⟩
   · simp only [withRun, stored, scopes, List.mem_append, List.mem_singleton] at inside
     rcases inside with old | rfl
     · exact .inl old
@@ -281,7 +284,8 @@ theorem moves_withRetained (s : State) (element : ElementId) (parent : ScopeOccu
   obtain ⟨_, slots, next, rest⟩ := entered_eq s element parent locals
   obtain ⟨scopes, activations, named, signals⟩ := rest
   refine ⟨by simp only [withRetained, stored, next]; exact Nat.le_succ _, fun entry inside => ?_, activations, named,
-    ⟨[], by simp [withRetained, stored, signals], by simp⟩, fun trigger => ?_, fun other inside => ?_⟩
+    ⟨[], by simp [withRetained, stored, signals], by simp⟩, fun trigger => ?_, fun other inside => ?_,
+    fun _ inside => by simpa [withRetained, stored, Laws.State.enterScope_eq] using inside⟩
   · simp only [withRetained, stored, scopes, List.mem_append, List.mem_singleton] at inside
     rcases inside with old | rfl
     · exact .inl old
@@ -302,7 +306,7 @@ theorem moves_fewer (s : State) {runs : List CompensationRun} (fewer : runs.Subl
     Moves s (stored s { s.slots.compensation with runs }) :=
   ⟨Nat.le_refl _, fun _ inside => .inl inside, rfl, rfl, ⟨[], by simp [stored], by simp⟩,
     ungrouped_sublist (t := stored s { s.slots.compensation with runs }) fewer,
-    fun run inside => ⟨run, fewer.subset inside, rfl⟩⟩
+    fun run inside => ⟨run, fewer.subset inside, rfl⟩, fun _ inside => inside⟩
 
 theorem counted_fewer (s : State) {runs : List CompensationRun} (fewer : runs.Sublist s.slots.compensation.runs)
     (n : Nat) : (completions (stored s { s.slots.compensation with runs }).slots.compensation).count n ≤
@@ -408,7 +412,8 @@ theorem moves_trimmed (s : State) (context : ScopeOccurrenceId) {f : Compensatio
   have runsSub := left_runs s context
   refine ⟨Nat.le_of_eq (Laws.State.leaveScope_compensation s context).2.2.2.2.symm,
     fun entry inside => .inl ((left_scopes s context).subset inside), (Laws.State.leaveScope_compensation s context).2.2.2.1,
-    (Laws.State.leaveScope_eq s context).2, ⟨[], ?_, by simp⟩, fun trigger => ?_, fun run inside => ?_⟩
+    (Laws.State.leaveScope_eq s context).2, ⟨[], ?_, by simp⟩, fun trigger => ?_, fun run inside => ?_,
+    fun _ inside => (Laws.State.leaveScope_occurrences s context).subset inside⟩
   · simp only [trimmed, stored, Laws.State.leaveScope_signals, List.append_nil]
   · simp only [ungroupedTriggers, trimmed, stored]
     rw [trims_ungrouped trims]
@@ -548,8 +553,9 @@ structure Twin (base s : State) : Prop where
   scopes : s.scopes = base.scopes
   named : s.instanceId = base.instanceId
   next : s.nextIssue = base.nextIssue
+  occurrences : s.occurrences = base.occurrences
 
-theorem Twin.refl (s : State) : Twin s s := ⟨rfl, rfl, rfl⟩
+theorem Twin.refl (s : State) : Twin s s := ⟨rfl, rfl, rfl, rfl⟩
 
 /-- A later state names no queued trigger a state twin to a well-formed `base` does not: each queued Cancel raise's
 scope occurrence was issued (`TriggersApart.issued`), so while it stands it is the one the earlier state held, in the
@@ -597,7 +603,8 @@ theorem triggers_moved {program : Program} {base s t : State} (before : WellForm
     omega
   refine ⟨⟨List.nodup_iff_count.mpr fun trigger => Nat.le_trans (held trigger)
       (List.nodup_iff_count.mp apart.apart trigger), fun run inside grouped queuedIn => ?_,
-    fun trigger inside => ?_, fun origin inside => ?_⟩, fun scope activity trigger leave resume inside => ?_⟩
+    fun trigger inside => ?_, fun origin inside => ?_, fun o inside unbegun trigger member => ?_⟩,
+    fun scope activity trigger leave resume inside => ?_⟩
   · obtain ⟨source, member, same⟩ := moves.sources run inside
     have old : source.trigger ∈ queuedTriggers s := by rw [same]; exact queued.subset queuedIn
     cases sourced : resumesGroup source.resume
@@ -613,6 +620,21 @@ theorem triggers_moved {program : Program} {base s t : State} (before : WellForm
     · exact counted_moved moves (apart.counted _ (List.mem_append_right _ (queued.subset queuedIn)))
   · rw [signals, Laws.Step.triggersOf_append, Laws.Step.triggersOf_untriggered quiet, List.append_nil] at inside
     exact Nat.lt_of_lt_of_le (apart.issued origin inside) moves.issued
+  · have was := moves.occurrences o inside
+    have scopes : ∀ entry ∈ t.scopes, entry ∈ base.scopes ∨ base.nextIssue ≤ entry.id.value := by
+      rw [← twin.scopes, ← twin.next]; exact moves.scopes
+    obtain ⟨entry, entered, named⟩ := List.mem_map.mp (before.owned.occurrenceScopes o (twin.occurrences ▸ was))
+    have below : o.scope.value < base.nextIssue := by rw [← named]; exact before.issued.scopes entry entered
+    have keyed : Laws.State.key t o = Laws.State.key s o := by
+      simp [Laws.State.key, instanceOf_moved before after scopes (moves.named.trans twin.named)
+        (after.owned.occurrenceScopes o inside) below, Laws.State.instanceOf_congr twin.scopes twin.named]
+    rw [keyed]
+    rcases List.mem_append.mp member with ran | queuedIn
+    · obtain ⟨run, runMember, rfl⟩ := List.mem_map.mp ran
+      obtain ⟨source, old, same⟩ := moves.sources run runMember
+      rw [← same]
+      exact apart.unreserved o was unbegun _ (List.mem_append_left _ (List.mem_map.mpr ⟨source, old, rfl⟩))
+    · exact apart.unreserved o was unbegun _ (List.mem_append_right _ (queued.subset queuedIn))
   · rw [signals] at inside
     rcases List.mem_append.mp inside with old | new
     · exact ungrouped scope activity trigger leave resume old
@@ -732,7 +754,8 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
     exact old
   have runs : ∀ other ∈ s.slots.compensation.runs, other ∈ queue.slots.compensation.runs := fun other inside => by
     rw [← slots]; exact inside
-  refine ⟨⟨?_, fun other inside grouped queuedIn => ?_, fun key inside => ?_, fun origin inside => ?_⟩,
+  refine ⟨⟨?_, fun other inside grouped queuedIn => ?_, fun key inside => ?_, fun origin inside => ?_,
+    fun o inside unbegun held member => ?_⟩,
     fun scope activity trigger leave resume inside => ungrouped scope activity trigger leave resume (later _ inside)⟩
   · have held : heldTriggers (opened s others run) = heldTriggers queue := by
       rw [heldTriggers_eq, heldTriggers_eq, ungroupedEq, queuedEq, List.append_assoc, List.singleton_append]
@@ -756,5 +779,19 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
     have bound := apart.issued origin old
     rw [← next] at bound
     exact bound
+  · have occurrences : s.occurrences = queue.occurrences := by rw [shape]
+    have was : o ∈ queue.occurrences := by rw [← occurrences]; exact inside
+    have keyed : Laws.State.key (opened s others run) o = Laws.State.key queue o := by
+      simp [Laws.State.key, Laws.State.instanceOf_congr (s := queue) (t := opened s others run) scopes instance_]
+    rw [keyed]
+    refine apart.unreserved o was unbegun held ?_
+    simp only [opened, stored, List.map_append, List.map_cons, List.map_nil, List.mem_append, List.mem_singleton]
+      at member
+    rcases member with (old | rfl) | queuedIn
+    · obtain ⟨other, member, rfl⟩ := List.mem_map.mp old
+      exact List.mem_append_left _ (List.mem_map.mpr ⟨other, runs other member, rfl⟩)
+    · rw [named]
+      exact List.mem_append_right _ (by rw [queuedEq]; exact List.mem_cons_self ..)
+    · exact List.mem_append_right _ (by rw [queuedEq]; exact List.mem_cons_of_mem _ queuedIn)
 
 end Kernel.Proofs.Compensation

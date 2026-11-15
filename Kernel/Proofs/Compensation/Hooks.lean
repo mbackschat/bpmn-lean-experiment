@@ -452,7 +452,7 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
       · rw [List.mem_singleton.mp new] at resumed' ⊢
         exact post.tame.grouped run member outer context resumed'
     · refine post.moves.trans ⟨Nat.le_refl _, fun entry inside => .inl inside, rfl, rfl, ⟨[], by simp [stored], by simp⟩,
-        fun key => ?_, fun other inside => ?_⟩
+        fun key => ?_, fun other inside => ?_, fun _ inside => inside⟩
       · have same := ((split.filter (!resumesGroup ·.resume)).map (·.trigger)).count_eq key
         simp only [ungroupedTriggers, stored, List.filter_append, List.map_append, List.count_append] at same ⊢
         rw [same]
@@ -635,7 +635,7 @@ theorem failCompensation_formed (hooks : Hooks) {ctx : Ctx} {handler : ScopeOccu
 theorem moves_retained (s : State) (retained : List Compensable) {next : Nat} (issued : s.nextIssue ≤ next) :
     Moves s (stored { s with nextIssue := next } { s.slots.compensation with retained }) :=
   ⟨issued, fun _ inside => .inl inside, rfl, rfl, ⟨[], by simp [stored], by simp⟩, fun _ => Nat.le_refl _,
-    fun run inside => ⟨run, inside, rfl⟩⟩
+    fun run inside => ⟨run, inside, rfl⟩, fun _ inside => inside⟩
 
 theorem completed_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence} {s t : State}
     (before : WellFormed ctx.program s) (formed : Formed (DependsIn hooks footprintReads footprintWrites ctx.program) s)
@@ -732,7 +732,7 @@ theorem compensate_formed (hooks : Hooks) {ctx : Ctx} {scope : ScopeOccurrenceId
   refine formed_of formed post.tame.retained post.tame.keyed post.tame.runsIssued
     (apart_of_counts (fun n => Nat.le_trans (post.counted n) (Nat.le_of_eq (count_opened perm rfl rfl n))) formed.completions
       formed.issued post.moves.issued) (fun run inside => ?_)
-    (triggers_moved before (⟨rfl, rfl, rfl⟩ : Twin s (opened s others _)) after post.moves triggers.1
+    (triggers_moved before (⟨rfl, rfl, rfl, rfl⟩ : Twin s (opened s others _)) after post.moves triggers.1
       triggers.2)
   rcases post.runs run inside with ⟨held, other⟩ | good
   · simp only [opened, stored, List.mem_append, List.mem_singleton] at held

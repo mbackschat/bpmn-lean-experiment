@@ -59,6 +59,14 @@ theorem leaveScope_slots (s : State) (scope : ScopeOccurrenceId) :
   rw [leaveScope_slots_eq]
   exact ⟨rfl, rfl, rfl⟩
 
+/-- Leaving a scope occurrence keeps a sublist of the occurrences. -/
+theorem leaveScope_occurrences (s : State) (scope : ScopeOccurrenceId) :
+    (s.leaveScope scope).occurrences.Sublist s.occurrences := by
+  rw [(leaveScope_eq s scope).1]
+  obtain ⟨_, made⟩ := clearInside_eq s scope []
+  rw [made]
+  exact List.filter_sublist
+
 theorem leaveScope_signals (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope scope).signals = s.signals := by
   rw [(leaveScope_eq s scope).1]
   exact clearInside_signals s scope []

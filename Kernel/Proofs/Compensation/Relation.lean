@@ -112,13 +112,19 @@ key no run has (`CompensationsFresh`): the held triggers are distinct (`heldTrig
 takes the trigger of the run whose handler began it, shares none of the queued ones; every run's and every queued
 trigger's activation was issued by its counter (`Laws.State.Counted`), so an occurrence begun afresh later is no thrower
 of one; and a queued Cancel raise's scope occurrence was issued, so no scope occurrence entered later makes it name a
-trigger (`queuedTrigger`). A group's nested run is tied to no outer run: a drop by scope occurrence
-(`Compensation.dropWithin`) may take its outer run and leave it. -/
+trigger (`queuedTrigger`). No trigger names an unbegun reservation: a throw's trigger is its begun occurrence's key,
+which no other occurrence carries (`Laws.State.Distinct.keys`), and a reservation made later is numbered above every
+counted activation; so a thrower `Step` begins, a reservation or a fresh issue, takes a key no held trigger has. A
+group's nested run is tied to no outer run: a drop by scope occurrence (`Compensation.dropWithin`) may take its outer
+run and leave it. -/
 structure TriggersApart (s : State) : Prop where
   apart : (heldTriggers s).Nodup
   grouped : ∀ run ∈ s.slots.compensation.runs, resumesGroup run.resume = true → run.trigger ∉ queuedTriggers s
   counted : ∀ trigger ∈ s.slots.compensation.runs.map (·.trigger) ++ queuedTriggers s, Counted s (triggerKey trigger)
   issued : ∀ origin, .inr origin ∈ Laws.Step.triggersOf s.signals → origin.scope.value < s.nextIssue
+  unreserved : ∀ occurrence ∈ s.occurrences, occurrence.begun = false →
+    ∀ trigger ∈ s.slots.compensation.runs.map (·.trigger) ++ queuedTriggers s,
+      triggerKey trigger ≠ Laws.State.key s occurrence
 
 /-- No queued compensation resumes a group: `Propagation` queues those that complete or occur an occurrence, and a
 group's nested run resumes its outer run directly (`Compensation.advance`). -/
@@ -233,6 +239,22 @@ theorem unissued_raise_rejected :
   have below := apart.issued { element := thrower, scope := ⟨8⟩, activation := 1 }
     (by simp [holding, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel])
   simp [holding] at below
+
+/-- An unbegun reservation of occurrence 7 of `T` in the root scope occurrence, with a Cancel raise queued from that
+occurrence. -/
+def reservedRaise : State :=
+  { holding {} [.raise .cancel { element := thrower, scope := rootScope, activation := 1 }] with
+    occurrences := [{ id := 7, element := thrower, scope := rootScope, activation := 1, begun := false }] }
+
+/-- A queued trigger that names an unbegun reservation breaks `TriggersApart`: beginning the reservation would throw
+from a key the trigger already holds. -/
+theorem reserved_trigger_rejected : ¬ TriggersApart reservedRaise := fun apart =>
+  apart.unreserved _ (List.mem_singleton_self _) rfl
+    { processInstanceId := reservedRaise.instanceOf rootScope, element := thrower, activation := 1 }
+    (List.mem_append_right _ (by
+      simp [queuedTriggers, reservedRaise, holding, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel,
+        queuedTrigger, scopeIds]))
+    rfl
 
 /-- A queued compensation that resumes a group breaks `QueuedUngrouped`. -/
 theorem queued_group_rejected :
