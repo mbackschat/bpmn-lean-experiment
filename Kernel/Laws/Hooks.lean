@@ -104,9 +104,10 @@ theorem collectionItems_lists {value : Value} {outputs : List Value}
     collectionItems value = some outputs := by
   rcases lists with rfl | ⟨texts, rfl, rfl⟩ <;> rfl
 
-/-! ## The value domain
+/-! ## The value domain and failed mapping sources
 
-What `inValueDomain` computes, against `Kernel.Laws.Data.Values`' statement of the portable value domain. -/
+What `inValueDomain` and `Ctx.evaluateMappings` compute, against `Kernel.Laws.Data.Values`' statements of the portable
+value domain and of a failed mapping source. -/
 
 /-- A fold over a byte array folds its bytes in order. -/
 private theorem foldl_data {β : Type} (f : β → UInt8 → β) (init : β) (bytes : ByteArray) :
@@ -461,5 +462,22 @@ theorem admitValues_rejects {values : List Value} (outside : ∃ value ∈ value
   have refused : values.all inValueDomain = false := Bool.eq_false_iff.mpr fun all =>
     notIn (inValueDomain_sound (List.all_eq_true.mp all value mem))
   simp [admitValues, refused]
+
+/-- `lastWrites` restated: the keyed bindings, in name order. -/
+theorem lastWrites_eq (bindings : List (String × Value)) :
+    lastWrites bindings = (keyed bindings).mergeSort fun left right => decide (left.1 ≤ right.1) := by
+  simp only [lastWrites]
+
+/-- One mapping whose source fails to evaluate with `code` reads by its dialect: a Data Association's leaves the set
+unavailable, an input or output parameter's rolls back with the code, and a Call variable's binds its target to null. -/
+theorem evaluateMappings_failed {ctx : Ctx} {context : EvalContext} {mapping : Mapping} {code : String}
+    (unresolved : ctx.evaluate context mapping.source = .failure code) :
+    ctx.evaluateMappings context [mapping] = match mapping.dialect with
+      | .dataAssociation => .ok none
+      | .ioParameter => .error (.rolledBack code)
+      | .callVariable => .ok (some (lastWrites [(mapping.target, .null)])) := by
+  unfold Ctx.evaluateMappings Ctx.evaluateMappingsWith
+  simp only [List.foldlM_cons, List.foldlM_nil, unresolved]
+  cases mapping.dialect <;> rfl
 
 end Kernel.Laws.Hooks

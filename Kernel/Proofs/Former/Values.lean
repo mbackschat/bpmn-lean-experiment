@@ -2,6 +2,7 @@ module
 
 public import Kernel.Laws.Step.Inputs
 public import Kernel.Laws.Data.Values
+import Kernel.Laws.State
 
 /-! # Proofs: the former lanes, values and mapping sources (P7)
 
@@ -50,5 +51,18 @@ theorem valuesRejectedWhole (hooks : Hooks) : ValuesRejectedWhole hooks := by
   obtain ⟨binding, mem, notIn⟩ := outside
   exact Laws.Step.step_refusesValues submits
     (Laws.Hooks.admitValues_rejects ⟨binding.2, List.mem_map_of_mem mem, notIn⟩)
+
+/-- `FailedSourcesRead`: `Laws.Hooks.evaluateMappings_failed`, read at the mapping's target; a Call variable's null is
+the one binding of its target, which `lastWrites` keeps. -/
+theorem failedSourcesRead : FailedSourcesRead := by
+  intro ctx context mapping code unresolved
+  rw [Laws.Hooks.evaluateMappings_failed unresolved]
+  refine ⟨fun association => ?_, fun parameter => ?_, fun copied => ?_⟩
+  · simp only [association]; rfl
+  · simp only [parameter]; rfl
+  · simp only [copied, Laws.Hooks.lastWrites_eq, Laws.State.keyed_eq.2, Laws.State.keyed_eq.1, List.any_nil,
+      Bool.false_eq_true, ↓reduceIte, List.mergeSort_singleton]
+    show Except.ok ((some [(mapping.target, Value.null)]).bind (·.lookup mapping.target)) = _
+    simp
 
 end Kernel.Proofs.Former
