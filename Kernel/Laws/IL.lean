@@ -1,8 +1,10 @@
 module
 
 public import Kernel.IL.Types
+public import Kernel.IL.Footprint
 import all Kernel.IL.Types
 import all Kernel.IL.Types.Options
+import all Kernel.IL.Footprint
 
 /-! # Laws of the IL
 
@@ -150,5 +152,43 @@ theorem mem_children {program : Program} {parent : Option ElementId} {element : 
     (member : element ∈ program.children parent) : element ∈ program.elements := by
   unfold Program.children at member
   exact (List.mem_filter.mp member).1
+
+/-! ## Footprints
+
+A footprint's name set read as a list of names, for laws that compare name lists and have no "every name": `every`
+lists the names a set may name, and a set of every name lists all of them (`listed`). -/
+
+/-- The names `names` lists: all of `every` for a set of every name, else its own. -/
+def listed (every : List String) (names : NameSet) : List String := if names.all then every else names.names
+
+/-- Two name sets meet (`NameSet.meets`) exactly when their lists (`listed`) share a name, once `every` holds both
+sets' names and at least one more, `sentinel`. By the six cases: two sets of every name share `sentinel`; a set of every
+name meets another set exactly when that set names one name, from either side; and two lists meet exactly when they
+share one. Without `sentinel`, two sets of every name over an empty `every` would meet with no name shared. -/
+theorem NameSet.meets_iff_listed {every : List String} {sentinel : String} (inhabited : sentinel ∈ every)
+    {reads writes : NameSet} (readsListed : ∀ name ∈ reads.names, name ∈ every)
+    (writesListed : ∀ name ∈ writes.names, name ∈ every) :
+    reads.meets writes = true ↔ ∃ name ∈ listed every reads, name ∈ listed every writes := by
+  unfold NameSet.meets listed
+  cases readsAll : reads.all <;> cases writesAll : writes.all
+  · simp only [Bool.false_and, Bool.false_or, List.any_eq_true, List.contains_iff_mem, Bool.false_eq_true, ite_false]
+  · simp only [Bool.false_and, Bool.true_and, Bool.false_or, Bool.or_eq_true, Bool.not_eq_true', List.isEmpty_eq_false_iff,
+      List.any_eq_true, List.contains_iff_mem, Bool.false_eq_true, ite_false, ite_true]
+    constructor
+    · rintro (named | ⟨name, inside, _⟩)
+      · obtain ⟨name, inside⟩ := List.exists_mem_of_ne_nil _ named
+        exact ⟨name, inside, readsListed name inside⟩
+      · exact ⟨name, inside, readsListed name inside⟩
+    · exact fun ⟨name, inside, _⟩ => .inl (List.ne_nil_of_mem inside)
+  · simp only [Bool.true_and, Bool.false_and, Bool.false_or, Bool.or_false, Bool.or_eq_true, Bool.not_eq_true',
+      List.isEmpty_eq_false_iff, List.any_eq_true, List.contains_iff_mem, Bool.false_eq_true, ite_false, ite_true]
+    constructor
+    · rintro (named | ⟨_, _, inside⟩)
+      · obtain ⟨name, inside⟩ := List.exists_mem_of_ne_nil _ named
+        exact ⟨name, writesListed name inside, inside⟩
+      · exact ⟨_, writesListed _ inside, inside⟩
+    · exact fun ⟨_, _, inside⟩ => .inl (List.ne_nil_of_mem inside)
+  · simp only [Bool.true_and, Bool.true_or, ite_true, true_iff]
+    exact ⟨sentinel, inhabited, inhabited⟩
 
 end Kernel.Laws.IL

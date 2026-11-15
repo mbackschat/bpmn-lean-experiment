@@ -213,7 +213,7 @@ def FreshCall (state : State) (scope : ScopeOccurrenceId) (trigger : OccurrenceR
   (∀ run ∈ state.slots.compensation.runs, run.scope = scope → run.trigger ≠ trigger) ∧ resumesGroup resume = false
 
 /-- Every compensation `Step` performs is a `FreshCall`. `Step` runs `Hooks.compensate` only for the signal it takes
-off the head of a closure state (`Laws.Step.HookContract.compensate`, whose `Laws.Step.Popped` premise names that
+off the head of a closure state (`Laws.Step.HookContract.compensate`, whose `Laws.State.Popped` premise names that
 state), and from a before-state that keeps `WellFormed` and the lane relation every closure state does; there the
 queued compensation's trigger is held apart from every run's and every other queued trigger (`TriggersApart`), and it
 resumes no group (`QueuedUngrouped`). -/
@@ -256,7 +256,7 @@ def TakesOutOnce (hooks : Hooks) (reads writes : Ctx → ElementId → List Stri
 Stated of `Hooks.compensate` and `Hooks.handlerCompleted`, the hooks that start handlers, on a state that keeps the
 lane relation, as `Step` calls them (root decision D2, 2026-11-15); the new run's first advance is `TakesOutOnce`'s.
 `reads` and `writes` name what each subject's run reads and writes; the lane binds them to the kernel's footprint
-`NameSet`s through `Laws.IL.NameSet.listed` (root decision D3, 2026-11-15). -/
+`NameSet`s through `Laws.IL.listed` (`Laws.IL.NameSet.meets_iff_listed`, root decision D3, 2026-11-15). -/
 def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
   ∀ (ctx : Ctx) (state after : State) (run next : CompensationRun),
     Formed (Depends ctx.program (reads ctx) (writes ctx)) state →
