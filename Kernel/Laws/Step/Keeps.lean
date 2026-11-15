@@ -115,8 +115,8 @@ theorem fireItem_keeps (contract : HookContract hooks inv) {ctx : Ctx} {item : O
   · exact contract.trigger _ _ _ _ _ holds open_ ran
 
 /-- A begun occurrence's dispatch to its element's hook keeps `inv`; one numbered as a body is of an element with a
-Multi-Instance envelope, so any hook but `Hooks.arriveMultiInstance` gets one of the element role, and a throw's hook
-gets one begun from a state that kept `inv`. -/
+Multi-Instance envelope, so any hook but `Hooks.arriveMultiInstance` gets one of the element role, a throw's hook
+gets one begun from a state that kept `inv`, and an Activity's one that owns no scope occurrence yet. -/
 theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}
     {trigger : StartTrigger} {state after : State} (holds : inv ctx.program state) (member : occurrence ∈ state.occurrences)
     (begun : occurrence.begun = true) (inner : ∀ id ∈ entry.inner.toList,
@@ -126,6 +126,7 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
       (((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true)
     (newest : state.draft.started.getLast?.map (·.occurrence) = some (Laws.State.key state occurrence))
     (unrun : ∀ run ∈ state.slots.multiInstances, run.occurrence ≠ occurrence.id)
+    (unowned : ∀ scope ∈ state.scopes, scope.occurrence ≠ some occurrence.id)
     (begunFrom : occurrence.role = .element → Laws.State.BegunFrom (inv ctx.program) state occurrence)
     (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) : inv ctx.program after := by
   rcases dispatch_unstarted ran with ⟨_, _, ran⟩ | ⟨_, _, _, body⟩ | ⟨unstarted, single, arrives⟩
@@ -138,7 +139,7 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
     · simpa [single body] using bodied body
   cases arrives with
   | atStart ran => exact contract.arriveStart _ _ _ _ _ _ _ holds member begun ran
-  | atActivity ran => exact contract.arriveActivity _ _ _ _ _ _ holds member begun unstarted role ran
+  | atActivity ran => exact contract.arriveActivity _ _ _ _ _ _ holds member begun unstarted role unowned ran
   | atScope ran => exact contract.arriveScope _ _ _ _ _ _ _ holds member begun inner ran
   | atGateway ran => exact contract.arriveGateway _ _ _ _ _ _ holds member begun ran
   | atCatch ran => exact contract.arriveCatch _ _ _ _ _ _ _ holds member begun unstarted role ran
@@ -156,13 +157,14 @@ theorem begin_keeps (contract : HookContract hooks inv) (phases : ClosurePhases 
   have begunMember := facts.begun state request (roleOf ctx.program request) sourceType
   have newest := phases.newest _ state request (roleOf ctx.program request) sourceType holds
   have unrun := phases.unrun _ state request (roleOf ctx.program request) sourceType holds admitted
-  simp only [made] at begunHolds begunMember newest unrun
+  have unowned := phases.unowned _ state request (roleOf ctx.program request) sourceType holds admitted
+  simp only [made] at begunHolds begunMember newest unrun unowned
   obtain ⟨entry, standing, named⟩ := begin_scope ran
   have throws : occurrence.role = .element → Laws.State.BeginsThrow state request occurrence := fun role =>
     ⟨List.mem_map.mpr ⟨entry, standing, named⟩,
       fun id reserved => (admitted.2.1 id (by simp [Laws.State.names, reserved])).1, role⟩
   exact dispatch_keeps contract begunHolds.1 begunMember.1 begunMember.2 begunHolds.2
-    (phases.bodied _ _ _ begunHolds.1 begunMember.1) newest unrun
+    (phases.bodied _ _ _ begunHolds.1 begunMember.1) newest unrun unowned
     (fun role => ⟨state, request, _, sourceType, holds, throws role, made⟩) dispatched
 
 /-- A request an arrival or a start makes names no reservation. -/

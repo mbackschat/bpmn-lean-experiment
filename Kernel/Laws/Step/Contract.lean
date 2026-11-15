@@ -396,10 +396,11 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     occurrence ∈ state.occurrences →
     occurrence.begun = true → hooks.arriveStart ctx header payload trigger occurrence state = .ok after →
     inv ctx.program after
+  /-- An Activity's occurrence owns no scope occurrence yet, since `Step.begin` has just begun it (`Phases.unowned`). -/
   arriveActivity : ∀ ctx header payload occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     occurrence.begun = true → (ctx.program.element? occurrence.element).bind (·.start?) = none →
-    occurrence.role = .element → hooks.arriveActivity ctx header payload occurrence state = .ok after →
-    inv ctx.program after
+    occurrence.role = .element → (∀ scope ∈ state.scopes, scope.occurrence ≠ some occurrence.id) →
+    hooks.arriveActivity ctx header payload occurrence state = .ok after → inv ctx.program after
   /-- A body occurrence arrives with the loop its element's envelope carries (`Step.bodyLoop?`), its start the newest the
   draft holds and no running body keyed by it, since `Step.begin` has just begun it (`Phases.newest`, `Phases.unrun`). -/
   arriveMultiInstance : ∀ ctx header envelope loop occurrence state after, inv ctx.program state →
@@ -574,6 +575,11 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop where
   unrun : ∀ program state request role sourceType, inv program state → Admitted state request →
     ∀ run ∈ (state.beginOccurrence request role sourceType).1.slots.multiInstances,
       run.occurrence ≠ (state.beginOccurrence request role sourceType).2.id
+  /-- `State.beginOccurrence` of an admitted request begins an occurrence that owns no scope occurrence: a fresh one is
+  issued at the counter, and a reservation is unbegun, while only a begun occurrence owns one (`Laws.State.Owned`). -/
+  unowned : ∀ program state request role sourceType, inv program state → Admitted state request →
+    ∀ scope ∈ (state.beginOccurrence request role sourceType).1.scopes,
+      scope.occurrence ≠ some (state.beginOccurrence request role sourceType).2.id
   /-- An occurrence parked at a join is begun while it stands, so a join offered again hands over a begun one. -/
   parkedBegun : ∀ program state waiting occurrence, inv program state → waiting ∈ state.slots.parked →
     occurrence ∈ state.occurrences →

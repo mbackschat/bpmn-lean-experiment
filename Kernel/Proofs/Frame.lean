@@ -31,11 +31,13 @@ theorem Within.up {s : State} {inner outer : ScopeOccurrenceId} (within : Within
   | parent child parent _ member link above => exact .inr ⟨child, member, rfl, parent, link, above⟩
 
 /-- What the features' records supply, for a property `rel` carried beside `WellFormed` under `program`, where they
-make or queue a reservation or a trigger: a subscription reserves a `Reservable` element; a queued `Signal.occur` or
-compensation resume names a boundary or one pending in a state that kept `rel`; a caught Cancel's compensation, queued
-once a well-formed state's standing scope occurrence is cleared, takes the trigger of the raise it was taken off
-(`Laws.State.RollsBack`), and a throw's compensation and raise name an occurrence begun from a state that kept
-`WellFormed` and `rel` (`Laws.State.BegunFrom`, `Laws.State.RaisesFrom`). -/
+make or queue a reservation or a trigger, or read the program: a subscription reserves a `Reservable` element; a queued
+`Signal.occur` or compensation resume names a boundary or one pending in a state that kept `rel`; a caught Cancel's
+compensation, queued once a well-formed state's standing scope occurrence is cleared, takes the trigger of the raise it
+was taken off (`Laws.State.RollsBack`), and a throw's compensation and raise name an occurrence begun from a state that
+kept `WellFormed` and `rel` (`Laws.State.BegunFrom`, `Laws.State.RaisesFrom`); a Call enters its called root under
+`program`, which names the root by the Call's authored identifier, for a present begun Call of the element role that
+owns no called root yet (`Laws.Work.WorkOps.enterCalled`). -/
 structure OccursAlongside (program : Program) (rel : State → Prop) : Prop where
   reserve : ∀ s element scope, WellFormed program s → Reservable program element → rel s →
     rel (s.reserve element scope).1
@@ -55,6 +57,9 @@ structure OccursAlongside (program : Program) (rel : State → Prop) : Prop wher
     Laws.State.RaisesFrom (fun t => WellFormed program t ∧ rel t) occurrence s → rel s →
     rel (s.signal (.raise raised { element := occurrence.element, scope := occurrence.scope,
                                    activation := occurrence.activation }))
+  enterCalled : ∀ s call variables definition, WellFormed program s → call ∈ s.occurrences → call.begun = true →
+    call.role = .element → (∀ root ∈ s.scopes, root.calledInstance.isSome → root.occurrence ≠ some call.id) → rel s →
+    rel (s.enterCalled program call variables definition).1
 
 /-- The compensation runs `compensation` resume only reservations pending in `s` or in a state that kept `rel`: what
 storing them needs (`StoresAlongside.storeRuns`). -/
@@ -159,20 +164,19 @@ theorem BeginFits.handler {s : State} {request : BeginRequest} {run : ScopeOccur
 
 /-- What the state operations the hooks apply keep of a property `rel` carried beside `WellFormed`: an update of
 nothing `rel` may read (`Unmoved`), queuing a begin that `BeginFits`, issuing an identity, entering a scope occurrence
-or a Call's called root, reserving an occurrence a `Signal.occur` queued in a state that kept `rel`
-(`Laws.Step.PendingIn`; a subscription's reservation is `OccursAlongside`'s), leaving a scope occurrence that stands and is owned or a running
+(a Call's called root, which reads the program, is `OccursAlongside`'s), reserving an occurrence a `Signal.occur` queued
+in a state that kept `rel` (`Laws.Step.PendingIn`; a subscription's reservation is `OccursAlongside`'s), leaving a scope occurrence that stands and is owned or a running
 compensation context (`LeavesOwned`), clearing one that stands, keeping only occurrences that lie in no scope occurrence
 strictly within it, disarming a host, and a variable write or removal. Every feature's operations record of `WellFormed`
 and `rel` but `Laws.MultiInstance.MultiInstanceOps` and the compensation records follows from its record of `WellFormed`
-and this one; those two compensation records also store runs (`StoresAlongside`). -/
+and this one, with `OccursAlongside` where it reserves, queues a trigger or enters a called root; those two compensation
+records also store runs (`StoresAlongside`). -/
 structure FrameAlongside (rel : State → Prop) : Prop where
   frame : ∀ s t, Unmoved s t → rel s → rel t
   signalBegin : ∀ s request, BeginFits s request → rel s → rel (s.signal (.begin request))
   issue : ∀ s, rel s → rel s.issue.1
   enterScope : ∀ program s element parent locals owner, WellFormed program s → rel s →
     rel (s.enterScope element parent locals owner).1
-  enterCalled : ∀ program s called call variables definition, WellFormed program s → rel s →
-    rel (s.enterCalled called call variables definition).1
   reserve : ∀ program s element scope, WellFormed program s → Laws.Step.PendingIn rel element → rel s →
     rel (s.reserve element scope).1
   leaveScope : ∀ program s scope, WellFormed program s → scope ∈ scopeIds s → LeavesOwned s scope → rel s →
@@ -379,6 +383,7 @@ theorem closurePhases_alongside {rel : Program → State → Prop} (phases : Law
   bodied _ _ occurrence holds := phases.bodied _ _ occurrence holds.1
   newest _ _ request role sourceType holds := phases.newest _ _ request role sourceType holds.1
   unrun _ _ request role sourceType holds := phases.unrun _ _ request role sourceType holds.1
+  unowned _ _ request role sourceType holds := phases.unowned _ _ request role sourceType holds.1
   parkedBegun _ _ waiting occurrence holds := phases.parkedBegun _ _ waiting occurrence holds.1
   endInstance _ s status failure holds recorded := by
     refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩

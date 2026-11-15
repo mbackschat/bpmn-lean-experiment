@@ -229,7 +229,6 @@ theorem beginsKept_alongside (program : Program) : Alongside (BeginsKept program
   signalBegin _ request _ held := held.signalBegin request
   issue _ held := held.issue
   enterScope _ _ element parent locals owner _ held := held.enterScope element parent locals owner
-  enterCalled _ _ called call variables definition formed held := held.enterCalled formed called call variables definition
   reserve _ _ _ scope _ pending held :=
     held.reserve (fun apart => PendingIn.unlooped (fun _ kept => (kept apart).occurs) pending) scope
   leaveScope _ _ _ formed present _ held := held.leaveScope formed present
@@ -355,9 +354,6 @@ theorem framedNumbered_frameAlongside (program : Program) : StoresAlongside (Fra
   enterScope other s element parent locals owner formed kept :=
     ⟨(runsFramed_frameAlongside program).enterScope other s element parent locals owner formed kept.1,
       fun apart => (kept.2 apart).enterScope formed kept.1.owns element parent locals owner⟩
-  enterCalled other s called call variables definition formed kept :=
-    ⟨(runsFramed_frameAlongside program).enterCalled other s called call variables definition formed kept.1,
-      fun apart => (kept.2 apart).enterCalled formed kept.1.owns called call variables definition⟩
   reserve _ s element scope formed pending kept :=
     ⟨reserve_runsFramed s element scope kept.1, fun apart =>
       (kept.2 apart).reserve formed (PendingIn.unlooped (fun _ kept => (kept.2 apart).2.occurs) pending)⟩
@@ -411,6 +407,9 @@ theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside pro
     ⟨(runsFramed_occursAlongside program).raise s raised occurrence formed
       (raises.imp fun _ => And.imp_right And.left) kept.1, fun apart =>
       (kept.2 apart).signalPending rfl fun _ inside => absurd inside List.not_mem_nil⟩
+  enterCalled s call variables definition formed member begun role unowned kept :=
+    ⟨(runsFramed_occursAlongside program).enterCalled s call variables definition formed member begun role unowned kept.1,
+      fun apart => (kept.2 apart).enterCalled formed kept.1.owns program call variables definition⟩
 
 /-- Dropping a record that owns no scope occurrence keeps the numbering beside the slot invariant. -/
 theorem framedNumbered_withoutRecord {program : Program} (t : State) (id : Nat)
@@ -495,6 +494,7 @@ theorem composed_phases : Laws.Step.Phases Composed :=
     bodied := fun _ _ occurrence holds => phases.bodied _ _ occurrence holds.1
     newest := fun _ _ request role sourceType holds => phases.newest _ _ request role sourceType holds.1
     unrun := fun _ _ request role sourceType holds => phases.unrun _ _ request role sourceType holds.1
+    unowned := fun _ _ request role sourceType holds => phases.unowned _ _ request role sourceType holds.1
     parkedBegun := fun _ _ waiting occurrence holds => phases.parkedBegun _ _ waiting occurrence holds.1
     endInstance := fun _ s status failure holds recorded => by
       refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩

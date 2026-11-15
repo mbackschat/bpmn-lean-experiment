@@ -30,6 +30,25 @@ theorem begin_wellFormed {state : State} (formed : WellFormed program state) (re
     WellFormed program (state.beginOccurrence request role sourceType).1 :=
   (beginOccurrence_begins formed.activations request role sourceType).wellFormed formed stands admitted roled bodied
 
+/-- The occurrence a request whose reservations are beginnable begins owns no scope occurrence: a fresh one is issued
+at the counter, and a reservation is unbegun, while a scope occurrence's owner is begun (`Owned.scopeOwners`). -/
+theorem begin_unowned {state : State} (formed : WellFormed program state) (request : BeginRequest)
+    (role : ActivationRole) (sourceType : String)
+    (admitted : ∀ id ∈ names request, Beginnable state request.scope id ∧ Unclaimed state id) :
+    ∀ scope ∈ (state.beginOccurrence request role sourceType).1.scopes,
+      scope.occurrence ≠ some (state.beginOccurrence request role sourceType).2.id := by
+  intro scope member owned
+  have begins := beginOccurrence_begins formed.activations request role sourceType
+  rw [begins.scopes] at member
+  obtain ⟨owner, present, named, begun⟩ := formed.owned.scopeOwners scope member _ owned
+  rcases begins.source with ⟨reserved, facts⟩ | fresh
+  · have unbegun := ((admitted reserved.id (by simp [names, facts.named])).1.2 owner present (named.trans facts.id)).1
+    rw [begun] at unbegun
+    cases unbegun
+  · have below := formed.issued.occurrences owner present
+    rw [named, fresh.id] at below
+    exact Nat.lt_irrefl _ below
+
 /-- An admitted request's start Event reservation stays beginnable, unclaimed and placed after its begin, in the
 scope occurrence the begun occurrence runs in. -/
 theorem Begins.entry {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}

@@ -42,7 +42,7 @@ theorem operations_alongside {rel : Program → State → Prop} (side : ∀ prog
   removeVariable program s target name holds :=
     ⟨ops.removeVariable program s target name holds.1, (side program).removeVariable program s target name holds.1 holds.2⟩
 
-theorem workOps_alongside (side : FrameAlongside rel) {program : Program}
+theorem workOps_alongside (side : FrameAlongside rel) {program : Program} (occurs : OccursAlongside program rel)
     (ops : Laws.Work.WorkOps program (WellFormed program)) :
     Laws.Work.WorkOps program fun s => WellFormed program s ∧ rel s where
   write s scope writes rule holds := ⟨ops.write s scope writes rule holds.1, side.signal holds.2 _⟩
@@ -73,9 +73,9 @@ theorem workOps_alongside (side : FrameAlongside rel) {program : Program}
     have opened := ops.openItem s kind occurrence holds.1 member begun unstarted role
     ⟨⟨opened.1, side.openItem holds.2 kind occurrence⟩, opened.2⟩
   arm s occurrence element holds member begun := ⟨ops.arm s occurrence element holds.1 member begun, side.signal holds.2 _⟩
-  enterCalled s called call variables definition holds member begun :=
-    have entered := ops.enterCalled s called call variables definition holds.1 member begun
-    ⟨⟨entered.1, side.enterCalled program s called call variables definition holds.1 holds.2⟩, entered.2⟩
+  enterCalled s call variables definition holds member begun role unowned :=
+    have entered := ops.enterCalled s call variables definition holds.1 member begun role unowned
+    ⟨⟨entered.1, occurs.enterCalled s call variables definition holds.1 member begun role unowned holds.2⟩, entered.2⟩
   armScope s scope holds stands := ⟨ops.armScope s scope holds.1 stands, side.signal holds.2 _⟩
   begin s element scope holds stands :=
     ⟨ops.begin s element scope holds.1 stands, side.signalBegin _ _ (.fresh rfl rfl) holds.2⟩
@@ -312,14 +312,15 @@ end Alongside
 /-! ## The registered hooks' feature records beside `WellFormed` -/
 
 /-- The feature records but Multi-Instance's and Compensation's of `WellFormed` and a property beside it, which may
-read the step's program, from those of `WellFormed` and `FrameAlongside` alone (`Proofs.Step.registered_contract_of`
-turns them and what the Multi-Instance and compensation hooks keep into the registered hooks' contract). -/
+read the step's program, from those of `WellFormed`, `FrameAlongside` and `OccursAlongside` alone
+(`Proofs.Step.registered_contract_of` turns them and what the Multi-Instance and compensation hooks keep into the
+registered hooks' contract). -/
 theorem featureOps_frame {rel : Program → State → Prop} (ops : Proofs.Step.FeatureOps WellFormed)
     (side : ∀ program, FrameAlongside (rel program))
     (occurs : ∀ program, OccursAlongside program (rel program)) :
     Proofs.Step.FeatureOps fun program s => WellFormed program s ∧ rel program s where
   operations := operations_alongside side ops.operations
-  work _ := workOps_alongside (side _) (ops.work _)
+  work _ := workOps_alongside (side _) (occurs _) (ops.work _)
   flow _ := flowOps_alongside (side _) (ops.flow _)
   join _ := joinOps_alongside (side _) (ops.join _)
   starts _ := startsOps_alongside (side _) (ops.starts _)
@@ -366,6 +367,10 @@ theorem scopesKept_occursAlongside (before : State) (program : Program) :
   raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
+  enterCalled s call variables definition formed _ _ _ _ kept := by
+    rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
+    exact kept.enter rfl fun entry member => (List.mem_append.mp member).imp_right fun fresh => by
+      rw [List.mem_singleton.mp fresh]
 
 /-- The registered hooks keep the scope occurrences of any before-state beside `WellFormed`. -/
 theorem keepsScopes_contract (ops : Proofs.Step.RegisteredOps WellFormed) (before : State) :
@@ -396,8 +401,6 @@ theorem endsKept_alongside (b : State) (x : Option (Nat × OccurrenceKey)) :
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_succ _) (.refl _)
   enterScope _ s element parent locals owner formed kept :=
     kept.step formed (Laws.Step.enterScope_frame formed element parent locals owner)
-  enterCalled _ s called call variables definition formed kept :=
-    kept.step formed (Laws.Step.enterCalled_frame formed called call variables definition)
   reserve _ _ element scope formed _ kept := kept.step formed (Laws.Step.reserve_frame formed element scope)
   leaveScope _ _ _ formed present _ kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
   clearInside _ _ _ _ formed present inside kept := kept.step formed (Laws.Step.clearInside_frame formed present inside)
@@ -451,6 +454,8 @@ theorem endsKept_occursAlongside (b : State) (x : Option (Nat × OccurrenceKey))
   raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+  enterCalled s call variables definition formed _ _ _ _ kept :=
+    kept.step formed (Laws.Step.enterCalled_frame formed program call variables definition)
 
 /-- The registered hooks keep an input's end facts from its start beside `WellFormed`, under any exemption
 (`Laws.Step.EndsInv`), the hook contract `Laws.Step.complete_ends` and `MicroStepsKeepEnds` rest on. -/

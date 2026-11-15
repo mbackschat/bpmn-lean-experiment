@@ -325,9 +325,6 @@ theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) 
   enterScope _ s element parent locals owner well kept := by
     rw [Laws.State.enterScope_eq]
     exact kept.enter well rfl rfl rfl rfl rfl rfl rfl rfl rfl
-  enterCalled _ s called call variables definition well kept := by
-    rw [Laws.State.enterCalled_eq s called call variables definition (Laws.State.scopes_fresh well)]
-    exact kept.enter well rfl rfl rfl rfl rfl rfl rfl rfl rfl
   reserve _ s element scope well _ kept := kept.reserve well element scope
   leaveScope _ _ _ well present _ kept := kept.leaveScope well present
   clearInside _ _ _ keep well present housed kept := kept.clearInside well present keep housed
@@ -750,5 +747,8 @@ theorem formed_occursAlongside (program : Program) (precedes : Compensable → C
       · have stands : occurrence.scope ∈ scopeIds s := List.mem_map.mpr ⟨entry, inside, named⟩
         simp only [queuedTrigger, stands, ite_true, Option.some.injEq] at found
         exact found ▸ fresh
+  enterCalled s call variables definition well _ _ _ _ kept := by
+    rw [Laws.State.enterCalled_eq s program call variables definition (Laws.State.scopes_fresh well)]
+    exact kept.enter well rfl rfl rfl rfl rfl rfl rfl rfl rfl
 
 end Kernel.Proofs.Compensation

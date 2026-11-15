@@ -281,9 +281,9 @@ theorem registered_contract_of {inv : Program → State → Prop} (ops : Feature
   arriveStart _ _ _ _ _ _ _ holds member begun ran := by
     rw [Laws.Registry.hooks_arriveStart] at ran
     exact Laws.Starts.arriveStart_keeps (ops.starts _) holds member begun ran
-  arriveActivity _ _ _ _ _ _ holds member begun unstarted role ran := by
+  arriveActivity _ _ _ _ _ _ holds member begun unstarted role unowned ran := by
     rw [Laws.Registry.hooks_arriveActivity] at ran
-    exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted role ran
+    exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted role unowned ran
   arriveMultiInstance _ _ _ _ _ _ _ holds member begun body named looped newest unrun ran := by
     rw [Laws.Registry.hooks_arriveMultiInstance] at ran
     exact multiInstance.arrive _ _ _ _ _ _ _ holds member begun body named looped newest unrun ran

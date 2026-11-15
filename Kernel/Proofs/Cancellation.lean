@@ -323,14 +323,6 @@ theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) wh
     rw [Laws.State.enterScope_eq]
     exact kept.enter rfl fun entry member => (List.mem_append.mp member).imp_right fun fresh => by
       rw [List.mem_singleton.mp fresh]
-  enterCalled _ s called call variables definition formed kept := by
-    have fresh : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ := fun entry inside same => by
-      have below := formed.issued.scopes entry inside
-      rw [same] at below
-      exact Nat.lt_irrefl _ below
-    rw [Laws.State.enterCalled_eq _ _ _ _ _ fresh]
-    exact kept.enter rfl fun entry member => (List.mem_append.mp member).imp_right fun fresh => by
-      rw [List.mem_singleton.mp fresh]
   reserve _ s element scope _ _ kept :=
     have reserves := Laws.State.reserve_reserves s element scope
     kept.enter reserves.nextIssue fun _ member => .inl (reserves.scopes ▸ member)

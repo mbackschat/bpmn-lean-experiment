@@ -307,16 +307,6 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside (RunsFra
     · exact .inl old
     · rw [List.mem_singleton.mp new]
       exact .inr (counter_fresh formed)
-  enterCalled _ s called call variables definition formed kept := by
-    have fresh : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ := fun entry inside same =>
-      counter_fresh formed (same ▸ List.mem_map.mpr ⟨entry, inside, rfl⟩)
-    rw [Laws.State.enterCalled_eq _ _ _ _ _ fresh]
-    refine kept.carry (.grow (fun entry inside => ?_) (fun _ inside => List.mem_append_left _ inside) rfl rfl
-      fun _ present => present)
-    rcases List.mem_append.mp inside with old | new
-    · exact .inl old
-    · rw [List.mem_singleton.mp new]
-      exact .inr (counter_fresh formed)
   reserve _ s element scope _ _ kept := reserve_runsFramed s element scope kept
   leaveScope _ _ _ formed present leaves kept := leaveScope_runsFramed formed present leaves kept
   clearInside _ _ _ keep formed present _ kept := kept.carry (clearInside_carries formed present keep kept)
@@ -351,6 +341,16 @@ theorem runsFramed_occursAlongside (program : Program) : OccursAlongside program
   raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
+  enterCalled s call variables definition formed _ _ _ _ kept := by
+    have fresh : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ := fun entry inside same =>
+      counter_fresh formed (same ▸ List.mem_map.mpr ⟨entry, inside, rfl⟩)
+    rw [Laws.State.enterCalled_eq _ _ _ _ _ fresh]
+    refine kept.carry (.grow (fun entry inside => ?_) (fun _ inside => List.mem_append_left _ inside) rfl rfl
+      fun _ present => present)
+    rcases List.mem_append.mp inside with old | new
+    · exact .inl old
+    · rw [List.mem_singleton.mp new]
+      exact .inr (counter_fresh formed)
 
 /-- Dropping a record that owns no scope occurrence carries the invariant: it is no running body's body occurrence,
 which owns the body's scope occurrence. -/
@@ -616,9 +616,6 @@ theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
     exact kept.move (.same rfl rfl rfl (Nat.le_succ _) rfl)
   enterScope _ s element parent locals owner formed kept :=
     kept.move (.ofEnds (Laws.Step.enterScope_frame formed element parent locals owner) (by rw [Laws.State.enterScope_eq]))
-  enterCalled _ s called call variables definition formed kept :=
-    kept.move (.ofEnds (Laws.Step.enterCalled_frame formed called call variables definition)
-      (by rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]))
   reserve _ s element scope formed _ kept := kept.reserve formed
   leaveScope _ _ _ formed present _ kept :=
     kept.move (.ofEnds (Laws.Step.leaveScope_frame formed present) (Laws.State.leaveScope_left formed present).started)
@@ -660,9 +657,6 @@ theorem snapshots_frameAlongside (b : State) : StoresAlongside (Snapshots b) whe
   enterScope _ s element parent locals owner _ kept := by
     rw [Laws.State.enterScope_eq]
     exact kept.same rfl
-  enterCalled _ s called call variables definition formed kept := by
-    rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
-    exact kept.same rfl
   reserve _ s element scope _ _ kept := kept.reserve element scope
   leaveScope _ _ _ formed present _ kept := kept.shrink (Laws.State.leaveScope_left formed present).slots.bodies
   clearInside _ _ _ keep formed present _ kept :=
@@ -686,9 +680,6 @@ theorem since_frameAlongside (b : State) : StoresAlongside fun s => Unstarted b 
     enterScope := fun program s element parent locals owner formed kept =>
       ⟨one.enterScope program s element parent locals owner formed kept.1,
         two.enterScope program s element parent locals owner formed kept.2⟩
-    enterCalled := fun program s called call variables definition formed kept =>
-      ⟨one.enterCalled program s called call variables definition formed kept.1,
-        two.enterCalled program s called call variables definition formed kept.2⟩
     reserve := fun _ _ element scope formed _ kept => ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
     leaveScope := fun program s scope formed present leaves kept =>
       ⟨one.leaveScope program s scope formed present leaves kept.1, two.leaveScope program s scope formed present leaves kept.2⟩
@@ -723,6 +714,10 @@ theorem since_occursAlongside (b : State) (program : Program) :
   raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
+  enterCalled s call variables definition formed _ _ _ _ kept := by
+    refine ⟨kept.1.move (.ofEnds (Laws.Step.enterCalled_frame formed program call variables definition) ?_), ?_⟩ <;>
+      rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
+    exact kept.2.same rfl
 
 /-- Dropping a record keeps both: it moves no key and no body's record. -/
 theorem since_withoutRecord {b t : State} (id : Nat) (kept : Unstarted b t ∧ Snapshots b t) :

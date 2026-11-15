@@ -125,6 +125,8 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
       · have below := (formed.settled.bodies run member).1
         rw [same, fresh.id] at below
         exact Nat.lt_irrefl _ below
+    unowned := fun _ _ request role sourceType formed admitted =>
+      Laws.State.begin_unowned formed request role sourceType admitted.2.1
     parkedBegun := fun _ _ waiting _ formed parked member named =>
       (formed.settled.parked waiting parked).2.1 _ member named
     endInstance := fun _ _ _ _ formed recorded => by
@@ -194,11 +196,17 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
   hold _ held formed := hold_wellFormed formed held
   enter _ element locals occurrence formed member begun :=
     ⟨Laws.State.enterScope_wellFormed formed element (formed.owned.occurrenceScopes occurrence member) locals
-      fun _ named => ⟨occurrence, member, Option.some.inj named, begun, rfl⟩, by rw [Laws.State.enterScope_eq]⟩
+      fun _ named => ⟨occurrence, member, Option.some.inj named, begun, rfl⟩, by rw [Laws.State.enterScope_eq],
+      fun root inside called => by
+        rw [Laws.State.enterScope_eq] at inside
+        rcases List.mem_append.mp inside with old | new
+        · exact old
+        · rw [List.mem_singleton.mp new] at called
+          cases called⟩
   openItem _ kind _ formed member begun unstarted role :=
     ⟨Laws.State.openItem_wellFormed formed kind member begun unstarted role, by rw [Laws.State.openItem_eq]⟩
   arm _ _ element formed member begun := queueArm_wellFormed formed member begun element
-  enterCalled _ program _ variables definition formed member begun := by
+  enterCalled _ _ variables definition formed member begun _ _ := by
     refine ⟨Laws.State.enterCalled_wellFormed formed program member begun variables definition, ?_, ?_⟩ <;>
       rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
     simp
