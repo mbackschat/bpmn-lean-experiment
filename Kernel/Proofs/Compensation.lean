@@ -81,12 +81,15 @@ def ClaimsStayApart (hooks : Hooks) (reads writes : Ctx → ElementId → List S
     ClaimsApart after.slots.compensation
 
 /-- Retention: every record still retained after a committed input lies in a present scope occurrence, so a scope
-occurrence left without completing keeps none (§13.5.5, "presumed abort"; `Laws.Compensation.LeaveDrops`). -/
+occurrence left without completing keeps none (§13.5.5, "presumed abort"; the drop side of
+`Laws.Compensation.LeaveDrops`). That every other record is kept, and what a completion retains
+(`Laws.Compensation.Retains`), stay witness-only. -/
 def RetainedInPresentScopes (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
   ∀ (program : Program) (before after : State), Commits hooks reads writes program before after → RetainedPresent after
 
-/-- Completion: a run whose handlers have all completed continues and goes within the input, so no finished run is
-left after a committed input (`Laws.Compensation.EndsOnce`). -/
+/-- Completion: a run whose handlers have all completed goes within the input, so no finished run is left after a
+committed input. That it continues its thrower or Cancel boundary exactly once (`Laws.Compensation.EndsOnce`) stays
+witness-only. -/
 def NoFinishedRunLeft (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
   ∀ (program : Program) (before after : State), Commits hooks reads writes program before after → RunsUnfinished after
 
