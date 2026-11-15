@@ -643,9 +643,11 @@ def Popped (inv : State → Prop) (signal : Signal) (state : State) : Prop :=
 
 /-- `trigger` is the thrower of a Cancel raise taken off a queue that kept `inv` (`Popped`), whose search reached
 `state`, or `state` with a host disarmed, by `Steady` steps: the trigger a caught Cancel's compensation takes
-(`Feature.Propagation.leaveOccurrence`). -/
+(`Feature.Propagation.leaveOccurrence`). The raise's scope occurrence stood when it was taken off, since a search from
+a scope occurrence that is gone fails (`Feature.Propagation.searchScopes`, #121). -/
 def RollsBack (inv : State → Prop) (trigger : OccurrenceRef) (state : State) : Prop :=
-  ∃ base raised origin searched, Popped inv (.raise raised origin) base ∧ raised.isCancel = true ∧
+  ∃ base raised origin searched, Popped inv (.raise raised origin) base ∧ origin.scope ∈ scopeIds base ∧
+    raised.isCancel = true ∧
     Steady base searched ∧ (state = searched ∨ ∃ host, state = searched.disarm host) ∧
     trigger = { processInstanceId := searched.instanceOf origin.scope, element := origin.element,
                 activation := origin.activation }

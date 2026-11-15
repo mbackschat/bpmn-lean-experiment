@@ -274,7 +274,7 @@ theorem leaveOccurrence_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Featur
     {occurrence : ScopeOccurrence} {parent : ScopeOccurrenceId} {boundary : Boundary} {writes : List (String × Value)}
     {base state after : State} (holds : inv state) (settled : HostSettled origin state)
     (thrown : Thrown ctx.program origin state) (popped : Popped inv (.raise raised origin) base) (steady : Steady base state)
-    (present : occurrence ∈ state.scopes) (bounded : Laws.IL.BoundaryOf ctx.program boundary.id)
+    (standing : origin.scope ∈ Laws.State.scopeIds base) (present : occurrence ∈ state.scopes) (bounded : Laws.IL.BoundaryOf ctx.program boundary.id)
     (ran : Feature.Propagation.leaveOccurrence hooks ctx raised origin occurrence parent boundary writes state = .ok after) :
     inv after := by
   unfold Feature.Propagation.leaveOccurrence at ran
@@ -285,9 +285,9 @@ theorem leaveOccurrence_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Featur
     repeat' split
     all_goals first
       | exact ops.rollBack _ _ _ _ _ _ _ holds ⟨entry, inside, named⟩ bounded
-          ⟨base, raised, origin, state, popped, cancels, steady, .inl rfl, rfl⟩
+          ⟨base, raised, origin, state, popped, standing, cancels, steady, .inl rfl, rfl⟩
       | exact ops.rollBack _ _ _ _ _ _ _ (ops.disarm _ _ holds).1 ⟨entry, (ops.disarm _ _ holds).2 ▸ inside, named⟩
-          bounded ⟨base, raised, origin, state, popped, cancels, steady, .inr ⟨_, rfl⟩, rfl⟩
+          bounded ⟨base, raised, origin, state, popped, standing, cancels, steady, .inr ⟨_, rfl⟩, rfl⟩
   · split at ran
     · obtain ⟨dropped, steady⟩ := search.dropRuns occurrence.id state holds
       obtain ⟨decided, decision, ran⟩ := ok_bind ran
@@ -305,18 +305,24 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
     (ops : PropagationOps ctx.program inv) (search : SearchHooks ctx inv hooks) {raised : Raised} {origin : Origin}
     {base : State} (popped : Popped inv (.raise raised origin) base) :
     ∀ fuel current (state after : State), inv state → HostSettled origin state → Thrown ctx.program origin state →
-      Steady base state →
+      Steady base state → (current = some origin.scope ∨ origin.scope ∈ Laws.State.scopeIds base) →
       Feature.Propagation.searchScopes hooks ctx raised origin state fuel current = .ok after → inv after
-  | 0, _, _, _, holds, settled, thrown, _, ran => exhausted_keeps ops search holds settled thrown (by
+  | 0, _, _, _, holds, settled, thrown, _, _, ran => exhausted_keeps ops search holds settled thrown (by
       simpa [Feature.Propagation.searchScopes] using ran)
-  | _ + 1, none, _, _, holds, settled, thrown, _, ran => exhausted_keeps ops search holds settled thrown (by
+  | _ + 1, none, _, _, holds, settled, thrown, _, _, ran => exhausted_keeps ops search holds settled thrown (by
       simpa [Feature.Propagation.searchScopes] using ran)
-  | fuel + 1, some current, state, after, holds, settled, thrown, walked, ran => by
+  | fuel + 1, some current, state, after, holds, settled, thrown, walked, reached, ran => by
     unfold Feature.Propagation.searchScopes at ran
     split at ran
     · simp at ran
     · rename_i occurrence found
       have present := List.mem_of_find?_eq_some found
+      have standing : origin.scope ∈ Laws.State.scopeIds base := by
+        rcases reached with same | standing
+        · have named : occurrence.id = current := by simpa using List.find?_some found
+          rw [← Option.some.inj same, ← named]
+          exact List.mem_map.mpr ⟨occurrence, walked.scopes ▸ present, rfl⟩
+        · exact standing
       dsimp only at ran
       split at ran
       · exact exhausted_keeps ops search holds settled thrown ran
@@ -341,14 +347,14 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
           · exact throwerLeaves_keeps ops begun (thrown.steady ((ops.signalOccurrences _ _).trans chain.occurrences))
         · have inside := best?_mem ‹Feature.Propagation.best? _ _ _ _ = some _›
           refine leaveOccurrence_keeps ops search kept (settled.steady steady) (thrown.steady steady.occurrences) popped
-            (walked.trans steady) (steady.scopes ▸ present) ?_ ran
+            (walked.trans steady) standing (steady.scopes ▸ present) ?_ ran
           split at inside
           · split at inside
             · simp at inside
             · exact boundariesOf_boundaryOf inside
           · simp at inside
         · exact searchScopes_keeps ops search popped fuel _ _ _ kept (settled.steady steady)
-            (thrown.steady steady.occurrences) (walked.trans steady) ran
+            (thrown.steady steady.occurrences) (walked.trans steady) (.inr standing) ran
 
 /-- `Hooks.raise` keeps `inv` for a raise whose host is settled and whose origin, an Event's, names begun occurrences,
 taken off a queue that kept `inv`. -/
@@ -367,7 +373,7 @@ theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagat
     split at inside
     · simp at inside
     · exact boundariesOf_boundaryOf inside
-  · exact searchScopes_keeps ops search popped _ _ _ _ holds settled thrown (.refl _) ran
+  · exact searchScopes_keeps ops search popped _ _ _ _ holds settled thrown (.refl _) (.inl rfl) ran
 
 /-! ## Cancellation
 
