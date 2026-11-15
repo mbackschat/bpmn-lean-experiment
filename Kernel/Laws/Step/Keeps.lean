@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.Step
+public import Kernel.Laws.Step.Inputs
 
 /-! # Laws of the step function: preservation through a step
 

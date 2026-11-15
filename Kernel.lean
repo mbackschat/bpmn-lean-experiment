@@ -93,6 +93,7 @@ public import Kernel.Laws.Step
 public import Kernel.Laws.Step.Contract
 public import Kernel.Laws.Step.Ends
 public import Kernel.Laws.Step.EndsFrames
+public import Kernel.Laws.Step.Inputs
 public import Kernel.Laws.Step.Keeps
 public import Kernel.Laws.Step.Ran
 public import Kernel.Laws.Step.Signals

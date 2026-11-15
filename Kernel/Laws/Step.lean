@@ -20,9 +20,10 @@ made of, phase by phase; and which hook or state operation each committed body r
 equations; it names no feature, no registry and no law of a feature, so a feature edit never rebuilds it. Nothing
 executable imports this module.
 
-What the registered hooks do is `Kernel.Laws.Registry`'s and each feature's `Laws` module's; `Kernel.Laws.Step.Keeps`
-carries an invariant through `Step.step` from these equations, and `Kernel.Proofs` composes them with the feature
-lemmas, never opening a body.
+What the registered hooks do is `Kernel.Laws.Registry`'s and each feature's `Laws` module's; an input body is restated
+whole here (`step_eq` and its siblings) and `Kernel.Laws.Step.Inputs` derives from it what a committed or rejected input
+ran; `Kernel.Laws.Step.Keeps` carries an invariant through `Step.step` from these equations, and `Kernel.Proofs`
+composes them with the feature lemmas, never opening a body.
 -/
 
 public section
@@ -195,10 +196,10 @@ theorem compensationFailed_scope_gone {hooks : Hooks} {ctx : Ctx} {handler : Sco
 /-! ## Decomposition
 
 What a committed `Step.step` is made of, one phase at a time, each read from one body of `Kernel.Step`: the input's
-own transition and the closure (`step_ok`, `onRunning_ok`), a micro-step's absorbed completion and its transition
-(`absorb_ok`, `conclude_ok`), the completion pipeline (`complete_ok`, `continueAfter_ok`) and the queued work of a
-signal whose target is gone (`perform_stale`, `perform_gone`, `complete_absent`, `fire_absent`). A proof composes
-these and never opens `Kernel.Step`. -/
+own transition and the closure (`step_eq`, `onRunning_eq`, from which `Kernel.Laws.Step.Inputs` derives `step_ok` and
+`onRunning_ok`), a micro-step's absorbed completion and its transition (`absorb_ok`, `conclude_ok`), the completion
+pipeline (`complete_ok`, `continueAfter_ok`) and the queued work of a signal whose target is gone (`perform_stale`,
+`perform_gone`, `complete_absent`, `fire_absent`). A proof composes these and never opens `Kernel.Step`. -/
 
 /-- An instance end clears the instance root and records the status and failure. -/
 theorem endInstance_eq {status : InstanceStatus} {failure : Option InstanceFailure} {state : State} :
@@ -225,62 +226,108 @@ theorem orderJournal_ok {outcome : Outcome} {after : State} (ran : orderJournal 
   | error failure => simp [orderJournal, Except.map] at ran
   | ok settled => exact ⟨settled, rfl, (Except.ok.inj ran).symm⟩
 
-/-- A committed input on a running instance ran its transition as one micro-step, from the instance's state with an
-empty journal and outbox and the clock advanced to the input's time; then the closure settled, and the journal was put
-in run order. -/
-theorem onRunning_ok {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Option State}
-    {transition : State → Outcome} {after : State} (ran : onRunning hooks ctx input before transition = .ok after) :
-    ∃ state start moved settled, before = some state ∧ state.status = .running ∧
-      advanceClock (inputHead input).2.1 { state with journal := [], outbox := [], draft := {}, writes := [] } = .ok start ∧
-      microStep hooks ctx (.input (inputHead input).1) none State.root transition start = .ok moved ∧
-      settle hooks ctx closureBound closureWorkBound moved = .ok settled ∧
-      after = { settled with journal := settled.journal.reverse } := by
-  unfold onRunning at ran
-  split at ran
-  · simp at ran
-  · rename_i state
-    split at ran
-    · simp at ran
-    · rename_i running
-      split at ran
-      rename_i tag at? choices head
-      obtain ⟨start, clocked, ran⟩ := bind_ok ran
-      obtain ⟨_, _, ran⟩ := bind_ok ran
-      obtain ⟨moved, stepped, ran⟩ := bind_ok ran
-      obtain ⟨final, settled, made⟩ := orderJournal_ok ran
-      exact ⟨state, start, moved, final, by simp, by simpa using running, by simpa [head] using clocked,
-        by simpa [head] using stepped, settled, made⟩
+/-! ### The inputs' bodies
 
-/-- `Step.step` is a start's run, or a running input's transition and closure (`onRunning_ok`). -/
-theorem step_ok {hooks : Hooks} {program : Program} {before : Option State} {input : Input} {after : State}
-    (ran : step hooks program before input = .ok after) :
-    (∃ payload, input = .start payload ∧ before = none ∧ StartRan hooks program payload after) ∨
-      ∃ running transition, RunsTransition hooks (inputCtx hooks program input) transition ∧
-        onRunning hooks (inputCtx hooks program input) running before transition = .ok after := by
-  unfold step at ran
-  split at ran
-  · rename_i payload
-    split at ran
-    · simp at ran
-    · left
-      obtain ⟨fired, _, ran⟩ := bind_ok ran
-      obtain ⟨start, _, ran⟩ := bind_ok ran
-      obtain ⟨_, _, ran⟩ := bind_ok ran
-      obtain ⟨initial, clocked, ran⟩ := bind_ok ran
-      obtain ⟨_, _, ran⟩ := bind_ok ran
-      obtain ⟨moved, stepped, ran⟩ := bind_ok ran
-      obtain ⟨final, settled, made⟩ := orderJournal_ok ran
-      exact ⟨payload, by simp, by simp, ⟨start, initial, moved, final, clocked, stepped, settled, made⟩⟩
-  · exact .inr ⟨_, _, .inl ⟨_, rfl⟩, ran⟩
-  · refine .inr ⟨_, _, .inr (.inr fun state after transition => ?_), ran⟩
-    obtain ⟨⟨item, fired⟩, picked, fire⟩ := bind_ok transition
-    exact ⟨item, fired, .inr ⟨_, picked⟩, fire⟩
-  · refine .inr ⟨_, _, .inr (.inr fun state after transition => ?_), timerJob_ok ran⟩
-    split at transition
-    · simp at transition
-    · exact ⟨_, _, .inl (Laws.Hooks.item?_mem ‹_›), transition⟩
-  · obtain ⟨reported, ran⟩ := effectContinuation_ok ran
-    exact .inr ⟨_, _, .inr (.inl ⟨reported, rfl⟩), ran⟩
+Each input body of `Kernel.Step` restated whole, so `Kernel.Laws.Step.Inputs` reads what a committed or rejected input
+ran without opening `Kernel.Step`. -/
+
+theorem step_eq {hooks : Hooks} {program : Program} {before : Option State} {input : Input} :
+    step hooks program before input =
+      let ctx := { context hooks program with conditionChoices := (inputHead input).2.2 }
+      match input with
+      | .start payload =>
+        match before with
+        | some _ => .error (.rejected "instance-already-started")
+        | none => do
+          let start ← chooseStart payload.startEvent (← hooks.startsFired ctx payload)
+          admitValues (payload.variables.map (·.2))
+          let initial ← advanceClock payload.atMs
+            ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root))
+          admitChoices hooks ctx
+          orderJournal <| settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input .start)
+            (some start) State.root (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger })
+            initial)
+      | .command data => onRunning hooks ctx input before (command hooks ctx data)
+      | .deliver data => onRunning hooks ctx input before fun state => do
+        let (item, fired) ← hooks.delivered ctx data state
+        fireItem hooks ctx item fired state
+      | .timerFire data => timerJob ctx.program.options.continuationFailure <| onRunning hooks ctx input before fun state =>
+        match item? ctx state data.occurrence (·.deadlineMs) with
+        | none => .error (.rejected "unknown-timer")
+        | some item => fireItem hooks ctx item (.timer data.logicalTimeMs) state
+      | .effectResult data =>
+        effectContinuation ctx data fun data =>
+          onRunning hooks ctx (.effectResult data) before (deliverEffectResult hooks ctx data) := by
+  unfold step; rfl
+
+theorem onRunning_eq {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Option State}
+    {transition : State → Outcome} :
+    onRunning hooks ctx input before transition =
+      (match before with
+      | none => .error (.rejected "instance-not-started")
+      | some state =>
+        if state.status != .running then .error (.rejected "instance-not-running")
+        else do
+          let (tag, at?, _) := inputHead input
+          let start ← advanceClock at? { state with journal := [], outbox := [], draft := {}, writes := [] }
+          admitChoices hooks ctx
+          orderJournal (settle hooks ctx closureBound closureWorkBound
+            (← microStep hooks ctx (.input tag) none State.root transition start))) := by
+  unfold onRunning; rfl
+
+/-- `Step.command` restated, with `Step.atActivity` unfolded. -/
+theorem command_eq {hooks : Hooks} {ctx : Ctx} {data : CommandInput} {state : State} :
+    command hooks ctx data state =
+      let incident (resolve : OpenItem → IncidentDetail → Outcome) : Outcome :=
+        match itemDetail? ctx state data.occurrence (·.incident) with
+        | none => .error (.rejected "unknown-incident")
+        | some (item, detail) => resolve item detail
+      let variables (act : ScopeOccurrenceId → Signal) : Outcome :=
+        match occurrenceOf? ctx state data.occurrence with
+        | none => .error (.rejected "unknown-occurrence")
+        | some occurrence => .ok (state.signal (act (state.ownScope occurrence.id occurrence.scope)))
+      match data.action with
+      | .completeUserTask values =>
+        match item? ctx state data.occurrence (·.userTask) with
+        | none => .error (.rejected "unknown-user-task")
+        | some item =>
+          match (ctx.program.element? item.element).bind (·.activity?) with
+          | some (header, payload) => hooks.completeUserTask ctx header payload item values state
+          | none => .error (.semanticFailure "activity-item-without-activity")
+      | .retryIncident generation => incident fun item detail => hooks.retryIncident ctx item detail generation state
+      | .cancelIncidentProcess generation => incident fun _ detail => hooks.cancelIncidentProcess ctx detail generation state
+      | .setVariables values =>
+        admitValues (values.map (·.2)) *> variables fun scope => .write scope values .outward
+      | .removeVariables names => variables fun scope => .remove scope names := by
+  unfold command atActivity; rfl
+
+theorem deliverEffectResult_eq {hooks : Hooks} {ctx : Ctx} {data : EffectInput} {state : State} :
+    deliverEffectResult hooks ctx data state =
+      match item? ctx state data.occurrence (·.effect) with
+      | none => .error (.rejected "unknown-effect")
+      | some item => hooks.effectResult ctx item data.outcome state := by
+  unfold deliverEffectResult; rfl
+
+/-- A micro-step whose body rejects rejects: no transaction boundary turns a rejection into another failure
+(`Step.deferred`). -/
+theorem microStep_rejected {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Option ElementId}
+    {owner : ScopeOccurrenceId} {body : State → Outcome} {state : State} {code : String}
+    (rejected : body state = .error (.rejected code)) :
+    microStep hooks ctx cause element owner body state = .error (.rejected code) := by
+  simp [microStep, bind, Except.bind, rejected, deferred]
+
+/-- The clock fails only by rejecting the input's time. -/
+theorem advanceClock_error {at? : Option Nat} {state : State} {failure : Failure}
+    (ran : advanceClock at? state = .error failure) : ∃ code, failure = .rejected code := by
+  unfold advanceClock at ran
+  split at ran <;> (try split at ran) <;> first | simp at ran; done | exact ⟨_, (Except.error.inj ran).symm⟩
+
+/-- An input's ranking of competing Conditional items fails only by being rejected. -/
+theorem admitChoices_error {hooks : Hooks} {ctx : Ctx} {failure : Failure}
+    (ran : admitChoices hooks ctx = .error failure) : ∃ code, failure = .rejected code := by
+  unfold admitChoices at ran
+  dsimp only at ran
+  split at ran <;> (try split at ran) <;> first | simp at ran; done | exact ⟨_, (Except.error.inj ran).symm⟩
 
 /-- A committed absorb left the micro-step's state as it was, or ran the micro-step's sole completion after taking it
 off the queue. -/
@@ -402,15 +449,10 @@ theorem scope_stale {hooks : Hooks} {ctx : Ctx} {signal : Signal} {scope : Scope
   rcases names with ⟨_, _, rfl⟩ | rfl | ⟨_, _, rfl⟩ | ⟨_, rfl, rfl⟩ | ⟨_, _, ⟨_, _, rfl⟩⟩ <;>
     exact perform_stale (by simp_all [stale, signalWork])
 
-/-! ### Inputs no lookup addresses
+/-! ### What an addressed input's lookups and jobs read
 
-An addressed input whose occurrence reference no lookup finds is rejected (`step_unknown`). The lookups run on the
-transition's start state, so the premise speaks of every state agreeing with the before-state on what they read. -/
-
-/-- The fields an addressed lookup reads agree with `state`'s. -/
-def Agrees (state s : State) : Prop :=
-  s.occurrences = state.occurrences ∧ s.openItems = state.openItems ∧ s.scopes = state.scopes ∧
-    s.instanceId = state.instanceId
+The body facts behind `Kernel.Laws.Step.Inputs.step_unknown`: what an occurrence lookup finds, and that a timer firing
+and an effect result pass a rejection through. -/
 
 /-- What `Step.occurrenceOf?` finds is an occurrence of the state with the reference's element, activation and
 instance, numbered under its element's counter, and begun or waited for by an open item. -/
@@ -424,28 +466,6 @@ theorem occurrenceOf?_some {ctx : Ctx} {state : State} {ref : OccurrenceRef} {oc
   simp only [Bool.and_eq_true, Bool.or_eq_true, beq_iff_eq, List.any_eq_true] at holds
   exact ⟨List.mem_of_find?_eq_some found, ⟨holds.1.2, holds.1.1.2, holds.2⟩, holds.1.1.1.2, holds.1.1.1.1⟩
 
-theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : State} {transition : State → Outcome}
-    (rejects : ∀ s : State, Agrees state s → ∃ code, transition s = .error (.rejected code)) :
-    ∃ code, onRunning hooks ctx input (some state) transition = .error (.rejected code) := by
-  simp only [onRunning]
-  split
-  · exact ⟨_, rfl⟩
-  · have clocked : ∀ at? : Option Nat, (∃ code, advanceClock at? { state with journal := [], outbox := [], draft := {}, writes := [] } = .error (.rejected code)) ∨
-        ∃ start, advanceClock at? { state with journal := [], outbox := [], draft := {}, writes := [] } = .ok start ∧ Agrees state start := by
-      intro at?
-      unfold advanceClock
-      split <;> (try split) <;> first | exact .inl ⟨_, rfl⟩ | exact .inr ⟨_, rfl, rfl, rfl, rfl, rfl⟩
-    have chosen : (∃ code, admitChoices hooks ctx = .error (.rejected code)) ∨ admitChoices hooks ctx = .ok () := by
-      unfold admitChoices
-      dsimp only
-      split <;> (try split) <;> first | exact .inl ⟨_, rfl⟩ | exact .inr rfl
-    rcases clocked (inputHead input).2.1 with ⟨code, clock⟩ | ⟨start, clock, agrees⟩
-    · exact ⟨code, by simp [bind, Except.bind, clock]⟩
-    · rcases chosen with ⟨code, chose⟩ | chose
-      · exact ⟨code, by simp [bind, Except.bind, clock, chose]⟩
-      · obtain ⟨code, rejected⟩ := rejects start agrees
-        exact ⟨code, by simp [bind, Except.bind, clock, chose, microStep, rejected, deferred]⟩
-
 theorem rejected_timerJob {failure : ContinuationFailure} {outcome : Outcome}
     (rejected : ∃ code, outcome = .error (.rejected code)) : ∃ code, timerJob failure outcome = .error (.rejected code) := by
   obtain ⟨code, same⟩ := rejected
@@ -458,61 +478,6 @@ theorem rejected_effectContinuation {ctx : Ctx} {data : EffectInput} {run : Effe
   refine ⟨code, ?_⟩
   unfold effectContinuation
   split <;> simp_all
-
-/-- An addressed input whose occurrence reference neither `occurrenceOf?` nor `itemDetail?` finds, on any state that
-agrees with the before-state on what they read, is rejected. -/
-theorem step_unknown {hooks : Hooks} {program : Program} {state : State} {input : Input} {ref : OccurrenceRef}
-    (addressed : (∃ data : CommandInput, input = .command data ∧ data.occurrence = ref) ∨
-      (∃ data : TimerInput, input = .timerFire data ∧ data.occurrence = ref) ∨
-      ∃ data : EffectInput, input = .effectResult data ∧ data.occurrence = ref)
-    (unknown : ∀ (ctx : Ctx) (s : State), ctx.program = program → s.occurrences = state.occurrences →
-      s.openItems = state.openItems → s.scopes = state.scopes → s.instanceId = state.instanceId →
-      occurrenceOf? ctx s ref = none ∧ ∀ {α : Type} (detail : WaitView → Option α), itemDetail? ctx s ref detail = none) :
-    ∃ code, step hooks program (some state) input = .error (.rejected code) := by
-  have lookups : ∀ s, Agrees state s → occurrenceOf? (inputCtx hooks program input) s ref = none ∧
-      ∀ {α : Type} (detail : WaitView → Option α), itemDetail? (inputCtx hooks program input) s ref detail = none :=
-    fun s ⟨o, i, sc, id⟩ => unknown _ s rfl o i sc id
-  have itemNone : ∀ s, Agrees state s → ∀ {α : Type} (detail : WaitView → Option α),
-      item? (inputCtx hooks program input) s ref detail = none := fun s agrees _ detail =>
-    Laws.Hooks.item?_none ((lookups s agrees).2 detail)
-  rcases addressed with ⟨data, rfl, rfl⟩ | ⟨data, rfl, rfl⟩ | ⟨data, rfl, rfl⟩
-  · unfold step
-    refine onRunning_rejects fun s agrees => ?_
-    unfold command
-    have items : ∀ {α : Type} (detail : WaitView → Option α),
-        item? (inputCtx hooks program (.command data)) s data.occurrence detail = none := itemNone s agrees
-    have details : ∀ {α : Type} (detail : WaitView → Option α),
-        itemDetail? (inputCtx hooks program (.command data)) s data.occurrence detail = none := (lookups s agrees).2
-    have occurrences := (lookups s agrees).1
-    simp only [inputCtx] at items details occurrences
-    cases data.action with
-    | completeUserTask values => simp [items]
-    | retryIncident generation => simp [details]
-    | cancelIncidentProcess generation => simp [details]
-    | setVariables values =>
-      simp only [occurrences, SeqRight.seqRight, Except.bind]
-      split
-      · rename_i failure failed
-        exact ⟨"value-outside-domain", by rw [Laws.Hooks.admitValues_error failed]⟩
-      · simp
-    | removeVariables names => simp [occurrences]
-  · unfold step
-    apply rejected_timerJob
-    apply onRunning_rejects
-    intro s agrees
-    have items : ∀ {α : Type} (detail : WaitView → Option α),
-        item? (inputCtx hooks program (.timerFire data)) s data.occurrence detail = none := itemNone s agrees
-    simp only [inputCtx] at items
-    simp [items]
-  · unfold step
-    apply rejected_effectContinuation
-    intro reported addressed
-    apply onRunning_rejects
-    intro s agrees
-    have items : ∀ {α : Type} (detail : WaitView → Option α),
-        item? (inputCtx hooks program (.effectResult data)) s data.occurrence detail = none := itemNone s agrees
-    simp only [inputCtx] at items
-    simp [deliverEffectResult, addressed, items]
 
 
 /-! ### What each body ran
@@ -594,24 +559,6 @@ theorem completeIdleScope_ok {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrenc
         | gateway header payload => simp at ran
         | start header payload => simp at ran
 
-theorem nextToken_rest {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
-    (next : nextToken ctx state = some (token, rest)) : rest.Sublist state.tokens := by
-  unfold nextToken at next
-  dsimp only at next
-  split at next
-  · split at next
-    · simp at next
-    · rename_i head tail queued
-      obtain ⟨_, same⟩ := Prod.mk.inj (Option.some.inj next)
-      rw [← same, queued]
-      exact List.sublist_cons_self head tail
-  · split at next
-    · simp at next
-    · obtain ⟨_, _, made⟩ := Option.map_eq_some_iff.mp next
-      obtain ⟨_, same⟩ := Prod.mk.inj made
-      rw [← same]
-      exact List.dropLast_sublist _
-
 /-- The closure takes the oldest token or the newest. -/
 theorem nextToken_shape {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
     (next : nextToken ctx state = some (token, rest)) : (ctx.program.options.branchSchedule = .orderInvariant ∧
@@ -631,6 +578,12 @@ theorem nextToken_shape {ctx : Ctx} {state : State} {token : Token} {rest : List
       subst first same
       obtain ⟨front, split⟩ := List.getLast?_eq_some_iff.mp found
       exact .inr (by rw [split, List.dropLast_concat])
+
+theorem nextToken_rest {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
+    (next : nextToken ctx state = some (token, rest)) : rest.Sublist state.tokens := by
+  rcases nextToken_shape next with ⟨_, queued⟩ | queued <;> rw [queued]
+  · exact List.sublist_cons_self token rest
+  · exact List.sublist_append_left rest [token]
 
 theorem idleScope_mem {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
     (idle : idleScope? ctx state = some scope) : scope ∈ state.scopes := by
@@ -751,51 +704,6 @@ theorem dispatchBegin_ok {hooks : Hooks} {ctx : Ctx} {request : BeginRequest} {s
     (ran : dispatchSignal hooks ctx (.begin request) state = .ok after) : begin hooks ctx request state = .ok after := by
   obtain ⟨_, _, ran⟩ := perform_ok (dispatchSignal_eq ▸ ran)
   exact beginWork_run ▸ ran
-
-theorem command_ok {hooks : Hooks} {ctx : Ctx} {data : CommandInput} {state after : State}
-    (ran : command hooks ctx data state = .ok after) : Commands hooks ctx state after := by
-  unfold command at ran
-  cases action : data.action with
-  | completeUserTask values =>
-    simp only [action] at ran
-    cases found : item? ctx state data.occurrence (·.userTask) with
-    | none => simp [found] at ran
-    | some item =>
-      simp only [found] at ran
-      unfold atActivity at ran
-      split at ran
-      · exact .completeUserTask (Laws.Hooks.item?_mem found) ‹_› ran
-      · simp at ran
-  | retryIncident generation =>
-    simp only [action] at ran
-    split at ran
-    · simp at ran
-    · exact .retryIncident (Laws.Hooks.itemDetail?_mem ‹_›) (Laws.Hooks.itemDetail?_view ‹_›) ran
-  | cancelIncidentProcess generation =>
-    simp only [action] at ran
-    split at ran
-    · simp at ran
-    · exact .cancelIncidentProcess ran
-  | setVariables values =>
-    simp only [action] at ran
-    obtain ⟨_, _, ran⟩ := bind_ok ran
-    split at ran
-    · simp at ran
-    · exact .write (Except.ok.inj ran).symm
-  | removeVariables names =>
-    simp only [action] at ran
-    split at ran
-    · simp at ran
-    · exact .remove (Except.ok.inj ran).symm
-
-theorem deliverEffectResult_ok {hooks : Hooks} {ctx : Ctx} {data : EffectInput} {state after : State}
-    (ran : deliverEffectResult hooks ctx data state = .ok after) :
-    ∃ item ∈ state.openItems, item.kind.view.effect.isSome = true ∧
-      hooks.effectResult ctx item data.outcome state = .ok after := by
-  unfold deliverEffectResult at ran
-  split at ran
-  · simp at ran
-  · exact ⟨_, Laws.Hooks.item?_mem ‹_›, Laws.Hooks.item?_view ‹_›, ran⟩
 
 /-! ## The program of a step and the elements a dispatch reaches
 
