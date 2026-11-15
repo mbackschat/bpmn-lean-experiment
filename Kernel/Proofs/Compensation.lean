@@ -114,7 +114,10 @@ def CompensationsFresh : Prop :=
 one, and leaves every other record retained (`Laws.Compensation.TakesOut`); the run, as taken, then advances once
 (`Laws.Compensation.Advances`), or, holding nothing, ends at once and continues its thrower (COMPH-EXCLUSIVE-01).
 Stated of `Hooks.compensate`, which `Step` calls for a queued `Signal.compensate` as a `FreshCall` (`CompensationsFresh`)
-on a state that keeps the lane relation.
+on a well-formed state that keeps the lane relation. `WellFormed` is needed (root decision on the P5 TakesOutOnce stop,
+2026-11-15): a scope occurrence whose parent was never issued would lie below a handler's fresh context, and a run
+holding that context running would release it, removing a kept record (P5 probe `T2`); `IssuedBelow` with `Rooted` and
+`RunPlaced` exclude both.
 
 P0 said that some run of the after-state with the trigger takes out exactly the selected records. That was false (P5
 design probe `R2`): the after-state holds the run after its first advance, whose started handlers have left `pending`;
@@ -124,7 +127,7 @@ taken and every other one kept, of the run as taken: every record retained in a 
 stays retained exactly when it was kept (§13.5.5, the #103 account). -/
 def TakesOutOnce (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
   ∀ (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
-    (leave : Option Nat) (resume : Option Resume) (state after : State),
+    (leave : Option Nat) (resume : Option Resume) (state after : State), WellFormed ctx.program state →
     Formed (Depends ctx.program (reads ctx) (writes ctx)) state → FreshCall state scope trigger resume →
     hooks.compensate ctx scope activity trigger leave resume state = .ok after →
     ∃ covered taken kept, taken.trigger = trigger ∧ taken.scope = scope ∧ taken.running = [] ∧
@@ -139,14 +142,18 @@ def TakesOutOnce (hooks : Hooks) (reads writes : Ctx → ElementId → List Stri
 
 /-- Handler order: every change a hook makes to a run in progress is one `Advances` of it under `Depends`
 (`Laws.Compensation.Advances`), so no handler starts while one that must complete before it is pending or running.
-Stated of `Hooks.compensate` and `Hooks.handlerCompleted`, the hooks that start handlers, on a state that keeps the
-lane relation, as `Step` calls them (root decision D2, 2026-11-15); the new run's first advance is `TakesOutOnce`'s.
+Stated of `Hooks.compensate` and `Hooks.handlerCompleted`, the hooks that start handlers, on a well-formed state that
+keeps the lane relation, as `Step` calls them (root decision D2, 2026-11-15), and for a compensation that is a
+`FreshCall`, as every one `Step` performs is (`compensationsFresh`, root decision on the P5 TakesOutOnce stop,
+2026-11-15); `WellFormed` is `TakesOutOnce`'s premise for the same reason. The new run's first advance is
+`TakesOutOnce`'s.
 `reads` and `writes` name what each subject's run reads and writes; the lane binds them to the kernel's footprint
 `NameSet`s through `Laws.IL.listed` (`Laws.IL.NameSet.meets_iff_listed`, root decision D3, 2026-11-15). -/
 def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
-  ∀ (ctx : Ctx) (state after : State) (run next : CompensationRun),
+  ∀ (ctx : Ctx) (state after : State) (run next : CompensationRun), WellFormed ctx.program state →
     Formed (Depends ctx.program (reads ctx) (writes ctx)) state →
-    ((∃ scope activity trigger leave resume, hooks.compensate ctx scope activity trigger leave resume state = .ok after) ∨
+    ((∃ scope activity trigger leave resume, FreshCall state scope trigger resume ∧
+        hooks.compensate ctx scope activity trigger leave resume state = .ok after) ∨
       ∃ context occurrence, hooks.handlerCompleted ctx context occurrence state = .ok after) →
     run ∈ state.slots.compensation.runs → next ∈ after.slots.compensation.runs → next.trigger = run.trigger →
     next.scope = run.scope → ∃ released started, Advances (Depends ctx.program (reads ctx) (writes ctx)) released next started ∧

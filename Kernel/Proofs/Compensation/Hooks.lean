@@ -113,7 +113,10 @@ theorem ready_iff {ctx : Ctx} {precedes : Compensable → Compensable → Prop}
 
 /-- What an advance of the run `trigger` started in `scope` keeps from `s` to `t`: what a hook keeps (`Tame`, `Moves`),
 no completion number more often, and every run it leaves either one of `s`'s of another key or one the lane relation
-accepts; while no run holds `scope` as a running context, it keeps every run of another key. -/
+accepts; while no run holds `scope` as a running context, it keeps every run of another key. Each run of its key is
+one advance of the first run of `s` of that key, every other run `Steps` from `s`, and while no run of the key resumes
+a group or no run holds `scope`, it releases nothing: every record retained in a scope occurrence `s` had issued stays
+as it was, and every run it leaves is of the key, one of `s`'s or freshly scoped. -/
 structure AdvanceFormed (precedes : Compensable → Compensable → Prop) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef)
     (s t : State) : Prop where
   tame : Tame t
@@ -123,16 +126,27 @@ structure AdvanceFormed (precedes : Compensable → Compensable → Prop) (scope
     (run ∈ s.slots.compensation.runs ∧ ¬ Keyed scope trigger run) ∨ Good precedes run
   kept : Laws.Compensation.Unheld s scope → ∀ run ∈ s.slots.compensation.runs, ¬ Keyed scope trigger run →
     run ∈ t.slots.compensation.runs
+  keyedSteps : ∀ next ∈ t.slots.compensation.runs, Keyed scope trigger next →
+    ∃ first ∈ s.slots.compensation.runs, Keyed scope trigger first ∧ ∃ started, Advances precedes first next started
+  steps : ∀ next ∈ t.slots.compensation.runs, ¬ Keyed scope trigger next → Steps precedes s next
+  direct : ((∀ run ∈ s.slots.compensation.runs, Keyed scope trigger run → resumesGroup run.resume = false) ∨
+      Laws.Compensation.Unheld s scope) →
+    (∀ record, record.scope.value < s.nextIssue →
+      (record ∈ t.slots.compensation.retained ↔ record ∈ s.slots.compensation.retained)) ∧
+    ∀ next ∈ t.slots.compensation.runs, Keyed scope trigger next ∨ next ∈ s.slots.compensation.runs ∨
+      s.nextIssue ≤ next.scope.value
 
-/-- What a release keeps from `s` to `t`. -/
+/-- What a release keeps from `s` to `t`, each run it leaves `Steps` from `s`. -/
 structure ReleaseFormed (precedes : Compensable → Compensable → Prop) (s t : State) : Prop where
   tame : Tame t
   moves : Moves s t
   counted : ∀ n, (completions t.slots.compensation).count n ≤ (completions s.slots.compensation).count n
   runs : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs ∨ Good precedes run
+  steps : ∀ next ∈ t.slots.compensation.runs, Steps precedes s next
 
 /-- What beginning the handlers of `records` keeps from `s` to `t`, the children of the begun records added to what it
-holds, each begun in a context issued meanwhile. -/
+holds, each begun in a context issued meanwhile, keeping every record retained in a scope occurrence `s` had issued and
+leaving no run but `s`'s and freshly scoped ones. -/
 structure BegunFormed (precedes : Compensable → Compensable → Prop) (records : List Compensable)
     (contexts : List ScopeOccurrenceId) (s t : State) : Prop where
   tame : Tame t
@@ -142,6 +156,9 @@ structure BegunFormed (precedes : Compensable → Compensable → Prop) (records
   runs : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs ∨ Good precedes run
   kept : ∀ run ∈ s.slots.compensation.runs, run ∈ t.slots.compensation.runs
   fresh : ∀ context ∈ contexts, s.nextIssue ≤ context.value ∧ context.value < t.nextIssue
+  retained : ∀ record, record.scope.value < s.nextIssue →
+    (record ∈ t.slots.compensation.retained ↔ record ∈ s.slots.compensation.retained)
+  plain : ∀ next ∈ t.slots.compensation.runs, next ∈ s.slots.compensation.runs ∨ s.nextIssue ≤ next.scope.value
 
 /-- What `Compensation.advance` keeps at `fuel`. -/
 def AdvanceKept (precedes : Compensable → Compensable → Prop) (ctx : Ctx) (fuel : Nat) : Prop :=
@@ -190,9 +207,10 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
         rw [contextEq] at this
         exact Nat.lt_irrefl _ this
       · cases running
+    have direct := post.direct (.inr unheld)
     refine ⟨post.tame, (moves_withRun s record.subject scope record.snapshot (by simp [resumesGroup])
       (source.imp fun _ found => ⟨found.1, found.2⟩)).trans post.moves, fun n => ?_, fun run inside => ?_,
-      fun run inside => ?_, fun context' inside => ?_⟩
+      fun run inside => ?_, fun context' inside => ?_, fun record' below => ?_, fun later inside => ?_⟩
     · have bound := post.counted n
       simp only [withRun, stored, slots, count_completions, List.flatMap_append, List.count_append, List.flatMap_cons,
         List.flatMap_nil, List.append_nil, runCompletions, completionsIn_rescope, List.map_nil,
@@ -212,6 +230,17 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
     · rw [List.mem_singleton.mp inside, contextEq]
       exact ⟨Nat.le_refl _, Nat.lt_of_lt_of_le (by simp only [withRun, stored, next]; exact Nat.lt_succ_self _)
         post.moves.issued⟩
+    · have kept := direct.1 record' (by simp only [withRun, stored, next]; omega)
+      simp only [withRun, stored, slots] at kept
+      exact kept
+    · rcases direct.2 later inside with keyed | old | fresh
+      · exact .inr (Nat.le_of_eq (by rw [keyed.1, contextEq]))
+      · simp only [withRun, stored, slots, List.mem_append, List.mem_singleton] at old
+        rcases old with older | rfl
+        · exact .inl older
+        · exact .inr (Nat.le_of_eq (by rw [contextEq]))
+      · simp only [withRun, stored, next] at fresh
+        exact .inr (by omega)
   · obtain ⟨_, _, entering, rfl⟩ := rest
     obtain ⟨rfl, rfl⟩ : entered = _ ∧ context = _ :=
       ⟨(congrArg Prod.fst entering).symm, (congrArg Prod.snd entering).symm⟩
@@ -222,7 +251,7 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
       fun child inside => by obtain ⟨_, _, rfl⟩ := List.mem_map.mp inside; rfl
     refine ⟨tame_signal tameHandled _, (moves_withRetained s handler scope record.snapshot _).trans
       (moves_signal _ (Laws.Step.untriggered_begin _)), fun n => ?_, fun run inside => .inl ?_, fun run inside => ?_,
-      fun context' inside => ?_⟩
+      fun context' inside => ?_, fun record' below => ?_, fun next inside => .inl ?_⟩
     · rw [Laws.State.signal_eq]
       simp only [stored, slots, count_completions, completionsIn_append, List.count_append,
         completionsIn_rescope, childrenCompletions_one]
@@ -234,6 +263,15 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
     · rw [List.mem_singleton.mp inside, Laws.State.signal_eq, contextEq]
       simp only [stored, next]
       exact ⟨Nat.le_refl _, Nat.lt_succ_self _⟩
+    · rw [Laws.State.signal_eq]
+      simp only [stored, slots, List.mem_append, List.mem_map]
+      constructor
+      · rintro (old | ⟨child, _, rfl⟩)
+        · exact old
+        · simp [contextEq] at below
+      · exact .inl
+    · rw [Laws.State.signal_eq] at inside
+      simpa only [withRetained, stored, slots] using inside
 
 /-- Beginning the handlers of `started` one after another keeps what each begin keeps. -/
 theorem chain_formed {precedes : Compensable → Compensable → Prop} {ctx : Ctx} {less : Nat}
@@ -245,13 +283,15 @@ theorem chain_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
   induction chain with
   | nil s =>
     exact ⟨tame, .refl s, fun n => by simp [childrenCompletions], fun run inside => .inl inside, fun _ inside => inside,
-      fun _ inside => by cases inside⟩
+      fun _ inside => (by cases inside), fun _ _ => Iff.rfl, fun _ inside => .inl inside⟩
   | cons began _ ih =>
     have first := begins _ _ _ _ _ _ tame source began
     obtain ⟨run, member, named⟩ := source
     have later := ih first.tame ⟨run, first.kept run member, named⟩
     refine ⟨later.tame, first.moves.trans later.moves, fun n => ?_, fun run inside => ?_,
-      fun run inside => later.kept run (first.kept run inside), fun context inside => ?_⟩
+      fun run inside => later.kept run (first.kept run inside), fun context inside => ?_,
+      fun record below => (later.retained record (Nat.lt_of_lt_of_le below first.moves.issued)).trans
+        (first.retained record below), fun next inside => ?_⟩
     · have one := first.counted n
       have two := later.counted n
       simp only [List.map_cons, childrenCompletions, List.flatMap_cons, List.flatMap_nil, List.append_nil,
@@ -266,23 +306,40 @@ theorem chain_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
         exact ⟨bounds.1, Nat.lt_of_lt_of_le bounds.2 later.moves.issued⟩
       · have bounds := later.fresh _ rest
         exact ⟨Nat.le_trans first.moves.issued bounds.1, bounds.2⟩
+    · rcases later.plain next inside with old | fresh
+      · exact first.plain next old
+      · exact .inr (Nat.le_trans first.moves.issued fresh)
 
 /-- A run of another key is no `isRun` of that key. -/
 theorem isRun_false {scope : ScopeOccurrenceId} {trigger : OccurrenceRef} {run : CompensationRun} :
     Feature.Compensation.isRun scope trigger run = false ↔ ¬ Keyed scope trigger run := by
-  rw [← Laws.Compensation.isRun_iff]; simp
+  rw [← Laws.Compensation.isRun_iff]
+  simp
 
 /-- An advance whose result holds the runs of `s` but those of its key keeps what `AdvanceKept` says. -/
 theorem advanceFormed_filtered {precedes : Compensable → Compensable → Prop} {scope : ScopeOccurrenceId}
     {trigger : OccurrenceRef} {s t : State} (tame : Tame t) (moves : Moves s t)
     (counted : ∀ n, (completions t.slots.compensation).count n ≤ (completions s.slots.compensation).count n)
-    (runs : t.slots.compensation.runs = s.slots.compensation.runs.filter (!Feature.Compensation.isRun scope trigger ·)) :
+    (runs : t.slots.compensation.runs = s.slots.compensation.runs.filter (!Feature.Compensation.isRun scope trigger ·))
+    (retained : t.slots.compensation.retained = s.slots.compensation.retained) :
     AdvanceFormed precedes scope trigger s t := by
-  refine ⟨tame, moves, counted, fun run inside => .inl ?_, fun _ run inside other => ?_⟩
-  · rw [runs, List.mem_filter, Bool.not_eq_true', isRun_false] at inside
-    exact inside
-  · rw [runs, List.mem_filter, Bool.not_eq_true', isRun_false]
-    exact ⟨inside, other⟩
+  have left : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs ∧ ¬ Keyed scope trigger run :=
+    fun run inside => by
+      rw [runs, List.mem_filter, Bool.not_eq_true', isRun_false] at inside
+      exact inside
+  refine ⟨tame, moves, counted, fun run inside => .inl (left run inside), fun _ run inside other => ?_,
+    fun next inside keyed => absurd keyed (left next inside).2,
+    fun next inside _ => .inr ⟨next, (left next inside).1, rfl, rfl, .inl rfl⟩,
+    fun _ => ⟨fun record _ => by rw [retained], fun next inside => .inr (.inl (left next inside).1)⟩⟩
+  rw [runs, List.mem_filter, Bool.not_eq_true', isRun_false]
+  exact ⟨inside, other⟩
+
+/-- An advance under the kernel's dependency is one under the lane relation's. -/
+theorem advances_of {ctx : Ctx} {precedes : Compensable → Compensable → Prop}
+    (orders : ∀ record other, Feature.Compensation.precedes ctx record other = true ↔ precedes record other)
+    {run after : CompensationRun} {started : List Compensable}
+    (law : Advances (Feature.Compensation.precedes ctx · · = true) run after started) : Advances precedes run after started := by
+  simpa only [Advances, ready_iff orders] using law
 
 /-- `Compensation.advance` keeps what `AdvanceKept` says, given what the begins and releases it runs keep. -/
 theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : Ctx} {less : Nat}
@@ -310,30 +367,54 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
     have countedEnded : ∀ n, (completions ended.slots.compensation).count n ≤ (completions s.slots.compensation).count n :=
       fun n => by rw [quieted.slots]; exact counted_fewer s fewer n
     have runsEnded : ended.slots.compensation.runs =
-        s.slots.compensation.runs.filter (!Feature.Compensation.isRun scope trigger ·) := by rw [quieted.slots]; rfl
+        s.slots.compensation.runs.filter (!Feature.Compensation.isRun scope trigger ·) := by
+      rw [quieted.slots]
+      rfl
+    have retainedEnded : ended.slots.compensation.retained = s.slots.compensation.retained := by
+      rw [quieted.slots]
+      rfl
+    have left : ∀ other ∈ ended.slots.compensation.runs,
+        other ∈ s.slots.compensation.runs ∧ ¬ Keyed scope trigger other := fun other inside => by
+      rw [runsEnded, List.mem_filter, Bool.not_eq_true', isRun_false] at inside
+      exact inside
     rcases resumed : run.resume with _ | ⟨occurrence, leave⟩ | ⟨element, at_, leave⟩ | ⟨outer, context⟩
     · rw [resumedNone resumed]
-      exact advanceFormed_filtered tameEnded movesEnded countedEnded runsEnded
+      exact advanceFormed_filtered tameEnded movesEnded countedEnded runsEnded retainedEnded
     · have last : Quieted ended t := .inr ⟨_, Laws.Step.untriggered_complete _ _ _ _, resumedComplete _ _ resumed⟩
       exact advanceFormed_filtered (last.tame tameEnded) (movesEnded.trans last.moves)
         (fun n => by rw [last.slots]; exact countedEnded n) (by rw [last.slots]; exact runsEnded)
+        (by rw [last.slots]; exact retainedEnded)
     · have last : Quieted ended t := .inr ⟨_, Laws.Step.untriggered_occur _ _ _ _ _, resumedOccur _ _ _ resumed⟩
       exact advanceFormed_filtered (last.tame tameEnded) (movesEnded.trans last.moves)
         (fun n => by rw [last.slots]; exact countedEnded n) (by rw [last.slots]; exact runsEnded)
+        (by rw [last.slots]; exact retainedEnded)
     · have released := resumedGroup outer context resumed
       have post := releases _ _ _ tameEnded released
-      refine ⟨post.tame, movesEnded.trans post.moves, fun n => Nat.le_trans (post.counted n) (countedEnded n),
-        fun other inside => ?_, fun unheld => ?_⟩
-      · rcases post.runs other inside with old | good
-        · rw [runsEnded, List.mem_filter, Bool.not_eq_true', isRun_false] at old
-          exact .inl old
-        · exact .inr good
-      · have own : context = scope := (tame.grouped run first.mem outer context resumed).trans first.1.1
+      have never : ¬ Laws.Compensation.Unheld s scope := fun unheld => by
+        have own : context = scope := (tame.grouped run first.mem outer context resumed).trans first.1.1
         obtain ⟨_, owner, _, rest⟩ := Laws.Compensation.release_spec released
         have found := rest.1
         have held := found.mem
         rw [runsEnded, List.mem_filter] at held
         exact absurd (own ▸ found.1) (unheld owner held.1)
+      have below : scope.value < s.nextIssue := first.1.1 ▸ tame.runsIssued run first.mem
+      refine ⟨post.tame, movesEnded.trans post.moves, fun n => Nat.le_trans (post.counted n) (countedEnded n),
+        fun other inside => ?_, fun unheld => absurd unheld never, fun next inside keyed => ?_,
+        fun next inside _ => Steps.mono (fun other member => (left other member).1) movesEnded.issued
+          (post.steps next inside), fun unresumed => ?_⟩
+      · rcases post.runs other inside with old | good
+        · exact .inl (left other old)
+        · exact .inr good
+      · rcases post.steps next inside with fresh | ⟨other, member, rest⟩
+        · have := Nat.lt_of_lt_of_le below (Nat.le_trans movesEnded.issued fresh)
+          rw [keyed.1] at this
+          exact absurd this (Nat.lt_irrefl _)
+        · exact absurd ⟨rest.1.trans keyed.1, rest.2.1.trans keyed.2⟩ (left other member).2
+      · rcases unresumed with unresumed | unheld
+        · have ungrouped := unresumed run first.mem first.1
+          rw [resumed] at ungrouped
+          cases ungrouped
+        · exact absurd unheld never
   · obtain ⟨later, started, begun, rest⟩ := progressed
     obtain ⟨advanced, perm, progress, rest⟩ := rest
     obtain ⟨chain, rfl⟩ := rest
@@ -349,8 +430,11 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
         ((begun.slots.compensation.runs.filter (!Feature.Compensation.isRun scope trigger ·) ++ [run]).map
           fun (run : CompensationRun) => (run.scope, run.trigger)) := by simp
     refine ⟨⟨post.tame.retained, ?_, fun other inside => ?_, fun other inside context running => ?_, post.tame.scopes,
-      fun other inside outer context resumed' => ?_⟩, ?_, fun n => ?_, fun other inside => ?_, fun _ other inside differs => ?_⟩
-    · unfold RunsKeyed; dsimp only [stored]
+      fun other inside outer context resumed' => ?_⟩, ?_, fun n => ?_, fun other inside => ?_, fun _ other inside differs => ?_,
+      fun other inside keyed' => ?_, fun other inside differs' => ?_,
+      fun _ => ⟨fun record below => post.retained record below, fun other inside => ?_⟩⟩
+    · unfold RunsKeyed
+      dsimp only [stored]
       rw [keysEq]
       exact ((split.map _).nodup_iff).mp post.tame.keyed
     · rcases List.mem_append.mp inside with old | new
@@ -401,6 +485,24 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
     · refine List.mem_append_left _ (List.mem_filter.mpr ⟨post.kept other inside, ?_⟩)
       rw [Bool.not_eq_true', isRun_false]
       exact differs
+    · rcases List.mem_append.mp inside with old | new
+      · have kept := List.mem_filter.mp old
+        rw [Bool.not_eq_true', isRun_false] at kept
+        exact absurd keyed' kept.2
+      · rw [List.mem_singleton.mp new]
+        exact ⟨run, first.mem, first.1, started.map (·.2), advances_of orders advanced⟩
+    · rcases List.mem_append.mp inside with old | new
+      · rcases post.plain other (List.mem_filter.mp old).1 with older | fresh
+        · exact .inr ⟨other, older, rfl, rfl, .inl rfl⟩
+        · exact .inl fresh
+      · rw [List.mem_singleton.mp new] at differs'
+        exact absurd first.1 differs'
+    · rcases List.mem_append.mp inside with old | new
+      · rcases post.plain other (List.mem_filter.mp old).1 with older | fresh
+        · exact .inr (.inl older)
+        · exact .inr (.inr fresh)
+      · rw [List.mem_singleton.mp new]
+        exact .inl first.1
 
 /-- `Compensation.release` keeps what `ReleaseKept` says, given what the advance it runs keeps. -/
 theorem release_formed {precedes : Compensable → Compensable → Prop} {ctx : Ctx} {less : Nat}
@@ -415,8 +517,38 @@ theorem release_formed {precedes : Compensable → Compensable → Prop} {ctx : 
     ⟨fun run => by split <;> rfl, fun run => by split <;> rfl, fun run => by split <;> rfl,
       fun run => by split <;> rfl, fun run => by split <;> first | exact List.filter_sublist | exact .refl _⟩
   have post := advances _ _ _ _ (tame_trimmed tame context trims) advanced
+  have nextEq : (s.leaveScope context).nextIssue = s.nextIssue := (Laws.State.leaveScope_compensation s context).2.2.2.2
   refine ⟨post.tame, (moves_trimmed s context trims).trans post.moves,
-    fun n => Nat.le_trans (post.counted n) (counted_trimmed s context trims n), fun run inside => ?_⟩
+    fun n => Nat.le_trans (post.counted n) (counted_trimmed s context trims n), fun run inside => ?_,
+    fun next inside => ?_⟩
+  rotate_left
+  · by_cases keyed : Keyed owner.scope owner.trigger next
+    · obtain ⟨first, member, rest⟩ := post.keyedSteps next inside keyed
+      obtain ⟨firstKeyed, started, law⟩ := rest
+      simp only [trimmed, stored, List.mem_map] at member
+      obtain ⟨source, sourceIn, rfl⟩ := member
+      exact .inr ⟨source, (left_runs s context).subset sourceIn,
+        (trims.sameScope source).symm.trans (firstKeyed.1.trans keyed.1.symm),
+        (trims.sameTrigger source).symm.trans (firstKeyed.2.trans keyed.2.symm),
+        .inr ⟨_, started, law, trims.samePending source, trims.sameTrigger source⟩⟩
+    · rcases post.steps next inside keyed with fresh | ⟨run, member, rest⟩
+      · simp only [trimmed, stored, nextEq] at fresh
+        exact .inl fresh
+      · obtain ⟨sameScope, sameTrigger, which⟩ := rest
+        simp only [trimmed, stored, List.mem_map] at member
+        obtain ⟨source, sourceIn, rfl⟩ := member
+        refine .inr ⟨source, (left_runs s context).subset sourceIn, (trims.sameScope source).symm.trans sameScope,
+          (trims.sameTrigger source).symm.trans sameTrigger, ?_⟩
+        rcases which with same | ⟨released, started, rest⟩
+        · by_cases run : Feature.Compensation.isRun owner.scope owner.trigger source = true
+          · have sourceKeyed := (Laws.Compensation.isRun_iff _ _ _).mp run
+            exact absurd ⟨((congrArg (·.scope) same).trans (trims.sameScope source)).trans sourceKeyed.1,
+              ((congrArg (·.trigger) same).trans (trims.sameTrigger source)).trans sourceKeyed.2⟩ keyed
+          · rw [ite_eq_right run] at same
+            exact .inl same
+        · obtain ⟨law, pending, named⟩ := rest
+          exact .inr ⟨released, started, law, pending.trans (trims.samePending source),
+            named.trans (trims.sameTrigger source)⟩
   rcases post.runs run inside with ⟨held, other⟩ | good
   · simp only [trimmed, stored, List.mem_map] at held
     obtain ⟨source, member, rfl⟩ := held

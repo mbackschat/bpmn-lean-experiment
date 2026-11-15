@@ -19,7 +19,7 @@ namespace Kernel.Proofs.Compensation
 
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds Counted Untriggered Within)
-open Kernel.Laws.Compensation (ClaimsApart Ready claimed)
+open Kernel.Laws.Compensation (ClaimsApart Advances Ready claimed)
 
 /-! ## Counting what a hook holds
 
@@ -431,6 +431,21 @@ theorem counted_trimmed (s : State) (context : ScopeOccurrenceId) {f : Compensat
   rw [count_completions] at below ⊢
   simp only [trimmed, stored, List.flatMap_map] at shrunk below ⊢
   omega
+
+/-- A run a hook's state holds, read against the state `s` the hook began from: one in a scope occurrence issued since,
+or one of the key of a run of `s`, that run itself or one advance of it released, its pending records and trigger
+kept. -/
+def Steps (precedes : Compensable → Compensable → Prop) (s : State) (next : CompensationRun) : Prop :=
+  s.nextIssue ≤ next.scope.value ∨ ∃ run ∈ s.slots.compensation.runs, run.scope = next.scope ∧
+    run.trigger = next.trigger ∧ (next = run ∨ ∃ released started, Advances precedes released next started ∧
+      released.pending = run.pending ∧ released.trigger = run.trigger)
+
+theorem Steps.mono {precedes : Compensable → Compensable → Prop} {s u : State}
+    (runs : ∀ run ∈ u.slots.compensation.runs, run ∈ s.slots.compensation.runs) (issued : s.nextIssue ≤ u.nextIssue)
+    {next : CompensationRun} (steps : Steps precedes u next) : Steps precedes s next := by
+  rcases steps with fresh | ⟨run, member, rest⟩
+  · exact .inl (Nat.le_trans issued fresh)
+  · exact .inr ⟨run, runs run member, rest⟩
 
 /-! ## Assembling the relation -/
 
