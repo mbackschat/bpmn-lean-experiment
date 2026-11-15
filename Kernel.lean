@@ -68,6 +68,8 @@ public import Kernel.Laws.MultiInstance.Witnesses
 public import Kernel.Laws.Population
 public import Kernel.Laws.Population.Timers
 public import Kernel.Laws.Propagation
+public import Kernel.Laws.Propagation.Rules
+public import Kernel.Laws.Propagation.Witnesses
 public import Kernel.Laws.Registry
 public import Kernel.Laws.Scopes
 public import Kernel.Laws.Starts
