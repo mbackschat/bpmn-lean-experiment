@@ -84,14 +84,22 @@ def Linked (program : Program) (anchor element : ElementId) : Prop :=
     ∃ found envelope, program.element? anchor = some found ∧ found.envelope? = some envelope ∧
       element ∈ envelope.compensationHandlers
 
+/-- `anchor` lies at the top level of the process the called root `scope` of `state` runs: `scope` calls an instance,
+and an instance entry of it records the definition of a process that lists `anchor` among its own elements
+(`Program.processChildren`), as `State.enterCalled` records the process a Call binds. -/
+def CalledAnchor (program : Program) (state : State) (anchor : ElementId) (scope : ScopeOccurrenceId) : Prop :=
+  (∃ root ∈ state.scopes, root.id = scope ∧ root.calledInstance.isSome) ∧
+    ∃ entry ∈ state.slots.instances, entry.root = scope ∧ ∃ process ∈ program.processes,
+      entry.definition = some process.definition ∧ ∃ child ∈ program.processChildren process, child.header.id = anchor
+
 /-- What `state` holds that places `anchor` where the scope occurrence `scope` lies: an occurrence of it there, a scope
-occurrence of it entered there or, calling no instance, `scope` itself, or an element the scope occurrence declares
-(`State.childrenOf`). -/
+occurrence of it entered there or, calling no instance, `scope` itself, an element the scope occurrence declares
+(`State.childrenOf`), or a top-level element of the process the called root `scope` runs (`CalledAnchor`). -/
 def AnchoredBy (program : Program) (state : State) (anchor : ElementId) (scope : ScopeOccurrenceId) : Prop :=
   (∃ occurrence ∈ state.occurrences, occurrence.scope = scope ∧ occurrence.element = anchor) ∨
     (∃ entry ∈ state.scopes, entry.element = some anchor ∧
       (entry.parent = some scope ∨ entry.id = scope ∧ entry.calledInstance = none)) ∨
-    ∃ child ∈ state.childrenOf program scope, child.header.id = anchor
+    (∃ child ∈ state.childrenOf program scope, child.header.id = anchor) ∨ CalledAnchor program state anchor scope
 
 /-- Where work queued for `element` in the scope occurrence `scope` of `state` comes from: one reference (`Linked`) from
 an anchor that `state` places there (`AnchoredBy`), or that a state `held` that kept `inv`, and whose scope occurrences

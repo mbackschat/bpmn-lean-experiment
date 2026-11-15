@@ -391,6 +391,14 @@ theorem misplaced_pending_rejected (thrown : OccurrenceRef) :
       (by simp [recordElements, recordsElements]))
     (placed_calledRoot (definition := definition) rfl) (by simp [placedCompensating, placedState])
 
+/-- A called root anchors no element of a program that declares no process (`Laws.Flow.CalledAnchor`). -/
+theorem unprocessed_calledAnchor_rejected (anchor : ElementId) :
+    ¬ Laws.Flow.CalledAnchor { program with processes := [] } (placedState definition) anchor ⟨1⟩ := fun anchored => by
+  obtain ⟨_, entry⟩ := anchored
+  obtain ⟨_, _, _, process⟩ := entry
+  obtain ⟨found, member, _⟩ := process
+  simp at member
+
 end Witnesses
 
 end Kernel.Proofs.Former
