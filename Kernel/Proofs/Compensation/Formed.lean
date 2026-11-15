@@ -747,7 +747,7 @@ theorem formed_occursAlongside (program : Program) (precedes : Compensable → C
       · have stands : occurrence.scope ∈ scopeIds s := List.mem_map.mpr ⟨entry, inside, named⟩
         simp only [queuedTrigger, stands, ite_true, Option.some.injEq] at found
         exact found ▸ fresh
-  enterCalled s call variables definition well _ _ _ _ kept := by
+  enterCalled s call variables definition well _ _ _ _ _ kept := by
     rw [Laws.State.enterCalled_eq s program call variables definition (Laws.State.scopes_fresh well)]
     exact kept.enter well rfl rfl rfl rfl rfl rfl rfl rfl rfl
 

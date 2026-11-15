@@ -209,7 +209,7 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
   openItem _ kind _ formed member begun unstarted role :=
     ⟨Laws.State.openItem_wellFormed formed kind member begun unstarted role, by rw [Laws.State.openItem_eq]⟩
   arm _ _ element formed member begun := queueArm_wellFormed formed member begun element
-  enterCalled _ _ variables definition formed member begun _ _ := by
+  enterCalled _ _ variables definition formed member begun _ _ _ := by
     refine ⟨Laws.State.enterCalled_wellFormed formed program member begun variables definition, ?_, ?_⟩ <;>
       rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
     simp

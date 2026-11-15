@@ -139,7 +139,8 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
     · simpa [single body] using bodied body
   cases arrives with
   | atStart ran => exact contract.arriveStart _ _ _ _ _ _ _ holds member begun ran
-  | atActivity ran => exact contract.arriveActivity _ _ _ _ _ _ holds member begun unstarted role unowned ran
+  | atActivity activity ran =>
+    exact contract.arriveActivity _ _ _ _ _ _ holds member begun unstarted role unowned activity ran
   | atScope ran => exact contract.arriveScope _ _ _ _ _ _ _ holds member begun inner ran
   | atGateway ran => exact contract.arriveGateway _ _ _ _ _ _ holds member begun ran
   | atCatch ran => exact contract.arriveCatch _ _ _ _ _ _ _ holds member begun unstarted role ran

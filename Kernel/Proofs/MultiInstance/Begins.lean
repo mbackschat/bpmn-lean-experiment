@@ -359,7 +359,8 @@ theorem beginsKept_occursAlongside (program : Program) : OccursAlongside program
     exact named.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept apart).occurs)
   throwCompensate s _ _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   raise s _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
-  enterCalled _ call variables definition formed _ _ _ _ held := held.enterCalled formed program call variables definition
+  enterCalled _ call variables definition formed _ _ _ _ _ held :=
+    held.enterCalled formed program call variables definition
 
 /-! ## Through an input -/
 

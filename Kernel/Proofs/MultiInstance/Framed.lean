@@ -341,7 +341,7 @@ theorem runsFramed_occursAlongside (program : Program) : OccursAlongside program
   raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
-  enterCalled s call variables definition formed _ _ _ _ kept := by
+  enterCalled s call variables definition formed _ _ _ _ _ kept := by
     have fresh : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ := fun entry inside same =>
       counter_fresh formed (same ▸ List.mem_map.mpr ⟨entry, inside, rfl⟩)
     rw [Laws.State.enterCalled_eq _ _ _ _ _ fresh]
@@ -714,7 +714,7 @@ theorem since_occursAlongside (b : State) (program : Program) :
   raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
-  enterCalled s call variables definition formed _ _ _ _ kept := by
+  enterCalled s call variables definition formed _ _ _ _ _ kept := by
     refine ⟨kept.1.move (.ofEnds (Laws.Step.enterCalled_frame formed program call variables definition) ?_), ?_⟩ <;>
       rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
     exact kept.2.same rfl

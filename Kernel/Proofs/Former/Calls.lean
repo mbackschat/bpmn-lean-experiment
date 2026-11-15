@@ -89,6 +89,13 @@ def Roled (s : State) : Prop :=
   ∀ root ∈ s.scopes, root.calledInstance.isSome → ∀ call ∈ s.occurrences, root.occurrence = some call.id →
     call.role = .element
 
+/-- An occurrence that owns a called root is of an Activity the program declares: only a Call invokes, and `Step.dispatch`
+hands a Call's arrival its element as an Activity (`Laws.Step.HookContract.arriveActivity`). With `PublicIdsApart`, an
+owner's authored identifier is then its element's own (root decision C-8, 2026-11-15). -/
+def ActivityOwners (program : Program) (s : State) : Prop :=
+  ∀ root ∈ s.scopes, root.calledInstance.isSome → ∀ call ∈ s.occurrences, root.occurrence = some call.id →
+    ((program.element? call.element).bind (·.activity?)).isSome
+
 /-- No occurrence owns two called roots. -/
 def OwnersApart (s : State) : Prop :=
   ∀ first ∈ s.scopes, ∀ second ∈ s.scopes, first.calledInstance.isSome → second.calledInstance.isSome →
@@ -102,11 +109,13 @@ def IdentitiesApart (s : State) : Prop :=
     first.calledInstance = second.calledInstance → first.id = second.id
 
 /-- The lane invariant of called instances, beside `Laws.State.WellFormed`, as P4's `RunsFormed` is: every called root
-is named by the occurrence that owns it (`Named`), which numbers under its element's counter (`Roled`) and owns no
-other (`OwnersApart`). An input keeps it (root decisions D3, C-1 and C-7, 2026-11-15). -/
+is named by the occurrence that owns it (`Named`), which numbers under its element's counter (`Roled`), is of an
+Activity (`ActivityOwners`) and owns no other (`OwnersApart`). An input keeps it (root decisions D3, C-1, C-7 and C-8,
+2026-11-15). -/
 structure CallsFormed (program : Program) (s : State) : Prop where
   named : Named program s
   roled : Roled s
+  activities : ActivityOwners program s
   ownersApart : OwnersApart s
 
 /-- Under `WellFormed`, a called root is named by the occurrence that owns it, which stands. -/
@@ -266,6 +275,16 @@ theorem body_owner_rejected :
   have := roled (witnessCalled 2 (some 1)) (by simp) rfl _ (List.mem_singleton_self _) rfl
   cases this
 
+/-- A called root owned by an occurrence of no Activity breaks `ActivityOwners`: the program holds no element. -/
+theorem nonActivity_owner_rejected (program : Program) :
+    ¬ ActivityOwners { program with elements := [] }
+      { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some 1)]
+        occurrences := [{ id := 1, element := ⟨"CallIt"⟩, scope := ⟨0⟩, activation := 1 }] } := fun owners => by
+  have activity := owners (witnessCalled 2 (some 1)) (by simp) rfl _ (List.mem_singleton_self _) rfl
+  cases found : ({ program with elements := [] } : Program).element? ⟨"CallIt"⟩ with
+  | none => simp [found] at activity
+  | some element => simpa using Laws.IL.element?_mem found
+
 /-- One occurrence owning two called roots breaks `OwnersApart`. -/
 theorem twice_owned_rejected :
     ¬ OwnersApart { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some 1), witnessCalled 3 (some 1)] } :=
@@ -395,16 +414,16 @@ hooks. -/
 
 open Kernel.Proofs.Frame (Alongside StoresAlongside OccursAlongside ClosureAlongside StepAlongside phases_alongside)
 
-/-- `call` of `t` names the called roots it owns as a record of `s` with its identity and role named them. -/
+/-- `call` of `t` names the called roots it owns as a record of `s` with its identity, role and element named them. -/
 def NamesAlike (program : Program) (s t : State) (call : Occurrence) : Prop :=
-  ∃ old ∈ s.occurrences, old.id = call.id ∧ old.role = call.role ∧
+  ∃ old ∈ s.occurrences, old.id = call.id ∧ old.role = call.role ∧ old.element = call.element ∧
     State.calledInstanceId (t.instanceOf call.scope) (program.publicId call.element) call.activation =
       State.calledInstanceId (s.instanceOf old.scope) (program.publicId old.element) old.activation
 
 /-- A record of `s` that stays in its process instance names alike. -/
 theorem NamesAlike.same {program : Program} {s t : State} {call : Occurrence} (member : call ∈ s.occurrences)
     (stays : t.instanceOf call.scope = s.instanceOf call.scope) : NamesAlike program s t call :=
-  ⟨call, member, rfl, rfl, by rw [stays]⟩
+  ⟨call, member, rfl, rfl, rfl, by rw [stays]⟩
 
 section Carry
 
@@ -419,13 +438,18 @@ theorem CallsFormed.carry (kept : CallsFormed program s)
     have old := roots root member called
     refine ⟨(kept.named root old called).1, fun call inside owned => ?_⟩
     obtain ⟨record, present, alike⟩ := owners root member called call inside owned
-    obtain ⟨same, _, names⟩ := alike
+    obtain ⟨same, _, _, names⟩ := alike
     rw [names]
     exact (kept.named root old called).2 record present (owned.trans (congrArg some same.symm))
   roled root member called call inside owned := by
     obtain ⟨record, present, alike⟩ := owners root member called call inside owned
     obtain ⟨same, role, _⟩ := alike
     exact role ▸ kept.roled root (roots root member called) called record present (owned.trans (congrArg some same.symm))
+  activities root member called call inside owned := by
+    obtain ⟨record, present, alike⟩ := owners root member called call inside owned
+    obtain ⟨same, _, element, _⟩ := alike
+    exact element ▸
+      kept.activities root (roots root member called) called record present (owned.trans (congrArg some same.symm))
   ownersApart first one second two called called' same :=
     kept.ownersApart first (roots first one called) second (roots second two called') called called' same
 
@@ -556,15 +580,16 @@ theorem CallsFormed.startReserved (holds : CallsFormed program s) {occurrence : 
     obtain ⟨other, present, made⟩ := List.mem_map.mp inside
     split at made
     · subst made
-      exact ⟨occurrence, member, rfl, rfl, by rw [starts.instances]⟩
+      exact ⟨occurrence, member, rfl, rfl, rfl, by rw [starts.instances]⟩
     · subst made
       exact .same present (starts.instances _)
 
-/-- A Call's entry of its called root keeps the lane invariant, for a present Call of the element role that owns no
-called root yet: the new root is the one called root its Call owns, named as `State.enterCalled` names it, and every
+/-- A Call's entry of its called root keeps the lane invariant, for a present Call of the element role, of an Activity
+the program declares, that owns no called root yet: the new root is the one called root its Call owns, named as `State.enterCalled` names it, and every
 scope occurrence that stood keeps its process instance. -/
 theorem CallsFormed.enterCalled (formed : WellFormed under s) (holds : CallsFormed program s) {call : Occurrence}
     (member : call ∈ s.occurrences) (role : call.role = .element)
+    (activity : ((program.element? call.element).bind (·.activity?)).isSome)
     (unowned : ∀ root ∈ s.scopes, root.calledInstance.isSome → root.occurrence ≠ some call.id)
     (variables : List (String × Value)) (definition : DefinitionRef) :
     CallsFormed program (s.enterCalled program call variables definition).1 := by
@@ -582,7 +607,7 @@ theorem CallsFormed.enterCalled (formed : WellFormed under s) (holds : CallsForm
   have only : ∀ other ∈ s.occurrences, other.id = call.id → other = call := fun other inside same =>
     Laws.State.nodup_map_eq formed.distinct.occurrences inside member same
   refine ⟨fun root inside called => ?_, fun root inside called other present owned => ?_,
-    fun first one second two called called' same => ?_⟩
+    fun root inside called other present owned => ?_, fun first one second two called called' same => ?_⟩
   · rcases List.mem_append.mp inside with old | new
     · refine ⟨(holds.named root old called).1, fun other present owned => ?_⟩
       rw [stays (formed.owned.occurrenceScopes other present)]
@@ -596,6 +621,11 @@ theorem CallsFormed.enterCalled (formed : WellFormed under s) (holds : CallsForm
     · rw [List.mem_singleton.mp new] at owned
       obtain rfl := only other present (Option.some.inj owned).symm
       exact role
+  · rcases List.mem_append.mp inside with old | new
+    · exact holds.activities root old called other present owned
+    · rw [List.mem_singleton.mp new] at owned
+      obtain rfl := only other present (Option.some.inj owned).symm
+      exact activity
   · rcases List.mem_append.mp one with old | new <;> rcases List.mem_append.mp two with old' | new'
     · exact holds.ownersApart first old second old' called called' same
     · rw [List.mem_singleton.mp new'] at same
@@ -643,8 +673,8 @@ theorem callsFormed_occursAlongside (program : Program) : OccursAlongside progra
   compensate _ _ _ _ _ _ _ _ _ _ held := held.signal _
   throwCompensate _ _ _ _ _ _ _ _ _ held := held.signal _
   raise _ _ _ _ _ held := held.signal _
-  enterCalled _ _ variables definition formed member _ role unowned held :=
-    held.enterCalled formed member role unowned variables definition
+  enterCalled _ _ variables definition formed member _ role activity unowned held :=
+    held.enterCalled formed member role activity unowned variables definition
 
 /-- `Step`'s own phases keep the lane invariant; cancelling is `Proofs.Frame.FrameAlongside.cancelOccurrence`. -/
 theorem callsFormed_stepAlongside (program : Program) : StepAlongside (CallsFormed program) where
@@ -690,7 +720,8 @@ theorem callsFormed_initial (program : Program) (instanceId : String) (variables
     (businessKey : Option String) :
     CallsFormed program ((State.initial instanceId variables businessKey).signal (.armScope State.root)) := by
   rw [Laws.State.signal_eq, Laws.State.initial_eq]
-  refine ⟨fun root member called => ?_, fun root member called => ?_, fun first member _ _ called => ?_⟩ <;>
+  refine ⟨fun root member called => ?_, fun root member called => ?_, fun root member called => ?_,
+    fun first member _ _ called => ?_⟩ <;>
     simp only [List.mem_singleton] at member <;> subst member <;> cases called
 
 end Kernel.Proofs.Former

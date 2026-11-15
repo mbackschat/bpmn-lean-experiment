@@ -396,10 +396,12 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     occurrence ∈ state.occurrences →
     occurrence.begun = true → hooks.arriveStart ctx header payload trigger occurrence state = .ok after →
     inv ctx.program after
-  /-- An Activity's occurrence owns no scope occurrence yet, since `Step.begin` has just begun it (`Phases.unowned`). -/
+  /-- An Activity's occurrence owns no scope occurrence yet, since `Step.begin` has just begun it (`Phases.unowned`), and
+  is of the Activity handed over, which `Step.dispatch` found as its element. -/
   arriveActivity : ∀ ctx header payload occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     occurrence.begun = true → (ctx.program.element? occurrence.element).bind (·.start?) = none →
     occurrence.role = .element → (∀ scope ∈ state.scopes, scope.occurrence ≠ some occurrence.id) →
+    (ctx.program.element? occurrence.element).bind (·.activity?) = some (header, payload) →
     hooks.arriveActivity ctx header payload occurrence state = .ok after → inv ctx.program after
   /-- A body occurrence arrives with the loop its element's envelope carries (`Step.bodyLoop?`), its start the newest the
   draft holds and no running body keyed by it, since `Step.begin` has just begun it (`Phases.newest`, `Phases.unrun`). -/

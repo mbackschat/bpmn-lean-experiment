@@ -103,6 +103,11 @@ theorem start?_gateway (header : Header) (payload : GatewayPayload) : (Element.g
 theorem activity?_start (header : Header) (payload : StartPayload) : (Element.start header payload).activity? = none := by
   simp only [Element.activity?]
 
+/-- An Activity is its own Activity, as `Step.dispatch` hands it to `Hooks.arriveActivity`. -/
+theorem activity?_activity (header : Header) (payload : ActivityPayload) :
+    (Element.activity header payload).activity? = some (header, payload) := by
+  simp only [Element.activity?]
+
 /-- A Call's work record names its Call, and no other work record names one: `Kernel.Laws.Work`, which owns matching
 on `Work`, reads `Work.call?` by these. -/
 theorem call?_call (work : CallWork) : (Work.call work).call? = some work := by simp only [Work.call?]

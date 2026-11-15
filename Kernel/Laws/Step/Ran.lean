@@ -112,6 +112,7 @@ inductive Arrives (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (entry :
       hooks.arriveStart ctx header payload trigger occurrence state = .ok after →
       Arrives hooks ctx occurrence entry trigger state after
   | atActivity {header : Header} {payload : ActivityPayload} :
+      (ctx.program.element? occurrence.element).bind (·.activity?) = some (header, payload) →
       hooks.arriveActivity ctx header payload occurrence state = .ok after →
       Arrives hooks ctx occurrence entry trigger state after
   | atScope {header : Header} {payload : ScopePayload} :

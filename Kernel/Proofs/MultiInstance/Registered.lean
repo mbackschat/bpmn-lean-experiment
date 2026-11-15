@@ -407,8 +407,9 @@ theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside pro
     ⟨(runsFramed_occursAlongside program).raise s raised occurrence formed
       (raises.imp fun _ => And.imp_right And.left) kept.1, fun apart =>
       (kept.2 apart).signalPending rfl fun _ inside => absurd inside List.not_mem_nil⟩
-  enterCalled s call variables definition formed member begun role unowned kept :=
-    ⟨(runsFramed_occursAlongside program).enterCalled s call variables definition formed member begun role unowned kept.1,
+  enterCalled s call variables definition formed member begun role activity unowned kept :=
+    ⟨(runsFramed_occursAlongside program).enterCalled s call variables definition formed member begun role activity
+      unowned kept.1,
       fun apart => (kept.2 apart).enterCalled formed kept.1.owns program call variables definition⟩
 
 /-- Dropping a record that owns no scope occurrence keeps the numbering beside the slot invariant. -/

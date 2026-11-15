@@ -73,9 +73,10 @@ theorem workOps_alongside (side : FrameAlongside rel) {program : Program} (occur
     have opened := ops.openItem s kind occurrence holds.1 member begun unstarted role
     ⟨⟨opened.1, side.openItem holds.2 kind occurrence⟩, opened.2⟩
   arm s occurrence element holds member begun := ⟨ops.arm s occurrence element holds.1 member begun, side.signal holds.2 _⟩
-  enterCalled s call variables definition holds member begun role unowned :=
-    have entered := ops.enterCalled s call variables definition holds.1 member begun role unowned
-    ⟨⟨entered.1, occurs.enterCalled s call variables definition holds.1 member begun role unowned holds.2⟩, entered.2⟩
+  enterCalled s call variables definition holds member begun role activity unowned :=
+    have entered := ops.enterCalled s call variables definition holds.1 member begun role activity unowned
+    ⟨⟨entered.1, occurs.enterCalled s call variables definition holds.1 member begun role activity unowned holds.2⟩,
+      entered.2⟩
   armScope s scope holds stands := ⟨ops.armScope s scope holds.1 stands, side.signal holds.2 _⟩
   begin s element scope holds stands :=
     ⟨ops.begin s element scope holds.1 stands, side.signalBegin _ _ (.fresh rfl rfl) holds.2⟩
@@ -367,7 +368,7 @@ theorem scopesKept_occursAlongside (before : State) (program : Program) :
   raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
-  enterCalled s call variables definition formed _ _ _ _ kept := by
+  enterCalled s call variables definition formed _ _ _ _ _ kept := by
     rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
     exact kept.enter rfl fun entry member => (List.mem_append.mp member).imp_right fun fresh => by
       rw [List.mem_singleton.mp fresh]
@@ -454,7 +455,7 @@ theorem endsKept_occursAlongside (b : State) (x : Option (Nat × OccurrenceKey))
   raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
-  enterCalled s call variables definition formed _ _ _ _ kept :=
+  enterCalled s call variables definition formed _ _ _ _ _ kept :=
     kept.step formed (Laws.Step.enterCalled_frame formed program call variables definition)
 
 /-- The registered hooks keep an input's end facts from its start beside `WellFormed`, under any exemption

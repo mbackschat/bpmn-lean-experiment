@@ -843,7 +843,9 @@ theorem dispatch_unstarted {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence}
         split at ran
         · simp at ran
         · exact .inl ⟨_, _, ran⟩
-      | activity header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_activity], single, .atActivity ran⟩)
+      | activity header payload =>
+        exact .inr (.inr ⟨by simp [Laws.IL.start?_activity], single,
+          .atActivity (by rw [known]; exact Laws.IL.activity?_activity header payload) ran⟩)
       | scope header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_scope], single, .atScope ran⟩)
       | gateway header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_gateway], single, .atGateway ran⟩)
       | event header payload =>

@@ -36,8 +36,8 @@ make or queue a reservation or a trigger, or read the program: a subscription re
 compensation, queued once a well-formed state's standing scope occurrence is cleared, takes the trigger of the raise it
 was taken off (`Laws.State.RollsBack`), and a throw's compensation and raise name an occurrence begun from a state that
 kept `WellFormed` and `rel` (`Laws.State.BegunFrom`, `Laws.State.RaisesFrom`); a Call enters its called root under
-`program`, which names the root by the Call's authored identifier, for a present begun Call of the element role that
-owns no called root yet (`Laws.Work.WorkOps.enterCalled`). -/
+`program`, which names the root by the Call's authored identifier, for a present begun Call of the element role, of an
+Activity the program declares, that owns no called root yet (`Laws.Work.WorkOps.enterCalled`). -/
 structure OccursAlongside (program : Program) (rel : State → Prop) : Prop where
   reserve : ∀ s element scope, WellFormed program s → Reservable program element → rel s →
     rel (s.reserve element scope).1
@@ -58,7 +58,8 @@ structure OccursAlongside (program : Program) (rel : State → Prop) : Prop wher
     rel (s.signal (.raise raised { element := occurrence.element, scope := occurrence.scope,
                                    activation := occurrence.activation }))
   enterCalled : ∀ s call variables definition, WellFormed program s → call ∈ s.occurrences → call.begun = true →
-    call.role = .element → (∀ root ∈ s.scopes, root.calledInstance.isSome → root.occurrence ≠ some call.id) → rel s →
+    call.role = .element → ((program.element? call.element).bind (·.activity?)).isSome →
+    (∀ root ∈ s.scopes, root.calledInstance.isSome → root.occurrence ≠ some call.id) → rel s →
     rel (s.enterCalled program call variables definition).1
 
 /-- The compensation runs `compensation` resume only reservations pending in `s` or in a state that kept `rel`: what

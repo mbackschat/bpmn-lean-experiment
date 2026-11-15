@@ -205,10 +205,12 @@ structure WorkOps (program : Program) (inv : State → Prop) : Prop where
     inv (state.openItem kind occurrence) ∧ (state.openItem kind occurrence).occurrences = state.occurrences
   arm : ∀ state occurrence element, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
     inv (state.signal (.arm occurrence.id element occurrence.scope))
-  /-- A begun Call's called root, entered below its scope occurrence under the instance's program, for a Call
-  numbered under its element's counter that owns no called root yet, as `Step.begin` has just begun it. -/
+  /-- A begun Call's called root, entered below its scope occurrence under the instance's program, for a Call of an
+  Activity the program declares, numbered under its element's counter, that owns no called root yet, as `Step.begin`
+  has just begun it. -/
   enterCalled : ∀ state call variables definition, inv state → call ∈ state.occurrences → call.begun = true →
-    call.role = .element → (∀ root ∈ state.scopes, root.calledInstance.isSome → root.occurrence ≠ some call.id) →
+    call.role = .element → ((program.element? call.element).bind (·.activity?)).isSome →
+    (∀ root ∈ state.scopes, root.calledInstance.isSome → root.occurrence ≠ some call.id) →
     inv (state.enterCalled program call variables definition).1 ∧
       (state.enterCalled program call variables definition).1.occurrences = state.occurrences ∧
       ∃ entry ∈ (state.enterCalled program call variables definition).1.scopes,
@@ -381,7 +383,7 @@ theorem evaluateDecision_keeps {inv : State → Prop} (ops : WorkOps program inv
 none start keeps `inv`. -/
 theorem called_keeps {inv : State → Prop} (ops : WorkOps program inv) {occurrence : Occurrence} {state : State}
     (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
-    (role : occurrence.role = .element)
+    (role : occurrence.role = .element) (isActivity : ((program.element? occurrence.element).bind (·.activity?)).isSome)
     (unowned : ∀ root ∈ state.scopes, root.calledInstance.isSome → root.occurrence ≠ some occurrence.id)
     (variables : List (String × Value)) (definition : DefinitionRef) (start : ElementId) (armed : State → State)
     (arming : ∀ current, inv current → occurrence ∈ current.occurrences →
@@ -389,7 +391,8 @@ theorem called_keeps {inv : State → Prop} (ops : WorkOps program inv) {occurre
     inv (((armed (state.enterCalled program occurrence variables definition).1).signal
       (.armScope (state.enterCalled program occurrence variables definition).2)).signal
         (.begin { element := start, scope := (state.enterCalled program occurrence variables definition).2 })) := by
-  obtain ⟨entered, same, root⟩ := ops.enterCalled state occurrence variables definition holds member begun role unowned
+  obtain ⟨entered, same, root⟩ :=
+    ops.enterCalled state occurrence variables definition holds member begun role isActivity unowned
   obtain ⟨armedHolds, armedScopes⟩ := arming _ entered (by rw [same]; exact member)
   have stands : ∃ entry ∈ (armed (state.enterCalled program occurrence variables definition).1).scopes,
       entry.id = (state.enterCalled program occurrence variables definition).2 := by
@@ -402,14 +405,15 @@ Event Sub-Process arming and its none start's begin. -/
 theorem invoke_keeps {inv : State → Prop} {ctx : Ctx} (ops : WorkOps ctx.program inv) {header : Header}
     {payload : ActivityPayload} {work : CallWork} {occurrence : Occurrence} {state after : State} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (role : occurrence.role = .element)
+    (isActivity : ((ctx.program.element? occurrence.element).bind (·.activity?)).isSome)
     (unowned : ∀ root ∈ state.scopes, root.calledInstance.isSome → root.occurrence ≠ some occurrence.id)
     (ran : Feature.Work.Call.invoke ctx header payload work occurrence state = .ok after) : inv after := by
   unfold Feature.Work.Call.invoke at ran
   simp only [bind, Except.bind] at ran
   repeat' split at ran
   all_goals cases ran
-  · exact called_keeps ops holds member begun role unowned _ _ _ (fun current => current) fun _ held _ => ⟨held, rfl⟩
-  · exact called_keeps ops holds member begun role unowned _ _ _ (fun current => current.signal (.arm occurrence.id
+  · exact called_keeps ops holds member begun role isActivity unowned _ _ _ (fun current => current) fun _ held _ => ⟨held, rfl⟩
+  · exact called_keeps ops holds member begun role isActivity unowned _ _ _ (fun current => current.signal (.arm occurrence.id
       header.id occurrence.scope)) fun _ held present => ⟨ops.arm _ _ _ held present begun, (ops.kept _ _).2⟩
 
 /-- `Hooks.arriveActivity` keeps `inv` for a begun occurrence that owns no scope occurrence yet. -/
@@ -418,6 +422,7 @@ theorem arriveActivity_keeps {inv : State → Prop} {hooks : Feature.Work.WorkHo
     {state after : State} (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
     (unstarted : (ctx.program.element? occurrence.element).bind (·.start?) = none) (role : occurrence.role = .element)
     (unowned : ∀ scope ∈ state.scopes, scope.occurrence ≠ some occurrence.id)
+    (activity : (ctx.program.element? occurrence.element).bind (·.activity?) = some (header, payload))
     (ran : Feature.Work.arriveActivity hooks ctx header payload occurrence state = .ok after) : inv after := by
   unfold Feature.Work.arriveActivity at ran
   simp only [bind, Except.bind] at ran
@@ -432,7 +437,7 @@ theorem arriveActivity_keeps {inv : State → Prop} {hooks : Feature.Work.WorkHo
     | exact evaluateDecision_keeps ops (enterLocal_keeps ops holds member begun).1
         (enterLocal_keeps ops holds member begun).2.1 begun ran
     | exact invoke_keeps ops (enterLocal_keeps ops holds member begun).1
-        (enterLocal_keeps ops holds member begun).2.1 begun role
+        (enterLocal_keeps ops holds member begun).2.1 begun role (by rw [activity]; rfl)
         (fun root inside _ => unowned root ((enterLocal_keeps ops holds member begun).2.2 root inside ‹_›)) ran
 
 /-! ## Calls
