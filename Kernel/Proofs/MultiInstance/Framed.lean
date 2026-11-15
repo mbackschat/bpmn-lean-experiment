@@ -359,7 +359,7 @@ theorem withoutRecord_carries {program : Program} {t : State} {id : Nat}
 
 /-- `Step`'s phases keep the lane's slot invariant but its numbering: journalling and ordering move nothing it reads,
 beginning replaces a reservation by its begun record or adds a fresh occurrence, and cancelling withdraws items and
-removes an occurrence (`FrameAlongside.removeOccurrence`). -/
+removes an occurrence (`FrameAlongside.cancelOccurrence`). -/
 theorem runsFramed_stepAlongside (program : Program) : StepAlongside (RunsFramed program) where
   toFrameAlongside := runsFramed_frameAlongside program
   journal _ _ _ _ kept _ _ := kept.carry (.equal rfl rfl rfl rfl)
@@ -380,29 +380,9 @@ theorem runsFramed_stepAlongside (program : Program) : StepAlongside (RunsFramed
         rw [same, fresh.id] at below
         exact absurd below (Nat.lt_irrefl _)
     · exact ⟨o, List.mem_append_left _ (List.mem_filter.mpr ⟨present, by simpa using same⟩), rfl, rfl, rfl⟩
-  cancel _ s id formed kept := by
-    cases found : s.occurrence? id with
-    | none =>
-      rw [Laws.State.cancelOccurrence_absent found]
-      exact kept
-    | some occurrence =>
-      obtain ⟨ended, cancelled, cancels⟩ := Laws.State.cancelOccurrence_some found
-      have side := runsFramed_frameAlongside program
-      have formedWithdrawn := (Laws.State.withdrawAll
-        (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) _
-        (Laws.State.disarm_wellFormed (Laws.State.closeOwnItems_wellFormed formed id) id)).1
-      obtain ⟨items, withdrawn⟩ := Laws.State.withdrawAll_frame
-        (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
-      rw [← Laws.State.withdrawOccurrence_eq] at formedWithdrawn withdrawn
-      have closed : RunsFramed program (s.closeOwnItems id) := by
-        rw [Laws.State.closeOwnItems_eq]
-        exact kept.carry (.equal rfl rfl rfl rfl)
-      have withdrawnKept : RunsFramed program (s.withdrawOccurrence id) := by
-        rw [withdrawn]
-        exact (side.disarm _ _ id (Laws.State.closeOwnItems_wellFormed formed id) closed).carry (.equal rfl rfl rfl rfl)
-      rw [cancels]
-      exact (side.removeOccurrence (fun _ _ unowned framed => withoutRecord_carries unowned framed) formedWithdrawn
-        withdrawnKept).carry (.equal rfl rfl rfl rfl)
+  cancel _ s id formed kept := (runsFramed_frameAlongside program).cancelOccurrence
+    (fun _ _ unowned framed => withoutRecord_carries unowned framed) (fun _ _ _ kept => kept.carry (.equal rfl rfl rfl rfl))
+    (id := id) formed kept
 
 /-- The completion pipeline's own phases keep the lane's slot invariant but its numbering where they keep
 `WellFormed`: starting a reservation begins its record in place, removing an occurrence is
@@ -742,7 +722,7 @@ theorem since_start {program : Program} {b s t : State} {spare : Option Nat} {fa
 /-! ### `Step`'s phases -/
 
 /-- `Step`'s phases keep both: journalling empties the draft, a begin starts an admitted reservation, which is unbegun,
-or a fresh occurrence, and cancelling withdraws items and removes an occurrence (`FrameAlongside.removeOccurrence`). -/
+or a fresh occurrence, and cancelling withdraws items and removes an occurrence (`FrameAlongside.cancelOccurrence`). -/
 theorem since_stepAlongside (b : State) : StepAlongside fun s => Unstarted b s ∧ Snapshots b s where
   toFrameAlongside := since_frameAlongside b
   journal _ _ _ _ kept _ _ := ⟨⟨kept.1.below, kept.1.begun, fun _ _ _ _ _ => by simp⟩, kept.2.same rfl⟩
@@ -762,31 +742,9 @@ theorem since_stepAlongside (b : State) : StepAlongside fun s => Unstarted b s �
     · have below := formed.issued.occurrences o member
       rw [same, fresh.id] at below
       exact absurd below (Nat.lt_irrefl _)
-  cancel _ s id formed kept := by
-    have side := since_frameAlongside b
-    cases found : s.occurrence? id with
-    | none =>
-      rw [Laws.State.cancelOccurrence_absent found]
-      exact kept
-    | some occurrence =>
-      obtain ⟨ended, cancelled, cancels⟩ := Laws.State.cancelOccurrence_some found
-      have formedWithdrawn := (Laws.State.withdrawAll
-        (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) _
-        (Laws.State.disarm_wellFormed (Laws.State.closeOwnItems_wellFormed formed id) id)).1
-      obtain ⟨items, withdrawn⟩ := Laws.State.withdrawAll_frame
-        (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
-      rw [← Laws.State.withdrawOccurrence_eq] at formedWithdrawn withdrawn
-      have closed : Unstarted b (s.closeOwnItems id) ∧ Snapshots b (s.closeOwnItems id) := by
-        rw [Laws.State.closeOwnItems_eq]
-        exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
-      have disarmed := side.disarm _ _ id (Laws.State.closeOwnItems_wellFormed formed id) closed
-      have withdrawnKept : Unstarted b (s.withdrawOccurrence id) ∧ Snapshots b (s.withdrawOccurrence id) := by
-        rw [withdrawn]
-        exact ⟨disarmed.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), disarmed.2.same rfl⟩
-      have removed := side.removeOccurrence (fun _ id _ kept => since_withoutRecord id kept) (id := id) formedWithdrawn
-        withdrawnKept
-      rw [cancels]
-      exact ⟨removed.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), removed.2.same rfl⟩
+  cancel _ s id formed kept := (since_frameAlongside b).cancelOccurrence
+    (fun _ id _ kept => since_withoutRecord id kept)
+    (fun _ _ _ kept => ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩) (id := id) formed kept
 
 /-- The completion pipeline's own phases keep `Since` where they keep `WellFormed`: starting a reservation starts an
 unbegun occurrence, removing one is `FrameAlongside.removeOccurrence`, and journalling an end moves nothing either

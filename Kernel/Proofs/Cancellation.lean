@@ -4,6 +4,7 @@ public import Kernel.Laws.Step
 public import Kernel.Laws.Step.Keeps
 public import Kernel.Laws.Step.Ends
 public import Kernel.Laws.Scopes
+public import Kernel.Laws.State.Fire
 public import Kernel.Proofs.MultiInstance.Occurs
 
 /-! # Proofs: cancellation (P3)
@@ -581,6 +582,39 @@ theorem FrameAlongside.removeOccurrence {rel : State → Prop} (side : FrameAlon
   rw [Laws.State.removeOccurrence_eq, commutes]
   exact without _ _ none kept
 
+/-- Withdrawing an occurrence's items closes its own, disarms it and withdraws the items inside the scope occurrences
+it owns, which only the disarming may move anything `rel` reads of. -/
+theorem FrameAlongside.withdrawOccurrence {rel : State → Prop} (side : FrameAlongside rel) {program : Program} {s : State}
+    (formed : WellFormed program s) (kept : rel s) (id : Nat) : rel (s.withdrawOccurrence id) := by
+  obtain ⟨items, frame⟩ := Laws.State.withdrawAll_frame
+    (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
+  rw [Laws.State.withdrawOccurrence_eq, frame]
+  refine side.frame ((s.closeOwnItems id).disarm id) _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩
+    (side.disarm program _ id (Laws.State.closeOwnItems_wellFormed formed id) ?_)
+  rw [Laws.State.closeOwnItems_eq]
+  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ kept
+
+/-- Cancelling an occurrence of a well-formed state withdraws its items (`FrameAlongside.withdrawOccurrence`), removes
+it (`FrameAlongside.removeOccurrence`, given what dropping a record that owns no scope occurrence keeps) and journals
+its end and cancellation, which `ends` keeps. -/
+theorem FrameAlongside.cancelOccurrence {rel : State → Prop} (side : FrameAlongside rel)
+    (without : ∀ t id, (∀ entry ∈ t.scopes, entry.occurrence ≠ some id) → rel t → rel (Laws.State.withoutRecord t id))
+    (ends : ∀ t ended cancelled, rel t → rel { t with draft := { t.draft with ended, cancelled } })
+    {program : Program} {s : State} {id : Nat} (formed : WellFormed program s) (kept : rel s) :
+    rel (s.cancelOccurrence id) := by
+  cases found : s.occurrence? id with
+  | none =>
+    rw [Laws.State.cancelOccurrence_absent found]
+    exact kept
+  | some occurrence =>
+    obtain ⟨ended, cancelled, cancels⟩ := Laws.State.cancelOccurrence_some found
+    have withdrawn := (Laws.State.withdrawAll
+      (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) _
+      (Laws.State.disarm_wellFormed (Laws.State.closeOwnItems_wellFormed formed id) id)).1
+    rw [← Laws.State.withdrawOccurrence_eq] at withdrawn
+    rw [cancels]
+    exact ends _ ended cancelled (side.removeOccurrence without withdrawn (side.withdrawOccurrence formed kept id))
+
 /-- What the phases a closure runs keep of a property `rel` carried beside `WellFormed`, besides the hooks' state
 operations (`FrameAlongside`): journalling the draft, beginning an admitted request in a scope occurrence that stands
 and cancelling an occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
@@ -727,39 +761,6 @@ def MicroStepsKeepEnds (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (b state after : State), Laws.Step.EndsInv b none ctx.program state →
     Laws.Step.ClosureStep hooks ctx state after → Laws.Step.EndsInv b none ctx.program after ∧ after.draft.ended = []
 
-/-- The state operations the hooks apply keep an input's end facts from its start under any exemption, since each frames
-them (`Kernel.Laws.Step.EndsFrames`): the hooks then keep `Laws.Step.EndsInv` by their feature lemmas
-(`Kernel.Proofs.Cancellation.Registered`). -/
-theorem endsKept_alongside (b : State) (x : Option (Nat × OccurrenceKey)) :
-    Alongside (Laws.Step.EndsKept b x) where
-  frame _ _ moved kept := kept.unmoved moved.occurrences moved.activations ⟨moved.scopes, moved.instanceId⟩
-    (Nat.le_of_eq moved.nextIssue.symm) (.of_eq (by simp only [Laws.Step.endKeys, moved.journal, moved.draft]))
-  signalBegin s _ _ kept := by
-    rw [Laws.State.signal_eq]
-    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
-  issue _ kept := by
-    rw [Laws.State.issue_eq]
-    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_succ _) (.refl _)
-  enterScope _ s element parent locals owner formed kept :=
-    kept.step formed (Laws.Step.enterScope_frame formed element parent locals owner)
-  enterCalled _ s called call variables definition formed kept :=
-    kept.step formed (Laws.Step.enterCalled_frame formed called call variables definition)
-  reserve _ _ element scope formed _ kept := kept.step formed (Laws.Step.reserve_frame formed element scope)
-  leaveScope _ _ _ formed present _ kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
-  clearInside _ _ _ _ formed present inside kept := kept.step formed (Laws.Step.clearInside_frame formed present inside)
-  disarm _ s host formed kept := kept.step formed (Laws.Step.disarm_frame s host)
-  setVariable _ s target name value formed kept := kept.step formed (Laws.Step.setVariable_frame s target name value)
-  removeVariable _ s target name formed kept := kept.step formed (Laws.Step.removeVariable_frame s target name)
-  storeRuns _ _ _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
-  instanceBegin s _ kept := by
-    rw [Laws.State.signal_eq]
-    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
-  defer s _ kept := by
-    rw [Laws.State.deferBegins_eq]
-    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
-  leaveInstance _ _ _ _ formed _ _ present kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
-  runs _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
-
 /-- Each committed micro-step of an input on a running instance keeps `inv`: its transition and every closure
 micro-step. -/
 def MicroStepsKeep (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
@@ -780,22 +781,6 @@ theorem microStepsKeep_alongside {hooks : Hooks} {rel : Program → State → Pr
   ⟨fun _ _ _ _ _ runs holds ran => Laws.Step.microStep_keeps contract (closurePhases_alongside phases side) pipeline
       (fun _ transitioned => Laws.Step.transition_keeps contract (closurePhases_alongside phases side) runs holds transitioned) ran,
     fun _ _ _ holds step => Laws.Step.closureStep_keeps contract (closurePhases_alongside phases side) facts pipeline holds step⟩
-
-/-- `Step`'s phases keep an input's end facts from its start: journalling the draft and ordering the journal permute
-them, and beginning and cancelling frame them (`Kernel.Laws.Step.EndsFrames`). -/
-theorem endsKept_stepAlongside (b : State) :
-    StepAlongside (Laws.Step.EndsKept b none) where
-  toFrameAlongside := (endsKept_alongside b none).toFrameAlongside
-  journal _ s transition _ kept _ ended := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (by
-    simp only [Laws.Step.endKeys, List.flatMap_cons, ended, List.map_append]
-    simpa using List.perm_append_comm)
-  runOrder _ s _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _)
-    ((((List.reverse_perm s.journal).flatMap_right _).append_right _).map _)
-  dequeue _ _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
-  untoken _ _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
-  begin _ _ _ role sourceType formed stands admitted _ _ kept :=
-    kept.step formed (Laws.Step.beginOccurrence_frame formed stands admitted role sourceType)
-  cancel _ _ id formed kept := kept.step formed (Laws.Step.cancelOccurrence_frame formed id)
 
 /-- A list whose keys are distinct holds the key `key` once if at all. -/
 theorem once_of_nodup {α β : Type} {facts : List (α × β)} {key : α} (distinct : (facts.map (·.1)).Nodup)

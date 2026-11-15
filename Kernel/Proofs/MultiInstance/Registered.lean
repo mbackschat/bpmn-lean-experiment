@@ -440,36 +440,6 @@ theorem numbered_begin {program : Program} {s : State} {request : BeginRequest} 
       exact (kept.2 apart).beginOther formed admitted (fun looping => assigned.trans (roleOf_other other looping))
         other (reservedApart_of_dequeued (held.2.2 apart) dequeued)
 
-/-- Cancelling an occurrence keeps the numbering beside the slot invariant: it closes and withdraws items, disarms its
-host and removes it (`FrameAlongside.removeOccurrence`). -/
-theorem framedNumbered_cancel {program : Program} {s : State} (id : Nat) (formed : WellFormed program s)
-    (kept : FramedNumbered program s) : FramedNumbered program (s.cancelOccurrence id) := by
-  have side := framedNumbered_frameAlongside program
-  cases found : s.occurrence? id with
-  | none =>
-    rw [Laws.State.cancelOccurrence_absent found]
-    exact kept
-  | some occurrence =>
-    obtain ⟨ended, cancelled, cancels⟩ := Laws.State.cancelOccurrence_some found
-    have formedWithdrawn := (Laws.State.withdrawAll
-      (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) _
-      (Laws.State.disarm_wellFormed (Laws.State.closeOwnItems_wellFormed formed id) id)).1
-    obtain ⟨items, withdrawn⟩ := Laws.State.withdrawAll_frame
-      (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
-    rw [← Laws.State.withdrawOccurrence_eq] at formedWithdrawn withdrawn
-    have closed : FramedNumbered program (s.closeOwnItems id) := by
-      rw [Laws.State.closeOwnItems_eq]
-      exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ kept
-    have disarmed := side.disarm _ _ id (Laws.State.closeOwnItems_wellFormed formed id) closed
-    have withdrawnKept : FramedNumbered program (s.withdrawOccurrence id) := by
-      rw [withdrawn]
-      exact side.frame ((s.closeOwnItems id).disarm id) _
-        ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ disarmed
-    have removed := side.removeOccurrence framedNumbered_withoutRecord (id := id) formedWithdrawn withdrawnKept
-    rw [cancels]
-    exact ⟨removed.1.carry (.equal rfl rfl rfl rfl), fun apart =>
-      (removed.2 apart).unmoved rfl rfl rfl rfl rfl fun _ pending => .inl pending⟩
-
 /-- `Step`'s phases keep `Composed`: those that read `WellFormed` alone read its first part, and the others keep the
 rest by what each operation keeps. -/
 theorem composed_phases : Laws.Step.Phases Composed :=
@@ -526,7 +496,10 @@ theorem composed_phases : Laws.Step.Phases Composed :=
       have reserved := phases.reserve _ _ element scope holds.1 stands (pending.imp fun _ => And.imp_left And.left)
       ⟨⟨reserved.1, (framedNumbered_frameAlongside _).reserve _ s element scope holds.1
         (pending.imp fun _ => And.imp_left And.right) holds.2⟩, reserved.2⟩
-    cancel := fun _ s id holds => ⟨phases.cancel _ _ id holds.1, framedNumbered_cancel id holds.1 holds.2⟩ }
+    cancel := fun _ s id holds => ⟨phases.cancel _ _ id holds.1,
+      (framedNumbered_frameAlongside _).cancelOccurrence framedNumbered_withoutRecord (fun _ _ _ kept =>
+        ⟨kept.1.carry (.equal rfl rfl rfl rfl), fun apart => (kept.2 apart).unmoved rfl rfl rfl rfl rfl
+          fun _ pending => .inl pending⟩) holds.1 holds.2⟩ }
 
 /-- The completion pipeline's own phases keep `Composed`. -/
 theorem composed_pipelinePhases : Laws.Step.PipelinePhases Composed :=
