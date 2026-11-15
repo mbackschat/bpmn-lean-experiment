@@ -165,6 +165,27 @@ export const eventSubProcess = (trigger: Json | string, interrupting: boolean): 
 export const flow = (id: string, source: string, target: string, conditionExpression: Json | null = null): Json =>
   ({ id, source, target, condition: conditionExpression });
 
+/** The throw record of a Signal `signal()` names, sent to every receiver. */
+export const signalThrow: Json = { signal: { payload: { ...(signal() as { signal: { payload: Json } }).signal.payload,
+  payload: [], propagateAll: null, localOnly: false, businessKey: null, asynchronous: false } } };
+
+/** An intermediate throw Event `id` in `parent` throwing `record`. */
+export const throwing = (id: string, record: Json | string, parent: string | null = null): Json => ({
+  event: {
+    header: header(id, "intermediateThrowEvent", parent),
+    payload: { role: { throw: { record } }, placement: "intermediate", incoming: [], outgoing: [], alternativeThrows: [] },
+  },
+});
+
+/** The automatic Sub-Process `id`, `idS → idE`, whose output writes `value` into `name` when it completes. */
+export const writer = (id: string, name: string, value: string, parent: string | null = null, env: Json = {}): [Json[], Json[]] => [[
+  scope(id, "embedded", {}, { outputs: [mapping(name, literalValue({ kind: "string", value }))], ...env }, parent),
+  start(`${id}S`, null, [], id), end(`${id}E`, "none", id),
+], [flow(`${id}s`, `${id}S`, `${id}E`)]];
+
+/** `program` with the base elements replaced by `elements` and its flows by `flows`. */
+export const model = (elements: Json[], flows: Json[]) => (program: Json): Json => ({ ...program, elements, flows });
+
 // Programs.
 
 /** `Start -> Task -> End`, the admitted base every row mutates. */

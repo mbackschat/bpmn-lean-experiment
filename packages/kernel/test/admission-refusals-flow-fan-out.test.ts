@@ -13,36 +13,17 @@ import { test } from "node:test";
 
 import {
   activity, append, base, boundary, callWork, catchEvent, compensationTrigger, definitionRef, elementId, end, errorTrigger,
-  escalationTrigger, eventSubProcess, flow, gateway, literalValue, loop, mapping, refusalOf, refusalTests, replace, scope,
-  signal, simpleBoolean, start, terminateThrow, text, userWork, variable, withOptions,
+  escalationTrigger, eventSubProcess, flow, gateway, loop, mapping, model, refusalOf, refusalTests, replace, scope, signal,
+  signalThrow, simpleBoolean, start, terminateThrow, text, throwing, userWork, variable, withOptions, writer,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
-const signalThrow: Json = { signal: { payload: { ...(signal() as { signal: { payload: Json } }).signal.payload,
-  payload: [], propagateAll: null, localOnly: false, businessKey: null, asynchronous: false } } };
 const raiseEscalation: Json = { escalation: { payload: { code: "X" } } };
 const raiseError: Json = { error: { payload: { code: "E", message: null } } };
 const compensateAll: Json = { compensation: { payload: { activity: null, waitForCompletion: true } } };
 /** A Conditional trigger whose condition holds once `name` is present. */
 const whenPresent = (name: string): Json =>
   ({ condition: { payload: { condition: { simpleBoolean: { body: { isPresent: { name } } } }, variableName: null, variableEvents: [] } } });
-
-/** An intermediate throw Event `id` in `parent` throwing `record`. */
-const throwing = (id: string, record: Json | string, parent: string | null = null): Json => ({
-  event: {
-    header: { id, origin: { definition: null, sourceId: id }, sourceType: "intermediateThrowEvent", parent },
-    payload: { role: { throw: { record } }, placement: "intermediate", incoming: [], outgoing: [], alternativeThrows: [] },
-  },
-});
-
-/** The automatic Sub-Process `id`, `idS → idE`, whose output writes `value` into `name` when it completes. */
-const writer = (id: string, name: string, value: string, parent: string | null = null, env: Json = {}): [Json[], Json[]] => [[
-  scope(id, "embedded", {}, { outputs: [mapping(name, literalValue({ kind: "string", value }))], ...env }, parent),
-  start(`${id}S`, null, [], id), end(`${id}E`, "none", id),
-], [flow(`${id}s`, `${id}S`, `${id}E`)]];
-
-/** `program` with the base elements replaced by `elements` and its flows by `flows`. */
-const model = (elements: Json[], flows: Json[]) => (program: Json): Json => ({ ...program, elements, flows });
 
 /** `S → U → X → W → E`: a User Task, the throw `record`, a writer of `outcome`, an End. */
 const thrower = (record: Json | string, name = "outcome"): [Json[], Json[]] => {

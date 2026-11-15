@@ -12,23 +12,13 @@ import { test } from "node:test";
 
 import {
   activity, append, base, boundary, catchEvent, end, errorTrigger, eventSubProcess, escalationTrigger, flow, gateway, loop, refusalOf, refusalTests,
-  replace, scope, signal, start, terminateThrow, userWork, variable, withOptions,
+  replace, scope, signal, signalThrow, start, terminateThrow, throwing, userWork, variable, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
 const raiseError: Json = { error: { payload: { code: "E", message: null } } };
 const raiseEscalation: Json = { escalation: { payload: { code: "X" } } };
-const signalThrow: Json = { signal: { payload: { ...(signal() as { signal: { payload: Json } }).signal.payload,
-  payload: [], propagateAll: null, localOnly: false, businessKey: null, asynchronous: false } } };
 const compensateAll: Json = { compensation: { payload: { activity: null, waitForCompletion: true } } };
-
-/** An intermediate throw Event `id` in `parent` throwing `record`. */
-const throwing = (id: string, record: Json | string, parent: string | null = null): Json => ({
-  event: {
-    header: { id, origin: { definition: null, sourceId: id }, sourceType: "intermediateThrowEvent", parent },
-    payload: { role: { throw: { record } }, placement: "intermediate", incoming: [], outgoing: [], alternativeThrows: [] },
-  },
-});
 
 const idOf = (element: Json): string => ((Object.values(element)[0] as Json).header as Json).id as string;
 
