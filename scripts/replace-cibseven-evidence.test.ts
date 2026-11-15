@@ -63,12 +63,20 @@ test("reads each scenario's answer or harness failure from the bridge output, in
   const population = { kind: "cibSevenPopulationResult", scenarioId: "c" };
   assert.deepEqual(
     bridgeOutcomes(["a", "b", "c"], [JSON.stringify(result), JSON.stringify(failure), JSON.stringify(population)]),
-    {
-      results: [result],
-      populations: [population],
-      failures: [{ scenarioId: "b", failure: "java.lang.IllegalStateException: no host" }],
-    },
+    [
+      { kind: "result", result },
+      { kind: "failure", failure: "java.lang.IllegalStateException: no host" },
+      { kind: "population", result: population },
+    ],
   );
+});
+
+// Verify run 43662533880: two scenario files in one shard both carry the id `classification`, which the scenario
+// contract allows; keying the answers by id dropped one of them. Each answer is the request's, by position.
+test("answers each requested scenario at its own position when two scenarios share an id", async () => {
+  const { run } = bridgeStandIn(undefined, "b");
+  const outcome = await isolateResourceBreaches([{ id: "a" }, { id: "b" }, { id: "a" }], run, () => {});
+  assert.deepEqual(outcome.map(({ kind }) => kind), ["result", "failure", "result"]);
 });
 
 test("keeps population evidence only from a clean run under the profile's pinned producer", () => {
@@ -103,6 +111,11 @@ test("gives the preparing bridge call the shared Maven ceiling and every scenari
  * A bridge stand-in that answers every scenario, or fails as `runCibBatch` does when its batch holds `slow` (the batch
  * deadline) or `hungry` (the JVM heap ceiling).
  */
+/** The scenario id an answer's result names, or the harness failure that stopped the scenario. */
+function answered(answer: Readonly<{ kind: string; result?: Readonly<{ scenarioId: string }>; failure?: string }>): string {
+  return answer.result?.scenarioId ?? answer.failure ?? answer.kind;
+}
+
 function bridgeStandIn(slow: string | undefined, hungry?: string) {
   const invocations: string[][] = [];
   const run = async (batch: ReadonlyArray<Readonly<{ id: string }>>) => {
@@ -125,8 +138,7 @@ test("isolates the one scenario that exceeds the batch deadline as a harness fai
   const outcome = await isolateResourceBreaches([{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }], run, (line) => {
     logged.push(line);
   });
-  assert.deepEqual(outcome.results.map(({ scenarioId }) => scenarioId), ["a", "b", "d"]);
-  assert.deepEqual(outcome.failures, [{ scenarioId: "c", failure: "CIB_SCENARIO_DEADLINE_EXCEEDED budgetMs=30000" }]);
+  assert.deepEqual(outcome.map(answered), ["a", "b", "CIB_SCENARIO_DEADLINE_EXCEEDED budgetMs=30000", "d"]);
   assert.deepEqual(invocations, [["a", "b", "c", "d"], ["a", "b"], ["c", "d"], ["c"], ["d"]]);
   assert.equal(logged.length, 2);
   assert.match(logged[0]!, /a, b, c, d/u);
@@ -138,8 +150,7 @@ test("isolates the one scenario that exhausts the JVM heap as a harness failure 
   // inside the 30 s deadline, and aborted the whole replacement.
   const { invocations, run } = bridgeStandIn(undefined, "b");
   const outcome = await isolateResourceBreaches([{ id: "a" }, { id: "b" }, { id: "c" }], run, () => {});
-  assert.deepEqual(outcome.results.map(({ scenarioId }) => scenarioId), ["a", "c"]);
-  assert.deepEqual(outcome.failures, [{ scenarioId: "b", failure: "CIB_SCENARIO_HEAP_EXHAUSTED" }]);
+  assert.deepEqual(outcome.map(answered), ["a", "CIB_SCENARIO_HEAP_EXHAUSTED", "c"]);
   assert.deepEqual(invocations, [["a", "b", "c"], ["a", "b"], ["a"], ["b"], ["c"]]);
 });
 
@@ -172,8 +183,7 @@ test("runs a batch inside its deadline in one bridge call", async () => {
   const outcome = await isolateResourceBreaches([{ id: "a" }, { id: "b" }, { id: "c" }], run, (line) => {
     logged.push(line);
   });
-  assert.equal(outcome.results.length, 3);
-  assert.deepEqual(outcome.failures, []);
+  assert.deepEqual(outcome.map(answered), ["a", "b", "c"]);
   assert.deepEqual(invocations, [["a", "b", "c"]]);
   assert.deepEqual(logged, []);
 });

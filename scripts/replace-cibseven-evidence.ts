@@ -163,12 +163,18 @@ export function cibBridgeDeadlineMs(scenarioCount: number, environment: NodeJS.P
   return scenarioCount === 0 ? resolveCibSevenMavenTimeoutMs(environment) : cibBatchDeadlineMs;
 }
 
-type HarnessFailure = Readonly<{ scenarioId: string; failure: string }>;
-type BatchOutcome = Readonly<{
-  results: ReadonlyArray<CibRunnerResult>;
-  populations: ReadonlyArray<CibPopulationResult>;
-  failures: ReadonlyArray<HarnessFailure>;
-}>;
+/** One requested scenario's answer: its result, its population result, or the harness failure that stopped it. */
+type BridgeAnswer =
+  | Readonly<{ kind: "result"; result: CibRunnerResult }>
+  | Readonly<{ kind: "population"; result: CibPopulationResult }>
+  | Readonly<{ kind: "failure"; failure: string }>;
+
+/**
+ * A batch's answers, one per requested scenario in request order. Callers pair them with their cases by position, never
+ * by scenario id: the scenario contract does not make ids unique, and in Verify run 43662533880 two `classification`
+ * scenarios in one shard made an id-keyed pairing drop one of them.
+ */
+type BatchOutcome = ReadonlyArray<BridgeAnswer>;
 
 /**
  * Splits the export bridge's output into answers and harness failures. The bridge answers every requested scenario in
@@ -179,9 +185,7 @@ export function bridgeOutcomes(requested: ReadonlyArray<string>, lines: Readonly
   if (lines.length !== requested.length) {
     throw new Error(`CIB bridge answered ${String(lines.length)} of ${String(requested.length)} scenarios`);
   }
-  const results: CibRunnerResult[] = [];
-  const populations: CibPopulationResult[] = [];
-  const failures: HarnessFailure[] = [];
+  const answers: BridgeAnswer[] = [];
   for (const [index, line] of lines.entries()) {
     const answer = parseWireJson<Readonly<{ kind: string; scenarioId: string; failure?: string }>>(
       line,
@@ -190,13 +194,14 @@ export function bridgeOutcomes(requested: ReadonlyArray<string>, lines: Readonly
     if (answer.scenarioId !== requested[index]) {
       throw new Error(`CIB bridge line ${String(index + 1)} answers ${answer.scenarioId}, not ${requested[index]!}`);
     }
-    if (answer.kind === "scenarioResult") results.push(answer as unknown as CibRunnerResult);
-    else if (answer.kind === "cibSevenPopulationResult") populations.push(answer as unknown as CibPopulationResult);
-    else if (answer.kind === "scenarioHarnessFailure" && typeof answer.failure === "string") {
-      failures.push({ scenarioId: answer.scenarioId, failure: answer.failure });
+    if (answer.kind === "scenarioResult") answers.push({ kind: "result", result: answer as unknown as CibRunnerResult });
+    else if (answer.kind === "cibSevenPopulationResult") {
+      answers.push({ kind: "population", result: answer as unknown as CibPopulationResult });
+    } else if (answer.kind === "scenarioHarnessFailure" && typeof answer.failure === "string") {
+      answers.push({ kind: "failure", failure: answer.failure });
     } else throw new Error(`CIB bridge line ${String(index + 1)} has kind ${answer.kind}`);
   }
-  return { results, populations, failures };
+  return answers;
 }
 
 /** The bridge's failure text for a scenario during which the JVM exhausted its heap (`CibSevenOracleMain`). */
@@ -254,7 +259,7 @@ export async function isolateResourceBreaches<S extends Readonly<{ id: string }>
     const breach = resourceBreach(error);
     if (breach === undefined) throw error;
     if (scenarios.length === 1) {
-      return { results: [], populations: [], failures: [{ scenarioId: scenarios[0]!.id, failure: breach }] };
+      return [{ kind: "failure", failure: breach }];
     }
     // A chunk's composition is arbitrary, so one costly scenario must not decide the fate of the others: in Verify run
     // 43069801261 the chunk holding `cycle-compositions/automatic-loop-beyond-bound` (about 13 s of engine time alone)
@@ -262,15 +267,10 @@ export async function isolateResourceBreaches<S extends Readonly<{ id: string }>
     // the whole replacement. Splitting keeps both bounds and names the culprit.
     log(`CIB batch breached ${breach}; splitting ${scenarios.map(({ id }) => id).join(", ")}`);
     const middle = Math.ceil(scenarios.length / 2);
-    const halves = [
-      await isolateResourceBreaches(scenarios.slice(0, middle), run, log),
-      await isolateResourceBreaches(scenarios.slice(middle), run, log),
+    return [
+      ...await isolateResourceBreaches(scenarios.slice(0, middle), run, log),
+      ...await isolateResourceBreaches(scenarios.slice(middle), run, log),
     ];
-    return {
-      results: halves.flatMap(({ results }) => results),
-      populations: halves.flatMap(({ populations }) => populations),
-      failures: halves.flatMap(({ failures }) => failures),
-    };
   }
 }
 
@@ -468,18 +468,14 @@ async function populationReplacements(
         (scenarios) => runCibBatch(scenarios, temporaryDirectory, engineVersion, "plainSuccess"),
         logSplit,
       );
-      if (batch.results.length > 0) throw new Error("CIB answered a population with a single-instance result");
-      const sourceOf = (scenarioId: string) => {
-        const source = chunk.find(({ scenario }) => scenario.value.id === scenarioId);
-        if (source === undefined) throw new Error(`CIB answered population ${scenarioId}, which it was not asked`);
-        return source;
-      };
-      failures.push(...batch.failures.map(({ scenarioId, failure }) => ({
-        scenarioRelativePath: sourceOf(scenarioId).artifactCase.scenarioRelativePath,
-        failure,
-      })));
-      for (const result of batch.populations) {
-        const source = sourceOf(result.scenarioId);
+      for (const [index, answer] of batch.entries()) {
+        const source = chunk[index]!;
+        if (answer.kind === "result") throw new Error("CIB answered a population with a single-instance result");
+        if (answer.kind === "failure") {
+          failures.push({ scenarioRelativePath: source.artifactCase.scenarioRelativePath, failure: answer.failure });
+          continue;
+        }
+        const { result } = answer;
         requireCleanPopulation(result, source.profile.value);
         const { scenario, profile } = source;
         replacements.push({
@@ -524,8 +520,7 @@ async function replaceEvidence(shard: Shard | undefined) {
         cibEvidenceEffectSchedule(scenario.value),
       ]),
     );
-    const results: CibRunnerResult[] = [];
-    const failedIds = new Set<string>();
+    const answered: Array<Readonly<{ source: (typeof sources)[number]; result: CibRunnerResult }>> = [];
     const failures: CaseFailure[] = [];
     for (const [group, versionSources] of sourcesByVersion) {
       const parsed: unknown = JSON.parse(group);
@@ -542,41 +537,26 @@ async function replaceEvidence(shard: Shard | undefined) {
       }
       const engineVersion = parsed[0];
       const effectSchedule = parsed[1];
-      const scenarios = versionSources.map(({ scenario }) => scenario.value);
       await runCibBatch([], temporaryDirectory, engineVersion, effectSchedule);
-      for (let start = 0; start < scenarios.length; start += cibBatchChunkSize) {
+      for (let start = 0; start < versionSources.length; start += cibBatchChunkSize) {
+        const chunk = versionSources.slice(start, start + cibBatchChunkSize);
         const batch = await isolateResourceBreaches(
-          scenarios.slice(start, start + cibBatchChunkSize),
-          (chunk) => runCibBatch(chunk, temporaryDirectory, engineVersion, effectSchedule),
+          chunk.map(({ scenario }) => scenario.value),
+          (scenarios) => runCibBatch(scenarios, temporaryDirectory, engineVersion, effectSchedule),
           logSplit,
         );
-        results.push(...batch.results);
-        for (const { scenarioId, failure } of batch.failures) {
-          const source = versionSources.find(({ scenario }) => scenario.value.id === scenarioId);
-          if (source === undefined) throw new Error(`CIB failed scenario ${scenarioId}, which it was not asked`);
-          failedIds.add(scenarioId);
-          failures.push({ scenarioRelativePath: source.artifactCase.scenarioRelativePath, failure });
+        for (const [index, answer] of batch.entries()) {
+          const source = chunk[index]!;
+          if (answer.kind === "population") throw new Error("CIB answered a single-instance scenario with a population result");
+          if (answer.kind === "failure") {
+            failures.push({ scenarioRelativePath: source.artifactCase.scenarioRelativePath, failure: answer.failure });
+          } else answered.push({ source, result: answer.result });
         }
       }
     }
-    const produced = sources.filter(({ scenario }) => !failedIds.has(scenario.value.id));
-    const byScenario = new Map<string, CibRunnerResult>(
-      results.map(
-        (result) => [result.scenarioId, result] as const,
-      ),
-    );
-    if (
-      byScenario.size !== produced.length ||
-      produced.some(
-        ({ scenario }) => !byScenario.has(scenario.value.id),
-      )
-    ) {
-      throw new Error("CIB evidence batch returned different scenarios");
-    }
 
-    const replacements = produced.map(
-      ({ artifactCase, scenario, profile }) => {
-        const result = byScenario.get(scenario.value.id);
+    const replacements = answered.map(
+      ({ source: { artifactCase, scenario, profile }, result }) => {
         requireCleanDiagnostics(result);
         if (
           result.diagnostics.engineVersion !==
