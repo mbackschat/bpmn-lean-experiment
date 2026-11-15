@@ -110,7 +110,10 @@ public import Kernel.Proofs.Cancellation
 public import Kernel.Proofs.Cancellation.Registered
 public import Kernel.Proofs.Compensation
 public import Kernel.Proofs.Compensation.Formed
+public import Kernel.Proofs.Compensation.Hooks
+public import Kernel.Proofs.Compensation.Lane
 public import Kernel.Proofs.Compensation.Raise
+public import Kernel.Proofs.Compensation.Registered
 public import Kernel.Proofs.Compensation.Relation
 public import Kernel.Proofs.Concurrency
 public import Kernel.Proofs.Former
