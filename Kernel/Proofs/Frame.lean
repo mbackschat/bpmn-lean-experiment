@@ -70,9 +70,10 @@ def ResumesPending (rel : State → Prop) (s : State) (compensation : Compensati
 
 /-- `t` agrees with `s` on everything a property carried beside `WellFormed` may read: the scope occurrences, the
 occurrences, the issue and activation counters, the journal, the draft, the instance identity, the Multi-Instance runs,
-the compensation slot, the queued begins in queue order (`Laws.Step.beginsOf`, `Laws.Step.deferredOf`), the queued
-triggers (`Laws.Step.triggersOf`) and the queued compensations' resumes (`Laws.Step.resumesOf`), and `t` has no
-reservation pending that `s` lacks (`Laws.Step.OccurPending`). -/
+the compensation slot, the instance entries, the queued begins in queue order (`Laws.Step.beginsOf`,
+`Laws.Step.deferredOf`), the queued triggers (`Laws.Step.triggersOf`) and the queued compensations' resumes
+(`Laws.Step.resumesOf`), and `t` has no reservation pending (`Laws.Step.OccurPending`), flow token
+(`Laws.Step.flowsOf`), join wait or queued signal that places work (`Laws.Step.placing`) that `s` lacks. -/
 structure Unmoved (s t : State) : Prop where
   scopes : t.scopes = s.scopes
   occurrences : t.occurrences = s.occurrences
@@ -88,6 +89,10 @@ structure Unmoved (s t : State) : Prop where
   resumes : Laws.Step.resumesOf t.signals = Laws.Step.resumesOf s.signals
   deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens
   pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element
+  instances : t.slots.instances = s.slots.instances
+  flows : ∀ token ∈ Laws.Step.flowsOf t.tokens, token ∈ Laws.Step.flowsOf s.tokens
+  parked : ∀ waiting ∈ t.slots.parked, waiting ∈ s.slots.parked
+  placings : ∀ signal ∈ t.signals, Laws.Step.placing signal = true → signal ∈ s.signals
 
 /-- `Unmoved` stating only the fields a change moves: every other field holds by definition, so a field added to
 `Unmoved` is one edit here. -/
@@ -102,9 +107,13 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (resumes : Laws.Step.resumesOf t.signals = Laws.Step.resumesOf s.signals := by exact rfl)
     (deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens := by exact rfl)
     (pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element :=
-      by exact fun _ held => held) : Unmoved s t :=
+      by exact fun _ held => held) (instances : t.slots.instances = s.slots.instances := by exact rfl)
+    (flows : ∀ token ∈ Laws.Step.flowsOf t.tokens, token ∈ Laws.Step.flowsOf s.tokens := by exact fun _ held => held)
+    (parked : ∀ waiting ∈ t.slots.parked, waiting ∈ s.slots.parked := by exact fun _ held => held)
+    (placings : ∀ signal ∈ t.signals, Laws.Step.placing signal = true → signal ∈ s.signals :=
+      by exact fun _ held _ => held) : Unmoved s t :=
   ⟨scopes, occurrences, nextIssue, activations, journal, draft, instanceId, multiInstances, compensation, begins,
-    triggers, resumes, deferred, pending⟩
+    triggers, resumes, deferred, pending, instances, flows, parked, placings⟩
 
 /-- `scope` is the context of a handler or group a compensation run of `s` holds running. -/
 def RunningContext (s : State) (scope : ScopeOccurrenceId) : Prop :=
@@ -163,6 +172,25 @@ theorem BeginFits.handler {s : State} {request : BeginRequest} {run : ScopeOccur
   ⟨fun body same => Laws.Step.compensation_ne_multiInstance run body (handles ▸ same),
     fun _ named => by rw [fresh] at named; cases named⟩
 
+/-- Where a completion of the occurrence `id` by `leave` queued in `s` comes from: flows offered where the occurrence
+lies (`Laws.Flow.LeaveOffered`), or the resume of a compensation run a state that kept `rel` held. -/
+def CompletesFrom (rel : State → Prop) (program : Program) (s : State) (id : Nat) (leave : Leave) : Prop :=
+  Laws.Flow.LeaveOffered (fun held => WellFormed program held ∧ rel held) program s id leave ∨
+    ∃ held, WellFormed program held ∧ rel held ∧
+      ∃ run ∈ held.slots.compensation.runs, run.resume = some (.complete id leave)
+
+/-- A completion that comes from states that kept `rel` comes from states that kept anything `rel` implies. -/
+theorem CompletesFrom.mono {rel weaker : State → Prop} {program : Program} {s : State} {id : Nat} {leave : Leave}
+    (source : CompletesFrom rel program s id leave) (implies : ∀ s, rel s → weaker s) :
+    CompletesFrom weaker program s id leave :=
+  source.imp (fun offered => offered.mono fun _ held => ⟨held.1, implies _ held.2⟩)
+    fun ⟨held, formed, kept, resumed⟩ => ⟨held, formed, implies held kept, resumed⟩
+
+/-- A completion that names no flow comes from anywhere. -/
+theorem CompletesFrom.unnamed {rel : State → Prop} {program : Program} {s : State} {id : Nat} {leave : Leave}
+    (unnamed : ∀ selected, leave = .flows selected → selected = []) : CompletesFrom rel program s id leave :=
+  .inl fun selected same _ inside => by cases unnamed selected same; cases inside
+
 /-- What the state operations the hooks apply keep of a property `rel` carried beside `WellFormed`: an update of
 nothing `rel` may read (`Unmoved`), queuing a begin that `BeginFits`, issuing an identity, entering a scope occurrence
 (a Call's called root, which reads the program, is `OccursAlongside`'s), reserving an occurrence a `Signal.occur` queued
@@ -171,9 +199,31 @@ compensation context (`LeavesOwned`), clearing one that stands, keeping only occ
 strictly within it, disarming a host, and a variable write or removal. Every feature's operations record of `WellFormed`
 and `rel` but `Laws.MultiInstance.MultiInstanceOps` and the compensation records follows from its record of `WellFormed`
 and this one, with `OccursAlongside` where it reserves, queues a trigger or enters a called root; those two compensation
-records also store runs (`StoresAlongside`). -/
-structure FrameAlongside (rel : State → Prop) : Prop where
+records also store runs (`StoresAlongside`). The flows an outflow queues are read off states that kept `srel`
+beside `WellFormed` (`Laws.Flow.FlowOps`); a property that reads no flow token takes any. -/
+structure FrameAlongside (rel : State → Prop) (srel : State → Prop := rel) : Prop where
   frame : ∀ s t, Unmoved s t → rel s → rel t
+  /-- Flow tokens queued in the scope occurrence of an occurrence they continue from (`Laws.Flow.LeavesFrom`). -/
+  emit : ∀ program s occurrence flows, WellFormed program s → (∃ entry ∈ s.scopes, entry.id = occurrence.scope) →
+    Laws.Flow.LeavesFrom (fun held => WellFormed program held ∧ srel held) program s occurrence (.flows flows) → rel s →
+    rel (s.emit flows occurrence.scope)
+  /-- A completion by flows offered where its occurrence lies, or by a held compensation run's resume (`CompletesFrom`). -/
+  complete : ∀ program s id leave writes rule, CompletesFrom rel program s id leave → rel s →
+    rel (s.signal (.complete id leave writes rule))
+  /-- A begun occurrence parked at a join in its scope occurrence, on the flow it arrived by. -/
+  park : ∀ program s waiting, WellFormed program s → (∃ occurrence ∈ s.occurrences,
+    occurrence.id = waiting.occurrence ∧ occurrence.begun = true ∧ occurrence.scope = waiting.scope ∧
+      occurrence.incoming = some waiting.flow) → rel s →
+    rel { s with slots := { s.slots with parked := s.slots.parked ++ [waiting] } }
+  /-- The arming of an occurrence's boundaries, of its element in its scope occurrence. -/
+  arm : ∀ program s host element scope, WellFormed program s → (∃ occurrence ∈ s.occurrences,
+    occurrence.id = host ∧ occurrence.element = element ∧ occurrence.scope = scope) → rel s →
+    rel (s.signal (.arm host element scope))
+  /-- The arming of the arms of the Event-Based Gateway an occurrence arrived at (`Laws.Flow.GatewayOf`), in its scope
+  occurrence. -/
+  armGateway : ∀ program s occurrence header payload, WellFormed program s → occurrence ∈ s.occurrences →
+    Laws.Flow.GatewayOf program s occurrence header payload → rel s →
+    rel (s.signal (.armGateway occurrence.id header.id occurrence.scope))
   signalBegin : ∀ s request, BeginFits s request → rel s → rel (s.signal (.begin request))
   issue : ∀ s, rel s → rel s.issue.1
   enterScope : ∀ program s element parent locals owner, WellFormed program s → rel s →
@@ -202,19 +252,20 @@ structure StoresAlongside (rel : State → Prop) : Prop extends FrameAlongside r
 `Laws.MultiInstance.MultiInstanceOps`: queuing and deferring the begins of instances, leaving an active Multi-Instance
 instance's scope occurrence and replacing the Multi-Instance runs. The scope occurrences kept and an input's end facts
 read no queued begin and no runs. -/
-structure Alongside (rel : State → Prop) : Prop extends FrameAlongside rel where
+structure Alongside (rel : State → Prop) (srel : State → Prop := rel) : Prop extends FrameAlongside rel srel where
   instanceBegin : ∀ s request, rel s → rel (s.signal (.begin request))
   defer : ∀ s requests, rel s → rel (s.deferBegins requests)
   leaveInstance : ∀ program s run scope, WellFormed program s → run ∈ s.slots.multiInstances →
     Iteration.active scope ∈ run.instances → scope ∈ scopeIds s → rel s → rel (s.leaveScope scope)
   runs : ∀ s (runs : List MultiInstanceRun), rel s → rel { s with slots := { s.slots with multiInstances := runs } }
 
-/-- A queued signal that queues no begin, makes no reservation and carries no trigger and no resume moves nothing `rel`
+/-- A queued signal that queues no begin, makes no reservation and carries no trigger, no resume and places no work moves nothing `rel`
 reads. -/
 theorem FrameAlongside.signal {rel : State → Prop} (side : FrameAlongside rel) {s : State} (kept : rel s)
     (signal : Signal)
     (quiet : Laws.Step.beginsOf [signal] = [] ∧ Laws.Step.occursOf [signal] = [] ∧ Laws.Step.triggersOf [signal] = [] :=
-      by exact ⟨rfl, rfl, rfl⟩) (unresumed : Laws.Step.resumesOf [signal] = [] := by exact rfl) :
+      by exact ⟨rfl, rfl, rfl⟩) (unresumed : Laws.Step.resumesOf [signal] = [] := by exact rfl)
+    (unplacing : Laws.Step.placing signal = false := by exact rfl) :
     rel (s.signal signal) := by
   rw [Laws.State.signal_eq]
   have pending := fun pending => Laws.Step.occurPending_of (s := s) (t := { s with signals := s.signals ++ [signal] })
@@ -222,7 +273,12 @@ theorem FrameAlongside.signal {rel : State → Prop} (side : FrameAlongside rel)
     (fun _ member => member) (element := pending)
   exact side.frame s _ (.same (begins := by rw [Laws.Step.beginsOf_append, quiet.1, List.append_nil])
     (triggers := by rw [Laws.Step.triggersOf_append, quiet.2.2, List.append_nil])
-    (resumes := by rw [Laws.Step.resumesOf_append, unresumed, List.append_nil]) (pending := pending)) kept
+    (resumes := by rw [Laws.Step.resumesOf_append, unresumed, List.append_nil]) (pending := pending)
+    (placings := fun queued member placed => by
+      rcases List.mem_append.mp member with old | new
+      · exact old
+      · rw [List.mem_singleton.mp new, unplacing] at placed
+        cases placed)) kept
 
 /-- Removing an occurrence of a well-formed state keeps what the state operations keep and dropping a record that owns
 no scope occurrence keeps: `State.removeOccurrence` drops the record and then leaves the scope occurrences it owns,
@@ -381,6 +437,7 @@ theorem closurePhases_alongside {rel : Program → State → Prop} (phases : Law
     phases.resumable _ _ scope activity trigger leave resume rest holds.1
   raisable _ _ raised origin rest holds := phases.raisable _ _ raised origin rest holds.1
   housed _ _ occurrence holds := phases.housed _ _ occurrence holds.1
+  issued _ _ occurrence holds := phases.issued _ _ occurrence holds.1
   bodied _ _ occurrence holds := phases.bodied _ _ occurrence holds.1
   newest _ _ request role sourceType holds := phases.newest _ _ request role sourceType holds.1
   unrun _ _ request role sourceType holds := phases.unrun _ _ request role sourceType holds.1

@@ -49,28 +49,31 @@ theorem advanceClock_keeps (phases : ClosurePhases inv) {program : Program} {at?
   · exact same ▸ holds
   · exact moved ▸ phases.clock _ _ _ holds
 
-theorem continueAfter_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurrence : Occurrence} {leave : Leave}
-    {writes : List (String × Value)} {state after : State} (holds : inv ctx.program state)
-    (stands : ScopeStands state occurrence.scope) (ran : continueAfter hooks ctx occurrence leave writes state = .ok after) : inv ctx.program after := by
+theorem continueAfter_keeps {src : Program → State → Prop} (contract : HookContract hooks inv src) {ctx : Ctx}
+    {occurrence : Occurrence} {leave : Leave} {writes : List (String × Value)} {state after : State}
+    (holds : inv ctx.program state) (stands : ScopeStands state occurrence.scope)
+    (continues : Laws.Flow.LeavesFrom (src ctx.program) ctx.program state occurrence leave)
+    (ran : continueAfter hooks ctx occurrence leave writes state = .ok after) : inv ctx.program after := by
   rcases continueAfter_ok ran with same | flowed | ⟨_, done⟩ | ⟨_, done | ended⟩
   · exact same ▸ holds
-  · exact contract.outflow _ _ _ _ _ holds stands flowed
+  · exact contract.outflow _ _ _ _ _ holds stands continues flowed
   · exact contract.instanceCompleted _ _ _ _ _ _ holds stands done
   · exact contract.handlerCompleted _ _ _ _ _ holds stands done
   · exact contract.handlerEnded _ _ _ _ _ holds stands ended
 
-/-- The completion pipeline keeps `inv`. -/
+/-- The completion pipeline keeps `inv`: its continuation comes from where the completion did, read off the states
+it ran through, which keep the scope occurrences and add no instance entry. -/
 theorem complete_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) (pipeline : PipelinePhases inv)
     (facts : StateFacts) : PipelineKeeps hooks inv := by
-  intro ctx id leave writes rule state after holds free ran
+  intro ctx id leave writes rule state after holds free source ran
   rcases complete_ok ran with ⟨_, same⟩ | ⟨occurrence, sourceType, begun, pipeline⟩
   · exact same ▸ holds
   obtain ⟨left, selected, written, pipeline⟩ := pipeline
   obtain ⟨found, _, leaving, pipeline⟩ := pipeline
-  obtain ⟨made, _, writing, finishes⟩ := pipeline
+  obtain ⟨made, choosing, writing, finishes⟩ := pipeline
   obtain ⟨member, named⟩ := facts.found _ _ _ found
   obtain ⟨begunMember, begunFlag, begunId, reservation⟩ := facts.startReserved state occurrence sourceType member
-  obtain ⟨begunScope, reservedScopes⟩ := reservation
+  obtain ⟨begunScope, reservedScopes, begunElement, reservedInstances⟩ := reservation
   have closedHolds := pipeline.startReserved _ state occurrence sourceType holds member (named ▸ free)
   rw [named] at closedHolds
   obtain ⟨closedFrame, closedFree⟩ := facts.closeOwnItems (state.startReserved occurrence sourceType).1 id
@@ -91,21 +94,42 @@ theorem complete_keeps (contract : HookContract hooks inv) (phases : ClosurePhas
     have inLeft := within item member
     exact ⟨closedFree item (leftFrame.items item inLeft), identity ▸ detached item inLeft⟩
   have inWritten := writtenFrame.begun _ (leftFrame.begun _ inClosed begunFlag) begunFlag
+  -- The source, carried from the state the completion ran on to every later state of the pipeline.
+  have toWritten : ∀ (later : State), (∀ entry ∈ later.slots.instances, entry ∈ written.slots.instances) →
+      (∀ entry ∈ later.scopes, entry ∈ written.scopes) →
+      Laws.Flow.LeavesFrom (inv ctx.program) ctx.program later (state.startReserved occurrence sourceType).2 selected :=
+    fun later instances scopes => ((source occurrence member named).chosen
+      (by rw [← begunElement]; exact contract.select _ _ _ _ _ choosing)).shrink
+      (fun entry inside => by
+        have := closedFrame.instances _ (leftFrame.instances _ (writtenFrame.instances _ (instances entry inside)))
+        rwa [reservedInstances] at this)
+      (fun entry inside => by
+        have := scopes entry inside
+        rwa [writtenFrame.scopes, leftFrame.scopes, closedFrame.scopes, reservedScopes] at this)
+      begunId begunElement begunScope
   cases finishes with
   | raised continuing =>
     obtain ⟨removedHolds, removedStands⟩ := pipeline.removeOccurrence _ written _ writtenHolds inWritten
       (free written writtenFrame.items)
     rw [identity] at removedHolds removedStands
     obtain ⟨entry, inside, named⟩ := removedStands
+    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence written id
+    obtain ⟨endedScopes, endedInstances⟩ := facts.recordEnd (written.removeOccurrence id) (written.keyOf
+      (state.startReserved occurrence sourceType).2) .cancelled
     exact continueAfter_keeps contract (pipeline.recordEnd _ _ _ _ removedHolds)
-      ⟨entry, (facts.recordEnd _ _ _).symm ▸ inside, named⟩ continuing
+      ⟨entry, endedScopes.symm ▸ inside, named⟩
+      (toWritten _ (fun entry member => removedInstances entry (endedInstances ▸ member))
+        (fun entry member => removedScopes entry (endedScopes ▸ member))) continuing
   | left _ retaining continuing =>
     obtain ⟨retainedHolds, retainedFrame⟩ := contract.completed _ _ _ _ writtenHolds inWritten retaining
     obtain ⟨removedHolds, removedStands⟩ := pipeline.removeOccurrence _ _ _ retainedHolds
       (retainedFrame.begun _ inWritten begunFlag)
       (free _ fun item member => writtenFrame.items item (retainedFrame.items item member))
     rw [identity] at removedHolds removedStands
-    exact pipeline.recordEnd _ _ _ _ (continueAfter_keeps contract removedHolds removedStands continuing)
+    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence _ id
+    exact pipeline.recordEnd _ _ _ _ (continueAfter_keeps contract removedHolds removedStands
+      (toWritten _ (fun entry member => retainedFrame.instances _ (removedInstances entry member))
+        (fun entry member => retainedFrame.scopes ▸ removedScopes entry member)) continuing)
 
 theorem fireItem_keeps (contract : HookContract hooks inv) {ctx : Ctx} {item : OpenItem} {fired : Fired}
     {state after : State} (holds : inv ctx.program state) (open_ : item ∈ state.openItems)
@@ -139,13 +163,15 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
     · simpa [single body] using bodied body
   cases arrives with
   | atStart ran => exact contract.arriveStart _ _ _ _ _ _ _ holds member begun ran
-  | atActivity activity ran =>
-    exact contract.arriveActivity _ _ _ _ _ _ holds member begun unstarted role unowned activity ran
-  | atScope ran => exact contract.arriveScope _ _ _ _ _ _ _ holds member begun inner ran
-  | atGateway ran => exact contract.arriveGateway _ _ _ _ _ _ holds member begun ran
+  | atActivity named activity ran =>
+    exact contract.arriveActivity _ _ _ _ _ _ holds member begun unstarted role unowned named activity ran
+  | atScope named ran => exact contract.arriveScope _ _ _ _ _ _ _ holds member begun named inner ran
+  | atGateway named ran =>
+    obtain ⟨element, found, gateway⟩ := Option.bind_eq_some_iff.mp named
+    exact contract.arriveGateway _ _ _ _ _ _ holds member begun ⟨element, gateway, .inl found⟩ ran
   | atCatch ran => exact contract.arriveCatch _ _ _ _ _ _ _ holds member begun unstarted role ran
   | atThrow named ran => exact contract.arriveThrow _ _ _ _ _ _ _ holds member begun unstarted role named (begunFrom role) ran
-  | atLink ran => exact contract.arriveLink _ _ _ _ _ _ holds member begun ran
+  | atLink named ran => exact contract.arriveLink _ _ _ _ _ _ holds member begun named ran
 
 /-- A begin keeps `inv`: it begins only in a scope occurrence that stands, and hands the begun occurrence on. -/
 theorem begin_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts) {ctx : Ctx}
@@ -203,12 +229,26 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : ClosurePhases
   | onComplete ran =>
     exact pipeline _ _ _ _ _ _ _ popped (fun request queued => phases.completeQueued _ _ _ _ _ _ holds head
       request (Laws.State.Queued.shrink (before := queue) (after := { queue with signals := rest })
-        (by rw [heads]; exact List.sublist_cons_self _ _) (.refl _) queued)) ran
+        (by rw [heads]; exact List.sublist_cons_self _ _) (.refl _) queued))
+      (fun occurrence member named => ⟨queue, holds, fun _ kept => kept, fun _ kept => kept,
+        .inl ⟨occurrence, member, rfl, rfl, rfl⟩, fun selected same flow inside => .inr ⟨selected, _, _, inside,
+          .inl (by rw [named, ← same]; exact head)⟩⟩) ran
   | onWrite stands ran => exact (contract.writeOutputs _ _ _ _ _ _ popped stands ran).1
   | onRemove stands ran => exact contract.removeVariables _ _ _ _ _ popped stands ran
   | onOccur stands ran =>
     obtain ⟨reserved, free⟩ := phases.reserve _ _ _ _ popped stands ⟨queue, holds, .inl ⟨_, _, _, _, head⟩⟩
-    exact pipeline _ _ _ _ _ _ _ reserved free ran
+    obtain ⟨occurrences, element, scope, placed⟩ := facts.reserve { queue with signals := rest } _ _
+    obtain ⟨issue, scopes, instances⟩ := placed
+    refine pipeline _ _ _ _ _ _ _ reserved free (fun occurrence member named => ?_) ran
+    rw [occurrences] at member
+    rcases List.mem_append.mp member with old | new
+    · have := phases.issued _ _ _ popped old
+      rw [named, issue] at this
+      exact absurd this (Nat.lt_irrefl _)
+    rw [List.mem_singleton.mp new]
+    exact ⟨queue, holds, fun entry kept => instances ▸ kept, fun entry kept => scopes ▸ kept,
+      .inr ⟨_, _, _, by rw [element, scope]; exact head⟩, fun selected same flow inside =>
+        .inr ⟨selected, _, _, inside, .inr (by rw [element, scope, ← same]; exact head)⟩⟩
   | onCancel => exact phases.cancel _ _ _ popped
   | onFire fired =>
     rcases fired with ⟨item, open_, ran⟩ | same
@@ -238,10 +278,12 @@ theorem reoffer_keeps (contract : HookContract hooks inv) (phases : ClosurePhase
     {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId} {offered : State} (holds : inv ctx.program state)
     (ran : reoffer? hooks ctx state = .ok (some (gateway, scope, offered))) : inv ctx.program offered := by
   obtain ⟨_, occurrence, _, rest⟩ := reoffer_ok ran
-  obtain ⟨_, ⟨waiting, parked, named⟩, found, offering⟩ := rest
+  obtain ⟨_, ⟨waiting, parked, named, gateway⟩, found, offering⟩ := rest
+  obtain ⟨element, targeted, isGateway⟩ := gateway
   obtain ⟨member, same⟩ := facts.found _ _ _ found
   exact contract.arriveGateway _ _ _ _ _ _ holds member
-    (phases.parkedBegun _ _ _ _ holds parked member (same.trans named.symm)) offering
+    (phases.parkedBegun _ _ _ _ holds parked member (same.trans named.symm))
+    ⟨element, isGateway, .inr ⟨waiting, parked, named.trans same.symm, targeted⟩⟩ offering
 
 theorem transition_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) {ctx : Ctx}
     {transition : State → Outcome} (runs : RunsTransition hooks ctx transition) {state after : State}
@@ -294,7 +336,10 @@ theorem absorb_keeps (phases : ClosurePhases inv) (pipeline : PipelineKeeps hook
     exact pipeline _ _ _ _ _ _ _ (phases.dequeue _ _ _ holds (List.take_sublist _ _))
       (fun request inQueue => phases.completeQueued _ _ _ _ _ _ holds queued request
         (Laws.State.Queued.shrink (before := state) (after := { state with signals := state.signals.take before })
-          (List.take_sublist _ _) (.refl _) inQueue)) completed
+          (List.take_sublist _ _) (.refl _) inQueue))
+      (fun occurrence member named => ⟨state, holds, fun _ kept => kept, fun _ kept => kept,
+        .inl ⟨occurrence, member, rfl, rfl, rfl⟩, fun selected same flow inside => .inr ⟨selected, _, _, inside,
+          .inl (by rw [named, ← same]; exact queued)⟩⟩) completed
 
 /-- A micro-step whose body keeps `inv` keeps it. -/
 theorem microStep_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) (pipeline : PipelineKeeps hooks inv)

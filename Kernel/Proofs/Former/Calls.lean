@@ -683,6 +683,12 @@ end Carry
 /-- The state operations the hooks apply keep the lane invariant. -/
 theorem callsFormed_alongside (program : Program) : Alongside (CallsFormed program) where
   frame _ _ moved held := held.same moved.scopes (fun _ member => moved.occurrences ▸ member) moved.instanceId
+  emit _ _ _ _ _ _ _ held := held.same (by rw [Laws.State.emit_eq])
+    (by rw [Laws.State.emit_eq]; exact fun _ member => member) (by rw [Laws.State.emit_eq])
+  complete _ _ id leave writes rule _ held := held.signal (.complete id leave writes rule)
+  park _ _ _ _ _ held := held.same rfl (fun _ member => member) rfl
+  arm _ _ host element scope _ _ held := held.signal (.arm host element scope)
+  armGateway _ _ occurrence header _ _ _ _ held := held.signal (.armGateway occurrence.id header.id occurrence.scope)
   signalBegin _ request _ held := held.signal (.begin request)
   issue _ held := held.same (by rw [Laws.State.issue_eq]) (by rw [Laws.State.issue_eq]; exact fun _ member => member)
     (by rw [Laws.State.issue_eq])

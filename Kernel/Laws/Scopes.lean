@@ -110,7 +110,8 @@ structure ScopesOps (inv : State → Prop) : Prop where
     scope.occurrence = some occurrence.id → occurrence.begun = true
   /-- The completion of a begun occurrence that stands. -/
   complete : ∀ state occurrence leave writes rule, inv state → occurrence ∈ state.occurrences →
-    occurrence.begun = true → inv (state.signal (.complete occurrence.id leave writes rule))
+    occurrence.begun = true → (∀ selected, leave = .flows selected → selected = []) →
+    inv (state.signal (.complete occurrence.id leave writes rule))
   /-- An interrupting Event Sub-Process's clearing of the scope occurrence its begun occurrence runs in, keeping that
   occurrence and its start Event's reservation, which lies there; the occurrence stands and the reservation stays
   claimable there. -/
@@ -138,7 +139,7 @@ structure ScopesOps (inv : State → Prop) : Prop where
         Laws.State.Unclaimed (state.enterScope element occurrence.scope locals (some occurrence.id)).1 id
   /-- The arming of a begun occurrence's boundaries. -/
   arm : ∀ state occurrence element, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
-    inv (state.signal (.arm occurrence.id element occurrence.scope))
+    element = occurrence.element → inv (state.signal (.arm occurrence.id element occurrence.scope))
   /-- The arming of the Event Sub-Process starts of a scope occurrence that stands. -/
   armScope : ∀ state scope, inv state → scope ∈ Laws.State.scopeIds state → inv (state.signal (.armScope scope))
   /-- A begin that continues by its flows, in a scope occurrence that stands and some occurrence owns if it names a
@@ -174,7 +175,7 @@ theorem completeScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : 
   split at ran
   · cases ran
   · cases ran
-    exact ops.complete _ _ _ _ _ holds owned (ops.owner _ _ _ holds member owned link)
+    exact ops.complete _ _ _ _ _ holds owned (ops.owner _ _ _ holds member owned link) fun _ same => by cases same
 
 /-- Bare begins of a Scope's implicit start, queued in a scope occurrence that stands, keep `inv`. -/
 theorem implicitBegins_keeps {inv : State → Prop} (ops : ScopesOps inv) {scope : ScopeOccurrenceId} :
@@ -200,7 +201,7 @@ its start Event, an Event Sub-Process's triggered start with the reservation its
 start. -/
 theorem enter_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {header : Header} {payload : ScopePayload}
     {occurrence : Occurrence} {entry : ScopeEntry} {state after : State} (holds : inv state)
-    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (named : header.id = occurrence.element)
     (claimable : ∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧
       Laws.State.Unclaimed state id)
     (ran : Feature.Scopes.enter ctx header payload occurrence entry state = .ok after) : inv after := by
@@ -223,7 +224,7 @@ theorem enter_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {he
     split
     · exact ⟨entered_, entered, rfl, ready, rfl⟩
     · obtain ⟨sameScopes, stillReady⟩ := ops.armed _ _ _ _ _ _ ready
-      exact ⟨_, ops.arm _ _ _ entered (occurrences ▸ member) begun, sameScopes, stillReady, rfl⟩
+      exact ⟨_, ops.arm _ _ _ entered (occurrences ▸ member) begun named, sameScopes, stillReady, rfl⟩
   obtain ⟨armed, armedHolds, armedScopes, rest⟩ := armed
   obtain ⟨armedReady, armedIs⟩ := rest
   rw [armedIs] at ran
@@ -256,7 +257,7 @@ theorem enter_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {he
 own occurrence and its start Event's reservation, which lies there; then the Scope is entered. -/
 theorem arriveScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {header : Header}
     {payload : ScopePayload} {occurrence : Occurrence} {entry : ScopeEntry} {state after : State} (holds : inv state)
-    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (named : header.id = occurrence.element)
     (ready : ∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧
       Laws.State.Unclaimed state id ∧ ∀ found ∈ state.occurrences, found.id = id → found.scope = occurrence.scope)
     (ran : Feature.Scopes.arriveScope ctx header payload occurrence entry state = .ok after) : inv after := by
@@ -264,16 +265,16 @@ theorem arriveScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ct
       Laws.State.Unclaimed state id := fun id inner => ⟨(ready id inner).1, (ready id inner).2.1⟩
   unfold Feature.Scopes.arriveScope at ran
   split at ran
-  · exact enter_keeps ops holds member begun claimable ran
-  · exact enter_keeps ops holds member begun claimable ran
+  · exact enter_keeps ops holds member begun named claimable ran
+  · exact enter_keeps ops holds member begun named claimable ran
   · rename_i interrupting _
     split at ran
     · cases ran
     · dsimp only at ran
       cases interrupting
-      · exact enter_keeps ops holds member begun claimable ran
+      · exact enter_keeps ops holds member begun named claimable ran
       · obtain ⟨cleared, stays, clearedReady⟩ := ops.clear state occurrence entry.inner holds member begun ready
-        exact enter_keeps ops cleared stays begun clearedReady ran
+        exact enter_keeps ops cleared stays begun named clearedReady ran
 
 /-! ## Cancellation
 

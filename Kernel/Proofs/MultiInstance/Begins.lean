@@ -17,9 +17,9 @@ every one its counter has issued, which every start fact of the input counts (`L
 
 The order is a fact of the settled state before `Step.orderJournal` turns the journal round, so it is carried by the
 closure's phases alone (`Laws.Step.ClosurePhases`, `Laws.Step.running_settles`). The state operations' lemmas here
-are each of what the frame records ask (`Proofs.Frame.FrameAlongside`, `ClosureAlongside`, `Alongside`), which
-`Kernel.Proofs.MultiInstance.Registered` assembles, since this module may not reach a feature's Laws module beyond its
-fan-in (guard 15). Nothing executable imports this module.
+are each of what the frame records ask (`Proofs.Frame.FrameAlongside`, `ClosureAlongside`, `Alongside`), which this
+module assembles and `Kernel.Proofs.MultiInstance.Registered` composes with the registered hooks, since this module may
+not reach a feature's Laws module beyond its fan-in (guard 15). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -31,7 +31,7 @@ open Kernel.Laws.State (WellFormed scopeIds)
 open Kernel.Laws.IL (BoundaryOf Reservable)
 open Kernel.Laws.MultiInstance (LoopOf IdsUnique UnbegunUnlooped BeginsInOrder)
 open Kernel.Laws.Step (OccurPending PendingIn)
-open Kernel.Proofs.Frame (OccursAlongside ResumesPending)
+open Kernel.Proofs.Frame (OccursAlongside ResumesPending Alongside StoresAlongside ClosureAlongside)
 
 /-! ## The relation -/
 
@@ -460,5 +460,59 @@ theorem beginsInOrder_of {program : Program} {before after : State} {input : Inp
     (List.sublist_append_left (settled.journal.reverse.flatMap (·.started)) settled.draft.started)
 
 end Walk
+
+/-! ## The frame records -/
+
+/-- The state operations the hooks apply keep `BeginsKept`. -/
+theorem beginsKept_alongside (program : Program) : Alongside (BeginsKept program) where
+  frame _ _ moved held := held.frame (fun _ inside => moved.occurrences ▸ inside) moved.pending moved.journal
+    (congrArg (·.started) moved.draft)
+  emit _ _ _ _ _ _ _ held := by
+    rw [Laws.State.emit_eq]
+    exact held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
+  complete _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
+  park _ _ _ _ _ held := held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
+  arm _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
+  armGateway _ _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
+  signalBegin _ request _ held := held.signalBegin request
+  issue _ held := held.issue
+  enterScope _ _ element parent locals owner _ held := held.enterScope element parent locals owner
+  reserve _ _ _ scope _ pending held :=
+    held.reserve (fun apart => PendingIn.unlooped (fun _ kept => (kept apart).occurs) pending) scope
+  leaveScope _ _ _ formed present _ held := held.leaveScope formed present
+  clearInside _ _ _ keep formed present _ held := held.clearInside formed present keep
+  disarm _ _ host _ held := held.disarm host
+  setVariable _ _ target name value _ held := held.setVariable target name value
+  removeVariable _ _ target name _ held := held.removeVariable target name
+  instanceBegin _ request held := held.signalBegin request
+  defer _ requests held := held.defer requests
+  leaveInstance _ _ _ _ formed _ _ present held := held.leaveScope formed present
+  runs _ runs held := held.runs runs
+
+/-- Storing compensation runs that resume only by pending reservations keeps `BeginsKept`. -/
+theorem beginsKept_stores (program : Program) : StoresAlongside (BeginsKept program) :=
+  { (beginsKept_alongside program).toFrameAlongside with
+    storeRuns := fun _ _ compensation _ _ resumes held => held.storeRuns compensation resumes }
+
+/-- The phases a closure runs keep `BeginsKept`; cancelling is `FrameAlongside.cancelOccurrence`. -/
+theorem beginsKept_closureAlongside (program : Program) : ClosureAlongside (BeginsKept program) where
+  toFrameAlongside := (beginsKept_alongside program).toFrameAlongside
+  journal _ _ transition _ held started _ := held.journal transition started
+  dequeue _ _ _ _ fewer held := held.dequeue fewer
+  untoken _ _ tokens _ _ held := held.untoken tokens
+  begin _ _ _ role sourceType formed _ admitted _ _ held := held.begin formed admitted role sourceType
+  cancel _ _ _ formed held := (beginsKept_alongside program).toFrameAlongside.cancelOccurrence
+    (fun _ id _ kept => kept.withoutRecord id) (fun _ _ _ kept => kept.draft _ rfl) formed held
+
+/-- The completion pipeline's own phases keep `BeginsKept` where they keep `WellFormed`. -/
+theorem beginsKept_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) :
+    Laws.Step.PipelinePhases fun program s => WellFormed program s ∧ BeginsKept program s where
+  startReserved _ _ occurrence sourceType holds member unnamed :=
+    ⟨pipeline.startReserved _ _ occurrence sourceType holds.1 member unnamed, holds.2.startReserved sourceType member⟩
+  removeOccurrence program _ occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
+    ⟨⟨removed.1, (beginsKept_alongside program).toFrameAlongside.removeOccurrence
+      (fun _ id _ kept => kept.withoutRecord id) holds.1 holds.2⟩, removed.2⟩
+  recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, holds.2.recordEnd key terminal⟩
 
 end Kernel.Proofs.MultiInstance

@@ -565,8 +565,8 @@ theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loo
     {occurrence : Occurrence} {state after : State}
     (ops : Laws.MultiInstance.MultiInstanceOps ctx.program (WellFormed ctx.program) Laws.State.Settled)
     (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : Numbered ctx.program state)
-    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (looped : LoopOf ctx.program header.id loop)
-    (ownsEntered : ∀ locals (unarmed : Bool), SlotsOwned (if unarmed then
+    (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (named : header.id = occurrence.element)
+    (looped : LoopOf ctx.program header.id loop) (ownsEntered : ∀ locals (unarmed : Bool), SlotsOwned (if unarmed then
       (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
       else (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1.signal
         (.arm occurrence.id header.id occurrence.scope)))
@@ -579,7 +579,8 @@ theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loo
   · obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
     have waiting : ∀ slot ∈ List.replicate count Iteration.waiting, slot = .waiting := fun _ inside =>
       List.eq_of_mem_replicate inside
-    obtain ⟨entering, slots, _⟩ := enterBody_entering ops formed member begun header.id locals unarmed collection _ waiting
+    obtain ⟨entering, slots, _⟩ := enterBody_entering ops formed member begun header.id
+      (fun current kept present => ops.arm current occurrence _ kept present begun named) locals unarmed collection _ waiting
     have enteredHeld : Numbered ctx.program (if unarmed then
         (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1.signal

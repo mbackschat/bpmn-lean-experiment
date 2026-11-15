@@ -324,7 +324,8 @@ structure StartsOps (inv : State → Prop) : Prop where
   clock : ∀ state atMs, inv state → inv { state with logicalTimeMs := atMs }
   /-- The completion of a begun occurrence that stands. -/
   complete : ∀ state occurrence leave writes rule, inv state → occurrence ∈ state.occurrences →
-    occurrence.begun = true → inv (state.signal (.complete occurrence.id leave writes rule))
+    occurrence.begun = true → (∀ selected, leave = .flows selected → selected = []) →
+    inv (state.signal (.complete occurrence.id leave writes rule))
 
 /-- `Hooks.arriveStart` keeps `inv`: a start Event completes its own begun occurrence. -/
 theorem arriveStart_keeps {inv : State → Prop} (ops : StartsOps inv) {hooks : Feature.Starts.StartsHooks} {ctx : Ctx}
@@ -335,23 +336,23 @@ theorem arriveStart_keeps {inv : State → Prop} (ops : StartsOps inv) {hooks : 
   split at ran
   · simp only [bind, Except.bind] at ran
     cases ran
-    exact ops.complete _ _ _ _ _ (ops.clock _ _ holds) member begun
+    exact ops.complete _ _ _ _ _ (ops.clock _ _ holds) member begun fun _ same => by cases same
   · cases paid : Feature.Starts.startPayload hooks ctx state.logicalTimeMs ‹_› ‹_› with
     | error failure => simp [paid, bind, Except.bind] at ran
     | ok values =>
       simp only [paid, bind, Except.bind] at ran
       cases ran
-      exact ops.complete _ _ _ _ _ holds member begun
+      exact ops.complete _ _ _ _ _ holds member begun fun _ same => by cases same
   · split at ran
     · simp [throw, throwThe, MonadExcept.throw, bind, Except.bind] at ran
     · simp only [bind, Except.bind] at ran
       split at ran
       · cases ran
       · cases ran
-        exact ops.complete _ _ _ _ _ holds member begun
+        exact ops.complete _ _ _ _ _ holds member begun fun _ same => by cases same
   all_goals
     simp only [bind, Except.bind] at ran
     cases ran
-    exact ops.complete _ _ _ _ _ holds member begun
+    exact ops.complete _ _ _ _ _ holds member begun fun _ same => by cases same
 
 end Kernel.Laws.Starts

@@ -57,6 +57,14 @@ theorem arm_apart {host : Nat} {element : ElementId} {scope : ScopeOccurrenceId}
       ∀ scope' activity trigger leave resume, Signal.compensate scope' activity trigger leave resume ≠ .arm host element scope :=
   ⟨fun _ => nofun, fun _ _ _ _ _ => nofun, fun _ _ _ _ _ => nofun⟩
 
+/-- A queued gateway arming is no begin, reservation or compensation. -/
+theorem armGateway_apart {occurrence : Nat} {gateway : ElementId} {scope : ScopeOccurrenceId} :
+    (∀ request, Signal.begin request ≠ .armGateway occurrence gateway scope) ∧
+      (∀ element scope' leave writes rule, Signal.occur element scope' leave writes rule ≠ .armGateway occurrence gateway scope) ∧
+      ∀ scope' activity trigger leave resume,
+        Signal.compensate scope' activity trigger leave resume ≠ .armGateway occurrence gateway scope :=
+  ⟨fun _ => nofun, fun _ _ _ _ _ => nofun, fun _ _ _ _ _ => nofun⟩
+
 /-- A compensation handler's failure is none of the other signals a raise's search queues. -/
 theorem compensationFailed_apart {handler : ScopeOccurrenceId} {code : String} {message : Option String}
     {origin : Origin} :

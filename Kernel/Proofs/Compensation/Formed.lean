@@ -318,6 +318,13 @@ theorem Formed.clearInside {precedes : Compensable → Compensable → Prop} {pr
 /-- The state operations the hooks apply keep `Formed`. -/
 theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) : FrameAlongside (Formed precedes) where
   frame _ _ moved kept := kept.unmoved moved
+  emit _ s _ _ _ _ _ kept := by
+    rw [Laws.State.emit_eq]
+    exact kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
+  complete _ _ _ _ _ _ _ kept := kept.signal _
+  park _ _ _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
+  arm _ _ _ _ _ _ _ kept := kept.signal _
+  armGateway _ _ _ _ _ _ _ _ kept := kept.signal _
   signalBegin _ _ _ kept := kept.signal _
   issue s kept := by
     rw [Laws.State.issue_eq]

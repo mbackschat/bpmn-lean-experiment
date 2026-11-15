@@ -46,6 +46,12 @@ structure SearchHooks (ctx : Ctx) (inv : State → Prop) (hooks : Feature.Propag
   dropRuns : ∀ scope state, inv state →
     inv (hooks.dropRuns ctx scope state) ∧ Steady state (hooks.dropRuns ctx scope state)
 
+/-- A throw leaves by its element's own outgoing flows or by none. -/
+theorem throwLeave_unnamed (payload : EventPayload) :
+    ∀ selected, Feature.Propagation.throwLeave payload = .flows selected → selected = [] := by
+  unfold Feature.Propagation.throwLeave
+  split <;> intro _ same <;> cases same <;> rfl
+
 /-- `Hooks.arriveThrow` keeps `inv`: a raise names the thrower's element (`Laws.Step.HookContract.arriveThrow`). -/
 theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationOps ctx.program inv) {header : Header}
     {payload : EventPayload} {thrown : Throw} {occurrence : Occurrence} {state after : State} (holds : inv state)
@@ -54,6 +60,7 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
     (named : header.id = occurrence.element) (begunFrom : BegunFrom inv state occurrence)
     (ran : Feature.Propagation.arriveThrow ctx header payload thrown occurrence state = .ok after) : inv after := by
   have complete := ops.complete state occurrence (Feature.Propagation.throwLeave payload) [] .outward holds member begun
+    (throwLeave_unnamed payload)
   have left : occurrence ∈ (state.signal (.complete occurrence.id (Feature.Propagation.throwLeave payload) [] .outward)).occurrences := by
     rw [ops.signalOccurrences]; exact member
   unfold Feature.Propagation.arriveThrow at ran
@@ -62,7 +69,7 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
   | terminate =>
     cases ran
     obtain ⟨cleared, stays⟩ := ops.terminate state occurrence holds member begun
-    exact ops.complete _ _ _ _ _ cleared stays begun
+    exact ops.complete _ _ _ _ _ cleared stays begun fun _ same => by cases same; rfl
   | error record => cases ran; rw [named]; exact ops.raise _ _ _ complete left begun ⟨state, begunFrom, .inr ⟨_, rfl⟩⟩
   | escalation record => cases ran; rw [named]; exact ops.raise _ _ _ holds member begun ⟨state, begunFrom, .inl rfl⟩
   | message record =>
@@ -78,7 +85,7 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
     repeat' split at ran
     all_goals try cases ran
     obtain ⟨fired, same⟩ := fireAll_keeps ops _ (Feature.Propagation.ownReceivers state _) state holds
-    exact ops.complete _ _ _ _ _ (ops.outbox _ _ fired) (same ▸ member) begun
+    exact ops.complete _ _ _ _ _ (ops.outbox _ _ fired) (same ▸ member) begun (throwLeave_unnamed payload)
   | compensation record =>
     dsimp only at ran
     unfold Feature.Propagation.throwCompensation at ran
@@ -164,7 +171,7 @@ theorem throwerLeaves_keeps {inv : State → Prop} {ctx : Ctx} (ops : Propagatio
       have same := List.find?_some found
       simp only [Bool.and_eq_true, beq_iff_eq] at same
       exact ops.complete _ _ _ _ _ holds (List.mem_of_find?_eq_some found)
-        (thrown (by rw [event]; rfl) occurrence (List.mem_of_find?_eq_some found) same.1.1 same.1.2 same.2)
+        (thrown (by rw [event]; rfl) occurrence (List.mem_of_find?_eq_some found) same.1.1 same.1.2 same.2) (throwLeave_unnamed _)
 
 theorem hostLeaves_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (search : SearchHooks ctx inv hooks) {origin : Origin} {state after : State} (holds : inv state)

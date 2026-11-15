@@ -3,6 +3,7 @@ module
 public import Kernel.Step
 public import Kernel.Laws.State.Frames
 public import Kernel.Laws.IL
+public import Kernel.Laws.Flow.Sources
 
 /-! # Laws of the step function: the preservation contract
 
@@ -214,6 +215,44 @@ theorem occurPending_of {s t : State} (occurs : ∀ element ∈ occursOf t.signa
   · exact (mem_occursOf.mp (occurs _ (mem_occursOf.mpr (.inr resumed)))).elim .inl (.inr ∘ .inl)
   · exact .inr (.inr ⟨run, runs run member, rest⟩)
 
+/-- A queued signal that places work: an arming, which reserves its element's boundaries or its gateway's arms in its
+scope occurrence, a `Signal.occur`, which reserves its element there, and a completion by named flows, whose tokens
+it queues there. An invariant over where queued work lies reads them. -/
+def placing : Signal → Bool
+  | .arm _ _ _ | .armGateway _ _ _ | .occur _ _ _ _ _ => true
+  | .complete _ (.flows selected) _ _ => !selected.isEmpty
+  | .complete _ .outgoing _ _ | .complete _ .raised _ _ | .armScope _ | .raise _ _ | .begin _ | .write _ _ _
+  | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensate _ _ _ _ _ | .compensationFailed _ _ _ _ => false
+
+/-- A completion by no named flow places nothing. -/
+theorem placing_complete {occurrence : Nat} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule}
+    (unnamed : ∀ selected, leave = .flows selected → selected = []) :
+    placing (.complete occurrence leave writes rule) = false := by
+  cases leave with
+  | flows selected => rw [unnamed selected rfl]; rfl
+  | outgoing | raised => rfl
+
+/-- The flow tokens of `tokens`, each with its scope occurrence, in stack order. -/
+def flowsOf (tokens : List Token) : List (FlowId × ScopeOccurrenceId) :=
+  tokens.filterMap fun
+    | .flow flow scope => some (flow, scope)
+    | .begin _ => none
+
+/-- A flow token is on the stack exactly when its flow and scope occurrence are among `flowsOf`. -/
+theorem mem_flowsOf {tokens : List Token} {flow : FlowId} {scope : ScopeOccurrenceId} :
+    (flow, scope) ∈ flowsOf tokens ↔ Token.flow flow scope ∈ tokens := by
+  simp only [flowsOf, List.mem_filterMap]
+  constructor
+  · rintro ⟨token, member, made⟩
+    cases token with
+    | flow => cases made; exact member
+    | begin => cases made
+  · exact fun member => ⟨_, member, rfl⟩
+
+/-- Stacking tokens adds the flow tokens among them. -/
+theorem flowsOf_append (tokens more : List Token) : flowsOf (tokens ++ more) = flowsOf tokens ++ flowsOf more :=
+  List.filterMap_append
+
 /-! ## Queued triggers
 
 What the closure reads of the compensation triggers its queue carries: a queued compensation's trigger, and a queued
@@ -395,6 +434,7 @@ structure PipelineFrame (before after : State) : Prop where
   scopes : after.scopes = before.scopes
   begun : ∀ occurrence ∈ before.occurrences, occurrence.begun = true → occurrence ∈ after.occurrences
   items : ∀ item ∈ after.openItems, item ∈ before.openItems
+  instances : ∀ entry ∈ after.slots.instances, entry ∈ before.slots.instances
 
 /-- What each hook must keep of `inv`, given what `Step` establishes before it calls the hook: the occurrence it hands
 over stands (a begun occurrence, an idle scope occurrence's owner, a parked join's latest occurrence, the completing
@@ -413,8 +453,10 @@ its occurrence began in, and nothing claims it. The completion pipeline's hooks 
 and `Hooks.leave` leaves nothing hanging on the completing occurrence. `Hooks.delivered`, a query, picks an open item,
 and `Hooks.startsFired`, another, root-process starts.
 Each field keeps `inv` under the program of the hook's context, which is the program the step runs
-(`Laws.Step.inputCtx_program`). Each feature's `Laws` module proves the fields of the hooks it fills. -/
-structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop where
+(`Laws.Step.inputCtx_program`). An outflow's flows are read off states that kept `src`, the invariant of the state the
+completion it continues ran on: `inv` but in `Laws.Step.complete_ends`, whose continuation runs under an exemption that
+state does not have. Each feature's `Laws` module proves the fields of the hooks it fills. -/
+structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src : Program → State → Prop := inv) : Prop where
   arriveStart : ∀ ctx header payload trigger occurrence state after, inv ctx.program state →
     occurrence ∈ state.occurrences →
     occurrence.begun = true → hooks.arriveStart ctx header payload trigger occurrence state = .ok after →
@@ -424,7 +466,7 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
   arriveActivity : ∀ ctx header payload occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     occurrence.begun = true → (ctx.program.element? occurrence.element).bind (·.start?) = none →
     occurrence.role = .element → (∀ scope ∈ state.scopes, scope.occurrence ≠ some occurrence.id) →
-    (ctx.program.element? occurrence.element).bind (·.activity?) = some (header, payload) →
+    header.id = occurrence.element → (ctx.program.element? occurrence.element).bind (·.activity?) = some (header, payload) →
     hooks.arriveActivity ctx header payload occurrence state = .ok after → inv ctx.program after
   /-- A body occurrence arrives with the loop its element's envelope carries (`Step.bodyLoop?`), its start the newest the
   draft holds and no running body keyed by it, since `Step.begin` has just begun it (`Phases.newest`, `Phases.unrun`). -/
@@ -436,14 +478,13 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     (∀ run ∈ state.slots.multiInstances, run.occurrence ≠ occurrence.id) →
     hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after → inv ctx.program after
   arriveScope : ∀ ctx header payload occurrence entry state after, inv ctx.program state →
-    occurrence ∈ state.occurrences →
-    occurrence.begun = true →
+    occurrence ∈ state.occurrences → occurrence.begun = true → header.id = occurrence.element →
     (∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id ∧
       ∀ found ∈ state.occurrences, found.id = id → found.scope = occurrence.scope) →
     hooks.arriveScope ctx header payload occurrence entry state = .ok after → inv ctx.program after
   arriveGateway : ∀ ctx header payload occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
-    occurrence.begun = true → hooks.arriveGateway ctx header payload occurrence state = .ok after →
-    inv ctx.program after
+    occurrence.begun = true → Laws.Flow.GatewayOf ctx.program state occurrence header payload →
+    hooks.arriveGateway ctx header payload occurrence state = .ok after → inv ctx.program after
   arriveCatch : ∀ ctx header payload subscription occurrence state after, inv ctx.program state →
     occurrence ∈ state.occurrences →
     occurrence.begun = true → (ctx.program.element? occurrence.element).bind (·.start?) = none →
@@ -456,7 +497,9 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     header.id = occurrence.element → Laws.State.BegunFrom (inv ctx.program) state occurrence →
     hooks.arriveThrow ctx header payload thrown occurrence state = .ok after → inv ctx.program after
   arriveLink : ∀ ctx header payload occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
-    occurrence.begun = true → hooks.arriveLink ctx header payload occurrence state = .ok after → inv ctx.program after
+    occurrence.begun = true → (∃ element, ctx.program.element? occurrence.element = some element ∧
+      element.header = header) →
+    hooks.arriveLink ctx header payload occurrence state = .ok after → inv ctx.program after
   completeScope : ∀ ctx header payload scope occurrence state after, inv ctx.program state → scope ∈ state.scopes →
     occurrence ∈ state.occurrences → scope.occurrence = some occurrence.id →
     hooks.completeScope ctx header payload scope occurrence state = .ok after → inv ctx.program after
@@ -514,6 +557,7 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
   completed : ∀ ctx occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     hooks.completed ctx occurrence state = .ok after → inv ctx.program after ∧ PipelineFrame state after
   outflow : ∀ ctx occurrence leave state after, inv ctx.program state → ScopeStands state occurrence.scope →
+    Laws.Flow.LeavesFrom (src ctx.program) ctx.program state occurrence leave →
     hooks.outflow ctx occurrence leave state = .ok after → inv ctx.program after
   instanceCompleted : ∀ ctx body occurrence writes state after, inv ctx.program state →
     ScopeStands state occurrence.scope →
@@ -527,6 +571,9 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
   written : ∀ ctx writes state after, inv ctx.program state → hooks.written ctx writes state = .ok after →
     inv ctx.program after
   delivered : ∀ ctx data state item fired, hooks.delivered ctx data state = .ok (item, fired) → item ∈ state.openItems
+  /-- `Hooks.select`, a query, keeps a completion's leave or picks flows the occurrence's element lists. -/
+  select : ∀ ctx occurrence leave state chosen, hooks.select ctx occurrence leave state = .ok chosen →
+    chosen = leave ∨ ∃ flows, chosen = .flows flows ∧ ∀ flow ∈ flows, Laws.Flow.Lists ctx.program occurrence.element flow
   /-- `Hooks.startsFired`, a query, returns root-process start Events only. -/
   startsFired : ∀ ctx input fired, hooks.startsFired ctx input = .ok fired →
     ∀ id ∈ fired, ∃ element ∈ ctx.program.children none, element.header.id = id
@@ -587,6 +634,9 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop where
   /-- An occurrence's scope occurrence stands. -/
   housed : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
     ScopeStands state occurrence.scope
+  /-- Every occurrence was issued, so a reservation's number names it alone. -/
+  issued : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
+    occurrence.id < state.nextIssue
   /-- An occurrence numbered as a Multi-Instance body is of an element with a Multi-Instance envelope, so a dispatch
   hands every other hook an occurrence of the element role (`Laws.Step.dispatch_unstarted`). -/
   bodied : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
@@ -660,12 +710,15 @@ structure PipelinePhases (inv : Program → State → Prop) : Prop where
     inv program (state.removeOccurrence occurrence.id) ∧ ScopeStands (state.removeOccurrence occurrence.id) occurrence.scope
   recordEnd : ∀ program state key terminal, inv program state → inv program (state.recordEnd key terminal)
 
-/-- The completion pipeline keeps `inv`, from a state in which no queued begin names the completing occurrence:
+/-- The completion pipeline keeps `inv`, from a state in which no queued begin names the completing occurrence and
+which says where it comes from (`Laws.Flow.LeavesFrom`):
 `Laws.Step.complete_keeps` gives it from the hook contract, `Phases` and `PipelinePhases`, and the walk of
 `Laws.Step.Keeps` takes it as a premise. -/
 def PipelineKeeps (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
   ∀ (ctx : Ctx) (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) (state after : State),
     inv ctx.program state → (∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request) →
+    (∀ occurrence ∈ state.occurrences, occurrence.id = id →
+      Laws.Flow.LeavesFrom (inv ctx.program) ctx.program state occurrence leave) →
     complete hooks ctx id leave writes rule state = .ok after → inv ctx.program after
 
 /-- What the state operations `Step` applies do to the fields it reads, whatever the invariant (`Laws.State`). -/
@@ -680,10 +733,22 @@ structure StateFacts : Prop where
     (state.startReserved occurrence sourceType).2.begun = true ∧
     (state.startReserved occurrence sourceType).2.id = occurrence.id ∧
     (state.startReserved occurrence sourceType).2.scope = occurrence.scope ∧
-    (state.startReserved occurrence sourceType).1.scopes = state.scopes
+    (state.startReserved occurrence sourceType).1.scopes = state.scopes ∧
+    (state.startReserved occurrence sourceType).2.element = occurrence.element ∧
+    (state.startReserved occurrence sourceType).1.slots.instances = state.slots.instances
   closeOwnItems : ∀ (state : State) id,
     PipelineFrame state (state.closeOwnItems id) ∧ ∀ item ∈ (state.closeOwnItems id).openItems, item.occurrence ≠ id
-  recordEnd : ∀ (state : State) key terminal, (state.recordEnd key terminal).scopes = state.scopes
+  recordEnd : ∀ (state : State) key terminal, (state.recordEnd key terminal).scopes = state.scopes ∧
+    (state.recordEnd key terminal).slots.instances = state.slots.instances
+  /-- A reservation adds one occurrence, of its element in its scope occurrence and numbered by the next issue. -/
+  reserve : ∀ (state : State) element scope,
+    (state.reserve element scope).1.occurrences = state.occurrences ++ [(state.reserve element scope).2] ∧
+    (state.reserve element scope).2.element = element ∧ (state.reserve element scope).2.scope = scope ∧
+    (state.reserve element scope).2.id = state.nextIssue ∧ (state.reserve element scope).1.scopes = state.scopes ∧
+    (state.reserve element scope).1.slots.instances = state.slots.instances
+  /-- Removing an occurrence keeps no scope occurrence and no instance entry it did not have. -/
+  removeOccurrence : ∀ (state : State) id, (∀ entry ∈ (state.removeOccurrence id).scopes, entry ∈ state.scopes) ∧
+    ∀ entry ∈ (state.removeOccurrence id).slots.instances, entry ∈ state.slots.instances
   /-- A variable write or removal changes no scope occurrence, occurrence or open item. -/
   setVariable : ∀ (state : State) target name value, (state.setVariable target name value).scopes = state.scopes ∧
     (state.setVariable target name value).occurrences = state.occurrences ∧

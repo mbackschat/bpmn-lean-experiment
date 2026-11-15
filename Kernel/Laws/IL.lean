@@ -59,6 +59,13 @@ theorem event?_event (header : Header) (payload : EventPayload) :
 theorem header_event (header : Header) (payload : EventPayload) : (Element.event header payload).header = header := by
   simp only [Element.header]
 
+theorem header_activity (header : Header) (payload : ActivityPayload) :
+    (Element.activity header payload).header = header := by
+  simp only [Element.header]
+
+theorem header_scope (header : Header) (payload : ScopePayload) : (Element.scope header payload).header = header := by
+  simp only [Element.header]
+
 theorem event?_activity (header : Header) (payload : ActivityPayload) : (Element.activity header payload).event? = none := by
   simp only [Element.event?]
 
@@ -107,6 +114,11 @@ theorem activity?_start (header : Header) (payload : StartPayload) : (Element.st
 theorem activity?_activity (header : Header) (payload : ActivityPayload) :
     (Element.activity header payload).activity? = some (header, payload) := by
   simp only [Element.activity?]
+
+/-- A gateway is its own gateway, as `Step.dispatch` hands it to `Hooks.arriveGateway`. -/
+theorem gateway?_gateway (header : Header) (payload : GatewayPayload) :
+    (Element.gateway header payload).gateway? = some (header, payload) := by
+  simp only [Element.gateway?]
 
 /-- A Call's work record names its Call, and no other work record names one: `Kernel.Laws.Work`, which owns matching
 on `Work`, reads `Work.call?` by these. -/

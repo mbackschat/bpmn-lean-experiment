@@ -59,6 +59,7 @@ public import Kernel.Laws.Data.Values
 public import Kernel.Laws.Decision
 public import Kernel.Laws.Flow
 public import Kernel.Laws.Flow.Concurrent
+public import Kernel.Laws.Flow.Sources
 public import Kernel.Laws.Flow.Walk
 public import Kernel.Laws.Hooks
 public import Kernel.Laws.IL

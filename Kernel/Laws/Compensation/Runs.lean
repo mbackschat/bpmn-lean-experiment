@@ -68,7 +68,9 @@ structure RunsOps (inv : State → Prop) (settled : State → Nat → Prop) : Pr
     (state.signal signal).nextIssue = state.nextIssue ∧ (state.signal signal).slots = state.slots
   cancel : ∀ state id, inv state → inv (state.signal (.cancel id)) ∧
     ∀ other, settled state other → settled (state.signal (.cancel id)) other
+  /-- The completion a run held in a state that kept `inv` resumes by. -/
   complete : ∀ state id leave writes rule, inv state → settled state id →
+    (∃ held, inv held ∧ ∃ run ∈ held.slots.compensation.runs, run.resume = some (.complete id leave)) →
     inv (state.signal (.complete id leave writes rule)) ∧
       ∀ other, settled state other → settled (state.signal (.complete id leave writes rule)) other
   /-- An ended run's resume, pending in a state that kept `inv`. -/
@@ -209,8 +211,9 @@ theorem Ended.done {inv : State → Prop} {settled : State → Nat → Prop} {st
 
 theorem Ended.complete {inv : State → Prop} {settled : State → Nat → Prop} (ops : RunsOps inv settled)
     {state ended : State} {scope : ScopeOccurrenceId} (done : Ended inv settled scope state ended) {id : Nat}
-    (completes : settled state id) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :
+    (completes : settled state id) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule)
+    (resumed : ∃ held, inv held ∧ ∃ run ∈ held.slots.compensation.runs, run.resume = some (.complete id leave)) :
     Advanced inv settled scope state (ended.signal (.complete id leave writes rule)) :=
-  done.queue ops (ops.complete _ _ _ _ _ done.1 (done.2.1.2.2.1 _ completes))
+  done.queue ops (ops.complete _ _ _ _ _ done.1 (done.2.1.2.2.1 _ completes) resumed)
 
 end Kernel.Laws.Compensation

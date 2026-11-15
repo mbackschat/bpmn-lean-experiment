@@ -56,7 +56,10 @@ theorem registered_writeOutputs (ops : Operations inv) (facts : StateFacts) :
   rw [Laws.Registry.hooks_writeOutputs] at ran
   obtain ⟨kept, scopes, occurrences, items⟩ := Laws.Data.writeOutputs_keeps (dataOps ops facts ctx.program) holds (fun _ => stands)
     ran
-  exact ⟨kept, scopes, fun occurrence member _ => occurrences ▸ member, fun item member => items ▸ member⟩
+  have slots := Laws.Data.writeOutputs_induction (fun s => s.slots = state.slots)
+    (fun s _ _ _ same => (Laws.State.setVariable_same s _ _ _).slots.trans same) (Eq.refl _) ran
+  exact ⟨kept, scopes, fun occurrence member _ => occurrences ▸ member, fun item member => items ▸ member,
+    fun entry member => by rwa [slots] at member⟩
 
 /-- `HookContract.removeVariables` of the registered hooks. -/
 theorem registered_removeVariables (ops : Operations inv) (facts : StateFacts) :
@@ -70,7 +73,7 @@ theorem registered_removeVariables (ops : Operations inv) (facts : StateFacts) :
 theorem disarm_frame (state : State) (host : Nat) : Laws.Step.PipelineFrame state (state.disarm host) ∧
     ∀ item ∈ (state.disarm host).openItems, item.attachedTo ≠ some host := by
   rw [Laws.State.disarm_eq]
-  refine ⟨⟨rfl, fun found member begun => ?_, fun item member => (List.mem_filter.mp member).1⟩,
+  refine ⟨⟨rfl, fun found member begun => ?_, fun item member => (List.mem_filter.mp member).1, fun _ kept => kept⟩,
     fun item member => by simpa using (List.mem_filter.mp member).2⟩
   exact List.mem_filter.mpr ⟨member, by simp [begun]⟩
 
@@ -86,9 +89,9 @@ theorem hosted_of {state : State} {host : Nat} {scope : ScopeOccurrenceId} (stan
 
 /-- A completion's retained record keeps the completion pipeline's frame. -/
 theorem retained_frame {state after : State} (scopes : after.scopes = state.scopes)
-    (occurrences : after.occurrences = state.occurrences) (items : after.openItems = state.openItems) :
-    Laws.Step.PipelineFrame state after :=
-  ⟨scopes, fun _ member _ => occurrences ▸ member, fun _ member => items ▸ member⟩
+    (occurrences : after.occurrences = state.occurrences) (items : after.openItems = state.openItems)
+    (instances : after.slots.instances = state.slots.instances) : Laws.Step.PipelineFrame state after :=
+  ⟨scopes, fun _ member _ => occurrences ▸ member, fun _ member => items ▸ member, fun _ member => instances ▸ member⟩
 
 /-- `HookContract.delivered` of the registered hooks: the item a delivery fires is open. -/
 theorem registered_delivered : ∀ ctx data state item fired,
@@ -114,8 +117,8 @@ invariant. -/
 structure FeatureOps (inv : Program → State → Prop) : Prop where
   operations : Laws.Step.Operations inv
   work : ∀ program, Laws.Work.WorkOps program (inv program)
-  flow : ∀ program, Laws.Flow.FlowOps (inv program)
-  join : ∀ program, Laws.Flow.JoinOps (inv program) Laws.State.Settled
+  flow : ∀ program, Laws.Flow.FlowOps program (inv program)
+  join : ∀ program, Laws.Flow.JoinOps program (inv program) Laws.State.Settled
   starts : ∀ program, Laws.Starts.StartsOps (inv program)
   scopes : ∀ program, Laws.Scopes.ScopesOps (inv program)
   subscriptions : ∀ program, Laws.Subscriptions.SubscriptionsOps program (inv program)
@@ -149,8 +152,8 @@ structure MultiInstanceKeeps (inv : Program → State → Prop) : Prop where
 theorem multiInstanceKeeps_of
     (ops : ∀ program, Laws.MultiInstance.MultiInstanceOps program (inv program) Laws.State.Settled) :
     MultiInstanceKeeps inv where
-  arrive _ _ _ _ _ _ _ holds member begun _ _ _ _ _ ran :=
-    Proofs.MultiInstance.arriveMultiInstance_keeps (ops _) holds member begun ran
+  arrive _ _ _ _ _ _ _ holds member begun _ named _ _ _ ran :=
+    Proofs.MultiInstance.arriveMultiInstance_keeps (ops _) holds member begun named ran
   completeBody _ _ _ _ _ _ _ holds _ ran := Laws.MultiInstance.completeBody_keeps (ops _) holds ran
   instanceCompleted _ _ _ _ _ _ holds stands ran := Proofs.MultiInstance.instanceCompleted_keeps (ops _) holds stands ran
 
@@ -214,8 +217,9 @@ theorem handlerEnded_keeps {inv : State → Prop} {settled : State → Nat → P
 theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.CompensationOps (inv program))
     (runs : ∀ program, Laws.Compensation.RunsOps (inv program) Laws.State.Settled) : CompensationKeeps inv where
   completed _ _ _ _ holds _ ran := by
-    obtain ⟨kept, scopes, occurrences, items⟩ := Laws.Compensation.completed_keeps (compensation _) holds ran
-    exact ⟨kept, retained_frame scopes occurrences items⟩
+    obtain ⟨kept, scopes, occurrences, rest⟩ := Laws.Compensation.completed_keeps (compensation _) holds ran
+    obtain ⟨items, instances⟩ := rest
+    exact ⟨kept, retained_frame scopes occurrences items instances⟩
   dropWithin ctx scope _ holds :=
     ⟨(Laws.Compensation.dropWithin_keeps (compensation _) ctx scope holds).1, dropWithin_steady (compensation ctx.program) ctx scope _⟩
   failCompensation _ _ _ _ _ _ _ holds _ ran := failCompensation_keeps (compensation _) holds ran
@@ -269,7 +273,8 @@ theorem registeredSearch (ops : FeatureOps inv) (compensation : CompensationKeep
         (fun _ _ _ _ ⟨kept, steady⟩ wrote => ?_) (fun _ host named ⟨kept, steady⟩ => ?_) ⟨holds, .refl _⟩ ran
       · obtain ⟨written, more⟩ := outward _ _ _ _ kept wrote
         exact ⟨written, steady.trans more⟩
-      · refine ⟨(ops.join _).complete _ _ _ _ _ kept ((settled.steady steady) host named), steady.trans ?_⟩
+      · refine ⟨(ops.join _).complete _ _ _ _ _ kept ((settled.steady steady) host named)
+          (fun _ same => by cases same), steady.trans ?_⟩
         rw [Laws.State.signal_eq]
         exact ⟨rfl, rfl, Nat.le_refl _, fun request named => named.elim (fun named =>
           .inl ((List.mem_append.mp named).resolve_right (by simp))) .inr, Laws.State.instanceOf_congr rfl rfl, rfl,
@@ -291,27 +296,27 @@ theorem registered_contract_of {inv : Program → State → Prop} (ops : Feature
   arriveStart _ _ _ _ _ _ _ holds member begun ran := by
     rw [Laws.Registry.hooks_arriveStart] at ran
     exact Laws.Starts.arriveStart_keeps (ops.starts _) holds member begun ran
-  arriveActivity _ _ _ _ _ _ holds member begun unstarted role unowned activity ran := by
+  arriveActivity _ _ _ _ _ _ holds member begun unstarted role unowned named activity ran := by
     rw [Laws.Registry.hooks_arriveActivity] at ran
-    exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted role unowned activity ran
+    exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted role unowned named activity ran
   arriveMultiInstance _ _ _ _ _ _ _ holds member begun body named looped newest unrun ran := by
     rw [Laws.Registry.hooks_arriveMultiInstance] at ran
     exact multiInstance.arrive _ _ _ _ _ _ _ holds member begun body named looped newest unrun ran
-  arriveScope _ _ _ _ _ _ _ holds member begun ready ran := by
+  arriveScope _ _ _ _ _ _ _ holds member begun named ready ran := by
     rw [Laws.Registry.hooks_arriveScope] at ran
-    exact Laws.Scopes.arriveScope_keeps (ops.scopes _) holds member begun ready ran
-  arriveGateway _ _ _ _ _ _ holds member begun ran := by
+    exact Laws.Scopes.arriveScope_keeps (ops.scopes _) holds member begun named ready ran
+  arriveGateway _ _ _ _ _ _ holds member begun named ran := by
     rw [Laws.Registry.hooks_arriveGateway] at ran
-    exact Laws.Flow.arriveGateway_keeps (ops.join _) holds member begun ran
+    exact Laws.Flow.arriveGateway_keeps (ops.join _) holds member begun named ran
   arriveCatch _ _ _ _ _ _ _ holds member begun unstarted role ran := by
     rw [Laws.Registry.hooks_arriveCatch] at ran
     exact Laws.Subscriptions.arriveCatch_keeps (ops.subscriptions _) holds member begun unstarted role ran
   arriveThrow _ _ _ _ _ _ _ holds member begun unstarted role named begunFrom ran := by
     rw [Laws.Registry.hooks_arriveThrow] at ran
     exact Laws.Propagation.arriveThrow_keeps (ops.propagation _) holds member begun unstarted role named begunFrom ran
-  arriveLink _ _ _ _ _ _ holds member begun ran := by
+  arriveLink _ _ _ _ _ _ holds member begun named ran := by
     rw [Laws.Registry.hooks_arriveLink] at ran
-    exact Laws.Flow.arriveLink_keeps (ops.flow _) holds member begun ran
+    exact Laws.Flow.arriveLink_keeps (ops.flow _) holds member begun named ran
   completeScope _ _ _ _ _ _ _ holds member owned link ran := by
     rw [Laws.Registry.hooks_completeScope] at ran
     exact Laws.Scopes.completeScope_keeps (ops.scopes _) holds member owned link ran
@@ -369,9 +374,9 @@ theorem registered_contract_of {inv : Program → State → Prop} (ops : Feature
   completed _ _ _ _ holds member ran := by
     rw [Laws.Registry.hooks_completed] at ran
     exact compensation.completed _ _ _ _ holds member ran
-  outflow _ _ _ _ _ holds stands ran := by
+  outflow _ _ _ _ _ holds stands continues ran := by
     rw [Laws.Registry.hooks_outflow] at ran
-    exact Laws.Flow.outflow_keeps (ops.flow _) holds stands ran
+    exact Laws.Flow.outflow_keeps (ops.flow _) holds stands continues ran
   instanceCompleted _ _ _ _ _ _ holds stands ran := by
     rw [Laws.Registry.hooks_instanceCompleted] at ran
     obtain ⟨entry, inside, named⟩ := stands
@@ -390,6 +395,9 @@ theorem registered_contract_of {inv : Program → State → Prop} (ops : Feature
     rw [Laws.Registry.hooks_written] at ran
     exact Laws.Subscriptions.offerWrites_keeps (ops.subscriptions _) holds ran
   delivered := registered_delivered
+  select _ _ _ _ _ picked := by
+    rw [Laws.Registry.hooks_select] at picked
+    exact Laws.Flow.select_lists picked
   startsFired := registered_startsFired
 
 /-- The registered hooks keep any invariant every feature's record is filled for. -/
@@ -397,6 +405,16 @@ theorem registered_contract {inv : Program → State → Prop} (ops : Registered
     Laws.Step.HookContract Registry.hooks inv :=
   registered_contract_of ops.toFeatureOps (multiInstanceKeeps_of ops.multiInstance)
     (compensationKeeps_of ops.compensation ops.runs) facts
+
+/-- The registered hooks' contract with an outflow's flows read off states that kept `src`, given Flow's record for it:
+only the outflow reads them. -/
+theorem registered_sourced {inv src : Program → State → Prop} (contract : Laws.Step.HookContract Registry.hooks inv)
+    (flow : ∀ program, Laws.Flow.FlowOps program (inv program) (src program)) :
+    Laws.Step.HookContract Registry.hooks inv src :=
+  { contract with
+    outflow := fun _ _ _ _ _ holds stands continues ran => by
+      rw [Laws.Registry.hooks_outflow] at ran
+      exact Laws.Flow.outflow_keeps (flow _) holds stands continues ran }
 
 end Contract
 

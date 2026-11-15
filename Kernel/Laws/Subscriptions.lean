@@ -465,18 +465,20 @@ structure SubscriptionsOps (program : Program) (inv : State → Prop) : Prop whe
   subscribed : ∀ state kind element scope host passive, inv state →
     (state.openSubscription kind element scope host passive).1.scopes = state.scopes ∧
       ∀ occurrence ∈ state.occurrences, occurrence ∈ (state.openSubscription kind element scope host passive).1.occurrences
-  /-- A fired item closed, then what it waited on completed; an Event-Based Gateway's arm disarms and completes its
-  Gateway first, an interrupting boundary withdraws and cancels its host first, a cycle Timer reopens first. -/
+  /-- A fired item closed, then what it waited on completed, by flows its element lists; an Event-Based Gateway's arm
+  disarms and completes its Gateway first, an interrupting boundary withdraws and cancels its host first, a cycle Timer
+  reopens first. -/
   closeComplete : ∀ state item leave writes, inv state → item ∈ state.openItems →
-    inv ((state.closeItem item.id).signal (.complete item.occurrence leave writes .outward))
+    (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) → inv ((state.closeItem item.id).signal (.complete item.occurrence leave writes .outward))
   gatewayComplete : ∀ state item gateway leave writes, inv state → item ∈ state.openItems →
-    item.attachedTo = some gateway → inv ((((state.closeItem item.id).disarm gateway).signal
+    item.attachedTo = some gateway → (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) → inv ((((state.closeItem item.id).disarm gateway).signal
       (.complete gateway (.flows []) [] .outward)).signal (.complete item.occurrence leave writes .outward))
   interruptComplete : ∀ state item host leave writes, inv state → item ∈ state.openItems →
-    inv ((((state.closeItem item.id).withdrawOccurrence host).signal (.cancel host)).signal
+    (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) → inv ((((state.closeItem item.id).withdrawOccurrence host).signal (.cancel host)).signal
       (.complete item.occurrence leave writes .outward))
   reopenComplete : ∀ state item detail leave writes, inv state → item ∈ state.openItems →
-    Laws.IL.Reservable program item.element → inv (((state.closeItem item.id).openSubscription (.timer detail) item.element item.scope item.attachedTo
+    Laws.IL.Reservable program item.element → (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
+    inv (((state.closeItem item.id).openSubscription (.timer detail) item.element item.scope item.attachedTo
       item.passive).1.signal (.complete item.occurrence leave writes .outward))
   /-- A fresh occurrence of a boundary in the item's scope occurrence, of a subscription that stays open. -/
   occur : ∀ state item element leave writes, inv state → item ∈ state.openItems → Laws.IL.BoundaryOf program element →
@@ -838,13 +840,13 @@ theorem trigger_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps
         · cases ran
           rw [Laws.Hooks.fire_eq]
           split
-          · exact ops.interruptComplete _ _ _ _ _ holds member
+          · exact ops.interruptComplete _ _ _ _ _ holds member fun _ same => by cases same; exact fun _ inside => .inr ⟨_, _, ‹_›, inside⟩
           · contradiction
     · rcases afterFiring_cases state item with same | same | ⟨detail, same⟩ <;> rw [same] at ran <;> cases ran <;>
         rw [Laws.Hooks.fire_eq] <;> split <;> first | contradiction | skip
       · exact ops.occur _ _ _ _ _ holds member (named ▸ bounded)
-      · exact ops.closeComplete _ _ _ _ holds member
-      · exact ops.reopenComplete _ _ _ _ _ holds member (.inl bounded)
+      · exact ops.closeComplete _ _ _ _ holds member fun _ same => by cases same; exact fun _ inside => .inr ⟨_, _, ‹_›, inside⟩
+      · exact ops.reopenComplete _ _ _ _ _ holds member (.inl bounded) fun _ same => by cases same; exact fun _ inside => .inr ⟨_, _, ‹_›, inside⟩
   · dsimp only at ran
     split at ran
     · unfold Feature.Subscriptions.fireCatch at ran
@@ -852,8 +854,8 @@ theorem trigger_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps
       cases admitFiring_state admission
       cases ran
       split
-      · exact ops.gatewayComplete _ _ _ _ _ holds member ‹_›
-      · exact ops.closeComplete _ _ _ _ holds member
+      · exact ops.gatewayComplete _ _ _ _ _ holds member ‹_› fun _ same => by cases same
+      · exact ops.closeComplete _ _ _ _ holds member fun _ same => by cases same
     · obtain ⟨⟨header, payload⟩, typed, -⟩ := Option.bind_eq_some_iff.mp ‹_›
       have start : ((ctx.program.element? item.element).bind (·.start?)).isSome = true := by rw [typed]; rfl
       have reservable : Laws.IL.Reservable ctx.program item.element := by

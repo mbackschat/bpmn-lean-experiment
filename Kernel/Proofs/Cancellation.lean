@@ -313,6 +313,11 @@ theorem ScopesKept.enter {before s t : State} (kept : ScopesKept before s) (issu
 /-- The state operations the hooks apply keep the scope occurrences of any before-state. -/
 theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) where
   frame _ _ moved kept := kept.shrink (by rw [moved.scopes]; exact .refl _) moved.nextIssue
+  emit _ s _ _ _ _ _ kept := by rw [Laws.State.emit_eq]; exact kept
+  complete _ s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
+  park _ _ _ _ _ kept := kept
+  arm _ s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
+  armGateway _ s _ _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
   signalBegin s _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept

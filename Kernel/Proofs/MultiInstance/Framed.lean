@@ -293,6 +293,19 @@ theorem reserve_runsFramed {program : Program} (s : State) (element : ElementId)
 theorem runsFramed_frameAlongside (program : Program) : StoresAlongside (RunsFramed program) where
   frame _ _ moved kept :=
     kept.carry (.equal moved.scopes moved.occurrences moved.multiInstances (congrArg (·.runs) moved.compensation))
+  emit _ s _ _ _ _ _ kept := by
+    rw [Laws.State.emit_eq]
+    exact kept.carry (.equal rfl rfl rfl rfl)
+  complete _ s _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.carry (.equal rfl rfl rfl rfl)
+  park _ _ _ _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
+  arm _ s _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.carry (.equal rfl rfl rfl rfl)
+  armGateway _ s _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.carry (.equal rfl rfl rfl rfl)
   signalBegin s _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
@@ -608,6 +621,19 @@ the draft's starts; the Multi-Instance ones as well, since it reads no body's re
 theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
   frame s _ moved kept := kept.move (.same moved.occurrences moved.scopes moved.instanceId
     (Nat.le_of_eq moved.nextIssue.symm) (by rw [moved.draft]))
+  emit _ s _ _ _ _ _ kept := by
+    rw [Laws.State.emit_eq]
+    exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+  complete _ s _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+  park _ _ _ _ _ kept := kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+  arm _ s _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+  armGateway _ s _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
   signalBegin s _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
@@ -648,6 +674,19 @@ theorem unstarted_stores (b : State) : StoresAlongside (Unstarted b) :=
 some. -/
 theorem snapshots_frameAlongside (b : State) : StoresAlongside (Snapshots b) where
   frame _ _ moved kept := kept.shrink fun _ inside => moved.multiInstances ▸ inside
+  emit _ s _ _ _ _ _ kept := by
+    rw [Laws.State.emit_eq]
+    exact kept.same rfl
+  complete _ s _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.same rfl
+  park _ _ _ _ _ kept := kept.same rfl
+  arm _ s _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.same rfl
+  armGateway _ s _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.same rfl
   signalBegin s _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.same rfl
@@ -675,6 +714,19 @@ theorem since_frameAlongside (b : State) : StoresAlongside fun s => Unstarted b 
   have one := unstarted_stores b
   have two := snapshots_frameAlongside b
   { frame := fun s t moved kept => ⟨one.frame s t moved kept.1, two.frame s t moved kept.2⟩
+    emit := fun program s occurrence flows formed stands continues kept =>
+      ⟨one.emit program s occurrence flows formed stands (continues.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
+        two.emit program s occurrence flows formed stands (continues.mono fun _ held => ⟨held.1, held.2.2⟩) kept.2⟩
+    complete := fun program s id leave writes rule source kept =>
+      ⟨one.complete program s id leave writes rule (source.mono fun _ held => held.1) kept.1,
+        two.complete program s id leave writes rule (source.mono fun _ held => held.2) kept.2⟩
+    park := fun program s waiting formed waits kept =>
+      ⟨one.park program s waiting formed waits kept.1, two.park program s waiting formed waits kept.2⟩
+    arm := fun program s host element scope formed hosted kept =>
+      ⟨one.arm program s host element scope formed hosted kept.1, two.arm program s host element scope formed hosted kept.2⟩
+    armGateway := fun program s occurrence header payload formed member gateway kept =>
+      ⟨one.armGateway program s occurrence header payload formed member gateway kept.1,
+        two.armGateway program s occurrence header payload formed member gateway kept.2⟩
     signalBegin := fun s request fits kept => ⟨one.signalBegin s request fits kept.1, two.signalBegin s request fits kept.2⟩
     issue := fun s kept => ⟨one.issue s kept.1, two.issue s kept.2⟩
     enterScope := fun program s element parent locals owner formed kept =>

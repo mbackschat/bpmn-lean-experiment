@@ -254,19 +254,21 @@ theorem EndsKept.unmoved {b s t : State} {x : Option (Nat × OccurrenceKey)} (ke
 /-- The completion pipeline keeps an input's end facts, as a unit: its hooks before the removal and its continuation
 keep `EndsInv`, the continuation with the completing occurrence exempt, and the end it journals last lifts the
 exemption (`EndsKept.remove`, `EndsKept.record`). The one obligation `Step`'s phases cannot carry (module
-documentation). -/
-theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContract hooks (EndsInv b x))
+documentation). The continuation's outflow reads where it comes from off states that kept `EndsInv` without the
+exemption, so the hooks read it under `src`, which those imply. -/
+theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → Prop}
+    (contract : ∀ x, HookContract hooks (EndsInv b x) src) (sourced : ∀ program s, EndsInv b none program s → src program s)
     (phases : Phases WellFormed) (pipeline : PipelinePhases WellFormed) (facts : StateFacts) :
     PipelineKeeps hooks (EndsInv b none) := by
-  intro ctx id leave writes rule state after holds free ran
+  intro ctx id leave writes rule state after holds free source ran
   rcases complete_ok ran with ⟨_, same⟩ | ⟨occurrence, sourceType, begun, pipeline⟩
   · exact same ▸ holds
   obtain ⟨left, selected, written, pipeline⟩ := pipeline
   obtain ⟨found, _, leaving, pipeline⟩ := pipeline
-  obtain ⟨made, _, writing, finishes⟩ := pipeline
+  obtain ⟨made, choosing, writing, finishes⟩ := pipeline
   obtain ⟨member, named⟩ := facts.found _ _ _ found
   obtain ⟨begunMember, begunFlag, begunId, reservation⟩ := facts.startReserved state occurrence sourceType member
-  obtain ⟨begunScope, reservedScopes⟩ := reservation
+  obtain ⟨begunScope, reservedScopes, begunElement, reservedInstances⟩ := reservation
   have closedFormed := pipeline.startReserved _ state occurrence sourceType holds.1 member (named ▸ free)
   rw [named] at closedFormed
   have startedKept := holds.2.step holds.1 (startReserved_frame holds.1 member sourceType)
@@ -291,6 +293,19 @@ theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContrac
     have inLeft := within item member
     exact ⟨closedFree item (leftFrame.items item inLeft), identity ▸ detached item inLeft⟩
   have inWritten := writtenFrame.begun _ (leftFrame.begun _ inClosed begunFlag) begunFlag
+  -- The source, carried from the state the completion ran on to every later state of the pipeline.
+  have toWritten : ∀ (later : State), (∀ entry ∈ later.slots.instances, entry ∈ written.slots.instances) →
+      (∀ entry ∈ later.scopes, entry ∈ written.scopes) →
+      Laws.Flow.LeavesFrom (src ctx.program) ctx.program later (state.startReserved occurrence sourceType).2 selected :=
+    fun later instances scopes => (((source occurrence member named).chosen
+      (by rw [← begunElement]; exact (contract none).select _ _ _ _ _ choosing)).shrink
+      (fun entry inside => by
+        have := closedFrame.instances _ (leftFrame.instances _ (writtenFrame.instances _ (instances entry inside)))
+        rwa [reservedInstances] at this)
+      (fun entry inside => by
+        have := scopes entry inside
+        rwa [writtenFrame.scopes, leftFrame.scopes, closedFrame.scopes, reservedScopes] at this)
+      begunId begunElement begunScope).mono (sourced ctx.program)
   cases finishes with
   | raised continuing =>
     obtain ⟨removedFormed, removedStands⟩ := pipeline.removeOccurrence _ written _ writtenHolds.1 inWritten
@@ -299,9 +314,14 @@ theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContrac
     have recorded := (writtenHolds.2.remove writtenHolds.1 inWritten removing gone).record .cancelled
     rw [identity] at removedFormed removedStands recorded
     obtain ⟨entry, inside, entryNamed⟩ := removedStands
-    rw [Laws.State.keyOf_eq] at continuing
+    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence written id
+    obtain ⟨endedScopes, endedInstances⟩ := facts.recordEnd (written.removeOccurrence id) (written.keyOf
+      (state.startReserved occurrence sourceType).2) .cancelled
+    rw [Laws.State.keyOf_eq] at continuing endedScopes endedInstances
     exact continueAfter_keeps (contract none) ⟨pipeline.recordEnd _ _ _ _ removedFormed, recorded⟩
-      ⟨entry, (facts.recordEnd _ _ _).symm ▸ inside, entryNamed⟩ continuing
+      ⟨entry, endedScopes.symm ▸ inside, entryNamed⟩
+      (toWritten _ (fun entry member => removedInstances entry (endedInstances ▸ member))
+        (fun entry member => removedScopes entry (endedScopes ▸ member))) continuing
   | @left _ _ retained _ _ retaining continuing =>
     obtain ⟨retainedHolds, retainedFrame⟩ := (contract none).completed _ _ _ _ writtenHolds inWritten retaining
     have inRetained := retainedFrame.begun _ inWritten begunFlag
@@ -310,8 +330,10 @@ theorem complete_ends {hooks : Hooks} {b : State} (contract : ∀ x, HookContrac
     obtain ⟨removing, gone, _⟩ := removeOccurrence_frame retainedHolds.1 inRetained
     have exempt := retainedHolds.2.remove retainedHolds.1 inRetained removing gone
     rw [identity] at removedFormed removedStands exempt
+    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence retained id
     obtain ⟨continuedFormed, continuedKept⟩ := continueAfter_keeps (contract _) ⟨removedFormed, exempt⟩ removedStands
-      continuing
+      (toWritten _ (fun entry member => retainedFrame.instances _ (removedInstances entry member))
+        (fun entry member => retainedFrame.scopes ▸ removedScopes entry member)) continuing
     have keyed : key retained (state.startReserved occurrence sourceType).2 =
         key written (state.startReserved occurrence sourceType).2 :=
       Laws.State.key_congr (Laws.State.instanceOf_congr retainedFrame.scopes

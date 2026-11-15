@@ -185,12 +185,14 @@ theorem startReserved_facts {state : State} {occurrence : Occurrence} (sourceTyp
       (state.startReserved occurrence sourceType).2.begun = true ∧
       (state.startReserved occurrence sourceType).2.id = occurrence.id ∧
       (state.startReserved occurrence sourceType).2.scope = occurrence.scope ∧
-      (state.startReserved occurrence sourceType).1.scopes = state.scopes := by
+      (state.startReserved occurrence sourceType).1.scopes = state.scopes ∧
+      (state.startReserved occurrence sourceType).2.element = occurrence.element ∧
+      (state.startReserved occurrence sourceType).1.slots = state.slots := by
   unfold State.startReserved
   split
   · rename_i begun
-    exact ⟨member, begun, rfl, rfl, rfl⟩
-  · refine ⟨?_, by simp, by simp, by simp, by simp [State.recordStart]⟩
+    exact ⟨member, begun, rfl, rfl, rfl, rfl, rfl⟩
+  · refine ⟨?_, by simp, by simp, by simp, by simp [State.recordStart], by simp, by simp [State.recordStart]⟩
     simp only [State.recordStart]
     exact List.mem_map.mpr ⟨occurrence, member, by simp⟩
 
@@ -515,6 +517,11 @@ theorem activate_activated {state : State} (keyed : ActivationsKeyed state) (ins
       refine congrArg some (nodup_map_eq keyed.keys (List.mem_of_find?_eq_some lookup) member ?_)
       simp [hit.1.1, hit.1.2, hit.2, named, same, roled]
   simp [State.activate, found]
+
+/-- A reservation keeps the feature slots. -/
+theorem reserve_slots (state : State) (element : ElementId) (scope : ScopeOccurrenceId) :
+    (state.reserve element scope).1.slots = state.slots := by
+  simp [State.reserve, State.activate, State.issue]
 
 /-- `State.reserve`. -/
 theorem reserve_reserves (state : State) (element : ElementId) (scope : ScopeOccurrenceId) :

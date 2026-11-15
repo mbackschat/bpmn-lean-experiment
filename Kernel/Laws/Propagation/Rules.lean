@@ -143,7 +143,8 @@ theorem Thrown.steady {program : Program} {origin : Origin} {before after : Stat
 structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
   /-- The completion of a begun occurrence that stands. -/
   complete : ∀ state occurrence leave writes rule, inv state → occurrence ∈ state.occurrences →
-    occurrence.begun = true → inv (state.signal (.complete occurrence.id leave writes rule))
+    occurrence.begun = true → (∀ selected, leave = .flows selected → selected = []) →
+    inv (state.signal (.complete occurrence.id leave writes rule))
   /-- A raise from a begun occurrence that stands, at its element, scope occurrence and activation, which a begin from a
   state that kept `inv` began. -/
   raise : ∀ state raised occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →

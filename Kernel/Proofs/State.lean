@@ -64,15 +64,45 @@ def PopulationKeepsWellFormed (hooks : Hooks) : Prop :=
 
 /-! ## The composition -/
 
+/-- Leaving scope occurrences keeps no scope occurrence or instance entry the state did not have. -/
+private theorem leaveAll_kept : ∀ (scopes : List ScopeOccurrence) (t : State),
+    (∀ entry ∈ (scopes.foldl (fun t entry => t.leaveScope entry.id) t).scopes, entry ∈ t.scopes) ∧
+      ∀ entry ∈ (scopes.foldl (fun t entry => t.leaveScope entry.id) t).slots.instances, entry ∈ t.slots.instances
+  | [], _ => ⟨fun _ kept => kept, fun _ kept => kept⟩
+  | entry :: rest, t => by
+    obtain ⟨scopes, instances⟩ := leaveAll_kept rest (t.leaveScope entry.id)
+    obtain ⟨draft, cleared⟩ := Laws.State.clearInside_eq t entry.id []
+    have left := (Laws.State.leaveScope_eq t entry.id).1
+    refine ⟨fun found member => ?_, fun found member => ?_⟩
+    · have inLeft := scopes found member
+      rw [left, cleared] at inLeft
+      exact (List.mem_filter.mp (List.mem_filter.mp inLeft).1).1
+    · have inLeft := instances found member
+      rw [Laws.State.leaveScope_slots_eq, cleared] at inLeft
+      exact (List.mem_filter.mp inLeft).1
+
 /-- What the state operations `Step` applies do to the fields it reads (`Laws.State`). -/
 theorem stateFacts : Laws.Step.StateFacts where
   found _ _ _ found := Laws.State.occurrence?_some found
   begun := Laws.State.beginOccurrence_mem
-  startReserved _ _ sourceType member := Laws.State.startReserved_facts sourceType member
+  startReserved _ _ sourceType member := by
+    obtain ⟨inside, begun, id, facts⟩ := Laws.State.startReserved_facts sourceType member
+    obtain ⟨scope, scopes, element, slots⟩ := facts
+    exact ⟨inside, begun, id, scope, scopes, element, by rw [slots]⟩
   closeOwnItems state id := by
     obtain ⟨scopes, occurrences, fewer, free⟩ := Laws.State.closeOwnItems_facts state id
-    exact ⟨⟨scopes, fun occurrence member _ => occurrences ▸ member, fewer⟩, free⟩
-  recordEnd := Laws.State.recordEnd_scopes
+    exact ⟨⟨scopes, fun occurrence member _ => occurrences ▸ member, fewer, fun _ kept => by
+      rwa [Laws.State.closeOwnItems_eq] at kept⟩, free⟩
+  recordEnd state key terminal := ⟨Laws.State.recordEnd_scopes state key terminal, by rw [Laws.State.recordEnd_eq]⟩
+  reserve state element scope := by
+    have reserves := Laws.State.reserve_reserves state element scope
+    exact ⟨reserves.occurrences, reserves.kind, reserves.placed, reserves.id, reserves.scopes,
+      by rw [Laws.State.reserve_slots]⟩
+  removeOccurrence state id := by
+    rw [Laws.State.removeOccurrence_eq]
+    obtain ⟨scopes, instances⟩ := leaveAll_kept (state.scopes.filter (·.occurrence == some id))
+      (Laws.State.withoutRecord state id)
+    exact ⟨scopes, instances⟩
   setVariable := Laws.State.setVariable_frame
   removeVariable := Laws.State.removeVariable_frame
   declaring _ _ _ _ found := Laws.State.declaring?_stands found

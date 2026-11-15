@@ -397,15 +397,17 @@ handler's uncaught failure ends the instance failed, under the operations record
 /-- `Hooks.completed` keeps `inv`, the scope occurrences, the occurrences and the open items. -/
 theorem completed_keeps {inv : State → Prop} (ops : CompensationOps inv) {ctx : Ctx} {occurrence : Occurrence}
     {state after : State} (holds : inv state) (ran : Feature.Compensation.completed ctx occurrence state = .ok after) :
-    inv after ∧ after.scopes = state.scopes ∧ after.occurrences = state.occurrences ∧ after.openItems = state.openItems := by
+    inv after ∧ after.scopes = state.scopes ∧ after.occurrences = state.occurrences ∧ after.openItems = state.openItems ∧
+      after.slots.instances = state.slots.instances := by
   rcases completed_spec ran with ⟨-, rfl⟩ | ⟨_, _, _, retained⟩
-  · exact ⟨holds, rfl, rfl, rfl⟩
+  · exact ⟨holds, rfl, rfl, rfl, rfl⟩
   obtain ⟨_, -, -, retained⟩ := retained
   rcases retained.2.2 with ⟨-, rfl⟩ | ⟨_, -, -, numbered⟩
-  · exact ⟨ops.store _ _ holds fun _ member => member, rfl, rfl, rfl⟩
+  · exact ⟨ops.store _ _ holds fun _ member => member, rfl, rfl, rfl, rfl⟩
   obtain ⟨-, -, -, rfl⟩ := numbered
   obtain ⟨scopes, occurrences, items, slots⟩ := ops.issued state
-  exact ⟨ops.store _ _ (ops.issue state holds) fun _ member => slots ▸ member, scopes, occurrences, items⟩
+  exact ⟨ops.store _ _ (ops.issue state holds) fun _ member => slots ▸ member, scopes, occurrences, items,
+    show state.issue.1.slots.instances = _ by rw [slots]⟩
 
 /-- Dropping the runs inside a scope occurrence an interrupting catcher decided on (`Feature.Compensation.dropWithin`)
 keeps `inv` and changes only the compensation slot. -/
@@ -575,9 +577,9 @@ theorem runs_keep {inv : State → Prop} {settled : State → Nat → Prop} (ops
           · cases ran
             exact (ended_cancel ops holds scope _ held kept _).done
           · cases ran
-            exact (ended_store ops holds scope _ held kept).complete ops (fits.1 _ _ resumed) _ _ _
+            exact (ended_store ops holds scope _ held kept).complete ops (fits.1 _ _ resumed) _ _ _ ⟨state, holds, run, member, resumed⟩
           · cases ran
-            exact (ended_cancel ops holds scope _ held kept _).complete ops (fits.1 _ _ resumed) _ _ _
+            exact (ended_cancel ops holds scope _ held kept _).complete ops (fits.1 _ _ resumed) _ _ _ ⟨state, holds, run, member, resumed⟩
           · cases ran
             exact (ended_store ops holds scope _ held kept).queue ops
               (ops.occur _ _ _ _ _ _ (ended_store ops holds scope _ held kept).1 (held_pending holds member resumed))

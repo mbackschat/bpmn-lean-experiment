@@ -111,7 +111,9 @@ theorem arriveMultiInstance_framed {ctx : Ctx} {header : Header} {envelope : Env
     obtain ⟨enteredFramed, placed⟩ := enterBody_placed formed framed member body header.id named.symm locals unarmed
       collection count
     exact beginInstances_framed (enterBody_entering (Proofs.Step.registeredOps_wellFormed.multiInstance
-      ctx.program) formed member begun header.id locals unarmed collection _ waiting).1 enteredFramed placed
+      ctx.program) formed member begun header.id (fun current kept present =>
+        (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program).arm current occurrence _ kept present begun named)
+      locals unarmed collection _ waiting).1 enteredFramed placed
       (fun _ => ⟨[], [], List.replicate count .waiting, by simp, by simp, by simp, by simp, waiting⟩)
       (fun _ inside => by cases waiting _ inside) looped
 
@@ -222,51 +224,6 @@ theorem framed_start {program : Program} {input : Input}
 
 /-! ## The reservations of looping elements and the order instances begin in -/
 
-/-- The state operations the hooks apply keep `BeginsKept` (`Kernel.Proofs.MultiInstance.Begins`). -/
-theorem beginsKept_alongside (program : Program) : Alongside (BeginsKept program) where
-  frame _ _ moved held := held.frame (fun _ inside => moved.occurrences ▸ inside) moved.pending moved.journal
-    (congrArg (·.started) moved.draft)
-  signalBegin _ request _ held := held.signalBegin request
-  issue _ held := held.issue
-  enterScope _ _ element parent locals owner _ held := held.enterScope element parent locals owner
-  reserve _ _ _ scope _ pending held :=
-    held.reserve (fun apart => PendingIn.unlooped (fun _ kept => (kept apart).occurs) pending) scope
-  leaveScope _ _ _ formed present _ held := held.leaveScope formed present
-  clearInside _ _ _ keep formed present _ held := held.clearInside formed present keep
-  disarm _ _ host _ held := held.disarm host
-  setVariable _ _ target name value _ held := held.setVariable target name value
-  removeVariable _ _ target name _ held := held.removeVariable target name
-  instanceBegin _ request held := held.signalBegin request
-  defer _ requests held := held.defer requests
-  leaveInstance _ _ _ _ formed _ _ present held := held.leaveScope formed present
-  runs _ runs held := held.runs runs
-
-/-- Storing compensation runs that resume only by pending reservations keeps `BeginsKept`. -/
-theorem beginsKept_stores (program : Program) : StoresAlongside (BeginsKept program) :=
-  { (beginsKept_alongside program).toFrameAlongside with
-    storeRuns := fun _ _ compensation _ _ resumes held => held.storeRuns compensation resumes }
-
-/-- The phases a closure runs keep `BeginsKept`; cancelling is `FrameAlongside.cancelOccurrence`. -/
-theorem beginsKept_closureAlongside (program : Program) : ClosureAlongside (BeginsKept program) where
-  toFrameAlongside := (beginsKept_alongside program).toFrameAlongside
-  journal _ _ transition _ held started _ := held.journal transition started
-  dequeue _ _ _ _ fewer held := held.dequeue fewer
-  untoken _ _ tokens _ _ held := held.untoken tokens
-  begin _ _ _ role sourceType formed _ admitted _ _ held := held.begin formed admitted role sourceType
-  cancel _ _ _ formed held := (beginsKept_alongside program).toFrameAlongside.cancelOccurrence
-    (fun _ id _ kept => kept.withoutRecord id) (fun _ _ _ kept => kept.draft _ rfl) formed held
-
-/-- The completion pipeline's own phases keep `BeginsKept` where they keep `WellFormed`. -/
-theorem beginsKept_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) :
-    Laws.Step.PipelinePhases fun program s => WellFormed program s ∧ BeginsKept program s where
-  startReserved _ _ occurrence sourceType holds member unnamed :=
-    ⟨pipeline.startReserved _ _ occurrence sourceType holds.1 member unnamed, holds.2.startReserved sourceType member⟩
-  removeOccurrence program _ occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
-    ⟨⟨removed.1, (beginsKept_alongside program).toFrameAlongside.removeOccurrence
-      (fun _ id _ kept => kept.withoutRecord id) holds.1 holds.2⟩, removed.2⟩
-  recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, holds.2.recordEnd key terminal⟩
-
 /-- The registered hooks keep `BeginsKept` beside `WellFormed`. -/
 theorem beginsKept_contract :
     Laws.Step.HookContract Registry.hooks fun program s => WellFormed program s ∧ BeginsKept program s :=
@@ -348,6 +305,23 @@ theorem framedNumbered_frameAlongside (program : Program) : StoresAlongside (Fra
   frame s t moved kept := ⟨(runsFramed_frameAlongside program).frame s t moved kept.1, fun apart =>
     (kept.2 apart).unmoved moved.scopes moved.occurrences moved.multiInstances moved.begins moved.deferred
       fun element pending => .inl (moved.pending element pending)⟩
+  emit other s occurrence flows formed stands continues kept :=
+    ⟨(runsFramed_frameAlongside program).emit other s occurrence flows formed stands
+      (continues.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1, fun apart => by
+      rw [Laws.State.emit_eq]
+      exact (kept.2 apart).unmoved rfl rfl rfl rfl
+        (by rw [Laws.Step.deferredOf_append, Laws.Step.deferredOf_flows, List.append_nil]) fun _ pending => .inl pending⟩
+  complete other s id leave writes rule source kept :=
+    ⟨(runsFramed_frameAlongside program).complete other s id leave writes rule (source.mono fun _ held => held.1) kept.1,
+      fun apart => (kept.2 apart).signalOther Laws.Step.complete_apart⟩
+  park other s waiting formed waits kept := ⟨(runsFramed_frameAlongside program).park other s waiting formed waits kept.1,
+    fun apart => (kept.2 apart).unmoved rfl rfl rfl rfl rfl fun _ pending => .inl pending⟩
+  arm other s host element scope formed hosted kept :=
+    ⟨(runsFramed_frameAlongside program).arm other s host element scope formed hosted kept.1,
+      fun apart => (kept.2 apart).signalOther Laws.Step.arm_apart⟩
+  armGateway other s occurrence header payload formed member gateway kept :=
+    ⟨(runsFramed_frameAlongside program).armGateway other s occurrence header payload formed member gateway kept.1,
+      fun apart => (kept.2 apart).signalOther Laws.Step.armGateway_apart⟩
   signalBegin s request fits kept := ⟨(runsFramed_frameAlongside program).signalBegin s request fits kept.1,
     fun apart => (kept.2 apart).signalBegin kept.1.owns fits.1 fits.2⟩
   issue s kept := ⟨(runsFramed_frameAlongside program).issue s kept.1, fun apart => (kept.2 apart).issue⟩
@@ -482,8 +456,7 @@ theorem composed_phases : Laws.Step.Phases Composed :=
       ⟨phases.queueRemove _ _ scope names holds.1, (framedNumbered_frameAlongside _).signal holds.2 _⟩
     armIssued := fun _ _ host element scope holds => phases.armIssued _ _ host element scope holds.1
     armScopeIssued := fun _ _ scope holds => phases.armScopeIssued _ _ scope holds.1
-    armGatewayIssued := fun _ _ occurrence gateway scope holds =>
-      phases.armGatewayIssued _ _ occurrence gateway scope holds.1
+    armGatewayIssued := fun _ _ host gateway scope holds => phases.armGatewayIssued _ _ host gateway scope holds.1
     endRecorded := fun _ _ status failure holds => phases.endRecorded _ _ status failure holds.1
     admittedSignal := fun _ _ request rest holds => phases.admittedSignal _ _ request rest holds.1
     admittedToken := fun _ _ request rest holds => phases.admittedToken _ _ request rest holds.1
@@ -492,6 +465,7 @@ theorem composed_phases : Laws.Step.Phases Composed :=
       phases.resumable _ _ scope activity trigger leave resume rest holds.1
     raisable := fun _ _ raised origin rest holds => phases.raisable _ _ raised origin rest holds.1
     housed := fun _ _ occurrence holds => phases.housed _ _ occurrence holds.1
+    issued := fun _ _ occurrence holds => phases.issued _ _ occurrence holds.1
     bodied := fun _ _ occurrence holds => phases.bodied _ _ occurrence holds.1
     newest := fun _ _ request role sourceType holds => phases.newest _ _ request role sourceType holds.1
     unrun := fun _ _ request role sourceType holds => phases.unrun _ _ request role sourceType holds.1
@@ -544,7 +518,7 @@ theorem multiInstanceKeeps_composed : Proofs.Step.MultiInstanceKeeps Composed wh
     have framed := multiInstanceKeeps_framed.arrive ctx header envelope loop occurrence state after ⟨holds.1, holds.2.1⟩
       member begun body named looped newest unrun ran
     ⟨framed.1, framed.2, fun apart => numbered_arrive (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program)
-      holds.1 holds.2.1.owns (holds.2.2 apart) member begun looped (fun locals unarmed =>
+      holds.1 holds.2.1.owns (holds.2.2 apart) member begun named looped (fun locals unarmed =>
         (enterBody_placed holds.1 holds.2.1 member body header.id named.symm locals unarmed .null 0).1.owns) unrun ran⟩
   completeBody ctx header envelope loop occurrence state after holds member ran :=
     have framed := multiInstanceKeeps_framed.completeBody ctx header envelope loop occurrence state after
@@ -736,7 +710,7 @@ last, which no body of `b` is keyed by. -/
 theorem arriveMultiInstance_snapshots {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
     {occurrence : Occurrence} {b state after : State} (formed : WellFormed ctx.program state) (unstarted : Unstarted b state)
     (kept : Snapshots b state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
-    (newest : state.draft.started.getLast?.map (·.occurrence) = some (key state occurrence))
+    (named : header.id = occurrence.element) (newest : state.draft.started.getLast?.map (·.occurrence) = some (key state occurrence))
     (ran : Feature.MultiInstance.arriveMultiInstance ctx header envelope loop occurrence state = .ok after) :
     Snapshots b after := by
   have fresh : ∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ occurrence.id := fun earlier inside same => by
@@ -755,7 +729,9 @@ theorem arriveMultiInstance_snapshots {ctx : Ctx} {header : Header} {envelope : 
       cases unarmed <;> simp only [Bool.false_eq_true, ↓reduceIte, Laws.State.signal_eq, Laws.State.enterScope_eq] <;>
         exact kept.same rfl
     refine beginInstances_snapshots (enterBody_entering (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program)
-      formed member begun header.id locals unarmed collection _ fun _ inside => List.eq_of_mem_replicate inside).1
+      formed member begun header.id (fun current kept present =>
+        (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program).arm current occurrence _ kept present begun named)
+      locals unarmed collection _ fun _ inside => List.eq_of_mem_replicate inside).1
       enteredKept (fun earlier inside same => absurd same (fresh earlier inside)) fun _ => ?_
     simpa using positive
 
@@ -810,7 +786,7 @@ theorem since_multiInstanceKeeps (b : State) : Proofs.Step.MultiInstanceKeeps (S
   arrive ctx header envelope loop occurrence state after holds member begun body named looped newest unrun ran :=
     have first := (unstarted_keeps b).arrive ctx header envelope loop occurrence state after ⟨holds.1, holds.2.1⟩ member
       begun body named looped newest unrun ran
-    ⟨first.1, first.2, arriveMultiInstance_snapshots holds.1 holds.2.1 holds.2.2 member begun newest ran⟩
+    ⟨first.1, first.2, arriveMultiInstance_snapshots holds.1 holds.2.1 holds.2.2 member begun named newest ran⟩
   completeBody ctx header envelope loop occurrence state after holds member ran :=
     have first := (unstarted_keeps b).completeBody ctx header envelope loop occurrence state after ⟨holds.1, holds.2.1⟩
       member ran

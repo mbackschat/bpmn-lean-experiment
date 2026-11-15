@@ -46,10 +46,11 @@ theorem workOps_alongside (side : FrameAlongside rel) {program : Program} (occur
     (ops : Laws.Work.WorkOps program (WellFormed program)) :
     Laws.Work.WorkOps program fun s => WellFormed program s ∧ rel s where
   write s scope writes rule holds := ⟨ops.write s scope writes rule holds.1, side.signal holds.2 _⟩
-  complete s item leave writes rule holds open_ unstarted :=
-    ⟨ops.complete s item leave writes rule holds.1 open_ unstarted, side.signal holds.2 _⟩
-  completeOwner s scope occurrence leave writes rule holds member owned link :=
-    ⟨ops.completeOwner s scope occurrence leave writes rule holds.1 member owned link, side.signal holds.2 _⟩
+  complete s item leave writes rule holds open_ unstarted unnamed :=
+    ⟨ops.complete s item leave writes rule holds.1 open_ unstarted unnamed, side.signal holds.2 _ (unplacing := Laws.Step.placing_complete unnamed)⟩
+  completeOwner s scope occurrence leave writes rule holds member owned link unnamed :=
+    ⟨ops.completeOwner s scope occurrence leave writes rule holds.1 member owned link unnamed,
+      side.signal holds.2 _ (unplacing := Laws.Step.placing_complete unnamed)⟩
   raise s item code message patch holds member effect :=
     ⟨ops.raise s item code message patch holds.1 member effect, side.signal holds.2 _
       ⟨rfl, rfl, by rw [Laws.Step.triggersOf_raise, Laws.State.isCancel_error]; rfl⟩⟩
@@ -62,8 +63,8 @@ theorem workOps_alongside (side : FrameAlongside rel) {program : Program} (occur
   distinct s holds := ops.distinct s holds.1
   queued := ops.queued
   kept := ops.kept
-  completeBegun s occurrence leave writes rule holds member begun :=
-    ⟨ops.completeBegun s occurrence leave writes rule holds.1 member begun, side.signal holds.2 _⟩
+  completeBegun s occurrence leave writes rule holds member begun unnamed :=
+    ⟨ops.completeBegun s occurrence leave writes rule holds.1 member begun unnamed, side.signal holds.2 _ (unplacing := Laws.Step.placing_complete unnamed)⟩
   housed s occurrence holds member := ops.housed s occurrence holds.1 member
   hold s held holds := ⟨ops.hold s held holds.1, side.hold holds.2 held⟩
   enter s element locals occurrence holds member begun :=
@@ -72,7 +73,8 @@ theorem workOps_alongside (side : FrameAlongside rel) {program : Program} (occur
   openItem s kind occurrence holds member begun unstarted role :=
     have opened := ops.openItem s kind occurrence holds.1 member begun unstarted role
     ⟨⟨opened.1, side.openItem holds.2 kind occurrence⟩, opened.2⟩
-  arm s occurrence element holds member begun := ⟨ops.arm s occurrence element holds.1 member begun, side.signal holds.2 _⟩
+  arm s occurrence element holds member begun named := ⟨ops.arm s occurrence element holds.1 member begun named,
+    side.arm program s _ _ _ holds.1 ⟨occurrence, member, rfl, named.symm, rfl⟩ holds.2⟩
   enterCalled s call variables definition holds member begun role activity unowned :=
     have entered := ops.enterCalled s call variables definition holds.1 member begun role activity unowned
     ⟨⟨entered.1, occurs.enterCalled s call variables definition holds.1 member begun role activity unowned holds.2⟩,
@@ -81,30 +83,34 @@ theorem workOps_alongside (side : FrameAlongside rel) {program : Program} (occur
   begin s element scope holds stands :=
     ⟨ops.begin s element scope holds.1 stands, side.signalBegin _ _ (.fresh rfl rfl) holds.2⟩
 
-theorem flowOps_alongside (side : FrameAlongside rel) {program : Program}
-    (ops : Laws.Flow.FlowOps (WellFormed program)) :
-    Laws.Flow.FlowOps fun s => WellFormed program s ∧ rel s where
-  emit s flows scope holds stands := ⟨ops.emit s flows scope holds.1 stands, by
-    rw [Laws.State.emit_eq]
-    exact side.frame s _ (.same (deferred := by
-      rw [Laws.Step.deferredOf_append, Laws.Step.deferredOf_flows, List.append_nil])) holds.2⟩
-  complete s occurrence leave writes rule holds member begun :=
-    ⟨ops.complete s occurrence leave writes rule holds.1 member begun, side.signal holds.2 _⟩
+/-- Flow's record beside `WellFormed`, an outflow's flows read off states that kept `srel` beside it. -/
+theorem flowOps_alongside {srel : State → Prop} (side : FrameAlongside rel srel) {program : Program}
+    (ops : Laws.Flow.FlowOps program (WellFormed program)) :
+    Laws.Flow.FlowOps program (fun s => WellFormed program s ∧ rel s) fun s => WellFormed program s ∧ srel s where
+  emit s occurrence flows holds stands continues :=
+    ⟨ops.emit s occurrence flows holds.1 stands (continues.mono fun _ held => held.1),
+      side.emit program s occurrence flows holds.1 stands continues holds.2⟩
+  complete s occurrence leave writes rule holds member begun offered :=
+    ⟨ops.complete s occurrence leave writes rule holds.1 member begun (offered.mono fun _ held => held.1),
+      side.complete program s _ leave writes rule (.inl offered) holds.2⟩
 
 theorem joinOps_alongside (side : FrameAlongside rel) {program : Program}
-    (ops : Laws.Flow.JoinOps (WellFormed program) Laws.State.Settled) :
-    Laws.Flow.JoinOps (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
+    (ops : Laws.Flow.JoinOps program (WellFormed program) Laws.State.Settled) :
+    Laws.Flow.JoinOps program (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
   park s waiting holds waits :=
-    ⟨ops.park s waiting holds.1 waits, side.frame s _ .same holds.2⟩
+    ⟨ops.park s waiting holds.1 waits, side.park program s waiting holds.1 waits holds.2⟩
   unpark s keep holds :=
-    ⟨ops.unpark s keep holds.1, side.frame s _ .same holds.2⟩
+    ⟨ops.unpark s keep holds.1, side.frame s _ (.same (parked := fun _ kept => (List.mem_filter.mp kept).1)) holds.2⟩
   parked s waiting holds member := ops.parked s waiting holds.1 member
   begun s occurrence holds member begun := ops.begun s occurrence holds.1 member begun
   reparked := ops.reparked
-  complete s id leave writes rule holds settled := ⟨ops.complete s id leave writes rule holds.1 settled, side.signal holds.2 _⟩
+  complete s id leave writes rule holds settled offered :=
+    ⟨ops.complete s id leave writes rule holds.1 settled (offered.mono fun _ held => held.1),
+      side.complete program s id leave writes rule (.inl offered) holds.2⟩
   completed := ops.completed
-  armGateway s occurrence gateway holds member begun :=
-    ⟨ops.armGateway s occurrence gateway holds.1 member begun, side.signal holds.2 _⟩
+  armGateway s occurrence header payload holds member begun gateway :=
+    ⟨ops.armGateway s occurrence header payload holds.1 member begun gateway,
+      side.armGateway program s occurrence header payload holds.1 member gateway holds.2⟩
 
 /-- Multi-Instance's record beside `WellFormed`, through `Alongside`'s instance leave and run replacement. -/
 theorem multiInstanceOps_alongside (side : Alongside rel) {program : Program}
@@ -120,16 +126,17 @@ theorem multiInstanceOps_alongside (side : Alongside rel) {program : Program}
         holds.2)⟩, recorded.2⟩
   bodies s run holds member := ops.bodies s run holds.1 member
   placed s run holds member := ops.placed s run holds.1 member
-  complete s id leave writes rule holds settled := ⟨ops.complete s id leave writes rule holds.1 settled, side.signal holds.2 _⟩
+  complete s id leave writes rule holds settled unnamed :=
+    ⟨ops.complete s id leave writes rule holds.1 settled unnamed, side.signal holds.2 _ (unplacing := Laws.Step.placing_complete unnamed)⟩
   begun s occurrence holds member begun := ops.begun s occurrence holds.1 member begun
   housed s occurrence holds member := ops.housed s occurrence holds.1 member
   hold s held holds := ⟨ops.hold s held holds.1, side.hold holds.2 held⟩
   enter s element parent locals owner holds stands owned :=
     have entered := ops.enter s element parent locals owner holds.1 stands owned
     ⟨⟨entered.1, side.enterScope program s element parent locals owner holds.1 holds.2⟩, entered.2⟩
-  arm s occurrence element holds member begun :=
-    have armed := ops.arm s occurrence element holds.1 member begun
-    ⟨⟨armed.1, side.signal holds.2 _⟩, armed.2⟩
+  arm s occurrence element holds member begun named :=
+    have armed := ops.arm s occurrence element holds.1 member begun named
+    ⟨⟨armed.1, side.arm program s _ _ _ holds.1 ⟨occurrence, member, rfl, named.symm, rfl⟩ holds.2⟩, armed.2⟩
   begin s request holds bare stands :=
     have begun := ops.begin s request holds.1 bare stands
     ⟨⟨begun.1, side.instanceBegin s request holds.2⟩, begun.2⟩
@@ -148,15 +155,15 @@ theorem startsOps_alongside (side : FrameAlongside rel) {program : Program}
     Laws.Starts.StartsOps fun s => WellFormed program s ∧ rel s where
   clock s atMs holds :=
     ⟨ops.clock s atMs holds.1, side.frame s _ .same holds.2⟩
-  complete s occurrence leave writes rule holds member begun :=
-    ⟨ops.complete s occurrence leave writes rule holds.1 member begun, side.signal holds.2 _⟩
+  complete s occurrence leave writes rule holds member begun unnamed :=
+    ⟨ops.complete s occurrence leave writes rule holds.1 member begun unnamed, side.signal holds.2 _ (unplacing := Laws.Step.placing_complete unnamed)⟩
 
 theorem scopesOps_alongside (side : FrameAlongside rel) {program : Program}
     (ops : Laws.Scopes.ScopesOps (WellFormed program)) :
     Laws.Scopes.ScopesOps fun s => WellFormed program s ∧ rel s where
   owner s scope occurrence holds member owned link := ops.owner s scope occurrence holds.1 member owned link
-  complete s occurrence leave writes rule holds member begun :=
-    ⟨ops.complete s occurrence leave writes rule holds.1 member begun, side.signal holds.2 _⟩
+  complete s occurrence leave writes rule holds member begun unnamed :=
+    ⟨ops.complete s occurrence leave writes rule holds.1 member begun unnamed, side.signal holds.2 _ (unplacing := Laws.Step.placing_complete unnamed)⟩
   clear s occurrence inner holds member begun ready :=
     have cleared := ops.clear s occurrence inner holds.1 member begun ready
     have kept : ∀ o ∈ s.occurrences, o.id ∈ occurrence.id :: inner.toList →
@@ -169,7 +176,8 @@ theorem scopesOps_alongside (side : FrameAlongside rel) {program : Program}
   enter s element locals occurrence inner holds member begun ready :=
     have entered := ops.enter s element locals occurrence inner holds.1 member begun ready
     ⟨⟨entered.1, side.enterScope program s _ _ _ _ holds.1 holds.2⟩, entered.2⟩
-  arm s occurrence element holds member begun := ⟨ops.arm s occurrence element holds.1 member begun, side.signal holds.2 _⟩
+  arm s occurrence element holds member begun named := ⟨ops.arm s occurrence element holds.1 member begun named,
+    side.arm program s _ _ _ holds.1 ⟨occurrence, member, rfl, named.symm, rfl⟩ holds.2⟩
   armScope s scope holds stands := ⟨ops.armScope s scope holds.1 stands, side.signal holds.2 _⟩
   begin s request holds stands inner flows owned nodup admitted :=
     ⟨ops.begin s request holds.1 stands inner flows owned nodup admitted,
@@ -182,8 +190,8 @@ theorem propagationOps_alongside (side : FrameAlongside rel) {program : Program}
     (occurs : OccursAlongside program rel)
     (ops : Laws.Propagation.PropagationOps program (WellFormed program)) :
     Laws.Propagation.PropagationOps program fun s => WellFormed program s ∧ rel s where
-  complete s occurrence leave writes rule holds member begun :=
-    ⟨ops.complete s occurrence leave writes rule holds.1 member begun, side.signal holds.2 _⟩
+  complete s occurrence leave writes rule holds member begun unnamed :=
+    ⟨ops.complete s occurrence leave writes rule holds.1 member begun unnamed, side.signal holds.2 _ (unplacing := Laws.Step.placing_complete unnamed)⟩
   raise s raised occurrence holds member begun raises :=
     ⟨ops.raise s raised occurrence holds.1 member begun (raises.imp fun _ => And.left),
       occurs.raise s raised occurrence holds.1 raises holds.2⟩
@@ -241,9 +249,10 @@ theorem runsOps_alongside (side : StoresAlongside rel) {program : Program}
   entered := ops.entered
   signalled := ops.signalled
   cancel s id holds := have queued := ops.cancel s id holds.1; ⟨⟨queued.1, side.signal holds.2 _⟩, queued.2⟩
-  complete s id leave writes rule holds settled :=
-    have queued := ops.complete s id leave writes rule holds.1 settled
-    ⟨⟨queued.1, side.signal holds.2 _⟩, queued.2⟩
+  complete s id leave writes rule holds settled resumed :=
+    have queued := ops.complete s id leave writes rule holds.1 settled (resumed.imp fun _ => And.imp_left And.left)
+    ⟨⟨queued.1, side.complete program s id leave writes rule (.inr (resumed.imp fun _ held => ⟨held.1.1, held.1.2, held.2⟩))
+      holds.2⟩, queued.2⟩
   occur s element scope leave writes rule holds pending :=
     have queued := ops.occur s element scope leave writes rule holds.1 (pending.imp fun _ => And.imp_left And.left)
     ⟨⟨queued.1, occurs.occur _ _ _ _ _ _ (.inr (pending.imp fun _ => And.imp_left And.right)) holds.2⟩, queued.2⟩
@@ -254,6 +263,46 @@ theorem runsOps_alongside (side : StoresAlongside rel) {program : Program}
     have left := ops.leave s entry parent holds.1 member link running
     ⟨⟨left.1, side.leaveScope program s entry.id holds.1 (List.mem_map.mpr ⟨entry, member, rfl⟩) (.inr running)
       holds.2⟩, left.2⟩
+
+/-- A fired item's completion by flows its element lists is offered where its occurrence lies, in the state the item
+was open in, which holds every occurrence of that identity the completion is queued beside. -/
+private theorem item_completesFrom {program : Program} {s t : State} (formed : WellFormed program s) (kept : rel s)
+    {item : OpenItem} (member : item ∈ s.openItems)
+    (occurrences : ∀ o ∈ t.occurrences, o.id = item.occurrence → o ∈ s.occurrences) (scopes : t.scopes = s.scopes)
+    (instances : t.slots.instances = s.slots.instances) {leave : Leave}
+    (named : ∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) :
+    CompletesFrom rel program t item.occurrence leave :=
+  .inl fun selected same flow inside => by
+    obtain ⟨occurrence, present, waits⟩ := formed.owned.itemOccurrences item member
+    obtain ⟨identity, element, -⟩ := waits
+    exact ⟨s, ⟨formed, kept⟩, occurrences, fun _ inside => scopes ▸ inside, fun _ inside => instances ▸ inside,
+      .inl ⟨occurrence, present, identity, occurrence, present, rfl, .inl (element ▸ named selected same flow inside)⟩⟩
+
+/-- Reopening a fired item's subscription reserves a fresh occurrence, so the occurrences of the item's identity are
+those the item's state held. -/
+private theorem reopened_occurrences {program : Program} {s : State} (formed : WellFormed program s) {item : OpenItem}
+    (member : item ∈ s.openItems) {kind : OpenKind} {element : ElementId} {scope : ScopeOccurrenceId}
+    {host : Option Nat} {passive : Bool} {o : Occurrence}
+    (inside : o ∈ ((s.closeItem item.id).openSubscription kind element scope host passive).1.occurrences)
+    (same : o.id = item.occurrence) : o ∈ s.occurrences := by
+  have reserves := Laws.State.reserve_reserves (s.closeItem item.id) element scope
+  rw [Laws.State.openSubscription_eq, reserves.occurrences] at inside
+  rcases List.mem_append.mp inside with old | fresh
+  · rwa [Laws.State.closeItem_eq] at old
+  · obtain ⟨waiting, present, identity, -⟩ := formed.owned.itemOccurrences item member
+    have below := formed.issued.occurrences waiting present
+    have issued : (s.closeItem item.id).nextIssue = s.nextIssue := by rw [Laws.State.closeItem_eq]
+    rw [List.mem_singleton.mp fresh, reserves.id, issued] at same
+    omega
+
+/-- Withdrawing an occurrence's items keeps the scope occurrences and the slots, and drops occurrences only. -/
+private theorem withdrawOccurrence_kept (s : State) (id : Nat) :
+    (∀ o ∈ (s.withdrawOccurrence id).occurrences, o ∈ s.occurrences) ∧ (s.withdrawOccurrence id).scopes = s.scopes ∧
+      (s.withdrawOccurrence id).slots = s.slots := by
+  obtain ⟨items, frame⟩ := Laws.State.withdrawAll_frame
+    (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
+  rw [Laws.State.withdrawOccurrence_eq, frame, Laws.State.disarm_eq, Laws.State.closeOwnItems_eq]
+  exact ⟨fun _ inside => (List.mem_filter.mp inside).1, rfl, rfl⟩
 
 theorem subscriptionsOps_alongside (side : FrameAlongside rel) {program : Program}
     (occurs : OccursAlongside program rel)
@@ -271,17 +320,39 @@ theorem subscriptionsOps_alongside (side : FrameAlongside rel) {program : Progra
     ⟨ops.openSubscription s kind element scope host passive holds.1 stands hangs waits reservable,
       side.openSubscription occurs holds.1 holds.2 kind element scope host passive reservable⟩
   subscribed s kind element scope host passive holds := ops.subscribed s kind element scope host passive holds.1
-  closeComplete s item leave writes holds member :=
-    ⟨ops.closeComplete s item leave writes holds.1 member, side.signal (side.closeItem holds.2 item.id) _⟩
-  gatewayComplete s item gateway leave writes holds member attached :=
-    ⟨ops.gatewayComplete s item gateway leave writes holds.1 member attached, side.signal (side.signal
-      (side.disarm program _ gateway (Laws.State.closeItem_fired holds.1 member).1 (side.closeItem holds.2 item.id)) _) _⟩
-  interruptComplete s item host leave writes holds member :=
-    ⟨ops.interruptComplete s item host leave writes holds.1 member, side.signal (side.signal
-      (side.withdrawOccurrence (Laws.State.closeItem_fired holds.1 member).1 (side.closeItem holds.2 item.id) host) _) _⟩
-  reopenComplete s item detail leave writes holds member reservable :=
-    ⟨ops.reopenComplete s item detail leave writes holds.1 member reservable, side.signal (side.openSubscription occurs
-      (Laws.State.closeItem_fired holds.1 member).1 (side.closeItem holds.2 item.id) _ _ _ _ _ reservable) _⟩
+  closeComplete s item leave writes holds member named :=
+    ⟨ops.closeComplete s item leave writes holds.1 member named, side.complete program _ _ _ _ _
+      (item_completesFrom holds.1 holds.2 member (fun _ inside _ => by rwa [Laws.State.closeItem_eq] at inside)
+        (by rw [Laws.State.closeItem_eq]) (by rw [Laws.State.closeItem_eq]) named) (side.closeItem holds.2 item.id)⟩
+  gatewayComplete s item gateway leave writes holds member attached named :=
+    ⟨ops.gatewayComplete s item gateway leave writes holds.1 member attached named, side.complete program _ _ _ _ _
+      (item_completesFrom holds.1 holds.2 member
+        (fun _ inside _ => by
+          rw [Laws.State.signal_eq, Laws.State.disarm_eq, Laws.State.closeItem_eq] at inside
+          exact (List.mem_filter.mp inside).1)
+        (by rw [Laws.State.signal_eq, Laws.State.disarm_eq, Laws.State.closeItem_eq])
+        (by rw [Laws.State.signal_eq, Laws.State.disarm_eq, Laws.State.closeItem_eq]) named)
+      (side.signal (side.disarm program _ gateway (Laws.State.closeItem_fired holds.1 member).1
+        (side.closeItem holds.2 item.id)) _)⟩
+  interruptComplete s item host leave writes holds member named :=
+    have kept := withdrawOccurrence_kept (s.closeItem item.id) host
+    ⟨ops.interruptComplete s item host leave writes holds.1 member named, side.complete program _ _ _ _ _
+      (item_completesFrom holds.1 holds.2 member
+        (fun _ inside _ => by
+          rw [Laws.State.signal_eq] at inside
+          have held := kept.1 _ inside
+          rwa [Laws.State.closeItem_eq] at held)
+        (by rw [Laws.State.signal_eq, kept.2.1, Laws.State.closeItem_eq])
+        (by rw [Laws.State.signal_eq, kept.2.2, Laws.State.closeItem_eq]) named)
+      (side.signal (side.withdrawOccurrence (Laws.State.closeItem_fired holds.1 member).1 (side.closeItem holds.2 item.id)
+        host) _)⟩
+  reopenComplete s item detail leave writes holds member reservable named :=
+    ⟨ops.reopenComplete s item detail leave writes holds.1 member reservable named, side.complete program _ _ _ _ _
+      (item_completesFrom holds.1 holds.2 member (fun o inside same => reopened_occurrences holds.1 member inside same)
+        (by rw [Laws.State.openSubscription_eq, (Laws.State.reserve_reserves _ _ _).scopes, Laws.State.closeItem_eq])
+        (by rw [Laws.State.openSubscription_eq, Laws.State.reserve_slots, Laws.State.closeItem_eq]) named)
+      (side.openSubscription occurs (Laws.State.closeItem_fired holds.1 member).1 (side.closeItem holds.2 item.id) _ _ _ _ _
+        reservable)⟩
   occur s item element leave writes holds member bounded :=
     ⟨ops.occur s item element leave writes holds.1 member bounded, occurs.occur _ _ _ _ _ _ (.inl bounded) holds.2⟩
   insideBegin s item element locals holds member start :=
@@ -390,10 +461,23 @@ theorem subtreeRemoved_registered (ops : Proofs.Step.RegisteredOps WellFormed) (
 /-- The state operations the hooks apply keep an input's end facts from its start under any exemption, since each frames
 them (`Kernel.Laws.Step.EndsFrames`): the hooks then keep `Laws.Step.EndsInv` by their feature lemmas
 (`endsInv_contract`). -/
-theorem endsKept_alongside (b : State) (x : Option (Nat × OccurrenceKey)) :
-    Alongside (Laws.Step.EndsKept b x) where
+theorem endsKept_alongside (b : State) (x : Option (Nat × OccurrenceKey)) {srel : State → Prop} :
+    Alongside (Laws.Step.EndsKept b x) srel where
   frame _ _ moved kept := kept.unmoved moved.occurrences moved.activations ⟨moved.scopes, moved.instanceId⟩
     (Nat.le_of_eq moved.nextIssue.symm) (.of_eq (by simp only [Laws.Step.endKeys, moved.journal, moved.draft]))
+  emit _ s _ _ _ _ _ kept := by
+    rw [Laws.State.emit_eq]
+    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+  complete _ s _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+  park _ _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+  arm _ s _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+  armGateway _ s _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
   signalBegin s _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
@@ -466,6 +550,13 @@ theorem endsInv_contract (ops : Proofs.Step.RegisteredOps WellFormed) (b : State
     (endsKept_occursAlongside b x))
     Proofs.State.stateFacts
 
+/-- The registered hooks keep an input's end facts under any exemption, an outflow's flows read off states that kept
+`WellFormed` alone (`Laws.Step.complete_ends`): the end facts read no flow token. -/
+theorem endsInv_sourced (ops : Proofs.Step.RegisteredOps WellFormed) (b : State) (x : Option (Nat × OccurrenceKey)) :
+    Laws.Step.HookContract Registry.hooks (Laws.Step.EndsInv b x) fun program s => WellFormed program s ∧ True :=
+  Proofs.Step.registered_sourced (endsInv_contract ops b x) fun program =>
+    flowOps_alongside (endsKept_alongside b x (srel := fun _ => True)).toFrameAlongside (ops.flow program)
+
 /-! ## The draft the registered hooks leave -/
 
 section Draft
@@ -512,12 +603,12 @@ theorem subscriptionsOps_draft (program : Program)
     have reserves := Laws.State.reserve_reserves s element scope
     rw [Laws.State.openSubscription_eq]
     exact ⟨reserves.scopes, fun o inside => reserves.occurrences ▸ List.mem_append_left _ inside⟩
-  closeComplete s _ _ _ same _ := by rw [signal_draft, closeItem_draft]; exact same
-  gatewayComplete s _ _ _ _ same _ _ := by rw [signal_draft, signal_draft, disarm_draft, closeItem_draft]; exact same
-  interruptComplete s _ _ _ _ same _ := by
+  closeComplete s _ _ _ same _ _ := by rw [signal_draft, closeItem_draft]; exact same
+  gatewayComplete s _ _ _ _ same _ _ _ := by rw [signal_draft, signal_draft, disarm_draft, closeItem_draft]; exact same
+  interruptComplete s _ _ _ _ same _ _ := by
     rw [signal_draft, signal_draft, withdrawOccurrence_draft, closeItem_draft]
     exact same
-  reopenComplete s _ _ _ _ same _ _ := by rw [signal_draft, openSubscription_ended, closeItem_draft]; exact same
+  reopenComplete s _ _ _ _ same _ _ _ := by rw [signal_draft, openSubscription_ended, closeItem_draft]; exact same
   occur s _ _ _ _ same _ _ := by rw [signal_draft]; exact same
   insideBegin s _ _ _ same _ _ := by rw [signal_draft, withdrawInside_draft, closeItem_draft]; exact same
   closeBegin s _ _ _ same _ _ := by rw [signal_draft, closeItem_draft]; exact same
@@ -548,7 +639,8 @@ theorem microStepsKeepEnds_registered (ops : Proofs.Step.RegisteredOps WellForme
     MicroStepsKeepEnds Registry.hooks := by
   have kept := fun b => microStepsKeep_alongside (rel := fun _ => Laws.Step.EndsKept b none) (endsInv_contract ops b none)
     phases.toClosurePhases (fun _ => (endsKept_stepAlongside b).toClosureAlongside) Proofs.State.stateFacts
-    (Laws.Step.complete_ends (endsInv_contract ops b) phases pipeline Proofs.State.stateFacts)
+    (Laws.Step.complete_ends (endsInv_sourced ops b) (fun _ _ holds => ⟨holds.1, trivial⟩) phases pipeline
+      Proofs.State.stateFacts)
   obtain ⟨cancelled, written⟩ := registered_quiet
   refine ⟨fun ctx cause transition b state after runs holds ran =>
     ⟨(kept b).1 ctx cause transition state after runs holds ran, Laws.Step.microStep_drafts cancelled written ran⟩,

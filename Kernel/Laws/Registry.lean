@@ -25,6 +25,10 @@ theorem hooks_arriveGateway : Registry.hooks.arriveGateway = Feature.Flow.arrive
 theorem hooks_outflow : Registry.hooks.outflow = Feature.Flow.outflow := by
   simp only [Registry.hooks]
 
+/-- Flow picks a completion's flows. -/
+theorem hooks_select : Registry.hooks.select = Feature.Flow.select := by
+  simp only [Registry.hooks]
+
 /-- Flow arrives at every Link. -/
 theorem hooks_arriveLink : Registry.hooks.arriveLink = Feature.Flow.arriveLink := by
   simp only [Registry.hooks]

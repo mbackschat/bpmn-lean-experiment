@@ -83,7 +83,7 @@ structure MultiInstanceOps (program : Program) (inv : State → Prop) (settled :
   bodies : ∀ state run, inv state → run ∈ state.slots.multiInstances → settled state run.occurrence
   placed : ∀ state run, inv state → run ∈ state.slots.multiInstances → Laws.State.Placed state run
   complete : ∀ state id leave writes rule, inv state → settled state id →
-    inv (state.signal (.complete id leave writes rule))
+    (∀ selected, leave = .flows selected → selected = []) → inv (state.signal (.complete id leave writes rule))
   begun : ∀ state occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
     settled state occurrence.id
   housed : ∀ state occurrence, inv state → occurrence ∈ state.occurrences →
@@ -101,7 +101,7 @@ structure MultiInstanceOps (program : Program) (inv : State → Prop) (settled :
       (∀ id, settled state id → settled (state.enterScope element parent locals owner).1 id) ∧
       ∀ entry ∈ state.scopes, entry.id ≠ (state.enterScope element parent locals owner).2
   arm : ∀ state occurrence element, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
-    inv (state.signal (.arm occurrence.id element occurrence.scope)) ∧
+    element = occurrence.element → inv (state.signal (.arm occurrence.id element occurrence.scope)) ∧
       ∀ id, settled state id → settled (state.signal (.arm occurrence.id element occurrence.scope)) id
   begin : ∀ state request, inv state → Laws.State.names request = [] → request.scope ∈ Laws.State.scopeIds state →
     inv (state.signal (.begin request)) ∧ ∀ id, settled state id → settled (state.signal (.begin request)) id
@@ -148,7 +148,7 @@ theorem completeBody_keeps (ops : MultiInstanceOps program inv settled)
     (ran : Feature.MultiInstance.completeBody ctx header envelope loop occurrence state = .ok after) : inv after := by
   obtain ⟨run, found, rfl⟩ := completeBody_spec ran
   unfold Feature.MultiInstance.runOf? at found
-  exact ops.complete _ _ _ _ _ holds (ops.bodies _ _ holds (List.mem_of_find?_eq_some found))
+  exact ops.complete _ _ _ _ _ holds (ops.bodies _ _ holds (List.mem_of_find?_eq_some found)) fun _ same => by cases same
 
 /-- Queuing begins keeps everything but the queued signals and tokens, and queues them as `QueuedAs` says. -/
 theorem queueInstances_frame (ctx : Ctx) (mode : MultiInstanceMode) (requests : List BeginRequest) (state : State) :

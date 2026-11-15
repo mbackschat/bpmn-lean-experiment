@@ -114,14 +114,15 @@ inductive Arrives (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (entry :
   | atStart {header : Header} {payload : StartPayload} :
       hooks.arriveStart ctx header payload trigger occurrence state = .ok after →
       Arrives hooks ctx occurrence entry trigger state after
-  | atActivity {header : Header} {payload : ActivityPayload} :
+  | atActivity {header : Header} {payload : ActivityPayload} : header.id = occurrence.element →
       (ctx.program.element? occurrence.element).bind (·.activity?) = some (header, payload) →
       hooks.arriveActivity ctx header payload occurrence state = .ok after →
       Arrives hooks ctx occurrence entry trigger state after
-  | atScope {header : Header} {payload : ScopePayload} :
+  | atScope {header : Header} {payload : ScopePayload} : header.id = occurrence.element →
       hooks.arriveScope ctx header payload occurrence entry state = .ok after →
       Arrives hooks ctx occurrence entry trigger state after
   | atGateway {header : Header} {payload : GatewayPayload} :
+      (ctx.program.element? occurrence.element).bind (·.gateway?) = some (header, payload) →
       hooks.arriveGateway ctx header payload occurrence state = .ok after →
       Arrives hooks ctx occurrence entry trigger state after
   | atCatch {header : Header} {payload : EventPayload} {subscription : Subscription} :
@@ -131,6 +132,7 @@ inductive Arrives (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (entry :
       hooks.arriveThrow ctx header payload thrown occurrence state = .ok after →
       Arrives hooks ctx occurrence entry trigger state after
   | atLink {header : Header} {payload : EventPayload} :
+      (∃ element, ctx.program.element? occurrence.element = some element ∧ element.header = header) →
       hooks.arriveLink ctx header payload occurrence state = .ok after →
       Arrives hooks ctx occurrence entry trigger state after
 

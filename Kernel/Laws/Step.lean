@@ -678,26 +678,35 @@ theorem completeIdleScope_called (facts : StateFacts) {hooks : Hooks} {ctx : Ctx
 /-- A parked join offered again ran its gateway's hook on the state the closure reached, for an occurrence it found. -/
 theorem reoffer_ok {hooks : Hooks} {ctx : Ctx} {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId}
     {offered : State} (ran : reoffer? hooks ctx state = .ok (some (gateway, scope, offered))) :
-    ∃ id occurrence header payload, (∃ waiting ∈ state.slots.parked, waiting.occurrence = id) ∧
+    ∃ id occurrence header payload, (∃ waiting ∈ state.slots.parked, waiting.occurrence = id ∧ ∃ element,
+      (ctx.program.target? waiting.flow).bind ctx.program.element? = some element ∧
+        element.gateway? = some (header, payload)) ∧
       state.occurrence? id = some occurrence ∧ hooks.arriveGateway ctx header payload occurrence state = .ok offered := by
   unfold reoffer? at ran
   refine foldlM_finds (fun found => ∃ id occurrence header payload, (∃ waiting ∈ state.slots.parked,
-    waiting.occurrence = id) ∧ state.occurrence? id = some occurrence ∧
+    waiting.occurrence = id ∧ ∃ element, (ctx.program.target? waiting.flow).bind ctx.program.element? = some element ∧
+      element.gateway? = some (header, payload)) ∧ state.occurrence? id = some occurrence ∧
       hooks.arriveGateway ctx header payload occurrence state = .ok found.2.2)
     (fun found waiting result kept stepped => ?_) _ none _ (by simp) ran _ rfl
   split at stepped
   · exact (Except.ok.inj stepped) ▸ kept
   · simp at stepped
-  · split at stepped
-    · rename_i occurrence lookup
+  · rename_i element targeted
+    split at stepped
+    · rename_i occurrence isGateway lookup
       obtain ⟨offeredState, offering, made⟩ := bind_ok stepped
       obtain ⟨last, isLast, found⟩ := Option.bind_eq_some_iff.mp lookup
+      have kept := List.mem_filter.mp (List.mem_of_getLast? isLast)
+      have sameTarget : ctx.program.target? last.flow = ctx.program.target? waiting.flow := by
+        have matched := kept.2
+        simp only [Bool.and_eq_true, beq_iff_eq] at matched
+        exact matched.2
       intro result same
       rw [← Except.ok.inj made] at same
       split at same
       · simp at same
       · rw [← Option.some.inj same]
-        exact ⟨_, _, _, _, ⟨last, (List.mem_filter.mp (List.mem_of_getLast? isLast)).1, rfl⟩, found, offering⟩
+        exact ⟨_, _, _, _, ⟨last, kept.1, rfl, element, sameTarget ▸ targeted, isGateway⟩, found, offering⟩
     · simp at stepped
 
 private theorem perform_ok {work : SignalWork} {state after : State} (ran : work.perform state = .ok after) :
@@ -844,18 +853,20 @@ theorem dispatch_unstarted {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence}
         · simp at ran
         · exact .inl ⟨_, _, ran⟩
       | activity header payload =>
-        exact .inr (.inr ⟨by simp [Laws.IL.start?_activity], single,
-          .atActivity (by rw [known]; exact Laws.IL.activity?_activity header payload) ran⟩)
-      | scope header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_scope], single, .atScope ran⟩)
-      | gateway header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_gateway], single, .atGateway ran⟩)
+        exact .inr (.inr ⟨by simp [Laws.IL.start?_activity], single, .atActivity (Laws.IL.header_activity header payload ▸
+          Laws.IL.element?_header known) (by rw [known]; exact Laws.IL.activity?_activity header payload) ran⟩)
+      | scope header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_scope], single,
+          .atScope (Laws.IL.header_scope header payload ▸ Laws.IL.element?_header known) ran⟩)
+      | gateway header payload => exact .inr (.inr ⟨by simp [Laws.IL.start?_gateway], single,
+          .atGateway (by rw [known]; exact Laws.IL.gateway?_gateway header payload) ran⟩)
       | event header payload =>
         refine .inr (.inr ⟨by simp [Laws.IL.start?_event], single, ?_⟩)
         dsimp only at ran
         cases role : payload.role with
         | «catch» subscription => simp only [role] at ran; exact .atCatch ran
         | «throw» thrown => simp only [role] at ran; exact .atThrow (Laws.IL.element?_event known) ran
-        | linkCatch name => simp only [role] at ran; exact .atLink ran
-        | linkThrow name => simp only [role] at ran; exact .atLink ran
+        | linkCatch name => simp only [role] at ran; exact .atLink ⟨_, known, Laws.IL.header_event _ _⟩ ran
+        | linkThrow name => simp only [role] at ran; exact .atLink ⟨_, known, Laws.IL.header_event _ _⟩ ran
 
 /-- `Step` calls a scope occurrence a compensation handler's context (`Step.scopeRole`) exactly when a compensation
 run holds it running. -/
