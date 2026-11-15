@@ -294,4 +294,17 @@ def PropagatesFromTrigger (policy : CompensationHandlerFailure) (caughtInside : 
     (searchedFrom : Option ScopeOccurrenceId) (after : State) : Prop :=
   policy = .propagatesFromTrigger → caughtInside = false → searchedFrom = some run.scope ∧ after.status ≠ .failed
 
+/-! ## What the hooks need -/
+
+/-- What the compensation hooks need of the state operations they apply, for an invariant `inv`. -/
+structure CompensationOps (inv : State → Prop) : Prop where
+  /-- The retained records replaced, and the runs by some of them. -/
+  store : ∀ state compensation, inv state → (∀ run ∈ compensation.runs, run ∈ state.slots.compensation.runs) →
+    inv { state with slots := { state.slots with compensation } }
+  issue : ∀ state, inv state → inv state.issue.1
+  /-- Issuing keeps the scope occurrences, the occurrences, the open items and the slots. -/
+  issued : ∀ state : State, state.issue.1.scopes = state.scopes ∧ state.issue.1.occurrences = state.occurrences ∧
+    state.issue.1.openItems = state.openItems ∧ state.issue.1.slots = state.slots
+  fail : ∀ state failure, inv state → inv (state.signal (.endInstance .failed (some failure)))
+
 end Kernel.Laws.Compensation

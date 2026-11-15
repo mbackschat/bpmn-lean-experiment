@@ -4,6 +4,7 @@ public import Kernel.Laws.Compensation
 public import Kernel.Laws.State.Transitions
 public import Kernel.IL.Paths
 public import Kernel.Laws.Population
+public import Kernel.Laws.State.Sample
 
 /-! # Proofs: Compensation and Transaction (P5)
 
@@ -86,6 +87,11 @@ def RunsSettled (precedes : Compensable → Compensable → Prop) (s : State) : 
 def RunsKeyed (s : State) : Prop :=
   (s.slots.compensation.runs.map fun run => (run.scope, run.trigger)).Nodup
 
+/-- Every run's scope occurrence was issued, so a context entered later is no run's and a group's nested run takes a
+key no run has. -/
+def RunsIssued (s : State) : Prop :=
+  ∀ run ∈ s.slots.compensation.runs, run.scope.value < s.nextIssue
+
 /-- Whether a compensation resumes a group's nested run (`Resume.group`), which only `Compensation.beginHandler`
 makes. -/
 def resumesGroup : Option Resume → Bool
@@ -104,25 +110,31 @@ def queuedTrigger (s : State) : OccurrenceRef ⊕ Origin → Option OccurrenceRe
       some { processInstanceId := s.instanceOf origin.scope, element := origin.element, activation := origin.activation }
     else none
 
-/-- The triggers `s` keeps apart: its runs' but a group's nested runs', which share their outer run's, and those of its
-queued compensations and Cancel raises. -/
+/-- The triggers `s`'s queued compensations and Cancel raises name (`queuedTrigger`). -/
+def queuedTriggers (s : State) : List OccurrenceRef :=
+  (Laws.Step.triggersOf s.signals).filterMap (queuedTrigger s)
+
+/-- The triggers `s` keeps apart: its runs' but a group's nested runs', which share their outer run's, and the queued
+ones. -/
 def heldTriggers (s : State) : List OccurrenceRef :=
-  (s.slots.compensation.runs.filter (!resumesGroup ·.resume)).map (·.trigger) ++
-    (Laws.Step.triggersOf s.signals).filterMap (queuedTrigger s)
+  (s.slots.compensation.runs.filter (!resumesGroup ·.resume)).map (·.trigger) ++ queuedTriggers s
 
 /-- The key of the occurrence a trigger names, which numbers under its element's own counter. -/
 def triggerKey (trigger : OccurrenceRef) : OccurrenceKey :=
   { processInstanceId := trigger.processInstanceId, element := trigger.element, activation := trigger.activation }
 
 /-- Every compensation trigger the state holds is held once and was counted, so a compensation `Step` performs takes a
-key no run has (`CompensationsFresh`): the held triggers are distinct (`heldTriggers`); a group's nested run shares the
-trigger of an outer run that is no group's; and each held trigger's activation was issued by its counter
-(`Laws.State.Counted`), so an occurrence begun afresh later is no thrower of one. -/
+key no run has (`CompensationsFresh`): the held triggers are distinct (`heldTriggers`); a group's nested run, which
+takes the trigger of the run whose handler began it, shares none of the queued ones; every run's and every queued
+trigger's activation was issued by its counter (`Laws.State.Counted`), so an occurrence begun afresh later is no thrower
+of one; and a queued Cancel raise's scope occurrence was issued, so no scope occurrence entered later makes it name a
+trigger (`queuedTrigger`). A group's nested run is tied to no outer run: a drop by scope occurrence
+(`Compensation.dropWithin`) may take its outer run and leave it. -/
 structure TriggersApart (s : State) : Prop where
   apart : (heldTriggers s).Nodup
-  nested : ∀ run ∈ s.slots.compensation.runs, resumesGroup run.resume = true →
-    ∃ outer ∈ s.slots.compensation.runs, resumesGroup outer.resume = false ∧ outer.trigger = run.trigger
-  counted : ∀ trigger ∈ heldTriggers s, Counted s (triggerKey trigger)
+  grouped : ∀ run ∈ s.slots.compensation.runs, resumesGroup run.resume = true → run.trigger ∉ queuedTriggers s
+  counted : ∀ trigger ∈ s.slots.compensation.runs.map (·.trigger) ++ queuedTriggers s, Counted s (triggerKey trigger)
+  issued : ∀ origin, .inr origin ∈ Laws.Step.triggersOf s.signals → origin.scope.value < s.nextIssue
 
 /-- No queued compensation resumes a group: `Propagation` queues those that complete or occur an occurrence, and a
 group's nested run resumes its outer run directly (`Compensation.advance`). -/
@@ -133,13 +145,16 @@ def QueuedUngrouped (s : State) : Prop :=
 /-- The lane relation: no record is claimed twice (`ClaimsApart`), every retained record lies in a present scope
 occurrence and no finished run is left, the P0 slot invariant, and its inductive strengthening, which the kernel keeps
 by construction (root decision D2, 2026-11-15): completion numbers apart and issued, runs settled under `precedes` and
-keyed apart, the held triggers apart and no queued compensation resuming a group. It is a lane premise beside
+keyed apart in issued scope occurrences, the held triggers apart and no queued compensation resuming a group (root
+decision on the P5 hook proofs' stop, 2026-11-15). It is a lane premise beside
 `WellFormed`, not a clause of it, since feature slot entries are each feature's own laws; the lane proves it kept, as P2
 does `WellFormed`: by a committed input, at a start (`CompensationsFormedAtStart`) and in every instance of a population
 run (`CompensationsFormedInPopulation`). Without `CompletionsApart` a completion that moves a record outward would make
 two claimed records equal; without `RunsSettled` and `RunsKeyed` a run no hook touches could hold a ready handler, and a
-second run of one key would be advanced in its place; without `TriggersApart` and `QueuedUngrouped` a compensation could
-take a key a run holds, whose advance then finds the old run and loses the new one, or end by releasing a context. -/
+second run of one key would be advanced in its place, and without `RunsIssued` a group's context, entered afresh, could
+be a run's scope occurrence, whose run its nested run's advance then finds; without `TriggersApart` and
+`QueuedUngrouped` a compensation could take a key a run holds, whose advance then finds the old run and loses the new
+one, or end by releasing a context. -/
 structure Formed (precedes : Compensable → Compensable → Prop) (s : State) : Prop where
   claims : ClaimsApart s.slots.compensation
   retained : RetainedPresent s
@@ -148,6 +163,7 @@ structure Formed (precedes : Compensable → Compensable → Prop) (s : State) :
   issued : CompletionsIssued s
   settled : RunsSettled precedes s
   keyed : RunsKeyed s
+  runsIssued : RunsIssued s
   triggers : TriggersApart s
   ungrouped : QueuedUngrouped s
 
@@ -398,30 +414,51 @@ theorem ready_pending_rejected : ¬ RunsSettled (fun _ _ => False) (holding { ru
 theorem shared_key_rejected : ¬ RunsKeyed (holding { runs := [pendingRun, pendingRun] } []) := by
   simp [RunsKeyed, holding]
 
+/-- A run in a scope occurrence not yet issued breaks `RunsIssued`. -/
+theorem unissued_run_rejected : ¬ RunsIssued (holding { runs := [{ pendingRun with scope := ⟨8⟩ }] } []) := by
+  simp [RunsIssued, holding]
+
 /-- A queued compensation with a run's trigger breaks `TriggersApart`. -/
 theorem shared_trigger_rejected :
     ¬ TriggersApart (holding { runs := [pendingRun] } [.compensate rootScope none thrownBy none none]) := fun apart => by
   have nodup := apart.apart
-  simp [heldTriggers, holding, pendingRun, resumesGroup, Laws.Step.triggersOf_compensate, queuedTrigger] at nodup
+  simp [heldTriggers, queuedTriggers, holding, pendingRun, resumesGroup, Laws.Step.triggersOf_compensate,
+    queuedTrigger] at nodup
 
-/-- A group's nested run without an outer run of its trigger breaks `TriggersApart`. -/
-theorem orphan_group_rejected :
-    ¬ TriggersApart (holding { runs := [{ pendingRun with resume := some (.group rootScope rootScope) }] } []) :=
-  fun apart => by
-    obtain ⟨outer, member, ungrouped, _⟩ := apart.nested { pendingRun with resume := some (.group rootScope rootScope) }
-      (by simp [holding]) (by simp [resumesGroup])
-    simp [holding] at member
-    simp [member, resumesGroup] at ungrouped
+/-- `pendingRun` as a group's nested run. -/
+def groupRun : CompensationRun := { pendingRun with resume := some (.group rootScope rootScope) }
+
+/-- A group's nested run with a queued compensation's trigger breaks `TriggersApart`, though no run but a group's holds
+the trigger. -/
+theorem queued_group_trigger_rejected :
+    ¬ TriggersApart (holding { runs := [groupRun] } [.compensate rootScope none thrownBy none none]) := fun apart => by
+  refine apart.grouped groupRun (by simp [holding]) (by simp [groupRun, resumesGroup]) ?_
+  simp [queuedTriggers, holding, groupRun, pendingRun, Laws.Step.triggersOf_compensate, queuedTrigger]
 
 /-- A trigger whose activation its counter has not issued breaks `TriggersApart`. -/
 theorem uncounted_trigger_rejected :
     ¬ TriggersApart (holding { runs := [{ pendingRun with trigger := { thrownBy with activation := 2 } }] } []) :=
   fun apart => by
-    obtain ⟨count, member, named⟩ := apart.counted { thrownBy with activation := 2 }
-      (by simp [heldTriggers, holding, pendingRun, resumesGroup, Laws.Step.triggersOf_nil])
+    obtain ⟨count, member, named⟩ := apart.counted { thrownBy with activation := 2 } (by simp [holding])
     obtain ⟨_, _, _, below⟩ := named
     simp [holding] at member
     simp [member, triggerKey] at below
+
+/-- So does a group's nested run whose trigger's activation was not issued, though no held trigger names it. -/
+theorem uncounted_group_rejected :
+    ¬ TriggersApart (holding { runs := [{ groupRun with trigger := { thrownBy with activation := 2 } }] } []) :=
+  fun apart => by
+    obtain ⟨count, member, named⟩ := apart.counted { thrownBy with activation := 2 } (by simp [holding])
+    obtain ⟨_, _, _, below⟩ := named
+    simp [holding] at member
+    simp [member, triggerKey] at below
+
+/-- A queued Cancel raise from a scope occurrence not yet issued breaks `TriggersApart`. -/
+theorem unissued_raise_rejected :
+    ¬ TriggersApart (holding {} [.raise .cancel { element := thrower, scope := ⟨8⟩, activation := 1 }]) := fun apart => by
+  have below := apart.issued { element := thrower, scope := ⟨8⟩, activation := 1 }
+    (by simp [holding, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel])
+  simp [holding] at below
 
 /-- A queued compensation that resumes a group breaks `QueuedUngrouped`. -/
 theorem queued_group_rejected :

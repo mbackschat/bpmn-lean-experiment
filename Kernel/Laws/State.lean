@@ -70,6 +70,10 @@ theorem visible_congr {s t : State} (scopes : t.scopes = s.scopes) (variables : 
 theorem isCancel_error (code : String) (message : Option String) : (Raised.error code message).isCancel = false := by
   simp [Raised.isCancel]
 
+/-- A Cancel raise is one (`Raised.isCancel`), so it queues its origin as a trigger. -/
+theorem isCancel_cancel : Raised.cancel.isCancel = true := by
+  simp [Raised.isCancel]
+
 /-- `State.instanceOf` reads only the scope occurrences and the instance identifier. -/
 theorem instanceOf_congr {s t : State} (scopes : t.scopes = s.scopes) (named : t.instanceId = s.instanceId)
     (x : ScopeOccurrenceId) : t.instanceOf x = s.instanceOf x := by

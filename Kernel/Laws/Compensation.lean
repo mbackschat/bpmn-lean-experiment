@@ -41,6 +41,18 @@ theorem precedes_spec (ctx : Ctx) (record other : Compensable) :
   unfold Feature.Compensation.precedes
   simp only [Bool.or_eq_true, Bool.and_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq, beq_iff_eq, or_assoc]
 
+/-- The kernel's dependency reads only the program, so every context of one program orders records alike. -/
+theorem precedes_congr {ctx other : Ctx} (same : ctx.program = other.program) :
+    Feature.Compensation.precedes ctx = Feature.Compensation.precedes other := by
+  have alike : ∀ fuel ids, Feature.Compensation.interior.go ctx fuel ids = Feature.Compensation.interior.go other fuel ids := by
+    intro fuel
+    induction fuel with
+    | zero => intro ids; rfl
+    | succ fuel ih => intro ids; simp only [Feature.Compensation.interior.go, same, ih]
+  funext record later
+  simp only [Feature.Compensation.precedes, Feature.Compensation.data, Feature.Compensation.interior,
+    Feature.Compensation.ownData, same, alike]
+
 /-- `isRun` picks the run `Keyed` by the scope occurrence and the trigger. -/
 theorem isRun_iff (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (run : CompensationRun) :
     Feature.Compensation.isRun scope trigger run = true ↔ Keyed scope trigger run := by
@@ -361,18 +373,8 @@ theorem failCompensation_spec {ctx : Ctx} {handler : ScopeOccurrenceId} {code : 
 /-! ## Preservation
 
 What the compensation hooks keep of an invariant: a completion retains its record, issuing a completion number, and a
-handler's uncaught failure ends the instance failed. -/
-
-/-- What the compensation hooks need of the state operations they apply, for an invariant `inv`. -/
-structure CompensationOps (inv : State → Prop) : Prop where
-  /-- The retained records replaced, and the runs by some of them. -/
-  store : ∀ state compensation, inv state → (∀ run ∈ compensation.runs, run ∈ state.slots.compensation.runs) →
-    inv { state with slots := { state.slots with compensation } }
-  issue : ∀ state, inv state → inv state.issue.1
-  /-- Issuing keeps the scope occurrences, the occurrences, the open items and the slots. -/
-  issued : ∀ state : State, state.issue.1.scopes = state.scopes ∧ state.issue.1.occurrences = state.occurrences ∧
-    state.issue.1.openItems = state.openItems ∧ state.issue.1.slots = state.slots
-  fail : ∀ state failure, inv state → inv (state.signal (.endInstance .failed (some failure)))
+handler's uncaught failure ends the instance failed, under the operations record `CompensationOps`
+(`Kernel.Laws.Compensation.Rules`). -/
 
 /-- `Hooks.completed` keeps `inv`, the scope occurrences, the occurrences and the open items. -/
 theorem completed_keeps {inv : State → Prop} (ops : CompensationOps inv) {ctx : Ctx} {occurrence : Occurrence}
