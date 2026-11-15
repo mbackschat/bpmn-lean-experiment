@@ -229,6 +229,47 @@ theorem removeVariables_keeps {inv : State → Prop} (ops : StateOps inv) {ctx :
     · exact ops.remove _ _ _ holds
     · exact holds
 
+/-! ## Where Data's writes land
+
+The former lanes' share (P7): the scope occurrence each write of `Hooks.writeOutputs` lands on, stated over the
+searches of `Kernel.State` so that `Kernel.Proofs.Former` reads what they find through `Kernel.Laws.State.Chain`. -/
+
+/-- Data's `Hooks.writeOutputs` applies its writes in order, each as one `State.setVariable` on the state the earlier
+ones left: an `.own` write on the writing scope occurrence; an outward write on the declaring occurrence of its name's
+item when the item's Scope has one on the way out (`State.declaring?`), else on the nearest scope occurrence that binds
+the name (`State.owner?`), else on the instance root (`State.instanceRoot`), unless the profile refuses it. -/
+theorem write_outward {ctx : Ctx} {scope : ScopeOccurrenceId} {writes : List (String × Value)} {rule : WriteRule}
+    {state after : State} : Feature.Data.writeOutputs ctx scope writes rule state = .ok after →
+    after = writes.foldl (fun s binding => s.setVariable (match rule with
+      | .own => scope
+      | .outward => (((ctx.program.itemScope? binding.1).bind (s.declaring? scope) <|> s.owner? scope binding.1).getD
+          (s.instanceRoot scope))) binding.1 binding.2) state := by
+  intro ran
+  unfold Feature.Data.writeOutputs at ran
+  induction writes generalizing state with
+  | nil => simp only [List.foldlM_nil, pure, Except.pure] at ran; cases ran; rfl
+  | cons binding rest ih =>
+    simp only [List.foldlM_cons] at ran
+    cases wrote : Feature.Data.write ctx rule scope state binding with
+    | error failure => simp [wrote, bind, Except.bind] at ran
+    | ok next =>
+      simp only [wrote, bind, Except.bind] at ran
+      rw [List.foldl_cons]
+      refine (ih ran).trans (congrArg (fun start => rest.foldl _ start) ?_)
+      obtain ⟨name, value⟩ := binding
+      unfold Feature.Data.write at wrote
+      cases rule with
+      | own => exact (Except.ok.inj wrote).symm
+      | outward =>
+        simp only [Feature.Data.itemOwner?] at wrote
+        dsimp only
+        cases found : ((ctx.program.itemScope? name).bind (state.declaring? scope) <|> state.owner? scope name) with
+        | some owner => simp only [found] at wrote; exact (Except.ok.inj wrote).symm
+        | none =>
+          simp only [found] at wrote
+          repeat' split at wrote
+          all_goals first | (simp at wrote; done) | exact (Except.ok.inj wrote).symm
+
 /-! ## Non-vacuity
 
 The scopes of `Kernel.Laws.State`: the root scope 0 holds the Sub-Process's scope occurrence 2. The root declares `a`,
