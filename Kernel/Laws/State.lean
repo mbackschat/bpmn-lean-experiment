@@ -850,4 +850,31 @@ theorem clearInside_instanceId (s : State) (scope : ScopeOccurrenceId) (keep : L
     (s.clearInside scope keep).instanceId = s.instanceId := by
   simp [State.clearInside, State.recordCancelled]
 
+/-- Clearing a scope occurrence queues and drops no signal, whatever it clears. -/
+theorem clearInside_signals (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
+    (s.clearInside scope keep).signals = s.signals := by
+  simp [State.clearInside, State.recordCancelled]
+
+/-- Clearing a scope occurrence only drops tokens, whatever it clears. -/
+theorem clearInside_tokens (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
+    (s.clearInside scope keep).tokens.Sublist s.tokens := by
+  simp only [State.clearInside, State.recordCancelled]
+  exact List.filter_sublist
+
+/-- The elements a scope occurrence declares (`State.childrenOf`) are a called process's children or the children of
+an element of the program. -/
+theorem childrenOf_mem {s : State} {program : Program} {scope : ScopeOccurrenceId} {child : Element}
+    (member : child ∈ s.childrenOf program scope) :
+    (∃ process ∈ program.processes, child ∈ program.processChildren process) ∨ ∃ parent, child ∈ program.children parent := by
+  unfold State.childrenOf at member
+  dsimp only at member
+  split at member
+  · rename_i _ definition _ _
+    cases found : program.processes.find? (·.definition == definition) with
+    | none => simp [found] at member
+    | some process =>
+      rw [found] at member
+      exact .inl ⟨process, List.mem_of_find?_eq_some found, member⟩
+  · exact .inr ⟨_, member⟩
+
 end Kernel.Laws.State
