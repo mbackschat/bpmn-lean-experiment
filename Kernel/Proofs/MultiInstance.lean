@@ -11,9 +11,13 @@ and parallel slots, collection, early end and instance isolation; an outer inter
 the cancellation lane (`Kernel.Proofs.Cancellation`). Each is stated over a hooks parameter and closes when
 `Kernel.Proofs.Step` proves it of `Registry.hooks`.
 
-The model premises are the loop a run's element carries (`LoopOf`), read from the IL, two loop conditions admission
-enforces (`ItemApart`, `OutputsNamed`), and, for the statements that read instance identity, the IL contract that the
-program's identifiers are unique (`IdsUnique`), which the codec does not check. That admission refuses the loops the kernel does not run (`multiInstance.*`,
+The model premises are the loop a run's element carries (`LoopOf`), read from the IL, two loop conditions, and, for the
+statements that read instance identity, the IL contract that the program's identifiers are unique (`IdsUnique`), which
+the codec does not check. Admission enforces `ItemApart` under `MultiInstanceCounters.cibLocals`, the only option the
+statements taking it read it under (`multiInstance.itemNamedLikeCounter`), and `OutputsNamed` for every instance but
+one whose submission installs variables (CIB-EXT-0005), which needs no output data item and which no shipped profile
+pairs with `MultiInstanceOutputs.aggregates` (`multiInstance.outputDataItem` under `SubmissionRule.outputSet`,
+`multiInstance.instanceResult`). That admission refuses the loops the kernel does not run (`multiInstance.*`,
 `scope.multiInstance`) stays scenario evidence (guard 12's refusal tests): no statement here names the admission
 evaluator. Nothing executable imports this module.
 
