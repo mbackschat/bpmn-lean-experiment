@@ -449,6 +449,37 @@ theorem scope_stale {hooks : Hooks} {ctx : Ctx} {signal : Signal} {scope : Scope
   rcases names with ⟨_, _, rfl⟩ | rfl | ⟨_, _, rfl⟩ | ⟨_, rfl, rfl⟩ | ⟨_, _, ⟨_, _, rfl⟩⟩ <;>
     exact perform_stale (by simp_all [stale, signalWork])
 
+/-- What a signal's work names, as what it does something in or on (`Step.stale`) and what it acts from (`Step.gone`),
+is read from the signal alone, never from the hooks or the context: a lane reads a queued signal's targets from
+`Step.signalWork` of any hooks and context instead of enumerating `Signal`'s constructors. -/
+theorem signalWork_targets (hooks hooks' : Hooks) (ctx ctx' : Ctx) (signal : Signal) :
+    (signalWork hooks ctx signal).scopes = (signalWork hooks' ctx' signal).scopes ∧
+      (signalWork hooks ctx signal).occurrences = (signalWork hooks' ctx' signal).occurrences ∧
+      (signalWork hooks ctx signal).requires = (signalWork hooks' ctx' signal).requires := by
+  cases signal <;> simp [signalWork]
+
+/-- Work that does something in, or acts from, a scope occurrence that was issued and is gone fails the input, as
+interrupted before its wait (`perform_stale`) or as an invariant failure (`perform_gone`). -/
+theorem perform_absent {work : SignalWork} {state : State} {scope : ScopeOccurrenceId}
+    (names : scope ∈ work.scopes ∨ scope ∈ work.requires) (issued : scope.value < state.nextIssue)
+    (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
+    work.perform state = .error (.unsupported "interrupted-before-wait") ∨
+      work.perform state = .error (.semanticFailure "queued-work-scope-gone") := by
+  have none : state.scopes.any (·.id == scope) = false :=
+    List.any_eq_false.mpr fun entry member same => absent entry member (by simpa using same)
+  cases fresh : stale state work with
+  | true => exact .inl (perform_stale fresh)
+  | false =>
+    refine .inr (perform_gone fresh ?_)
+    rcases names with named | named
+    · have refused : stale state work = true := by
+        unfold stale
+        simp only [Bool.or_eq_true, List.any_eq_true]
+        exact .inl ⟨scope, named, by simp [issued, none]⟩
+      simp [refused] at fresh
+    · unfold gone
+      exact List.any_eq_true.mpr ⟨scope, named, by simp [none]⟩
+
 /-! ### What an addressed input's lookups and jobs read
 
 The body facts behind `Kernel.Laws.Step.Inputs.step_unknown`: what an occurrence lookup finds, and that a timer firing
