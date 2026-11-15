@@ -101,6 +101,7 @@ public import Kernel.Laws.Step.Keeps
 public import Kernel.Laws.Step.Ran
 public import Kernel.Laws.Step.Signals
 public import Kernel.Laws.Subscriptions
+public import Kernel.Laws.Subscriptions.Rules
 public import Kernel.Laws.Subscriptions.Timers
 public import Kernel.Laws.Work
 public import Kernel.Population
