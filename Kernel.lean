@@ -123,8 +123,11 @@ public import Kernel.Proofs.Concurrency
 public import Kernel.Proofs.Former
 public import Kernel.Proofs.Former.Calls
 public import Kernel.Proofs.Former.Placed
+public import Kernel.Proofs.Former.PlacedLane
+public import Kernel.Proofs.Former.Placement
 public import Kernel.Proofs.Former.Values
 public import Kernel.Proofs.Frame
+public import Kernel.Proofs.Frame.Alongside
 public import Kernel.Proofs.MultiInstance
 public import Kernel.Proofs.MultiInstance.Begins
 public import Kernel.Proofs.MultiInstance.Formed

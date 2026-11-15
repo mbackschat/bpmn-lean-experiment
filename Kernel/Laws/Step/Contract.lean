@@ -232,6 +232,11 @@ theorem placing_complete {occurrence : Nat} {leave : Leave} {writes : List (Stri
   | flows selected => rw [unnamed selected rfl]; rfl
   | outgoing | raised => rfl
 
+/-- A completion by named flows places work. -/
+theorem placing_named {occurrence : Nat} {selected : List FlowId} {writes : List (String × Value)} {rule : WriteRule}
+    (named : selected ≠ []) : placing (.complete occurrence (.flows selected) writes rule) = true := by
+  simpa [placing] using named
+
 /-- The flow tokens of `tokens`, each with its scope occurrence, in stack order. -/
 def flowsOf (tokens : List Token) : List (FlowId × ScopeOccurrenceId) :=
   tokens.filterMap fun
