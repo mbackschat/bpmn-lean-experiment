@@ -247,6 +247,47 @@ theorem triggersOf_raise (event : Raised) (origin : Origin) :
     triggersOf [.raise event origin] = if event.isCancel then [.inr origin] else [] := by
   cases cancels : event.isCancel <;> simp [triggersOf, cancels]
 
+/-- The resumes of the queued compensations of `signals`, in queue order: what an invariant that reads how a queued
+compensation ends reads, which `triggersOf` drops. -/
+def resumesOf (signals : List Signal) : List (Option Resume) :=
+  signals.filterMap fun
+    | .compensate _ _ _ _ resume => some resume
+    | .raise _ _ | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .begin _ | .complete _ _ _ _ | .write _ _ _
+    | .remove _ _ | .occur _ _ _ _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ => none
+
+/-- Queuing signals adds the resumes they carry to the queued ones. -/
+theorem resumesOf_append (signals more : List Signal) :
+    resumesOf (signals ++ more) = resumesOf signals ++ resumesOf more :=
+  List.filterMap_append
+
+/-- A resume is queued exactly when a queued compensation carries it. -/
+theorem mem_resumesOf {signals : List Signal} {resume : Option Resume} :
+    resume ∈ resumesOf signals ↔
+      ∃ scope activity trigger leave, Signal.compensate scope activity trigger leave resume ∈ signals := by
+  unfold resumesOf
+  constructor
+  · intro member
+    obtain ⟨signal, inside, carried⟩ := List.mem_filterMap.mp member
+    cases signal with
+    | compensate scope activity trigger leave carriedResume =>
+      cases carried
+      exact ⟨scope, activity, trigger, leave, inside⟩
+    | raise | arm | armScope | armGateway | begin | complete | write | remove | occur | cancel | fire | endInstance
+    | compensationFailed => cases carried
+  · intro queued
+    obtain ⟨scope, activity, trigger, rest⟩ := queued
+    obtain ⟨leave, inside⟩ := rest
+    exact List.mem_filterMap.mpr ⟨_, inside, rfl⟩
+
+/-- Signals that carry no trigger (`Laws.State.Untriggered`) carry no resume. -/
+theorem resumesOf_untriggered {signals : List Signal} (quiet : ∀ signal ∈ signals, Laws.State.Untriggered signal) :
+    resumesOf signals = [] := by
+  refine List.filterMap_eq_nil_iff.mpr fun signal inside => ?_
+  cases signal with
+  | compensate scope activity trigger leave resume => exact absurd rfl ((quiet _ inside).1 scope activity trigger leave resume)
+  | raise | arm | armScope | armGateway | begin | complete | write | remove | occur | cancel | fire | endInstance
+  | compensationFailed => rfl
+
 /-- Signals that carry no trigger (`Laws.State.Untriggered`) queue none. -/
 theorem triggersOf_untriggered {signals : List Signal} (quiet : ∀ signal ∈ signals, Laws.State.Untriggered signal) :
     triggersOf signals = [] := by
