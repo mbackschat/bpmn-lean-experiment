@@ -17,7 +17,7 @@ every one its counter has issued, which every start fact of the input counts (`L
 The order is a fact of the settled state before `Step.orderJournal` turns the journal round, so it is carried by the
 closure's phases alone (`Laws.Step.ClosurePhases`, `Laws.Step.running_settles`). The state operations' lemmas here
 are each of what the frame records ask (`Proofs.Cancellation.FrameAlongside`, `ClosureAlongside`, `Alongside`), which
-`Kernel.Proofs.MultiInstance.Formed` assembles, since this module may not reach a feature's Laws module beyond its
+`Kernel.Proofs.MultiInstance.Registered` assembles, since this module may not reach a feature's Laws module beyond its
 fan-in (guard 15). Nothing executable imports this module.
 -/
 

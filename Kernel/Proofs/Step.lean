@@ -3,14 +3,12 @@ module
 public import Kernel.Laws.Step
 public import Kernel.Laws.Registry
 public import Kernel.Laws.Flow
-public import Kernel.Laws.Scopes
 public import Kernel.Laws.Starts
 public import Kernel.Laws.Subscriptions
 public import Kernel.Laws.Data
 public import Kernel.Laws.Work
 public import Kernel.Laws.Compensation
 public import Kernel.Laws.Propagation
-public import Kernel.Laws.MultiInstance
 public import Kernel.Laws.Hooks
 public import Kernel.Proofs.State
 public import Kernel.Proofs.Step.Queue

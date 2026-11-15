@@ -2,7 +2,10 @@ module
 
 public import Kernel.Proofs.MultiInstance
 public import Kernel.Laws.State.Fire
-public import Kernel.Laws.Registry
+public import Kernel.Laws.MultiInstance
+public import Kernel.Proofs.MultiInstance.Records
+public import Kernel.Proofs.Cancellation
+public import Kernel.Laws.Scopes
 
 /-! # Proofs: the Multi-Instance lane's slot invariant carried by the state operations
 
@@ -15,10 +18,9 @@ only what is fresh. Removal keeps it because a body that stays has its scope occ
 stays, and so do its instances' scope occurrences, which lie directly below it, but for one the removal leaves itself,
 which `LeavesOwned` excludes: an active instance's scope occurrence is owned by no occurrence and holds no handler.
 Instances lie `Apart` in every well-formed state, so the lane carries `Owned` instead. The state operations and phases
-also keep what an input keeps of its start's bodies (`Since`), which gives `RunsGenerated`. `Kernel.Proofs.MultiInstance.Formed`
-carries it through the registered hooks. It reaches the Laws modules of Multi-Instance and Scopes, so it imports the
-registry's Laws module, which puts it in every feature's rebuild cone (guard 15). Nothing executable imports this
-module.
+also keep what an input keeps of its start's bodies (`Since`), which gives `RunsGenerated`. `Kernel.Proofs.MultiInstance.Registered`
+carries it through the registered hooks. It reaches the Laws modules of Multi-Instance and Scopes and imports them
+directly, so it lies in their rebuild cones alone (guard 15). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -441,7 +443,7 @@ begin starts an unbegun reservation or a fresh occurrence, under a key no begun 
 what it keeps of the bodies of `b` (`Snapshots`): every other operation keeps a body's record, removes it or records an
 instance's output in it. `Unstarted` reads no body's record, so the Multi-Instance hooks keep it through their feature
 record (`Proofs.Cancellation.Alongside`); `Snapshots` reads only the records, so each hook keeps it by what it sets
-(`Kernel.Proofs.MultiInstance.Formed`). -/
+(`Kernel.Proofs.MultiInstance.Registered`). -/
 
 section Since
 
