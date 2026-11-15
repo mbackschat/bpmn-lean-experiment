@@ -63,8 +63,9 @@ def ResumesPending (rel : State → Prop) (s : State) (compensation : Compensati
 
 /-- `t` agrees with `s` on everything a property carried beside `WellFormed` may read: the scope occurrences, the
 occurrences, the issue and activation counters, the journal, the draft, the instance identity, the Multi-Instance runs,
-the compensation slot, the queued begins in queue order (`Laws.Step.beginsOf`, `Laws.Step.deferredOf`) and the queued
-triggers (`Laws.Step.triggersOf`), and `t` has no reservation pending that `s` lacks (`Laws.Step.OccurPending`). -/
+the compensation slot, the queued begins in queue order (`Laws.Step.beginsOf`, `Laws.Step.deferredOf`), the queued
+triggers (`Laws.Step.triggersOf`) and the queued compensations' resumes (`Laws.Step.resumesOf`), and `t` has no
+reservation pending that `s` lacks (`Laws.Step.OccurPending`). -/
 structure Unmoved (s t : State) : Prop where
   scopes : t.scopes = s.scopes
   occurrences : t.occurrences = s.occurrences
@@ -77,6 +78,7 @@ structure Unmoved (s t : State) : Prop where
   compensation : t.slots.compensation = s.slots.compensation
   begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals
   triggers : Laws.Step.triggersOf t.signals = Laws.Step.triggersOf s.signals
+  resumes : Laws.Step.resumesOf t.signals = Laws.Step.resumesOf s.signals
   deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens
   pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element
 
@@ -90,11 +92,12 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (compensation : t.slots.compensation = s.slots.compensation := by exact rfl)
     (begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals := by exact rfl)
     (triggers : Laws.Step.triggersOf t.signals = Laws.Step.triggersOf s.signals := by exact rfl)
+    (resumes : Laws.Step.resumesOf t.signals = Laws.Step.resumesOf s.signals := by exact rfl)
     (deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens := by exact rfl)
     (pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element :=
       by exact fun _ held => held) : Unmoved s t :=
   ⟨scopes, occurrences, nextIssue, activations, journal, draft, instanceId, multiInstances, compensation, begins,
-    triggers, deferred, pending⟩
+    triggers, resumes, deferred, pending⟩
 
 /-- `scope` is the context of a handler or group a compensation run of `s` holds running. -/
 def RunningContext (s : State) (scope : ScopeOccurrenceId) : Prop :=
@@ -200,18 +203,20 @@ structure Alongside (rel : State → Prop) : Prop extends FrameAlongside rel whe
     Iteration.active scope ∈ run.instances → scope ∈ scopeIds s → rel s → rel (s.leaveScope scope)
   runs : ∀ s (runs : List MultiInstanceRun), rel s → rel { s with slots := { s.slots with multiInstances := runs } }
 
-/-- A queued signal that queues no begin, makes no reservation and carries no trigger moves nothing `rel` reads. -/
+/-- A queued signal that queues no begin, makes no reservation and carries no trigger and no resume moves nothing `rel`
+reads. -/
 theorem FrameAlongside.signal {rel : State → Prop} (side : FrameAlongside rel) {s : State} (kept : rel s)
     (signal : Signal)
     (quiet : Laws.Step.beginsOf [signal] = [] ∧ Laws.Step.occursOf [signal] = [] ∧ Laws.Step.triggersOf [signal] = [] :=
-      by exact ⟨rfl, rfl, rfl⟩) :
+      by exact ⟨rfl, rfl, rfl⟩) (unresumed : Laws.Step.resumesOf [signal] = [] := by exact rfl) :
     rel (s.signal signal) := by
   rw [Laws.State.signal_eq]
   have pending := fun pending => Laws.Step.occurPending_of (s := s) (t := { s with signals := s.signals ++ [signal] })
     (fun element inside => by rwa [Laws.Step.occursOf_append, quiet.2.1, List.append_nil] at inside)
     (fun _ member => member) (element := pending)
   exact side.frame s _ (.same (begins := by rw [Laws.Step.beginsOf_append, quiet.1, List.append_nil])
-    (triggers := by rw [Laws.Step.triggersOf_append, quiet.2.2, List.append_nil]) (pending := pending)) kept
+    (triggers := by rw [Laws.Step.triggersOf_append, quiet.2.2, List.append_nil])
+    (resumes := by rw [Laws.Step.resumesOf_append, unresumed, List.append_nil]) (pending := pending)) kept
 
 /-- Removing an occurrence of a well-formed state keeps what the state operations keep and dropping a record that owns
 no scope occurrence keeps: `State.removeOccurrence` drops the record and then leaves the scope occurrences it owns,
