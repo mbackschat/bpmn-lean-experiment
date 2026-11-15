@@ -61,7 +61,8 @@ def inputCtx (hooks : Hooks) (program : Program) (input : Input) : Ctx :=
 
 
 /-- What a start input runs: its start Event's begin in a fresh instance whose root's Event Sub-Process starts are
-queued for arming, as one micro-step after the clock advanced to the input's time; then the closure. -/
+queued for arming, as one micro-step after the clock advanced to the input's time; then the closure. The start is the
+one `chooseStart` picked among the starts the input fired (`admittedStartsFired`). -/
 structure StartRan (hooks : Hooks) (program : Program) (payload : StartInput) (after : State) : Prop where
   ran : ∃ start initial moved settled,
     advanceClock payload.atMs
@@ -71,7 +72,9 @@ structure StartRan (hooks : Hooks) (program : Program) (payload : StartInput) (a
       (begin hooks (inputCtx hooks program (.start payload)) { element := start, scope := State.root, trigger := payload.trigger })
       initial = .ok moved ∧
     settle hooks (inputCtx hooks program (.start payload)) closureBound closureWorkBound moved = .ok settled ∧
-    after = { settled with journal := settled.journal.reverse }
+    after = { settled with journal := settled.journal.reverse } ∧
+    ∃ fired, admittedStartsFired hooks (inputCtx hooks program (.start payload)) payload = .ok fired ∧
+      chooseStart payload.startEvent fired = .ok start
 
 /-- What the transition of a committed input on a running instance (`Step.onRunning`'s argument) is made of: it is
 `Step.command`'s or `Step.deliverEffectResult`'s, or it fires, through `Step.fireItem`, an open item it found or the one

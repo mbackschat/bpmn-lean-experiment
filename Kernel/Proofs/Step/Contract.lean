@@ -99,6 +99,16 @@ theorem registered_delivered : ∀ ctx data state item fired,
   · exact Laws.Hooks.item?_mem found
   · exact Laws.Hooks.item?_mem found
 
+/-- `HookContract.startsFired` of the registered hooks: the starts a start input fires are root-process start Events
+(`Laws.Starts.startsFired_root`). -/
+theorem registered_startsFired : ∀ ctx input fired, Registry.hooks.startsFired ctx input = .ok fired →
+    ∀ id ∈ fired, ∃ element ∈ ctx.program.children none, element.header.id = id := by
+  intro _ _ _ ran id inside
+  rw [Laws.Registry.hooks_startsFired] at ran
+  obtain ⟨element, member, found⟩ := Laws.Starts.startsFired_root ran id inside
+  obtain ⟨_, _, typed, named⟩ := found
+  exact ⟨element, member, (Laws.Step.start?_bare typed).1 ▸ named⟩
+
 /-- The operations records of every feature the registered hooks run but Multi-Instance's and Compensation's, of one
 invariant. -/
 structure FeatureOps (inv : Program → State → Prop) : Prop where
@@ -380,6 +390,7 @@ theorem registered_contract_of {inv : Program → State → Prop} (ops : Feature
     rw [Laws.Registry.hooks_written] at ran
     exact Laws.Subscriptions.offerWrites_keeps (ops.subscriptions _) holds ran
   delivered := registered_delivered
+  startsFired := registered_startsFired
 
 /-- The registered hooks keep any invariant every feature's record is filled for. -/
 theorem registered_contract {inv : Program → State → Prop} (ops : RegisteredOps inv) (facts : Laws.Step.StateFacts) :

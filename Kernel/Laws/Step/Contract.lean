@@ -351,20 +351,42 @@ theorem multiInstance_inj {body other : Nat} (same : Continuation.multiInstance 
     body = other := by
   injection same
 
-/-- The closure took the queued begin `request` off `queue`, leaving `popped`: the head `begin` signal, or, with no
-signal queued, the deferred begin `Step.nextToken` takes, the oldest under `orderInvariant` and the newest otherwise. -/
+/-- With no signal queued, the closure took `token` off `queue`'s work stack, leaving `popped`: the oldest under
+`orderInvariant` and the newest otherwise (`Step.nextToken`). -/
+def TokenTaken (program : Program) (queue : State) (token : Token) (popped : State) : Prop :=
+  queue.signals = [] ∧ ∃ rest, ((program.options.branchSchedule = .orderInvariant ∧ queue.tokens = token :: rest) ∨
+    queue.tokens = rest ++ [token]) ∧ popped = { queue with tokens := rest }
+
+/-- The closure took the queued begin `request` off `queue`, leaving `popped`: the head `begin` signal, or the deferred
+begin it took off the work stack (`TokenTaken`). -/
 def Dequeued (program : Program) (queue : State) (request : BeginRequest) (popped : State) : Prop :=
   (∃ rest, queue.signals = .begin request :: rest ∧ popped = { queue with signals := rest }) ∨
-    (queue.signals = [] ∧ ∃ rest, ((program.options.branchSchedule = .orderInvariant ∧
-      queue.tokens = .begin request :: rest) ∨ queue.tokens = rest ++ [.begin request]) ∧
-      popped = { queue with tokens := rest })
+    TokenTaken program queue (.begin request) popped
 
-/-- Where a begin `Step` runs comes from: a fresh request that continues by its flows and names no reservation, as an
-arrival and a start make, or a queued begin the closure took off a state that keeps `inv`, which an invariant over the
-queued begins reads to place the begun occurrence among them. -/
+/-- Where a fresh begin's request comes from: the arrival of a flow token the closure took off a queue that keeps `inv`,
+which begins the element the token's flow ends at in the token's scope occurrence (`Step.arrive`), or a start input's
+begin, in the process root, of a root-process start Event (`Program.children none`, `HookContract.startsFired`). An
+invariant that places what a token or a start begins reads it. -/
+def FreshSource (inv : Program → State → Prop) (program : Program) (state : State) (request : BeginRequest) : Prop :=
+  (∃ queue flow, inv program queue ∧ program.target? flow = some request.element ∧
+    TokenTaken program queue (.flow flow request.scope) state) ∨
+  (request.scope = State.root ∧ ∃ element ∈ program.children none, element.header.id = request.element)
+
+/-- Where a begin `Step` runs comes from: a fresh request that continues by its flows and names no reservation, made by
+an arrival or a start (`FreshSource`), or a queued begin the closure took off a state that keeps `inv`, which an
+invariant over the queued begins reads to place the begun occurrence among them. -/
 def BeginOrigin (inv : Program → State → Prop) (program : Program) (state : State) (request : BeginRequest) : Prop :=
-  (request.continuation = .flow ∧ request.reserved = none) ∨
+  (request.continuation = .flow ∧ request.reserved = none ∧ FreshSource inv program state request) ∨
     ∃ queue, inv program queue ∧ Dequeued program queue request state
+
+/-- An origin from states that keep `inv` is one from states that keep what `inv` implies of the same program. -/
+theorem BeginOrigin.mono {inv weaker : Program → State → Prop} {program : Program}
+    (implies : ∀ s, inv program s → weaker program s) {state : State} {request : BeginRequest}
+    (origin : BeginOrigin inv program state request) : BeginOrigin weaker program state request := by
+  rcases origin with ⟨flows, fresh, (⟨queue, flow, held, target, taken⟩ | started)⟩ | ⟨queue, held, dequeued⟩
+  · exact .inl ⟨flows, fresh, .inl ⟨queue, flow, implies _ held, target, taken⟩⟩
+  · exact .inl ⟨flows, fresh, .inr started⟩
+  · exact .inr ⟨queue, implies _ held, dequeued⟩
 
 /-- What the completion pipeline needs of each phase it runs between closing the completing occurrence's own items and
 removing its record (`Step.complete`): the scope occurrences and the begun occurrences stay, and no open item is added,
@@ -388,7 +410,8 @@ a state that kept `inv`, and a raise or compensation was taken off a queue that 
 `Laws.State.Popped`), which an invariant over the queued triggers reads (`triggersOf`); a completed occurrence's continuation runs while its scope occurrence stands;
 an Event Sub-Process's start Event reservation (`ScopeEntry.inner`) is beginnable in, and lies in, the scope occurrence
 its occurrence began in, and nothing claims it. The completion pipeline's hooks also keep its frame (`PipelineFrame`),
-and `Hooks.leave` leaves nothing hanging on the completing occurrence. `Hooks.delivered`, a query, picks an open item.
+and `Hooks.leave` leaves nothing hanging on the completing occurrence. `Hooks.delivered`, a query, picks an open item,
+and `Hooks.startsFired`, another, root-process starts.
 Each field keeps `inv` under the program of the hook's context, which is the program the step runs
 (`Laws.Step.inputCtx_program`). Each feature's `Laws` module proves the fields of the hooks it fills. -/
 structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop where
@@ -504,6 +527,9 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
   written : ∀ ctx writes state after, inv ctx.program state → hooks.written ctx writes state = .ok after →
     inv ctx.program after
   delivered : ∀ ctx data state item fired, hooks.delivered ctx data state = .ok (item, fired) → item ∈ state.openItems
+  /-- `Hooks.startsFired`, a query, returns root-process start Events only. -/
+  startsFired : ∀ ctx input fired, hooks.startsFired ctx input = .ok fired →
+    ∀ id ∈ fired, ∃ element ∈ ctx.program.children none, element.header.id = id
 
 /-- What each phase `Step` runs itself must keep of `inv`, and what the closure reads of `inv`: the arming a queued
 signal asks for names issued identities, so one that `Step.stale` lets run finds them standing, and a host that stands

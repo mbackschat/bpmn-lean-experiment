@@ -393,7 +393,7 @@ theorem closurePhases_alongside {rel : Program → State → Prop} (phases : Law
       ((side _).clearInside _ s State.root [] holds.1 holds.1.rooted.1 (fun _ _ none => by cases none) holds.2)
   begin _ s request role sourceType holds stands admitted roled bodied assigned origin :=
     have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled bodied assigned
-      (origin.imp_right fun ⟨queue, held, dequeued⟩ => ⟨queue, held.1, dequeued⟩)
+      (origin.mono fun _ held => held.1)
     ⟨⟨begun.1, (side _).begin _ s request role sourceType holds.1 stands admitted assigned origin holds.2⟩, begun.2⟩
   reserve _ s element scope holds stands pending :=
     have reserved := phases.reserve _ _ element scope holds.1 stands (pending.imp fun _ => And.imp_left And.left)

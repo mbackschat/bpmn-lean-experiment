@@ -56,6 +56,21 @@ theorem item?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : Occurren
   cases same
   exact itemDetail?_mem made
 
+/-- The start `chooseStart` picks is one of the fired starts. -/
+theorem chooseStart_mem {named : Option ElementId} {fired : List ElementId} {start : ElementId}
+    (chosen : chooseStart named fired = .ok start) : start ∈ fired := by
+  unfold chooseStart at chosen
+  split at chosen
+  · split at chosen
+    · rename_i listed
+      cases chosen
+      simpa using listed
+    · cases chosen
+  · cases chosen
+    exact List.mem_singleton_self _
+  · cases chosen
+  · cases chosen
+
 /-- The item an input addresses has the detail it was looked up by. -/
 theorem itemDetail?_view {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef}
     {detail : WaitView → Option α} {item : OpenItem} {value : α}

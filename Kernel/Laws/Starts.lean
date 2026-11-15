@@ -20,8 +20,8 @@ The laws take a process's elements, their parents and their triggers as paramete
 Each law is followed by its non-vacuity witness: values that satisfy it and, where the law could otherwise hold of
 everything, values that violate it.
 
-Its laws read no body of `Kernel.Feature.Starts`; its share of the state-invariant lane, at the end, reads
-`Hooks.arriveStart`'s.
+Its laws read no body of `Kernel.Feature.Starts`; what `Hooks.startsFired` returns (`startsFired_root`) and its share of
+the state-invariant lane, at the end, read its bodies.
 -/
 
 @[expose] public section
@@ -244,6 +244,73 @@ theorem second_instance_rejected : ¬ BeginsOnce [some begun, some { begun with 
   | _ :: _, split =>
     have := absent (some begun) (by simp at split; simp [split.1])
     simp at this
+
+/-! ## The starts `Hooks.startsFired` returns -/
+
+/-- An element a list's `filterMapM` keeps is one its function kept from a member. -/
+private theorem filterMapM_mem {α β ε : Type} {f : α → Except ε (Option β)} :
+    ∀ {items : List α} {kept : List β}, items.filterMapM f = .ok kept → ∀ b ∈ kept, ∃ a ∈ items, f a = .ok (some b) := by
+  intro items
+  induction items with
+  | nil =>
+    intro kept ran b inside
+    simp only [List.filterMapM_nil, pure, Except.pure, Except.ok.injEq] at ran
+    subst ran
+    cases inside
+  | cons a rest ih =>
+    intro kept ran b inside
+    rw [List.filterMapM_cons] at ran
+    cases found : f a with
+    | error _ => simp [found, bind, Except.bind] at ran
+    | ok result =>
+      simp only [found, bind, Except.bind] at ran
+      cases result with
+      | none =>
+        obtain ⟨member, present, made⟩ := ih ran b inside
+        exact ⟨member, List.mem_cons_of_mem _ present, made⟩
+      | some first =>
+        cases tail : rest.filterMapM f with
+        | error _ => simp [tail] at ran
+        | ok more =>
+          simp only [tail, pure, Except.pure, Except.ok.injEq] at ran
+          subst ran
+          rcases List.mem_cons.mp inside with rfl | later
+          · exact ⟨a, List.mem_cons_self .., found⟩
+          · obtain ⟨member, present, made⟩ := ih tail b later
+            exact ⟨member, List.mem_cons_of_mem _ present, made⟩
+
+/-- Every start `Hooks.startsFired` returns is a root-process start Event: it reads only the starts of
+`Program.children none`, so no start of a called process or inside a Scope begins an instance. -/
+theorem startsFired_root {hooks : Feature.Starts.StartsHooks} {ctx : Ctx} {input : StartInput} {fired : List ElementId}
+    (ran : Feature.Starts.startsFired hooks ctx input = .ok fired) :
+    ∀ id ∈ fired, ∃ element ∈ ctx.program.children none, ∃ header payload,
+      element.start? = some (header, payload) ∧ header.id = id := by
+  have started : ∀ start ∈ (ctx.program.children none).filterMap Element.start?,
+      ∃ element ∈ ctx.program.children none, ∃ header payload,
+        element.start? = some (header, payload) ∧ header.id = start.1.id := fun start inside => by
+    obtain ⟨element, member, typed⟩ := List.mem_filterMap.mp inside
+    exact ⟨element, member, start.1, start.2, typed, rfl⟩
+  have kept : ∀ (starts : List (Header × StartPayload)), (∀ start ∈ starts, start ∈
+      (ctx.program.children none).filterMap Element.start?) → ∀ (fires : Header × StartPayload → Except Failure Bool)
+      (kept : List ElementId), starts.filterMapM (fun start => do
+        pure (if ← fires start then some start.1.id else none)) = .ok kept → ∀ id ∈ kept,
+      ∃ element ∈ ctx.program.children none, ∃ header payload, element.start? = some (header, payload) ∧ header.id = id :=
+    fun starts within fires kept made id inside => by
+      obtain ⟨start, member, chose⟩ := filterMapM_mem made id inside
+      cases fired : fires start with
+      | error _ => simp [fired, bind, Except.bind] at chose
+      | ok fires =>
+        cases fires <;> simp [fired, bind, Except.bind, pure, Except.pure] at chose
+        rw [← chose]
+        exact started start (within start member)
+  unfold Feature.Starts.startsFired at ran
+  split at ran
+  · exact kept _ (fun _ inside => (List.mem_filter.mp inside).1) _ _ ran
+  · cases ran
+    intro id inside
+    obtain ⟨start, member, named⟩ := List.mem_map.mp inside
+    exact named ▸ started start (List.mem_filter.mp member).1
+  · exact kept _ (fun _ inside => inside) _ _ ran
 
 /-! ## The state invariant under Starts' hooks
 

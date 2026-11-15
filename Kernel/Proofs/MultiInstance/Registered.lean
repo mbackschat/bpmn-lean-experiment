@@ -441,7 +441,7 @@ theorem numbered_begin {program : Program} {s : State} {request : BeginRequest} 
     (assigned : role = Step.roleOf program request)
     (origin : Laws.Step.BeginOrigin Composed program s request) (kept : FramedNumbered program s) :
     Numbered program (s.beginOccurrence request role sourceType).1 := by
-  rcases origin with ⟨flows, fresh⟩ | ⟨queue, held, dequeued⟩
+  rcases origin with ⟨flows, fresh, _⟩ | ⟨queue, held, dequeued⟩
   · have other : ∀ body, request.continuation ≠ .multiInstance body := fun body same =>
       Laws.Step.flow_ne_multiInstance body (flows ▸ same)
     exact (kept.2 apart).beginOther formed admitted (fun looping => assigned.trans (roleOf_other other looping)) other
@@ -504,9 +504,9 @@ theorem composed_phases : Laws.Step.Phases Composed :=
         (fun _ _ none => by cases none) holds.2) rfl rfl rfl rfl rfl
     begin := fun _ s request role sourceType holds stands admitted roled bodied assigned origin =>
       have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled bodied assigned
-        (origin.imp_right fun ⟨queue, held, dequeued⟩ => ⟨queue, held.1, dequeued⟩)
+        (origin.mono fun _ held => held.1)
       ⟨⟨begun.1, (runsFramed_stepAlongside _).begin _ s request role sourceType holds.1 stands admitted assigned
-        (origin.imp_right fun ⟨queue, held, dequeued⟩ => ⟨queue, ⟨held.1, held.2.1⟩, dequeued⟩) holds.2.1,
+        (origin.mono fun _ held => ⟨held.1, held.2.1⟩) holds.2.1,
         fun apart => numbered_begin apart holds.1 stands admitted assigned origin holds.2⟩, begun.2⟩
     reserve := fun _ s element scope holds stands pending =>
       have reserved := phases.reserve _ _ element scope holds.1 stands (pending.imp fun _ => And.imp_left And.left)

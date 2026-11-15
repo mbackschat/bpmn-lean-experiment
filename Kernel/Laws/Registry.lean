@@ -65,6 +65,10 @@ theorem hooks_cancelled (ctx : Ctx) (occurrence : Occurrence) (state : State) :
 theorem hooks_delivered : Registry.hooks.delivered = Feature.Subscriptions.delivered := by
   simp only [Registry.hooks]
 
+/-- Starts fires the root starts of every start input. -/
+theorem hooks_startsFired : Registry.hooks.startsFired = Feature.Starts.startsFired Registry.startsHooks := by
+  simp only [Registry.hooks]
+
 /-- Work completes every User Task. -/
 theorem hooks_completeUserTask : Registry.hooks.completeUserTask = Feature.Work.completeUserTask := by
   simp only [Registry.hooks]

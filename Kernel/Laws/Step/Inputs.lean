@@ -54,13 +54,14 @@ theorem step_ok {hooks : Hooks} {program : Program} {before : Option State} {inp
     split at ran
     · simp at ran
     · left
-      obtain ⟨fired, _, ran⟩ := bind_ok ran
-      obtain ⟨start, _, ran⟩ := bind_ok ran
+      obtain ⟨fired, admitted, ran⟩ := bind_ok ran
+      obtain ⟨start, chosen, ran⟩ := bind_ok ran
       obtain ⟨initial, clocked, ran⟩ := bind_ok ran
       obtain ⟨_, _, ran⟩ := bind_ok ran
       obtain ⟨moved, stepped, ran⟩ := bind_ok ran
       obtain ⟨final, settled, made⟩ := orderJournal_ok ran
-      exact ⟨payload, by simp, by simp, ⟨start, initial, moved, final, clocked, stepped, settled, made⟩⟩
+      exact ⟨payload, by simp, by simp, ⟨start, initial, moved, final, clocked, stepped, settled, made, fired, admitted,
+        chosen⟩⟩
   · exact .inr ⟨_, _, .inl ⟨_, rfl⟩, ran⟩
   · refine .inr ⟨_, _, .inr (.inr fun state after transition => ?_), ran⟩
     obtain ⟨⟨item, fired⟩, picked, fire⟩ := bind_ok transition
