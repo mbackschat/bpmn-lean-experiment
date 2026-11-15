@@ -15,6 +15,8 @@ public import Kernel.Proofs.Step.Queue
 public import Kernel.Proofs.Step.Contract
 public import Kernel.Proofs.Cancellation.Registered
 public import Kernel.Proofs.MultiInstance
+public import Kernel.Proofs.Former
+public import Kernel.Proofs.Former.Values
 
 /-! # Proofs: composition over the registered hooks
 
@@ -650,5 +652,31 @@ theorem registered_stopsUncollected : MultiInstance.StopsUncollected Registry.ho
     obtain ⟨slot, inside', open_⟩ := unfilled
     obtain ⟨filled, is⟩ := (writes name value present).2.1 slot inside'
     exact open_ filled is
+
+/-! ## The former lanes
+
+The statements of `Kernel.Proofs.Former` read `Hooks.writeOutputs` or no hook: each holds of every hooks record whose
+`writeOutputs` is Data's, and of every `Laws.Step.StateFacts`. `CalledReadsIsolated` and `FailedSourcesRead` read no
+hook and are proved where they are stated. -/
+
+/-- A write from inside a called instance under the registered hooks changes no frame outside it. -/
+theorem registered_calledWritesIsolated : Former.CalledWritesIsolated Registry.hooks :=
+  Former.calledWritesIsolated Laws.Registry.hooks_writeOutputs
+
+/-- An outward write under the registered hooks lands at the nearest owner within the writer's instance. -/
+theorem registered_outputsAtNearestOwner : Former.OutputsAtNearestOwner Registry.hooks :=
+  Former.outputsAtNearestOwner Laws.Registry.hooks_writeOutputs
+
+/-- An outward write of a Scope's item under the registered hooks lands in its declaring occurrence. -/
+theorem registered_outputsAtDeclaringOccurrence : Former.OutputsAtDeclaringOccurrence Registry.hooks :=
+  Former.outputsAtDeclaringOccurrence Laws.Registry.hooks_writeOutputs
+
+/-- A scope occurrence with a live child, a nested Call's root among them, is never the idle one the closure completes. -/
+theorem stateFacts_nestedCallKeepsRootBusy : Former.NestedCallKeepsRootBusy :=
+  Former.nestedCallKeepsRootBusy Proofs.State.stateFacts
+
+/-- An input carrying a value outside the domain is rejected whole under the registered hooks. -/
+theorem registered_valuesRejectedWhole : Former.ValuesRejectedWhole Registry.hooks :=
+  Former.valuesRejectedWhole Registry.hooks
 
 end Kernel.Proofs.Step
