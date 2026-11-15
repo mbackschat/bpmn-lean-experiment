@@ -592,10 +592,11 @@ theorem searchScopes_stops {ctx : Ctx} {hooks : Feature.Propagation.PropagationH
     {origin : Origin} {state : State} {fuel : Nat} {current : ScopeOccurrenceId} {occurrence : ScopeOccurrence}
     (found : state.scopes.find? (·.id == current) = some occurrence)
     (handler : ctx.scopeRole state occurrence.id = .compensationHandler)
-    (stopping : Feature.Propagation.propagatesFromTrigger ctx = false) :
+    (stopping : ctx.program.options.compensationHandlerFailure ≠ .propagatesFromTrigger) :
     Feature.Propagation.searchScopes hooks ctx raised origin state (fuel + 1) (some current) =
       Feature.Propagation.exhausted hooks ctx raised origin (some occurrence.id) state := by
-  simp [Feature.Propagation.searchScopes, found, handler, stopping]
+  cases option : ctx.program.options.compensationHandlerFailure <;>
+    simp_all [Feature.Propagation.searchScopes, Feature.Propagation.propagatesFromTrigger]
 
 /-- Anywhere else, a compensation handler's context under `propagatesFromTrigger` included, the search offers the scope
 occurrence's candidates, its Event Sub-Processes (`handlerCandidates`) and the boundaries on its element unless it is a

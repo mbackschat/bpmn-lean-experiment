@@ -1,7 +1,6 @@
 module
 
 public import Kernel.Proofs.Compensation
-public import Kernel.Proofs.Frame
 public import Kernel.Laws.Propagation
 public import Kernel.Laws.Compensation
 public import Kernel.Laws.Scopes
@@ -151,7 +150,8 @@ theorem cancelCompensatesFirst_of {hooks : Hooks} {propagation : Feature.Propaga
 theorem handlerFailure_of {hooks : Hooks} {propagation : Feature.Propagation.PropagationHooks}
     (registered : RaiseRegistered hooks propagation) : HandlerFailure hooks := by
   refine ⟨fun ctx handler code message origin state after ran => ?_, fun ctx raised origin state selected => ?_,
-    fun ctx raised origin state after queries _ ran => ?_⟩
+    fun ctx raised origin state after queries _ ran => ?_, fun _ _ _ fails _ _ _ _ _ _ found role =>
+      Laws.Propagation.searchScopes_stops found role (by rw [fails]; nofun)⟩
   · rw [registered.failCompensation] at ran
     obtain ⟨owner, _, _, rest⟩ := Laws.Compensation.failCompensation_spec ran
     obtain ⟨_, first, -, rest⟩ := rest

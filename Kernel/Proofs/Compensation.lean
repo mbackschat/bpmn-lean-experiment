@@ -24,9 +24,9 @@ Model premises: the profile option `compensationHandlerFailure`; the read and wr
 That admission refuses the compensation shapes the kernel does not run (`compensation.*`, `throw.compensation.*`,
 `throw.cancel.*`) stays scenario evidence.
 
-Three P0 statements were false of the kernel and are corrected (root decision D1, 2026-11-15), each docstring naming
-what P0 said, why it was false (P5 design probe `R1`–`R3`) and its citation: `CancelCompensatesFirst`, `TakesOutOnce`
-and `HandlerFailure`. Nothing executable imports this module.
+Four P0 statements were false of the kernel and are corrected (root decisions D1 and D2, 2026-11-15), each docstring
+naming what P0 said, why it was false (P5 design probe `R1`–`R3`, design report on `HandlersInOrder`) and its citation:
+`CancelCompensatesFirst`, `TakesOutOnce`, `HandlerFailure` and `HandlersInOrder`. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -147,6 +147,10 @@ keeps the lane relation, as `Step` calls them (root decision D2, 2026-11-15), an
 `FreshCall`, as every one `Step` performs is (`compensationsFresh`, root decision on the P5 TakesOutOnce stop,
 2026-11-15); `WellFormed` is `TakesOutOnce`'s premise for the same reason. The new run's first advance is
 `TakesOutOnce`'s.
+P0 stated it with no premise on the hook's state. That was false: over an arbitrary state a run untouched by the hook
+may hold a ready pending handler, and two runs may share one scope occurrence and trigger, where `release` and
+`advance` pick the other run (P5 design report); `FreshCall` is taken for the reason `TakesOutOnce` takes it (P5
+report F2). The conclusion is P0's, unchanged.
 `reads` and `writes` name what each subject's run reads and writes; the lane binds them to the kernel's footprint
 `NameSet`s through `Laws.IL.listed` (`Laws.IL.NameSet.meets_iff_listed`, root decision D3, 2026-11-15). -/
 def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
@@ -182,6 +186,17 @@ def PassesHandlerContext (hooks : Hooks) (ctx : Ctx) (raised : Raised) (origin :
       Feature.Propagation.searchScopes propagation ctx raised origin state (fuel + 1) (some current) =
         Feature.Propagation.searchScopes propagation ctx raised origin passed fuel occurrence.parent
 
+/-- How the search `hooks.raise` runs, when it is Propagation's (`Feature.Propagation.raise`) over some `propagation`
+hooks, stops at a scope occurrence `occurrence` that it calls a compensation handler's context: the search is exhausted
+there, naming the context (`Feature.Propagation.exhausted`), and never reaches the context's parent. -/
+def StopsAtHandlerContext (hooks : Hooks) (ctx : Ctx) (raised : Raised) (origin : Origin) : Prop :=
+  ∀ propagation, hooks.raise = Feature.Propagation.raise propagation →
+    ∀ (state : State) (fuel : Nat) (current : ScopeOccurrenceId) (occurrence : ScopeOccurrence),
+      state.scopes.find? (·.id == current) = some occurrence →
+      ctx.scopeRole state occurrence.id = .compensationHandler →
+      Feature.Propagation.searchScopes propagation ctx raised origin state (fuel + 1) (some current) =
+        Feature.Propagation.exhausted propagation ctx raised origin (some occurrence.id) state
+
 /-- The queries a hook's context answers as `Step`'s for `hooks` does (`Step.context`): how a catch trigger catches a
 raised event, an Event Sub-Process's start, and what a scope occurrence is. -/
 def StepQueries (hooks : Hooks) (ctx : Ctx) : Prop :=
@@ -189,7 +204,7 @@ def StepQueries (hooks : Hooks) (ctx : Ctx) : Prop :=
 
 /-- Failure: an Error that leaves a compensation handler's context uncaught fails the instance under
 `CompensationHandlerFailure.failsInstance` (COMPH-FAIL-01) and is searched for on from the context's parent, the
-run's scope occurrence, under `propagatesFromTrigger` (CIB-INT-0038). Three parts:
+run's scope occurrence, under `propagatesFromTrigger` (CIB-INT-0038). Four parts:
 (a) `Hooks.failCompensation`, which `Step` calls for a queued `Signal.compensationFailed`, queues the failed end of the
 instance, naming the run's trigger and the handler, whatever the option;
 (b) under `propagatesFromTrigger` the search `Hooks.raise` runs passes a compensation handler's context
@@ -197,8 +212,11 @@ instance, naming the run's trigger and the handler, whatever the option;
 parent, which for a running context is the run's scope occurrence (`Laws.State.SlotsSettled.runsPlaced`); and the raise
 queues no `compensationFailed`;
 (c) under `failsInstance` every `compensationFailed` a raise queues names a scope occurrence `Step` calls a compensation
-handler's context, a running context of a run.
-Which candidates the context's level offers is open (#159), and none of the three says it is skipped.
+handler's context, a running context of a run;
+(d) under `failsInstance` the search stops at a compensation handler's context (`StopsAtHandlerContext`): it is
+exhausted there, naming the context, and never searches past it (COMPH-FAIL-01).
+Which candidates the context's level offers under `propagatesFromTrigger` is open (#159), and no part says it is
+skipped.
 
 P0 said that under `propagatesFromTrigger` `Hooks.failCompensation` queues no failed end but a raise, and under
 `failsInstance` a failed end. That was false (P5 design probe `R3`): `Compensation.failCompensation` reads no option
@@ -216,11 +234,13 @@ def HandlerFailure (hooks : Hooks) : Prop :=
       ctx.program.options.compensationHandlerFailure = .propagatesFromTrigger →
       PassesHandlerContext hooks ctx raised origin ∧ ∀ after, hooks.raise ctx raised origin state = .ok after → ∃ new, Queues state after new ∧
         ∀ handler code message raisedFrom, Signal.compensationFailed handler code message raisedFrom ∉ new) ∧
-    ∀ (ctx : Ctx) (raised : Raised) (origin : Origin) (state after : State), StepQueries hooks ctx →
+    (∀ (ctx : Ctx) (raised : Raised) (origin : Origin) (state after : State), StepQueries hooks ctx →
       ctx.program.options.compensationHandlerFailure = .failsInstance →
       hooks.raise ctx raised origin state = .ok after → ∃ new, Queues state after new ∧
         ∀ handler code message raisedFrom, Signal.compensationFailed handler code message raisedFrom ∈ new →
-          ctx.scopeRole state handler = .compensationHandler
+          ctx.scopeRole state handler = .compensationHandler) ∧
+    ∀ (ctx : Ctx) (raised : Raised) (origin : Origin),
+      ctx.program.options.compensationHandlerFailure = .failsInstance → StopsAtHandlerContext hooks ctx raised origin
 
 /-! ## Cancel -/
 
