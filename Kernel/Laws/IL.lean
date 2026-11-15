@@ -4,6 +4,7 @@ public import Kernel.IL.Types
 public import Kernel.IL.Footprint
 import all Kernel.IL.Types
 import all Kernel.IL.Types.Options
+import all Kernel.IL.Types.Work
 import all Kernel.IL.Footprint
 
 /-! # Laws of the IL
@@ -101,6 +102,26 @@ theorem start?_gateway (header : Header) (payload : GatewayPayload) : (Element.g
 /-- A start Event is no Activity, so an Activity's item is never a start Event's. -/
 theorem activity?_start (header : Header) (payload : StartPayload) : (Element.start header payload).activity? = none := by
   simp only [Element.activity?]
+
+/-- A Call's work record names its Call, and no other work record names one: `Kernel.Laws.Work`, which owns matching
+on `Work`, reads `Work.call?` by these. -/
+theorem call?_call (work : CallWork) : (Work.call work).call? = some work := by simp only [Work.call?]
+
+theorem call?_none : Work.none.call? = none := by simp only [Work.call?]
+
+theorem call?_manual : Work.manual.call? = none := by simp only [Work.call?]
+
+theorem call?_user (work : UserWork) : (Work.user work).call? = none := by simp only [Work.call?]
+
+theorem call?_receive (work : ReceiveWork) : (Work.receive work).call? = none := by simp only [Work.call?]
+
+theorem call?_service (work : ServiceWork) : (Work.service work).call? = none := by simp only [Work.call?]
+
+theorem call?_send (work : SendWork) : (Work.send work).call? = none := by simp only [Work.call?]
+
+theorem call?_script (work : ScriptWork) : (Work.script work).call? = none := by simp only [Work.call?]
+
+theorem call?_rule (work : RuleWork) : (Work.rule work).call? = none := by simp only [Work.call?]
 
 /-! ## Where a reserved identifier comes from
 

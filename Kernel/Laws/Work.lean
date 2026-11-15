@@ -2,6 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Feature.Work
+import Kernel.Laws.IL
 import all Kernel.Feature.Work
 import all Kernel.Feature.Work.Call
 
@@ -433,5 +434,89 @@ theorem arriveActivity_keeps {inv : State → Prop} {hooks : Feature.Work.WorkHo
     | exact invoke_keeps ops (enterLocal_keeps ops holds member begun).1
         (enterLocal_keeps ops holds member begun).2.1 begun role
         (fun root inside _ => unowned root ((enterLocal_keeps ops holds member begun).2.2 root inside ‹_›)) ran
+
+/-! ## Calls
+
+What a Call's own hooks do, for the former lanes of a called instance (`Kernel.Proofs.Former.Calls`): its arrival holds
+the occurrence or invokes the called instance, and its return queues the completion of the Call occurrence that owns
+the called root. -/
+
+/-- The work record that names a Call is that Call's. -/
+theorem work_call {work : Work} {call : CallWork} (named : work.call? = some call) : work = .call call := by
+  cases work with
+  | call found => rw [Laws.IL.call?_call] at named; rw [Option.some.inj named]
+  | none => rw [Laws.IL.call?_none] at named; cases named
+  | manual => rw [Laws.IL.call?_manual] at named; cases named
+  | user _ => rw [Laws.IL.call?_user] at named; cases named
+  | receive _ => rw [Laws.IL.call?_receive] at named; cases named
+  | service _ => rw [Laws.IL.call?_service] at named; cases named
+  | send _ => rw [Laws.IL.call?_send] at named; cases named
+  | script _ => rw [Laws.IL.call?_script] at named; cases named
+  | rule _ => rw [Laws.IL.call?_rule] at named; cases named
+
+/-- A Call's mappings copied are the mappings evaluated, all available. -/
+theorem copy_ok {ctx : Ctx} {unavailable : String} {context : EvalContext} {mappings : List Mapping}
+    {bindings : List (String × Value)} (copied : Feature.Work.Call.copy ctx unavailable context mappings = .ok bindings) :
+    ctx.evaluateMappings context mappings = .ok (some bindings) := by
+  unfold Feature.Work.Call.copy at copied
+  simp only [bind, Except.bind] at copied
+  split at copied
+  · cases copied
+  · rename_i evaluated
+    split at copied
+    · cases copied
+      exact evaluated
+    · cases copied
+
+/-- An arrival at a Call holds its occurrence while its InputSet is unavailable, or enters the Activity's inputs as its
+own scope occurrence (`Feature.Work.enterLocal`) and invokes the called instance: it enters the called root with the
+Call's inputs evaluated against what the Call's scope occurrence then sees, arms the Call's boundaries or not, and
+queues the root's Event Sub-Process arming and its none start's begin. -/
+theorem arriveActivity_call {hooks : Feature.Work.WorkHooks} {ctx : Ctx} {header : Header} {payload : ActivityPayload}
+    {work : CallWork} {occurrence : Occurrence} {state after : State} (called : payload.work.call? = some work)
+    (ran : Feature.Work.arriveActivity hooks ctx header payload occurrence state = .ok after) :
+    (∃ held, after = state.hold held) ∨
+      ∃ inputs entered installed definition start, entered = Feature.Work.enterLocal header inputs occurrence state ∧
+        ctx.evaluateMappings (entered.evalContext ctx.program occurrence.scope) work.inputs = .ok (some installed) ∧
+        ∃ armed, (armed = (entered.enterCalled ctx.program occurrence installed definition).1 ∨
+            armed = (entered.enterCalled ctx.program occurrence installed definition).1.signal
+              (.arm occurrence.id header.id occurrence.scope)) ∧
+          after = (armed.signal (.armScope (entered.enterCalled ctx.program occurrence installed definition).2)).signal
+            (.begin { element := start, scope := (entered.enterCalled ctx.program occurrence installed definition).2 })
+    := by
+  unfold Feature.Work.arriveActivity at ran
+  simp only [work_call called, bind, Except.bind] at ran
+  split at ran
+  · cases ran
+  · split at ran
+    · split at ran
+      · cases ran
+      · rename_i inputs _ _
+        refine .inr ⟨inputs, Feature.Work.enterLocal header inputs occurrence state, ?_⟩
+        unfold Feature.Work.Call.invoke at ran
+        simp only [bind, Except.bind] at ran
+        repeat' split at ran
+        all_goals first | (cases ran; done) | skip
+        all_goals cases ran
+        · exact ⟨_, _, _, rfl, copy_ok (by assumption), _, .inl rfl, rfl⟩
+        · exact ⟨_, _, _, rfl, copy_ok (by assumption), _, .inr rfl, rfl⟩
+    · cases ran
+      exact .inl ⟨_, rfl⟩
+
+/-- A return from a called instance queues only the completion of the Call occurrence `owner`, writing the Call's
+outputs outward, and changes nothing else. -/
+theorem completeCall_queues {ctx : Ctx} {header : Header} {payload : ActivityPayload} {root : ScopeOccurrence}
+    {owner : Occurrence} {state after : State}
+    (ran : Feature.Work.completeCall ctx header payload root owner state = .ok after) :
+    ∃ outputs, after = state.signal (.complete owner.id .outgoing outputs .outward) := by
+  unfold Feature.Work.completeCall at ran
+  split at ran
+  · unfold Feature.Work.Call.returnFromCall at ran
+    simp only [bind, Except.bind] at ran
+    split at ran
+    · cases ran
+    · cases ran
+      exact ⟨_, rfl⟩
+  all_goals cases ran
 
 end Kernel.Laws.Work
