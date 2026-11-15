@@ -1,0 +1,364 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "error-multi-instance-parallel-subprocess-handler-rethrows",
+    "sha256": "2269a98e03ba1ed08cfec768c27de158ba4610f1bf0b0659351373bd8d60135b"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "bebb41a73dccc8f7cea020423212ce40a02a20c6ab1ade5929eb73159855ed58"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-pack-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-inspect-damage-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-pack-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-resolve-damage-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "Pack",
+            "name": "Pack the parcel"
+          },
+          {
+            "elementId": "Pack",
+            "name": "Pack the parcel"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-pack-1",
+        "tasks": [
+          {
+            "elementId": "InspectDamage",
+            "name": "Inspect the damage"
+          },
+          {
+            "elementId": "Pack",
+            "name": "Pack the parcel"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-inspect-damage-1",
+        "tasks": [
+          {
+            "elementId": "ResolveDamage",
+            "name": "Resolve the damaged shipment"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-pack-2",
+        "tasks": [
+          {
+            "elementId": "ResolveDamage",
+            "name": "Resolve the damaged shipment"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-resolve-damage-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-pack-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-inspect-damage-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-pack-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-resolve-damage-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-pack-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-inspect-damage-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-pack-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-resolve-damage-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Pack",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pack the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Pack",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pack the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-pack-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "InspectDamage",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect the damage",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Pack",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pack the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-inspect-damage-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ResolveDamage",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Resolve the damaged shipment",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-pack-2",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ResolveDamage",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Resolve the damaged shipment",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-resolve-damage-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}
