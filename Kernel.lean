@@ -108,6 +108,7 @@ public import Kernel.Population.Timers
 public import Kernel.Proofs.Cancellation
 public import Kernel.Proofs.Cancellation.Registered
 public import Kernel.Proofs.Compensation
+public import Kernel.Proofs.Compensation.Raise
 public import Kernel.Proofs.Concurrency
 public import Kernel.Proofs.Former
 public import Kernel.Proofs.Frame

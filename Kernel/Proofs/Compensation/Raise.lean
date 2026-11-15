@@ -1,0 +1,188 @@
+module
+
+public import Kernel.Proofs.Compensation
+public import Kernel.Proofs.Frame
+public import Kernel.Laws.Propagation
+public import Kernel.Laws.Compensation
+public import Kernel.Laws.Scopes
+public import Kernel.Laws.Step.Signals
+
+/-! # Proofs of the Compensation lane: the Cancel and failure statements
+
+`CancelCompensatesFirst` and `HandlerFailure` for any hooks record that registers Propagation's arrival, raise and
+Compensation's failure, over search hooks whose Call output pass and catcher writes change only variables, whose
+Error-path leave queues only completions and whose drop queues nothing (`RaiseRegistered`). The registry's record is one
+such; which of its fields the record reads is `Kernel.Laws.Registry`'s to state, so the module that reads that registry
+discharges `RaiseRegistered` and nothing here imports it. Nothing executable imports this module.
+-/
+
+public section
+
+namespace Kernel.Proofs.Compensation
+
+open Kernel
+open Kernel.Laws.State (Queues)
+
+/-- What `hooks` registers for a raise: Propagation's arrival at a throw and search over `propagation`, Compensation's
+handler failure, Scopes' Event Sub-Process start, a Cancel caught only by a Cancel trigger, and search hooks that keep
+what a Cancel raise's statement reads. -/
+structure RaiseRegistered (hooks : Hooks) (propagation : Feature.Propagation.PropagationHooks) : Prop where
+  arriveThrow : hooks.arriveThrow = Feature.Propagation.arriveThrow
+  raise : hooks.raise = Feature.Propagation.raise propagation
+  failCompensation : hooks.failCompensation = Feature.Compensation.failCompensation
+  eventStart : hooks.eventStart = Feature.Scopes.eventStart
+  cancelCatches : ∀ trigger, (hooks.catches .cancel trigger).isSome = true → trigger = .cancel
+  /-- A Call output pass is `Steady` and writes only variables. -/
+  callOutputs : ∀ ctx root state after, propagation.callOutputs ctx root state = .ok after →
+    Laws.State.Steady state after ∧ after.tokens = state.tokens ∧ after.signals = state.signals ∧
+      after.slots = state.slots
+  writeCaught : ∀ ctx scope writes state after, propagation.writeCaught ctx scope writes state = .ok after →
+    after.signals = state.signals
+  mappedErrorOutputs : ∀ ctx origin installed state after,
+    propagation.mappedErrorOutputs ctx origin installed state = .ok after →
+      Laws.Propagation.Appends (fun signal => ∃ id leave writes rule, signal = .complete id leave writes rule) state after
+  dropRuns : ∀ ctx scope state, (propagation.dropRuns ctx scope state).signals = state.signals
+
+/-- The state operations' facts a raise's search reads. -/
+theorem raiseFacts : Laws.Propagation.RaiseFacts where
+  signal state signal := by rw [Laws.State.signal_eq]
+  cleared state scope := Laws.State.clearInside_signals state scope _
+  disarmed state host := by rw [Laws.State.disarm_eq]
+  cancel := Laws.State.isCancel_cancel
+
+/-- A signal other than a compensation handler's failure. -/
+def NotHandlerFailure (signal : Signal) : Prop :=
+  ∀ handler code message origin, signal ≠ .compensationFailed handler code message origin
+
+/-- A raise's own steps queue no compensation handler's failure. -/
+theorem notHandlerFailure_steps : Laws.Propagation.QuietSteps NotHandlerFailure where
+  complete _ _ _ _ _ _ _ _ := Laws.Step.compensationFailed_apart.1 _ _ _ _
+  begin _ _ _ _ _ := Laws.Step.compensationFailed_apart.2.1 _
+  cancel _ _ _ _ _ := Laws.Step.compensationFailed_apart.2.2.1 _
+  occur _ _ _ _ _ _ _ _ _ := Laws.Step.compensationFailed_apart.2.2.2.1 _ _ _ _ _
+  write _ _ _ _ _ _ _ := Laws.Step.compensationFailed_apart.2.2.2.2.1 _ _ _
+  fail _ _ _ _ _ := Laws.Step.compensationFailed_apart.2.2.2.2.2.1 _ _
+  compensate _ _ _ _ _ _ _ _ _ := Laws.Step.compensationFailed_apart.2.2.2.2.2.2 _ _ _ _ _
+
+/-- The registered search hooks queue no compensation handler's failure. -/
+theorem notHandlerFailure_hooks {hooks : Hooks} {propagation : Feature.Propagation.PropagationHooks}
+    (registered : RaiseRegistered hooks propagation) (ctx : Ctx) :
+    Laws.Propagation.QuietHooks ctx NotHandlerFailure propagation where
+  mappedErrorOutputs origin installed state after ran :=
+    (registered.mappedErrorOutputs ctx origin installed state after ran).mono fun _ completes => by
+      obtain ⟨id, leave, writes, completion⟩ := completes
+      obtain ⟨rule, named⟩ := completion
+      exact named ▸ notHandlerFailure_steps.complete id leave writes rule
+  writeCaught scope writes state after ran := .same (registered.writeCaught ctx scope writes state after ran)
+  callOutputs root state after ran := .same (registered.callOutputs ctx root state after ran).2.2.1
+  dropRuns := registered.dropRuns ctx
+
+/-- Under `CancelCatchers` and the Step context, no Event Sub-Process a scope occurrence declares starts on a trigger
+that catches a Cancel. -/
+theorem noCancelStart_of {hooks : Hooks} {propagation : Feature.Propagation.PropagationHooks} {ctx : Ctx}
+    (registered : RaiseRegistered hooks propagation) (queries : StepQueries hooks ctx)
+    (catchers : CancelCatchers ctx.program) : Laws.Propagation.NoCancelStart ctx := by
+  intro state scope child member header payload start interrupting shaped started
+  rw [queries.2.1, registered.eventStart] at started
+  rw [queries.1]
+  cases caught : hooks.catches .cancel start.trigger with
+  | none => rfl
+  | some _ =>
+    have cancel := registered.cancelCatches start.trigger (by simp [caught])
+    have declared : child ∈ ctx.program.elements := by
+      rcases Laws.State.childrenOf_mem member with ⟨_, _, inside⟩ | ⟨_, inside⟩
+      · exact Laws.IL.mem_processChildren inside
+      · exact Laws.IL.mem_children inside
+    have kind := Laws.Scopes.eventStart_kind started
+    refine absurd cancel (catchers.1 child declared header payload start shaped ?_)
+    rw [kind]
+    exact Laws.IL.start?_eventSubProcess _ _
+
+/-- Under `CancelCatchers` and the Step context, a boundary that catches a Cancel is an interrupting Cancel boundary of
+a Transaction. -/
+theorem cancelBoundary_of {hooks : Hooks} {propagation : Feature.Propagation.PropagationHooks} {ctx : Ctx}
+    {occurrence : ScopeOccurrence} {boundary : Boundary} (registered : RaiseRegistered hooks propagation)
+    (queries : StepQueries hooks ctx) (catchers : CancelCatchers ctx.program)
+    (caught : Laws.Propagation.CancelCatch ctx occurrence boundary) :
+    CancelBoundary ctx.program boundary.id (.flows boundary.outgoing) := by
+  obtain ⟨element, -, envelope, held⟩ := caught
+  obtain ⟨found, inside, catching⟩ := held
+  obtain ⟨host, located, enveloped⟩ := Option.bind_eq_some_iff.mp found
+  have declared := Laws.IL.element?_mem located
+  rw [queries.1] at catching
+  have cancel := registered.cancelCatches _ catching
+  obtain ⟨interrupting, transaction⟩ := catchers.2 host declared envelope enveloped boundary inside cancel
+  exact ⟨host, declared, transaction, envelope, enveloped, boundary, inside, rfl, cancel, interrupting, rfl⟩
+
+/-- Cancel propagation holds of every hooks record that registers a raise (`RaiseRegistered`). -/
+theorem cancelCompensatesFirst_of {hooks : Hooks} {propagation : Feature.Propagation.PropagationHooks}
+    (registered : RaiseRegistered hooks propagation) : CancelCompensatesFirst hooks := by
+  refine ⟨fun ctx header payload occurrence state after ran => ?_, fun ctx origin state after queries catchers hostless
+    ran => ?_⟩
+  · rw [registered.arriveThrow, Laws.Propagation.arriveThrow_cancel] at ran
+    cases ran
+    refine ⟨by simp only [Laws.State.signal_eq], Feature.Propagation.throwLeave payload,
+      { element := header.id, scope := occurrence.scope, activation := occurrence.activation }, ?_, rfl, rfl, rfl, rfl⟩
+    simp only [Queues, Laws.State.signal_eq, List.append_assoc]
+  · rw [registered.raise] at ran
+    obtain ⟨passed, steady, kept, taken⟩ := Laws.Propagation.raise_cancel
+      (motive := fun s => s.tokens = state.tokens ∧ s.signals = state.signals) raiseFacts
+      (fun root s next pass => have frame := registered.callOutputs ctx root s next pass
+        ⟨frame.1, fun held => ⟨frame.2.1.trans held.1, frame.2.2.1.trans held.2⟩⟩)
+      (noCancelStart_of registered queries catchers) ⟨rfl, rfl⟩ hostless ran
+    obtain ⟨occurrence, -, parent, rest⟩ := taken
+    obtain ⟨boundary, -, caught, rest⟩ := rest
+    obtain ⟨rolledBack, terminating, -, rest⟩ := rest
+    obtain ⟨terminated, made⟩ := rest
+    subst made
+    have frame : terminating.tokens = passed.tokens ∧ terminating.signals = passed.signals := by
+      rcases terminated with same | ⟨_, _, disarmed⟩
+      · exact same ▸ ⟨rfl, rfl⟩
+      · rw [disarmed, Laws.State.disarm_eq]
+        exact ⟨rfl, rfl⟩
+    refine ⟨fun token member => ?_, rolledBack, occurrence.occurrence, boundary.id, parent, .flows boundary.outgoing, ?_,
+      cancelBoundary_of registered queries catchers caught⟩
+    · rw [Laws.State.signal_eq] at member
+      have cleared := (Laws.State.clearInside_tokens terminating rolledBack _).subset member
+      rwa [frame.1, kept.1] at cleared
+    · simp only [Queues, Laws.State.signal_eq, Laws.State.clearInside_signals, frame.2, kept.2, steady.instances]
+
+/-- Failure holds of every hooks record that registers a raise (`RaiseRegistered`). -/
+theorem handlerFailure_of {hooks : Hooks} {propagation : Feature.Propagation.PropagationHooks}
+    (registered : RaiseRegistered hooks propagation) : HandlerFailure hooks := by
+  refine ⟨fun ctx handler code message origin state after ran => ?_, fun ctx raised origin state selected => ?_,
+    fun ctx raised origin state after queries _ ran => ?_⟩
+  · rw [registered.failCompensation] at ran
+    obtain ⟨owner, _, _, rest⟩ := Laws.Compensation.failCompensation_spec ran
+    obtain ⟨_, first, -, rest⟩ := rest
+    obtain ⟨-, -, made⟩ := rest
+    subst made
+    rw [Laws.State.signal_eq]
+    exact ⟨_, owner, rfl, rfl, rfl, first.mem, first.1, by simp, _, List.mem_cons_of_mem _ (List.mem_singleton.mpr rfl)⟩
+  · refine ⟨fun _ _ _ _ _ _ _ _ found _ offered unhandled unbounded pass =>
+      Laws.Propagation.searchScopes_onward found (fun _ => Laws.Propagation.propagatesFromTrigger_selected selected)
+        offered unhandled (fun element _ named _ _ => unbounded element named) pass, fun after ran => ?_⟩
+    rw [registered.raise] at ran
+    obtain ⟨new, made, queued⟩ := Laws.Propagation.raise_queues (motive := fun _ => True) raiseFacts
+      notHandlerFailure_steps (notHandlerFailure_hooks registered ctx)
+      (fun root s next pass => ⟨(registered.callOutputs ctx root s next pass).1, fun _ => trivial⟩) trivial ran
+    refine ⟨new, made, fun handler code message raisedFrom member => ?_⟩
+    rcases queued _ member with quiet | ⟨stopping, -⟩
+    · exact quiet handler code message raisedFrom rfl
+    · rw [Laws.Propagation.propagatesFromTrigger_selected selected] at stopping
+      cases stopping
+  · rw [registered.raise] at ran
+    obtain ⟨new, made, queued⟩ := Laws.Propagation.raise_queues (motive := fun s => s.slots = state.slots) raiseFacts
+      notHandlerFailure_steps (notHandlerFailure_hooks registered ctx)
+      (fun root s next pass => have frame := registered.callOutputs ctx root s next pass
+        ⟨frame.1, fun held => frame.2.2.2.trans held⟩) rfl ran
+    refine ⟨new, made, fun handler code message raisedFrom member => ?_⟩
+    rcases queued _ member with quiet | ⟨-, stoppedAt⟩
+    · exact (quiet handler code message raisedFrom rfl).elim
+    · obtain ⟨named, ⟨code', message', same⟩, stopped, rest⟩ := stoppedAt
+      obtain ⟨slots, role⟩ := rest
+      obtain rfl := Laws.Step.compensationFailed_handler same
+      rw [queries.2.2, Laws.Step.scopeRole_handler] at role ⊢
+      rwa [slots] at role
+
+end Kernel.Proofs.Compensation
