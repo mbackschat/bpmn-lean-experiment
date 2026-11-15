@@ -23,10 +23,12 @@ def conditionalStarts (registry : List Deployment) (scope : Option Deployment) :
         (deployment, header, (deployment.program.publicId header.id).value)
 
 /-- Whether the Conditional root start `input` names in `program` holds, or the failure of its predicate: the start
-step's own predicate (`Hooks.startsFired`) over the start's own input, so a caller passes the exact input it then starts
-the instance with, its identity, business key, logical time and submitted variables alone included (CIB-EXT-0044). -/
+step's own admission and predicate (`Step.admittedStartsFired`) over the start's own input, so a caller passes the exact
+input it then starts the instance with, its identity, business key, logical time and submitted variables alone included
+(CIB-EXT-0044). A submitted value outside the domain fails every start `value-outside-domain` before its predicate
+reads it, whether or not the predicate would hold. -/
 def conditionalStartVerdict (hooks : Hooks) (program : Program) (input : StartInput) : Except Failure Bool :=
-  match hooks.startsFired (Step.context hooks program) input with
+  match Step.admittedStartsFired hooks (Step.context hooks program) input with
   | .ok [] => .ok false
   | .ok (_ :: _) => .ok true
   | .error failure => .error failure

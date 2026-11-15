@@ -246,8 +246,7 @@ theorem step_eq {hooks : Hooks} {program : Program} {before : Option State} {inp
         match before with
         | some _ => .error (.rejected "instance-already-started")
         | none => do
-          let start ← chooseStart payload.startEvent (← hooks.startsFired ctx payload)
-          admitValues (payload.variables.map (·.2))
+          let start ← chooseStart payload.startEvent (← admittedStartsFired hooks ctx payload)
           let initial ← advanceClock payload.atMs
             ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root))
           admitChoices hooks ctx

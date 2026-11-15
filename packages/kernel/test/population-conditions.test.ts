@@ -82,6 +82,20 @@ test("a start whose predicate fails is its own failed entry and leaves the other
   assert.equal((result.processStates as Json[]).length, 1);
 });
 
+test("a value outside the domain fails every start before its predicate reads it, holding or not", () => {
+  const program = processModel("Orders", [["Large", condition("amount")], ["Flagged", condition("flag", false)]]);
+  const variables = [...amount(10), { name: "flag", value: integer(-1) }];
+  const outside = { outcome: "rejected", code: "value-outside-domain" };
+  assert.deepEqual(fixture("conditionalStartVerdict", [program],
+    { instanceId: "I", startEvent: "Flagged", variables, businessKey: null, atMs: 5_000 }), outside);
+  const result = populate([program], [evaluate("c1", variables)]);
+  assert.deepEqual(resolutions(result), [fanOut(
+    { kind: "failed", target: startTarget(1, "Large"), ...outside },
+    { kind: "failed", target: startTarget(1, "Flagged"), ...outside },
+  )]);
+  assert.deepEqual(result.processStates, []);
+});
+
 test("an explicit order is followed when it names each start once and rejected otherwise", () => {
   const programs = [processModel("Orders", [["Large", condition("amount")]]), processModel("Audit", [["Big", condition("amount")]])];
   const reversed = [startTarget(2, "Big"), startTarget(1, "Large")];

@@ -178,6 +178,16 @@ test("a named Conditional input evaluates only the start it names", () => {
     { tag: "rolledBack", code: "condition-not-boolean" });
 });
 
+test("a Conditional start input with a value outside the domain is rejected whole before its predicate reads it", () => {
+  const outside = { tag: "rejected", code: "value-outside-domain" };
+  const condition = { kind: "condition" };
+  const flagged = startingOn({ condition: { payload: { condition: juel({ identifier: { name: "expedite" } }), variableName: null, variableEvents: [] } } },
+    conditional);
+  assert.deepEqual(rejected(run(flagged, null, startWith(condition, [{ name: "expedite", value: integer(-1) }]))), outside);
+  const unread = [{ name: "amount", value: integer(10) }, { name: "note", value: integer(-1) }];
+  assert.deepEqual(rejected(run(startingOn(largeOrder(), conditional), null, startWith(condition, unread))), outside);
+});
+
 test("a Signal root start fires on its Signal's QName under the identifier reading, never on a name", () => {
   const program = startingOn(signal());
   assert.ok(committed(run(program, null, startWith({ kind: "signal", signalRef: { id: "Sig" }, variables: [] }))));

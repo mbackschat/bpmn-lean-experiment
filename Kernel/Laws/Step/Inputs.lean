@@ -56,7 +56,6 @@ theorem step_ok {hooks : Hooks} {program : Program} {before : Option State} {inp
     · left
       obtain ⟨fired, _, ran⟩ := bind_ok ran
       obtain ⟨start, _, ran⟩ := bind_ok ran
-      obtain ⟨_, _, ran⟩ := bind_ok ran
       obtain ⟨initial, clocked, ran⟩ := bind_ok ran
       obtain ⟨_, _, ran⟩ := bind_ok ran
       obtain ⟨moved, stepped, ran⟩ := bind_ok ran

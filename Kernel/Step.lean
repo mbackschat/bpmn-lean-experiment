@@ -435,6 +435,15 @@ def scopeRole (state : State) (scope : ScopeOccurrenceId) : ScopeRole :=
 def context (hooks : Hooks) (program : Program) : Ctx :=
   { program, evaluate := hooks.evaluate, catches := hooks.catches, eventStart := hooks.eventStart, scopeRole }
 
+/-- The root starts a start input fires (`Hooks.startsFired`), its submitted values admitted first: values are admitted
+before any transition reads them, and a Conditional start's predicate reads the submitted variables
+(`Feature.Subscriptions.conditionHolds`), so a value outside the domain rejects the input whole as
+`value-outside-domain` (PBV-BOUND-01) before any start's trigger is asked, whatever the start choice would answer. The
+start step and a population's Conditional start evaluation (`Population.conditionalStartVerdict`) both fire starts
+through it. -/
+def admittedStartsFired (hooks : Hooks) (ctx : Ctx) (input : StartInput) : Except Failure (List ElementId) :=
+  admitValues (input.variables.map (·.2)) *> hooks.startsFired ctx input
+
 /-- One input. `none` is the state before the instance starts; only a start applies to it. The root's Event
 Sub-Process starts are armed before the start Event's tokens move. Every hook of the input's closure reads its
 ranking of competing Conditional items. -/
@@ -445,8 +454,7 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
     match before with
     | some _ => .error (.rejected "instance-already-started")
     | none => do
-      let start ← chooseStart payload.startEvent (← hooks.startsFired ctx payload)
-      admitValues (payload.variables.map (·.2))
+      let start ← chooseStart payload.startEvent (← admittedStartsFired hooks ctx payload)
       let initial ← advanceClock payload.atMs
         ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root))
       admitChoices hooks ctx

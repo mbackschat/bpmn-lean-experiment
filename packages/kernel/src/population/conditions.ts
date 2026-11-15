@@ -7,7 +7,7 @@
 import { assertNever, elementStart, programChildren, programPublicId, triggerCondition, type Header, type Program } from "../il/types.js";
 import type { Hooks } from "../hooks.js";
 import { StartTriggerTag, type Result, type StartInput } from "../state.js";
-import { context } from "../step.js";
+import { admittedStartsFired, context } from "../step.js";
 import {
   FanOutEntryTag,
   PendingTag,
@@ -55,11 +55,13 @@ export type ConditionalStartVerdict = Result<boolean>;
 
 /**
  * Whether the Conditional root start `input` names in `program` holds, or the failure of its predicate: the start step's
- * own predicate (`Hooks.startsFired`) over the start's own input, so a caller passes the exact input it then starts the
- * instance with, its identity, business key, logical time and submitted variables alone included (CIB-EXT-0044).
+ * own admission and predicate (`admittedStartsFired`) over the start's own input, so a caller passes the exact input it
+ * then starts the instance with, its identity, business key, logical time and submitted variables alone included
+ * (CIB-EXT-0044). A submitted value outside the domain fails every start `value-outside-domain` before its predicate
+ * reads it, whether or not the predicate would hold.
  */
 export function conditionalStartVerdict(hooks: Hooks, program: Program, input: StartInput): ConditionalStartVerdict {
-  const fired = hooks.startsFired(context(hooks, program), input);
+  const fired = admittedStartsFired(hooks, context(hooks, program), input);
   return fired.ok ? { ok: true, value: fired.value.length > 0 } : fired;
 }
 

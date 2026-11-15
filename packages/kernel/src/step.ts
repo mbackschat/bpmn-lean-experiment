@@ -31,8 +31,8 @@ import {
   keyOf, occurrenceOf, ownScope, recordEnd, reserve, root, signal as enqueue, startReserved, type BeginRequest,
   type Binding, type Cause, type CommandInput, type EffectInput, type Fired, type IncidentDetail, type Input,
   type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceRef, type OpenItem, type Outcome,
-  type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartTrigger, type State, type Token,
-  type Transition,
+  type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartInput, type StartTrigger, type State,
+  type Token, type Transition,
 } from "./state.js";
 import {
   ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemDetailOf, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
@@ -576,6 +576,17 @@ export function context(hooks: Hooks, program: Program): Ctx {
 }
 
 /**
+ * The root starts a start input fires (`Hooks.startsFired`), its submitted values admitted first: values are admitted
+ * before any transition reads them, and a Conditional start's predicate reads the submitted variables
+ * (`Subscriptions.conditionHolds`), so a value outside the domain rejects the input whole as `value-outside-domain`
+ * (PBV-BOUND-01) before any start's trigger is asked, whatever the start choice would answer. The start step and a
+ * population's Conditional start evaluation (`conditionalStartVerdict`) both fire starts through it.
+ */
+export function admittedStartsFired(hooks: Hooks, ctx: Ctx, input: StartInput): Result<readonly ElementId[]> {
+  return admitThen(input.variables.map(([, value]) => value), () => hooks.startsFired(ctx, input));
+}
+
+/**
  * One input. `null` is the state before the instance starts; only a start applies to it. The root's Event Sub-Process
  * starts are armed before the start Event's tokens move. Every hook of the input's closure reads its ranking of
  * competing Conditional items.
@@ -586,10 +597,10 @@ export function step(hooks: Hooks, program: Program, before: State | null, input
     case InputTag.Start: {
       const payload = input.payload;
       if (before !== null) return failed(FailureTag.Rejected, "instance-already-started");
-      const fired = hooks.startsFired(ctx, payload);
+      const fired = admittedStartsFired(hooks, ctx, payload);
       const start = fired.ok ? chooseStart(payload.startEvent, fired.value) : failedWith<ElementId>(fired.failure);
       if (!start.ok) return start;
-      const fresh = admitThen(payload.variables.map(([, value]) => value), () => advanceClock(payload.atMs, enqueue(initial(payload.instanceId, payload.variables, payload.businessKey), { tag: SignalTag.ArmScope, scope: root })));
+      const fresh = advanceClock(payload.atMs, enqueue(initial(payload.instanceId, payload.variables, payload.businessKey), { tag: SignalTag.ArmScope, scope: root }));
       if (!fresh.ok) return fresh;
       const started = admitChoicesThen(hooks, ctx, () => microStep(hooks, ctx, { tag: CauseTag.Input, input: InputTag.Start }, start.value, root,
         (state) => begin(hooks, ctx, beginRequest({ element: start.value, scope: root, trigger: payload.trigger }), state), fresh.value));
