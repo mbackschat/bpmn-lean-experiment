@@ -3,6 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.Laws.State.Invariant
 public import Kernel.Laws.Hooks
+public import Kernel.Laws.Except
 public import Kernel.Laws.Step.Contract
 public import Kernel.Laws.Subscriptions.Rules
 public import Kernel.Laws.Subscriptions.Timers
@@ -114,12 +115,6 @@ structure SubscriptionsOps (program : Program) (inv : State → Prop) : Prop whe
   /-- An Event Sub-Process begun without a reservation in the item's scope occurrence. -/
   bareBegin : ∀ state item element locals, inv state → item ∈ state.openItems →
     inv (state.signal (.begin { element, scope := item.scope, locals }))
-
-private theorem ok_bind {α β ε : Type} {x : Except ε α} {f : α → Except ε β} {b : β} (ran : (x >>= f) = .ok b) :
-    ∃ a, x = .ok a ∧ f a = .ok b := by
-  cases x with
-  | error failure => exact absurd ran (by simp [bind, Except.bind])
-  | ok a => exact ⟨a, by simp, by simpa [bind, Except.bind] using ran⟩
 
 /-- A monadic left fold in `Except` keeps what each step keeps of the items folded. -/
 private theorem foldlM_holds {α β : Type} {holds : β → Prop} {f : β → α → Except Failure β} :

@@ -57,6 +57,7 @@ public import Kernel.Laws.Correlation
 public import Kernel.Laws.Data
 public import Kernel.Laws.Data.Values
 public import Kernel.Laws.Decision
+public import Kernel.Laws.Except
 public import Kernel.Laws.Flow
 public import Kernel.Laws.Flow.Concurrent
 public import Kernel.Laws.Flow.Sources

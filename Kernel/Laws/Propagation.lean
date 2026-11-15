@@ -2,6 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Laws.Hooks
+public import Kernel.Laws.Except
 public import Kernel.Laws.Propagation.Rules
 public import Kernel.Feature.Propagation
 import all Kernel.Feature.Propagation
@@ -96,18 +97,6 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
   | cancel => cases ran; rw [named]; exact ops.raise _ _ _ complete left begun ⟨state, begunFrom, .inr ⟨_, rfl⟩⟩
 
 /-! ### The search -/
-
-private theorem ok_bind {α β ε : Type} {x : Except ε α} {f : α → Except ε β} {b : β} (ran : (x >>= f) = .ok b) :
-    ∃ a, x = .ok a ∧ f a = .ok b := by
-  cases x with
-  | error failure => exact absurd ran (by simp [bind, Except.bind])
-  | ok a => exact ⟨a, by simp, by simpa [bind, Except.bind] using ran⟩
-
-private theorem ok_map {α β ε : Type} {x : Except ε α} {f : α → β} {b : β} (ran : x.map f = .ok b) :
-    ∃ a, x = .ok a ∧ b = f a := by
-  cases x with
-  | error failure => simp [Except.map] at ran
-  | ok a => exact ⟨a, rfl, (Except.ok.inj ran).symm⟩
 
 /-- The candidate `Propagation.best?` picks is one of the candidates. -/
 theorem best?_mem {α : Type} {ctx : Ctx} {raised : Raised} {trigger : α → Trigger} {candidates : List α}
