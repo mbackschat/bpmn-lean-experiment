@@ -195,7 +195,7 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : Phases inv) (
   | onWrite stands ran => exact (contract.writeOutputs _ _ _ _ _ _ popped stands ran).1
   | onRemove stands ran => exact contract.removeVariables _ _ _ _ _ popped stands ran
   | onOccur stands ran =>
-    obtain ⟨reserved, free⟩ := phases.reserve _ _ _ _ popped stands
+    obtain ⟨reserved, free⟩ := phases.reserve _ _ _ _ popped stands ⟨queue, holds, .inl ⟨_, _, _, _, head⟩⟩
     exact pipeline _ _ _ _ _ _ _ reserved free ran
   | onCancel => exact phases.cancel _ _ _ popped
   | onFire fired =>
@@ -205,7 +205,7 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : Phases inv) (
   | onEndInstance => exact phases.endInstance _ _ _ _ popped (phases.endRecorded _ queue _ _ holds head)
   | onCompensate stands ran =>
     exact contract.compensate _ _ _ _ _ _ _ _ popped stands (fun _ same => phases.resumable _ _ _ _ _ _ _ _ holds
-      (same ▸ heads)) ran
+      (same ▸ heads)) (fun _ _ _ same => ⟨queue, holds, .inr (.inl ⟨_, _, _, _, _, _, same ▸ head⟩)⟩) ran
   | onCompensationFailed stands ran => exact contract.failCompensation _ _ _ _ _ _ _ popped stands ran
 
 theorem completeIdleScope_keeps (contract : HookContract hooks inv) (facts : StateFacts) {ctx : Ctx}
@@ -341,14 +341,13 @@ theorem settle_keeps (contract : HookContract hooks inv) (phases : Phases inv) (
       inv ctx.program after :=
   settle_induction (inv ctx.program) fun _ _ holds step => closureStep_keeps contract phases facts pipeline holds step
 
-/-- `Step.step` on a running instance keeps `inv` of the program it runs for hooks that keep their contract, from a
-before-state that keeps it, when the input's reset keeps it: an input starts from an empty journal, outbox, draft and
-write log. A start never runs here, so `inv` need not hold of a fresh instance. -/
+/-- `Step.step` on a running instance keeps `inv` of the program it runs for hooks that keep their contract, when the
+input's start keeps it: the before-state with an empty journal, outbox, draft and write log. An invariant relative to
+the before-state may hold there though not of the before-state itself. A start never runs here, so `inv` need not hold
+of a fresh instance. -/
 theorem running_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts)
-    (pipeline : PipelineKeeps hooks inv)
-    (reset : ∀ program state, inv program state →
-      inv program { state with journal := [], outbox := [], draft := {}, writes := [] })
-    {program : Program} {before : State} {input : Input} {after : State} (holds : inv program before)
+    (pipeline : PipelineKeeps hooks inv) {program : Program} {before : State} {input : Input} {after : State}
+    (holds : inv program { before with journal := [], outbox := [], draft := {}, writes := [] })
     (ran : step hooks program (some before) input = .ok after) : inv program after := by
   rcases step_ok ran with ⟨_, _, fresh, _⟩ | ⟨_, _, runs, ran⟩
   · simp at fresh
@@ -356,10 +355,11 @@ theorem running_keeps (contract : HookContract hooks inv) (phases : Phases inv) 
     obtain ⟨settled, present, _, rest⟩ := rest
     obtain ⟨clocked, stepped, settling, made⟩ := rest
     obtain rfl := Option.some.inj present
-    have entered : inv (inputCtx hooks program input).program before := by
+    have entered : inv (inputCtx hooks program input).program
+        { before with journal := [], outbox := [], draft := {}, writes := [] } := by
       rw [inputCtx_program]
       exact holds
-    have started := advanceClock_keeps phases (reset _ _ entered) clocked
+    have started := advanceClock_keeps phases entered clocked
     have movedHolds := microStep_keeps contract phases pipeline
       (fun _ transitioned => transition_keeps contract phases runs started transitioned) stepped
     have done := made ▸ phases.runOrder _ _ (settle_keeps contract phases facts pipeline _ _ _ _ movedHolds settling)
@@ -376,7 +376,7 @@ theorem step_keeps (contract : HookContract hooks inv) (phases : Phases inv) (fa
     {before : Option State} {input : Input} {after : State} (entry : ∀ state, before = some state → inv program state)
     (ran : step hooks program before input = .ok after) : inv program after := by
   cases before with
-  | some state => exact running_keeps contract phases facts pipeline reset (entry state rfl) ran
+  | some state => exact running_keeps contract phases facts pipeline (reset _ _ (entry state rfl)) ran
   | none =>
     rcases step_ok ran with ⟨payload, rfl, _, ⟨_, _, _, settled, clocked, stepped, settling, made⟩⟩ | ⟨_, _, _, ran⟩
     · have fresh : inv (inputCtx hooks program (.start payload)).program

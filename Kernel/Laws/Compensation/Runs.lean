@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Laws.MultiInstance.Rules
 
 /-! # Laws of compensation runs: what preserving an invariant needs
 
@@ -43,12 +44,15 @@ structure RunsOps (inv : State → Prop) (settled : State → Nat → Prop) : Pr
     Iteration.active scope ∈ body.instances → scope.value < state.nextIssue
   /-- The records and runs replaced, each run held before or fitting, and each context they hold running a running
   context before or no active Multi-Instance instance's scope occurrence, so that an invariant keeping instances apart
-  from handlers is kept by storing them. -/
+  from handlers is kept by storing them; a run that resumes by a reservation names one pending in a state that kept
+  `inv`. -/
   store : ∀ state compensation, inv state →
     (∀ run ∈ compensation.runs, run ∈ state.slots.compensation.runs ∨ Fits settled state run) →
     (∀ run ∈ compensation.runs, ∀ context ∈ run.running.map (·.1),
       (∃ other ∈ state.slots.compensation.runs, context ∈ other.running.map (·.1)) ∨
         ∀ body ∈ state.slots.multiInstances, Iteration.active context ∉ body.instances) →
+    (∀ run ∈ compensation.runs, ∀ element at_ leave, run.resume = some (.occur element at_ leave) →
+      Laws.MultiInstance.PendingIn inv element) →
     inv { state with slots := { state.slots with compensation } } ∧
       ∀ id, settled state id → settled { state with slots := { state.slots with compensation } } id
   /-- A context entered below a scope occurrence that stands. -/
@@ -67,7 +71,9 @@ structure RunsOps (inv : State → Prop) (settled : State → Nat → Prop) : Pr
   complete : ∀ state id leave writes rule, inv state → settled state id →
     inv (state.signal (.complete id leave writes rule)) ∧
       ∀ other, settled state other → settled (state.signal (.complete id leave writes rule)) other
-  occur : ∀ state element scope leave writes rule, inv state → inv (state.signal (.occur element scope leave writes rule)) ∧
+  /-- An ended run's resume, pending in a state that kept `inv`. -/
+  occur : ∀ state element scope leave writes rule, inv state → Laws.MultiInstance.PendingIn inv element →
+    inv (state.signal (.occur element scope leave writes rule)) ∧
     ∀ other, settled state other → settled (state.signal (.occur element scope leave writes rule)) other
   /-- A handler's begin in its context. -/
   begin : ∀ state handler context scope, inv state → context ∈ state.scopes.map (·.id) →
@@ -158,6 +164,29 @@ theorem held_running {state : State} {runs : List CompensationRun}
       (∃ other ∈ state.slots.compensation.runs, context ∈ other.running.map (·.1)) ∨
         ∀ body ∈ state.slots.multiInstances, Iteration.active context ∉ body.instances :=
   fun run member _ running => .inl ⟨run, held run member, running⟩
+
+/-- A run `state` holds resumes only by a reservation pending in `state`, which keeps `inv`. -/
+theorem held_pending {inv : State → Prop} {state : State} (holds : inv state) {run : CompensationRun}
+    (member : run ∈ state.slots.compensation.runs) {element : ElementId} {at_ : ScopeOccurrenceId} {leave : Leave}
+    (resumed : run.resume = some (.occur element at_ leave)) : Laws.MultiInstance.PendingIn inv element :=
+  ⟨state, holds, .inr (.inr ⟨run, member, at_, leave, resumed⟩)⟩
+
+/-- The runs `held`, of `state`, which keeps `inv`, resume only by reservations pending in a state that kept it. -/
+theorem held_resumes {inv : State → Prop} {state : State} {runs : List CompensationRun} (holds : inv state)
+    (held : ∀ run ∈ runs, run ∈ state.slots.compensation.runs) :
+    ∀ run ∈ runs, ∀ element at_ leave, run.resume = some (.occur element at_ leave) →
+      Laws.MultiInstance.PendingIn inv element :=
+  fun run member _ _ _ resumed => held_pending holds (held run member) resumed
+
+/-- Runs `state`, which keeps `inv`, held, followed by one whose resume, if a reservation, is pending, resume only by
+pending reservations. -/
+theorem appended_resumes {inv : State → Prop} {state : State} {runs : List CompensationRun} {run : CompensationRun}
+    (holds : inv state) (held : ∀ other ∈ runs, other ∈ state.slots.compensation.runs)
+    (pending : ∀ element at_ leave, run.resume = some (.occur element at_ leave) → Laws.MultiInstance.PendingIn inv element) :
+    ∀ other ∈ runs ++ [run], ∀ element at_ leave, other.resume = some (.occur element at_ leave) →
+      Laws.MultiInstance.PendingIn inv element := fun other member element at_ leave resumed =>
+  (List.mem_append.mp member).elim (fun old => held_pending holds (held other old) resumed) fun new =>
+    pending element at_ leave (List.mem_singleton.mp new ▸ resumed)
 
 /-- A run that ends by queuing a completion or an occurrence keeps what `Compensation.advance` keeps. -/
 theorem Ended.queue {inv : State → Prop} {settled : State → Nat → Prop} (ops : RunsOps inv settled)

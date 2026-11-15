@@ -150,6 +150,11 @@ def OccurPending (s : State) (element : ElementId) : Prop :=
       Signal.compensate scope activity trigger leave (some (.occur element at_ resumed)) ∈ s.signals) ∨
     ∃ run ∈ s.slots.compensation.runs, ∃ at_ leave, run.resume = some (.occur element at_ leave)
 
+/-- `element` is a reservation still to be made in a state that keeps `rel`: where a queued `Signal.occur`, a queued
+compensation's resume or a held compensation run's resume came from once the closure has taken it. -/
+def PendingIn (rel : State → Prop) (element : ElementId) : Prop :=
+  ∃ held, rel held ∧ OccurPending held element
+
 /-- What the instances' begins still queued need for the numbering: every body's element loops, and its instances'
 scope occurrences belong to no called instance, so they share one activation counter; an instance is an occurrence of
 the body's element under the element role (`continued`); a queued instance begin targets an active slot of its body,

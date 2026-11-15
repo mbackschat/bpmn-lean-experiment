@@ -2,6 +2,8 @@ module
 
 public import Kernel.Step
 public import Kernel.Laws.State.Invariant
+public import Kernel.Laws.MultiInstance.Rules
+public import Kernel.Laws.IL
 
 /-! # Laws of the step function: the preservation contract
 
@@ -147,6 +149,71 @@ theorem deferredOf_flows (flows : List FlowId) (scope : ScopeOccurrenceId) :
     deferredOf (flows.map (Token.flow · scope)) = [] := by
   simp [deferredOf, List.filterMap_map]
 
+/-! ## Queued reservations
+
+What the closure reads of the reservations its queue still makes: the elements of the `occur` signals and of the
+compensations that resume by one, each in queue order, which with the compensation runs' resumes are the reservations
+`Laws.MultiInstance.OccurPending` calls pending. -/
+
+/-- The elements the queued `occur` signals and the queued compensations that resume by one reserve, in queue order. -/
+def occursOf (signals : List Signal) : List ElementId :=
+  signals.filterMap fun
+    | .occur element _ _ _ _ => some element
+    | .compensate _ _ _ _ (some (.occur element _ _)) => some element
+    | .compensate _ _ _ _ (some (.complete _ _)) | .compensate _ _ _ _ (some (.group _ _)) | .compensate _ _ _ _ none
+    | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .raise _ _ | .begin _ | .complete _ _ _ _ | .write _ _ _
+    | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ => none
+
+/-- An element is among the queued reservations exactly when an `occur` signal or a compensation that resumes by
+one reserves it. -/
+theorem mem_occursOf {signals : List Signal} {element : ElementId} :
+    element ∈ occursOf signals ↔ (∃ scope leave writes rule, Signal.occur element scope leave writes rule ∈ signals) ∨
+      ∃ scope activity trigger leave at_ resumed,
+        Signal.compensate scope activity trigger leave (some (.occur element at_ resumed)) ∈ signals := by
+  simp only [occursOf, List.mem_filterMap]
+  constructor
+  · rintro ⟨signal, member, made⟩
+    cases signal with
+    | occur => cases made; exact .inl ⟨_, _, _, _, member⟩
+    | compensate scope activity trigger leave resume =>
+      rcases resume with _ | ⟨_, _⟩ | ⟨_, _, _⟩ | ⟨_, _⟩
+      all_goals first | cases made | skip
+      exact .inr ⟨_, _, _, _, _, _, member⟩
+    | _ => cases made
+  · rintro (queued | resumed)
+    · obtain ⟨_, _, _, rest⟩ := queued
+      obtain ⟨_, member⟩ := rest
+      exact ⟨_, member, rfl⟩
+    · obtain ⟨_, _, _, rest⟩ := resumed
+      obtain ⟨_, _, _, member⟩ := rest
+      exact ⟨_, member, rfl⟩
+
+/-- Queuing signals adds the reservations they make to the queued ones. -/
+theorem occursOf_append (signals more : List Signal) : occursOf (signals ++ more) = occursOf signals ++ occursOf more :=
+  List.filterMap_append
+
+/-- A reservation pending in `t` is pending in `s` when `t`'s queued reservations and compensation runs are among
+`s`'s. -/
+theorem occurPending_of {s t : State} (occurs : ∀ element ∈ occursOf t.signals, element ∈ occursOf s.signals)
+    (runs : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs) {element : ElementId}
+    (pending : Laws.MultiInstance.OccurPending t element) : Laws.MultiInstance.OccurPending s element := by
+  rcases pending with queued | resumed | ⟨run, member, rest⟩
+  · exact (mem_occursOf.mp (occurs _ (mem_occursOf.mpr (.inl queued)))).elim .inl (.inr ∘ .inl)
+  · exact (mem_occursOf.mp (occurs _ (mem_occursOf.mpr (.inr resumed)))).elim .inl (.inr ∘ .inl)
+  · exact .inr (.inr ⟨run, runs run member, rest⟩)
+
+/-- An Event carries its element's header and no envelope. -/
+theorem event?_bare {element : Element} {header : Header} {payload : EventPayload}
+    (typed : element.event? = some (header, payload)) : element.header = header ∧ element.envelope? = none := by
+  cases element <;> simp_all [Laws.IL.event?_event, Laws.IL.header_event, Laws.IL.envelope?_event,
+    Laws.IL.event?_activity, Laws.IL.event?_scope, Laws.IL.event?_gateway, Laws.IL.event?_start]
+
+/-- A start carries its element's header and no envelope. -/
+theorem start?_bare {element : Element} {header : Header} {payload : StartPayload}
+    (typed : element.start? = some (header, payload)) : element.header = header ∧ element.envelope? = none := by
+  cases element <;> simp_all [Laws.IL.start?_start, Laws.IL.header_start, Laws.IL.envelope?_start,
+    Laws.IL.start?_activity, Laws.IL.start?_event, Laws.IL.start?_scope, Laws.IL.start?_gateway]
+
 /-- An occurrence that continues by its flows is no Multi-Instance instance. -/
 theorem flow_ne_multiInstance (body : Nat) : Continuation.flow ≠ .multiInstance body := nofun
 
@@ -189,7 +256,8 @@ activity's, catch's or throw's is of an element the program declares no start Ev
 `Hooks.arriveStart`) and numbered under its element's counter (it sends a Multi-Instance body to
 `Hooks.arriveMultiInstance`, with the header naming the body's element and the loop its envelope carries), a throw's
 header naming its element (`Program.element?` finds it by that name); the item it hands over is open; the scope occurrence and occurrence a queued signal names stand (`Step.stale`, `Step.gone`), an arming's
-host is begun in the scope occurrence the arming names, a compensation may end as it asks (`Laws.State.Resumable`),
+host is begun in the scope occurrence the arming names, a compensation may end as it asks (`Laws.State.Resumable`)
+and the reservation it resumes by was pending in a state that kept `inv` (`Laws.MultiInstance.PendingIn`),
 and a raise finds what its origin names and a settled host (`Laws.State.Raisable`); a completed occurrence's continuation runs while its scope occurrence stands;
 an Event Sub-Process's start Event reservation (`ScopeEntry.inner`) is beginnable in, and lies in, the scope occurrence
 its occurrence began in, and nothing claims it. The completion pipeline's hooks also keep its frame (`PipelineFrame`),
@@ -273,6 +341,8 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     inv ctx.program after
   compensate : ∀ ctx scope activity trigger leave resume state after, inv ctx.program state → ScopeStands state scope →
     (∀ next, resume = some next → Laws.State.Resumable state scope next) →
+    (∀ element at_ resumed, resume = some (.occur element at_ resumed) →
+      Laws.MultiInstance.PendingIn (inv ctx.program) element) →
     hooks.compensate ctx scope activity trigger leave resume state = .ok after → inv ctx.program after
   failCompensation : ∀ ctx handler code message origin state after, inv ctx.program state → ScopeStands state handler →
     hooks.failCompensation ctx handler code message origin state = .ok after → inv ctx.program after
@@ -390,8 +460,10 @@ structure Phases (inv : Program → State → Prop) : Prop where
       Laws.State.Unclaimed (state.beginOccurrence request role sourceType).1 id ∧
       ∀ found ∈ (state.beginOccurrence request role sourceType).1.occurrences, found.id = id →
         found.scope = (state.beginOccurrence request role sourceType).2.scope
-  /-- `State.reserve` for `Signal.occur`, in a scope occurrence that stands; nothing queued names the reservation. -/
+  /-- `State.reserve` for `Signal.occur`, in a scope occurrence that stands, of an element the signal reserved in a
+  state that kept `inv`; nothing queued names the reservation. -/
   reserve : ∀ program state element scope, inv program state → ScopeStands state scope →
+    Laws.MultiInstance.PendingIn (inv program) element →
     inv program (state.reserve element scope).1 ∧
     ∀ request, Laws.State.Queued (state.reserve element scope).1 request →
       (state.reserve element scope).2.id ∉ Laws.State.names request

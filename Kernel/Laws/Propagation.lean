@@ -3,6 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.Laws.Hooks
 public import Kernel.Laws.State.Frames
+public import Kernel.Laws.IL
 public import Kernel.Feature.Propagation
 import all Kernel.Feature.Propagation
 
@@ -369,7 +370,8 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
   /-- An interrupting boundary's cancellation of its host. -/
   cancel : ∀ state id, inv state → inv (state.signal (.cancel id))
   /-- A caught boundary's fresh occurrence. -/
-  occur : ∀ state element scope leave writes rule, inv state → inv (state.signal (.occur element scope leave writes rule))
+  occur : ∀ state element scope leave writes rule, inv state → Laws.IL.BoundaryOf program element →
+    inv (state.signal (.occur element scope leave writes rule))
   /-- An interrupted Scope's output mappings. -/
   write : ∀ state scope writes rule, inv state → inv (state.signal (.write scope writes rule))
   /-- An Error that reached a compensation handler's context. -/
@@ -382,7 +384,7 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
   /-- A caught Cancel's rollback: the scope occurrence, which stands, cleared, then its compensation queued, which takes
   the boundary once it ends. -/
   rollBack : ∀ state scope trigger leave element parent flows, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
-    inv ((state.clearInside scope).signal (.compensate scope none trigger leave (some (.occur element parent flows))))
+    Laws.IL.BoundaryOf program element → inv ((state.clearInside scope).signal (.compensate scope none trigger leave (some (.occur element parent flows))))
 
 /-- Firing each of a Signal throw's receivers keeps `inv` and the occurrences. -/
 theorem fireAll_keeps {inv : State → Prop} (ops : PropagationOps program inv) (fired : State → OpenItem → Fired) :
@@ -451,9 +453,46 @@ private theorem ok_map {α β ε : Type} {x : Except ε α} {f : α → β} {b :
   | error failure => simp [Except.map] at ran
   | ok a => exact ⟨a, rfl, (Except.ok.inj ran).symm⟩
 
+/-- `List.foldl` keeps what each step keeps. -/
+private theorem foldl_holds {α β : Type} (holds : β → Prop) (f : β → α → β) :
+    ∀ (items : List α) (b : β), holds b → (∀ b a, a ∈ items → holds b → holds (f b a)) → holds (items.foldl f b)
+  | [], _, start, _ => start
+  | a :: rest, b, start, each => foldl_holds holds f rest (f b a) (each b a List.mem_cons_self start)
+      fun b a inside => each b a (List.mem_cons_of_mem _ inside)
+
+/-- The candidate `Propagation.best?` picks is one of the candidates. -/
+theorem best?_mem {α : Type} {ctx : Ctx} {raised : Raised} {trigger : α → Trigger} {candidates : List α}
+    {chosen : α} {writes : List (String × Value)}
+    (found : Feature.Propagation.best? ctx raised trigger candidates = some (chosen, writes)) : chosen ∈ candidates := by
+  unfold Feature.Propagation.best? at found
+  obtain ⟨⟨caught, candidate⟩, folded, same⟩ := Option.map_eq_some_iff.mp found
+  have named : candidate = chosen := congrArg Prod.fst same
+  subst named
+  refine foldl_holds (fun chosen => ∀ pair ∈ chosen, pair.2 ∈ candidates) _ candidates none (by simp)
+    (fun chosen candidate inside held pair member => ?_) _ folded
+  split at member
+  · exact held pair member
+  · cases member
+    exact inside
+  · split at member
+    · cases member
+      exact inside
+    · exact held pair member
+
+/-- A boundary `Propagation.boundariesOf` lists is one of the program's. -/
+theorem boundariesOf_boundaryOf {ctx : Ctx} {element : ElementId} {boundary : Boundary}
+    (member : boundary ∈ Feature.Propagation.boundariesOf ctx element) : Laws.IL.BoundaryOf ctx.program boundary.id := by
+  unfold Feature.Propagation.boundariesOf at member
+  cases found : (ctx.program.element? element).bind (·.envelope?) with
+  | none => simp [found] at member
+  | some envelope =>
+    rw [found] at member
+    exact Laws.IL.boundaryOf_envelope found member
+
 /-- A caught boundary fires: it cancels its host if it interrupts one, and a fresh occurrence occurs. -/
 theorem boundaryFire_keeps {inv : State → Prop} (ops : PropagationOps program inv) (boundary : Boundary)
-    (host : Option Nat) (scope : ScopeOccurrenceId) (writes : List (String × Value)) {state : State} (holds : inv state) :
+    (host : Option Nat) (scope : ScopeOccurrenceId) (writes : List (String × Value)) {state : State} (holds : inv state)
+    (bounded : Laws.IL.BoundaryOf program boundary.id) :
     inv (boundary.fire host none scope writes state) ∧ (boundary.fire host none scope writes state).occurrences =
       state.occurrences := by
   rw [Laws.Hooks.fire_eq]
@@ -465,7 +504,7 @@ theorem boundaryFire_keeps {inv : State → Prop} (ops : PropagationOps program 
       | none => exact ⟨holds, rfl⟩
       | some owner => exact ⟨ops.cancel _ _ holds, ops.signalOccurrences _ _⟩
     · exact ⟨holds, rfl⟩
-  exact ⟨ops.occur _ _ _ _ _ _ interrupted.1, (ops.signalOccurrences _ _).trans interrupted.2⟩
+  exact ⟨ops.occur _ _ _ _ _ _ interrupted.1 bounded, (ops.signalOccurrences _ _).trans interrupted.2⟩
 
 /-- An Escalation's thrower leaves once the search has decided: the occurrence it finds has begun. -/
 theorem throwerLeaves_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationOps ctx.program inv) {origin : Origin}
@@ -592,7 +631,7 @@ theorem leaveOccurrence_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Featur
     (ops : PropagationOps ctx.program inv) (search : SearchHooks ctx inv hooks) {raised : Raised} {origin : Origin}
     {occurrence : ScopeOccurrence} {parent : ScopeOccurrenceId} {boundary : Boundary} {writes : List (String × Value)}
     {state after : State} (holds : inv state) (settled : HostSettled origin state) (thrown : Thrown ctx.program origin state)
-    (present : occurrence ∈ state.scopes)
+    (present : occurrence ∈ state.scopes) (bounded : Laws.IL.BoundaryOf ctx.program boundary.id)
     (ran : Feature.Propagation.leaveOccurrence hooks ctx raised origin occurrence parent boundary writes state = .ok after) :
     inv after := by
   unfold Feature.Propagation.leaveOccurrence at ran
@@ -601,19 +640,20 @@ theorem leaveOccurrence_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Featur
     obtain ⟨entry, inside, named⟩ := cancelledScope_stands (origin := origin) present
     repeat' split
     all_goals first
-      | exact ops.rollBack _ _ _ _ _ _ _ holds ⟨entry, inside, named⟩
+      | exact ops.rollBack _ _ _ _ _ _ _ holds ⟨entry, inside, named⟩ bounded
       | exact ops.rollBack _ _ _ _ _ _ _ (ops.disarm _ _ holds).1 ⟨entry, (ops.disarm _ _ holds).2 ▸ inside, named⟩
+          bounded
   · split at ran
     · obtain ⟨dropped, steady⟩ := search.dropRuns occurrence.id state holds
       obtain ⟨decided, decision, ran⟩ := ok_bind ran
       obtain ⟨kept, _⟩ := catchDecided_keeps search dropped (settled.steady steady) decision
       obtain ⟨outputs, out, made⟩ := ok_map ran
       subst made
-      exact (boundaryFire_keeps ops _ _ _ _ (interruptedOutputs_keeps ops kept out)).1
+      exact (boundaryFire_keeps ops _ _ _ _ (interruptedOutputs_keeps ops kept out) bounded).1
     · obtain ⟨decided, decision, ran⟩ := ok_bind ran
       obtain ⟨kept, steady⟩ := catchDecided_keeps search holds settled decision
       cases ran
-      obtain ⟨fired, same⟩ := boundaryFire_keeps ops boundary occurrence.occurrence parent [] kept
+      obtain ⟨fired, same⟩ := boundaryFire_keeps ops boundary occurrence.occurrence parent [] kept bounded
       exact throwerLeaves_keeps ops fired (thrown.steady (same.trans steady.occurrences))
 
 theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
@@ -652,8 +692,14 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
           split
           · exact begun
           · exact throwerLeaves_keeps ops begun (thrown.steady ((ops.signalOccurrences _ _).trans chain.occurrences))
-        · exact leaveOccurrence_keeps ops search kept (settled.steady steady) (thrown.steady steady.occurrences)
-            (steady.scopes ▸ present) ran
+        · have inside := best?_mem ‹Feature.Propagation.best? _ _ _ _ = some _›
+          refine leaveOccurrence_keeps ops search kept (settled.steady steady) (thrown.steady steady.occurrences)
+            (steady.scopes ▸ present) ?_ ran
+          split at inside
+          · split at inside
+            · simp at inside
+            · exact boundariesOf_boundaryOf inside
+          · simp at inside
         · exact searchScopes_keeps ops search fuel _ _ _ kept (settled.steady steady) (thrown.steady steady.occurrences)
             ran
 
@@ -667,7 +713,11 @@ theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagat
   split at ran
   · obtain ⟨left, leaves, made⟩ := ok_map ran
     subst made
-    exact (boundaryFire_keeps ops _ _ _ _ (search.mappedErrorOutputs _ _ _ _ holds settled leaves).1).1
+    have inside := best?_mem ‹Feature.Propagation.best? _ _ _ _ = some _›
+    refine (boundaryFire_keeps ops _ _ _ _ (search.mappedErrorOutputs _ _ _ _ holds settled leaves).1 ?_).1
+    split at inside
+    · simp at inside
+    · exact boundariesOf_boundaryOf inside
   · exact searchScopes_keeps ops search _ _ _ _ holds settled thrown ran
 
 /-! ## Cancellation

@@ -49,6 +49,13 @@ theorem element?_header {program : Program} {id : ElementId} {element : Element}
   unfold Program.element? at found
   simpa using List.find?_some found
 
+theorem event?_event (header : Header) (payload : EventPayload) :
+    (Element.event header payload).event? = some (header, payload) := by
+  simp only [Element.event?]
+
+theorem header_event (header : Header) (payload : EventPayload) : (Element.event header payload).header = header := by
+  simp only [Element.header]
+
 theorem event?_activity (header : Header) (payload : ActivityPayload) : (Element.activity header payload).event? = none := by
   simp only [Element.event?]
 
@@ -66,6 +73,17 @@ theorem event?_start (header : Header) (payload : StartPayload) : (Element.start
 Which elements are start Events, for `Laws.State.Typed`, which tells an Event Sub-Process start's item from an
 Activity's or an intermediate Event's by `Element.start?`. -/
 
+theorem start?_start (header : Header) (payload : StartPayload) :
+    (Element.start header payload).start? = some (header, payload) := by
+  simp only [Element.start?]
+
+theorem header_start (header : Header) (payload : StartPayload) : (Element.start header payload).header = header := by
+  simp only [Element.header]
+
+/-- A start carries no envelope. -/
+theorem envelope?_start (header : Header) (payload : StartPayload) : (Element.start header payload).envelope? = none := by
+  simp only [Element.envelope?]
+
 theorem start?_activity (header : Header) (payload : ActivityPayload) : (Element.activity header payload).start? = none := by
   simp only [Element.start?]
 
@@ -81,5 +99,56 @@ theorem start?_gateway (header : Header) (payload : GatewayPayload) : (Element.g
 /-- A start Event is no Activity, so an Activity's item is never a start Event's. -/
 theorem activity?_start (header : Header) (payload : StartPayload) : (Element.start header payload).activity? = none := by
   simp only [Element.activity?]
+
+/-! ## Where a reserved identifier comes from
+
+What a reservation's element (`State.reserve`) may be, for the records that require it of a feature's reservations
+(`Kernel.Proofs.MultiInstance.OccursAlongside`): a boundary's identifier, or an element's that carries no envelope. -/
+
+/-- `element` is the identifier of a boundary of one of `program`'s elements. -/
+@[expose] def BoundaryOf (program : Program) (element : ElementId) : Prop :=
+  ∃ host ∈ program.elements, ∃ envelope, host.envelope? = some envelope ∧
+    ∃ boundary ∈ envelope.boundaries, boundary.id = element
+
+/-- What a subscription may reserve: a boundary, or an element of the program without an envelope, an Event or a
+start. -/
+@[expose] def Reservable (program : Program) (element : ElementId) : Prop :=
+  BoundaryOf program element ∨ ∃ found ∈ program.elements, found.header.id = element ∧ found.envelope? = none
+
+/-- The element `Program.element?` finds is one of the program's. -/
+theorem element?_mem {program : Program} {id : ElementId} {element : Element} (found : program.element? id = some element) :
+    element ∈ program.elements := by
+  unfold Program.element? at found
+  exact List.mem_of_find?_eq_some found
+
+/-- `Program.element?` finds an element under the identifier of each of the program's elements. -/
+theorem element?_isSome {program : Program} {element : Element} (member : element ∈ program.elements) :
+    (program.element? element.header.id).isSome := by
+  unfold Program.element?
+  exact List.find?_isSome.mpr ⟨element, member, by simp⟩
+
+/-- A boundary of the envelope of an element `Program.element?` finds is one of the program's. -/
+theorem boundaryOf_envelope {program : Program} {id : ElementId} {envelope : Envelope} {boundary : Boundary}
+    (found : (program.element? id).bind (·.envelope?) = some envelope) (member : boundary ∈ envelope.boundaries) :
+    BoundaryOf program boundary.id := by
+  obtain ⟨host, located, has⟩ := Option.bind_eq_some_iff.mp found
+  exact ⟨host, element?_mem located, envelope, has, boundary, member, rfl⟩
+
+/-- The boundary `Program.boundary?` finds is one of the program's, under the identifier it was asked for. -/
+theorem boundary?_boundaryOf {program : Program} {id : ElementId} {host : Element} {boundary : Boundary}
+    (found : program.boundary? id = some (host, boundary)) : BoundaryOf program id ∧ boundary.id = id := by
+  unfold Program.boundary? at found
+  obtain ⟨element, member, made⟩ := List.exists_of_findSome?_eq_some found
+  obtain ⟨located, inside, same⟩ := Option.map_eq_some_iff.mp made
+  obtain ⟨envelope, has, find⟩ := Option.bind_eq_some_iff.mp inside
+  have named : located.id = id := by simpa using List.find?_some find
+  have equal : located = boundary := congrArg Prod.snd same
+  exact ⟨⟨element, member, envelope, has, located, List.mem_of_find?_eq_some find, named⟩, equal ▸ named⟩
+
+/-- A child `Program.children` lists is one of the program's elements. -/
+theorem mem_children {program : Program} {parent : Option ElementId} {element : Element}
+    (member : element ∈ program.children parent) : element ∈ program.elements := by
+  unfold Program.children at member
+  exact (List.mem_filter.mp member).1
 
 end Kernel.Laws.IL

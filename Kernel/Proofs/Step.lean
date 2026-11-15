@@ -126,7 +126,7 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
     begin := fun _ _ request role sourceType formed stands admitted roled bodied _ _ =>
       ⟨Laws.State.begin_wellFormed formed request role sourceType (mem stands) admitted.2.1 roled bodied,
         Laws.State.begin_entry formed request role sourceType admitted.1 admitted.2.1 admitted.2.2⟩
-    reserve := fun _ _ element scope formed stands => Laws.State.reserve_wellFormed formed element scope (mem stands)
+    reserve := fun _ _ element scope formed stands _ => Laws.State.reserve_wellFormed formed element scope (mem stands)
     cancel := fun _ _ id formed => Laws.State.cancel_wellFormed formed id }
 
 /-- The completion pipeline's own phases keep `Laws.State.WellFormed` (`Laws.Step.PipelinePhases`). -/
@@ -337,12 +337,12 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
     obtain ⟨entry, inside, named⟩ := stands
     exact bareBegin_wellFormed formed (by simp [Laws.State.names]) (List.mem_map.mpr ⟨entry, inside, named⟩)
   cancel _ _ formed := queue_wellFormed formed trivial
-  occur _ _ _ _ _ _ formed := queue_wellFormed formed trivial
+  occur _ _ _ _ _ _ formed _ := queue_wellFormed formed trivial
   write _ _ _ _ formed := queue_wellFormed formed trivial
   failCompensation _ _ _ _ _ formed := queue_wellFormed formed trivial
   fail _ _ formed := queue_wellFormed formed (by simp [Queueable])
   disarm _ host formed := ⟨Laws.State.disarm_wellFormed formed host, by rw [Laws.State.disarm_eq]⟩
-  rollBack _ _ _ _ _ _ _ formed stands := queue_wellFormed
+  rollBack _ _ _ _ _ _ _ formed stands _ := queue_wellFormed
     (Laws.State.clearAll_wellFormed formed (List.mem_map.mpr stands)) fun _ same => by
       cases same
       exact ⟨fun _ _ wrong => (by cases wrong), fun _ _ wrong => by cases wrong⟩
@@ -363,7 +363,7 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
   disarm _ host formed := Laws.State.disarm_wellFormed formed host
   openItem _ kind _ formed member begun unstarted role :=
     Laws.State.openItem_wellFormed formed kind member begun unstarted role
-  openSubscription _ kind element _ _ passive formed stands hangs waits := by
+  openSubscription _ kind element _ _ passive formed stands hangs waits _ := by
     obtain ⟨entry, inside, named⟩ := stands
     exact Laws.State.openSubscription_wellFormed formed kind element (List.mem_map.mpr ⟨entry, inside, named⟩) hangs passive
       waits
@@ -396,12 +396,12 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
     exact fired_complete (queue_wellFormed (signal := .cancel host) withdrawn trivial) (kept.signal (fun _ same => by simp at same)
       (fun _ _ _ same => by simp at same) (fun _ _ _ _ _ same => by simp at same) fun _ _ same => by simp at same) leave
       writes .outward
-  reopenComplete _ item detail leave writes formed member := by
+  reopenComplete _ item detail leave writes formed member _ := by
     obtain ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
     obtain ⟨reopened, kept⟩ := Laws.State.openSubscription_fired closed fired (.timer detail) item.element fired.1
       (fired_hangs formed member) item.passive (Laws.State.triggers_await.1 detail)
     exact fired_complete reopened kept leave writes .outward
-  occur _ _ _ _ _ formed _ := queue_wellFormed formed trivial
+  occur _ _ _ _ _ formed _ _ := queue_wellFormed formed trivial
   insideBegin _ item element locals formed member start := by
     obtain ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
     obtain ⟨withdrawn, kept⟩ := Laws.State.withdrawInside_fired closed fired item.scope
@@ -409,7 +409,7 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
   closeBegin _ _ element locals formed member start :=
     have ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
     fired_begin closed fired start element locals
-  reopenBegin _ item detail element locals formed member start := by
+  reopenBegin _ item detail element locals formed member start _ := by
     obtain ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
     obtain ⟨reopened, kept⟩ := Laws.State.openSubscription_fired closed fired (.timer detail) item.element fired.1
       (fired_hangs formed member) item.passive (Laws.State.triggers_await.1 detail)
@@ -429,7 +429,7 @@ theorem runsOps : Laws.Compensation.RunsOps (Laws.State.WellFormed program) Laws
     ⟨formed.settled.resumed run member, (formed.settled.runsPlaced run member).1, (formed.settled.runsPlaced run member).2⟩
   issued _ formed := formed.issued.scopes
   slotsIssued _ formed body member scope active := (formed.settled.placed body member scope active).1
-  store _ _ formed kept _ := ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked, formed.settled.bodies,
+  store _ _ formed kept _ _ := ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked, formed.settled.bodies,
     fun run member => (kept run member).elim (formed.settled.resumed run) (·.1), formed.settled.queued,
     formed.settled.placed, fun run member => (kept run member).elim (formed.settled.runsPlaced run) (·.2),
     formed.settled.grouped, formed.settled.raised⟩, fun _ settled => settled⟩
@@ -440,7 +440,7 @@ theorem runsOps : Laws.Compensation.RunsOps (Laws.State.WellFormed program) Laws
   cancel _ _ formed := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩
   complete _ _ leave writes rule formed settled := ⟨settled_wellFormed formed settled leave writes rule,
     fun _ settled => settled.signal fun _ same => by simp at same⟩
-  occur _ _ _ _ _ _ formed := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩
+  occur _ _ _ _ _ _ formed _ := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩
   begin _ _ _ _ formed stands := ⟨bareBegin_wellFormed formed (by simp [Laws.State.names]) stands,
     fun _ settled => settled.begin (by simp [Laws.State.names])⟩
   leave _ _ _ formed member link _ := by

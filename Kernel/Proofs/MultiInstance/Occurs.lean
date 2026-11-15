@@ -1,14 +1,15 @@
 module
 
-public import Kernel.Laws.MultiInstance.Rules
+public import Kernel.Laws.Step.Contract
 
 /-! # Proofs: what a reservation may name
 
 A reservation is an occurrence under the element role (`State.reserve`), so the numbering lane needs every reservation
 the features make to name no looping element: one of a looping element in an instance's scope occurrence would be no
-instance (`Laws.MultiInstance.InstancesPlaced`). This module states where a reservation's element comes from, for the
-frame and phase records that carry a property beside `WellFormed` to require it, and what that gives under a program
-whose identifiers are unique (`Laws.MultiInstance.IdsUnique`). It imports no proof module, so the cancellation
+instance (`Laws.MultiInstance.InstancesPlaced`). This module states what the frame and phase records that carry a
+property beside `WellFormed` require of where a reservation's element comes from (`Laws.IL.BoundaryOf`,
+`Laws.IL.Reservable`, `Laws.MultiInstance.PendingIn`), and what that gives under a program whose identifiers are
+unique (`Laws.MultiInstance.IdsUnique`). It imports no proof module, so the cancellation
 lane's records can name it. Nothing executable imports this module.
 -/
 
@@ -18,22 +19,8 @@ namespace Kernel.Proofs.MultiInstance
 
 open Kernel
 open Kernel.Laws.State (WellFormed)
-open Kernel.Laws.MultiInstance (LoopOf IdsUnique OccurPending)
-
-/-- `element` is the identifier of a boundary of one of `program`'s elements. -/
-def BoundaryOf (program : Program) (element : ElementId) : Prop :=
-  ∃ host ∈ program.elements, ∃ envelope, host.envelope? = some envelope ∧
-    ∃ boundary ∈ envelope.boundaries, boundary.id = element
-
-/-- What a subscription may reserve: a boundary, or an element the program finds without an envelope, an Event or a
-start. -/
-def Reservable (program : Program) (element : ElementId) : Prop :=
-  BoundaryOf program element ∨ (program.element? element).bind (·.envelope?) = none
-
-/-- `element` is a reservation still to be made in a state that keeps `rel`: where a queued `Signal.occur`, a queued
-compensation's resume or a held compensation run's resume came from once the closure has taken it. -/
-def PendingIn (rel : State → Prop) (element : ElementId) : Prop :=
-  ∃ held, rel held ∧ OccurPending held element
+open Kernel.Laws.IL (BoundaryOf Reservable)
+open Kernel.Laws.MultiInstance (LoopOf IdsUnique OccurPending PendingIn)
 
 /-- What the features' records supply, for a property `rel` carried beside `WellFormed` under `program`, where they
 make or queue a reservation: a subscription reserves a `Reservable` element, and a queued `Signal.occur` or
@@ -54,7 +41,7 @@ def ResumesPending (rel : State → Prop) (s : State) (compensation : Compensati
     OccurPending s element ∨ PendingIn rel element
 
 /-- A boundary's identifier names no looping element of a program whose identifiers are unique. -/
-theorem BoundaryOf.unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
+theorem boundaryOf_unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
     (boundary : BoundaryOf program element) : ∀ loop, ¬ LoopOf program element loop := by
   obtain ⟨host, member, envelope, rest⟩ := boundary
   obtain ⟨has, found, inside, named⟩ := rest
@@ -65,12 +52,18 @@ theorem BoundaryOf.unlooped {program : Program} {element : ElementId} (apart : I
   cases looped
 
 /-- A reservable element is no looping one of a program whose identifiers are unique. -/
-theorem Reservable.unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
-    (reservable : Reservable program element) : ∀ loop, ¬ LoopOf program element loop := by
-  rcases reservable with boundary | bare
-  · exact boundary.unlooped apart
+theorem reservable_unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
+    (reservable : Reservable program element) :
+    ∀ loop, ¬ LoopOf program element loop := by
+  rcases reservable with boundary | ⟨found, member, named, bare⟩
+  · exact boundaryOf_unlooped apart boundary
   · intro loop looped
-    rw [LoopOf, bare] at looped
-    cases looped
+    have some := Laws.IL.element?_isSome member
+    rw [named] at some
+    obtain ⟨located, finds⟩ := Option.isSome_iff_exists.mp some
+    have same := Laws.State.nodup_map_eq apart.headers (Laws.IL.element?_mem finds) member
+      ((Laws.IL.element?_header finds).trans named.symm)
+    rw [same] at finds
+    simp [LoopOf, finds, bare] at looped
 
 end Kernel.Proofs.MultiInstance

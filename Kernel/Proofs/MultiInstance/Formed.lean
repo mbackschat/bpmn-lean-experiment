@@ -500,7 +500,8 @@ structure NumberingKept (hooks : Hooks) : Prop where
 /-- The registered hooks keep `Framed`. -/
 theorem framed_contract : Laws.Step.HookContract Registry.hooks Framed :=
   Proofs.Step.registered_contract_of
-    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps runsFramed_frameAlongside) multiInstanceKeeps_framed
+    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps runsFramed_frameAlongside
+      runsFramed_occursAlongside) multiInstanceKeeps_framed
     Proofs.State.stateFacts
 
 /-- `Step`'s phases keep `Framed`. -/
@@ -530,7 +531,7 @@ theorem framed_stepKeeps {program : Program} {input : Input}
   Laws.Step.running_keeps framed_contract framed_phases Proofs.State.stateFacts
     (Laws.Step.complete_keeps framed_contract framed_phases
       (runsFramed_pipelinePhases Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
-    (fun _ _ => framed_reset) holds ran
+    (framed_reset holds) ran
 
 /-- A committed start makes a `Framed` state under the registered hooks. -/
 theorem framed_start {program : Program} {input : Input}
@@ -745,7 +746,8 @@ theorem since_multiInstanceKeeps (b : State) : Proofs.Step.MultiInstanceKeeps (S
 /-- The registered hooks keep `Since`. -/
 theorem since_contract (b : State) : Laws.Step.HookContract Registry.hooks (Since b) :=
   Proofs.Step.registered_contract_of
-    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps fun _ => since_frameAlongside b)
+    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps (fun _ => since_frameAlongside b)
+      (since_occursAlongside b))
     (since_multiInstanceKeeps b) Proofs.State.stateFacts
 
 /-- `Step`'s phases keep `Since`. -/
@@ -763,30 +765,14 @@ theorem since_reset {program : Program} {b : State} (formed : WellFormed program
   obtain rfl := Laws.State.nodup_map_eq keyed member inside same.symm
   exact snapshotFixed_refl _
 
-/-- A committed input on a running instance keeps `Since` of its before-state under the registered hooks: the walk of
-`Laws.Step.running_keeps` from the input's reset start, which `Since` holds of though the before-state's draft may not
-be empty. -/
+/-- A committed input on a running instance keeps `Since` of its before-state under the registered hooks, from the
+input's start, which `Since` holds of though the before-state's draft may not be empty. -/
 theorem since_stepKeeps {program : Program} {input : Input} {b after : State} (formed : WellFormed program b)
-    (keyed : RunsKeyed b) (ran : Step.step Registry.hooks program (some b) input = .ok after) : Since b program after := by
-  have pipeline := Laws.Step.complete_keeps (since_contract b) (since_phases b)
-    (since_pipelinePhases b Proofs.Step.pipelinePhases) Proofs.State.stateFacts
-  rcases Laws.Step.step_ok ran with ⟨_, _, fresh, _⟩ | ⟨_, _, runs, ran⟩
-  · simp at fresh
-  · obtain ⟨state, start, moved, rest⟩ := Laws.Step.onRunning_ok ran
-    obtain ⟨settled, present, _, rest⟩ := rest
-    obtain ⟨clocked, stepped, settling, made⟩ := rest
-    cases Option.some.inj present
-    have entered : Since b (Laws.Step.inputCtx Registry.hooks program input).program
-        { b with journal := [], outbox := [], draft := {}, writes := [] } := by
-      rw [Laws.Step.inputCtx_program]
-      exact since_reset formed keyed
-    have started := Laws.Step.advanceClock_keeps (since_phases b) entered clocked
-    have movedHolds := Laws.Step.microStep_keeps (since_contract b) (since_phases b) pipeline
-      (fun _ transitioned => Laws.Step.transition_keeps (since_contract b) (since_phases b) runs started transitioned)
-      stepped
-    have done := made ▸ (since_phases b).runOrder _ _ (Laws.Step.settle_keeps (since_contract b) (since_phases b)
-      Proofs.State.stateFacts pipeline _ _ _ _ movedHolds settling)
-    rwa [Laws.Step.inputCtx_program] at done
+    (keyed : RunsKeyed b) (ran : Step.step Registry.hooks program (some b) input = .ok after) : Since b program after :=
+  Laws.Step.running_keeps (since_contract b) (since_phases b) Proofs.State.stateFacts
+    (Laws.Step.complete_keeps (since_contract b) (since_phases b)
+      (since_pipelinePhases b Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
+    (since_reset formed keyed) ran
 
 /-- A body begun by a committed input has at least one slot, and a body running before and after it keeps its
 snapshot, slot count and filled slots, under the registered hooks. -/

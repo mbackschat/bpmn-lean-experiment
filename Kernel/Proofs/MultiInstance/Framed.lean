@@ -276,6 +276,15 @@ theorem clearInside_carries {program other : Program} {s : State} {scope : Scope
 
 /-! ## The state operations -/
 
+/-- A reservation keeps the lane's slot invariant but its numbering: it adds an occurrence and moves no scope occurrence
+or run. -/
+theorem reserve_runsFramed {program : Program} (s : State) (element : ElementId) (scope : ScopeOccurrenceId)
+    (kept : RunsFramed program s) : RunsFramed program (s.reserve element scope).1 :=
+  have reserves := Laws.State.reserve_reserves s element scope
+  kept.carry (.grow (fun _ inside => .inl (reserves.scopes ▸ inside)) (fun _ inside => reserves.scopes ▸ inside)
+    (congrArg (·.multiInstances) reserves.slots) (congrArg (·.compensation.runs) reserves.slots)
+    fun _ present => reserves.occurrences ▸ List.mem_append_left _ present)
+
 /-- The state operations the hooks apply keep the lane's slot invariant but its numbering under any program
 (`Proofs.Cancellation.FrameAlongside`). -/
 theorem runsFramed_frameAlongside (program : Program) : FrameAlongside (RunsFramed program) where
@@ -304,11 +313,7 @@ theorem runsFramed_frameAlongside (program : Program) : FrameAlongside (RunsFram
     · exact .inl old
     · rw [List.mem_singleton.mp new]
       exact .inr (counter_fresh formed)
-  reserve _ s element scope _ kept :=
-    have reserves := Laws.State.reserve_reserves s element scope
-    kept.carry (.grow (fun _ inside => .inl (reserves.scopes ▸ inside)) (fun _ inside => reserves.scopes ▸ inside)
-      (congrArg (·.multiInstances) reserves.slots) (congrArg (·.compensation.runs) reserves.slots)
-      fun _ present => reserves.occurrences ▸ List.mem_append_left _ present)
+  reserve _ s element scope _ _ kept := reserve_runsFramed s element scope kept
   leaveScope _ _ _ formed present leaves kept := leaveScope_runsFramed formed present leaves kept
   clearInside _ _ _ keep formed present _ kept := kept.carry (clearInside_carries formed present keep kept)
   disarm _ s host formed kept := by
@@ -323,9 +328,19 @@ theorem runsFramed_frameAlongside (program : Program) : FrameAlongside (RunsFram
     have same := Laws.State.removeVariable_same s target name
     kept.carry (.equal same.scopes same.occurrences (congrArg (·.multiInstances) same.slots)
       (congrArg (·.compensation.runs) same.slots))
-  storeRuns _ s compensation _ fresh kept :=
+  storeRuns _ s compensation _ fresh _ kept :=
     kept.carry ⟨.refl _, fun _ _ o present _ => ⟨o, present, rfl, rfl, rfl⟩, fun _ inside => .inl inside,
       fun _ _ _ inside _ => inside, fresh⟩
+
+/-- Subscriptions' reservations and queued occurrences keep the lane's slot invariant but its numbering. -/
+theorem runsFramed_occursAlongside (program : Program) : OccursAlongside program (RunsFramed program) where
+  reserve s element scope _ _ kept := reserve_runsFramed s element scope kept
+  occur s _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.carry (.equal rfl rfl rfl rfl)
+  compensate s _ _ _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.carry (.equal rfl rfl rfl rfl)
 
 /-- Dropping a record that owns no scope occurrence carries the invariant: it is no running body's body occurrence,
 which owns the body's scope occurrence. -/
@@ -587,6 +602,17 @@ theorem opens_fixed {s : State} {base next : MultiInstanceRun} {loop : MultiInst
 
 /-! ### The state operations -/
 
+/-- A reservation keeps `Unstarted`: it moves the occurrences as `Laws.Step.EndsStep` says and keeps the draft's starts. -/
+theorem Unstarted.reserve {program : Program} {b s : State} {element : ElementId} {scope : ScopeOccurrenceId}
+    (kept : Unstarted b s) (formed : WellFormed program s) : Unstarted b (s.reserve element scope).1 :=
+  kept.move (.ofEnds (Laws.Step.reserve_frame formed element scope)
+    (congrArg (·.started) (Laws.State.reserve_reserves s element scope).draft))
+
+/-- A reservation keeps `Snapshots`: it keeps every body's record. -/
+theorem Snapshots.reserve {b s : State} (kept : Snapshots b s) (element : ElementId) (scope : ScopeOccurrenceId) :
+    Snapshots b (s.reserve element scope).1 :=
+  kept.shrink fun _ inside => (Laws.State.reserve_reserves s element scope).slots ▸ inside
+
 /-- The state operations keep `Unstarted`: each moves the occurrences and keys as `Laws.Step.EndsStep` says and keeps
 the draft's starts; the Multi-Instance ones as well, since it reads no body's record. -/
 theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
@@ -603,9 +629,7 @@ theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
   enterCalled _ s called call variables definition formed kept :=
     kept.move (.ofEnds (Laws.Step.enterCalled_frame formed called call variables definition)
       (by rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]))
-  reserve _ s element scope formed kept :=
-    kept.move (.ofEnds (Laws.Step.reserve_frame formed element scope)
-      (congrArg (·.started) (Laws.State.reserve_reserves s element scope).draft))
+  reserve _ s element scope formed _ kept := kept.reserve formed
   leaveScope _ _ _ formed present _ kept :=
     kept.move (.ofEnds (Laws.Step.leaveScope_frame formed present) (Laws.State.leaveScope_left formed present).started)
   clearInside _ _ _ keep formed present inside kept :=
@@ -618,7 +642,7 @@ theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
   removeVariable _ s target name _ kept :=
     kept.move (.ofEnds (Laws.Step.removeVariable_frame s target name)
       (congrArg (·.started) (Laws.State.removeVariable_same s target name).draft))
-  storeRuns _ _ _ _ _ kept := kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+  storeRuns _ _ _ _ _ _ kept := kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
   instanceBegin s _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
@@ -645,8 +669,7 @@ theorem snapshots_frameAlongside (b : State) : FrameAlongside (Snapshots b) wher
   enterCalled _ s called call variables definition formed kept := by
     rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
     exact kept.same rfl
-  reserve _ s element scope _ kept :=
-    kept.shrink fun _ inside => (Laws.State.reserve_reserves s element scope).slots ▸ inside
+  reserve _ s element scope _ _ kept := kept.reserve element scope
   leaveScope _ _ _ formed present _ kept := kept.shrink (Laws.State.leaveScope_left formed present).slots.bodies
   clearInside _ _ _ keep formed present _ kept :=
     kept.shrink (Laws.State.clearInside_cleared formed present keep).slots.bodies
@@ -657,7 +680,7 @@ theorem snapshots_frameAlongside (b : State) : FrameAlongside (Snapshots b) wher
     kept.shrink fun _ inside => (Laws.State.setVariable_same s target name value).slots ▸ inside
   removeVariable _ s target name _ kept :=
     kept.shrink fun _ inside => (Laws.State.removeVariable_same s target name).slots ▸ inside
-  storeRuns _ _ _ _ _ kept := kept.same rfl
+  storeRuns _ _ _ _ _ _ kept := kept.same rfl
 
 /-- The state operations keep `Unstarted` and `Snapshots` together. -/
 theorem since_frameAlongside (b : State) : FrameAlongside fun s => Unstarted b s ∧ Snapshots b s :=
@@ -672,8 +695,7 @@ theorem since_frameAlongside (b : State) : FrameAlongside fun s => Unstarted b s
     enterCalled := fun program s called call variables definition formed kept =>
       ⟨one.enterCalled program s called call variables definition formed kept.1,
         two.enterCalled program s called call variables definition formed kept.2⟩
-    reserve := fun program s element scope formed kept =>
-      ⟨one.reserve program s element scope formed kept.1, two.reserve program s element scope formed kept.2⟩
+    reserve := fun _ _ element scope formed _ kept => ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
     leaveScope := fun program s scope formed present leaves kept =>
       ⟨one.leaveScope program s scope formed present leaves kept.1, two.leaveScope program s scope formed present leaves kept.2⟩
     clearInside := fun program s scope keep formed present inside kept =>
@@ -684,8 +706,23 @@ theorem since_frameAlongside (b : State) : FrameAlongside fun s => Unstarted b s
       ⟨one.setVariable program s target name value formed kept.1, two.setVariable program s target name value formed kept.2⟩
     removeVariable := fun program s target name formed kept =>
       ⟨one.removeVariable program s target name formed kept.1, two.removeVariable program s target name formed kept.2⟩
-    storeRuns := fun program s compensation formed fresh kept =>
-      ⟨one.storeRuns program s compensation formed fresh kept.1, two.storeRuns program s compensation formed fresh kept.2⟩ }
+    storeRuns := fun program s compensation formed fresh resumes kept =>
+      ⟨one.storeRuns program s compensation formed fresh (fun run member element at_ leave resumed =>
+          (resumes run member element at_ leave resumed).imp_right (·.imp fun _ => And.imp_left And.left)) kept.1,
+        two.storeRuns program s compensation formed fresh (fun run member element at_ leave resumed =>
+          (resumes run member element at_ leave resumed).imp_right (·.imp fun _ => And.imp_left And.right)) kept.2⟩ }
+
+/-- Subscriptions' reservations and queued occurrences keep `Unstarted` and `Snapshots`: they move the occurrences as
+`Laws.Step.EndsStep` says, keep the draft's starts and keep every body's record. -/
+theorem since_occursAlongside (b : State) (program : Program) :
+    OccursAlongside program fun s => Unstarted b s ∧ Snapshots b s where
+  reserve _ element scope formed _ kept := ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
+  occur s _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
+  compensate s _ _ _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
 
 /-- Dropping a record keeps both: it moves no key and no body's record. -/
 theorem since_withoutRecord {b t : State} (id : Nat) (kept : Unstarted b t ∧ Snapshots b t) :

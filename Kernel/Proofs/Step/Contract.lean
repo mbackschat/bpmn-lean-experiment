@@ -260,10 +260,11 @@ theorem registered_contract_of {inv : Program → State → Prop} (ops : Feature
     exact Laws.Propagation.raise_keeps (ops.propagation _) (registeredSearch ops facts ctx (by simp only)
       (fun _ _ _ => by simp only) (fun _ _ _ => by simp only) (by simp only)) holds settled (fun event => (raisable event).2.2)
       ran
-  compensate _ _ _ _ _ _ _ _ holds stands resumable ran := by
+  compensate _ _ _ _ _ _ _ _ holds stands resumable pending ran := by
     rw [Laws.Registry.hooks_compensate] at ran
     obtain ⟨entry, inside, named⟩ := stands
-    exact Laws.Compensation.compensate_keeps (ops.runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) resumable ran
+    exact Laws.Compensation.compensate_keeps (ops.runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) resumable pending
+      ran
   failCompensation _ _ _ _ _ _ _ holds _ ran := by
     rw [Laws.Registry.hooks_failCompensation] at ran
     exact Laws.Compensation.failCompensation_keeps (ops.compensation _) holds ran

@@ -102,7 +102,7 @@ phases of `Step` (`Laws.Step.Phases`, `Laws.Step.PipelinePhases`) keep `WellForm
 theorem stepKeepsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hooks WellFormed)
     (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed) : StepKeepsWellFormed hooks :=
   fun _ _ _ _ formed ran => Laws.Step.running_keeps contract phases stateFacts
-    (Laws.Step.complete_keeps contract phases pipeline stateFacts) (fun _ _ => Laws.State.reset_wellFormed) formed ran
+    (Laws.Step.complete_keeps contract phases pipeline stateFacts) (Laws.State.reset_wellFormed formed) ran
 
 /-- A committed start makes a well-formed state, from the same obligations and a well-formed fresh instance with its
 root's Event Sub-Process starts queued for arming. -/
