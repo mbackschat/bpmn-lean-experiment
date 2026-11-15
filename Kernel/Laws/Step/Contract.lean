@@ -214,6 +214,39 @@ theorem occurPending_of {s t : State} (occurs : ∀ element ∈ occursOf t.signa
   · exact (mem_occursOf.mp (occurs _ (mem_occursOf.mpr (.inr resumed)))).elim .inl (.inr ∘ .inl)
   · exact .inr (.inr ⟨run, runs run member, rest⟩)
 
+/-! ## Queued triggers
+
+What the closure reads of the compensation triggers its queue carries: a queued compensation's trigger, and a queued
+Cancel raise's origin, whose thrower the compensation its catch queues takes as trigger
+(`Feature.Propagation.leaveOccurrence`). An invariant that keeps the keys of compensation runs apart reads them. -/
+
+/-- The triggers of the queued compensations of `signals` and the origins of its queued Cancel raises, in queue order;
+a raise is read by `Raised.isCancel`, its owner's query. -/
+def triggersOf (signals : List Signal) : List (OccurrenceRef ⊕ Origin) :=
+  signals.filterMap fun
+    | .compensate _ _ trigger _ _ => some (.inl trigger)
+    | .raise event origin => if event.isCancel then some (.inr origin) else none
+    | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .begin _ | .complete _ _ _ _ | .write _ _ _ | .remove _ _
+    | .occur _ _ _ _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ => none
+
+/-- An empty queue carries no trigger. -/
+theorem triggersOf_nil : triggersOf [] = [] := rfl
+
+/-- Queuing signals adds the triggers they carry to the queued ones. -/
+theorem triggersOf_append (signals more : List Signal) :
+    triggersOf (signals ++ more) = triggersOf signals ++ triggersOf more :=
+  List.filterMap_append
+
+/-- A queued compensation carries its trigger. -/
+theorem triggersOf_compensate (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
+    (leave : Option Nat) (resume : Option Resume) :
+    triggersOf [.compensate scope activity trigger leave resume] = [.inl trigger] := rfl
+
+/-- A queued Cancel raise carries its origin, and any other raise nothing. -/
+theorem triggersOf_raise (event : Raised) (origin : Origin) :
+    triggersOf [.raise event origin] = if event.isCancel then [.inr origin] else [] := by
+  cases cancels : event.isCancel <;> simp [triggersOf, cancels]
+
 /-- An Event carries its element's header and no envelope. -/
 theorem event?_bare {element : Element} {header : Header} {payload : EventPayload}
     (typed : element.event? = some (header, payload)) : element.header = header ∧ element.envelope? = none := by
