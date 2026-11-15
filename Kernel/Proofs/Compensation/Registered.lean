@@ -317,4 +317,12 @@ theorem registered_dequeued {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : 
   exact registered_handlersInOrder ctx state after run next holds.1 formed
     (.inl ⟨scope, activity, trigger, leave, resume, fresh, ran⟩) member inside sameTrigger sameScope
 
+/-! ## The Step context -/
+
+/-- The context `Step.step` hands every hook answers the queries as `Step`'s does (`StepQueries`), so the statements
+that read it hold of every hook call `Step` makes. -/
+theorem stepQueries_inputCtx (hooks : Hooks) (program : Program) (input : Input) :
+    StepQueries hooks (Laws.Step.inputCtx hooks program input) :=
+  Laws.Step.inputCtx_queries hooks program input
+
 end Kernel.Proofs.Compensation
