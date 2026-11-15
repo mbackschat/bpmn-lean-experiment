@@ -1,14 +1,15 @@
 /**
  * Refusal tests of `admission/scopes.ts`: a Scope the kernel can begin and run. A Scope without a none start Event
- * begins only Activities, a Transaction runs the compensate method, an Event Sub-Process carries no loop, and a local variable
- * needs the input mapping that gives it its initial value.
+ * begins only Activities, a Transaction runs the compensate method, an Event Sub-Process carries no loop, a local variable
+ * needs the input mapping that gives it its initial value, and a compensation handler sits beside its subject or inside
+ * it (`admission/flow.ts` `handlerReference`).
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, append, base, boundary, duration, elementId, end, eventSubProcess, flow, gateway, loop, mapping, receiveWork, refusalOf,
-  refusalTests, replace, scope, start, task, userWork, variable, wired, withFlows, withOptions,
+  activity, append, base, boundary, compensationTrigger, definitionRef, duration, elementId, end, eventSubProcess, flow, gateway, loop,
+  mapping, receiveWork, refusalOf, refusalTests, replace, scope, start, task, userWork, variable, wired, withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -68,6 +69,34 @@ const boundaryConnected = (alsoFromTask: boolean, merging = false) => (program: 
     ...(merging ? [gateway("G", { exclusive: { candidates: [], default: "gb" } })] : [])),
   flow("bb", "BT", into), flow("be", "B", "E"), ...(merging ? [flow("gb", "G", "B")] : []), ...(alsoFromTask ? [flow("tb", "T", into)] : []));
 };
+
+/**
+ * `T` becomes a User Task compensable by the unconnected handler `H`, which sits in the called process `Q`, or beside
+ * `T` under `beside`.
+ */
+const calledHandler = (beside: boolean) => (program: Json): Json => ({
+  ...append(task(activity("T", userWork(), { compensationHandlers: ["H"] }))(program), activity("H", "manual", { forCompensation: true })),
+  processes: [{ definition: definitionRef("Q"), children: beside ? [] : ["H"], variables: [], executable: true }],
+});
+
+/** `retaining`, with its handler `H` moved out of `T` to Process level. */
+const outerHandler = (program: Json): Json => {
+  const retained = retaining()(program);
+  return append({ ...retained, elements: (retained.elements as Json[]).filter((entry) => elementId(entry) !== "H") },
+    activity("H", "manual", { forCompensation: true }));
+};
+
+/** `T` becomes a User Task compensable by `H`, which sits in the Sub-Process `P` beside `T`, or beside `T` under `beside`. */
+const nestedHandler = (beside: boolean) => (program: Json): Json =>
+  append(task(activity("T", userWork(), { compensationHandlers: ["H"] }))(program),
+    scope("P", "embedded", {}, { forCompensation: true }), activity("H", "manual", { forCompensation: true }, beside ? null : "P"));
+
+/** `T` becomes an embedded Sub-Process `XS -> XE` whose handler is the Compensation Event Sub-Process `K` inside it. */
+const compensationEventSubProcess = (program: Json): Json =>
+  withFlows(append(task(scope("T", "embedded", {}, { compensationHandlers: ["K"] }))(withOptions(program, { abnormalScopeEnd: "completesNormally" })),
+    start("XS", null, [], "T"), end("XE", "none", "T"),
+    scope("K", eventSubProcess(compensationTrigger, true), {}, {}, "T"), start("KS", compensationTrigger, [], "K")),
+  flow("xx", "XS", "XE"));
 
 export const rows: readonly Row[] = [
   {
@@ -166,6 +195,25 @@ export const rows: readonly Row[] = [
     mutate: boundaryConnected(true, true),
     control: boundaryConnected(false, true),
   },
+  {
+    // `BpmnParse.parseAssociations` (`BpmnParse.java:848-883`) resolves an Association within one process's scopes.
+    code: "il.reference",
+    description: "a compensation handler in another process than its subject",
+    mutate: calledHandler(false),
+    control: calledHandler(true),
+  },
+  {
+    code: "il.reference",
+    description: "a compensation handler outside the Sub-Process its subject sits in",
+    mutate: outerHandler,
+    control: retaining(),
+  },
+  {
+    code: "il.reference",
+    description: "a compensation handler inside a Sub-Process beside its subject",
+    mutate: nestedHandler(false),
+    control: nestedHandler(true),
+  },
 ];
 
 refusalTests("scopes", rows);
@@ -185,4 +233,8 @@ test("scopes: an element its parent does not list, or a child naming another par
   assert.equal(refusalOf(listing([]), true), "il.reference");
   assert.equal(refusalOf(listing(["XS", "E"]), true), "il.reference");
   assert.equal(refusalOf(task(activity("T", userWork(), { compensationHandlers: ["Missing"] }))(base())), "il.reference");
+});
+
+test("scopes: a Compensation Event Sub-Process handling the Sub-Process holding it is admitted", () => {
+  assert.equal(refusalOf(compensationEventSubProcess(base())), null);
 });

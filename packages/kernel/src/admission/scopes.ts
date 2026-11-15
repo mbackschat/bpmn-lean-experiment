@@ -146,9 +146,9 @@ export function scope(program: Program, header: Header, payload: ScopePayload): 
 
 /**
  * Every parent is a Scope that lists the element as a child, every child a Scope lists, an element or a boundary of one,
- * sits in that Scope, a called process lists only process-level children, and a compensation handler names an element:
- * an element outside its parent's list, or listed by a Scope it does not sit in, would be begun or cleared by one owner
- * and not the other.
+ * sits in that Scope, and a called process lists only process-level children: an element outside its parent's list, or
+ * listed by a Scope it does not sit in, would be begun or cleared by one owner and not the other. Where a compensation
+ * handler sits is `flow.ts` `handlerReference`.
  */
 export function membership(program: Program): string | null {
   const parentOf = (id: ElementId): ElementId | null | undefined => {
@@ -168,11 +168,8 @@ export function membership(program: Program): string | null {
     const scope = elementScope(element);
     return scope === null || scope[1].children.every((child) => parentOf(child) === scope[0].id);
   };
-  const handler = (element: Element): boolean =>
-    (elementEnvelope(element)?.compensationHandlers ?? []).every((id) => programElement(program, id) !== null);
   const called = (process: CalledProcess): boolean => process.children.every((child) => parentOf(child) === null);
-  const resolved = program.elements.every(member) && program.elements.every(lists) && program.elements.every(handler) &&
-    program.processes.every(called);
+  const resolved = program.elements.every(member) && program.elements.every(lists) && program.processes.every(called);
   return resolved ? null : "il.reference";
 }
 

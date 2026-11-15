@@ -128,8 +128,26 @@ function gatewayReference(payload: GatewayPayload): boolean {
 }
 
 /**
- * Every identifier names exactly one element, boundary or flow, and every flow reference resolves where it is used: a
- * dangling or misplaced reference would be read as no reference at all. Scope membership is `scopes.ts` `membership`.
+ * An element's compensation handlers are elements in its own place, as the handler its compensation boundary's
+ * Association names is, or its children, as its Compensation Event Sub-Process is. `feature/compensation.ts` begins a
+ * handler in a context inside the scope occurrence its subject completed in, an occurrence of the parent of a handler
+ * beside the subject, and for a Compensation Event Sub-Process a context holding the subject's own variables, so a handler
+ * anywhere else would run outside its Scope. CIB resolves an Association from the scope declaring it, among that scope's
+ * activities and its own compensation handlers (`BpmnParse.parseAssociations`, `BpmnParse.java:848-883`), so it never
+ * links a handler of another process.
+ */
+function handlerReference(program: Program, element: Element): boolean {
+  const subject = elementHeader(element).id;
+  return (elementEnvelope(element)?.compensationHandlers ?? []).every((id) => {
+    const target = programElement(program, id);
+    return target !== null && (place(program, id) === place(program, subject) || elementHeader(target).parent === subject);
+  });
+}
+
+/**
+ * Every identifier names exactly one element, boundary or flow, and every flow and compensation handler reference
+ * resolves where it is used: a dangling or misplaced reference would be read as no reference at all. Scope membership is
+ * `scopes.ts` `membership`.
  */
 export function references(program: Program): string | null {
   const elements = program.elements.map((element) => elementHeader(element).id);
@@ -137,6 +155,7 @@ export function references(program: Program): string | null {
   const resolved = distinct([...elements, ...boundaries]) && distinct(program.flows.map((flow) => flow.id)) &&
     program.flows.every((flow) => flowReference(program, flow)) &&
     program.elements.every((element) => listReference(program, element)) &&
+    program.elements.every((element) => handlerReference(program, element)) &&
     program.elements.every((element) => {
       const gateway = elementGateway(element);
       return gateway === null || gatewayReference(gateway[1]);

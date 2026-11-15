@@ -51,6 +51,18 @@ def listReference (program : Program) (element : Element) : Bool :=
       envelope.defaultFlow.all element.outgoing.contains &&
       envelope.boundaries.all fun boundary => distinct boundary.outgoing && boundary.outgoing.all (leaves boundary.id))
 
+/-- An element's compensation handlers are elements in its own place, as the handler its compensation boundary's
+Association names is, or its children, as its Compensation Event Sub-Process is. `Kernel.Feature.Compensation` begins a
+handler in a context inside the scope occurrence its subject completed in, an occurrence of the parent of a handler
+beside the subject, and for a Compensation Event Sub-Process a context holding the subject's own variables, so a handler
+anywhere else would run outside its Scope. CIB resolves an Association from the scope declaring it, among that scope's
+activities and its own compensation handlers (`BpmnParse.parseAssociations`, `BpmnParse.java:848-883`), so it never
+links a handler of another process. -/
+def handlerReference (program : Program) (element : Element) : Bool :=
+  ((element.envelope?.map (·.compensationHandlers)).getD []).all fun id =>
+    (program.element? id).any fun target =>
+      place program id == place program element.header.id || target.header.parent == some element.header.id
+
 /-- What the admissions read of a Gateway's kind: the candidates and default of a conditional Gateway, whether one
 activation may leave on several flows at once, and whether it waits for an event. -/
 structure Routing where
@@ -71,14 +83,15 @@ def gatewayReference (payload : GatewayPayload) : Bool :=
     candidates.all payload.outgoing.contains && distinct candidates &&
       default.all fun flow => payload.outgoing.contains flow && !candidates.contains flow
 
-/-- Every identifier names exactly one element, boundary or flow, and every flow reference resolves where it is used:
-a dangling or misplaced reference would be read as no reference at all. Scope membership is
+/-- Every identifier names exactly one element, boundary or flow, and every flow and compensation handler reference
+resolves where it is used: a dangling or misplaced reference would be read as no reference at all. Scope membership is
 `Kernel.Admission.Scopes.membership`. -/
 def references (program : Program) : Option String :=
   let elements := program.elements.map (·.header.id)
   let boundaries := program.elements.flatMap fun element => (element.envelope?.map (·.boundaries.map (·.id))).getD []
   if distinct (elements ++ boundaries) && distinct (program.flows.map (·.id)) &&
       program.flows.all (flowReference program) && program.elements.all (listReference program) &&
+      program.elements.all (handlerReference program) &&
       program.elements.all fun element => element.gateway?.all fun (_, payload) => gatewayReference payload then none
   else some "il.reference"
 

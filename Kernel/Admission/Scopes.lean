@@ -91,9 +91,9 @@ def scope (program : Program) (header : Header) (payload : ScopePayload) : Optio
       implicitStart program header
 
 /-- Every parent is a Scope that lists the element as a child, every child a Scope lists, an element or a boundary of
-one, sits in that Scope, a called process lists only process-level children, and a compensation handler names an
-element: an element outside its parent's list, or listed by a Scope it does not sit in, would be begun or cleared by one
-owner and not the other. -/
+one, sits in that Scope, and a called process lists only process-level children: an element outside its parent's list,
+or listed by a Scope it does not sit in, would be begun or cleared by one owner and not the other. Where a compensation
+handler sits is `Kernel.Admission.Flow.handlerReference`. -/
 def membership (program : Program) : Option String :=
   let parentOf (id : ElementId) : Option (Option ElementId) :=
     match program.element? id with
@@ -105,12 +105,9 @@ def membership (program : Program) : Option String :=
   let lists (element : Element) : Bool :=
     element.scope?.all fun (header, payload) =>
       payload.children.all fun child => parentOf child == some (some header.id)
-  let handler (element : Element) : Bool :=
-    ((element.envelope?.map (·.compensationHandlers)).getD []).all fun id => (program.element? id).isSome
   let called (process : CalledProcess) : Bool :=
     process.children.all fun child => parentOf child == some none
-  if program.elements.all member && program.elements.all lists && program.elements.all handler &&
-      program.processes.all called then none
+  if program.elements.all member && program.elements.all lists && program.processes.all called then none
   else some "il.reference"
 
 /-- When a Sub-Process completes, the records retained in it pass to its compensation handler or, without one, to its
