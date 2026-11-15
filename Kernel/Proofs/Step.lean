@@ -156,7 +156,8 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
   complete _ _ leave writes rule formed member unstarted := waited_wellFormed formed member unstarted leave writes rule
   completeOwner _ _ _ leave writes rule formed member owned link :=
     complete_wellFormed formed owned (owner_begun formed member owned link) leave writes rule
-  raise _ _ event patch formed member effect := effectRaise_wellFormed formed member effect event patch
+  raise _ _ code message patch formed member effect :=
+    effectRaise_wellFormed formed member effect (.error code message) patch
   cancel _ formed := queue_wellFormed formed (by simp [Queueable])
   rekind _ change formed kept only := by
     have still : ∀ item ∈ _, Laws.State.AwaitsTrigger item.kind → Laws.State.AwaitsTrigger (change item).kind :=
@@ -327,11 +328,11 @@ theorem scopesOps : Laws.Scopes.ScopesOps (Laws.State.WellFormed program) where
 /-- Propagation's operations record (`Laws.Propagation.PropagationOps`) of `WellFormed`. -/
 theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.WellFormed program) where
   complete _ _ leave writes rule formed member begun := complete_wellFormed formed member begun leave writes rule
-  raise _ event _ formed member begun := raiseFrom_wellFormed formed member begun event (fun _ same => by cases same) []
+  raise _ event _ formed member begun _ := raiseFrom_wellFormed formed member begun event (fun _ same => by cases same) []
   fire _ _ _ formed := queue_wellFormed formed trivial
   outbox _ _ formed := formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply Laws.State.instanceOf_congr <;> rfl, id,
     .refl _, .refl _, .refl _, fun _ => id, .same rfl⟩ rfl formed.startedOnce
-  compensate _ _ _ _ _ _ formed member begun := queue_wellFormed formed fun _ same => by
+  compensate _ _ _ _ _ _ formed member begun _ _ := queue_wellFormed formed fun _ same => by
     cases same
     exact ⟨fun _ _ same => by cases same; exact begun_settled formed member begun, fun _ _ same => by simp at same⟩
   terminate _ _ formed member begun :=
@@ -349,7 +350,7 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
   failCompensation _ _ _ _ _ formed := queue_wellFormed formed trivial
   fail _ _ formed := queue_wellFormed formed (by simp [Queueable])
   disarm _ host formed := ⟨Laws.State.disarm_wellFormed formed host, by rw [Laws.State.disarm_eq]⟩
-  rollBack _ _ _ _ _ _ _ formed stands _ := queue_wellFormed
+  rollBack _ _ _ _ _ _ _ formed stands _ _ := queue_wellFormed
     (Laws.State.clearAll_wellFormed formed (List.mem_map.mpr stands)) fun _ same => by
       cases same
       exact ⟨fun _ _ wrong => (by cases wrong), fun _ _ wrong => by cases wrong⟩

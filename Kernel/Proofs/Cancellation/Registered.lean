@@ -50,8 +50,9 @@ theorem workOps_alongside (side : FrameAlongside rel) {program : Program}
     ⟨ops.complete s item leave writes rule holds.1 open_ unstarted, side.signal holds.2 _⟩
   completeOwner s scope occurrence leave writes rule holds member owned link :=
     ⟨ops.completeOwner s scope occurrence leave writes rule holds.1 member owned link, side.signal holds.2 _⟩
-  raise s item event patch holds member effect :=
-    ⟨ops.raise s item event patch holds.1 member effect, side.signal holds.2 _⟩
+  raise s item code message patch holds member effect :=
+    ⟨ops.raise s item code message patch holds.1 member effect, side.signal holds.2 _
+      ⟨rfl, rfl, by rw [Laws.Step.triggersOf_raise, Laws.State.isCancel_error]; rfl⟩⟩
   cancel s holds := ⟨ops.cancel s holds.1, side.signal holds.2 _⟩
   rekind s change holds kept keep :=
     ⟨ops.rekind s change holds.1 kept keep,
@@ -182,13 +183,15 @@ theorem propagationOps_alongside (side : FrameAlongside rel) {program : Program}
     Laws.Propagation.PropagationOps program fun s => WellFormed program s ∧ rel s where
   complete s occurrence leave writes rule holds member begun :=
     ⟨ops.complete s occurrence leave writes rule holds.1 member begun, side.signal holds.2 _⟩
-  raise s raised occurrence holds member begun :=
-    ⟨ops.raise s raised occurrence holds.1 member begun, side.signal holds.2 _⟩
+  raise s raised occurrence holds member begun raises :=
+    ⟨ops.raise s raised occurrence holds.1 member begun (raises.imp fun _ => And.left),
+      occurs.raise s raised occurrence holds.1 raises holds.2⟩
   fire s item fired holds := ⟨ops.fire s item fired holds.1, side.signal holds.2 _⟩
   outbox s outbox holds :=
     ⟨ops.outbox s outbox holds.1, side.frame s _ .same holds.2⟩
-  compensate s occurrence scope activity trigger leave holds member begun :=
-    ⟨ops.compensate s occurrence scope activity trigger leave holds.1 member begun, side.signal holds.2 _⟩
+  compensate s occurrence scope activity trigger leave holds member begun begunFrom named :=
+    ⟨ops.compensate s occurrence scope activity trigger leave holds.1 member begun (begunFrom.imp fun _ => And.left)
+      named, occurs.throwCompensate s occurrence scope activity trigger leave holds.1 begunFrom named holds.2⟩
   terminate s occurrence holds member begun :=
     have cleared := ops.terminate s occurrence holds.1 member begun
     ⟨⟨cleared.1, side.clearInside program s _ _ holds.1 (holds.1.owned.occurrenceScopes occurrence member)
@@ -209,15 +212,15 @@ theorem propagationOps_alongside (side : FrameAlongside rel) {program : Program}
   disarm s host holds :=
     have disarmed := ops.disarm s host holds.1
     ⟨⟨disarmed.1, side.disarm program s host holds.1 holds.2⟩, disarmed.2⟩
-  rollBack s scope trigger leave element parent flows holds stands bounded :=
-    ⟨ops.rollBack s scope trigger leave element parent flows holds.1 stands bounded, occurs.compensate _ _ _ _ _ _ _ _
-      (.inl bounded) (side.clearInside program s scope [] holds.1 (List.mem_map.mpr stands) (fun _ _ none => by simp at none)
-        holds.2)⟩
+  rollBack s scope trigger leave element parent flows holds stands bounded rolls :=
+    ⟨ops.rollBack s scope trigger leave element parent flows holds.1 stands bounded (rolls.imp fun _ => And.left),
+      occurs.compensate _ _ _ _ _ _ _ _ (.inl bounded) ⟨s, rfl, rolls⟩
+        (side.clearInside program s scope [] holds.1 (List.mem_map.mpr stands) (fun _ _ none => by simp at none) holds.2)⟩
 
 /-- Compensation runs' record beside `WellFormed`: a context `Laws.Compensation.RunsOps` leaves is a running one
 (`LeavesOwned`), the runs it stores hold only contexts held or fresh (`StoresHeldOrFresh`) and resume by pending
 reservations (`ResumesPending`), and an ended run's resume is pending. -/
-theorem runsOps_alongside (side : FrameAlongside rel) {program : Program}
+theorem runsOps_alongside (side : StoresAlongside rel) {program : Program}
     (occurs : OccursAlongside program rel)
     (ops : Laws.Compensation.RunsOps (WellFormed program) Laws.State.Settled) :
     Laws.Compensation.RunsOps (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
@@ -293,7 +296,7 @@ theorem subscriptionsOps_alongside (side : FrameAlongside rel) {program : Progra
   bareBegin s item element locals holds member :=
     ⟨ops.bareBegin s item element locals holds.1 member, side.signalBegin _ _ (.fresh rfl rfl) holds.2⟩
 
-theorem compensationOps_alongside (side : FrameAlongside rel) {program : Program}
+theorem compensationOps_alongside (side : StoresAlongside rel) {program : Program}
     (ops : Laws.Compensation.CompensationOps (WellFormed program)) :
     Laws.Compensation.CompensationOps fun s => WellFormed program s ∧ rel s where
   store s compensation holds runs :=
@@ -308,9 +311,9 @@ end Alongside
 
 /-! ## The registered hooks' feature records beside `WellFormed` -/
 
-/-- The feature records but Multi-Instance's of `WellFormed` and a property beside it, which may read the step's
-program, from those of `WellFormed` and `FrameAlongside` alone (`Proofs.Step.registered_contract_of` turns them and
-what the Multi-Instance hooks keep into the registered hooks' contract). -/
+/-- The feature records but Multi-Instance's and Compensation's of `WellFormed` and a property beside it, which may
+read the step's program, from those of `WellFormed` and `FrameAlongside` alone (`Proofs.Step.registered_contract_of`
+turns them and what the Multi-Instance and compensation hooks keep into the registered hooks' contract). -/
 theorem featureOps_frame {rel : Program → State → Prop} (ops : Proofs.Step.FeatureOps WellFormed)
     (side : ∀ program, FrameAlongside (rel program))
     (occurs : ∀ program, OccursAlongside program (rel program)) :
@@ -322,17 +325,25 @@ theorem featureOps_frame {rel : Program → State → Prop} (ops : Proofs.Step.F
   starts _ := startsOps_alongside (side _) (ops.starts _)
   scopes _ := scopesOps_alongside (side _) (ops.scopes _)
   subscriptions _ := subscriptionsOps_alongside (side _) (occurs _) (ops.subscriptions _)
-  compensation _ := compensationOps_alongside (side _) (ops.compensation _)
   propagation _ := propagationOps_alongside (side _) (occurs _) (ops.propagation _)
-  runs _ := runsOps_alongside (side _) (occurs _) (ops.runs _)
 
-/-- The feature records of `WellFormed` and a property beside it that `Alongside` gathers, from those of
-`WellFormed`. -/
+/-- What the registered compensation hooks keep of `WellFormed` and a property beside it that storing runs keeps, from
+the compensation records of `WellFormed`. -/
+theorem compensationKeeps_frame {rel : Program → State → Prop} (ops : Proofs.Step.RegisteredOps WellFormed)
+    (side : ∀ program, StoresAlongside (rel program)) (occurs : ∀ program, OccursAlongside program (rel program)) :
+    Proofs.Step.CompensationKeeps fun program s => WellFormed program s ∧ rel program s :=
+  Proofs.Step.compensationKeeps_of (fun _ => compensationOps_alongside (side _) (ops.compensation _))
+    (fun _ => runsOps_alongside (side _) (occurs _) (ops.runs _))
+
+/-- The feature records of `WellFormed` and a property beside it that `Alongside` and `StoresAlongside` gather, from
+those of `WellFormed`. -/
 theorem registeredOps_alongside {rel : State → Prop} (ops : Proofs.Step.RegisteredOps WellFormed)
-    (side : Alongside rel) (occurs : ∀ program, OccursAlongside program rel) :
+    (side : Alongside rel) (stores : StoresAlongside rel) (occurs : ∀ program, OccursAlongside program rel) :
     Proofs.Step.RegisteredOps fun program s => WellFormed program s ∧ rel s :=
   { featureOps_frame ops.toFeatureOps (fun _ => side.toFrameAlongside) occurs with
-    multiInstance := fun _ => multiInstanceOps_alongside side (ops.multiInstance _) }
+    multiInstance := fun _ => multiInstanceOps_alongside side (ops.multiInstance _)
+    compensation := fun _ => compensationOps_alongside stores (ops.compensation _)
+    runs := fun _ => runsOps_alongside stores (occurs _) (ops.runs _) }
 
 /-! ## Subtree removal of the registered hooks -/
 
@@ -346,7 +357,13 @@ theorem scopesKept_occursAlongside (before : State) (program : Program) :
   occur s _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
-  compensate s _ _ _ _ _ _ _ _ kept := by
+  compensate s _ _ _ _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept
+  throwCompensate s _ _ _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept
+  raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
 
@@ -354,7 +371,7 @@ theorem scopesKept_occursAlongside (before : State) (program : Program) :
 theorem keepsScopes_contract (ops : Proofs.Step.RegisteredOps WellFormed) (before : State) :
     Laws.Step.HookContract Registry.hooks (KeepsScopes before) :=
   Proofs.Step.registered_contract (registeredOps_alongside ops (scopesKept_alongside before)
-    (scopesKept_occursAlongside before)) Proofs.State.stateFacts
+    (scopesKept_stores before) (scopesKept_occursAlongside before)) Proofs.State.stateFacts
 
 /-- `SubtreeRemoved` of the registered hooks, from the records and phases of `WellFormed`. -/
 theorem subtreeRemoved_registered (ops : Proofs.Step.RegisteredOps WellFormed) (phases : Laws.Step.Phases WellFormed)
@@ -387,7 +404,6 @@ theorem endsKept_alongside (b : State) (x : Option (Nat × OccurrenceKey)) :
   disarm _ s host formed kept := kept.step formed (Laws.Step.disarm_frame s host)
   setVariable _ s target name value formed kept := kept.step formed (Laws.Step.setVariable_frame s target name value)
   removeVariable _ s target name formed kept := kept.step formed (Laws.Step.removeVariable_frame s target name)
-  storeRuns _ _ _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
   instanceBegin s _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
@@ -396,6 +412,11 @@ theorem endsKept_alongside (b : State) (x : Option (Nat × OccurrenceKey)) :
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
   leaveInstance _ _ _ _ formed _ _ present kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
   runs _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+
+/-- Storing compensation runs keeps an input's end facts from its start. -/
+theorem endsKept_stores (b : State) (x : Option (Nat × OccurrenceKey)) : StoresAlongside (Laws.Step.EndsKept b x) :=
+  { (endsKept_alongside b x).toFrameAlongside with
+    storeRuns := fun _ _ _ _ _ _ kept => kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _) }
 
 /-- `Step`'s phases keep an input's end facts from its start: journalling the draft and ordering the journal permute
 them, and beginning and cancelling frame them (`Kernel.Laws.Step.EndsFrames`). -/
@@ -421,7 +442,13 @@ theorem endsKept_occursAlongside (b : State) (x : Option (Nat × OccurrenceKey))
   occur s _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
-  compensate s _ _ _ _ _ _ _ _ kept := by
+  compensate s _ _ _ _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+  throwCompensate s _ _ _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+  raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
 
@@ -429,7 +456,8 @@ theorem endsKept_occursAlongside (b : State) (x : Option (Nat × OccurrenceKey))
 (`Laws.Step.EndsInv`), the hook contract `Laws.Step.complete_ends` and `MicroStepsKeepEnds` rest on. -/
 theorem endsInv_contract (ops : Proofs.Step.RegisteredOps WellFormed) (b : State) (x : Option (Nat × OccurrenceKey)) :
     Laws.Step.HookContract Registry.hooks (Laws.Step.EndsInv b x) :=
-  Proofs.Step.registered_contract (registeredOps_alongside ops (endsKept_alongside b x) (endsKept_occursAlongside b x))
+  Proofs.Step.registered_contract (registeredOps_alongside ops (endsKept_alongside b x) (endsKept_stores b x)
+    (endsKept_occursAlongside b x))
     Proofs.State.stateFacts
 
 /-! ## The draft the registered hooks leave -/

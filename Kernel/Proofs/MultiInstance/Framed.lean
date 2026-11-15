@@ -32,7 +32,7 @@ open Kernel
 open Kernel.Laws.State (WellFormed Within StrictlyWithin scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
   InstancesPlaced BeginsQueued UnbegunUnlooped SequentialSlots ParallelSlots OutputsFit)
-open Kernel.Proofs.Frame (OccursAlongside FrameAlongside StepAlongside Unmoved LeavesOwned StoresHeldOrFresh RunningContext
+open Kernel.Proofs.Frame (OccursAlongside FrameAlongside StoresAlongside StepAlongside Unmoved LeavesOwned StoresHeldOrFresh RunningContext
   ActiveInstance)
 
 /-- `Shaped` but the numbering: a running body's slots shaped by its loop's mode, its filled slots holding what its
@@ -289,9 +289,10 @@ theorem reserve_runsFramed {program : Program} (s : State) (element : ElementId)
     fun _ present => reserves.occurrences ▸ List.mem_append_left _ present)
 
 /-- The state operations the hooks apply keep the lane's slot invariant but its numbering under any program
-(`Proofs.Frame.FrameAlongside`). -/
-theorem runsFramed_frameAlongside (program : Program) : FrameAlongside (RunsFramed program) where
-  frame _ _ moved kept := kept.carry (.equal moved.scopes moved.occurrences moved.multiInstances moved.runs)
+(`Proofs.Frame.StoresAlongside`). -/
+theorem runsFramed_frameAlongside (program : Program) : StoresAlongside (RunsFramed program) where
+  frame _ _ moved kept :=
+    kept.carry (.equal moved.scopes moved.occurrences moved.multiInstances (congrArg (·.runs) moved.compensation))
   signalBegin s _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
@@ -341,7 +342,13 @@ theorem runsFramed_occursAlongside (program : Program) : OccursAlongside program
   occur s _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
-  compensate s _ _ _ _ _ _ _ _ kept := by
+  compensate s _ _ _ _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.carry (.equal rfl rfl rfl rfl)
+  throwCompensate s _ _ _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.carry (.equal rfl rfl rfl rfl)
+  raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
 
@@ -362,7 +369,7 @@ theorem withoutRecord_carries {program : Program} {t : State} {id : Nat}
 beginning replaces a reservation by its begun record or adds a fresh occurrence, and cancelling withdraws items and
 removes an occurrence (`FrameAlongside.cancelOccurrence`). -/
 theorem runsFramed_stepAlongside (program : Program) : StepAlongside (RunsFramed program) where
-  toFrameAlongside := runsFramed_frameAlongside program
+  toFrameAlongside := (runsFramed_frameAlongside program).toFrameAlongside
   journal _ _ _ _ kept _ _ := kept.carry (.equal rfl rfl rfl rfl)
   runOrder _ _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
   dequeue _ _ _ _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
@@ -625,7 +632,6 @@ theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
   removeVariable _ s target name _ kept :=
     kept.move (.ofEnds (Laws.Step.removeVariable_frame s target name)
       (congrArg (·.started) (Laws.State.removeVariable_same s target name).draft))
-  storeRuns _ _ _ _ _ _ kept := kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
   instanceBegin s _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
@@ -636,9 +642,14 @@ theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
     kept.move (.ofEnds (Laws.Step.leaveScope_frame formed present) (Laws.State.leaveScope_left formed present).started)
   runs _ _ kept := kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
 
+/-- Storing compensation runs keeps `Unstarted`: it moves no occurrence and no start. -/
+theorem unstarted_stores (b : State) : StoresAlongside (Unstarted b) :=
+  { (unstarted_alongside b).toFrameAlongside with
+    storeRuns := fun _ _ _ _ _ _ kept => kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl) }
+
 /-- The state operations the hooks apply keep `Snapshots`: none sets a body's record, and each keeps or removes
 some. -/
-theorem snapshots_frameAlongside (b : State) : FrameAlongside (Snapshots b) where
+theorem snapshots_frameAlongside (b : State) : StoresAlongside (Snapshots b) where
   frame _ _ moved kept := kept.shrink fun _ inside => moved.multiInstances ▸ inside
   signalBegin s _ _ kept := by
     rw [Laws.State.signal_eq]
@@ -666,8 +677,8 @@ theorem snapshots_frameAlongside (b : State) : FrameAlongside (Snapshots b) wher
   storeRuns _ _ _ _ _ _ kept := kept.same rfl
 
 /-- The state operations keep `Unstarted` and `Snapshots` together. -/
-theorem since_frameAlongside (b : State) : FrameAlongside fun s => Unstarted b s ∧ Snapshots b s :=
-  have one := (unstarted_alongside b).toFrameAlongside
+theorem since_frameAlongside (b : State) : StoresAlongside fun s => Unstarted b s ∧ Snapshots b s :=
+  have one := unstarted_stores b
   have two := snapshots_frameAlongside b
   { frame := fun s t moved kept => ⟨one.frame s t moved kept.1, two.frame s t moved kept.2⟩
     signalBegin := fun s request fits kept => ⟨one.signalBegin s request fits kept.1, two.signalBegin s request fits kept.2⟩
@@ -703,7 +714,13 @@ theorem since_occursAlongside (b : State) (program : Program) :
   occur s _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
-  compensate s _ _ _ _ _ _ _ _ kept := by
+  compensate s _ _ _ _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
+  throwCompensate s _ _ _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
+  raise s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
 
@@ -725,7 +742,7 @@ theorem since_start {program : Program} {b s t : State} {spare : Option Nat} {fa
 /-- `Step`'s phases keep both: journalling empties the draft, a begin starts an admitted reservation, which is unbegun,
 or a fresh occurrence, and cancelling withdraws items and removes an occurrence (`FrameAlongside.cancelOccurrence`). -/
 theorem since_stepAlongside (b : State) : StepAlongside fun s => Unstarted b s ∧ Snapshots b s where
-  toFrameAlongside := since_frameAlongside b
+  toFrameAlongside := (since_frameAlongside b).toFrameAlongside
   journal _ _ _ _ kept _ _ := ⟨⟨kept.1.below, kept.1.begun, fun _ _ _ _ _ => by simp⟩, kept.2.same rfl⟩
   runOrder _ _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
   dequeue _ _ _ _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩

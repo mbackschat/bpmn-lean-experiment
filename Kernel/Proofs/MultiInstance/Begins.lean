@@ -354,9 +354,11 @@ theorem beginsKept_occursAlongside (program : Program) : OccursAlongside program
   occur s element scope leave writes rule named held := held.signal _ fun apart other inside => by
     rw [List.mem_singleton.mp inside]
     exact named.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept apart).occurs)
-  compensate s scope activity trigger leave element at_ resumed named held := held.signal _ fun apart other inside => by
+  compensate s scope activity trigger leave element at_ resumed named _ held := held.signal _ fun apart other inside => by
     rw [List.mem_singleton.mp inside]
     exact named.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept apart).occurs)
+  throwCompensate s _ _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
+  raise s _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
 
 /-! ## Through an input -/
 

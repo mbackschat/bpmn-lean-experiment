@@ -115,7 +115,8 @@ theorem fireItem_keeps (contract : HookContract hooks inv) {ctx : Ctx} {item : O
   · exact contract.trigger _ _ _ _ _ holds open_ ran
 
 /-- A begun occurrence's dispatch to its element's hook keeps `inv`; one numbered as a body is of an element with a
-Multi-Instance envelope, so any hook but `Hooks.arriveMultiInstance` gets one of the element role. -/
+Multi-Instance envelope, so any hook but `Hooks.arriveMultiInstance` gets one of the element role, and a throw's hook
+gets one begun from a state that kept `inv`. -/
 theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}
     {trigger : StartTrigger} {state after : State} (holds : inv ctx.program state) (member : occurrence ∈ state.occurrences)
     (begun : occurrence.begun = true) (inner : ∀ id ∈ entry.inner.toList,
@@ -125,6 +126,7 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
       (((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true)
     (newest : state.draft.started.getLast?.map (·.occurrence) = some (Laws.State.key state occurrence))
     (unrun : ∀ run ∈ state.slots.multiInstances, run.occurrence ≠ occurrence.id)
+    (begunFrom : Laws.State.BegunFrom (inv ctx.program) state occurrence)
     (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) : inv ctx.program after := by
   rcases dispatch_unstarted ran with ⟨_, _, ran⟩ | ⟨_, _, _, body⟩ | ⟨unstarted, single, arrives⟩
   · exact contract.arriveStart _ _ _ _ _ _ _ holds member begun ran
@@ -140,7 +142,7 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
   | atScope ran => exact contract.arriveScope _ _ _ _ _ _ _ holds member begun inner ran
   | atGateway ran => exact contract.arriveGateway _ _ _ _ _ _ holds member begun ran
   | atCatch ran => exact contract.arriveCatch _ _ _ _ _ _ _ holds member begun unstarted role ran
-  | atThrow named ran => exact contract.arriveThrow _ _ _ _ _ _ _ holds member begun unstarted role named ran
+  | atThrow named ran => exact contract.arriveThrow _ _ _ _ _ _ _ holds member begun unstarted role named begunFrom ran
   | atLink ran => exact contract.arriveLink _ _ _ _ _ _ holds member begun ran
 
 /-- A begin keeps `inv`: it begins only in a scope occurrence that stands, and hands the begun occurrence on. -/
@@ -156,7 +158,7 @@ theorem begin_keeps (contract : HookContract hooks inv) (phases : ClosurePhases 
   have unrun := phases.unrun _ state request (roleOf ctx.program request) sourceType holds admitted
   simp only [made] at begunHolds begunMember newest unrun
   exact dispatch_keeps contract begunHolds.1 begunMember.1 begunMember.2 begunHolds.2
-    (phases.bodied _ _ _ begunHolds.1 begunMember.1) newest unrun dispatched
+    (phases.bodied _ _ _ begunHolds.1 begunMember.1) newest unrun ⟨state, request, _, sourceType, holds, made⟩ dispatched
 
 /-- A request an arrival or a start makes names no reservation. -/
 theorem admitted_fresh {state : State} {element : ElementId} {scope : ScopeOccurrenceId} {incoming : Option FlowId}
@@ -186,7 +188,7 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : ClosurePhases
     exact contract.armGateway _ _ _ _ _ _ popped (stands _ (occurrence occurrenceIssued)) (scope scopeIssued) hosted ran
   | onRaise ran =>
     obtain ⟨raisable, settled⟩ := phases.raisable _ _ _ _ _ holds heads
-    exact contract.raise _ _ _ _ _ popped raisable settled ran
+    exact contract.raise _ _ _ _ _ popped raisable settled ⟨queue, holds, heads, rfl⟩ ran
   | onBegin ran =>
     exact begin_keeps contract phases facts popped (phases.admittedSignal _ _ _ _ holds heads)
       (.inr ⟨queue, holds, .inl ⟨rest, heads, rfl⟩⟩) ran
@@ -207,7 +209,8 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : ClosurePhases
   | onEndInstance => exact phases.endInstance _ _ _ _ popped (phases.endRecorded _ queue _ _ holds head)
   | onCompensate stands ran =>
     exact contract.compensate _ _ _ _ _ _ _ _ popped stands (fun _ same => phases.resumable _ _ _ _ _ _ _ _ holds
-      (same ▸ heads)) (fun _ _ _ same => ⟨queue, holds, .inr (.inl ⟨_, _, _, _, _, _, same ▸ head⟩)⟩) ran
+      (same ▸ heads)) (fun _ _ _ same => ⟨queue, holds, .inr (.inl ⟨_, _, _, _, _, _, same ▸ head⟩)⟩)
+      ⟨queue, holds, heads, rfl⟩ ran
   | onCompensationFailed stands ran => exact contract.failCompensation _ _ _ _ _ _ _ popped stands ran
 
 theorem completeIdleScope_keeps (contract : HookContract hooks inv) (facts : StateFacts) {ctx : Ctx}

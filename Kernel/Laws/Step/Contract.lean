@@ -1,7 +1,7 @@
 module
 
 public import Kernel.Step
-public import Kernel.Laws.State.Invariant
+public import Kernel.Laws.State.Frames
 public import Kernel.Laws.IL
 
 /-! # Laws of the step function: the preservation contract
@@ -247,6 +247,17 @@ theorem triggersOf_raise (event : Raised) (origin : Origin) :
     triggersOf [.raise event origin] = if event.isCancel then [.inr origin] else [] := by
   cases cancels : event.isCancel <;> simp [triggersOf, cancels]
 
+/-- Signals that carry no trigger (`Laws.State.Untriggered`) queue none. -/
+theorem triggersOf_untriggered {signals : List Signal} (quiet : ∀ signal ∈ signals, Laws.State.Untriggered signal) :
+    triggersOf signals = [] := by
+  refine List.filterMap_eq_nil_iff.mpr fun signal inside => ?_
+  obtain ⟨uncompensated, uncancelled⟩ := quiet signal inside
+  cases signal with
+  | compensate scope activity trigger leave resume => exact absurd rfl (uncompensated scope activity trigger leave resume)
+  | raise event origin => simp [uncancelled event origin rfl]
+  | arm | armScope | armGateway | begin | complete | write | remove | occur | cancel | fire | endInstance
+  | compensationFailed => rfl
+
 /-- An Event carries its element's header and no envelope. -/
 theorem event?_bare {element : Element} {header : Header} {payload : EventPayload}
     (typed : element.event? = some (header, payload)) : element.header = header ∧ element.envelope? = none := by
@@ -303,7 +314,9 @@ activity's, catch's or throw's is of an element the program declares no start Ev
 header naming its element (`Program.element?` finds it by that name); the item it hands over is open; the scope occurrence and occurrence a queued signal names stand (`Step.stale`, `Step.gone`), an arming's
 host is begun in the scope occurrence the arming names, a compensation may end as it asks (`Laws.State.Resumable`)
 and the reservation it resumes by was pending in a state that kept `inv` (`PendingIn`),
-and a raise finds what its origin names and a settled host (`Laws.State.Raisable`); a completed occurrence's continuation runs while its scope occurrence stands;
+and a raise finds what its origin names and a settled host (`Laws.State.Raisable`); a throw's occurrence was begun from
+a state that kept `inv`, and a raise or compensation was taken off a queue that kept it (`Laws.State.BegunFrom`,
+`Laws.State.Popped`), which an invariant over the queued triggers reads (`triggersOf`); a completed occurrence's continuation runs while its scope occurrence stands;
 an Event Sub-Process's start Event reservation (`ScopeEntry.inner`) is beginnable in, and lies in, the scope occurrence
 its occurrence began in, and nothing claims it. The completion pipeline's hooks also keep its frame (`PipelineFrame`),
 and `Hooks.leave` leaves nothing hanging on the completing occurrence. `Hooks.delivered`, a query, picks an open item.
@@ -341,11 +354,12 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     occurrence.begun = true → (ctx.program.element? occurrence.element).bind (·.start?) = none →
     occurrence.role = .element → hooks.arriveCatch ctx header payload subscription occurrence state = .ok after →
     inv ctx.program after
+  /-- A throw's occurrence arrives as `Step.begin` has just begun it, from a state that kept `inv`. -/
   arriveThrow : ∀ ctx header payload thrown occurrence state after, inv ctx.program state →
     occurrence ∈ state.occurrences → occurrence.begun = true →
     (ctx.program.element? occurrence.element).bind (·.start?) = none → occurrence.role = .element →
-    header.id = occurrence.element → hooks.arriveThrow ctx header payload thrown occurrence state = .ok after →
-    inv ctx.program after
+    header.id = occurrence.element → Laws.State.BegunFrom (inv ctx.program) state occurrence →
+    hooks.arriveThrow ctx header payload thrown occurrence state = .ok after → inv ctx.program after
   arriveLink : ∀ ctx header payload occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     occurrence.begun = true → hooks.arriveLink ctx header payload occurrence state = .ok after → inv ctx.program after
   completeScope : ∀ ctx header payload scope occurrence state after, inv ctx.program state → scope ∈ state.scopes →
@@ -381,14 +395,17 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     ScopeStands state scope →
     (∀ found ∈ state.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope) →
     hooks.armGateway ctx occurrence gateway scope state = .ok after → inv ctx.program after
-  /-- A raise finds what its origin names and a settled host, as the closure takes it off the queue. -/
+  /-- A raise finds what its origin names and a settled host, as the closure takes it off a queue that kept `inv`. -/
   raise : ∀ ctx event origin state after, inv ctx.program state → Laws.State.Raisable ctx.program state origin →
-    (∀ host, origin.host = some host → Laws.State.Settled state host) → hooks.raise ctx event origin state = .ok after →
+    (∀ host, origin.host = some host → Laws.State.Settled state host) →
+    Laws.State.Popped (inv ctx.program) (.raise event origin) state → hooks.raise ctx event origin state = .ok after →
     inv ctx.program after
+  /-- A compensation is taken off a queue that kept `inv`. -/
   compensate : ∀ ctx scope activity trigger leave resume state after, inv ctx.program state → ScopeStands state scope →
     (∀ next, resume = some next → Laws.State.Resumable state scope next) →
     (∀ element at_ resumed, resume = some (.occur element at_ resumed) →
       PendingIn (inv ctx.program) element) →
+    Laws.State.Popped (inv ctx.program) (.compensate scope activity trigger leave resume) state →
     hooks.compensate ctx scope activity trigger leave resume state = .ok after → inv ctx.program after
   failCompensation : ∀ ctx handler code message origin state after, inv ctx.program state → ScopeStands state handler →
     hooks.failCompensation ctx handler code message origin state = .ok after → inv ctx.program after

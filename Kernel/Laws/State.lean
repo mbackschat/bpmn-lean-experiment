@@ -4,6 +4,7 @@ public import Kernel.Laws.State.Reserve
 public import Kernel.Laws.State.Transitions
 public import Kernel.State.Removal
 import all Kernel.State
+import all Kernel.State.Raise
 import all Kernel.State.Removal
 import all Kernel.State.Slots
 import all Kernel.State.Wait
@@ -64,6 +65,10 @@ theorem visible_congr {s t : State} (scopes : t.scopes = s.scopes) (variables : 
       | none => simp [State.visible.go]
       | some id => simp [State.visible.go, shows, called, scopes, variables, ih]
   simp only [State.visible, go, scopes]
+
+/-- An Error raise is no Cancel raise (`Raised.isCancel`), so it queues no trigger. -/
+theorem isCancel_error (code : String) (message : Option String) : (Raised.error code message).isCancel = false := by
+  simp [Raised.isCancel]
 
 /-- `State.instanceOf` reads only the scope occurrences and the instance identifier. -/
 theorem instanceOf_congr {s t : State} (scopes : t.scopes = s.scopes) (named : t.instanceId = s.instanceId)

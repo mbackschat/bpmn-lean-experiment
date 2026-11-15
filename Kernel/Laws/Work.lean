@@ -160,8 +160,8 @@ structure WorkOps (program : Program) (inv : State → Prop) : Prop where
     inv (state.signal (.complete occurrence.id leave writes rule))
   /-- A business Error raised from the occurrence an effect item waits for, in the item's scope occurrence and at its
   occurrence's activation. -/
-  raise : ∀ state item event patch, inv state → item ∈ state.openItems → item.kind.view.effect.isSome = true →
-    inv (state.signal (.raise event
+  raise : ∀ state item code message patch, inv state → item ∈ state.openItems → item.kind.view.effect.isSome = true →
+    inv (state.signal (.raise (.error code message)
       { element := item.element, scope := item.scope, host := some item.occurrence, patch := patch,
         activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }))
   cancel : ∀ state, inv state → inv (state.signal (.endInstance .cancelled none))
@@ -262,7 +262,7 @@ theorem effectResult_keeps {inv : State → Prop} (ops : WorkOps program inv) {c
   all_goals first
     | exact installed_keeps ops holds member unstarted _ _ _ _ _ _
     | exact ops.complete _ _ _ _ _ holds member unstarted
-    | exact ops.raise _ _ _ _ holds member effect
+    | exact ops.raise _ _ _ _ _ holds member effect
     | exact reopen_keeps ops holds member (.inl effect) _
 
 /-- `Hooks.retryIncident` keeps `inv`. -/

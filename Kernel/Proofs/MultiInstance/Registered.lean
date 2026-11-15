@@ -30,9 +30,9 @@ open Kernel.Laws.State (WellFormed Within scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
   InstancesPlaced BeginsQueued IdsUnique SequentialSlots OutputsFit)
 open Kernel.Laws.Step (OccurPending)
-open Kernel.Proofs.Cancellation (featureOps_frame multiInstanceOps_alongside)
+open Kernel.Proofs.Cancellation (featureOps_frame compensationKeeps_frame multiInstanceOps_alongside)
 open Kernel.Proofs.Frame (phases_alongside closurePhases_alongside Alongside ClosureAlongside FrameAlongside
-  OccursAlongside)
+  StoresAlongside OccursAlongside)
 
 /-- A body's instances, entered and queued from a state that keeps the invariant and places the body, its loop the one
 its element carries and its slots of a sequential body's shape, keep the invariant once their slot record is set. -/
@@ -177,8 +177,10 @@ theorem multiInstanceKeeps_framed : Proofs.Step.MultiInstanceKeeps Framed where
 /-- The registered hooks keep `Framed`. -/
 theorem framed_contract : Laws.Step.HookContract Registry.hooks Framed :=
   Proofs.Step.registered_contract_of
-    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps runsFramed_frameAlongside
-      runsFramed_occursAlongside) multiInstanceKeeps_framed
+    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps
+      (fun program => (runsFramed_frameAlongside program).toFrameAlongside) runsFramed_occursAlongside)
+    multiInstanceKeeps_framed
+    (compensationKeeps_frame Proofs.Step.registeredOps_wellFormed runsFramed_frameAlongside runsFramed_occursAlongside)
     Proofs.State.stateFacts
 
 /-- `Step`'s phases keep `Framed`. -/
@@ -235,11 +237,15 @@ theorem beginsKept_alongside (program : Program) : Alongside (BeginsKept program
   disarm _ _ host _ held := held.disarm host
   setVariable _ _ target name value _ held := held.setVariable target name value
   removeVariable _ _ target name _ held := held.removeVariable target name
-  storeRuns _ _ compensation _ _ resumes held := held.storeRuns compensation resumes
   instanceBegin _ request held := held.signalBegin request
   defer _ requests held := held.defer requests
   leaveInstance _ _ _ _ formed _ _ present held := held.leaveScope formed present
   runs _ runs held := held.runs runs
+
+/-- Storing compensation runs that resume only by pending reservations keeps `BeginsKept`. -/
+theorem beginsKept_stores (program : Program) : StoresAlongside (BeginsKept program) :=
+  { (beginsKept_alongside program).toFrameAlongside with
+    storeRuns := fun _ _ compensation _ _ resumes held => held.storeRuns compensation resumes }
 
 /-- The phases a closure runs keep `BeginsKept`; cancelling is `FrameAlongside.cancelOccurrence`. -/
 theorem beginsKept_closureAlongside (program : Program) : ClosureAlongside (BeginsKept program) where
@@ -270,6 +276,7 @@ theorem beginsKept_contract :
       (fun program => (beginsKept_alongside program).toFrameAlongside) beginsKept_occursAlongside)
     (Proofs.Step.multiInstanceKeeps_of fun program =>
       multiInstanceOps_alongside (beginsKept_alongside program) (Proofs.Step.registeredOps_wellFormed.multiInstance program))
+    (compensationKeeps_frame Proofs.Step.registeredOps_wellFormed beginsKept_stores beginsKept_occursAlongside)
     Proofs.State.stateFacts
 
 /-- The phases a closure runs keep `BeginsKept` beside `WellFormed`. -/
@@ -338,7 +345,7 @@ theorem source_unlooped {program : Program} {element : ElementId} (apart : IdsUn
   source.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept.2 apart).2.occurs)
 
 /-- The state operations the hooks apply keep the numbering beside the slot invariant. -/
-theorem framedNumbered_frameAlongside (program : Program) : FrameAlongside (FramedNumbered program) where
+theorem framedNumbered_frameAlongside (program : Program) : StoresAlongside (FramedNumbered program) where
   frame s t moved kept := ⟨(runsFramed_frameAlongside program).frame s t moved kept.1, fun apart =>
     (kept.2 apart).unmoved moved.scopes moved.occurrences moved.multiInstances moved.begins moved.deferred
       fun element pending => .inl (moved.pending element pending)⟩
@@ -388,12 +395,21 @@ theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside pro
       (kept.2 apart).signalPending rfl fun named inside => by
         rw [List.mem_singleton.mp inside]
         exact source_unlooped apart source⟩
-  compensate s scope activity trigger leave element at_ resumed source kept :=
+  compensate s scope activity trigger leave element at_ resumed source rolls kept :=
     ⟨(runsFramed_occursAlongside program).compensate s scope activity trigger leave element at_ resumed
-      (source.imp_right fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩) kept.1, fun apart =>
+      (source.imp_right fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩)
+      (rolls.imp fun _ => And.imp_right (Laws.State.RollsBack.imp fun _ => And.imp_right And.left)) kept.1, fun apart =>
       (kept.2 apart).signalPending rfl fun named inside => by
         rw [List.mem_singleton.mp inside]
         exact source_unlooped apart source⟩
+  throwCompensate s occurrence scope activity trigger leave formed begunFrom named kept :=
+    ⟨(runsFramed_occursAlongside program).throwCompensate s occurrence scope activity trigger leave formed
+      (begunFrom.imp fun _ => And.imp_right And.left) named kept.1, fun apart =>
+      (kept.2 apart).signalPending rfl fun _ inside => absurd inside List.not_mem_nil⟩
+  raise s raised occurrence formed raises kept :=
+    ⟨(runsFramed_occursAlongside program).raise s raised occurrence formed
+      (raises.imp fun _ => And.imp_right And.left) kept.1, fun apart =>
+      (kept.2 apart).signalPending rfl fun _ inside => absurd inside List.not_mem_nil⟩
 
 /-- Dropping a record that owns no scope occurrence keeps the numbering beside the slot invariant. -/
 theorem framedNumbered_withoutRecord {program : Program} (t : State) (id : Nat)
@@ -543,8 +559,11 @@ theorem multiInstanceKeeps_composed : Proofs.Step.MultiInstanceKeeps Composed wh
 /-- The registered hooks keep `Composed`. -/
 theorem composed_contract : Laws.Step.HookContract Registry.hooks Composed :=
   Proofs.Step.registered_contract_of
-    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps framedNumbered_frameAlongside
-      framedNumbered_occursAlongside) multiInstanceKeeps_composed
+    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps
+      (fun program => (framedNumbered_frameAlongside program).toFrameAlongside) framedNumbered_occursAlongside)
+    multiInstanceKeeps_composed
+    (compensationKeeps_frame Proofs.Step.registeredOps_wellFormed framedNumbered_frameAlongside
+      framedNumbered_occursAlongside)
     Proofs.State.stateFacts
 
 /-- Clearing an input's journal, outbox, draft and writes keeps `Composed`. -/
@@ -804,9 +823,11 @@ theorem since_multiInstanceKeeps (b : State) : Proofs.Step.MultiInstanceKeeps (S
 /-- The registered hooks keep `Since`. -/
 theorem since_contract (b : State) : Laws.Step.HookContract Registry.hooks (Since b) :=
   Proofs.Step.registered_contract_of
-    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps (fun _ => since_frameAlongside b)
+    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps (fun _ => (since_frameAlongside b).toFrameAlongside)
       (since_occursAlongside b))
-    (since_multiInstanceKeeps b) Proofs.State.stateFacts
+    (since_multiInstanceKeeps b)
+    (compensationKeeps_frame Proofs.Step.registeredOps_wellFormed (fun _ => since_frameAlongside b) (since_occursAlongside b))
+    Proofs.State.stateFacts
 
 /-- `Step`'s phases keep `Since`. -/
 theorem since_phases (b : State) : Laws.Step.Phases (Since b) :=

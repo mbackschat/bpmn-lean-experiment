@@ -31,27 +31,40 @@ theorem Within.up {s : State} {inner outer : ScopeOccurrenceId} (within : Within
   | parent child parent _ member link above => exact .inr ⟨child, member, rfl, parent, link, above⟩
 
 /-- What the features' records supply, for a property `rel` carried beside `WellFormed` under `program`, where they
-make or queue a reservation: a subscription reserves a `Reservable` element, and a queued `Signal.occur` or
-compensation resume names a boundary or one pending in a state that kept `rel`. -/
+make or queue a reservation or a trigger: a subscription reserves a `Reservable` element; a queued `Signal.occur` or
+compensation resume names a boundary or one pending in a state that kept `rel`; a caught Cancel's compensation takes the
+trigger of the raise it was taken off (`Laws.State.RollsBack`), and a throw's compensation and raise name an occurrence
+begun from a state that kept `WellFormed` and `rel` (`Laws.State.BegunFrom`, `Laws.State.RaisesFrom`). -/
 structure OccursAlongside (program : Program) (rel : State → Prop) : Prop where
   reserve : ∀ s element scope, WellFormed program s → Reservable program element → rel s →
     rel (s.reserve element scope).1
   occur : ∀ s element scope leave writes rule, (BoundaryOf program element ∨ PendingIn rel element) → rel s →
     rel (s.signal (.occur element scope leave writes rule))
   compensate : ∀ s scope activity trigger leave element at_ resumed,
-    (BoundaryOf program element ∨ PendingIn rel element) → rel s →
+    (BoundaryOf program element ∨ PendingIn rel element) →
+    (∃ before, s = before.clearInside scope ∧
+      Laws.State.RollsBack (fun t => WellFormed program t ∧ rel t) trigger before) → rel s →
     rel (s.signal (.compensate scope activity trigger leave (some (.occur element at_ resumed))))
+  throwCompensate : ∀ s occurrence scope activity trigger leave, WellFormed program s →
+    Laws.State.BegunFrom (fun t => WellFormed program t ∧ rel t) s occurrence →
+    trigger = { processInstanceId := s.instanceOf occurrence.scope, element := occurrence.element,
+                activation := occurrence.activation } → rel s →
+    rel (s.signal (.compensate scope activity trigger none (some (.complete occurrence.id leave))))
+  raise : ∀ s raised occurrence, WellFormed program s →
+    Laws.State.RaisesFrom (fun t => WellFormed program t ∧ rel t) occurrence s → rel s →
+    rel (s.signal (.raise raised { element := occurrence.element, scope := occurrence.scope,
+                                   activation := occurrence.activation }))
 
 /-- The compensation runs `compensation` resume only reservations pending in `s` or in a state that kept `rel`: what
-storing them needs (`FrameAlongside.storeRuns`). -/
+storing them needs (`StoresAlongside.storeRuns`). -/
 def ResumesPending (rel : State → Prop) (s : State) (compensation : Compensations) : Prop :=
   ∀ run ∈ compensation.runs, ∀ element at_ leave, run.resume = some (.occur element at_ leave) →
     OccurPending s element ∨ PendingIn rel element
 
 /-- `t` agrees with `s` on everything a property carried beside `WellFormed` may read: the scope occurrences, the
 occurrences, the issue and activation counters, the journal, the draft, the instance identity, the Multi-Instance runs,
-the compensation runs, and the queued begins in queue order (`Laws.Step.beginsOf`, `Laws.Step.deferredOf`), and `t`
-has no reservation pending that `s` lacks (`Laws.Step.OccurPending`). -/
+the compensation slot, the queued begins in queue order (`Laws.Step.beginsOf`, `Laws.Step.deferredOf`) and the queued
+triggers (`Laws.Step.triggersOf`), and `t` has no reservation pending that `s` lacks (`Laws.Step.OccurPending`). -/
 structure Unmoved (s t : State) : Prop where
   scopes : t.scopes = s.scopes
   occurrences : t.occurrences = s.occurrences
@@ -61,8 +74,9 @@ structure Unmoved (s t : State) : Prop where
   draft : t.draft = s.draft
   instanceId : t.instanceId = s.instanceId
   multiInstances : t.slots.multiInstances = s.slots.multiInstances
-  runs : t.slots.compensation.runs = s.slots.compensation.runs
+  compensation : t.slots.compensation = s.slots.compensation
   begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals
+  triggers : Laws.Step.triggersOf t.signals = Laws.Step.triggersOf s.signals
   deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens
   pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element
 
@@ -73,13 +87,14 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (activations : t.activations = s.activations := by exact rfl) (journal : t.journal = s.journal := by exact rfl)
     (draft : t.draft = s.draft := by exact rfl) (instanceId : t.instanceId = s.instanceId := by exact rfl)
     (multiInstances : t.slots.multiInstances = s.slots.multiInstances := by exact rfl)
-    (runs : t.slots.compensation.runs = s.slots.compensation.runs := by exact rfl)
+    (compensation : t.slots.compensation = s.slots.compensation := by exact rfl)
     (begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals := by exact rfl)
+    (triggers : Laws.Step.triggersOf t.signals = Laws.Step.triggersOf s.signals := by exact rfl)
     (deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens := by exact rfl)
     (pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element :=
       by exact fun _ held => held) : Unmoved s t :=
-  ⟨scopes, occurrences, nextIssue, activations, journal, draft, instanceId, multiInstances, runs, begins, deferred,
-    pending⟩
+  ⟨scopes, occurrences, nextIssue, activations, journal, draft, instanceId, multiInstances, compensation, begins,
+    triggers, deferred, pending⟩
 
 /-- `scope` is the context of a handler or group a compensation run of `s` holds running. -/
 def RunningContext (s : State) (scope : ScopeOccurrenceId) : Prop :=
@@ -143,10 +158,9 @@ nothing `rel` may read (`Unmoved`), queuing a begin that `BeginFits`, issuing an
 or a Call's called root, reserving an occurrence a `Signal.occur` queued in a state that kept `rel`
 (`Laws.Step.PendingIn`; a subscription's reservation is `OccursAlongside`'s), leaving a scope occurrence that stands and is owned or a running
 compensation context (`LeavesOwned`), clearing one that stands, keeping only occurrences that lie in no scope occurrence
-strictly within it, disarming a host, a variable write or removal, and storing compensation runs whose running contexts
-were held or are no active Multi-Instance instance (`StoresHeldOrFresh`) and that resume only by reservations pending
-(`ResumesPending`). Every feature's operations record of
-`WellFormed` and `rel` but `Laws.MultiInstance.MultiInstanceOps` follows from its record of `WellFormed` and this one. -/
+strictly within it, disarming a host, and a variable write or removal. Every feature's operations record of `WellFormed`
+and `rel` but `Laws.MultiInstance.MultiInstanceOps` and the compensation records follows from its record of `WellFormed`
+and this one; those two compensation records also store runs (`StoresAlongside`). -/
 structure FrameAlongside (rel : State → Prop) : Prop where
   frame : ∀ s t, Unmoved s t → rel s → rel t
   signalBegin : ∀ s request, BeginFits s request → rel s → rel (s.signal (.begin request))
@@ -165,6 +179,12 @@ structure FrameAlongside (rel : State → Prop) : Prop where
   disarm : ∀ program s host, WellFormed program s → rel s → rel (s.disarm host)
   setVariable : ∀ program s target name value, WellFormed program s → rel s → rel (s.setVariable target name value)
   removeVariable : ∀ program s target name, WellFormed program s → rel s → rel (s.removeVariable target name)
+
+/-- `FrameAlongside` with storing compensation runs whose running contexts were held or are no active Multi-Instance
+instance (`StoresHeldOrFresh`) and that resume only by reservations pending (`ResumesPending`): what the records of
+`Laws.Compensation.CompensationOps` and `Laws.Compensation.RunsOps` beside `WellFormed` follow from. A property that
+reads the runs themselves proves what the compensation hooks keep of it directly (`Proofs.Step.CompensationKeeps`). -/
+structure StoresAlongside (rel : State → Prop) : Prop extends FrameAlongside rel where
   storeRuns : ∀ program s (compensation : Compensations), WellFormed program s →
     StoresHeldOrFresh s compensation → ResumesPending rel s compensation → rel s →
     rel { s with slots := { s.slots with compensation } }
@@ -180,17 +200,18 @@ structure Alongside (rel : State → Prop) : Prop extends FrameAlongside rel whe
     Iteration.active scope ∈ run.instances → scope ∈ scopeIds s → rel s → rel (s.leaveScope scope)
   runs : ∀ s (runs : List MultiInstanceRun), rel s → rel { s with slots := { s.slots with multiInstances := runs } }
 
-/-- A queued signal that queues no begin and makes no reservation moves nothing `rel` reads. -/
+/-- A queued signal that queues no begin, makes no reservation and carries no trigger moves nothing `rel` reads. -/
 theorem FrameAlongside.signal {rel : State → Prop} (side : FrameAlongside rel) {s : State} (kept : rel s)
     (signal : Signal)
-    (quiet : Laws.Step.beginsOf [signal] = [] ∧ Laws.Step.occursOf [signal] = [] := by exact ⟨rfl, rfl⟩) :
+    (quiet : Laws.Step.beginsOf [signal] = [] ∧ Laws.Step.occursOf [signal] = [] ∧ Laws.Step.triggersOf [signal] = [] :=
+      by exact ⟨rfl, rfl, rfl⟩) :
     rel (s.signal signal) := by
   rw [Laws.State.signal_eq]
   have pending := fun pending => Laws.Step.occurPending_of (s := s) (t := { s with signals := s.signals ++ [signal] })
-    (fun element inside => by rwa [Laws.Step.occursOf_append, quiet.2, List.append_nil] at inside)
+    (fun element inside => by rwa [Laws.Step.occursOf_append, quiet.2.1, List.append_nil] at inside)
     (fun _ member => member) (element := pending)
   exact side.frame s _ (.same (begins := by rw [Laws.Step.beginsOf_append, quiet.1, List.append_nil])
-    (pending := pending)) kept
+    (triggers := by rw [Laws.Step.triggersOf_append, quiet.2.2, List.append_nil]) (pending := pending)) kept
 
 /-- Removing an occurrence of a well-formed state keeps what the state operations keep and dropping a record that owns
 no scope occurrence keeps: `State.removeOccurrence` drops the record and then leaves the scope occurrences it owns,

@@ -33,6 +33,7 @@ everything, values that violate it.
 namespace Kernel.Laws.Propagation
 
 open Kernel
+open Kernel.Laws.State (Steady BegunFrom RaisesFrom RollsBack Popped)
 
 /-! ## The catcher -/
 
@@ -287,24 +288,11 @@ Propagation's share of the proof wave's state-invariant lane (P2) for `Hooks.arr
 both for `Laws.State.WellFormed` and the registered hooks. A throw completes its own begun occurrence, raises from it,
 fires the receivers of a Signal, opens a Message throw's effect item or queues the compensation that completes it; a
 Terminate End first clears its scope occurrence, keeping itself. A raise reads two facts of the state the closure takes it
-off the queue in, which its steps keep (`Steady`): a raising Activity, its host, is settled, so its Error-path leave may
-complete it (`HostSettled`); and an Event's occurrences its origin names have begun, so `throwerLeaves` completes a begun
-one (`Thrown`). -/
-
-/-- What a raise's own steps keep of what it reads: the occurrences, the scope occurrences and the queued begins, with no
-identity issued back. -/
-structure Steady (before after : State) : Prop where
-  occurrences : after.occurrences = before.occurrences
-  scopes : after.scopes = before.scopes
-  issued : before.nextIssue ≤ after.nextIssue
-  queued : ∀ request, Laws.State.Queued after request → Laws.State.Queued before request
-
-theorem Steady.refl (state : State) : Steady state state := ⟨rfl, rfl, Nat.le_refl _, fun _ => id⟩
-
-theorem Steady.trans {first second third : State} (one : Steady first second) (two : Steady second third) :
-    Steady first third :=
-  ⟨two.occurrences.trans one.occurrences, two.scopes.trans one.scopes, Nat.le_trans one.issued two.issued,
-    fun request queued => one.queued request (two.queued request queued)⟩
+off the queue in, which its steps keep (`Laws.State.Steady`): a raising Activity, its host, is settled, so its
+Error-path leave may complete it (`HostSettled`); and an Event's occurrences its origin names have begun, so
+`throwerLeaves` completes a begun one (`Thrown`). The records that queue a trigger (a throw's compensation and raise, a
+caught Cancel's rollback) are handed where it comes from (`Laws.State.BegunFrom`, `RaisesFrom`, `RollsBack`), which an
+invariant over the queued triggers reads. -/
 
 /-- A raising Activity, the raise's host, is settled (`Laws.State.Settled`). -/
 def HostSettled (origin : Origin) (state : State) : Prop :=
@@ -341,17 +329,21 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
   /-- The completion of a begun occurrence that stands. -/
   complete : ∀ state occurrence leave writes rule, inv state → occurrence ∈ state.occurrences →
     occurrence.begun = true → inv (state.signal (.complete occurrence.id leave writes rule))
-  /-- A raise from a begun occurrence that stands, at its element, scope occurrence and activation. -/
+  /-- A raise from a begun occurrence that stands, at its element, scope occurrence and activation, which a begin from a
+  state that kept `inv` began. -/
   raise : ∀ state raised occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
-    inv (state.signal (.raise raised
+    RaisesFrom inv occurrence state → inv (state.signal (.raise raised
       { element := occurrence.element, scope := occurrence.scope, activation := occurrence.activation }))
   /-- An item's firing. -/
   fire : ∀ state item fired, inv state → inv (state.signal (.fire item fired))
   /-- A Signal throw's broadcast intent. -/
   outbox : ∀ state outbox, inv state → inv { state with outbox }
-  /-- The compensation a begun occurrence's throw queues, which completes it once it ends. -/
+  /-- The compensation a begun occurrence's throw queues, which completes it once it ends; the occurrence was begun from
+  a state that kept `inv`, and is the trigger. -/
   compensate : ∀ state occurrence scope activity trigger leave, inv state → occurrence ∈ state.occurrences →
-    occurrence.begun = true →
+    occurrence.begun = true → BegunFrom inv state occurrence →
+    trigger = { processInstanceId := state.instanceOf occurrence.scope, element := occurrence.element,
+                activation := occurrence.activation } →
     inv (state.signal (.compensate scope activity trigger none (some (.complete occurrence.id leave))))
   /-- A Terminate End's clearing of its scope occurrence, keeping its own begun occurrence. -/
   terminate : ∀ state occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
@@ -382,9 +374,10 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
   /-- A rolled-back Transaction's disarmed boundaries, keeping the scope occurrences. -/
   disarm : ∀ state host, inv state → inv (state.disarm host) ∧ (state.disarm host).scopes = state.scopes
   /-- A caught Cancel's rollback: the scope occurrence, which stands, cleared, then its compensation queued, which takes
-  the boundary once it ends. -/
+  the boundary once it ends and the trigger of the Cancel raise it was taken off. -/
   rollBack : ∀ state scope trigger leave element parent flows, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
-    Laws.IL.BoundaryOf program element → inv ((state.clearInside scope).signal (.compensate scope none trigger leave (some (.occur element parent flows))))
+    Laws.IL.BoundaryOf program element → RollsBack inv trigger state →
+    inv ((state.clearInside scope).signal (.compensate scope none trigger leave (some (.occur element parent flows))))
 
 /-- Firing each of a Signal throw's receivers keeps `inv` and the occurrences. -/
 theorem fireAll_keeps {inv : State → Prop} (ops : PropagationOps program inv) (fired : State → OpenItem → Fired) :
@@ -402,7 +395,7 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
     {payload : EventPayload} {thrown : Throw} {occurrence : Occurrence} {state after : State} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
     (unstarted : (ctx.program.element? occurrence.element).bind (·.start?) = none) (role : occurrence.role = .element)
-    (named : header.id = occurrence.element)
+    (named : header.id = occurrence.element) (begunFrom : BegunFrom inv state occurrence)
     (ran : Feature.Propagation.arriveThrow ctx header payload thrown occurrence state = .ok after) : inv after := by
   have complete := ops.complete state occurrence (Feature.Propagation.throwLeave payload) [] .outward holds member begun
   have left : occurrence ∈ (state.signal (.complete occurrence.id (Feature.Propagation.throwLeave payload) [] .outward)).occurrences := by
@@ -414,8 +407,8 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
     cases ran
     obtain ⟨cleared, stays⟩ := ops.terminate state occurrence holds member begun
     exact ops.complete _ _ _ _ _ cleared stays begun
-  | error record => cases ran; rw [named]; exact ops.raise _ _ _ complete left begun
-  | escalation record => cases ran; rw [named]; exact ops.raise _ _ _ holds member begun
+  | error record => cases ran; rw [named]; exact ops.raise _ _ _ complete left begun ⟨state, begunFrom, .inr ⟨_, rfl⟩⟩
+  | escalation record => cases ran; rw [named]; exact ops.raise _ _ _ holds member begun ⟨state, begunFrom, .inl rfl⟩
   | message record =>
     cases ran
     unfold Feature.Propagation.throwMessage
@@ -436,8 +429,8 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
     split at ran
     · cases ran
     · cases ran
-      exact ops.compensate _ _ _ _ _ _ holds member begun
-  | cancel => cases ran; rw [named]; exact ops.raise _ _ _ complete left begun
+      exact ops.compensate _ _ _ _ _ _ holds member begun begunFrom (by rw [named]; rfl)
+  | cancel => cases ran; rw [named]; exact ops.raise _ _ _ complete left begun ⟨state, begunFrom, .inr ⟨_, rfl⟩⟩
 
 /-! ### The search -/
 
@@ -623,19 +616,22 @@ theorem interruptedOutputs_keeps {inv : State → Prop} {ctx : Ctx} (ops : Propa
 theorem leaveOccurrence_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (ops : PropagationOps ctx.program inv) (search : SearchHooks ctx inv hooks) {raised : Raised} {origin : Origin}
     {occurrence : ScopeOccurrence} {parent : ScopeOccurrenceId} {boundary : Boundary} {writes : List (String × Value)}
-    {state after : State} (holds : inv state) (settled : HostSettled origin state) (thrown : Thrown ctx.program origin state)
+    {base state after : State} (holds : inv state) (settled : HostSettled origin state)
+    (thrown : Thrown ctx.program origin state) (popped : Popped inv (.raise raised origin) base) (steady : Steady base state)
     (present : occurrence ∈ state.scopes) (bounded : Laws.IL.BoundaryOf ctx.program boundary.id)
     (ran : Feature.Propagation.leaveOccurrence hooks ctx raised origin occurrence parent boundary writes state = .ok after) :
     inv after := by
   unfold Feature.Propagation.leaveOccurrence at ran
   split at ran
-  · cases ran
+  · rename_i cancels
+    cases ran
     obtain ⟨entry, inside, named⟩ := cancelledScope_stands (origin := origin) present
     repeat' split
     all_goals first
       | exact ops.rollBack _ _ _ _ _ _ _ holds ⟨entry, inside, named⟩ bounded
+          ⟨base, raised, origin, state, popped, cancels, steady, .inl rfl, rfl⟩
       | exact ops.rollBack _ _ _ _ _ _ _ (ops.disarm _ _ holds).1 ⟨entry, (ops.disarm _ _ holds).2 ▸ inside, named⟩
-          bounded
+          bounded ⟨base, raised, origin, state, popped, cancels, steady, .inr ⟨_, rfl⟩, rfl⟩
   · split at ran
     · obtain ⟨dropped, steady⟩ := search.dropRuns occurrence.id state holds
       obtain ⟨decided, decision, ran⟩ := ok_bind ran
@@ -650,14 +646,16 @@ theorem leaveOccurrence_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Featur
       exact throwerLeaves_keeps ops fired (thrown.steady (same.trans steady.occurrences))
 
 theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
-    (ops : PropagationOps ctx.program inv) (search : SearchHooks ctx inv hooks) {raised : Raised} {origin : Origin} :
+    (ops : PropagationOps ctx.program inv) (search : SearchHooks ctx inv hooks) {raised : Raised} {origin : Origin}
+    {base : State} (popped : Popped inv (.raise raised origin) base) :
     ∀ fuel current (state after : State), inv state → HostSettled origin state → Thrown ctx.program origin state →
+      Steady base state →
       Feature.Propagation.searchScopes hooks ctx raised origin state fuel current = .ok after → inv after
-  | 0, _, _, _, holds, settled, thrown, ran => exhausted_keeps ops search holds settled thrown (by
+  | 0, _, _, _, holds, settled, thrown, _, ran => exhausted_keeps ops search holds settled thrown (by
       simpa [Feature.Propagation.searchScopes] using ran)
-  | _ + 1, none, _, _, holds, settled, thrown, ran => exhausted_keeps ops search holds settled thrown (by
+  | _ + 1, none, _, _, holds, settled, thrown, _, ran => exhausted_keeps ops search holds settled thrown (by
       simpa [Feature.Propagation.searchScopes] using ran)
-  | fuel + 1, some current, state, after, holds, settled, thrown, ran => by
+  | fuel + 1, some current, state, after, holds, settled, thrown, walked, ran => by
     unfold Feature.Propagation.searchScopes at ran
     split at ran
     · simp at ran
@@ -686,20 +684,22 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
           · exact begun
           · exact throwerLeaves_keeps ops begun (thrown.steady ((ops.signalOccurrences _ _).trans chain.occurrences))
         · have inside := best?_mem ‹Feature.Propagation.best? _ _ _ _ = some _›
-          refine leaveOccurrence_keeps ops search kept (settled.steady steady) (thrown.steady steady.occurrences)
-            (steady.scopes ▸ present) ?_ ran
+          refine leaveOccurrence_keeps ops search kept (settled.steady steady) (thrown.steady steady.occurrences) popped
+            (walked.trans steady) (steady.scopes ▸ present) ?_ ran
           split at inside
           · split at inside
             · simp at inside
             · exact boundariesOf_boundaryOf inside
           · simp at inside
-        · exact searchScopes_keeps ops search fuel _ _ _ kept (settled.steady steady) (thrown.steady steady.occurrences)
-            ran
+        · exact searchScopes_keeps ops search popped fuel _ _ _ kept (settled.steady steady)
+            (thrown.steady steady.occurrences) (walked.trans steady) ran
 
-/-- `Hooks.raise` keeps `inv` for a raise whose host is settled and whose origin, an Event's, names begun occurrences. -/
+/-- `Hooks.raise` keeps `inv` for a raise whose host is settled and whose origin, an Event's, names begun occurrences,
+taken off a queue that kept `inv`. -/
 theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (ops : PropagationOps ctx.program inv) (search : SearchHooks ctx inv hooks) {raised : Raised} {origin : Origin}
     {state after : State} (holds : inv state) (settled : HostSettled origin state) (thrown : Thrown ctx.program origin state)
+    (popped : Popped inv (.raise raised origin) state)
     (ran : Feature.Propagation.raise hooks ctx raised origin state = .ok after) : inv after := by
   unfold Feature.Propagation.raise at ran
   dsimp only at ran
@@ -711,7 +711,7 @@ theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagat
     split at inside
     · simp at inside
     · exact boundariesOf_boundaryOf inside
-  · exact searchScopes_keeps ops search _ _ _ _ holds settled thrown ran
+  · exact searchScopes_keeps ops search popped _ _ _ _ holds settled thrown (.refl _) ran
 
 /-! ## Cancellation
 

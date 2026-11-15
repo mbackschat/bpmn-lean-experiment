@@ -586,4 +586,96 @@ theorem WellFormed.ofVariables {before after : State} (formed : WellFormed progr
     by simp [starts, same.journal, same.draft], .same same.slots⟩
     (by simpa [StartedOnce, starts, same.journal, same.draft] using formed.startedOnce) located keyed
 
+/-! ## Where a queued trigger comes from
+
+What a step's hooks are handed about the trigger a queued compensation or Cancel raise names, stated over the fields
+alone so that `Kernel.Laws.Step.HookContract`, the features' records and the frames of the proof lanes read one
+vocabulary: the occurrence a throw raises or compensates from was begun from a state that kept the invariant
+(`BegunFrom`, `RaisesFrom`), a raise or compensation `Step` runs was taken off the head of a queue that kept it
+(`Popped`), and a caught Cancel's compensation takes the trigger of the raise it was taken off (`RollsBack`), through
+search steps that move no trigger (`Steady`). -/
+
+/-- `signal` queues no compensation and no Cancel raise, so it carries no trigger. -/
+def Untriggered (signal : Signal) : Prop :=
+  (∀ scope activity trigger leave resume, signal ≠ .compensate scope activity trigger leave resume) ∧
+    ∀ event origin, signal = .raise event origin → event.isCancel = false
+
+/-- What a raise's search steps keep of what it reads: the occurrences, the scope occurrences, their process instances,
+the activation counters and the queued begins, with no identity issued back, no compensation run added and only
+signals queued that carry no trigger (`Untriggered`). -/
+structure Steady (before after : State) : Prop where
+  occurrences : after.occurrences = before.occurrences
+  scopes : after.scopes = before.scopes
+  issued : before.nextIssue ≤ after.nextIssue
+  queued : ∀ request, Queued after request → Queued before request
+  instances : ∀ scope, after.instanceOf scope = before.instanceOf scope
+  activations : after.activations = before.activations
+  runs : ∀ run ∈ after.slots.compensation.runs, run ∈ before.slots.compensation.runs
+  signals : ∃ more, after.signals = before.signals ++ more ∧ ∀ signal ∈ more, Untriggered signal
+
+theorem Steady.refl (state : State) : Steady state state :=
+  ⟨rfl, rfl, Nat.le_refl _, fun _ => id, fun _ => rfl, rfl, fun _ => id, [], by simp, by simp⟩
+
+theorem Steady.trans {first second third : State} (one : Steady first second) (two : Steady second third) :
+    Steady first third := by
+  obtain ⟨more, appended, quiet⟩ := one.signals
+  obtain ⟨further, appendedTwo, quietTwo⟩ := two.signals
+  refine ⟨two.occurrences.trans one.occurrences, two.scopes.trans one.scopes, Nat.le_trans one.issued two.issued,
+    fun request queued => one.queued request (two.queued request queued), fun scope => (two.instances scope).trans
+      (one.instances scope), two.activations.trans one.activations, fun run inside => one.runs run (two.runs run inside), more ++ further,
+    by rw [appendedTwo, appended, List.append_assoc], fun signal inside => ?_⟩
+  rcases List.mem_append.mp inside with early | late
+  · exact quiet signal early
+  · exact quietTwo signal late
+
+/-- `occurrence` is the one a begin from a state that kept `inv` began, in `state`. -/
+def BegunFrom (inv : State → Prop) (state : State) (occurrence : Occurrence) : Prop :=
+  ∃ before request role sourceType, inv before ∧ before.beginOccurrence request role sourceType = (state, occurrence)
+
+/-- `state` is where a throw raises from: the state a begin of `occurrence` from a state that kept `inv` left, or that
+state with the occurrence's completion queued. -/
+def RaisesFrom (inv : State → Prop) (occurrence : Occurrence) (state : State) : Prop :=
+  ∃ base, BegunFrom inv base occurrence ∧ (state = base ∨ ∃ leave, state = base.signal (.complete occurrence.id leave [] .outward))
+
+/-- `state` is what taking `signal` off the head of a queue that kept `inv` left. -/
+def Popped (inv : State → Prop) (signal : Signal) (state : State) : Prop :=
+  ∃ queue, inv queue ∧ queue.signals = signal :: state.signals ∧ state = { queue with signals := state.signals }
+
+/-- `trigger` is the thrower of a Cancel raise taken off a queue that kept `inv` (`Popped`), whose search reached
+`state`, or `state` with a host disarmed, by `Steady` steps: the trigger a caught Cancel's compensation takes
+(`Feature.Propagation.leaveOccurrence`). -/
+def RollsBack (inv : State → Prop) (trigger : OccurrenceRef) (state : State) : Prop :=
+  ∃ base raised origin searched, Popped inv (.raise raised origin) base ∧ raised.isCancel = true ∧
+    Steady base searched ∧ (state = searched ∨ ∃ host, state = searched.disarm host) ∧
+    trigger = { processInstanceId := searched.instanceOf origin.scope, element := origin.element,
+                activation := origin.activation }
+
+section Weaken
+
+variable {inv weaker : State → Prop} (weakens : ∀ t, inv t → weaker t)
+include weakens
+
+theorem BegunFrom.imp {state : State} {occurrence : Occurrence} (begun : BegunFrom inv state occurrence) :
+    BegunFrom weaker state occurrence := by
+  obtain ⟨before, request, rest⟩ := begun
+  obtain ⟨role, sourceType, holds, made⟩ := rest
+  exact ⟨before, request, role, sourceType, weakens _ holds, made⟩
+
+theorem RaisesFrom.imp {occurrence : Occurrence} {state : State} (raises : RaisesFrom inv occurrence state) :
+    RaisesFrom weaker occurrence state := by
+  obtain ⟨base, begun, at_⟩ := raises
+  exact ⟨base, begun.imp weakens, at_⟩
+
+theorem Popped.imp {signal : Signal} {state : State} (popped : Popped inv signal state) : Popped weaker signal state := by
+  obtain ⟨queue, holds, heads, same⟩ := popped
+  exact ⟨queue, weakens _ holds, heads, same⟩
+
+theorem RollsBack.imp {trigger : OccurrenceRef} {state : State} (rolls : RollsBack inv trigger state) :
+    RollsBack weaker trigger state := by
+  obtain ⟨base, raised, origin, rest⟩ := rolls
+  obtain ⟨searched, popped, rest⟩ := rest
+  exact ⟨base, raised, origin, searched, popped.imp weakens, rest⟩
+
+end Weaken
+
 end Kernel.Laws.State

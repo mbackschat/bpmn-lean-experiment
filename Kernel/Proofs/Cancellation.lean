@@ -362,7 +362,6 @@ theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) wh
   removeVariable _ s target name _ kept :=
     have same := Laws.State.removeVariable_same s target name
     kept.shrink (by rw [same.scopes]; exact .refl _) same.nextIssue
-  storeRuns _ _ _ _ _ _ kept := kept.shrink (.refl _) rfl
   instanceBegin s _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
@@ -372,6 +371,10 @@ theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) wh
   leaveInstance _ s _ scope _ _ _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2
   runs _ _ kept := kept.shrink (.refl _) rfl
+
+/-- Storing compensation runs keeps the scope occurrences of any before-state. -/
+theorem scopesKept_stores (before : State) : StoresAlongside (ScopesKept before) :=
+  { (scopesKept_alongside before).toFrameAlongside with storeRuns := fun _ _ _ _ _ _ kept => kept.shrink (.refl _) rfl }
 
 /-- `Step`'s phases keep the scope occurrences of any before-state: journalling and ordering move no scope occurrence
 nor the counter, beginning issues at most one identity and enters no scope occurrence, and cancelling drops some
