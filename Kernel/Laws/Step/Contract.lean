@@ -260,6 +260,16 @@ theorem resumesOf_append (signals more : List Signal) :
     resumesOf (signals ++ more) = resumesOf signals ++ resumesOf more :=
   List.filterMap_append
 
+/-- A sublist of a queue carries a sublist of its triggers. -/
+theorem triggersOf_sublist {signals more : List Signal} (fewer : signals.Sublist more) :
+    (triggersOf signals).Sublist (triggersOf more) :=
+  fewer.filterMap _
+
+/-- A sublist of a queue carries a sublist of its resumes. -/
+theorem resumesOf_sublist {signals more : List Signal} (fewer : signals.Sublist more) :
+    (resumesOf signals).Sublist (resumesOf more) :=
+  fewer.filterMap _
+
 /-- A resume is queued exactly when a queued compensation carries it. -/
 theorem mem_resumesOf {signals : List Signal} {resume : Option Resume} :
     resume ∈ resumesOf signals ↔
