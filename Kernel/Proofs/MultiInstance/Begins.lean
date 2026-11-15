@@ -28,7 +28,8 @@ namespace Kernel.Proofs.MultiInstance
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds)
 open Kernel.Laws.IL (BoundaryOf Reservable)
-open Kernel.Laws.MultiInstance (LoopOf IdsUnique OccurPending PendingIn UnbegunUnlooped BeginsInOrder)
+open Kernel.Laws.MultiInstance (LoopOf IdsUnique UnbegunUnlooped BeginsInOrder)
+open Kernel.Laws.Step (OccurPending PendingIn)
 
 /-! ## The relation -/
 

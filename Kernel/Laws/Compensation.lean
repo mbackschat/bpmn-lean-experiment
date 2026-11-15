@@ -845,7 +845,7 @@ theorem compensate_keeps {inv : State → Prop} {settled : State → Nat → Pro
     (resumable : ∀ next, resume = some next → (∀ occurrence leave, next = .complete occurrence leave →
       settled state occurrence) ∧ ∀ outer context, next = .group outer context → context = scope)
     (pending : ∀ element at_ resumed, resume = some (.occur element at_ resumed) →
-      Laws.MultiInstance.PendingIn inv element)
+      Laws.Step.PendingIn inv element)
     (ran : Feature.Compensation.compensate ctx scope activity trigger leave resume state = .ok after) : inv after := by
   unfold Feature.Compensation.compensate at ran
   simp only at ran

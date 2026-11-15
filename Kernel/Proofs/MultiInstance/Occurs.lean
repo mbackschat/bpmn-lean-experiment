@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.Step.Contract
+public import Kernel.Laws.MultiInstance.Rules
 
 /-! # Proofs: what a reservation may name
 
@@ -8,7 +8,7 @@ A reservation is an occurrence under the element role (`State.reserve`), so the 
 the features make to name no looping element: one of a looping element in an instance's scope occurrence would be no
 instance (`Laws.MultiInstance.InstancesPlaced`). This module states what the frame and phase records that carry a
 property beside `WellFormed` require of where a reservation's element comes from (`Laws.IL.BoundaryOf`,
-`Laws.IL.Reservable`, `Laws.MultiInstance.PendingIn`), and what that gives under a program whose identifiers are
+`Laws.IL.Reservable`, `Laws.Step.PendingIn`), and what that gives under a program whose identifiers are
 unique (`Laws.MultiInstance.IdsUnique`). It imports no proof module, so the cancellation
 lane's records can name it. Nothing executable imports this module.
 -/
@@ -20,7 +20,8 @@ namespace Kernel.Proofs.MultiInstance
 open Kernel
 open Kernel.Laws.State (WellFormed)
 open Kernel.Laws.IL (BoundaryOf Reservable)
-open Kernel.Laws.MultiInstance (LoopOf IdsUnique OccurPending PendingIn)
+open Kernel.Laws.MultiInstance (LoopOf IdsUnique)
+open Kernel.Laws.Step (OccurPending PendingIn)
 
 /-- What the features' records supply, for a property `rel` carried beside `WellFormed` under `program`, where they
 make or queue a reservation: a subscription reserves a `Reservable` element, and a queued `Signal.occur` or

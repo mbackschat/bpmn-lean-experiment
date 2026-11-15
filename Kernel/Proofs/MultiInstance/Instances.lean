@@ -20,7 +20,8 @@ namespace Kernel.Proofs.MultiInstance
 
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds Precedes)
-open Kernel.Laws.MultiInstance (LoopOf OccurPending QueuedFor Begun Requested instanceRequest)
+open Kernel.Laws.MultiInstance (LoopOf QueuedFor Begun Requested instanceRequest)
+open Kernel.Laws.Step (OccurPending)
 
 /-! ## Lists -/
 

@@ -21,8 +21,9 @@ namespace Kernel.Proofs.MultiInstance
 
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds)
-open Kernel.Laws.MultiInstance (LoopOf IdsUnique OccurPending NumberedInOrder InstancesPlaced BeginsQueued
+open Kernel.Laws.MultiInstance (LoopOf IdsUnique NumberedInOrder InstancesPlaced BeginsQueued
   QueuedFor Owned BodyOwns InstancesUnowned RunsKeyed)
+open Kernel.Laws.Step (OccurPending)
 
 /-! ## The relation -/
 

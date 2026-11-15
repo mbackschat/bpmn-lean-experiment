@@ -28,7 +28,8 @@ namespace Kernel.Proofs.MultiInstance
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
-  InstancesPlaced BeginsQueued IdsUnique SequentialSlots OutputsFit OccurPending)
+  InstancesPlaced BeginsQueued IdsUnique SequentialSlots OutputsFit)
+open Kernel.Laws.Step (OccurPending)
 open Kernel.Proofs.Cancellation (phases_alongside closurePhases_alongside featureOps_frame multiInstanceOps_alongside
   Alongside ClosureAlongside FrameAlongside)
 
@@ -331,7 +332,7 @@ theorem Numbered.signalPending {program : Program} {s : State} {signal : Signal}
 /-- A reservation a queued `Signal.occur` or compensation resume names, a boundary or one pending in a state that kept
 the numbering, is of no looping element. -/
 theorem source_unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
-    (source : Laws.IL.BoundaryOf program element ∨ Laws.MultiInstance.PendingIn (FramedNumbered program) element) :
+    (source : Laws.IL.BoundaryOf program element ∨ Laws.Step.PendingIn (FramedNumbered program) element) :
     ∀ loop, ¬ LoopOf program element loop :=
   source.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept.2 apart).2.occurs)
 

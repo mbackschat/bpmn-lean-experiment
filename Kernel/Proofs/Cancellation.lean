@@ -336,7 +336,7 @@ theorem ScopesKept.enter {before s t : State} (kept : ScopesKept before s) (issu
 /-- `t` agrees with `s` on everything a property carried beside `WellFormed` may read: the scope occurrences, the
 occurrences, the issue and activation counters, the journal, the draft, the instance identity, the Multi-Instance runs,
 the compensation runs, and the queued begins in queue order (`Laws.Step.beginsOf`, `Laws.Step.deferredOf`), and `t`
-has no reservation pending that `s` lacks (`Laws.MultiInstance.OccurPending`). -/
+has no reservation pending that `s` lacks (`Laws.Step.OccurPending`). -/
 structure Unmoved (s t : State) : Prop where
   scopes : t.scopes = s.scopes
   occurrences : t.occurrences = s.occurrences
@@ -349,7 +349,7 @@ structure Unmoved (s t : State) : Prop where
   runs : t.slots.compensation.runs = s.slots.compensation.runs
   begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals
   deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens
-  pending : ∀ element, Laws.MultiInstance.OccurPending t element → Laws.MultiInstance.OccurPending s element
+  pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element
 
 /-- `scope` is the context of a handler or group a compensation run of `s` holds running. -/
 def RunningContext (s : State) (scope : ScopeOccurrenceId) : Prop :=
@@ -411,7 +411,7 @@ theorem BeginFits.handler {s : State} {request : BeginRequest} {run : ScopeOccur
 /-- What the state operations the hooks apply keep of a property `rel` carried beside `WellFormed`: an update of
 nothing `rel` may read (`Unmoved`), queuing a begin that `BeginFits`, issuing an identity, entering a scope occurrence
 or a Call's called root, reserving an occurrence a `Signal.occur` queued in a state that kept `rel`
-(`Laws.MultiInstance.PendingIn`; a subscription's reservation is `Proofs.MultiInstance.OccursAlongside`'s), leaving a scope occurrence that stands and is owned or a running
+(`Laws.Step.PendingIn`; a subscription's reservation is `Proofs.MultiInstance.OccursAlongside`'s), leaving a scope occurrence that stands and is owned or a running
 compensation context (`LeavesOwned`), clearing one that stands, keeping only occurrences that lie in no scope occurrence
 strictly within it, disarming a host, a variable write or removal, and storing compensation runs whose running contexts
 were held or are no active Multi-Instance instance (`StoresHeldOrFresh`) and that resume only by reservations pending
@@ -425,7 +425,7 @@ structure FrameAlongside (rel : State → Prop) : Prop where
     rel (s.enterScope element parent locals owner).1
   enterCalled : ∀ program s called call variables definition, WellFormed program s → rel s →
     rel (s.enterCalled called call variables definition).1
-  reserve : ∀ program s element scope, WellFormed program s → Laws.MultiInstance.PendingIn rel element → rel s →
+  reserve : ∀ program s element scope, WellFormed program s → Laws.Step.PendingIn rel element → rel s →
     rel (s.reserve element scope).1
   leaveScope : ∀ program s scope, WellFormed program s → scope ∈ scopeIds s → LeavesOwned s scope → rel s →
     rel (s.leaveScope scope)

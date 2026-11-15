@@ -2,6 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Laws.State
+public import Kernel.Laws.Step.Signals
 
 /-! # Laws of Multi-Instance Activities: the rules
 
@@ -25,6 +26,7 @@ namespace Kernel.Laws.MultiInstance
 
 open Kernel
 open Kernel.Laws.State (Within)
+open Kernel.Laws.Step (OccurPending)
 
 /-- The Multi-Instance loop characteristics the element `element` carries (BPMN 2.0.2 §10.3.8, Table 10.30). -/
 def LoopOf (program : Program) (element : ElementId) (loop : MultiInstance) : Prop :=
@@ -141,19 +143,6 @@ running state queues nothing, so these are inductive strengthening (root decisio
 /-- The queued begin `request` begins the instance in slot `index` of `run`. -/
 def QueuedFor (run : MultiInstanceRun) (index : Nat) (request : BeginRequest) : Prop :=
   request.continuation = .multiInstance run.occurrence ∧ run.instances[index]? = some (.active request.scope)
-
-/-- A reservation of `element` still to be made: a queued `Signal.occur`, or the resume of a queued compensation or of a
-compensation run that ends by reserving it (`Compensation.advance`). -/
-def OccurPending (s : State) (element : ElementId) : Prop :=
-  (∃ scope leave writes rule, Signal.occur element scope leave writes rule ∈ s.signals) ∨
-    (∃ scope activity trigger leave at_ resumed,
-      Signal.compensate scope activity trigger leave (some (.occur element at_ resumed)) ∈ s.signals) ∨
-    ∃ run ∈ s.slots.compensation.runs, ∃ at_ leave, run.resume = some (.occur element at_ leave)
-
-/-- `element` is a reservation still to be made in a state that keeps `rel`: where a queued `Signal.occur`, a queued
-compensation's resume or a held compensation run's resume came from once the closure has taken it. -/
-def PendingIn (rel : State → Prop) (element : ElementId) : Prop :=
-  ∃ held, rel held ∧ OccurPending held element
 
 /-- What the instances' begins still queued need for the numbering: every body's element loops, and its instances'
 scope occurrences belong to no called instance, so they share one activation counter; an occurrence continuing into a
