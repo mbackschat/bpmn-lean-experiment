@@ -456,7 +456,7 @@ structure SubscriptionsOps (program : Program) (inv : State → Prop) : Prop whe
     (program.element? occurrence.element).bind (·.start?) = none → occurrence.role = .element →
     inv (state.openItem kind occurrence)
   /-- A subscription opened in a scope occurrence that stands, hanging, if at all, on a begun occurrence there, waiting
-  for a trigger, on a boundary or an element without an envelope. -/
+  for a trigger, on a boundary or a catching element without an envelope (`Laws.IL.Reservable`). -/
   openSubscription : ∀ state kind element scope host passive, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
     (∀ id, host = some id → ∃ occurrence ∈ state.occurrences, occurrence.id = id ∧ occurrence.begun = true ∧
       occurrence.scope = scope) → AwaitsTrigger kind → Laws.IL.Reservable program element →
@@ -637,7 +637,7 @@ theorem waitKind_awaits {inv : State → Prop} (ops : SubscriptionsOps program i
     exact ops.awaits.2.2.2 _
   all_goals cases ran
 
-/-- An Event-Based Gateway's arm subscribes a catch Event, an element without an envelope. -/
+/-- An Event-Based Gateway's arm subscribes a catch Event, a catching element without an envelope. -/
 theorem gatewayArm_reservable {program : Program} {flow : FlowId} {element : ElementId} {subscription : Subscription}
     (found : ((program.target? flow).bind program.element?).bind (fun target =>
       target.event?.bind fun (header, event) => event.catch?.map (header.id, ·)) = some (element, subscription)) :
@@ -645,19 +645,20 @@ theorem gatewayArm_reservable {program : Program} {flow : FlowId} {element : Ele
   obtain ⟨target, located, typed⟩ := Option.bind_eq_some_iff.mp found
   obtain ⟨id, -, finds⟩ := Option.bind_eq_some_iff.mp located
   obtain ⟨⟨header, event⟩, isEvent, caught⟩ := Option.bind_eq_some_iff.mp typed
-  obtain ⟨_, -, same⟩ := Option.map_eq_some_iff.mp caught
+  obtain ⟨_, held, same⟩ := Option.map_eq_some_iff.mp caught
   obtain ⟨headed, bare⟩ := Laws.Step.event?_bare isEvent
   have named : header.id = element := congrArg Prod.fst same
-  exact .inr ⟨target, Laws.IL.element?_mem finds, headed ▸ named, bare⟩
+  have catches : Laws.IL.Catches target := .inl (by rw [isEvent]; simp [held])
+  exact .inr ⟨target, Laws.IL.element?_mem finds, headed ▸ named, bare, catches⟩
 
-/-- An Event Sub-Process's start Event is an element without an envelope. -/
+/-- An Event Sub-Process's start Event is a catching element without an envelope. -/
 theorem startEvent_reservable {ctx : Ctx} {eventSubProcess start : ElementId}
     (found : Feature.Subscriptions.startEvent? ctx eventSubProcess = some start) : Laws.IL.Reservable ctx.program start := by
   unfold Feature.Subscriptions.startEvent? at found
   obtain ⟨child, member, made⟩ := List.exists_of_findSome?_eq_some found
   obtain ⟨⟨header, payload⟩, typed, named⟩ := Option.map_eq_some_iff.mp made
   obtain ⟨headed, bare⟩ := Laws.Step.start?_bare typed
-  exact .inr ⟨child, Laws.IL.mem_children member, headed ▸ named, bare⟩
+  exact .inr ⟨child, Laws.IL.mem_children member, headed ▸ named, bare, .inr (by rw [typed]; rfl)⟩
 
 /-- `subscribe` keeps `inv` and the arming's scope occurrence and host. -/
 theorem subscribe_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx} {arming : Feature.Subscriptions.Arming}
@@ -858,7 +859,7 @@ theorem trigger_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps
       have reservable : Laws.IL.Reservable ctx.program item.element := by
         obtain ⟨found, located, started⟩ := Option.bind_eq_some_iff.mp typed
         exact .inr ⟨found, Laws.IL.element?_mem located, Laws.IL.element?_header located,
-          (Laws.Step.start?_bare started).2⟩
+          (Laws.Step.start?_bare started).2, .inr (by rw [started]; rfl)⟩
       unfold Feature.Subscriptions.fireEventStart at ran
       dsimp only at ran
       split at ran

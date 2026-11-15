@@ -55,6 +55,6 @@ theorem reservable_unlooped {program : Program} {element : ElementId} (apart : I
     have same := Laws.State.nodup_map_eq apart.headers (Laws.IL.element?_mem finds) member
       ((Laws.IL.element?_header finds).trans named.symm)
     rw [same] at finds
-    simp [LoopOf, finds, bare] at looped
+    simp [LoopOf, finds, bare.1] at looped
 
 end Kernel.Proofs.MultiInstance

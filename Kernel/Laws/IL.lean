@@ -105,17 +105,23 @@ theorem activity?_start (header : Header) (payload : StartPayload) : (Element.st
 /-! ## Where a reserved identifier comes from
 
 What a reservation's element (`State.reserve`) may be, for the records that require it of a feature's reservations
-(`Kernel.Proofs.Frame.OccursAlongside`): a boundary's identifier, or an element's that carries no envelope. -/
+(`Kernel.Proofs.Frame.OccursAlongside`): a boundary's identifier, or a catching element's that carries no envelope, so
+that no reservation `Step` begins is a throw Event's. -/
 
 /-- `element` is the identifier of a boundary of one of `program`'s elements. -/
 @[expose] def BoundaryOf (program : Program) (element : ElementId) : Prop :=
   ∃ host ∈ program.elements, ∃ envelope, host.envelope? = some envelope ∧
     ∃ boundary ∈ envelope.boundaries, boundary.id = element
 
-/-- What a subscription may reserve: a boundary, or an element of the program without an envelope, an Event or a
-start. -/
+/-- `element` catches: an Event whose role is a catch's (`EventPayload.catch?`), or a start. -/
+@[expose] def Catches (element : Element) : Prop :=
+  (element.event?.bind (·.2.catch?)).isSome = true ∨ element.start?.isSome = true
+
+/-- What a subscription may reserve: a boundary, or a catching element of the program without an envelope, a catch
+Event or a start. -/
 @[expose] def Reservable (program : Program) (element : ElementId) : Prop :=
-  BoundaryOf program element ∨ ∃ found ∈ program.elements, found.header.id = element ∧ found.envelope? = none
+  BoundaryOf program element ∨
+    ∃ found ∈ program.elements, found.header.id = element ∧ found.envelope? = none ∧ Catches found
 
 /-- The element `Program.element?` finds is one of the program's. -/
 theorem element?_mem {program : Program} {id : ElementId} {element : Element} (found : program.element? id = some element) :
