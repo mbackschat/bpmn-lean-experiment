@@ -204,4 +204,92 @@ theorem fireAll_keeps {inv : State → Prop} (ops : PropagationOps program inv) 
   | item :: rest, state, holds => by
     obtain ⟨kept, same⟩ := fireAll_keeps ops fired rest _ (ops.fire state item.id (fired state item) holds)
     exact ⟨kept, same.trans (ops.signalOccurrences _ _)⟩
+/-! ## The vocabulary of a Cancel and of a compensation handler's failure
+
+What `Kernel.Laws.Propagation` states a Cancel's raise and the queue a raise leaves in (P5): the facts of the state
+operations it reads whose bodies only `Kernel.Laws.State` opens (`RaiseFacts`), the model premise on Event
+Sub-Process starts (`NoCancelStart`), how a caught Cancel leaves the state (`CancelCatch`, `CancelTaken`), what a raise
+appends to the queue (`Appends`) and which signals a raise's own steps queue (`QuietSteps`). -/
+
+/-- What the lemmas below read of the state operations whose bodies only `Kernel.Laws.State` opens: a queued signal is
+appended, the clearing and the disarming a caught Cancel applies queue nothing, and a Cancel is one
+(`Raised.isCancel`). -/
+structure RaiseFacts : Prop where
+  signal : ∀ (state : State) signal, (state.signal signal).signals = state.signals ++ [signal]
+  cleared : ∀ (state : State) scope, (state.clearInside scope).signals = state.signals
+  disarmed : ∀ (state : State) host, (state.disarm host).signals = state.signals
+  cancel : Raised.cancel.isCancel = true
+
+/-- No Event Sub-Process a scope occurrence declares starts on a trigger that catches a Cancel: what `start.cancel`
+gives, read through the Step context's `catches` and `eventStart`. -/
+def NoCancelStart (ctx : Ctx) : Prop :=
+  ∀ (state : State) (scope : ScopeOccurrenceId), ∀ child ∈ state.childrenOf ctx.program scope,
+    ∀ header payload start interrupting, child.scope? = some (header, payload) →
+      ctx.eventStart payload = some (start, interrupting) → ctx.catches .cancel start.trigger = none
+
+/-- `boundary` is a boundary on the element of `occurrence`, in that element's envelope, and catches a Cancel. -/
+def CancelCatch (ctx : Ctx) (occurrence : ScopeOccurrence) (boundary : Boundary) : Prop :=
+  ∃ element, occurrence.element = some element ∧ ∃ envelope,
+    (ctx.program.element? element).bind (·.envelope?) = some envelope ∧ boundary ∈ envelope.boundaries ∧
+    (ctx.catches .cancel boundary.subscription.trigger).isSome = true
+
+/-- A boundary that catches a Cancel is one of the program's. -/
+theorem CancelCatch.boundaryOf {ctx : Ctx} {occurrence : ScopeOccurrence} {boundary : Boundary}
+    (caught : CancelCatch ctx occurrence boundary) : Laws.IL.BoundaryOf ctx.program boundary.id := by
+  obtain ⟨_, _, rest⟩ := caught
+  obtain ⟨envelope, located, member, _⟩ := rest
+  exact Laws.IL.boundaryOf_envelope located member
+
+/-- How a caught Cancel leaves `passed`, the state its search decided in, as `after`: a boundary on a scope occurrence
+`occurrence` of `passed`, held in `parent`, catches it (`CancelCatch`); the raise clears the interior of the scope
+occurrence it rolls back, which stands, having disarmed the items attached to `occurrence`'s Activity or not, and
+queues one compensation of it, triggered by the thrower, whose resume occurs the boundary on its flows in `parent`, so
+that the boundary is taken only once the compensation has ended. It fires and begins nothing. -/
+def CancelTaken (ctx : Ctx) (origin : Origin) (passed after : State) : Prop :=
+  ∃ occurrence ∈ passed.scopes, ∃ parent boundary, occurrence.parent = some parent ∧ CancelCatch ctx occurrence boundary ∧
+    ∃ rolledBack terminating, (∃ entry ∈ passed.scopes, entry.id = rolledBack) ∧
+      (terminating = passed ∨ ∃ activity, occurrence.occurrence = some activity ∧ terminating = passed.disarm activity) ∧
+      after = (terminating.clearInside rolledBack).signal (.compensate rolledBack none
+        { processInstanceId := passed.instanceOf origin.scope, element := origin.element, activation := origin.activation }
+        occurrence.occurrence (some (.occur boundary.id parent (.flows boundary.outgoing))))
+
+/-- `after` holds `before`'s queued signals followed only by signals `allowed` admits. -/
+def Appends (allowed : Signal → Prop) (before after : State) : Prop :=
+  ∃ new, after.signals = before.signals ++ new ∧ ∀ signal ∈ new, allowed signal
+
+theorem Appends.refl {allowed : Signal → Prop} (state : State) : Appends allowed state state :=
+  ⟨[], by simp, by simp⟩
+
+theorem Appends.same {allowed : Signal → Prop} {before after : State} (signals : after.signals = before.signals) :
+    Appends allowed before after :=
+  ⟨[], by simp [signals], by simp⟩
+
+theorem Appends.trans {allowed : Signal → Prop} {first second third : State} (one : Appends allowed first second)
+    (two : Appends allowed second third) : Appends allowed first third := by
+  obtain ⟨new, made, good⟩ := one
+  obtain ⟨more, made', good'⟩ := two
+  exact ⟨new ++ more, by rw [made', made, List.append_assoc], fun signal member =>
+    (List.mem_append.mp member).elim (good signal) (good' signal)⟩
+
+theorem Appends.mono {allowed wider : Signal → Prop} {before after : State} (widens : ∀ signal, allowed signal → wider signal)
+    (appends : Appends allowed before after) : Appends wider before after := by
+  obtain ⟨new, made, good⟩ := appends
+  exact ⟨new, made, fun signal member => widens signal (good signal member)⟩
+
+theorem Appends.signal {allowed : Signal → Prop} {before after : State} {signal : Signal} (facts : RaiseFacts)
+    (appends : Appends allowed before after) (good : allowed signal) : Appends allowed before (after.signal signal) :=
+  appends.trans ⟨[signal], facts.signal _ _, by simpa using good⟩
+
+/-- `quiet` admits every signal a raise's own steps queue but a compensation handler's failure: a thrower's leave, an
+Event Sub-Process's begin, a boundary's host cancellation and occurrence, an interrupted Scope's outputs, an uncaught
+Error's failed end and a caught Cancel's compensation. -/
+structure QuietSteps (quiet : Signal → Prop) : Prop where
+  complete : ∀ occurrence leave writes rule, quiet (.complete occurrence leave writes rule)
+  begin : ∀ request, quiet (.begin request)
+  cancel : ∀ occurrence, quiet (.cancel occurrence)
+  occur : ∀ element scope leave writes rule, quiet (.occur element scope leave writes rule)
+  write : ∀ scope writes rule, quiet (.write scope writes rule)
+  fail : ∀ failure, quiet (.endInstance .failed (some failure))
+  compensate : ∀ scope activity trigger leave resume, quiet (.compensate scope activity trigger leave resume)
+
 end Kernel.Laws.Propagation
