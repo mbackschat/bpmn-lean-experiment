@@ -1,13 +1,15 @@
 module
 
 public import Kernel.Laws.State
+public import Kernel.Laws.Data.Values
 
 /-! # Laws of the kernel state: the scope chain's searches
 
 What `State.visible`, `State.owner?`, `State.declaring?` and `State.instanceRoot` find, derived from their step
 equations in `Kernel.Laws.State` (`visible_go`, `owner?_go`, `declaring?_go`, `instanceRoot_go`) without opening
 `Kernel.State`'s bodies. Each search runs from a scope occurrence outward and stops at a called instance's root, the
-root of the scope occurrence's process instance (`InstanceRoot`). Nothing executable imports this module.
+root of the scope occurrence's process instance (`InstanceRoot`). A called instance's identifier names its caller
+instance, Call and activation alone (`calledInstanceId_inj`). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -594,5 +596,69 @@ theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurre
   exact walk scope n depth _ _ (by simp; omega) lt
 
 end Searches
+
+/-! ## The identities of called instances
+
+`State.calledInstanceId` spells each part of a called instance's identity after its length, so equal identities have
+equal parts: each length is decimal digits ended by the first `:` after it, and each part's characters fill the UTF-8
+bytes its length counts. -/
+
+section Called
+
+private theorem split_colon : ∀ {first second rest rest' : List Char}, ':' ∉ first → ':' ∉ second →
+    first ++ ':' :: rest = second ++ ':' :: rest' → first = second ∧ rest = rest'
+  | [], [], _, _, _, _, same => ⟨rfl, List.cons.inj same |>.2⟩
+  | [], b :: _, _, _, _, apart, same => by
+    obtain ⟨rfl, _⟩ := List.cons.inj same
+    exact absurd (List.mem_cons_self ..) apart
+  | a :: _, [], _, _, apart, _, same => by
+    obtain ⟨rfl, _⟩ := List.cons.inj same
+    exact absurd (List.mem_cons_self ..) apart
+  | a :: first, b :: second, _, _, apart, apart', same => by
+    obtain ⟨rfl, tail⟩ := List.cons.inj same
+    obtain ⟨rfl, rfl⟩ := split_colon (fun inside => apart (List.mem_cons_of_mem _ inside))
+      (fun inside => apart' (List.mem_cons_of_mem _ inside)) tail
+    exact ⟨rfl, rfl⟩
+
+private theorem split_sized : ∀ {first second rest rest' : List Char},
+    (first.map Char.utf8Size).sum = (second.map Char.utf8Size).sum → first ++ rest = second ++ rest' →
+      first = second ∧ rest = rest'
+  | [], [], _, _, _, same => ⟨rfl, same⟩
+  | [], b :: _, _, _, sized, _ => by simp at sized; have := Char.utf8Size_pos b; omega
+  | a :: _, [], _, _, sized, _ => by simp at sized; have := Char.utf8Size_pos a; omega
+  | a :: first, b :: second, _, _, sized, same => by
+    obtain ⟨rfl, tail⟩ := List.cons.inj same
+    simp only [List.map_cons, List.sum_cons] at sized
+    obtain ⟨rfl, rfl⟩ := split_sized (by omega) tail
+    exact ⟨rfl, rfl⟩
+
+private theorem digits_colon (n : Nat) : ':' ∉ Nat.toDigits 10 n := fun inside => by
+  have := Nat.isDigit_of_mem_toDigits (by decide +kernel) (by decide +kernel) inside
+  simp at this
+
+private theorem digits_inj {m n : Nat} (same : Nat.toDigits 10 m = Nat.toDigits 10 n) : m = n := by
+  rw [← Nat.ofDigitChars_ten_toDigits (n := m), same, Nat.ofDigitChars_ten_toDigits]
+
+/-- Equal called-instance identifiers name one caller instance, one Call and one activation. -/
+theorem calledInstanceId_inj {caller caller' : String} {call call' : ElementId} {activation activation' : Nat}
+    (same : State.calledInstanceId caller call activation = State.calledInstanceId caller' call' activation') :
+    caller = caller' ∧ call = call' ∧ activation = activation' := by
+  rw [calledInstanceId_eq, calledInstanceId_eq] at same
+  have colon : (":" : String).toList = [':'] := by simp
+  have spelled := congrArg String.toList same
+  simp only [String.toList_append, toString, Nat.toList_repr, List.append_assoc, colon, List.singleton_append]
+    at spelled
+  replace spelled := List.append_cancel_left spelled
+  obtain ⟨sized, spelled⟩ := split_colon (digits_colon _) (digits_colon _) spelled
+  obtain ⟨named, spelled⟩ := split_sized (by rw [← Kernel.Laws.Data.utf8ByteSize_eq, ← Kernel.Laws.Data.utf8ByteSize_eq,
+    digits_inj sized]) spelled
+  obtain ⟨sized, spelled⟩ := split_colon (digits_colon _) (digits_colon _) (List.cons.inj spelled).2
+  obtain ⟨called, spelled⟩ := split_sized (by rw [← Kernel.Laws.Data.utf8ByteSize_eq, ← Kernel.Laws.Data.utf8ByteSize_eq,
+    digits_inj sized]) spelled
+  exact ⟨String.toList_inj.mp named, by
+    cases call; cases call'; exact congrArg ElementId.mk (String.toList_inj.mp called),
+    digits_inj (List.cons.inj spelled).2⟩
+
+end Called
 
 end Kernel.Laws.State
