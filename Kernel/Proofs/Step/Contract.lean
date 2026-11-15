@@ -181,6 +181,25 @@ theorem dropWithin_steady {inv : State → Prop} (ops : Laws.Compensation.Compen
   exact ⟨rfl, rfl, Nat.le_refl _, fun _ queued => queued, Laws.State.instanceOf_congr rfl rfl, rfl, kept, [], by simp,
     by simp⟩
 
+/-- `Hooks.failCompensation` keeps `inv`. -/
+theorem failCompensation_keeps {inv : State → Prop} (ops : Laws.Compensation.CompensationOps inv) {ctx : Ctx} {handler : ScopeOccurrenceId}
+    {code : String} {message : Option String} {origin : Origin} {state after : State} (holds : inv state)
+    (ran : Feature.Compensation.failCompensation ctx handler code message origin state = .ok after) : inv after := by
+  obtain ⟨_, _, _, failed⟩ := Laws.Compensation.failCompensation_spec ran
+  obtain ⟨_, -, -, failed⟩ := failed
+  obtain ⟨-, -, rfl⟩ := failed
+  exact ops.fail _ _ holds
+
+/-- `Hooks.handlerEnded` keeps `inv` for a handler whose context stands. -/
+theorem handlerEnded_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : Laws.Compensation.RunsOps inv settled)
+    {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Occurrence} {state after : State} (holds : inv state)
+    (stands : occurrence.scope ∈ state.scopes.map (·.id))
+    (ran : Feature.Compensation.handlerEnded ctx run occurrence state = .ok after) : inv after := by
+  rcases Laws.Compensation.handlerEnded_spec ran with ⟨-, -, released⟩ | ⟨-, rfl⟩
+  · exact Laws.Compensation.handlerCompleted_keeps ops holds stands
+      ((Laws.Compensation.handlerCompleted_spec ctx run occurrence state).trans released)
+  · exact holds
+
 /-- The registered compensation hooks keep an invariant their feature records are filled for. -/
 theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.CompensationOps (inv program))
     (runs : ∀ program, Laws.Compensation.RunsOps (inv program) Laws.State.Settled) : CompensationKeeps inv where
@@ -189,7 +208,7 @@ theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.Comp
     exact ⟨kept, retained_frame scopes occurrences items⟩
   dropWithin ctx scope _ holds :=
     ⟨(Laws.Compensation.dropWithin_keeps (compensation _) ctx scope holds).1, dropWithin_steady (compensation ctx.program) ctx scope _⟩
-  failCompensation _ _ _ _ _ _ _ holds _ ran := Laws.Compensation.failCompensation_keeps (compensation _) holds ran
+  failCompensation _ _ _ _ _ _ _ holds _ ran := failCompensation_keeps (compensation _) holds ran
   compensate _ _ _ _ _ _ _ _ holds stands resumable pending _ ran := by
     obtain ⟨entry, inside, named⟩ := stands
     exact Laws.Compensation.compensate_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) resumable pending
@@ -199,7 +218,7 @@ theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.Comp
     exact Laws.Compensation.handlerCompleted_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran
   handlerEnded _ _ _ _ _ holds stands ran := by
     obtain ⟨entry, inside, named⟩ := stands
-    exact Laws.Compensation.handlerEnded_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran
+    exact handlerEnded_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran
 
 /-- An Error-path completion carries no trigger. -/
 theorem untriggered_complete (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :

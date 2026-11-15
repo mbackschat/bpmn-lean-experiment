@@ -45,11 +45,13 @@ theorem precedes_spec (ctx : Ctx) (record other : Compensable) :
 theorem precedes_congr {ctx other : Ctx} (same : ctx.program = other.program) :
     Feature.Compensation.precedes ctx = Feature.Compensation.precedes other := by
   have alike : ∀ fuel ids, Feature.Compensation.interior.go ctx fuel ids = Feature.Compensation.interior.go other fuel ids := by
-    intro fuel; induction fuel with
+    intro fuel
+    induction fuel with
     | zero => intro ids; rfl
     | succ fuel ih => intro ids; simp only [Feature.Compensation.interior.go, same, ih]
-  funext record later; simp only [Feature.Compensation.precedes, Feature.Compensation.data,
-    Feature.Compensation.interior, Feature.Compensation.ownData, same, alike]
+  funext record later
+  simp only [Feature.Compensation.precedes, Feature.Compensation.data, Feature.Compensation.interior,
+    Feature.Compensation.ownData, same, alike]
 
 /-- A subject the program does not declare reads and writes nothing. -/
 theorem data_missing {ctx : Ctx} {subject : ElementId} (missing : ctx.program.element? subject = none) :
@@ -84,7 +86,8 @@ theorem compensate_spec {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Opti
   refine ⟨_, _, ⟨fun record => ?_, fun record => ?_⟩, List.filter_append_perm _ _, ran⟩ <;>
     rcases activity with _ | named <;> simp [List.mem_filter]
   · exact fun _ _ => eq_comm
-  · intro _; by_cases inside : record.scope ∈ Feature.Compensation.visibleScopes ctx state scope
+  · intro _
+    by_cases inside : record.scope ∈ Feature.Compensation.visibleScopes ctx state scope
     · simp [inside, eq_comm]
     · simp [inside]
 
@@ -248,7 +251,8 @@ theorem handlerEnded_spec {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Oc
       (¬ (ctx.program.options.compensationHandlerFailure = .propagatesFromTrigger ∧
           ∃ owner ∈ state.slots.compensation.runs, Holds occurrence.scope owner) ∧ after = state) := by
   have held : state.slots.compensation.runs.any (·.running.any (·.1 == occurrence.scope)) = true ↔
-      ∃ owner ∈ state.slots.compensation.runs, Holds occurrence.scope owner := by simp [Holds]
+      ∃ owner ∈ state.slots.compensation.runs, Holds occurrence.scope owner := by
+    simp [Holds]
   unfold Feature.Compensation.handlerEnded Feature.Compensation.handlerCompleted at ran
   split at ran
   · rename_i policy
@@ -400,15 +404,6 @@ theorem dropWithin_keeps {inv : State → Prop} (ops : CompensationOps inv) (ctx
     {state : State} (holds : inv state) : inv (Feature.Compensation.dropWithin ctx scope state) ∧
       ∃ compensation, Feature.Compensation.dropWithin ctx scope state = { state with slots := { state.slots with compensation } } :=
   ⟨ops.store _ _ holds fun _ member => (List.mem_filter.mp member).1, _, rfl⟩
-
-/-- `Hooks.failCompensation` keeps `inv`. -/
-theorem failCompensation_keeps {inv : State → Prop} (ops : CompensationOps inv) {ctx : Ctx} {handler : ScopeOccurrenceId}
-    {code : String} {message : Option String} {origin : Origin} {state after : State} (holds : inv state)
-    (ran : Feature.Compensation.failCompensation ctx handler code message origin state = .ok after) : inv after := by
-  obtain ⟨_, _, _, failed⟩ := failCompensation_spec ran
-  obtain ⟨_, -, -, failed⟩ := failed
-  obtain ⟨-, -, rfl⟩ := failed
-  exact ops.fail _ _ holds
 
 /-! ## Runs
 
@@ -831,14 +826,5 @@ theorem handlerCompleted_keeps {inv : State → Prop} {settled : State → Nat �
     (stands : occurrence.scope ∈ state.scopes.map (·.id))
     (ran : Feature.Compensation.handlerCompleted ctx run occurrence state = .ok after) : inv after :=
   ((runs_keep ops ctx _).2.1 _ _ _ holds stands ran).1
-
-/-- `Hooks.handlerEnded` keeps `inv` for a handler whose context stands. -/
-theorem handlerEnded_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : RunsOps inv settled)
-    {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Occurrence} {state after : State} (holds : inv state)
-    (stands : occurrence.scope ∈ state.scopes.map (·.id))
-    (ran : Feature.Compensation.handlerEnded ctx run occurrence state = .ok after) : inv after := by
-  rcases handlerEnded_spec ran with ⟨-, -, released⟩ | ⟨-, rfl⟩
-  · exact handlerCompleted_keeps ops holds stands ((handlerCompleted_spec ctx run occurrence state).trans released)
-  · exact holds
 
 end Kernel.Laws.Compensation
