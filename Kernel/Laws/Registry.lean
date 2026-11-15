@@ -161,4 +161,12 @@ theorem hooks_writeOutputs : Registry.hooks.writeOutputs = Feature.Data.writeOut
 theorem hooks_removeVariables : Registry.hooks.removeVariables = Feature.Data.removeVariables := by
   simp only [Registry.hooks]
 
+/-- Subscriptions decides how every catch trigger catches a raised event. -/
+theorem hooks_catches : Registry.hooks.catches = Feature.Subscriptions.catches := by
+  simp only [Registry.hooks]
+
+/-- Scopes reads every Event Sub-Process's start. -/
+theorem hooks_eventStart : Registry.hooks.eventStart = Feature.Scopes.eventStart := by
+  simp only [Registry.hooks]
+
 end Kernel.Laws.Registry

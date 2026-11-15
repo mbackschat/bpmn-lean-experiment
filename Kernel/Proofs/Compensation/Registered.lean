@@ -3,15 +3,17 @@ module
 public import Kernel.Laws.Registry
 public import Kernel.Proofs.Step
 public import Kernel.Proofs.Compensation.Hooks
+public import Kernel.Proofs.Compensation.Raise
 
 /-! # Proofs: the Compensation and Transaction lane under the registered hooks
 
 The compensation hooks keep `WellFormed` with the lane relation `Formed` beside it (`compensationKeeps_formed`), each
 hook by what `Kernel.Proofs.Compensation.Hooks` proves of its result. A trigger takes out once (`registered_takesOutOnce`)
 and handlers start in order (`registered_handlersInOrder`), and both apply to every compensation `Step` performs, each a
-`FreshCall` (`registered_dequeued`). This is the lane's one module that imports the
-registry's Laws module, since it composes the registered hooks, and so stays in every feature's rebuild cone (guard
-15). Nothing executable imports this module.
+`FreshCall` (`registered_dequeued`). The registered hooks register a raise (`raiseRegistered`), so Cancel propagation
+and handler failure hold of them (`registered_cancelCompensatesFirst`, `registered_handlerFailure`). This is the lane's
+one module that imports the registry's Laws module, since it composes the registered hooks, and so stays in every
+feature's rebuild cone (guard 15). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -324,5 +326,70 @@ that read it hold of every hook call `Step` makes. -/
 theorem stepQueries_inputCtx (hooks : Hooks) (program : Program) (input : Input) :
     StepQueries hooks (Laws.Step.inputCtx hooks program input) :=
   Laws.Step.inputCtx_queries hooks program input
+
+/-! ## Cancel and failure -/
+
+/-- A hooks record registers a raise (`RaiseRegistered`) when it registers Propagation's arrival and search,
+Compensation's failure, Scopes' Event Sub-Process start and Subscriptions' catch, a Cancel caught only by a Cancel trigger
+(`Laws.Subscriptions.catches_cancel`), over search hooks of Data's writes, which change only variables, Work's
+Error-path leave, which queues only its host's completion, and Compensation's drop, which changes only the slot. -/
+theorem raiseRegistered_of {hooks : Hooks} {propagation : Feature.Propagation.PropagationHooks}
+    (arriveThrow : hooks.arriveThrow = Feature.Propagation.arriveThrow)
+    (raise : hooks.raise = Feature.Propagation.raise propagation)
+    (failCompensation : hooks.failCompensation = Feature.Compensation.failCompensation)
+    (eventStart : hooks.eventStart = Feature.Scopes.eventStart) (catches : hooks.catches = Feature.Subscriptions.catches)
+    (mapped : propagation.mappedErrorOutputs = Feature.Work.mappedErrorOutputs Feature.Data.writeOutputs)
+    (caught : ∀ ctx scope writes,
+      propagation.writeCaught ctx scope writes = Feature.Data.writeOutputs ctx scope writes .outward)
+    (call : ∀ ctx root state, propagation.callOutputs ctx root state = do
+      let (scope, writes) ← Feature.Work.Call.raisedOutputs ctx root state
+      Feature.Data.writeOutputs ctx scope writes .outward state)
+    (drop : propagation.dropRuns = Feature.Compensation.dropWithin) : RaiseRegistered hooks propagation where
+  arriveThrow := arriveThrow
+  raise := raise
+  failCompensation := failCompensation
+  eventStart := eventStart
+  cancelCatches _ caught := Laws.Subscriptions.catches_cancel (catches ▸ caught)
+  callOutputs ctx root state _ ran := by
+    rw [call] at ran
+    obtain ⟨⟨_, _⟩, _, ran⟩ := Laws.Step.bind_ok ran
+    refine Laws.Data.writeOutputs_induction (motive := fun t => Laws.State.Steady state t ∧
+      t.tokens = state.tokens ∧ t.signals = state.signals ∧ t.slots = state.slots) (fun s target name value held => ?_)
+      ⟨.refl _, rfl, rfl, rfl⟩ ran
+    have same := Laws.State.setVariable_same s target name value
+    exact ⟨held.1.trans (Proofs.Step.steady_of_same same), same.tokens.trans held.2.1,
+      same.signals.trans held.2.2.1, same.slots.trans held.2.2.2⟩
+  writeCaught ctx scope writes state _ ran :=
+    Laws.Data.writeOutputs_induction (motive := fun t => t.signals = state.signals)
+      (fun s target name value held => (Laws.State.setVariable_same s target name value).signals.trans held) rfl
+      (caught ctx scope writes ▸ ran)
+  mappedErrorOutputs _ _ _ state _ ran := by
+    rw [mapped] at ran
+    exact Laws.Work.mappedErrorOutputs_keeps (motive := Laws.Propagation.Appends _ state)
+      (fun _ _ _ _ held wrote => held.trans (.same (Laws.Data.writeOutputs_induction
+        (motive := fun t => t.signals = _) (fun s target name value same =>
+          (Laws.State.setVariable_same s target name value).signals.trans same) rfl wrote)))
+      (fun _ host _ held => held.signal raiseFacts ⟨host, .raised, [], .outward, rfl⟩) (.refl _) ran
+  dropRuns ctx scope state := by
+    rw [drop]
+    obtain ⟨_, made⟩ := (Laws.Compensation.dropWithin_keeps (inv := fun _ => True) (state := state)
+      ⟨fun _ _ _ _ => trivial, fun _ _ => trivial,
+        (Proofs.Step.registeredOps_wellFormed.compensation ctx.program).issued, fun _ _ _ => trivial⟩
+      ctx scope trivial).2
+    rw [made]
+
+/-- The registered hooks register a raise. -/
+theorem raiseRegistered : ∃ propagation, RaiseRegistered Registry.hooks propagation :=
+  ⟨_, raiseRegistered_of Laws.Registry.hooks_arriveThrow Laws.Registry.hooks_raise Laws.Registry.hooks_failCompensation
+    Laws.Registry.hooks_eventStart Laws.Registry.hooks_catches (by simp only) (fun _ _ _ => by simp only)
+    (fun _ _ _ => by simp only) (by simp only)⟩
+
+/-- Cancel propagation holds of the registered hooks. -/
+theorem registered_cancelCompensatesFirst : CancelCompensatesFirst Registry.hooks :=
+  raiseRegistered.elim fun _ registered => cancelCompensatesFirst_of registered
+
+/-- Failure holds of the registered hooks. -/
+theorem registered_handlerFailure : HandlerFailure Registry.hooks :=
+  raiseRegistered.elim fun _ registered => handlerFailure_of registered
 
 end Kernel.Proofs.Compensation
