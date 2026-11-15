@@ -171,7 +171,7 @@ def thrownBy : OccurrenceRef := { processInstanceId := "p", element := thrower, 
 def pendingRun : CompensationRun := { trigger := thrownBy, scope := rootScope, pending := [recordA], leave := none, resume := none }
 
 /-- A state holding `compensation` and queuing `signals`, its root scope occurrence and the counter of `T` at 1. -/
-def holding (compensation : Compensations) (signals : List Signal) : State :=
+def holdingState (compensation : Compensations) (signals : List Signal) : State :=
   { instanceId := "p", scopes := [{ id := rootScope, element := none, parent := none }], nextIssue := 8, signals,
     activations := [{ processInstance := "p", element := thrower, role := .element, count := 1 }],
     slots := { compensation } }
@@ -183,26 +183,26 @@ theorem shared_completion_rejected :
 
 /-- A completion number not yet issued breaks `CompletionsIssued`. -/
 theorem unissued_completion_rejected :
-    ¬ CompletionsIssued { holding { retained := [recordA] } [] with nextIssue := 1 } := by
-  simp [CompletionsIssued, completions, completionsIn, completionsOf, holding, recordA]
+    ¬ CompletionsIssued { holdingState { retained := [recordA] } [] with nextIssue := 1 } := by
+  simp [CompletionsIssued, completions, completionsIn, completionsOf, holdingState, recordA]
 
 /-- A run whose pending record may start breaks `RunsSettled`. -/
-theorem ready_pending_rejected : ¬ RunsSettled (fun _ _ => False) (holding { runs := [pendingRun] } []) := fun settled =>
-  settled pendingRun (by simp [holding]) recordA ⟨by simp [pendingRun], fun _ _ none => none⟩
+theorem ready_pending_rejected : ¬ RunsSettled (fun _ _ => False) (holdingState { runs := [pendingRun] } []) := fun settled =>
+  settled pendingRun (by simp [holdingState]) recordA ⟨by simp [pendingRun], fun _ _ none => none⟩
 
 /-- Two runs of one key break `RunsKeyed`. -/
-theorem shared_key_rejected : ¬ RunsKeyed (holding { runs := [pendingRun, pendingRun] } []) := by
-  simp [RunsKeyed, holding]
+theorem shared_key_rejected : ¬ RunsKeyed (holdingState { runs := [pendingRun, pendingRun] } []) := by
+  simp [RunsKeyed, holdingState]
 
 /-- A run in a scope occurrence not yet issued breaks `RunsIssued`. -/
-theorem unissued_run_rejected : ¬ RunsIssued (holding { runs := [{ pendingRun with scope := ⟨8⟩ }] } []) := by
-  simp [RunsIssued, holding]
+theorem unissued_run_rejected : ¬ RunsIssued (holdingState { runs := [{ pendingRun with scope := ⟨8⟩ }] } []) := by
+  simp [RunsIssued, holdingState]
 
 /-- A queued compensation with a run's trigger breaks `TriggersApart`. -/
 theorem shared_trigger_rejected :
-    ¬ TriggersApart (holding { runs := [pendingRun] } [.compensate rootScope none thrownBy none none]) := fun apart => by
+    ¬ TriggersApart (holdingState { runs := [pendingRun] } [.compensate rootScope none thrownBy none none]) := fun apart => by
   have nodup := apart.apart
-  simp [heldTriggers, queuedTriggers, holding, pendingRun, resumesGroup, Laws.Step.triggersOf_compensate,
+  simp [heldTriggers, queuedTriggers, holdingState, pendingRun, resumesGroup, Laws.Step.triggersOf_compensate,
     queuedTrigger] at nodup
 
 /-- `pendingRun` as a group's nested run. -/
@@ -211,39 +211,39 @@ def groupRun : CompensationRun := { pendingRun with resume := some (.group rootS
 /-- A group's nested run with a queued compensation's trigger breaks `TriggersApart`, though no run but a group's holds
 the trigger. -/
 theorem queued_group_trigger_rejected :
-    ¬ TriggersApart (holding { runs := [groupRun] } [.compensate rootScope none thrownBy none none]) := fun apart => by
-  refine apart.grouped groupRun (by simp [holding]) (by simp [groupRun, resumesGroup]) ?_
-  simp [queuedTriggers, holding, groupRun, pendingRun, Laws.Step.triggersOf_compensate, queuedTrigger]
+    ¬ TriggersApart (holdingState { runs := [groupRun] } [.compensate rootScope none thrownBy none none]) := fun apart => by
+  refine apart.grouped groupRun (by simp [holdingState]) (by simp [groupRun, resumesGroup]) ?_
+  simp [queuedTriggers, holdingState, groupRun, pendingRun, Laws.Step.triggersOf_compensate, queuedTrigger]
 
 /-- A trigger whose activation its counter has not issued breaks `TriggersApart`. -/
 theorem uncounted_trigger_rejected :
-    ¬ TriggersApart (holding { runs := [{ pendingRun with trigger := { thrownBy with activation := 2 } }] } []) :=
+    ¬ TriggersApart (holdingState { runs := [{ pendingRun with trigger := { thrownBy with activation := 2 } }] } []) :=
   fun apart => by
-    obtain ⟨count, member, named⟩ := apart.counted { thrownBy with activation := 2 } (by simp [holding])
+    obtain ⟨count, member, named⟩ := apart.counted { thrownBy with activation := 2 } (by simp [holdingState])
     obtain ⟨_, _, _, below⟩ := named
-    simp [holding] at member
+    simp [holdingState] at member
     simp [member, triggerKey] at below
 
 /-- So does a group's nested run whose trigger's activation was not issued, though no held trigger names it. -/
 theorem uncounted_group_rejected :
-    ¬ TriggersApart (holding { runs := [{ groupRun with trigger := { thrownBy with activation := 2 } }] } []) :=
+    ¬ TriggersApart (holdingState { runs := [{ groupRun with trigger := { thrownBy with activation := 2 } }] } []) :=
   fun apart => by
-    obtain ⟨count, member, named⟩ := apart.counted { thrownBy with activation := 2 } (by simp [holding])
+    obtain ⟨count, member, named⟩ := apart.counted { thrownBy with activation := 2 } (by simp [holdingState])
     obtain ⟨_, _, _, below⟩ := named
-    simp [holding] at member
+    simp [holdingState] at member
     simp [member, triggerKey] at below
 
 /-- A queued Cancel raise from a scope occurrence not yet issued breaks `TriggersApart`. -/
 theorem unissued_raise_rejected :
-    ¬ TriggersApart (holding {} [.raise .cancel { element := thrower, scope := ⟨8⟩, activation := 1 }]) := fun apart => by
+    ¬ TriggersApart (holdingState {} [.raise .cancel { element := thrower, scope := ⟨8⟩, activation := 1 }]) := fun apart => by
   have below := apart.issued { element := thrower, scope := ⟨8⟩, activation := 1 }
-    (by simp [holding, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel])
-  simp [holding] at below
+    (by simp [holdingState, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel])
+  simp [holdingState] at below
 
 /-- An unbegun reservation of occurrence 7 of `T` in the root scope occurrence, with a Cancel raise queued from that
 occurrence. -/
 def reservedRaise : State :=
-  { holding {} [.raise .cancel { element := thrower, scope := rootScope, activation := 1 }] with
+  { holdingState {} [.raise .cancel { element := thrower, scope := rootScope, activation := 1 }] with
     occurrences := [{ id := 7, element := thrower, scope := rootScope, activation := 1, begun := false }] }
 
 /-- A queued trigger that names an unbegun reservation breaks `TriggersApart`: beginning the reservation would throw
@@ -252,15 +252,15 @@ theorem reserved_trigger_rejected : ¬ TriggersApart reservedRaise := fun apart 
   apart.unreserved _ (List.mem_singleton_self _) rfl
     { processInstanceId := reservedRaise.instanceOf rootScope, element := thrower, activation := 1 }
     (List.mem_append_right _ (by
-      simp [queuedTriggers, reservedRaise, holding, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel,
+      simp [queuedTriggers, reservedRaise, holdingState, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel,
         queuedTrigger, scopeIds]))
     rfl
 
 /-- A queued compensation that resumes a group breaks `QueuedUngrouped`. -/
 theorem queued_group_rejected :
-    ¬ QueuedUngrouped (holding {} [.compensate rootScope none thrownBy none (some (.group rootScope rootScope))]) :=
+    ¬ QueuedUngrouped (holdingState {} [.compensate rootScope none thrownBy none (some (.group rootScope rootScope))]) :=
   fun ungrouped => by
-    have := ungrouped rootScope none thrownBy none (some (.group rootScope rootScope)) (by simp [holding])
+    have := ungrouped rootScope none thrownBy none (some (.group rootScope rootScope)) (by simp [holdingState])
     simp [resumesGroup] at this
 
 end Kernel.Proofs.Compensation

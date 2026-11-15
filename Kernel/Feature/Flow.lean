@@ -49,12 +49,20 @@ def condition (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Except 
       | .failure code => .error (.rolledBack code)
       | .unsupported code => .error (.unsupported code)
 
+/-- The candidates whose condition holds, in order; the first failure stops the filter. -/
+def holding (ctx : Ctx) (context : EvalContext) : List FlowId → Except Failure (List FlowId)
+  | [] => .ok []
+  | candidate :: rest => do
+    let held ← condition ctx context candidate
+    let others ← holding ctx context rest
+    .ok (if held then candidate :: others else others)
+
 /-- The flows an inclusive choice takes: every candidate whose condition holds, else the default; with neither the
 command rolls back with `noFlow`. A choice without candidates takes all of `outgoing`, which are unconditioned. -/
 def inclusiveChoice (ctx : Ctx) (context : EvalContext) (candidates : List FlowId) (default : Option FlowId)
     (outgoing : List FlowId) (noFlow : String) : Except Failure (List FlowId) := do
   if candidates.isEmpty then return outgoing
-  let chosen ← candidates.filterM (condition ctx context)
+  let chosen ← holding ctx context candidates
   match chosen, default with
   | [], some flow => .ok [flow]
   | [], none => .error (.rolledBack noFlow)
