@@ -150,4 +150,21 @@ def SchedulesAgree (hooks : Hooks) : Prop :=
     Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' reordered = .ok right →
     ∃ ids keys, Issued ids state.nextIssue ∧ Activations state keys ∧ Alike ids keys left right
 
+/-- PC-HUM-04 (`DTB-COMMUTE-01`): a token to a None End beside a token entering an embedded Sub-Process commute under
+`orderInvariant` (BPMN 2.0.2 §10.5.3, §13.5.6). The pair's two orders are one `Reordered` pair of a closure state, so
+the former theorem is this lane under `Laws.Flow.Apart` at a state queuing the two tokens that the closure of a
+committed input reaches, with no premise about the pair's elements. -/
+theorem endBesideEntry {hooks : Hooks} (agree : SchedulesAgree hooks)
+    (program : Program) (input : Input) (start state reordered left right : State) (fuel work fuel' work' : Nat)
+    (toEnd toEntry : FlowId) (scope : ScopeOccurrenceId) (_pair : state.tokens = [.flow toEnd scope, .flow toEntry scope])
+    (invariant : program.options.branchSchedule = .orderInvariant) (separate : Laws.Flow.Apart program)
+    (opens : Opens hooks program input start)
+    (reached : Reaches hooks (Laws.Step.inputCtx hooks program input) start state)
+    (swapped : Reordered state reordered)
+    (settled : Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work state = .ok left)
+    (settled' : Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' reordered = .ok right) :
+    ∃ ids keys, Issued ids state.nextIssue ∧ Activations state keys ∧ Alike ids keys left right :=
+  agree program input start state reordered left right fuel work fuel' work' invariant separate opens reached swapped
+    settled settled'
+
 end Kernel.Proofs.Concurrency

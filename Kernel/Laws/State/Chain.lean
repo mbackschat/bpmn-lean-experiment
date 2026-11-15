@@ -6,8 +6,8 @@ public import Kernel.Laws.State
 
 What `State.visible`, `State.owner?`, `State.declaring?` and `State.instanceRoot` find, derived from their step
 equations in `Kernel.Laws.State` (`visible_go`, `owner?_go`, `declaring?_go`, `instanceRoot_go`) without opening
-`Kernel.State`'s bodies. Each search runs from a scope occurrence outward and stops at a called instance's root.
-Nothing executable imports this module.
+`Kernel.State`'s bodies. Each search runs from a scope occurrence outward and stops at a called instance's root, the
+root of the scope occurrence's process instance (`InstanceRoot`). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -15,6 +15,18 @@ Nothing executable imports this module.
 namespace Kernel.Laws.State
 
 open Kernel
+
+/-! ## The process instance of a scope occurrence -/
+
+/-- `root` is the root of a called process instance in `s`. -/
+def CalledRoot (s : State) (root : ScopeOccurrenceId) : Prop :=
+  ∃ occurrence ∈ s.scopes, occurrence.id = root ∧ occurrence.calledInstance.isSome
+
+/-- `root` is the root of the process instance `scope` belongs to: the nearest called root from `scope` outward, `scope`
+itself included, or the process root when none lies on the way. -/
+def InstanceRoot (s : State) (scope root : ScopeOccurrenceId) : Prop :=
+  Within s scope root ∧ (CalledRoot s root ∨ root = State.root) ∧
+    ∀ nearer, Within s scope nearer → Within s nearer root → CalledRoot s nearer → nearer = root
 
 /-! ## Congruence -/
 
