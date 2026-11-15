@@ -450,4 +450,15 @@ theorem non_interrupting_cancels_rejected (kind : OpenKind) :
   have := (law rfl).1 innerTask (by simp [sample])
   simp [cleared, innerTask, subProcess, outerTask] at this
 
+/-- A Scope `Hooks.eventStart` of Scopes reads a start off is an Event Sub-Process with that start. -/
+theorem eventStart_kind {payload : ScopePayload} {start : Subscription} {interrupting : Bool}
+    (started : Feature.Scopes.eventStart payload = some (start, interrupting)) :
+    payload.kind = .eventSubProcess start interrupting := by
+  unfold Feature.Scopes.eventStart at started
+  split at started
+  · rename_i chosen
+    cases started
+    exact chosen
+  all_goals cases started
+
 end Kernel.Laws.Scopes

@@ -51,6 +51,28 @@ theorem arm_apart {host : Nat} {element : ElementId} {scope : ScopeOccurrenceId}
       ∀ scope' activity trigger leave resume, Signal.compensate scope' activity trigger leave resume ≠ .arm host element scope :=
   ⟨fun _ => nofun, fun _ _ _ _ _ => nofun, fun _ _ _ _ _ => nofun⟩
 
+/-- A compensation handler's failure is none of the other signals a raise's search queues. -/
+theorem compensationFailed_apart {handler : ScopeOccurrenceId} {code : String} {message : Option String}
+    {origin : Origin} :
+    (∀ id leave writes rule, Signal.complete id leave writes rule ≠ .compensationFailed handler code message origin) ∧
+      (∀ request, Signal.begin request ≠ .compensationFailed handler code message origin) ∧
+      (∀ id, Signal.cancel id ≠ .compensationFailed handler code message origin) ∧
+      (∀ element scope leave writes rule,
+        Signal.occur element scope leave writes rule ≠ .compensationFailed handler code message origin) ∧
+      (∀ scope writes rule, Signal.write scope writes rule ≠ .compensationFailed handler code message origin) ∧
+      (∀ status failure, Signal.endInstance status failure ≠ .compensationFailed handler code message origin) ∧
+      ∀ scope activity trigger leave resume,
+        Signal.compensate scope activity trigger leave resume ≠ .compensationFailed handler code message origin :=
+  ⟨fun _ _ _ _ => nofun, fun _ => nofun, fun _ => nofun, fun _ _ _ _ _ => nofun, fun _ _ _ => nofun, fun _ _ => nofun,
+    fun _ _ _ _ _ => nofun⟩
+
+/-- Two handler failures that are one name one context. -/
+theorem compensationFailed_handler {handler other : ScopeOccurrenceId} {code code' : String}
+    {message message' : Option String} {origin origin' : Origin}
+    (same : Signal.compensationFailed handler code message origin = .compensationFailed other code' message' origin') :
+    handler = other :=
+  (Signal.compensationFailed.inj same).1
+
 /-- The begins of the requests' begin signals are the requests. -/
 theorem beginsOf_map (requests : List BeginRequest) : beginsOf (requests.map Signal.begin) = requests := by
   simp [beginsOf, List.filterMap_map, Function.comp_def]

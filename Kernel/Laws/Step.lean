@@ -854,4 +854,15 @@ theorem dispatch_unstarted {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence}
         | linkCatch name => simp only [role] at ran; exact .atLink ran
         | linkThrow name => simp only [role] at ran; exact .atLink ran
 
+/-- `Step` calls a scope occurrence a compensation handler's context (`Step.scopeRole`) exactly when a compensation
+run holds it running. -/
+theorem scopeRole_handler {state : State} {scope : ScopeOccurrenceId} :
+    Step.scopeRole state scope = .compensationHandler ↔
+      state.slots.compensation.runs.any (·.running.any (·.1 == scope)) = true := by
+  unfold Step.scopeRole
+  dsimp only
+  split
+  · simp_all
+  · split <;> simp_all
+
 end Kernel.Laws.Step

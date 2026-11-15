@@ -875,4 +875,10 @@ theorem trigger_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps
           · exact ops.reopenBegin _ _ _ _ _ holds member start reservable
     · cases ran
 
+/-- Only a Cancel trigger catches a raised Cancel (`Feature.Subscriptions.catches`). -/
+theorem catches_cancel {trigger : Trigger} (caught : (Feature.Subscriptions.catches .cancel trigger).isSome = true) :
+    trigger = .cancel := by
+  unfold Feature.Subscriptions.catches at caught
+  split at caught <;> simp_all [Feature.Subscriptions.errorFacts?, Feature.Subscriptions.escalationCode?]
+
 end Kernel.Laws.Subscriptions

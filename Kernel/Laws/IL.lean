@@ -153,6 +153,18 @@ theorem mem_children {program : Program} {parent : Option ElementId} {element : 
   unfold Program.children at member
   exact (List.mem_filter.mp member).1
 
+/-- A process-level element of a called process (`Program.processChildren`) is one of the program's elements. -/
+theorem mem_processChildren {program : Program} {process : CalledProcess} {element : Element}
+    (member : element ∈ program.processChildren process) : element ∈ program.elements := by
+  unfold Program.processChildren at member
+  obtain ⟨_, _, found⟩ := List.mem_filterMap.mp member
+  exact element?_mem found
+
+/-- An Event Sub-Process kind's start subscription is the one it carries. -/
+theorem start?_eventSubProcess (start : Subscription) (interrupting : Bool) :
+    (ScopeKind.eventSubProcess start interrupting).start? = some start := by
+  simp only [ScopeKind.start?]
+
 /-! ## Footprints
 
 A footprint's name set read as a list of names, for laws that compare name lists and have no "every name": `every`
