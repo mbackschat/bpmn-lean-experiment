@@ -255,15 +255,6 @@ export function awaitsStimulus(element: Element): boolean {
   return gateway !== null && routing(gateway[1]).waits;
 }
 
-/**
- * An element a branch stops at within its closure: one that awaits a stimulus, or a converging Parallel or Inclusive
- * Gateway, which joins the branches (CIB parks its execution there too).
- */
-export function branchStop(element: Element): boolean {
-  const gateway = elementGateway(element);
-  return awaitsStimulus(element) || (gateway !== null && routing(gateway[1]).concurrent && gateway[1].incoming.length >= 2);
-}
-
 /** The elements `flows` lead to. */
 export const flowTargets = (program: Program, flows: readonly FlowId[]): readonly Element[] => flows.flatMap((flow) => {
   const target = programTarget(program, flow);

@@ -192,11 +192,12 @@ def TwoRuns (program : Program) (left right : Element) : Prop :=
 
 /-! ## Units -/
 
-def branchWalk : Walk := { stop := BranchStop, ascends := false }
-def instanceWalk : Walk := { stop := AwaitsStimulus, ascends := false }
-def continuationWalk : Walk := { stop := BranchStop, ascends := true }
+/-- A unit's walk: to its next wait, through every Parallel and Inclusive join (#162), so the work after a join two
+units reach counts in both, the restriction `flow.concurrentWrite` states. -/
+def branchWalk : Walk := { stop := AwaitsStimulus, ascends := false }
+def continuationWalk : Walk := { stop := AwaitsStimulus, ascends := true }
 
-/-- A branch's path from `begun`, stopping where it waits or joins. -/
+/-- A branch's path from `begun`, stopping where it waits. -/
 def pathFrom (begun : Visit → Prop) : WorkUnit := { walk := branchWalk, start := begun }
 
 /-- The branch a token on `flow` runs. -/
@@ -239,7 +240,7 @@ def instances (program : Program) (body : Element) (loop : MultiInstance) (unit 
 
 /-- A parallel task body's instance against another: its run's footprint, and what its completion makes beside. -/
 def taskInstances (program : Program) (body : Element) (loop : MultiInstance) : Account :=
-  let beside := ({ walk := instanceWalk, start := Beyond program body } : WorkUnit).account program
+  let beside := ({ walk := branchWalk, start := Beyond program body } : WorkUnit).account program
   { beside with
     footprint := (· = runFootprint program body)
     withdraws := fun region => Unhandled program body region ∨ beside.withdraws region ∨
@@ -248,13 +249,13 @@ def taskInstances (program : Program) (body : Element) (loop : MultiInstance) : 
 
 /-- A compensation handler's own run, without its trigger's resumption, which comes after every handler it races. -/
 def handlerAccount (program : Program) (handler : Element) : Account :=
-  let begun := ({ walk := { stop := fun other => other.header.id = handler.header.id ∨ BranchStop other,
+  let begun := ({ walk := { stop := fun other => other.header.id = handler.header.id ∨ AwaitsStimulus other,
                             ascends := false },
                   start := (· = .enters handler) } : WorkUnit).account program
   { begun with
-    footprint := fun found => begun.footprint found ∨ (¬ BranchStop handler ∧ found = runFootprint program handler)
-    completes := fun id => begun.completes id ∨ (¬ BranchStop handler ∧ id = handler.header.id)
-    withdraws := fun region => begun.withdraws region ∨ (¬ BranchStop handler ∧ Unhandled program handler region) }
+    footprint := fun found => begun.footprint found ∨ (¬ AwaitsStimulus handler ∧ found = runFootprint program handler)
+    completes := fun id => begun.completes id ∨ (¬ AwaitsStimulus handler ∧ id = handler.header.id)
+    withdraws := fun region => begun.withdraws region ∨ (¬ AwaitsStimulus handler ∧ Unhandled program handler region) }
 
 /-! ## The mechanisms -/
 
@@ -279,12 +280,12 @@ inductive PathPair (program : Program) (own other : WorkUnit) : Account → Acco
 resumes them. -/
 inductive InstancePair (program : Program) (body : Element) (loop : MultiInstance) : Account → Account → Prop where
   | entered {header : Header} {payload : ScopePayload} : body.scope? = some (header, payload) →
-      InstancePair program body loop (instances program body loop (enteredFrom program header.id instanceWalk))
-        (instances program body loop (enteredFrom program header.id instanceWalk))
+      InstancePair program body loop (instances program body loop (enteredFrom program header.id branchWalk))
+        (instances program body loop (enteredFrom program header.id branchWalk))
   | woken {header : Header} {payload : ScopePayload} : body.scope? = some (header, payload) →
       InstancePair program body loop
-        (instances program body loop (wake program (enteredFrom program header.id instanceWalk)))
-        (instances program body loop (wake program (enteredFrom program header.id instanceWalk)))
+        (instances program body loop (wake program (enteredFrom program header.id branchWalk)))
+        (instances program body loop (wake program (enteredFrom program header.id branchWalk)))
   | task : body.scope? = none → ¬ AwaitsStimulus body →
       InstancePair program body loop (taskInstances program body loop) (taskInstances program body loop)
 
@@ -518,7 +519,7 @@ theorem split_race_not_apart {program : Program} {flow : Flow} {other : FlowId} 
 theorem shared_handler_not_apart {program : Program} {thrower handler : Element} {first second : ElementId}
     (member : thrower ∈ program.elements) (compensates : Compensates thrower) (handles : HandlersOf program thrower handler)
     (ofFirst : SubjectOf program handler first) (ofSecond : SubjectOf program handler second) (distinct : first ≠ second)
-    (unordered : ¬ Ordered program handler handler) (runs : ¬ BranchStop handler)
+    (unordered : ¬ Ordered program handler handler) (runs : ¬ AwaitsStimulus handler)
     (race : (runFootprint program handler).races (runFootprint program handler) = true) : ¬ Apart program := fun apart =>
   (apart _ (mechanism_mem_all _) _ _ (.compensating member compensates handles handles
     (.inr ⟨rfl, first, ofFirst, ⟨second, ofSecond, distinct⟩⟩) unordered)).1 ⟨_, _, .inr ⟨runs, rfl⟩, .inr ⟨runs, rfl⟩, race⟩

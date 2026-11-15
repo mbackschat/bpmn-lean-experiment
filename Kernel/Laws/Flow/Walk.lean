@@ -85,11 +85,6 @@ def AwaitsStimulus (element : Element) : Prop :=
   (∃ header payload subscription, element.event? = some (header, payload) ∧ payload.catch? = some subscription) ∨
   WaitsGateway element
 
-/-- An element a branch stops at: one that awaits a stimulus, or a converging Parallel or Inclusive Gateway. -/
-def BranchStop (element : Element) : Prop :=
-  AwaitsStimulus element ∨
-    ∃ header payload, element.gateway? = some (header, payload) ∧ Forking payload.kind ∧ payload.incoming.length ≥ 2
-
 def Thrown (element : Element) (thrown : Throw) : Prop :=
   ∃ header payload, element.event? = some (header, payload) ∧ payload.throw? = some thrown
 

@@ -156,12 +156,6 @@ def awaitsStimulus (element : Element) : Bool :=
   (element.event?.any fun (_, payload) => payload.catch?.isSome) ||
   element.gateway?.any fun (_, payload) => (routing payload).waits
 
-/-- An element a branch stops at within its closure: one that awaits a stimulus, or a converging Parallel or Inclusive
-Gateway, which joins the branches (CIB parks its execution there too). -/
-def branchStop (element : Element) : Bool :=
-  awaitsStimulus element ||
-    element.gateway?.any fun (_, payload) => (routing payload).concurrent && payload.incoming.length ≥ 2
-
 /-- The elements `flows` lead to. -/
 def flowTargets (program : Program) (flows : List FlowId) : List Element :=
   flows.filterMap fun flow => (program.target? flow).bind program.element?

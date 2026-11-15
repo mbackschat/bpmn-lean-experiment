@@ -79,15 +79,15 @@ import {
   type Walk,
   type Withdrawal,
 } from "./closure.js";
-import { awaitsStimulus, branchStop, enteredChildren, flowTargets, leaving, routing } from "../flow.js";
+import { awaitsStimulus, enteredChildren, flowTargets, leaving, routing } from "../flow.js";
 
-/** The closure a token on `start` runs in: the work it reaches, stopping where it waits or joins. */
+/** The closure a token on `start` runs in: the work it reaches, stopping where it waits and passing every join (#162). */
 const branchClosure = (reading: Reading, program: Program, start: FlowId): Closure =>
-  closureWalk(reading, program, { stop: branchStop, ascends: false }, flowTargets(program, [start]).map(toEnter));
+  closureWalk(reading, program, { stop: awaitsStimulus, ascends: false }, flowTargets(program, [start]).map(toEnter));
 
 /** The closure the resumptions in `wakes` run in, which one Signal broadcast may start together. */
 const wakeClosure = (reading: Reading, program: Program, wakes: readonly Visit[]): Closure =>
-  closureWalk(reading, program, { stop: branchStop, ascends: false }, wakes);
+  closureWalk(reading, program, { stop: awaitsStimulus, ascends: false }, wakes);
 
 /** Whether `withdrawal` removes the element `id`: `id` lies in its region, or in a called process a Call in it calls. */
 function removesElement(program: Program, withdrawal: Withdrawal, fuel: number, id: ElementId): boolean {
@@ -157,7 +157,9 @@ function branchesAgainst(reading: Reading, program: Program, own: Closure, other
  * the closure do, and a loop that may run no instance as completing (issue #99); a Call's output mappings count as
  * written even when the called instance waits, and a JUEL text as reading every name; any raise may meet any catcher
  * around it, any Signal throw any Signal subscription and any Compensation throw any record in its Scope; a later
- * profile may take the interleaving as a choice input instead. Not counted: what an element it stops at evaluates
+ * profile may take the interleaving as a choice input instead. A branch runs to its next wait through every Parallel
+ * and Inclusive join, so the work after a join two branches reach counts in both and is held against itself, though a
+ * join that synchronises every branch orders it after them (#162). Not counted: what an element it stops at evaluates
  * besides its input mappings and Multi-Instance definition.
  */
 export function concurrentBranches(reading: Reading, program: Program, flow: Flow): string | null {
@@ -343,17 +345,17 @@ function againstItself(reading: Reading, program: Program, visit: Visit, wake: C
   return againstHolders(program, holders(reading, program, visit), wake);
 }
 
-/** The walk of a resumption's or catcher's path: a branch's, stopping where it waits or joins. */
+/** The walk of a resumption's or catcher's path: a branch's, stopping where it waits and passing every join. */
 const pathOf = (reading: Reading, program: Program, begun: readonly Visit[]): Closure =>
-  closureWalk(reading, program, { stop: branchStop, ascends: false }, begun);
+  closureWalk(reading, program, { stop: awaitsStimulus, ascends: false }, begun);
 
 /**
- * What a token leaving `element` runs next in its closure: its flows and, ascending, the completion of the Scope or
- * called process its token may end (review change 4: `step.ts` `settle` completes an idle scope only after every signal
- * and token, so that completion goes on beside the other units).
+ * What a token leaving `element` runs next in its closure, through every join: its flows and, ascending, the completion
+ * of the Scope or called process its token may end (review change 4: `step.ts` `settle` completes an idle scope only
+ * after every signal and token, so that completion goes on beside the other units).
  */
 function continuation(reading: Reading, program: Program, element: Element): Closure {
-  const walk: Walk = { stop: branchStop, ascends: true };
+  const walk: Walk = { stop: awaitsStimulus, ascends: true };
   return closureWalk(reading, program, walk, onwardVisits(reading, program, walk, element));
 }
 
@@ -517,7 +519,7 @@ function writeFanOut(reading: Reading, program: Program, element: Element): stri
   const fired = (): string | null => firstOf(elementEnvelope(element)?.boundaries ?? [], (attached) => {
     const names = reading.fires(attached);
     if (names.length === 0) return null;
-    const next = closureWalk(reading, program, { stop: branchStop, ascends: true }, flowTargets(program, attached.outgoing).map(toEnter));
+    const next = closureWalk(reading, program, { stop: awaitsStimulus, ascends: true }, flowTargets(program, attached.outgoing).map(toEnter));
     return firstOf(resumed({ names, all: false }), ([, wake]) => conflict(program, next, wake));
   });
   const reads = (visit: Visit): NameSet => {
@@ -559,9 +561,9 @@ function compensationFanOut(reading: Reading, program: Program, element: Element
   if (!reading.compensates(element)) return null;
   const unit = (handlerElement: Element): Closure => {
     const id = elementHeader(handlerElement).id;
-    const begun = closureWalk(reading, program, { stop: (other) => elementHeader(other).id === id || branchStop(other), ascends: false },
+    const begun = closureWalk(reading, program, { stop: (other) => elementHeader(other).id === id || awaitsStimulus(other), ascends: false },
       [toEnter(handlerElement)]);
-    if (branchStop(handlerElement)) return begun;
+    if (awaitsStimulus(handlerElement)) return begun;
     const run = runs(reading, program, handlerElement);
     return { ...begun, footprint: joined(begun.footprint, run.footprint), withdraws: [...run.withdraws, ...begun.withdraws],
       completed: [id, ...begun.completed] };
@@ -709,10 +711,10 @@ export function fanOutConflict(reading: Reading, program: Program, element: Elem
 export type InstanceClosure = Readonly<{ races: boolean; completes: boolean }>;
 
 /**
- * A Sub-Process instance runs from its `enteredChildren` and continues past a join, which the instance's own branches reach
- * in that closure; a task instance is its work, which completes at once unless it awaits a stimulus. `completes`
- * over-approximates: a token reaching an element that neither waits nor continues, ignoring that a sibling branch of a
- * Parallel split may wait, which flows a condition selects and whether a nested Call waits.
+ * A Sub-Process instance runs from its `enteredChildren` through every join, as every unit's walk does; a task instance
+ * is its work, which completes at once unless it awaits a stimulus. `completes` over-approximates: a token reaching an
+ * element that neither waits nor continues, ignoring that a sibling branch of a Parallel split may wait, which flows a
+ * condition selects and whether a nested Call waits.
  */
 export function instanceClosure(reading: Reading, program: Program, element: Element): InstanceClosure {
   const walk = (begun: readonly Visit[]): Closure => closureWalk(reading, program, { stop: awaitsStimulus, ascends: false }, begun);

@@ -18,13 +18,14 @@ namespace Kernel.Admission.Flow.Concurrency
 
 open Kernel.Admission.Flow
 
-/-- The closure a token on `start` runs in: the work it reaches, stopping where it waits or joins. -/
+/-- The closure a token on `start` runs in: the work it reaches, stopping where it waits and passing every join
+(#162). -/
 def branchClosure (reading : Reading) (program : Program) (start : FlowId) : Closure :=
-  closureWalk reading program { stop := branchStop, ascends := false } ((flowTargets program [start]).map Visit.enters)
+  closureWalk reading program { stop := awaitsStimulus, ascends := false } ((flowTargets program [start]).map Visit.enters)
 
 /-- The closure the resumptions in `wakes` run in, which one Signal broadcast may start together. -/
 def wakeClosure (reading : Reading) (program : Program) (wakes : List Visit) : Closure :=
-  closureWalk reading program { stop := branchStop, ascends := false } wakes
+  closureWalk reading program { stop := awaitsStimulus, ascends := false } wakes
 
 /-- Whether `withdrawal` removes the element `id`: `id` lies in its region, or in a called process a Call in it
 calls. -/
@@ -79,7 +80,9 @@ flows. A forward-compatible restriction, and a conservative one: a branch counts
 a loop that may run no instance as completing (issue #99); a Call's output mappings count as written even when the
 called instance waits, and a JUEL text as reading every name; any raise may meet any catcher around it, any Signal
 throw any Signal subscription and any Compensation throw any record in its Scope; a later profile may take the
-interleaving as a choice input instead. Not counted: what an element it stops at evaluates besides its input mappings
+interleaving as a choice input instead. A branch runs to its next wait through every Parallel and Inclusive join, so
+the work after a join two branches reach counts in both and is held against itself, though a join that synchronises
+every branch orders it after them (#162). Not counted: what an element it stops at evaluates besides its input mappings
 and Multi-Instance definition. -/
 def concurrentBranches (reading : Reading) (program : Program) (flow : Flow) : Option String :=
   match program.options.branchSchedule with
@@ -207,15 +210,15 @@ def againstHolders (program : Program) (held : List ElementId) (wake : Closure) 
 def againstItself (reading : Reading) (program : Program) (visit : Visit) (wake : Closure) : Option String :=
   againstHolders program (holders reading program visit) wake
 
-/-- The walk of a resumption's or catcher's path: a branch's, stopping where it waits or joins. -/
+/-- The walk of a resumption's or catcher's path: a branch's, stopping where it waits and passing every join. -/
 def pathOf (reading : Reading) (program : Program) (begun : List Visit) : Closure :=
-  closureWalk reading program { stop := branchStop, ascends := false } begun
+  closureWalk reading program { stop := awaitsStimulus, ascends := false } begun
 
-/-- What a token leaving `element` runs next in its closure: its flows and, ascending, the completion of the Scope or
-called process its token may end (review change 4: `Step.settle` completes an idle scope only after every signal and
-token, so that completion goes on beside the other units). -/
+/-- What a token leaving `element` runs next in its closure, through every join: its flows and, ascending, the
+completion of the Scope or called process its token may end (review change 4: `Step.settle` completes an idle scope
+only after every signal and token, so that completion goes on beside the other units). -/
 def continuation (reading : Reading) (program : Program) (element : Element) : Closure :=
-  let walk : Walk := { stop := branchStop, ascends := true }
+  let walk : Walk := { stop := awaitsStimulus, ascends := true }
   closureWalk reading program walk (onwardVisits reading program walk element)
 
 /-- Under `BranchSchedule.orderInvariant`, the work one Signal throw starts in its closure may not conflict
@@ -339,7 +342,7 @@ def writeFanOut (reading : Reading) (program : Program) (element : Element) : Op
   let fired := ((element.envelope?.map (·.boundaries)).getD []).findSome? fun boundary =>
     if (reading.fires boundary).isEmpty then none
     else
-      let next := closureWalk reading program { stop := branchStop, ascends := true }
+      let next := closureWalk reading program { stop := awaitsStimulus, ascends := true }
         ((flowTargets program boundary.outgoing).map Visit.enters)
       (resumed { names := reading.fires boundary }).findSome? fun (_, wake) => conflict program next wake
   let reads (visit : Visit) : NameSet := ((visitSubscription visit).bind fun subscription =>
@@ -376,9 +379,9 @@ def compensationFanOut (reading : Reading) (program : Program) (element : Elemen
   else
     let unit (handler : Element) : Closure :=
       let begun := closureWalk reading program
-        { stop := fun other => other.header.id == handler.header.id || branchStop other, ascends := false }
+        { stop := fun other => other.header.id == handler.header.id || awaitsStimulus other, ascends := false }
         [Visit.enters handler]
-      if branchStop handler then begun
+      if awaitsStimulus handler then begun
       else
         let run := runs reading program handler
         { begun with footprint := begun.footprint.union run.footprint, withdraws := run.withdraws ++ begun.withdraws
@@ -474,9 +477,8 @@ structure InstanceClosure where
   /-- An instance may complete in that closure, or in the one where a broadcast resumes the instances together. -/
   completes : Bool
 
-/-- A Sub-Process instance runs from its `enteredChildren` and continues past a join, which the instance's own branches
-reach in that closure; a task instance is its work, which completes at once unless it awaits a stimulus. `completes`
-over-approximates: a token reaching an element that neither waits nor continues, ignoring that a sibling branch of a
+/-- A Sub-Process instance runs from its `enteredChildren` through every join, as every unit's walk does; a task
+instance is its work, which completes at once unless it awaits a stimulus. `completes` over-approximates: a token reaching an element that neither waits nor continues, ignoring that a sibling branch of a
 Parallel split may wait, which flows a condition selects and whether a nested Call waits. -/
 def instanceClosure (reading : Reading) (program : Program) (element : Element) : InstanceClosure :=
   let walk := closureWalk reading program { stop := awaitsStimulus, ascends := false }
