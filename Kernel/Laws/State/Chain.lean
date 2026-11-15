@@ -659,6 +659,14 @@ theorem calledInstanceId_inj {caller caller' : String} {call call' : ElementId} 
     cases call; cases call'; exact congrArg ElementId.mk (String.toList_inj.mp called),
     digits_inj (List.cons.inj spelled).2⟩
 
+/-- A called instance's identifier is longer than its caller's. -/
+theorem calledInstanceId_longer (caller : String) (call : ElementId) (activation : Nat) :
+    caller.length < (State.calledInstanceId caller call activation).length := by
+  rw [calledInstanceId_eq, ← String.length_toList, ← String.length_toList]
+  simp only [String.toList_append, List.length_append, toString]
+  have : ("call:" : String).toList.length = 5 := by decide +kernel
+  omega
+
 end Called
 
 end Kernel.Laws.State

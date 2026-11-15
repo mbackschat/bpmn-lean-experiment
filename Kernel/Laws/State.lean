@@ -365,6 +365,11 @@ theorem declaring?_go (state : State) (element : ElementId) :
         else ((state.scopes.find? (·.id == current)).bind (·.parent)).bind (go fuel) :=
   ⟨State.declaring?.go state element, fun _ => rfl, fun _ => rfl, fun _ _ => rfl⟩
 
+/-- `State.instanceOf`: the identifier its instance root's record calls, else the instance's own. -/
+theorem instanceOf_root (state : State) (scope : ScopeOccurrenceId) : state.instanceOf scope =
+    ((state.scopes.find? (·.id == state.instanceRoot scope)).bind (·.calledInstance)).getD state.instanceId := by
+  simp only [State.instanceOf]
+
 /-- `State.instanceRoot`: the first called root, else the process root. -/
 theorem instanceRoot_go (state : State) :
     ∃ go : Nat → ScopeOccurrenceId → ScopeOccurrenceId,
