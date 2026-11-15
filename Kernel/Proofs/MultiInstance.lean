@@ -3,6 +3,7 @@ module
 public import Kernel.Proofs.Cancellation
 public import Kernel.Laws.Scopes
 public import Kernel.Laws.MultiInstance
+public import Kernel.Proofs.MultiInstance.Records
 public import Kernel.Laws.Population
 
 /-! # Proofs: Multi-Instance (P4)

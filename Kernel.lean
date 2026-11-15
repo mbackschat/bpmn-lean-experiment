@@ -112,6 +112,7 @@ public import Kernel.Proofs.MultiInstance.Framed
 public import Kernel.Proofs.MultiInstance.Hooks
 public import Kernel.Proofs.MultiInstance.Numbered
 public import Kernel.Proofs.MultiInstance.Occurs
+public import Kernel.Proofs.MultiInstance.Records
 public import Kernel.Proofs.State
 public import Kernel.Proofs.Step
 public import Kernel.Proofs.Step.Contract

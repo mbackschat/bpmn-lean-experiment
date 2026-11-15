@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.MultiInstance
+public import Kernel.Proofs.MultiInstance.Records
 
 /-! # Proofs: what Multi-Instance's hooks keep and enter
 
@@ -17,8 +18,8 @@ this module.
 namespace Kernel.Proofs.MultiInstance
 
 open Kernel
-open Kernel.Laws.MultiInstance (MultiInstanceOps Entering Begun SlotsCounted Completes recorded leftWith setRun_eq mem_setRun
-  setRun_mem beginInstances_spec arriveMultiInstance_spec instanceCompleted_spec finish_spec LoopOf)
+open Kernel.Laws.MultiInstance (MultiInstanceOps Entering Begun SlotsCounted Completes recorded leftWith setRun_eq
+  beginInstances_spec arriveMultiInstance_spec instanceCompleted_spec finish_spec LoopOf)
 
 variable {program : Program} {inv : State → Prop} {settled : State → Nat → Prop}
 

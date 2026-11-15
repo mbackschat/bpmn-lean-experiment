@@ -279,10 +279,10 @@ theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps program (Laws.Sta
     refine ⟨Laws.State.slots_wellFormed left ⟨left.settled.parked, fun other present => ?_, left.settled.resumed,
       left.settled.queued, fun other present => ?_, left.settled.runsPlaced, left.settled.grouped, left.settled.raised⟩,
       body, standing, placed⟩
-    · rcases Laws.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
+    · rcases Proofs.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
       · exact left.settled.bodies other old
       · exact body
-    · rcases Laws.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
+    · rcases Proofs.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
       · exact left.settled.placed other old
       · exact placed
   runs state _ next _ formed settledNext placedNext _ _ := by
@@ -290,10 +290,10 @@ theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps program (Laws.Sta
     refine ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked, fun other present => ?_, formed.settled.resumed,
       formed.settled.queued, fun other present => ?_, formed.settled.runsPlaced, formed.settled.grouped,
       formed.settled.raised⟩, fun _ settled => settled⟩
-    · rcases Laws.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
+    · rcases Proofs.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
       · exact formed.settled.bodies other old
       · exact settledNext
-    · rcases Laws.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
+    · rcases Proofs.MultiInstance.mem_setRun present with ⟨old, _⟩ | rfl
       · exact formed.settled.placed other old
       · exact placedNext
   write _ scope writes rule formed :=

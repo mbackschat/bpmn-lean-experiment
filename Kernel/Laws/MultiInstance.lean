@@ -24,7 +24,8 @@ open Kernel.Laws.State (Within)
 
 /-! ## The body's slot record
 
-`MultiInstance.setRun` sets a body's slot record in place of every record of its occurrence, or adds it. -/
+`MultiInstance.setRun` sets a body's slot record in place of every record of its occurrence, or adds it
+(`Kernel.Proofs.MultiInstance.Records` reads what it keeps). -/
 
 /-- Setting a body's slot record changes the Multi-Instance slot only. -/
 theorem setRun_eq (state : State) (next : MultiInstanceRun) :
@@ -33,68 +34,14 @@ theorem setRun_eq (state : State) (next : MultiInstanceRun) :
   unfold Feature.MultiInstance.setRun
   rfl
 
-/-- A record after setting `next` is `next` or one of another occurrence held before. -/
-theorem mem_setRun {state : State} {next other : MultiInstanceRun}
-    (member : other ∈ (Feature.MultiInstance.setRun state next).slots.multiInstances) :
-    (other ∈ state.slots.multiInstances ∧ other.occurrence ≠ next.occurrence) ∨ other = next := by
-  unfold Feature.MultiInstance.setRun at member
-  dsimp only at member
-  split at member
-  · obtain ⟨found, kept, rfl⟩ := List.mem_map.mp member
-    split
-    · exact .inr rfl
-    · rename_i differs
-      exact .inl ⟨kept, fun same => differs (by simp [same])⟩
-  · rename_i absent
-    rcases List.mem_append.mp member with old | new
-    · refine .inl ⟨old, fun same => absent ?_⟩
-      exact List.any_eq_true.mpr ⟨other, old, by simp [same]⟩
-    · exact .inr (List.mem_singleton.mp new)
-
-/-- The record set is held. -/
-theorem setRun_mem (state : State) (next : MultiInstanceRun) :
-    next ∈ (Feature.MultiInstance.setRun state next).slots.multiInstances := by
+/-- The records after setting `next`: `next` in place of each record of its occurrence, or added. -/
+theorem setRun_runs (state : State) (next : MultiInstanceRun) :
+    (Feature.MultiInstance.setRun state next).slots.multiInstances =
+      if state.slots.multiInstances.any (·.occurrence == next.occurrence) then
+        state.slots.multiInstances.map fun other => if other.occurrence == next.occurrence then next else other
+      else state.slots.multiInstances ++ [next] := by
   unfold Feature.MultiInstance.setRun
-  dsimp only
-  split
-  · rename_i present
-    obtain ⟨found, inside, same⟩ := List.any_eq_true.mp present
-    exact List.mem_map.mpr ⟨found, inside, by simp [same]⟩
-  · exact List.mem_append_right _ (List.mem_singleton_self _)
-
-/-- A record of another occurrence stays. -/
-theorem setRun_keeps {state : State} {next other : MultiInstanceRun} (member : other ∈ state.slots.multiInstances)
-    (differs : other.occurrence ≠ next.occurrence) :
-    other ∈ (Feature.MultiInstance.setRun state next).slots.multiInstances := by
-  unfold Feature.MultiInstance.setRun
-  dsimp only
-  split
-  · exact List.mem_map.mpr ⟨other, member, by simp [differs]⟩
-  · exact List.mem_append_left _ member
-
-/-- Setting a body's slot record keeps one record per body occurrence. -/
-theorem setRun_keyed {state : State} (keyed : RunsKeyed state) (next : MultiInstanceRun) :
-    RunsKeyed (Feature.MultiInstance.setRun state next) := by
-  unfold RunsKeyed Feature.MultiInstance.setRun at *
-  dsimp only
-  split
-  · rw [List.map_map]
-    have same : ((·.occurrence) ∘ fun other : MultiInstanceRun =>
-        if (other.occurrence == next.occurrence) = true then next else other) = (·.occurrence) := by
-      funext other
-      simp only [Function.comp]
-      split
-      · rename_i equal
-        exact (beq_iff_eq.mp equal).symm
-      · rfl
-    rw [same]
-    exact keyed
-  · rename_i absent
-    rw [List.map_append]
-    refine List.nodup_append.mpr ⟨keyed, by simp, fun occurrence old added fresh same => ?_⟩
-    simp only [List.map_cons, List.map_nil, List.mem_singleton] at fresh
-    obtain ⟨other, inside, named⟩ := List.mem_map.mp old
-    exact absent (List.any_eq_true.mpr ⟨other, inside, by simp [named, same, fresh]⟩)
+  rfl
 
 /-- The state an instance's completion leaves: its scope occurrence `scope` left and the body's slot record `next`
 set. -/
@@ -340,7 +287,8 @@ structure Opening (inv : State → Prop) (settled : State → Nat → Prop) (ctx
   tokens : acc.1.tokens = start.tokens
   kept : ∀ entry ∈ start.scopes, entry ∈ acc.1.scopes
   scopes : ∀ entry ∈ acc.1.scopes, entry ∈ start.scopes ∨
-    start.nextIssue ≤ entry.id.value ∧ entry.parent = some run.scope ∧ entry.occurrence = none
+    start.nextIssue ≤ entry.id.value ∧ entry.parent = some run.scope ∧ entry.occurrence = none ∧
+      entry.calledInstance = none
   length : acc.2.1.length = run.instances.length
   untouched : ∀ index, index ∉ done → acc.2.1[index]? = run.instances[index]?
   entered : ∀ index ∈ done, ∃ scope, acc.2.1[index]? = some (.active scope) ∧
@@ -420,7 +368,7 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
   · rcases List.mem_append.mp member with old | new
     · exact opening.scopes entry old
     · rw [List.mem_singleton.mp new]
-      exact .inr ⟨issue, rfl, rfl⟩
+      exact .inr ⟨issue, rfl, rfl, rfl⟩
   · have differs : index ≠ other := fun same => outside (by simp [same])
     rw [List.getElem?_set_ne differs]
     exact untouched other fun inside => outside (List.mem_append_left _ inside)
@@ -497,8 +445,9 @@ theorem instanceLocals_counted (ctx : Ctx) (loop : MultiInstance) (index : Nat) 
 /-- What beginning a body's instances, from `state`, leaves in the state `queued` it sets the body's slot record in, to
 `run` with the slots `instances`: what the body keeps while it enters, slots that open `run` by the loop's mode, the
 feature slots and occurrences of `state`, its scope occurrences and others issued since, an issue counter that only
-grew, each slot active anew in a scope occurrence issued since `state` that, under `cibLocals`, holds its counter, and
-the begins of the opened slots, in index order, queued as the loop's mode and the branch schedule say. -/
+grew, each slot active anew in a scope occurrence issued since `state` that, under `cibLocals`, holds its counter, the
+begins of the opened slots, in index order, queued as the loop's mode and the branch schedule say, and scope
+occurrences new since `state` of no called instance, so that an instance shares its body's activation counter. -/
 structure Begun (inv : State → Prop) (settled : State → Nat → Prop) (ctx : Ctx) (loop : MultiInstance) (state : State)
     (run : MultiInstanceRun) (queued : State) (instances : List Iteration) : Prop where
   entering : Entering inv settled run queued instances []
@@ -512,6 +461,7 @@ structure Begun (inv : State → Prop) (settled : State → Nat → Prop) (ctx :
     QueuedAs ctx.program loop.mode state queued requests
   counted : ∀ index scope, instances[index]? = some (.active scope) → run.instances[index]? = some (.active scope) ∨
     state.nextIssue ≤ scope.value ∧ CounterIn ctx loop queued index scope
+  uncalled : ∀ entry ∈ queued.scopes, entry ∉ state.scopes → entry.calledInstance = none
 
 /-- Beginning a body's instances, from a state where it keeps what it keeps while it enters, queues their begins in a
 state it then sets the body's slot record in, as `Begun` says. -/
@@ -558,14 +508,16 @@ theorem beginInstances_spec (ops : MultiInstanceOps program inv settled) {ctx : 
     opened.untouched index outside, fun index inside => ?_, fun first second scope inside one two =>
     opened.apart first inside second scope one two⟩, slots.trans opened.slots,
     keeps.occurrences.trans opened.occurrences, fun entry member => scopes ▸ opened.kept entry member,
-    fun entry member => ?_, keeps.nextIssue ▸ opened.issue, ⟨requests, opened.requested, ?_⟩, ?_⟩
+    fun entry member => ?_, keeps.nextIssue ▸ opened.issue, ⟨requests, opened.requested, ?_⟩, ?_,
+    fun entry member outside => (opened.scopes entry (scopes ▸ member)).elim (fun old => absurd old outside)
+      fun fresh => fresh.2.2.2⟩
   · obtain ⟨scope, slot, bounds, rest⟩ := opened.entered index inside
     refine ⟨scope, slot, scopeIds ▸ rest.1, fun entry member named => ?_, fun other held context => ?_, fun active => ?_⟩
     · rcases opened.scopes entry (scopes ▸ member) with old | new
       · have := ops.issued state entering.1 entry old
         rw [named] at this
         exact absurd bounds.1 (Nat.not_le.mpr this)
-      · exact new.2
+      · exact ⟨new.2.1, new.2.2.1⟩
     · rw [slots, opened.slots] at held
       have := ops.contexts state entering.1 other held scope context
       exact absurd bounds.1 (Nat.not_le.mpr this)

@@ -70,8 +70,8 @@ theorem setRun_framed {program : Program} {s : State} {next : MultiInstanceRun} 
   have same := Laws.MultiInstance.setRun_eq s next
   have move : ∀ {run}, RunFramed program s run → RunFramed program (Feature.MultiInstance.setRun s next) run :=
     fun each => (each.placed.transport (by rw [same]) (by rw [same]) (by rw [same])).framed each.shaped
-  refine ⟨Laws.MultiInstance.setRun_keyed keyed next, fun run member => ?_⟩
-  rcases Laws.MultiInstance.mem_setRun member with ⟨held, differs⟩ | rfl
+  refine ⟨setRun_keyed keyed next, fun run member => ?_⟩
+  rcases mem_setRun member with ⟨held, differs⟩ | rfl
   · exact move (others run held differs)
   · exact move fresh
 

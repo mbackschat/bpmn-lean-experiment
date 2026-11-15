@@ -557,10 +557,10 @@ theorem Snapshots.setRun {b s : State} {next : MultiInstanceRun} (kept : Snapsho
     (generated : (∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ next.occurrence) → 0 < next.instances.length) :
     Snapshots b (Feature.MultiInstance.setRun s next) := by
   refine ⟨fun earlier member run inside same => ?_, fun run inside apart => ?_⟩
-  · rcases Laws.MultiInstance.mem_setRun inside with ⟨old, _⟩ | rfl
+  · rcases mem_setRun inside with ⟨old, _⟩ | rfl
     · exact kept.fixed earlier member run old same
     · exact fixed earlier member same.symm
-  · rcases Laws.MultiInstance.mem_setRun inside with ⟨old, _⟩ | rfl
+  · rcases mem_setRun inside with ⟨old, _⟩ | rfl
     · exact kept.generated run old apart
     · exact generated apart
 
