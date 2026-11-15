@@ -284,12 +284,17 @@ theorem Numbered.addOne {program : Program} {s t : State} {o : Occurrence} (held
       exact queued.above run (runIn run member) request index queued' scope (queuedIn request inQueue) for_ slot
         ⟨x, instanceIn x inside _ on, at_, on⟩ }
 
-/-- A reservation of an element that does not loop, in a scope occurrence that stands, keeps `Numbered`. -/
-theorem Numbered.reserve {program : Program} {s : State} {element : ElementId} {scope : ScopeOccurrenceId}
-    (formed : WellFormed program s) (stands : scope ∈ scopeIds s) (unlooped : ∀ loop, ¬ LoopOf program element loop)
+/-- A reservation of an element that does not loop keeps `Numbered`: it is issued at the counter, above every name a
+queued begin holds. -/
+theorem Numbered.reserve {program other : Program} {s : State} {element : ElementId} {scope : ScopeOccurrenceId}
+    (formed : WellFormed other s) (unlooped : ∀ loop, ¬ LoopOf program element loop)
     (held : Numbered program s) : Numbered program (s.reserve element scope).1 := by
   have reserves := Laws.State.reserve_reserves s element scope
-  have unnamed := (reserves.wellFormed formed stands).2
+  have unnamed : ∀ request, Laws.State.Queued s request → (s.reserve element scope).2.id ∉ Laws.State.names request :=
+    fun request queued named => by
+      have below := ((formed.claimed.named request queued).2 _ named).1
+      rw [reserves.id] at below
+      exact Nat.lt_irrefl _ below
   refine held.addOne (o := (s.reserve element scope).2) ⟨fun x inside => ?_, reserves.scopes,
     congrArg (·.multiInstances) reserves.slots, reserves.signals, reserves.tokens,
     congrArg (·.compensation.runs) reserves.slots, fun body same => ?_, fun run member _ named _ => ?_,
@@ -303,8 +308,7 @@ theorem Numbered.reserve {program : Program} {s : State} {element : ElementId} {
   · obtain ⟨loop, looped⟩ := held.2.looped run member
     rw [reserves.kind] at named
     exact unlooped loop (named ▸ looped)
-  · exact unnamed request ((queued_congr reserves.signals reserves.tokens).mpr inQueue)
-      (by simp [Laws.State.names, named])
+  · exact unnamed request inQueue (by simp [Laws.State.names, named])
 
 /-- Starting a reservation in place keeps `Numbered`. -/
 theorem Numbered.startReserved {program : Program} {s : State} {occurrence : Occurrence} (sourceType : String)
@@ -606,7 +610,7 @@ theorem slot_strictly {program : Program} {s : State} (formed : WellFormed progr
 
 /-- Clearing a scope occurrence that stands keeps `Numbered`: a body that goes lies within it, so its instances' scope
 occurrences go too. -/
-theorem Numbered.clearInside {program : Program} {s : State} (formed : WellFormed program s) (owns : SlotsOwned s)
+theorem Numbered.clearInside {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
     {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) (keep : List Nat) (held : Numbered program s) :
     Numbered program (s.clearInside scope keep) := by
   have cleared := Laws.State.clearInside_cleared formed present keep
@@ -624,7 +628,7 @@ theorem Numbered.clearInside {program : Program} {s : State} (formed : WellForme
   exact notWithin (eNamed ▸ slot_strictly formed owns member within active)
 
 /-- Leaving a scope occurrence that stands keeps `Numbered`, as clearing it does. -/
-theorem Numbered.leaveScope {program : Program} {s : State} (formed : WellFormed program s) (owns : SlotsOwned s)
+theorem Numbered.leaveScope {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
     {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) (held : Numbered program s) :
     Numbered program (s.leaveScope scope) := by
   have left := Laws.State.leaveScope_left formed present
@@ -692,7 +696,7 @@ theorem Numbered.unmoved {program : Program} {s t : State} (held : Numbered prog
 
 /-- Entering a scope occurrence under the identity counter keeps `Numbered`: no active instance and no queued begin
 names the fresh identity, each issued below the counter. -/
-theorem Numbered.enter {program : Program} {s t : State} (formed : WellFormed program s) (owns : SlotsOwned s)
+theorem Numbered.enter {program other : Program} {s t : State} (formed : WellFormed other s) (owns : SlotsOwned s)
     (held : Numbered program s) (scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ entry.id = ⟨s.nextIssue⟩)
     (occurrences : t.occurrences = s.occurrences) (runs : t.slots.multiInstances = s.slots.multiInstances)
     (signals : t.signals = s.signals) (tokens : t.tokens = s.tokens)
@@ -711,7 +715,7 @@ theorem Numbered.enter {program : Program} {s t : State} (formed : WellFormed pr
     exact Nat.lt_irrefl _ below
 
 /-- Entering a scope occurrence keeps `Numbered`. -/
-theorem Numbered.enterScope {program : Program} {s : State} (formed : WellFormed program s) (owns : SlotsOwned s)
+theorem Numbered.enterScope {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
     (element : ElementId) (parent : ScopeOccurrenceId) (locals : List (String × Value)) (owner : Option Nat)
     (held : Numbered program s) : Numbered program (s.enterScope element parent locals owner).1 := by
   rw [Laws.State.enterScope_eq]
@@ -719,7 +723,7 @@ theorem Numbered.enterScope {program : Program} {s : State} (formed : WellFormed
     rw [List.mem_singleton.mp new]) rfl rfl rfl rfl rfl
 
 /-- Entering a Call's called root keeps `Numbered`. -/
-theorem Numbered.enterCalled {program : Program} {s : State} (formed : WellFormed program s) (owns : SlotsOwned s)
+theorem Numbered.enterCalled {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
     (called : Program) (call : Occurrence) (variables : List (String × Value)) (definition : DefinitionRef)
     (held : Numbered program s) : Numbered program (s.enterCalled called call variables definition).1 := by
   have fresh : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ := fun entry inside same => by

@@ -346,7 +346,7 @@ def Framed (program : Program) (s : State) : Prop :=
 /-- What the numbering lane supplies: after a committed input from a well-formed state that keeps the slot invariant,
 and after a committed start, every running body numbers its instances in item order and each instance is the one
 occurrence of the Activity in its scope occurrence, and the instance begins still queued are in order, under a program
-whose identifiers are unique. -/
+whose identifiers are unique. The registered hooks supply it (`registered_numberingKept`). -/
 structure NumberingKept (hooks : Hooks) : Prop where
   step : ∀ program input before after, IdsUnique program → WellFormed program before →
     RunsFormed program before → Step.step hooks program (some before) input = .ok after →
