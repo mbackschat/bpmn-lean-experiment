@@ -17,6 +17,7 @@ public import Kernel.Proofs.Cancellation.Registered
 public import Kernel.Proofs.MultiInstance
 public import Kernel.Proofs.Former
 public import Kernel.Proofs.Former.Values
+public import Kernel.Proofs.Former.Calls
 
 /-! # Proofs: composition over the registered hooks
 
@@ -678,5 +679,9 @@ theorem stateFacts_nestedCallKeepsRootBusy : Former.NestedCallKeepsRootBusy :=
 /-- An input carrying a value outside the domain is rejected whole under the registered hooks. -/
 theorem registered_valuesRejectedWhole : Former.ValuesRejectedWhole Registry.hooks :=
   Former.valuesRejectedWhole Registry.hooks
+
+/-- A Call's return continues exactly its caller under the registered hooks. -/
+theorem registered_returnContinuesCaller : Former.ReturnContinuesCaller Registry.hooks :=
+  Former.returnContinuesCaller Laws.Registry.hooks_completeCall
 
 end Kernel.Proofs.Step
