@@ -34,12 +34,19 @@ def LoopOf (program : Program) (element : ElementId) (loop : MultiInstance) : Pr
 
 /-- The program's identifiers are unique: no two of its elements share a header identifier, and no boundary of its
 elements has an identifier that names an element. It is the IL contract that `Boundary.id` "is unique in the program,
-as `Header.id` is" (`Kernel/IL/Types.lean:118`), which compiled programs satisfy and the codec does not check. A
-reservation is an occurrence of its identifier under the element role (`State.reserve`), so a boundary or a start Event
-whose identifier named a Multi-Instance Activity could reserve an occurrence of that Activity, which is no instance, in
-an instance's scope occurrence: the statements that read instance identity (`InstancesPlaced`) are false of programs
-that break the contract, and take it as a model premise (root decision, 2026-11-14). The boundary clause ranges over
-every element the program lists, since a firing finds its boundary among them all (`Program.boundary?`). -/
+as `Header.id` is" (`Kernel/IL/Types.lean:118`), which compiled programs satisfy and the codec does not check: an
+element and a boundary Event each carry an `xsd:ID`, and the reader refuses a document with a duplicate identifier by
+`parser.warning` (`packages/bpmn-source/src/kernel-reader/schema.ts:12-15`); assembling a called process renames its
+element and boundary identifiers alike by their deployment (`carriedId`,
+`packages/bpmn-source/src/kernel-reader/assembly.ts:27`, applied at `:128`, `:139` and `:235`), which keeps distinct
+identifiers distinct. A reservation is an occurrence of its identifier under the element role (`State.reserve`), so a
+boundary or a start Event whose identifier named a Multi-Instance Activity could reserve an occurrence of that
+Activity, which is no instance, in an instance's scope occurrence: the statements that read instance identity
+(`InstancesPlaced`) are false of programs that break the contract, and take it as a model premise (root decision,
+2026-11-14). On `RunsShaped` and the lane's
+other statements the premise comes from the invariant's proof, which needs it, and narrows no admitted program. The
+boundary clause ranges over every element the program lists, since a firing finds its boundary among them all
+(`Program.boundary?`). -/
 structure IdsUnique (program : Program) : Prop where
   headers : (program.elements.map (·.header.id)).Nodup
   boundaries : ∀ element ∈ program.elements, ∀ envelope, element.envelope? = some envelope →
