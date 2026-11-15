@@ -78,12 +78,6 @@ theorem pending_same {s t : State} (signals : t.signals = s.signals)
     (pending : OccurPending t element) : OccurPending s element :=
   Laws.Step.occurPending_of (fun _ inside => signals ▸ inside) (fun _ member => runs ▸ member) pending
 
-/-- A reservation the relation's state left pending names no looping element. -/
-theorem PendingIn.unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
-    (pending : PendingIn (BeginsKept program) element) : ∀ loop, ¬ LoopOf program element loop := by
-  obtain ⟨held, kept, named⟩ := pending
-  exact (kept apart).occurs element named
-
 /-! ## The state operations the hooks apply -/
 
 /-- Queuing a signal whose reservations name no looping element keeps `BeginsKept`. -/
@@ -189,7 +183,8 @@ theorem BeginsKept.storeRuns {program : Program} {s : State} (compensation : Com
       · exact .inl (.inr (.inl compensate))
       · obtain ⟨run, member, rest⟩ := resumed
         obtain ⟨at_, leave, resume⟩ := rest
-        exact (resumes run member element at_ leave resume).imp_right (PendingIn.unlooped apart),
+        exact (resumes run member element at_ leave resume).imp_right
+          (PendingIn.unlooped fun _ kept => (kept apart).occurs),
     rfl⟩
 
 theorem BeginsKept.defer {program : Program} {s : State} (requests : List BeginRequest) (held : BeginsKept program s) :
@@ -355,10 +350,10 @@ theorem beginsKept_occursAlongside (program : Program) : OccursAlongside program
   reserve s _ scope _ reservable held := held.reserve (fun apart => reservable_unlooped apart reservable) scope
   occur s element scope leave writes rule named held := held.signal _ fun apart other inside => by
     rw [List.mem_singleton.mp inside]
-    exact named.elim (boundaryOf_unlooped apart) (PendingIn.unlooped apart)
+    exact named.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept apart).occurs)
   compensate s scope activity trigger leave element at_ resumed named held := held.signal _ fun apart other inside => by
     rw [List.mem_singleton.mp inside]
-    exact named.elim (boundaryOf_unlooped apart) (PendingIn.unlooped apart)
+    exact named.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept apart).occurs)
 
 /-! ## Through an input -/
 

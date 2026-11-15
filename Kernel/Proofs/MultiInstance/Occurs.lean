@@ -40,6 +40,14 @@ def ResumesPending (rel : State → Prop) (s : State) (compensation : Compensati
   ∀ run ∈ compensation.runs, ∀ element at_ leave, run.resume = some (.occur element at_ leave) →
     OccurPending s element ∨ PendingIn rel element
 
+/-- A reservation pending in a state that kept `rel` names no looping element when no state that keeps `rel` leaves
+one of a looping element pending. -/
+theorem PendingIn.unlooped {rel : State → Prop} {program : Program} {element : ElementId}
+    (occurs : ∀ s, rel s → ∀ element, OccurPending s element → ∀ loop, ¬ LoopOf program element loop)
+    (pending : PendingIn rel element) : ∀ loop, ¬ LoopOf program element loop :=
+  have ⟨held, kept, named⟩ := pending
+  occurs held kept element named
+
 /-- A boundary's identifier names no looping element of a program whose identifiers are unique. -/
 theorem boundaryOf_unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
     (boundary : BoundaryOf program element) : ∀ loop, ¬ LoopOf program element loop := by

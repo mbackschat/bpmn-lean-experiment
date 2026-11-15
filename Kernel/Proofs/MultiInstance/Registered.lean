@@ -226,7 +226,8 @@ theorem beginsKept_alongside (program : Program) : Alongside (BeginsKept program
   issue _ held := held.issue
   enterScope _ _ element parent locals owner _ held := held.enterScope element parent locals owner
   enterCalled _ _ called call variables definition formed held := held.enterCalled formed called call variables definition
-  reserve _ _ _ scope _ pending held := held.reserve (fun apart => PendingIn.unlooped apart pending) scope
+  reserve _ _ _ scope _ pending held :=
+    held.reserve (fun apart => PendingIn.unlooped (fun _ kept => (kept apart).occurs) pending) scope
   leaveScope _ _ _ formed present _ held := held.leaveScope formed present
   clearInside _ _ _ keep formed present _ held := held.clearInside formed present keep
   disarm _ _ host _ held := held.disarm host
@@ -308,12 +309,6 @@ theorem RunsFormed.numbered {program : Program} {s : State} (formed : RunsFormed
     obtain ⟨loop, looped⟩ := formed.queued.looped run member
     exact ((formed.formed run member).shaped loop looped).2.2.2, (formed.formed run member).placed⟩, formed.queued⟩
 
-/-- A reservation pending in a state that kept the numbering names no looping element. -/
-theorem pendingIn_unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
-    (pending : Laws.MultiInstance.PendingIn (FramedNumbered program) element) : ∀ loop, ¬ LoopOf program element loop :=
-  have ⟨_, kept, queued⟩ := pending
-  (kept.2 apart).2.occurs element queued
-
 /-- Queuing a signal that queues no begin and reserves only elements that do not loop keeps `Numbered`. -/
 theorem Numbered.signalPending {program : Program} {s : State} {signal : Signal}
     (quiet : Laws.Step.beginsOf [signal] = [])
@@ -338,7 +333,7 @@ the numbering, is of no looping element. -/
 theorem source_unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
     (source : Laws.IL.BoundaryOf program element ∨ Laws.MultiInstance.PendingIn (FramedNumbered program) element) :
     ∀ loop, ¬ LoopOf program element loop :=
-  source.elim (boundaryOf_unlooped apart) (pendingIn_unlooped apart)
+  source.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept.2 apart).2.occurs)
 
 /-- The state operations the hooks apply keep the numbering beside the slot invariant. -/
 theorem framedNumbered_frameAlongside (program : Program) : FrameAlongside (FramedNumbered program) where
@@ -356,7 +351,7 @@ theorem framedNumbered_frameAlongside (program : Program) : FrameAlongside (Fram
       fun apart => (kept.2 apart).enterCalled formed kept.1.owns called call variables definition⟩
   reserve _ s element scope formed pending kept :=
     ⟨reserve_runsFramed s element scope kept.1, fun apart =>
-      (kept.2 apart).reserve formed (pendingIn_unlooped apart pending)⟩
+      (kept.2 apart).reserve formed (PendingIn.unlooped (fun _ kept => (kept.2 apart).2.occurs) pending)⟩
   leaveScope other s scope formed present leaves kept :=
     ⟨(runsFramed_frameAlongside program).leaveScope other s scope formed present leaves kept.1,
       fun apart => (kept.2 apart).leaveScope formed kept.1.owns present⟩
@@ -376,7 +371,8 @@ theorem framedNumbered_frameAlongside (program : Program) : FrameAlongside (Fram
       (fun run member element at_ leave resumed => (resumes run member element at_ leave resumed).imp_right
         fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩) kept.1,
       fun apart => (kept.2 apart).storeRuns compensation fun run member element at_ leave resumed =>
-        (resumes run member element at_ leave resumed).imp_right (pendingIn_unlooped apart)⟩
+        (resumes run member element at_ leave resumed).imp_right
+          (PendingIn.unlooped fun _ kept => (kept.2 apart).2.occurs)⟩
 
 /-- Subscriptions' reservations and queued occurrences keep the numbering beside the slot invariant: each names a
 reservable element, a boundary or one pending in a state that kept it, none looping. -/
