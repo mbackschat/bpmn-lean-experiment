@@ -156,8 +156,10 @@ def PendingIn (rel : State → Prop) (element : ElementId) : Prop :=
   ∃ held, rel held ∧ OccurPending held element
 
 /-- What the instances' begins still queued need for the numbering: every body's element loops, and its instances'
-scope occurrences belong to no called instance, so they share one activation counter; an instance is an occurrence of
-the body's element under the element role (`continued`); a queued instance begin targets an active slot of its body,
+scope occurrences belong to no called instance, so they share one activation counter; an occurrence continuing into a
+body in one of its active instances' scope occurrences is an occurrence of the body's element under the element role
+(`continued`), stated only there, since an arrival or a re-entry opens its slots in scope occurrences no occurrence lies
+in yet and so needs no fact of occurrences elsewhere; a queued instance begin targets an active slot of its body,
 while that slot's scope occurrence stands, with the body's element and no reservation (`targets`); no queued begin into
 an instance's scope occurrence begins a reservation of the body's element under the element role, and every reservation
 continues by its flows (`reserved`, `reservations`), and no reservation still to be made names a looping element, as a
@@ -169,7 +171,7 @@ structure BeginsQueued (program : Program) (s : State) : Prop where
   uncalled : ∀ run ∈ s.slots.multiInstances, ∀ scope, Iteration.active scope ∈ run.instances →
     ∀ entry ∈ s.scopes, entry.id = scope → entry.calledInstance = none
   continued : ∀ run ∈ s.slots.multiInstances, ∀ o ∈ s.occurrences, o.continuation = .multiInstance run.occurrence →
-    o.element = run.element ∧ o.role = .element
+    Iteration.active o.scope ∈ run.instances → o.element = run.element ∧ o.role = .element
   targets : ∀ request, Laws.State.Queued s request → ∀ body, request.continuation = .multiInstance body →
     request.scope ∈ Laws.State.scopeIds s → ∃ run ∈ s.slots.multiInstances, run.occurrence = body ∧
       request.element = run.element ∧ request.reserved = none ∧ Iteration.active request.scope ∈ run.instances

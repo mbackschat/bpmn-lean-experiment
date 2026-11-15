@@ -374,7 +374,7 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
     simp only [queuing, entered, List.mem_singleton] at member
     simp only [queuing, entered, List.mem_cons, List.not_mem_nil, or_false] at inside
     rcases inside with rfl | rfl | rfl | rfl <;> rfl
-  continued run member o inside _ := by
+  continued run member o inside _ _ := by
     simp only [queuing, entered, List.mem_singleton] at member inside
     subst member inside
     exact ⟨rfl, rfl⟩

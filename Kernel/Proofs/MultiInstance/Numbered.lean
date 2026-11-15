@@ -181,10 +181,10 @@ theorem Numbered.relabel {program : Program} {s t : State} (held : Numbered prog
     looped := fun run member => queued.looped run (runIn run member)
     uncalled := fun run member scope active entry inside =>
       queued.uncalled run (runIn run member) scope active entry (relabels.scopes ▸ inside)
-    continued := fun run member x inside on => by
+    continued := fun run member x inside on active => by
       obtain ⟨y, yIn, same⟩ := relabels.occurrences x inside
       rw [same.2.1, same.2.2.2.2.1]
-      exact queued.continued run (runIn run member) y yIn (same.2.2.2.2.2.1 ▸ on)
+      exact queued.continued run (runIn run member) y yIn (same.2.2.2.2.2.1 ▸ on) (same.2.2.1 ▸ active)
     targets := fun request inQueue body on stands => by
       obtain ⟨run, member, rest⟩ := queued.targets request (queuedIn request inQueue) body on
         (by rw [Laws.State.scopeIds, ← relabels.scopes]; exact stands)
@@ -514,7 +514,7 @@ theorem Numbered.beginInstance {program : Program} {queue s : State} {request : 
         have atJ : second = j := slotOf second (by rw [two, ← laterAt, begins.scope])
         obtain ⟨count, counted, inst, rest⟩ := formed.occurrencesCounted earlier eOld
         obtain ⟨named', roled', below⟩ := rest
-        have continued := qs.continued r rS earlier eOld earlierOn
+        have continued := qs.continued r rS earlier eOld earlierOn (earlierAt ▸ List.mem_of_getElem? one)
         refine Nat.lt_of_le_of_lt below (fresh.activated.above count counted ?_ ?_ ?_)
         · rw [inst]
           change s.instanceOf earlier.scope = s.instanceOf request.scope
@@ -539,9 +539,9 @@ theorem Numbered.beginInstance {program : Program} {queue s : State} {request : 
     looped := fun r member => qs.looped r (runsAfter ▸ member)
     uncalled := fun r member scope active' entry inside =>
       qs.uncalled r (runsAfter ▸ member) scope active' entry (begins.scopes ▸ inside)
-    continued := fun r member x inside xOn => by
+    continued := fun r member x inside xOn active' => by
       rcases occIn x inside with old | rfl
-      · exact qs.continued r (runsAfter ▸ member) x old xOn
+      · exact qs.continued r (runsAfter ▸ member) x old xOn active'
       · obtain rfl := runOf r (runsAfter ▸ member) xOn
         exact ⟨fresh.element.trans element, oRole⟩
     targets := fun request' inQueue body' on' stands' => by
