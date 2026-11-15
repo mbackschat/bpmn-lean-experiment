@@ -55,6 +55,7 @@ public import Kernel.Laws.Compensation.Runs
 public import Kernel.Laws.Compensation.Witnesses
 public import Kernel.Laws.Correlation
 public import Kernel.Laws.Data
+public import Kernel.Laws.Data.Values
 public import Kernel.Laws.Decision
 public import Kernel.Laws.Flow
 public import Kernel.Laws.Flow.Concurrent
