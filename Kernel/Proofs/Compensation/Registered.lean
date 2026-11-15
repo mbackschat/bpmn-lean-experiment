@@ -8,12 +8,13 @@ public import Kernel.Proofs.Compensation.Raise
 /-! # Proofs: the Compensation and Transaction lane under the registered hooks
 
 The compensation hooks keep `WellFormed` with the lane relation `Formed` beside it (`compensationKeeps_formed`), each
-hook by what `Kernel.Proofs.Compensation.Hooks` proves of its result. A trigger takes out once (`registered_takesOutOnce`)
-and handlers start in order (`registered_handlersInOrder`), and both apply to every compensation `Step` performs, each a
-`FreshCall` (`registered_dequeued`). The registered hooks register a raise (`raiseRegistered`), so Cancel propagation
-and handler failure hold of them (`registered_cancelCompensatesFirst`, `registered_handlerFailure`). This is the lane's
-one module that imports the registry's Laws module, since it composes the registered hooks, and so stays in every
-feature's rebuild cone (guard 15). Nothing executable imports this module.
+hook by what `Kernel.Proofs.Compensation.Hooks` proves of its result, so the registered hooks keep both through every
+committed input, at a start and in a population run (`RegisteredFormed`, `registered_commits`). A trigger takes out
+once (`registered_takesOutOnce`) and handlers start in order (`registered_handlersInOrder`), and both apply to every
+compensation `Step` performs, each a `FreshCall` (`registered_dequeued`). The registered hooks register a raise
+(`raiseRegistered`), so Cancel propagation and handler failure hold of them (`registered_cancelCompensatesFirst`,
+`registered_handlerFailure`). This is the lane's one module that imports the registry's Laws module, since it composes
+the registered hooks, and so stays in every feature's rebuild cone (guard 15). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -22,7 +23,9 @@ namespace Kernel.Proofs.Compensation
 
 open Kernel
 open Kernel.Laws.State (WellFormed)
-open Kernel.Laws.Compensation (Advances FirstOf Keyed Ready TakesOut)
+open Kernel.Laws.Compensation (Advances ClaimsApart FirstOf Keyed Ready TakesOut)
+open Kernel.Proofs.Cancellation (featureOps_frame multiInstanceOps_alongside)
+open Kernel.Proofs.Frame (phases_alongside)
 
 /-- The compensation hooks keep `WellFormed` with the lane relation beside it, read under `hooks`' Step context, given
 that they keep `WellFormed`. -/
@@ -391,5 +394,97 @@ theorem registered_cancelCompensatesFirst : CancelCompensatesFirst Registry.hook
 /-- Failure holds of the registered hooks. -/
 theorem registered_handlerFailure : HandlerFailure Registry.hooks :=
   raiseRegistered.elim fun _ registered => handlerFailure_of registered
+
+/-! ## The lane relation across inputs -/
+
+/-- `WellFormed` with the lane relation read under the registered hooks' Step context beside it. -/
+def RegisteredFormed (program : Program) (s : State) : Prop :=
+  WellFormed program s ∧ Formed (DependsIn Registry.hooks footprintReads footprintWrites program) s
+
+/-- The registered hooks keep `RegisteredFormed`: the other features' records from `WellFormed`'s and the lane's frame
+instances (`formed_frameAlongside`, `formed_occursAlongside`, `formed_alongside`), the compensation hooks by what
+`compensationKeeps_formed` proves of each. -/
+theorem registeredFormed_contract : Laws.Step.HookContract Registry.hooks RegisteredFormed :=
+  Proofs.Step.registered_contract_of
+    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps
+      (fun program => formed_frameAlongside (DependsIn Registry.hooks footprintReads footprintWrites program))
+      (fun program => formed_occursAlongside program (DependsIn Registry.hooks footprintReads footprintWrites program)))
+    (Proofs.Step.multiInstanceKeeps_of fun program =>
+      multiInstanceOps_alongside (formed_alongside (DependsIn Registry.hooks footprintReads footprintWrites program))
+        (Proofs.Step.registeredOps_wellFormed.multiInstance program))
+    registered_compensationKeeps Proofs.State.stateFacts
+
+/-- `Step`'s phases keep `RegisteredFormed`. -/
+theorem registeredFormed_phases : Laws.Step.Phases RegisteredFormed :=
+  phases_alongside Proofs.Step.phases fun program =>
+    formed_stepAlongside (DependsIn Registry.hooks footprintReads footprintWrites program)
+
+/-- Clearing an input's journal, outbox, draft and writes keeps `RegisteredFormed`. -/
+theorem registeredFormed_reset {program : Program} {s : State} (holds : RegisteredFormed program s) :
+    RegisteredFormed program { s with journal := [], outbox := [], draft := {}, writes := [] } :=
+  ⟨Laws.State.reset_wellFormed holds.1, holds.2.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)⟩
+
+/-- A start's fresh instance holds no record, run or trigger. -/
+theorem formed_initial (precedes : Compensable → Compensable → Prop) (instanceId : String)
+    (variables : List (String × Value)) (businessKey : Option String) :
+    Formed precedes ((State.initial instanceId variables businessKey).signal (.armScope State.root)) := by
+  refine Formed.signal ?_ _
+  rw [Laws.State.initial_eq]
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_⟩ <;>
+    simp [ClaimsApart, RetainedPresent, RunsUnfinished, CompletionsApart, CompletionsIssued, completions, completionsIn,
+      RunsSettled, RunsKeyed, RunsIssued, heldTriggers, queuedTriggers, QueuedUngrouped, Laws.Step.triggersOf_nil]
+
+/-- A committed input keeps `RegisteredFormed` under the registered hooks. -/
+theorem registeredFormed_stepKeeps {program : Program} {input : Input} {before after : State}
+    (holds : RegisteredFormed program before)
+    (ran : Step.step Registry.hooks program (some before) input = .ok after) : RegisteredFormed program after :=
+  Laws.Step.running_keeps registeredFormed_contract registeredFormed_phases Proofs.State.stateFacts
+    (Laws.Step.complete_keeps registeredFormed_contract registeredFormed_phases.toClosurePhases
+      (formed_pipelinePhases (fun program => DependsIn Registry.hooks footprintReads footprintWrites program)
+        Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
+    (registeredFormed_reset holds) ran
+
+/-- A committed start makes a `RegisteredFormed` state under the registered hooks. -/
+theorem registeredFormed_start {program : Program} {input : Input} {after : State}
+    (ran : Step.step Registry.hooks program none input = .ok after) : RegisteredFormed program after :=
+  Laws.Step.step_keeps registeredFormed_contract registeredFormed_phases Proofs.State.stateFacts
+    (Laws.Step.complete_keeps registeredFormed_contract registeredFormed_phases.toClosurePhases
+      (formed_pipelinePhases (fun program => DependsIn Registry.hooks footprintReads footprintWrites program)
+        Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
+    (fun _ _ => registeredFormed_reset)
+    (fun instanceId variables businessKey => ⟨Proofs.Step.initial_wellFormed program instanceId variables businessKey,
+      formed_initial _ instanceId variables businessKey⟩)
+    (fun _ given => by simp at given) ran
+
+/-- A committed input keeps the lane relation under the registered hooks. -/
+theorem registered_commits {program : Program} {before after : State}
+    (commits : Commits Registry.hooks footprintReads footprintWrites program before after) :
+    RegisteredFormed program after :=
+  have ⟨formed, relation, _, ran⟩ := commits
+  registeredFormed_stepKeeps ⟨formed, relation⟩ ran
+
+/-- No record a run claimed is retained again under the registered hooks. -/
+theorem registered_claimsStayApart : ClaimsStayApart Registry.hooks footprintReads footprintWrites :=
+  fun _ _ _ commits => (registered_commits commits).2.claims
+
+/-- Every retained record lies in a present scope occurrence under the registered hooks. -/
+theorem registered_retainedInPresentScopes : RetainedInPresentScopes Registry.hooks footprintReads footprintWrites :=
+  fun _ _ _ commits => (registered_commits commits).2.retained
+
+/-- No finished run is left after a committed input under the registered hooks. -/
+theorem registered_noFinishedRunLeft : NoFinishedRunLeft Registry.hooks footprintReads footprintWrites :=
+  fun _ _ _ commits => (registered_commits commits).2.unfinished
+
+/-- A committed start keeps the lane relation under the registered hooks. -/
+theorem registered_compensationsFormedAtStart :
+    CompensationsFormedAtStart Registry.hooks footprintReads footprintWrites :=
+  fun _ _ _ ran => (registeredFormed_start ran).2
+
+/-- Every instance a committed population run holds keeps the lane relation under the registered hooks. -/
+theorem registered_compensationsFormedInPopulation :
+    CompensationsFormedInPopulation Registry.hooks footprintReads footprintWrites := fun _ _ _ ran member inside =>
+  (Laws.Population.runStimuli_held (good := RegisteredFormed)
+    ⟨fun _ _ _ _ holds stepped => registeredFormed_stepKeeps holds stepped, fun _ _ _ ran => registeredFormed_start ran⟩
+    ran member inside).2
 
 end Kernel.Proofs.Compensation
