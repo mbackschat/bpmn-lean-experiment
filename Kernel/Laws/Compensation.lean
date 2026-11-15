@@ -269,6 +269,15 @@ theorem dropWithin_spec (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) 
       runs := state.slots.compensation.runs.filter fun run => !(state.subtree scope).contains run.scope } := by
   unfold Feature.Compensation.dropWithin; rfl
 
+/-- A throw in `scope` sees only `scope` itself unless `scope` stands: the walk outward starts from its entry. -/
+theorem visibleScopes_mem {ctx : Ctx} {state : State} {scope x : ScopeOccurrenceId}
+    (seen : x ∈ Feature.Compensation.visibleScopes ctx state scope) :
+    x = scope ∨ ∃ entry ∈ state.scopes, entry.id = scope := by
+  rcases found : state.scopes.find? (·.id == scope) with _ | entry
+  · simp [Feature.Compensation.visibleScopes, Feature.Compensation.visibleScopes.go, found] at seen
+    exact .inl seen
+  · exact .inr ⟨entry, List.mem_of_find?_eq_some found, by simpa using List.find?_some found⟩
+
 /-- The scope occurrence `placement` retains a completion's record in is the occurrence's own or its parent. -/
 theorem placement_target {ctx : Ctx} {occurrence : Occurrence} {state : State} {handler : Option ElementId}
     {target : ScopeOccurrenceId} (placed : Feature.Compensation.placement ctx occurrence state = some (handler, target)) :
