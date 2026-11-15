@@ -299,6 +299,24 @@ theorem triggersOf_untriggered {signals : List Signal} (quiet : ∀ signal ∈ s
   | arm | armScope | armGateway | begin | complete | write | remove | occur | cancel | fire | endInstance
   | compensationFailed => rfl
 
+/-- The signals a compensation run's begin and end queue, and an instance's end, carry no trigger: a handler's begin,
+a cancellation, a completion and an occurrence. -/
+theorem untriggered_begin (request : BeginRequest) : Laws.State.Untriggered (.begin request) :=
+  ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
+
+theorem untriggered_cancel (occurrence : Nat) : Laws.State.Untriggered (.cancel occurrence) :=
+  ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
+
+theorem untriggered_complete (occurrence : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :
+    Laws.State.Untriggered (.complete occurrence leave writes rule) := ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
+
+theorem untriggered_occur (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave)
+    (writes : List (String × Value)) (rule : WriteRule) : Laws.State.Untriggered (.occur element scope leave writes rule) :=
+  ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
+
+theorem untriggered_endInstance (status : InstanceStatus) (failure : Option InstanceFailure) :
+    Laws.State.Untriggered (.endInstance status failure) := ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
+
 /-- An Event carries its element's header and no envelope. -/
 theorem event?_bare {element : Element} {header : Header} {payload : EventPayload}
     (typed : element.event? = some (header, payload)) : element.header = header ∧ element.envelope? = none := by

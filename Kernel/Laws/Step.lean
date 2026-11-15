@@ -808,6 +808,16 @@ theorem inputCtx_program {hooks : Hooks} {program : Program} {input : Input} :
     (inputCtx hooks program input).program = program := by
   simp only [inputCtx, context]
 
+theorem context_program (hooks : Hooks) (program : Program) : (context hooks program).program = program := by
+  simp only [context]
+
+/-- The context `Step.step` gives every hook answers how a catch trigger catches, an Event Sub-Process's start and what
+a scope occurrence is as the hooks record and `Step.scopeRole` do. -/
+theorem inputCtx_queries (hooks : Hooks) (program : Program) (input : Input) :
+    (inputCtx hooks program input).catches = hooks.catches ∧ (inputCtx hooks program input).eventStart = hooks.eventStart ∧
+      (inputCtx hooks program input).scopeRole = scopeRole := by
+  simp only [inputCtx, context, and_self]
+
 /-- A committed dispatch ran a start Event's or a Multi-Instance body's hook, or the hook of its element (`Arrives`),
 which is no start Event and declares no Multi-Instance envelope if the occurrence is numbered as a body. -/
 theorem dispatch_unstarted {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {entry : ScopeEntry}

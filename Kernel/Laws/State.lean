@@ -783,6 +783,17 @@ theorem leaveScope_slots (s : State) (scope : ScopeOccurrenceId) :
 theorem leaveScope_signals (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope scope).signals = s.signals := by
   simp [State.leaveScope, State.clearInside, State.recordCancelled]
 
+/-- Leaving a scope occurrence removes it and the scope occurrences below it, with the records they retain and the runs
+in its subtree, and keeps the counters: what a compensation run's release changes, read without a well-formed state. -/
+theorem leaveScope_compensation (s : State) (scope : ScopeOccurrenceId) :
+    (s.leaveScope scope).slots.compensation.retained =
+      (s.slots.compensation.retained.filter fun record =>
+        !((s.subtree scope).filter (· != scope)).contains record.scope).filter (·.scope != scope) ∧
+    (s.leaveScope scope).slots.compensation.runs = s.slots.compensation.runs.filter (!(s.subtree scope).contains ·.scope) ∧
+    (s.leaveScope scope).scopes = (s.scopes.filter fun entry =>
+      !((s.subtree scope).filter (· != scope)).contains entry.id).filter (·.id != scope) ∧
+    (s.leaveScope scope).activations = s.activations ∧ (s.leaveScope scope).nextIssue = s.nextIssue := ⟨rfl, rfl, rfl, rfl, rfl⟩
+
 /-- `State.removeOccurrence` leaves the scope occurrences the occurrence owns after removing its record. -/
 theorem removeOccurrence_eq (s : State) (id : Nat) :
     s.removeOccurrence id =

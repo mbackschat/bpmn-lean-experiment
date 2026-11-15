@@ -45,13 +45,20 @@ theorem precedes_spec (ctx : Ctx) (record other : Compensable) :
 theorem precedes_congr {ctx other : Ctx} (same : ctx.program = other.program) :
     Feature.Compensation.precedes ctx = Feature.Compensation.precedes other := by
   have alike : ∀ fuel ids, Feature.Compensation.interior.go ctx fuel ids = Feature.Compensation.interior.go other fuel ids := by
-    intro fuel
-    induction fuel with
+    intro fuel; induction fuel with
     | zero => intro ids; rfl
     | succ fuel ih => intro ids; simp only [Feature.Compensation.interior.go, same, ih]
-  funext record later
-  simp only [Feature.Compensation.precedes, Feature.Compensation.data, Feature.Compensation.interior,
-    Feature.Compensation.ownData, same, alike]
+  funext record later; simp only [Feature.Compensation.precedes, Feature.Compensation.data,
+    Feature.Compensation.interior, Feature.Compensation.ownData, same, alike]
+
+/-- A subject the program does not declare reads and writes nothing. -/
+theorem data_missing {ctx : Ctx} {subject : ElementId} (missing : ctx.program.element? subject = none) :
+    Feature.Compensation.data ctx subject = {} := by simp [Feature.Compensation.data, missing]
+
+/-- `store` replaces the compensation slot and nothing else. -/
+theorem store_eq (state : State) (compensation : Compensations) :
+    Feature.Compensation.store state compensation = { state with slots := { state.slots with compensation } } := by
+  unfold Feature.Compensation.store; rfl
 
 /-- `isRun` picks the run `Keyed` by the scope occurrence and the trigger. -/
 theorem isRun_iff (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (run : CompensationRun) :
@@ -77,8 +84,7 @@ theorem compensate_spec {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Opti
   refine ⟨_, _, ⟨fun record => ?_, fun record => ?_⟩, List.filter_append_perm _ _, ran⟩ <;>
     rcases activity with _ | named <;> simp [List.mem_filter]
   · exact fun _ _ => eq_comm
-  · intro _
-    by_cases inside : record.scope ∈ Feature.Compensation.visibleScopes ctx state scope
+  · intro _; by_cases inside : record.scope ∈ Feature.Compensation.visibleScopes ctx state scope
     · simp [inside, eq_comm]
     · simp [inside]
 
@@ -242,8 +248,7 @@ theorem handlerEnded_spec {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Oc
       (¬ (ctx.program.options.compensationHandlerFailure = .propagatesFromTrigger ∧
           ∃ owner ∈ state.slots.compensation.runs, Holds occurrence.scope owner) ∧ after = state) := by
   have held : state.slots.compensation.runs.any (·.running.any (·.1 == occurrence.scope)) = true ↔
-      ∃ owner ∈ state.slots.compensation.runs, Holds occurrence.scope owner := by
-    simp [Holds]
+      ∃ owner ∈ state.slots.compensation.runs, Holds occurrence.scope owner := by simp [Holds]
   unfold Feature.Compensation.handlerEnded Feature.Compensation.handlerCompleted at ran
   split at ran
   · rename_i policy
