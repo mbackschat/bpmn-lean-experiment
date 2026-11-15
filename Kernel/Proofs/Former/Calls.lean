@@ -6,6 +6,7 @@ public import Kernel.Laws.Work
 public import Kernel.Laws.State.Chain
 public import Kernel.Laws.State.Begin
 public import Kernel.Laws.Population
+public import Kernel.Proofs.Former.Placed
 
 /-! # Proofs: the former lanes, Calls (P7)
 
@@ -141,7 +142,7 @@ induction on the identifier's length. Where owners of one instance root with one
 
 /-- Two owners of called roots whose scope occurrences lie in one process instance and whose elements have one
 authored identifier are of one element: what `PublicIdsApart` gives where every occurrence lies in the process its
-instance runs. -/
+instance runs (`ownersPlaced_of`). -/
 def OwnersPlaced (program : Program) (s : State) : Prop :=
   ∀ first ∈ s.occurrences, ∀ second ∈ s.occurrences,
     (∃ root ∈ s.scopes, root.calledInstance.isSome ∧ root.occurrence = some first.id) →
@@ -248,6 +249,49 @@ theorem identitiesApart_of {program : Program} {s : State} (formed : WellFormed 
     have one_ := Laws.State.nodup_map_eq formed.distinct.keys present present' keys
     subst one_
     exact calls.ownersApart first one second two (by simp [carried]) (by simp [carried']) (owns.trans owns'.symm)
+
+/-- An element `Program.element?` finds belongs to the process of its own header. -/
+private theorem definitionAt_element {program : Program} {id : ElementId} {element : Element}
+    (found : program.element? id = some element) :
+    definitionAt program id = (program.processOf element.header).map (·.definition) := by
+  simp [definitionAt, found]
+
+/-- An occurrence's instance root has an entry: it is `State.root` or a called root (`Placed.rooted`, `Placed.entered`). -/
+private theorem entry_of_root {program : Program} {s : State} (formed : WellFormed program s) (placed : Placed program s)
+    {x : ScopeOccurrenceId} (present : x ∈ Laws.State.scopeIds s) :
+    ∃ entry ∈ s.slots.instances, entry.root = s.instanceRoot x := by
+  rcases (Laws.State.instanceRoot_spec formed present).2.1 with ⟨root, member, named, called⟩ | rooted
+  · rw [← named]
+    exact placed.entered root member called
+  · rw [rooted]
+    exact placed.rooted
+
+/-- An owner of a called root is of an element the program declares. -/
+private theorem declared {program : Program} {id : ElementId} (active : ((program.element? id).bind (·.activity?)).isSome) :
+    ∃ element, program.element? id = some element := by
+  cases found : program.element? id with
+  | none => rw [found] at active; simp at active
+  | some element => exact ⟨element, rfl⟩
+
+/-- Where every occurrence is placed and the authored identifiers are apart within each process, owners of called roots
+of one instance root with one authored identifier are of one element: both are Activities (`ActivityOwners`), so their
+authored identifiers are their elements' own, and both elements belong to the process the root's entry records. -/
+theorem ownersPlaced_of {program : Program} {s : State} (formed : WellFormed program s) (calls : CallsFormed program s)
+    (placed : Placed program s) (apart : PublicIdsApart program) : OwnersPlaced program s := by
+  intro first one second two owner owner' rooted named
+  obtain ⟨root, member, called, owns⟩ := owner
+  obtain ⟨root', member', called', owns'⟩ := owner'
+  obtain ⟨element, found⟩ := declared (calls.activities root member called first one owns)
+  obtain ⟨element', found'⟩ := declared (calls.activities root' member' called' second two owns')
+  obtain ⟨entry, recorded, at_⟩ := entry_of_root formed placed (formed.owned.occurrenceScopes first one)
+  have process := placed.occurrences first one entry recorded at_
+  have process' := placed.occurrences second two entry recorded (at_.trans rooted)
+  rw [definitionAt_element found] at process
+  rw [definitionAt_element found'] at process'
+  rw [Laws.IL.publicId_element found, Laws.IL.publicId_element found'] at named
+  have same := apart element (Laws.IL.element?_mem found) element' (Laws.IL.element?_mem found')
+    (process.trans process'.symm) (ElementId.mk.inj named)
+  rw [← Laws.IL.element?_header found, ← Laws.IL.element?_header found', same]
 
 /-! ### The clauses reject
 

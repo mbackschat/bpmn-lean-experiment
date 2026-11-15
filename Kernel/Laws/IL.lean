@@ -161,6 +161,11 @@ theorem element?_isSome {program : Program} {element : Element} (member : elemen
   unfold Program.element?
   exact List.find?_isSome.mpr ⟨element, member, by simp⟩
 
+/-- The authored identifier of an element `Program.element?` finds is its own origin's. -/
+theorem publicId_element {program : Program} {id : ElementId} {element : Element}
+    (found : program.element? id = some element) : program.publicId id = ⟨element.header.origin.sourceId⟩ := by
+  simp only [Program.publicId, found]
+
 /-- A boundary of the envelope of an element `Program.element?` finds is one of the program's. -/
 theorem boundaryOf_envelope {program : Program} {id : ElementId} {envelope : Envelope} {boundary : Boundary}
     (found : (program.element? id).bind (·.envelope?) = some envelope) (member : boundary ∈ envelope.boundaries) :
