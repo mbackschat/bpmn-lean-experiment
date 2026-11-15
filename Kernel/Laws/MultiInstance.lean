@@ -48,6 +48,12 @@ set. -/
 def leftWith (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) : State :=
   Feature.MultiInstance.setRun (state.leaveScope scope) next
 
+/-- The state `counted` an instance's completion reaches before it completes or continues its body: `leftWith`, then
+the body's counters written or not. -/
+def Counted (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) (counted : State) : Prop :=
+  counted = leftWith state scope next ∨
+    ∃ target writes rule, counted = (leftWith state scope next).signal (.write target writes rule)
+
 /-- What entering instances made of the body's slot record `base`: `next` differs only in the slots
 `MultiInstance.opening` names under the loop's mode, each now active in a scope occurrence `EnteredFor` it, of its
 own. -/
@@ -604,7 +610,7 @@ theorem submitted_fits {ctx : Ctx} {run : MultiInstanceRun} {loop : MultiInstanc
 /-- What a committed `Hooks.instanceCompleted` did for the instance in `scope`: it found the body's record `run` and
 its loop, the slot `index` active in `scope`, an output that fits and the counters held (its `intact` check), recorded
 the slot (`recorded`), leaving `scope`, wrote the body's counters or not, and completed the body or began the next
-instances. -/
+instances, completing it whenever the slot it recorded was the body's last unfilled one (`exhausts`). -/
 structure Completes (ctx : Ctx) (body : Nat) (scope : ScopeOccurrenceId) (state after : State) (run : MultiInstanceRun)
     (loop : MultiInstance) (index : Nat) (output : Option Value) : Prop where
   found : Feature.MultiInstance.runOf? state body = some run
@@ -614,11 +620,19 @@ structure Completes (ctx : Ctx) (body : Nat) (scope : ScopeOccurrenceId) (state 
   intact : Feature.MultiInstance.holdsCounts ctx (state.ownVariables run.scope)
       (Feature.MultiInstance.bodyCounts loop run.instances) = true ∧
     Feature.MultiInstance.holdsCounts ctx (state.ownVariables scope) (Feature.MultiInstance.instanceCounts index) = true
-  ends : ∃ results counted, (counted = leftWith state scope (recorded run index output results) ∨
-      ∃ target writes rule, counted = (leftWith state scope (recorded run index output results)).signal
-        (.write target writes rule)) ∧
+  ends : ∃ results counted, Counted state scope (recorded run index output results) counted ∧
     (after = Feature.MultiInstance.finish ctx loop (recorded run index output results) counted ∨
       ∃ items, after = Feature.MultiInstance.beginInstances ctx loop items (recorded run index output results) counted)
+  exhausts : (∀ slot ∈ run.instances.set index (.completed output), ∃ filled, slot = .completed filled) →
+    ∃ results counted, Counted state scope (recorded run index output results) counted ∧
+      after = Feature.MultiInstance.finish ctx loop (recorded run index output results) counted
+
+/-- Slots each filled are all filled, as `MultiInstance.instanceCompleted` reads its exhaustion. -/
+theorem filled_all {slots : List Iteration} (filled : ∀ slot ∈ slots, ∃ output, slot = .completed output) :
+    slots.all Feature.MultiInstance.slotFilled = true :=
+  List.all_eq_true.mpr fun slot inside => by
+    obtain ⟨_, rfl⟩ := filled slot inside
+    rfl
 
 /-- A name none of a loop's item locals carries is not the item local's name under either binding. -/
 theorem itemName_ne {ctx : Ctx} {loop : MultiInstance} {name : String} (data : loop.inputDataItem ≠ some name)
@@ -673,14 +687,17 @@ theorem instanceCompleted_spec {ctx : Ctx} {body : Nat} {occurrence : Occurrence
   rename_i passed
   simp only [Bool.or_eq_true, Bool.not_eq_true', not_or, Bool.not_eq_false] at passed
   refine ⟨run, loop, index, output, found, looped, slot_found indexed, submitted_fits looped submittedOk,
-    Bool.and_eq_true _ _ ▸ passed.2, ?_⟩
-  repeat' split at ran
+    Bool.and_eq_true _ _ ▸ passed.2, ?_, fun filled => ?_⟩
+  all_goals repeat' split at ran
   all_goals first
     | (cases ran; done)
     | (cases ran; exact ⟨_, _, .inl rfl, .inl rfl⟩)
     | (cases ran; exact ⟨_, _, .inr ⟨_, _, _, rfl⟩, .inl rfl⟩)
     | (cases ran; exact ⟨_, _, .inl rfl, .inr ⟨_, rfl⟩⟩)
     | (cases ran; exact ⟨_, _, .inr ⟨_, _, _, rfl⟩, .inr ⟨_, rfl⟩⟩)
+    | (cases ran; exact ⟨_, _, .inl rfl, rfl⟩)
+    | (cases ran; exact ⟨_, _, .inr ⟨_, _, _, rfl⟩, rfl⟩)
+    | (exact absurd (Bool.or_eq_true _ _ ▸ Or.inr (filled_all filled)) ‹_›)
 
 /-! ## The output collection
 
@@ -737,6 +754,20 @@ theorem finish_spec (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) 
     · cases member
     · cases member
   · cases member
+
+/-- Under `MultiInstanceOutputs.aggregates` the completion of a body whose loop names an output collection and whose
+every slot is filled writes that collection. -/
+theorem finish_collects (ctx : Ctx) {loop : MultiInstance} (run : MultiInstanceRun) (state : State) {name : String}
+    (aggregates : ctx.program.options.multiInstanceOutputs = .aggregates) (named : loop.outputCollection = some name)
+    (filled : ∀ slot ∈ run.instances, ∃ output, slot = .completed output) :
+    ∃ writes value, Feature.MultiInstance.finish ctx loop run state =
+      state.signal (.complete run.occurrence .outgoing writes .outward) ∧ (name, value) ∈ writes := by
+  refine ⟨_, Feature.MultiInstance.outputCollection run.collection (run.instances.filterMap Feature.MultiInstance.output?),
+    rfl, ?_⟩
+  rw [ite_eq_left_of_eq_true _ _ (eq_true (filled_all filled))]
+  unfold Feature.MultiInstance.written
+  rw [aggregates, named]
+  exact List.mem_singleton_self _
 
 /-- Beginning a body's instances queues only signals that begin its instances (`instanceRequest`). -/
 theorem beginInstances_signals (ctx : Ctx) (loop : MultiInstance) (items : List Value) (run : MultiInstanceRun)

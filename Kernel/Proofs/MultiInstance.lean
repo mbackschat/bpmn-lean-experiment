@@ -18,7 +18,7 @@ program's identifiers are unique (`IdsUnique`), which the codec does not check. 
 evaluator. Nothing executable imports this module.
 
 The counters and the output collection are stated of the hooks that write them (`CountersEntered`, `CountersRead`,
-`CollectsOnCompletion`, `StopsUncollected`), not of every state: a write admission cannot see may reach a counter local
+`CollectsOnCompletion`, `CollectionWritten`, `StopsUncollected`), not of every state: a write admission cannot see may reach a counter local
 inside an instance and is `unsupported` when the instance completes (`multiInstance.resultShadowsInstance`, CIB-INT-0018),
 and an early stop's state may hold any value under the output collection's name that another write left.
 -/
@@ -199,6 +199,30 @@ def CollectsOnCompletion (hooks : Hooks) : Prop :=
       hooks.instanceCompleted ctx body occurrence writes state = .ok after →
       ∃ new, Queues state after new ∧ ∀ id leave written rule, Signal.complete id leave written rule ∈ new →
         ∀ value, (name, value) ∈ written → ∃ outputs, collectionItems value = some outputs ∧ Collects run (some outputs)
+
+/-- A body's completion writes its output collection: under `MultiInstanceOutputs.aggregates`, once every slot of a body
+whose loop names an output collection is filled, the completion it newly queues (`Laws.State.Queues`) writes that
+collection (BPMN 2.0.2 §13.3.7, Table 10.30), listing what `CollectsOnCompletion` says. Stated of `Hooks.completeBody`
+with the body's slot record before it, and of `Hooks.instanceCompleted` for the instance active in the one slot of the
+record before it that is unfilled. -/
+def CollectionWritten (hooks : Hooks) : Prop :=
+  (∀ (ctx : Ctx) (header : Header) (envelope : Envelope) (loop : MultiInstance) (occurrence : Occurrence)
+      (state after : State) (run : MultiInstanceRun) (name : String),
+      RunsFormed ctx.program state → run ∈ state.slots.multiInstances → run.occurrence = occurrence.id →
+      ctx.program.options.multiInstanceOutputs = .aggregates → loop.outputCollection = some name →
+      (∀ slot ∈ run.instances, ∃ output, slot = .completed output) →
+      hooks.completeBody ctx header envelope loop occurrence state = .ok after →
+      ∃ new, Queues state after new ∧
+        ∃ written value, Signal.complete occurrence.id .outgoing written .outward ∈ new ∧ (name, value) ∈ written) ∧
+    ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
+      (run : MultiInstanceRun) (loop : MultiInstance) (index : Nat) (name : String),
+      RunsFormed ctx.program state → LoopOf ctx.program run.element loop → run ∈ state.slots.multiInstances →
+      run.occurrence = body → run.instances[index]? = some (.active occurrence.scope) →
+      (∀ other slot, run.instances[other]? = some slot → other ≠ index → ∃ output, slot = .completed output) →
+      ctx.program.options.multiInstanceOutputs = .aggregates → loop.outputCollection = some name →
+      hooks.instanceCompleted ctx body occurrence writes state = .ok after →
+      ∃ new, Queues state after new ∧
+        ∃ written value, Signal.complete body .outgoing written .outward ∈ new ∧ (name, value) ∈ written
 
 /-- An early stop writes no output collection: an instance's completion that leaves a slot of its body unfilled, as one
 whose completion condition holds before the last instance completes does, queues no completion writing the loop's output

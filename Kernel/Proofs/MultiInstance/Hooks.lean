@@ -9,7 +9,8 @@ What `Hooks.arriveMultiInstance` and `Hooks.instanceCompleted` keep, enter, queu
 operations record `Laws.MultiInstance.MultiInstanceOps` from what `Laws.MultiInstance` proves each does
 (`arriveMultiInstance_spec`, `instanceCompleted_spec`, `beginInstances_spec`, `finish_spec`): the invariant they keep,
 each instance they enter anew holding its `loopCounter` (`SlotsCounted`), the signals an instance's completion queues
-(`instanceCompleted_queues`) and the counters it found held. Nothing here sees a feature body. Nothing executable imports
+(`instanceCompleted_queues`), the output collection its completion of the last instance writes
+(`instanceCompleted_collects`) and the counters it found held. Nothing here sees a feature body. Nothing executable imports
 this module.
 -/
 
@@ -148,8 +149,7 @@ theorem counted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv set
     {scope : ScopeOccurrenceId} {state after counted : State} {run : MultiInstanceRun} {loop : MultiInstance}
     {index : Nat} {output : Option Value} {results : List String} (holds : inv state)
     (stands : scope ∈ Laws.State.scopeIds state) (done : Completes ctx body scope state after run loop index output)
-    (left : counted = leftWith state scope (recorded run index output results) ∨ ∃ target writes rule,
-      counted = (leftWith state scope (recorded run index output results)).signal (.write target writes rule)) :
+    (left : Laws.MultiInstance.Counted state scope (recorded run index output results) counted) :
     Entering inv settled (recorded run index output results) counted (recorded run index output results).instances [] ∧
       counted.nextIssue = state.nextIssue ∧ recorded run index output results ∈ counted.slots.multiInstances := by
   obtain ⟨kept, carried, standing, placed⟩ := ops.record state run index scope output results holds
@@ -317,6 +317,18 @@ theorem recorded_fits {program : Program} {run : MultiInstanceRun} {loop : Multi
   · obtain rfl := Iteration.completed.inj new
     exact ⟨fresh.1 loop looped, fresh.2⟩
 
+/-- What an instance's completion queues before it completes or continues its body: writes of its body's counters,
+over the slot record `leftWith` sets (`Laws.MultiInstance.Counted`). -/
+theorem counted_signals {state counted : State} {scope : ScopeOccurrenceId} {next : MultiInstanceRun}
+    (left : Laws.MultiInstance.Counted state scope next counted) :
+    ∃ counts : List Signal, counted.signals = state.signals ++ counts ∧
+      (∀ signal ∈ counts, ∃ target counts rule, signal = .write target counts rule) ∧
+      counted.slots = (leftWith state scope next).slots := by
+  rcases left with rfl | ⟨target, counts, rule, rfl⟩
+  · exact ⟨[], by rw [leftWith_signals, List.append_nil], fun _ none => (by cases none), rfl⟩
+  · exact ⟨[.write target counts rule], by rw [Laws.State.signal_eq, leftWith_signals],
+      fun _ inside => ⟨target, counts, rule, List.mem_singleton.mp inside⟩, by rw [Laws.State.signal_eq]⟩
+
 /-- What a committed `Hooks.instanceCompleted` newly queues: writes of its body's counters, begins of its next
 instances, or its body's completion, which writes what `Laws.MultiInstance.WritesCollection` allows of the slot record
 it recorded, the one record of the body the after-state holds. -/
@@ -333,13 +345,7 @@ theorem instanceCompleted_queues {ctx : Ctx} {body : Nat} {occurrence : Occurren
   refine ⟨run, loop, index, output, done, ?_⟩
   obtain ⟨results, counted, left, ended⟩ := done.ends
   obtain rfl := Laws.MultiInstance.found_occurrence done.found
-  obtain ⟨counts, queued, counters, slots⟩ : ∃ counts : List Signal, counted.signals = state.signals ++ counts ∧
-      (∀ signal ∈ counts, ∃ target counts rule, signal = .write target counts rule) ∧
-      counted.slots = (leftWith state occurrence.scope (recorded run index output results)).slots := by
-    rcases left with rfl | ⟨target, counts, rule, rfl⟩
-    · exact ⟨[], by rw [leftWith_signals, List.append_nil], fun _ none => (by cases none), rfl⟩
-    · exact ⟨[.write target counts rule], by rw [Laws.State.signal_eq, leftWith_signals],
-        fun _ inside => ⟨target, counts, rule, List.mem_singleton.mp inside⟩, by rw [Laws.State.signal_eq]⟩
+  obtain ⟨counts, queued, counters, slots⟩ := counted_signals left
   refine ⟨results, ?_⟩
   rcases ended with rfl | ⟨items, rfl⟩
   · obtain ⟨written, same, collects⟩ := finish_spec ctx loop (recorded run index output results) counted
@@ -362,6 +368,44 @@ theorem instanceCompleted_queues {ctx : Ctx} {body : Nat} {occurrence : Occurren
     · exact .inl (counters signal old)
     · obtain ⟨request, _, rfl⟩ := List.mem_map.mp new
       exact .inr (.inl ⟨request, rfl⟩)
+
+/-- Under `MultiInstanceOutputs.aggregates` a committed instance completion that fills the last unfilled slot of its
+body, whose loop names an output collection, queues the body's completion writing that collection, given one record per
+body occurrence and an instance's scope occurrence in one slot. -/
+theorem instanceCompleted_collects {ctx : Ctx} {body : Nat} {occurrence : Occurrence} {writes : List (String × Value)}
+    {state after : State} {run : MultiInstanceRun} {loop : MultiInstance} {index : Nat} {name : String}
+    (keyed : Laws.MultiInstance.RunsKeyed state) (owned : Laws.MultiInstance.Owned state run)
+    (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after)
+    (member : run ∈ state.slots.multiInstances) (owns : run.occurrence = body) (looped : LoopOf ctx.program run.element loop)
+    (slot : run.instances[index]? = some (.active occurrence.scope))
+    (others : ∀ other filled, run.instances[other]? = some filled → other ≠ index → ∃ output, filled = .completed output)
+    (aggregates : ctx.program.options.multiInstanceOutputs = .aggregates) (named : loop.outputCollection = some name) :
+    ∃ new, Laws.State.Queues state after new ∧
+      ∃ written value, Signal.complete body .outgoing written .outward ∈ new ∧ (name, value) ∈ written := by
+  subst owns
+  obtain ⟨found, other, at_, rest⟩ := instanceCompleted_spec ran
+  obtain ⟨output, done⟩ := rest
+  obtain rfl := Laws.MultiInstance.runOf?_keyed keyed done.found member rfl
+  obtain rfl : other = loop := Option.some.inj ((done.looped : _ = some other).symm.trans looped)
+  obtain rfl := owned.ownScopes at_ index occurrence.scope done.slot slot
+  have filled : ∀ slot ∈ found.instances.set at_ (.completed output), ∃ output, slot = .completed output :=
+    fun filled inside => by
+      obtain ⟨position, at'⟩ := List.mem_iff_getElem?.mp inside
+      by_cases same : position = at_
+      · subst same
+        rw [List.getElem?_set_self (List.getElem?_eq_some_iff.mp slot).1] at at'
+        exact ⟨output, (Option.some.inj at').symm⟩
+      · rw [List.getElem?_set_ne (Ne.symm same)] at at'
+        exact others position filled at' same
+  obtain ⟨results, counted, left, finished⟩ := done.exhausts filled
+  obtain ⟨counts, queued, -, -⟩ := counted_signals left
+  obtain ⟨written, value, same, present⟩ :=
+    Laws.MultiInstance.finish_collects ctx (recorded found at_ output results) counted aggregates named filled
+  subst finished
+  refine ⟨counts ++ [.complete found.occurrence .outgoing written .outward], ?_, written, value,
+    List.mem_append_right _ (List.mem_singleton_self _), present⟩
+  rw [Laws.State.Queues, same, Laws.State.signal_eq, queued, List.append_assoc]
+  rfl
 
 /-! ## Counters read -/
 

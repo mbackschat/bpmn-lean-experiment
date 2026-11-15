@@ -606,6 +606,23 @@ theorem registered_collectsOnCompletion : MultiInstance.CollectsOnCompletion Reg
       have fits := ((formed.formed found (Laws.MultiInstance.found_mem done.found)).shaped other done.looped).2.2.1
       exact collectsWritten writes named collection (MultiInstance.recorded_fits fits done.fits done.looped) value present
 
+/-- A body's completion under the registered hooks writes its output collection once every slot is filled. -/
+theorem registered_collectionWritten : MultiInstance.CollectionWritten Registry.hooks := by
+  refine ⟨fun ctx _ _ loop _ state _ run _ formed member owns aggregates named filled ran => ?_,
+    fun _ _ _ _ _ _ run _ _ _ formed looped member owns slot others aggregates named ran => ?_⟩
+  · rw [Laws.Registry.hooks_completeBody] at ran
+    obtain ⟨found, located, finished⟩ := Laws.MultiInstance.completeBody_spec ran
+    have one := Laws.MultiInstance.runOf?_keyed formed.keyed located member owns
+    subst finished one
+    obtain ⟨written, value, same, present⟩ := Laws.MultiInstance.finish_collects ctx found state aggregates named filled
+    refine ⟨[.complete found.occurrence .outgoing written .outward],
+      by rw [same, Laws.State.signal_eq, Laws.State.Queues], written, value, ?_, present⟩
+    rw [owns]
+    exact List.mem_singleton_self _
+  · rw [Laws.Registry.hooks_instanceCompleted] at ran
+    exact MultiInstance.instanceCompleted_collects formed.keyed (formed.formed run member).owned ran member owns looped
+      slot others aggregates named
+
 /-- An instance's completion under the registered hooks that leaves a slot of its body unfilled queues no completion
 writing the output collection. -/
 theorem registered_stopsUncollected : MultiInstance.StopsUncollected Registry.hooks := by
