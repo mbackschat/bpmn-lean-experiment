@@ -121,6 +121,7 @@ public import Kernel.Proofs.Compensation.Relation
 public import Kernel.Proofs.Concurrency
 public import Kernel.Proofs.Former
 public import Kernel.Proofs.Former.Calls
+public import Kernel.Proofs.Former.Placed
 public import Kernel.Proofs.Former.Values
 public import Kernel.Proofs.Frame
 public import Kernel.Proofs.MultiInstance
