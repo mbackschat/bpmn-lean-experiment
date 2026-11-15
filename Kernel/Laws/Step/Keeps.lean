@@ -126,7 +126,7 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
       (((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true)
     (newest : state.draft.started.getLast?.map (·.occurrence) = some (Laws.State.key state occurrence))
     (unrun : ∀ run ∈ state.slots.multiInstances, run.occurrence ≠ occurrence.id)
-    (begunFrom : Laws.State.BegunFrom (inv ctx.program) state occurrence)
+    (begunFrom : occurrence.role = .element → Laws.State.BegunFrom (inv ctx.program) state occurrence)
     (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) : inv ctx.program after := by
   rcases dispatch_unstarted ran with ⟨_, _, ran⟩ | ⟨_, _, _, body⟩ | ⟨unstarted, single, arrives⟩
   · exact contract.arriveStart _ _ _ _ _ _ _ holds member begun ran
@@ -142,7 +142,7 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
   | atScope ran => exact contract.arriveScope _ _ _ _ _ _ _ holds member begun inner ran
   | atGateway ran => exact contract.arriveGateway _ _ _ _ _ _ holds member begun ran
   | atCatch ran => exact contract.arriveCatch _ _ _ _ _ _ _ holds member begun unstarted role ran
-  | atThrow named ran => exact contract.arriveThrow _ _ _ _ _ _ _ holds member begun unstarted role named begunFrom ran
+  | atThrow named ran => exact contract.arriveThrow _ _ _ _ _ _ _ holds member begun unstarted role named (begunFrom role) ran
   | atLink ran => exact contract.arriveLink _ _ _ _ _ _ holds member begun ran
 
 /-- A begin keeps `inv`: it begins only in a scope occurrence that stands, and hands the begun occurrence on. -/
@@ -157,8 +157,13 @@ theorem begin_keeps (contract : HookContract hooks inv) (phases : ClosurePhases 
   have newest := phases.newest _ state request (roleOf ctx.program request) sourceType holds
   have unrun := phases.unrun _ state request (roleOf ctx.program request) sourceType holds admitted
   simp only [made] at begunHolds begunMember newest unrun
+  obtain ⟨entry, standing, named⟩ := begin_scope ran
+  have throws : occurrence.role = .element → Laws.State.BeginsThrow state request occurrence := fun role =>
+    ⟨List.mem_map.mpr ⟨entry, standing, named⟩,
+      fun id reserved => (admitted.2.1 id (by simp [Laws.State.names, reserved])).1, role⟩
   exact dispatch_keeps contract begunHolds.1 begunMember.1 begunMember.2 begunHolds.2
-    (phases.bodied _ _ _ begunHolds.1 begunMember.1) newest unrun ⟨state, request, _, sourceType, holds, made⟩ dispatched
+    (phases.bodied _ _ _ begunHolds.1 begunMember.1) newest unrun
+    (fun role => ⟨state, request, _, sourceType, holds, throws role, made⟩) dispatched
 
 /-- A request an arrival or a start makes names no reservation. -/
 theorem admitted_fresh {state : State} {element : ElementId} {scope : ScopeOccurrenceId} {incoming : Option FlowId}

@@ -628,9 +628,19 @@ theorem Steady.trans {first second third : State} (one : Steady first second) (t
   · exact quiet signal early
   · exact quietTwo signal late
 
-/-- `occurrence` is the one a begin from a state that kept `inv` began, in `state`. -/
+/-- What `Step.begin` establishes of the request it begins from `before`, for the throw its occurrence of the element
+role makes (`Step.roleOf`, `Laws.Step.HookContract.arriveThrow`): the request's scope occurrence stands and the
+reservation it names, if any, is beginnable there, so the begun occurrence is that unbegun reservation or a fresh issue
+under the element's own counter. -/
+structure BeginsThrow (before : State) (request : BeginRequest) (occurrence : Occurrence) : Prop where
+  scope : request.scope ∈ scopeIds before
+  reserved : ∀ id, request.reserved = some id → Beginnable before request.scope id
+  role : occurrence.role = .element
+
+/-- `occurrence` is the one a begin from a state that kept `inv` began, in `state`, for a throw (`BeginsThrow`). -/
 def BegunFrom (inv : State → Prop) (state : State) (occurrence : Occurrence) : Prop :=
-  ∃ before request role sourceType, inv before ∧ before.beginOccurrence request role sourceType = (state, occurrence)
+  ∃ before request role sourceType, inv before ∧ BeginsThrow before request occurrence ∧
+    before.beginOccurrence request role sourceType = (state, occurrence)
 
 /-- `state` is where a throw raises from: the state a begin of `occurrence` from a state that kept `inv` left, or that
 state with the occurrence's completion queued. -/
