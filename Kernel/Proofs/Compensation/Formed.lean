@@ -414,10 +414,10 @@ theorem formed_pipelinePhases (precedes : Program → Compensable → Compensabl
         · rw [starts.occurrences] at inside
           obtain ⟨other, was, made⟩ := List.mem_map.mp inside
           by_cases same : other.id = occurrence.id
-          · rw [if_pos same] at made
+          · simp only [same, ↓reduceIte] at made
             rw [← made] at unbegun
             cases unbegun
-          · rw [if_neg same] at made
+          · simp only [same, ↓reduceIte] at made
             subst made
             exact .inl ⟨other, was, unbegun, by simp [Laws.State.key, starts.instances]⟩
       · rw [Laws.State.startReserved_begun s sourceType begun]
@@ -660,7 +660,7 @@ theorem thrower_fresh {program : Program} {precedes : Compensable → Compensabl
     {occurrence : Occurrence}
     (begun : Laws.State.BegunFrom (fun u => WellFormed program u ∧ Formed precedes u) base occurrence)
     (well : WellFormed program t) (occurrences : t.occurrences = base.occurrences)
-    (activations : t.activations = base.activations) (scopes : t.scopes = base.scopes)
+    (scopes : t.scopes = base.scopes)
     (instanceId : t.instanceId = base.instanceId) (compensation : t.slots.compensation = base.slots.compensation)
     (triggers : Laws.Step.triggersOf t.signals = Laws.Step.triggersOf base.signals) :
     occurrence ∈ t.occurrences ∧ FreshTrigger t { processInstanceId := t.instanceOf occurrence.scope,
@@ -726,7 +726,7 @@ theorem formed_occursAlongside (program : Program) (precedes : Compensable → C
     formed_compensate program precedes s scope activity trigger leave element at_ resumed source kept
   throwCompensate s occurrence scope activity trigger leave well begun named kept := by
     subst named
-    have fresh := (thrower_fresh begun well rfl rfl rfl rfl rfl rfl).2
+    have fresh := (thrower_fresh begun well rfl rfl rfl rfl rfl).2
     exact kept.queue fresh.1 fresh.2.1 fresh.2.2.1 rfl fresh.2.2.2
   raise s raised occurrence well raises kept := by
     obtain ⟨base, begun, at_⟩ := raises
@@ -734,9 +734,9 @@ theorem formed_occursAlongside (program : Program) (precedes : Compensable → C
         FreshTrigger s { processInstanceId := s.instanceOf occurrence.scope, element := occurrence.element,
                          activation := occurrence.activation } := by
       rcases at_ with rfl | ⟨leave, rfl⟩
-      · exact thrower_fresh begun well rfl rfl rfl rfl rfl rfl
+      · exact thrower_fresh begun well rfl rfl rfl rfl rfl
       · rw [Laws.State.signal_eq] at well ⊢
-        exact thrower_fresh begun well rfl rfl rfl rfl rfl (by
+        exact thrower_fresh begun well rfl rfl rfl rfl (by
           rw [Laws.Step.triggersOf_append, show Laws.Step.triggersOf [Signal.complete occurrence.id leave [] .outward] = []
             from rfl, List.append_nil])
     cases cancels : raised.isCancel
