@@ -14,7 +14,8 @@ complete before it has (§13.5.5's dependency order: a Sequence Flow from its su
 the other subject, a data dependency, or a later record of the same subject); a run that an interruption drops begins
 nothing; leaving a scope occurrence drops its records ("presumed abort"); the thrower, and a Transaction's one Cancel
 boundary continuation, go on only once the last handler has completed; and a handler failure fails the instance.
-`Kernel.Laws.Compensation` proves what the feature's hooks keep and do.
+`Kernel.Laws.Compensation` proves what the feature's hooks keep and do, in this module's vocabulary of the run a search
+finds (`Keyed`, `Holds`, `FirstOf`) and of the handlers an advance begins (`BeginsEach`).
 
 The laws take the program's relations as parameters, `flowFrom` for "a Sequence Flow path leads from one of these
 elements to that one" (`flowReaches` in `Kernel.IL.Paths`), `boundaries` for a subject's boundary Events and `reads` and
@@ -177,6 +178,88 @@ theorem TakesOut.claimsSelected {covered : ScopeOccurrenceId → Prop} {activity
       record ∈ before.retained ∧ covered record.scope ∧ ∀ named, activity = some named → record.subject = named := by
   rw [advanced.claims, ← law.1 record]
   simp [claimed, idle]
+
+/-- `Ready` read as the search the kernel runs over a Boolean dependency `test`: a pending record that `test` orders
+after none of its run's pending or running records. -/
+theorem Ready.any_iff {test : Compensable → Compensable → Bool} {run : CompensationRun} {record : Compensable} :
+    Ready (test · · = true) run record ↔
+      record ∈ run.pending ∧ (!(run.pending ++ run.running.map (·.2)).any (test record ·)) = true := by
+  rw [Bool.not_eq_true', List.any_eq_false]
+  rfl
+
+/-- The run that `trigger` started in `scope`: two runs never share both. -/
+def Keyed (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (run : CompensationRun) : Prop :=
+  run.scope = scope ∧ run.trigger = trigger
+
+/-- The run holds a handler running in the context scope occurrence `context`. -/
+def Holds (context : ScopeOccurrenceId) (run : CompensationRun) : Prop :=
+  context ∈ run.running.map (·.1)
+
+/-- `run` is the first of `runs` that `holds`: the one a search of the runs in order finds. -/
+def FirstOf (holds : CompensationRun → Prop) (runs : List CompensationRun) (run : CompensationRun) : Prop :=
+  holds run ∧ ∃ front back, runs = front ++ run :: back ∧ ∀ other ∈ front, ¬ holds other
+
+theorem FirstOf.mem {holds : CompensationRun → Prop} {runs : List CompensationRun} {run : CompensationRun}
+    (first : FirstOf holds runs run) : run ∈ runs := by
+  obtain ⟨-, front, back, split⟩ := first
+  simp [split.1]
+
+/-- A search of the runs in order for one satisfying `test` finds the first one that `holds`. -/
+theorem FirstOf.of_find {test : CompensationRun → Bool} {holds : CompensationRun → Prop}
+    (tests : ∀ run, test run = true ↔ holds run) {runs : List CompensationRun} {run : CompensationRun}
+    (found : runs.find? test = some run) : FirstOf holds runs run := by
+  obtain ⟨tested, front, back, split⟩ := List.find?_eq_some_iff_append.mp found
+  refine ⟨(tests run).1 tested, front, back, split.1, fun other member held => ?_⟩
+  have := split.2 other member
+  simp [(tests other).2 held] at this
+
+/-- The search for a run holding `context` by its running handlers finds one that `Holds` it. -/
+theorem Holds.any_iff (context : ScopeOccurrenceId) (run : CompensationRun) :
+    run.running.any (·.1 == context) = true ↔ Holds context run := by
+  simp [Holds]
+
+/-- The handlers of the records in `started` begun one after another by `begin`, from `state` to `final`: each in the
+state the one before left, in the context scope occurrence paired with it. -/
+inductive BeginsEach (begin : State → Compensable → Except Failure (State × ScopeOccurrenceId)) :
+    State → List (ScopeOccurrenceId × Compensable) → State → Prop
+  | nil (state : State) : BeginsEach begin state [] state
+  | cons {state next final : State} {context : ScopeOccurrenceId} {record : Compensable}
+      {later : List (ScopeOccurrenceId × Compensable)} :
+      begin state record = .ok (next, context) → BeginsEach begin next later final →
+      BeginsEach begin state ((context, record) :: later) final
+
+/-- A fold over records whose every `step` begins one by `begin` and appends it with its context begins them as
+`BeginsEach` says. -/
+theorem BeginsEach.of_fold {begin : State → Compensable → Except Failure (State × ScopeOccurrenceId)}
+    {step : State × List (ScopeOccurrenceId × Compensable) → Compensable →
+      Except Failure (State × List (ScopeOccurrenceId × Compensable))}
+    (stepped : ∀ now record result, step now record = .ok result →
+      ∃ entered, begin now.1 record = .ok entered ∧ result = (entered.1, now.2 ++ [(entered.2, record)])) :
+    ∀ (records : List Compensable) (state : State) (begun : List (ScopeOccurrenceId × Compensable))
+      (result : State × List (ScopeOccurrenceId × Compensable)), records.foldlM step (state, begun) = .ok result →
+      ∃ started, result.2 = begun ++ started ∧ started.map (·.2) = records ∧ BeginsEach begin state started result.1
+  | [], state, begun, result, folded => by
+    cases folded
+    exact ⟨[], by simp, rfl, .nil _⟩
+  | record :: records, state, begun, result, folded => by
+    simp only [List.foldlM_cons, bind, Except.bind] at folded
+    split at folded
+    · cases folded
+    · rename_i next began
+      obtain ⟨entered, begins, rfl⟩ := stepped _ _ _ began
+      obtain ⟨started, appended, mapped, rest⟩ := BeginsEach.of_fold stepped records _ _ _ folded
+      exact ⟨(entered.2, record) :: started, by simp [appended], by simp [mapped], .cons begins rest⟩
+
+/-- A completion that moves its inner records, having no handler and no implicit group, retains no record of its own. -/
+theorem Retains.moved {handler : Option ElementId} {grouped : Bool} (plain : (handler.isNone && !grouped) = true) :
+    Retains true handler grouped none := by
+  cases handler <;> cases grouped <;> simp_all [Retains]
+
+/-- A completion with a handler or an implicit group retains a record of its own carrying the handler. -/
+theorem Retains.record {handler : Option ElementId} {grouped : Bool} {record : Compensable}
+    (kept : ¬ (handler.isNone && !grouped) = true) (carried : record.handler = handler) :
+    Retains true handler grouped (some record) := by
+  cases handler <;> cases grouped <;> simp_all [Retains]
 
 /-- The thrower continues, and a Transaction's Cancel boundary is taken, exactly once the run has no pending and no
 running handler: `continued` lists the continuations the run's end gives, at most the one it was asked for. -/
