@@ -167,8 +167,8 @@ theorem instances_placed : InstancesPlaced entered running := by
   · rfl
   · rfl
 
-/-- `InstancesPlaced` states identity, not isolation: an occurrence of another element may stand in an instance's scope
-occurrence (#158). -/
+/-- `InstancesPlaced` states identity, not isolation: it holds of a state with an occurrence of another element in an
+instance's scope occurrence. -/
 theorem other_element_placed :
     InstancesPlaced
       { entered with occurrences := [{ id := 7, element := ⟨"Other"⟩, scope := firstScope, activation := 1 }] } running := by

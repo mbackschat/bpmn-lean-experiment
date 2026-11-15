@@ -119,9 +119,8 @@ def NumberedInOrder (s : State) (run : MultiInstanceRun) : Prop :=
 
 /-- Instance identity: an occurrence of the body's element under the element role in an active instance's scope
 occurrence is that instance, continuing into the body (§13.3.7; CIB runs each instance in an execution of its own below
-the body's). It states identity, not isolation: that nothing else stands in an instance's scope occurrence is not
-stated, since a raise rethrown from an Event Sub-Process of a Multi-Instance Sub-Process begins that handler again there
-(#158). -/
+the body's). It states identity, not isolation: what else stands in an instance's scope occurrence is left unstated,
+since the numbering needs only identity (`numbered_of_placed`). -/
 def InstancesPlaced (s : State) (run : MultiInstanceRun) : Prop :=
   ∀ scope, Iteration.active scope ∈ run.instances → ∀ o ∈ s.occurrences, o.scope = scope → o.element = run.element →
     o.role = .element → o.continuation = .multiInstance run.occurrence
