@@ -183,6 +183,12 @@ def OrderedSubjects (program : Program) (first second : ElementId) : Prop :=
 def Ordered (program : Program) (left right : Element) : Prop :=
   ∀ first second, SubjectOf program left first → SubjectOf program right second → OrderedSubjects program first second
 
+/-- Two handler runs one throw may begin together: §13.5.5 compensates records, one per completed subject, so besides
+two handlers one handler serving two subjects runs twice (#155). One subject's records `Ordered` orders by completion. -/
+def TwoRuns (program : Program) (left right : Element) : Prop :=
+  left.header.id ≠ right.header.id ∨
+    (left = right ∧ ∃ subject, SubjectOf program left subject ∧ ∃ other, SubjectOf program left other ∧ subject ≠ other)
+
 /-! ## Units -/
 
 def branchWalk : Walk := { stop := BranchStop, ascends := false }
@@ -436,11 +442,11 @@ inductive Concurrent (program : Program) : Account → Account → Prop where
   (`Kernel.Admission.Flow.Concurrency.writeFanOut`). -/
   | writes {writer : Element} {left right : Account} : writer ∈ program.elements → WritePair program writer left right →
       Concurrent program left right
-  /-- The compensation handlers one Compensation throw or Cancel End begins together, in declaration order, unless
-  their subjects are ordered in every run: §13.5.5; `flow.concurrentWrite` and `flow.concurrentInterference`
-  (`Kernel.Admission.Flow.Concurrency.compensationFanOut`). -/
+  /-- The handler runs one Compensation throw or Cancel End begins together, in declaration order, unless their
+  subjects are ordered in every run: §13.5.5, two handlers or a handler serving two subjects (`TwoRuns`);
+  `flow.concurrentWrite` and `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.compensationFanOut`). -/
   | compensating {thrower first second : Element} : thrower ∈ program.elements → Compensates thrower →
-      HandlersOf program thrower first → HandlersOf program thrower second → first.header.id ≠ second.header.id →
+      HandlersOf program thrower first → HandlersOf program thrower second → TwoRuns program first second →
       ¬ Ordered program first second → Concurrent program (handlerAccount program first) (handlerAccount program second)
   /-- The Conditional items one arming finds true, beside the work the entry that armed them begins and beside each
   other: §13.4.4 gives simultaneous triggers no order (P1 census, G2); `flow.concurrentWrite` and
@@ -470,7 +476,9 @@ def Apart (program : Program) : Prop :=
 
 A program holding nothing is `Apart`, so the premise is no `False`. A split whose two branches each begin an element
 they run through, the two runs racing on a name, is not `Apart`: two plain Tasks behind a Parallel fork, both with an
-output to `x`, are an instance once `Laws.IL` states the values of the IL queries the hypotheses name. -/
+output to `x`, are an instance once `Laws.IL` states the values of the IL queries the hypotheses name. Nor is a
+handler serving two unordered subjects whose run races itself, the shape of #155's witness: a Parallel fork into two
+User Tasks naming one handler that reads and writes `x`, before a Compensation throw. -/
 
 def quiet : Program :=
   { identity := { processId := "quiet", sourceSha256 := "", profile := "" }, elements := [], flows := [] }
@@ -498,5 +506,13 @@ theorem split_race_not_apart {program : Program} {flow : Flow} {other : FlowId} 
   (apart _ _ (.split member forks leaving distinct .paths)).1
     ⟨_, _, ⟨.enters left, .start ⟨left, toLeft, rfl⟩, .inr ⟨runsLeft, rfl⟩⟩,
       ⟨.enters right, .start ⟨right, toRight, rfl⟩, .inr ⟨runsRight, rfl⟩⟩, race⟩
+
+theorem shared_handler_not_apart {program : Program} {thrower handler : Element} {first second : ElementId}
+    (member : thrower ∈ program.elements) (compensates : Compensates thrower) (handles : HandlersOf program thrower handler)
+    (ofFirst : SubjectOf program handler first) (ofSecond : SubjectOf program handler second) (distinct : first ≠ second)
+    (unordered : ¬ Ordered program handler handler) (runs : ¬ BranchStop handler)
+    (race : (runFootprint program handler).races (runFootprint program handler) = true) : ¬ Apart program := fun apart =>
+  (apart _ _ (.compensating member compensates handles handles (.inr ⟨rfl, first, ofFirst, ⟨second, ofSecond, distinct⟩⟩)
+    unordered)).1 ⟨_, _, .inr ⟨runs, rfl⟩, .inr ⟨runs, rfl⟩, race⟩
 
 end Kernel.Laws.Flow
