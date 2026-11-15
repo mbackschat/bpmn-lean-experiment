@@ -5,11 +5,11 @@ public import Kernel.Laws.MultiInstance.Rules
 /-! # Laws of Multi-Instance Activities: what a body keeps while it enters
 
 What a running body keeps while `Kernel.Feature.MultiInstance` enters and queues its instances (`Entering`), the
-left-fold lemmas the entering runs on, the begins it queues (`Requested`, `QueuedAs`, `QueueKeeps`), what an instance's
-completion records and a body's completion writes (`recorded`, `OutputFits`, `WritesCollection`), and the facts about
-the waiting slots `MultiInstance.opening` picks from, stated without naming the feature so that they stay outside its
-rebuild cone (guard 15); `Kernel.Laws.MultiInstance` proves what the hooks keep and do of them. Nothing executable
-imports this module.
+left-fold lemma the entering runs on (`foldl_prefix`), the begins it queues (`Requested`, `QueuedAs`, `QueueKeeps`),
+what an instance's completion records and a body's completion writes (`recorded`, `OutputFits`, `WritesCollection`),
+and the facts about the waiting slots `MultiInstance.opening` picks from, stated without naming the feature so that they
+stay outside its rebuild cone (guard 15); `Kernel.Laws.MultiInstance` proves what the hooks keep and do of them. Nothing
+executable imports this module.
 -/
 
 @[expose] public section
@@ -19,13 +19,6 @@ namespace Kernel.Laws.MultiInstance
 open Kernel
 
 variable {inv : State → Prop} {settled : State → Nat → Prop}
-
-/-- A property every step of a left fold keeps over the list's members holds of the fold. -/
-theorem foldl_keeps {α β : Type} (P : α → Prop) (f : α → β → α) :
-    ∀ (l : List β) (a : α), (∀ a b, b ∈ l → P a → P (f a b)) → P a → P (l.foldl f a)
-  | [], _, _, holds => holds
-  | b :: l, a, step, holds =>
-    foldl_keeps P f l (f a b) (fun a' b' member => step a' b' (List.mem_cons_of_mem _ member)) (step a b (by simp) holds)
 
 /-- A property of the members folded so far, which each step of a left fold over `whole` extends by its member, holds
 of the fold with all of `whole`. -/

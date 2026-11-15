@@ -191,7 +191,7 @@ theorem queueInstances_keeps (ops : MultiInstanceOps program inv settled)
       Entering inv settled run current instances [] := fun held => ⟨held.1, held.2.1, held.2.2.1, held.2.2.2.1, by simp⟩
   have signalled : Entering inv settled run
       (requests.foldl (fun state request => state.signal (.begin request)) state) instances requests := by
-    refine foldl_keeps (fun state => Entering inv settled run state instances requests) _ requests state
+    refine Laws.State.foldl_keeps (fun state => Entering inv settled run state instances requests) _ requests state
       (fun current request member held => ?_) entering
     obtain ⟨begun, carry⟩ := ops.begin _ _ held.1 (held.2.2.2.2 request member).1 (held.2.2.2.2 request member).2
     exact held.frame begun (carry _ held.2.1) (by rw [Laws.State.signal_eq]) (by rw [Laws.State.signal_eq])
@@ -780,7 +780,7 @@ theorem beginInstances_signals (ctx : Ctx) (loop : MultiInstance) (items : List 
   have kept : (fun acc : State × List Iteration × List BeginRequest => acc.1.signals = state.signals ∧
       ∀ request ∈ acc.2.2, ∃ scope, request = instanceRequest run scope) (current, instances, requests) := by
     rw [← folded]
-    refine foldl_keeps (fun acc : State × List Iteration × List BeginRequest => acc.1.signals = state.signals ∧
+    refine Laws.State.foldl_keeps (fun acc : State × List Iteration × List BeginRequest => acc.1.signals = state.signals ∧
       ∀ request ∈ acc.2.2, ∃ scope, request = instanceRequest run scope) _ _ _ (fun acc _ _ held => ?_)
       ⟨rfl, fun _ none => by cases none⟩
     obtain ⟨s, _, _⟩ := acc

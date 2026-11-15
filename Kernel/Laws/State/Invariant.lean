@@ -479,6 +479,13 @@ theorem nodup_map_eq {α β : Type} {f : α → β} : ∀ {l : List α}, (l.map 
     · exact absurd same (fresh a inFirst)
     · exact nodup_map_eq nodup inFirst inSecond same
 
+/-- A property every step of a left fold keeps over the list's members holds of the fold. -/
+theorem foldl_keeps {α β : Type} (P : α → Prop) (f : α → β → α) :
+    ∀ (l : List β) (a : α), (∀ a b, b ∈ l → P a → P (f a b)) → P a → P (l.foldl f a)
+  | [], _, _, holds => holds
+  | b :: l, a, step, holds =>
+    foldl_keeps P f l (f a b) (fun a' b' member => step a' b' (List.mem_cons_of_mem _ member)) (step a b (by simp) holds)
+
 /-- Two scope occurrences of a state whose identifiers are distinct and which share an identifier are one. -/
 theorem scope_unique {s : State} (distinct : Distinct s) {first second : ScopeOccurrence} (one : first ∈ s.scopes)
     (two : second ∈ s.scopes) (same : first.id = second.id) : first = second :=

@@ -453,13 +453,6 @@ private theorem ok_map {α β ε : Type} {x : Except ε α} {f : α → β} {b :
   | error failure => simp [Except.map] at ran
   | ok a => exact ⟨a, rfl, (Except.ok.inj ran).symm⟩
 
-/-- `List.foldl` keeps what each step keeps. -/
-private theorem foldl_holds {α β : Type} (holds : β → Prop) (f : β → α → β) :
-    ∀ (items : List α) (b : β), holds b → (∀ b a, a ∈ items → holds b → holds (f b a)) → holds (items.foldl f b)
-  | [], _, start, _ => start
-  | a :: rest, b, start, each => foldl_holds holds f rest (f b a) (each b a List.mem_cons_self start)
-      fun b a inside => each b a (List.mem_cons_of_mem _ inside)
-
 /-- The candidate `Propagation.best?` picks is one of the candidates. -/
 theorem best?_mem {α : Type} {ctx : Ctx} {raised : Raised} {trigger : α → Trigger} {candidates : List α}
     {chosen : α} {writes : List (String × Value)}
@@ -468,8 +461,8 @@ theorem best?_mem {α : Type} {ctx : Ctx} {raised : Raised} {trigger : α → Tr
   obtain ⟨⟨caught, candidate⟩, folded, same⟩ := Option.map_eq_some_iff.mp found
   have named : candidate = chosen := congrArg Prod.fst same
   subst named
-  refine foldl_holds (fun chosen => ∀ pair ∈ chosen, pair.2 ∈ candidates) _ candidates none (by simp)
-    (fun chosen candidate inside held pair member => ?_) _ folded
+  refine Laws.State.foldl_keeps (fun chosen => ∀ pair ∈ chosen, pair.2 ∈ candidates) _ candidates none
+    (fun chosen candidate inside held pair member => ?_) (by simp) _ folded
   split at member
   · exact held pair member
   · cases member
