@@ -3,6 +3,7 @@ module
 public import Kernel.Laws.Step.Keeps
 public import Kernel.Laws.State.Removal
 public import Kernel.Proofs.MultiInstance.Occurs
+public import Kernel.Proofs.Frame
 
 /-! # Proofs: the reservations of looping elements and the order instances begin in
 
@@ -16,7 +17,7 @@ every one its counter has issued, which every start fact of the input counts (`L
 
 The order is a fact of the settled state before `Step.orderJournal` turns the journal round, so it is carried by the
 closure's phases alone (`Laws.Step.ClosurePhases`, `Laws.Step.running_settles`). The state operations' lemmas here
-are each of what the frame records ask (`Proofs.Cancellation.FrameAlongside`, `ClosureAlongside`, `Alongside`), which
+are each of what the frame records ask (`Proofs.Frame.FrameAlongside`, `ClosureAlongside`, `Alongside`), which
 `Kernel.Proofs.MultiInstance.Registered` assembles, since this module may not reach a feature's Laws module beyond its
 fan-in (guard 15). Nothing executable imports this module.
 -/
@@ -30,6 +31,7 @@ open Kernel.Laws.State (WellFormed scopeIds)
 open Kernel.Laws.IL (BoundaryOf Reservable)
 open Kernel.Laws.MultiInstance (LoopOf IdsUnique UnbegunUnlooped BeginsInOrder)
 open Kernel.Laws.Step (OccurPending PendingIn)
+open Kernel.Proofs.Frame (OccursAlongside ResumesPending)
 
 /-! ## The relation -/
 

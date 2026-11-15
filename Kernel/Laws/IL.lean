@@ -103,7 +103,7 @@ theorem activity?_start (header : Header) (payload : StartPayload) : (Element.st
 /-! ## Where a reserved identifier comes from
 
 What a reservation's element (`State.reserve`) may be, for the records that require it of a feature's reservations
-(`Kernel.Proofs.MultiInstance.OccursAlongside`): a boundary's identifier, or an element's that carries no envelope. -/
+(`Kernel.Proofs.Frame.OccursAlongside`): a boundary's identifier, or an element's that carries no envelope. -/
 
 /-- `element` is the identifier of a boundary of one of `program`'s elements. -/
 @[expose] def BoundaryOf (program : Program) (element : ElementId) : Prop :=

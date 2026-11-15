@@ -25,47 +25,13 @@ namespace Kernel.Proofs.Cancellation
 open Kernel
 open Kernel.Laws.State (WellFormed)
 open Kernel.Laws.Step (Operations)
+open Kernel.Proofs.Frame
 
 /-! ## Each feature's operations record beside `WellFormed` -/
 
 section Alongside
 
 variable {rel : State → Prop}
-
-/-- Holding an occurrence moves nothing `rel` reads. -/
-theorem FrameAlongside.hold (side : FrameAlongside rel) {s : State} (kept : rel s) (held : Held) :
-    rel (s.hold held) := by
-  rw [Laws.Hooks.hold_eq]
-  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ kept
-
-/-- An open item is an issue and an added item. -/
-theorem FrameAlongside.openItem (side : FrameAlongside rel) {s : State} (kept : rel s) (kind : OpenKind)
-    (occurrence : Occurrence) : rel (s.openItem kind occurrence) := by
-  refine side.frame s.issue.1 _ ?_ (side.issue s kept)
-  rw [Laws.State.openItem_eq, Laws.State.issue_eq]
-  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩
-
-/-- A subscription is a reservation of a reservable element, an issue and an added item. -/
-theorem FrameAlongside.openSubscription (side : FrameAlongside rel) {program : Program}
-    (occurs : Proofs.MultiInstance.OccursAlongside program rel) {s : State} (formed : WellFormed program s) (kept : rel s)
-    (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool)
-    (reservable : Laws.IL.Reservable program element) : rel (s.openSubscription kind element scope host passive).1 := by
-  refine side.frame (s.reserve element scope).1.issue.1 _ ?_
-    (side.issue _ (occurs.reserve s element scope formed reservable kept))
-  rw [Laws.State.openSubscription_eq, Laws.State.issue_eq]
-  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩
-
-/-- Closing an item moves nothing `rel` reads. -/
-theorem FrameAlongside.closeItem (side : FrameAlongside rel) {s : State} (kept : rel s) (id : Nat) :
-    rel (s.closeItem id) := by
-  rw [Laws.State.closeItem_eq]
-  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ kept
-
-/-- Withdrawing the items inside a scope occurrence moves nothing `rel` reads. -/
-theorem FrameAlongside.withdrawInside (side : FrameAlongside rel) {s : State} (kept : rel s)
-    (scope : ScopeOccurrenceId) : rel (s.withdrawInside scope) := by
-  rw [Laws.State.withdrawInside_eq]
-  exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ kept
 
 theorem operations_alongside {rel : Program → State → Prop} (side : ∀ program, FrameAlongside (rel program))
     (ops : Operations WellFormed) : Operations fun program s => WellFormed program s ∧ rel program s where
@@ -211,7 +177,7 @@ theorem scopesOps_alongside (side : FrameAlongside rel) {program : Program}
   signalScopes := ops.signalScopes
 
 theorem propagationOps_alongside (side : FrameAlongside rel) {program : Program}
-    (occurs : Proofs.MultiInstance.OccursAlongside program rel)
+    (occurs : OccursAlongside program rel)
     (ops : Laws.Propagation.PropagationOps program (WellFormed program)) :
     Laws.Propagation.PropagationOps program fun s => WellFormed program s ∧ rel s where
   complete s occurrence leave writes rule holds member begun :=
@@ -250,9 +216,9 @@ theorem propagationOps_alongside (side : FrameAlongside rel) {program : Program}
 
 /-- Compensation runs' record beside `WellFormed`: a context `Laws.Compensation.RunsOps` leaves is a running one
 (`LeavesOwned`), the runs it stores hold only contexts held or fresh (`StoresHeldOrFresh`) and resume by pending
-reservations (`Proofs.MultiInstance.ResumesPending`), and an ended run's resume is pending. -/
+reservations (`ResumesPending`), and an ended run's resume is pending. -/
 theorem runsOps_alongside (side : FrameAlongside rel) {program : Program}
-    (occurs : Proofs.MultiInstance.OccursAlongside program rel)
+    (occurs : OccursAlongside program rel)
     (ops : Laws.Compensation.RunsOps (WellFormed program) Laws.State.Settled) :
     Laws.Compensation.RunsOps (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
   fits s run holds member := ops.fits s run holds.1 member
@@ -286,7 +252,7 @@ theorem runsOps_alongside (side : FrameAlongside rel) {program : Program}
       holds.2⟩, left.2⟩
 
 theorem subscriptionsOps_alongside (side : FrameAlongside rel) {program : Program}
-    (occurs : Proofs.MultiInstance.OccursAlongside program rel)
+    (occurs : OccursAlongside program rel)
     (ops : Laws.Subscriptions.SubscriptionsOps program (WellFormed program)) :
     Laws.Subscriptions.SubscriptionsOps program fun s => WellFormed program s ∧ rel s where
   fire s item fired holds := ⟨ops.fire s item fired holds.1, side.signal holds.2 _⟩
@@ -347,7 +313,7 @@ program, from those of `WellFormed` and `FrameAlongside` alone (`Proofs.Step.reg
 what the Multi-Instance hooks keep into the registered hooks' contract). -/
 theorem featureOps_frame {rel : Program → State → Prop} (ops : Proofs.Step.FeatureOps WellFormed)
     (side : ∀ program, FrameAlongside (rel program))
-    (occurs : ∀ program, Proofs.MultiInstance.OccursAlongside program (rel program)) :
+    (occurs : ∀ program, OccursAlongside program (rel program)) :
     Proofs.Step.FeatureOps fun program s => WellFormed program s ∧ rel program s where
   operations := operations_alongside side ops.operations
   work _ := workOps_alongside (side _) (ops.work _)
@@ -363,7 +329,7 @@ theorem featureOps_frame {rel : Program → State → Prop} (ops : Proofs.Step.F
 /-- The feature records of `WellFormed` and a property beside it that `Alongside` gathers, from those of
 `WellFormed`. -/
 theorem registeredOps_alongside {rel : State → Prop} (ops : Proofs.Step.RegisteredOps WellFormed)
-    (side : Alongside rel) (occurs : ∀ program, Proofs.MultiInstance.OccursAlongside program rel) :
+    (side : Alongside rel) (occurs : ∀ program, OccursAlongside program rel) :
     Proofs.Step.RegisteredOps fun program s => WellFormed program s ∧ rel s :=
   { featureOps_frame ops.toFeatureOps (fun _ => side.toFrameAlongside) occurs with
     multiInstance := fun _ => multiInstanceOps_alongside side (ops.multiInstance _) }
@@ -373,7 +339,7 @@ theorem registeredOps_alongside {rel : State → Prop} (ops : Proofs.Step.Regist
 /-- Reservations and queued occurrences keep the scope occurrences of any before-state: a reservation issues one
 identity and enters none. -/
 theorem scopesKept_occursAlongside (before : State) (program : Program) :
-    Proofs.MultiInstance.OccursAlongside program (ScopesKept before) where
+    OccursAlongside program (ScopesKept before) where
   reserve s element scope _ _ kept :=
     have reserves := Laws.State.reserve_reserves s element scope
     kept.enter reserves.nextIssue fun _ member => .inl (reserves.scopes ▸ member)
@@ -450,7 +416,7 @@ theorem endsKept_stepAlongside (b : State) :
 /-- Reservations and queued occurrences keep an input's end facts from its start, which they frame
 (`Kernel.Laws.Step.EndsFrames`). -/
 theorem endsKept_occursAlongside (b : State) (x : Option (Nat × OccurrenceKey)) (program : Program) :
-    Proofs.MultiInstance.OccursAlongside program (Laws.Step.EndsKept b x) where
+    OccursAlongside program (Laws.Step.EndsKept b x) where
   reserve _ element scope formed _ kept := kept.step formed (Laws.Step.reserve_frame formed element scope)
   occur s _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]

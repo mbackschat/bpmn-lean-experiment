@@ -4,7 +4,8 @@ public import Kernel.Proofs.MultiInstance
 public import Kernel.Laws.State.Fire
 public import Kernel.Laws.MultiInstance
 public import Kernel.Proofs.MultiInstance.Records
-public import Kernel.Proofs.Cancellation
+public import Kernel.Proofs.Frame
+public import Kernel.Laws.Step.Ends
 public import Kernel.Laws.Scopes
 
 /-! # Proofs: the Multi-Instance lane's slot invariant carried by the state operations
@@ -31,7 +32,7 @@ open Kernel
 open Kernel.Laws.State (WellFormed Within StrictlyWithin scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
   InstancesPlaced BeginsQueued UnbegunUnlooped SequentialSlots ParallelSlots OutputsFit)
-open Kernel.Proofs.Cancellation (FrameAlongside StepAlongside Unmoved LeavesOwned StoresHeldOrFresh RunningContext
+open Kernel.Proofs.Frame (OccursAlongside FrameAlongside StepAlongside Unmoved LeavesOwned StoresHeldOrFresh RunningContext
   ActiveInstance)
 
 /-- `Shaped` but the numbering: a running body's slots shaped by its loop's mode, its filled slots holding what its
@@ -190,7 +191,7 @@ theorem outside_body {program other : Program} {s : State} {run : MultiInstanceR
   · obtain ⟨index, slot⟩ := List.mem_iff_getElem?.mp active
     obtain ⟨placed, placedIn, placedNamed, placedLink⟩ := framed.owned.instanceScopes index entry.id slot
     obtain rfl := Laws.State.scope_unique formed.distinct placedIn inside placedNamed
-    rcases Proofs.Cancellation.Within.up within with same | ⟨child, childIn, childNamed, rest⟩
+    rcases Proofs.Frame.Within.up within with same | ⟨child, childIn, childNamed, rest⟩
     · exact same
     · obtain ⟨_, link, above⟩ := rest
       obtain rfl := Laws.State.scope_unique formed.distinct childIn placedIn childNamed
@@ -288,7 +289,7 @@ theorem reserve_runsFramed {program : Program} (s : State) (element : ElementId)
     fun _ present => reserves.occurrences ▸ List.mem_append_left _ present)
 
 /-- The state operations the hooks apply keep the lane's slot invariant but its numbering under any program
-(`Proofs.Cancellation.FrameAlongside`). -/
+(`Proofs.Frame.FrameAlongside`). -/
 theorem runsFramed_frameAlongside (program : Program) : FrameAlongside (RunsFramed program) where
   frame _ _ moved kept := kept.carry (.equal moved.scopes moved.occurrences moved.multiInstances moved.runs)
   signalBegin s _ _ kept := by
@@ -422,7 +423,7 @@ occurrence keyed by a body of `b` has a start in the draft (`Unstarted`): such a
 begin starts an unbegun reservation or a fresh occurrence, under a key no begun one has. Beside it the input carries
 what it keeps of the bodies of `b` (`Snapshots`): every other operation keeps a body's record, removes it or records an
 instance's output in it. `Unstarted` reads no body's record, so the Multi-Instance hooks keep it through their feature
-record (`Proofs.Cancellation.Alongside`); `Snapshots` reads only the records, so each hook keeps it by what it sets
+record (`Proofs.Frame.Alongside`); `Snapshots` reads only the records, so each hook keeps it by what it sets
 (`Kernel.Proofs.MultiInstance.Registered`). -/
 
 section Since
@@ -430,7 +431,7 @@ section Since
 open Kernel.Laws.State (key)
 open Kernel.Laws.MultiInstance (SnapshotFixed Opens recorded)
 open Kernel.Laws.Step (EndsStep)
-open Kernel.Proofs.Cancellation (Alongside)
+open Kernel.Proofs.Frame (Alongside)
 
 /-! ### The invariant -/
 

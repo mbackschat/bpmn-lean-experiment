@@ -106,6 +106,7 @@ public import Kernel.Proofs.Cancellation.Registered
 public import Kernel.Proofs.Compensation
 public import Kernel.Proofs.Concurrency
 public import Kernel.Proofs.Former
+public import Kernel.Proofs.Frame
 public import Kernel.Proofs.MultiInstance
 public import Kernel.Proofs.MultiInstance.Begins
 public import Kernel.Proofs.MultiInstance.Formed

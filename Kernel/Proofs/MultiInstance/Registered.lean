@@ -30,8 +30,9 @@ open Kernel.Laws.State (WellFormed Within scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
   InstancesPlaced BeginsQueued IdsUnique SequentialSlots OutputsFit)
 open Kernel.Laws.Step (OccurPending)
-open Kernel.Proofs.Cancellation (phases_alongside closurePhases_alongside featureOps_frame multiInstanceOps_alongside
-  Alongside ClosureAlongside FrameAlongside)
+open Kernel.Proofs.Cancellation (featureOps_frame multiInstanceOps_alongside)
+open Kernel.Proofs.Frame (phases_alongside closurePhases_alongside Alongside ClosureAlongside FrameAlongside
+  OccursAlongside)
 
 /-- A body's instances, entered and queued from a state that keeps the invariant and places the body, its loop the one
 its element carries and its slots of a sequential body's shape, keep the invariant once their slot record is set. -/
@@ -285,10 +286,10 @@ theorem registered_unbegunKept : UnbegunKept Registry.hooks :=
 Beside `Framed` the registered hooks keep the numbering under a program whose identifiers are unique
 (`FramedNumbered`): the state operations by what `Kernel.Proofs.MultiInstance.Numbered` proves each keeps, reading the
 slot invariant's ownership off `RunsFramed`; a reservation or a queued reservation names no looping element, from its
-feature record (`Proofs.MultiInstance.OccursAlongside`) or from the numbering of the state that queued it
+feature record (`Proofs.Frame.OccursAlongside`) or from the numbering of the state that queued it
 (`BeginsQueued.occurs`); and the Multi-Instance hooks by `Kernel.Proofs.MultiInstance.Instances`. `Step`'s begin phase
 reads the step's own program, which places a body's begun occurrence by its element's loop, so the phases are proved
-here rather than through `Proofs.Cancellation.phases_alongside`, whose begin may read another. -/
+here rather than through `Proofs.Frame.phases_alongside`, whose begin may read another. -/
 
 /-- The slot invariant but its numbering, and the numbering under a program whose identifiers are unique. -/
 def FramedNumbered (program : Program) (s : State) : Prop :=
