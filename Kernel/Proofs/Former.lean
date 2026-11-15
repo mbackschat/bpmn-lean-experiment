@@ -10,7 +10,7 @@ The former theorems of the rows that stayed `done` on lanes of the deleted libra
 ([status map](../../docs/kernel/KERNEL-STATUS-MAP.md#open-proof-lanes)), restated over `Laws.Data` against `Step`, as
 P3's or P6's statements, or closed as not applicable with the reason ([PLAN, P7](../../docs/PLAN.md#proof-wave)).
 Each statement is over a hooks parameter and closes when `Kernel.Proofs.Step` proves it of `Registry.hooks`; its state
-premise is `Laws.State.WellFormed`.
+premise is `Laws.State.WellFormed`, or for P6's corollary P6's reachable closure start.
 
 | Row | Former theorem | Here |
 |---|---|---|
@@ -54,17 +54,21 @@ def ValuesRejectedWhole (hooks : Hooks) : Prop :=
 
 /-- PC-HUM-04 (`DTB-COMMUTE-01`): a token to a None End beside a token entering an embedded Sub-Process commute under
 `orderInvariant` (BPMN 2.0.2 §10.5.3, §13.5.6). The pair's two orders are one `Reordered` pair of a closure state, so
-the former theorem is P6 under `Laws.Flow.Apart` at a state queuing the two tokens, with no premise about the pair's elements. -/
+the former theorem is P6 under `Laws.Flow.Apart` at a state queuing the two tokens that the closure of a committed
+input reaches, with no premise about the pair's elements. -/
 theorem endBesideEntry {hooks : Hooks} (agree : Proofs.Concurrency.SchedulesAgree hooks)
-    (ctx : Ctx) (start state reordered left right : State) (fuel work fuel' work' : Nat) (toEnd toEntry : FlowId)
-    (scope : ScopeOccurrenceId) (_pair : state.tokens = [.flow toEnd scope, .flow toEntry scope])
-    (invariant : ctx.program.options.branchSchedule = .orderInvariant) (separate : Laws.Flow.Apart ctx.program)
-    (formed : WellFormed ctx.program start) (reached : Proofs.Concurrency.Reaches hooks ctx start state)
-    (swapped : Proofs.Concurrency.Reordered state reordered) (settled : Step.settle hooks ctx fuel work state = .ok left)
-    (settled' : Step.settle hooks ctx fuel' work' reordered = .ok right) :
+    (program : Program) (input : Input) (start state reordered left right : State) (fuel work fuel' work' : Nat)
+    (toEnd toEntry : FlowId) (scope : ScopeOccurrenceId) (_pair : state.tokens = [.flow toEnd scope, .flow toEntry scope])
+    (invariant : program.options.branchSchedule = .orderInvariant) (separate : Laws.Flow.Apart program)
+    (opens : Proofs.Concurrency.Opens hooks program input start)
+    (reached : Proofs.Concurrency.Reaches hooks (Laws.Step.inputCtx hooks program input) start state)
+    (swapped : Proofs.Concurrency.Reordered state reordered)
+    (settled : Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work state = .ok left)
+    (settled' : Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' reordered = .ok right) :
     ∃ ids keys, Proofs.Concurrency.Issued ids state.nextIssue ∧ Proofs.Concurrency.Activations state keys ∧
       Proofs.Concurrency.Alike ids keys left right :=
-  agree ctx start state reordered left right fuel work fuel' work' invariant separate formed reached swapped settled settled'
+  agree program input start state reordered left right fuel work fuel' work' invariant separate opens reached swapped
+    settled settled'
 
 /-- `root` is the root of a called process instance in `state`. -/
 def CalledRoot (state : State) (root : ScopeOccurrenceId) : Prop :=

@@ -7,8 +7,8 @@ public import Kernel.Laws.Flow.Concurrent
 /-! # Proofs: concurrency (P6)
 
 The statement of the proof wave's concurrency lane ([PLAN, P6](../../docs/PLAN.md#proof-wave)): under
-`BranchSchedule.orderInvariant` and the order-invariance premise, two schedules of a closure's enabled tokens and
-waking items commit results equal up to a bijection of issued identities, with journal and outbox compared at the
+`BranchSchedule.orderInvariant` and the order-invariance premise, two schedules of the enabled tokens and waking items
+of a closure a committed input runs commit results equal up to a bijection of issued identities, with journal and outbox compared at the
 canonical-result observation boundary: `Step.settle`'s fixed order is immaterial. A Conditional contest is not covered:
 the input's ranking decides it by design. Stated over a hooks parameter; the lane closes when `Kernel.Proofs.Step`
 proves it of `Registry.hooks`.
@@ -37,7 +37,6 @@ module's path to `Laws.State`, whose importers are all feature `Laws` modules. N
 namespace Kernel.Proofs.Concurrency
 
 open Kernel
-open Kernel.Laws.State (WellFormed)
 
 /-- `after` is reached from `before` by closure micro-steps (`Laws.Step.ClosureStep`). -/
 inductive Reaches (hooks : Hooks) (ctx : Ctx) : State → State → Prop where
@@ -103,13 +102,52 @@ structure Alike (ids : Nat → Nat) (keys : OccurrenceKey → OccurrenceKey) (le
   outbox : (left.outbox.map fun intent => (intent.address, intent.variables, intent.businessKey)).Perm
     (right.outbox.map fun intent => (intent.address, intent.variables, intent.businessKey))
 
-/-- P6: from a closure state reached from a well-formed state, any two schedules of its enabled work that both settle
-commit results alike up to a bijection of the identities and activations issued from that state on. -/
+/-- A committed state of a run of `program`: what a committed start leaves, or what a committed input leaves on a
+committed state of a run. -/
+inductive Committed (hooks : Hooks) (program : Program) : State → Prop where
+  | start {input : Input} {after : State} : Step.step hooks program none input = .ok after → Committed hooks program after
+  | step {before after : State} {input : Input} : Committed hooks program before →
+      Step.step hooks program (some before) input = .ok after → Committed hooks program after
+
+/-- `start` is where the closure of `input` begins when `input` commits, the state its transition micro-step leaves,
+which `Step.step` then settles. For a start, the begin of the start Event `chooseStart` picks among those its trigger
+fired, on the fresh instance whose clock it advanced (`Laws.Step.StartRan`). For an input on `before`, a committed
+state of a run, `Step.onRunning`'s transition (`Laws.Step.step_ok`) on `before` emptied of its per-input record and its
+clock advanced (`Laws.Step.onRunning_ok`). -/
+def Opens (hooks : Hooks) (program : Program) (input : Input) (start : State) : Prop :=
+  (∃ payload after fired element initial, input = .start payload ∧ Step.step hooks program none input = .ok after ∧
+    hooks.startsFired (Laws.Step.inputCtx hooks program input) payload = .ok fired ∧
+    chooseStart payload.startEvent fired = .ok element ∧
+    Step.advanceClock payload.atMs
+      ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root)) =
+      .ok initial ∧
+    Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.input .start) (some element) State.root
+      (Step.begin hooks (Laws.Step.inputCtx hooks program input)
+        { element, scope := State.root, trigger := payload.trigger }) initial = .ok start) ∨
+  ∃ before after running transition clocked, Committed hooks program before ∧
+    Step.step hooks program (some before) input = .ok after ∧
+    Laws.Step.RunsTransition hooks (Laws.Step.inputCtx hooks program input) transition ∧
+    Step.onRunning hooks (Laws.Step.inputCtx hooks program input) running (some before) transition = .ok after ∧
+    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], outbox := [], draft := {}, writes := [] } =
+      .ok clocked ∧
+    Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.input (Step.inputHead running).1) none State.root
+      transition clocked = .ok start
+
+/-- P6: from a state the closure of a committed input reaches, any two schedules of its enabled work that both
+settle commit results alike up to a bijection of the identities and activations issued from that state on.
+
+P0 stated it from any `Laws.State.WellFormed` state, which is false: `WellFormed` admits queues no run produces, and
+two flow tokens queued in the root of a sequential `Start → User Task → Terminate End` process settle in one order
+beginning the User Task again before the End and in the other ending the instance first, with no renaming relating the
+two journals (P6 design, witness W1). The order-invariance argument rests on the queue having come from a run, so the
+start is now reachable (root decision D1, 2026-11-15): the state a committed input's transition micro-step leaves on a
+committed state of a run or the start's begin (`Opens`), and the closure context `Step.step` gives that input. -/
 def SchedulesAgree (hooks : Hooks) : Prop :=
-  ∀ (ctx : Ctx) (start state reordered left right : State) (fuel work fuel' work' : Nat),
-    ctx.program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart ctx.program →
-    WellFormed ctx.program start → Reaches hooks ctx start state → Reordered state reordered →
-    Step.settle hooks ctx fuel work state = .ok left → Step.settle hooks ctx fuel' work' reordered = .ok right →
+  ∀ (program : Program) (input : Input) (start state reordered left right : State) (fuel work fuel' work' : Nat),
+    program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart program → Opens hooks program input start →
+    Reaches hooks (Laws.Step.inputCtx hooks program input) start state → Reordered state reordered →
+    Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work state = .ok left →
+    Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' reordered = .ok right →
     ∃ ids keys, Issued ids state.nextIssue ∧ Activations state keys ∧ Alike ids keys left right
 
 end Kernel.Proofs.Concurrency
