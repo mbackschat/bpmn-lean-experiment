@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.State
+public import Kernel.Laws.State.Derived
 
 /-! # Laws of the kernel state: what the operations keep
 

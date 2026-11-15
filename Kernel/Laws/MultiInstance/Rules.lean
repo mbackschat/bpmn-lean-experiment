@@ -1,7 +1,7 @@
 module
 
 public import Kernel.Hooks
-public import Kernel.Laws.State
+public import Kernel.Laws.State.Derived
 public import Kernel.Laws.Step.Signals
 
 /-! # Laws of Multi-Instance Activities: the rules

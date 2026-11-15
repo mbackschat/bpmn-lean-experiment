@@ -77,6 +77,7 @@ public import Kernel.Laws.State
 public import Kernel.Laws.State.Begin
 public import Kernel.Laws.State.Claim
 public import Kernel.Laws.State.Clear
+public import Kernel.Laws.State.Derived
 public import Kernel.Laws.State.Enter
 public import Kernel.Laws.State.Fire
 public import Kernel.Laws.State.Frames
@@ -108,6 +109,7 @@ public import Kernel.Population.Timers
 public import Kernel.Proofs.Cancellation
 public import Kernel.Proofs.Cancellation.Registered
 public import Kernel.Proofs.Compensation
+public import Kernel.Proofs.Compensation.Formed
 public import Kernel.Proofs.Compensation.Raise
 public import Kernel.Proofs.Compensation.Relation
 public import Kernel.Proofs.Concurrency

@@ -747,10 +747,33 @@ theorem clearInside_ends {s : State} (formed : WellFormed program s) {scope : Sc
     · rintro ⟨member, begun, inside, outside⟩
       exact ⟨⟨_, inside, member, rfl, outside⟩, begun⟩
 
-/-- Clearing drops scope occurrences and issues no identity, whatever it clears. -/
-theorem clearInside_shrinks (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
-    (s.clearInside scope keep).scopes.Sublist s.scopes ∧ (s.clearInside scope keep).nextIssue = s.nextIssue :=
-  ⟨List.filter_sublist, by simp [State.clearInside, State.recordCancelled]⟩
+/-- `State.clearInside` drops what lies inside the scope occurrence (`State.subtree`), its own record kept, and journals
+the cancellations in `draft`: the one equation of the clearing the laws above this module read. -/
+theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) : ∃ draft, s.clearInside scope keep =
+    { s with
+      tokens := s.tokens.filter (!(s.subtree scope).contains ·.busyScope)
+      openItems := s.openItems.filter fun item => !(s.subtree scope).contains item.scope || keep.contains item.occurrence
+      occurrences := s.occurrences.filter fun occurrence =>
+        !(s.subtree scope).contains occurrence.scope || keep.contains occurrence.id
+      scopes := s.scopes.filter (!((s.subtree scope).filter (· != scope)).contains ·.id)
+      variables := s.variables.filter (!((s.subtree scope).filter (· != scope)).contains ·.scope)
+      slots := {
+        parked := s.slots.parked.filter (!(s.subtree scope).contains ·.scope)
+        held := s.slots.held.filter (!(s.subtree scope).contains ·.scope)
+        multiInstances := s.slots.multiInstances.filter (!(s.subtree scope).contains ·.scope)
+        compensation := {
+          retained := s.slots.compensation.retained.filter (!((s.subtree scope).filter (· != scope)).contains ·.scope)
+          runs := s.slots.compensation.runs.filter (!(s.subtree scope).contains ·.scope) }
+        instances := s.slots.instances.filter (!((s.subtree scope).filter (· != scope)).contains ·.root) }
+      draft } :=
+  ⟨_, rfl⟩
+
+/-- Leaving a scope occurrence keeps the slots its clearing leaves but the compensation records it retains. -/
+theorem leaveScope_slots_eq (s : State) (scope : ScopeOccurrenceId) :
+    (s.leaveScope scope).slots = { (s.clearInside scope).slots with compensation :=
+      { (s.clearInside scope).slots.compensation with
+        retained := (s.clearInside scope).slots.compensation.retained.filter (·.scope != scope) } } := by
+  simp only [State.leaveScope]
 
 /-! ## Removing occurrences -/
 
@@ -772,27 +795,6 @@ theorem leaveScope_eq (s : State) (scope : ScopeOccurrenceId) :
       slots := (s.leaveScope scope).slots } ∧
     (s.leaveScope scope).instanceId = s.instanceId := by
   simp [State.leaveScope, State.clearInside, State.recordCancelled]
-
-/-- Leaving a scope occurrence keeps the slots its clearing leaves but the retained compensation records. -/
-theorem leaveScope_slots (s : State) (scope : ScopeOccurrenceId) :
-    (s.leaveScope scope).slots.parked = (s.clearInside scope).slots.parked ∧
-      (s.leaveScope scope).slots.multiInstances = (s.clearInside scope).slots.multiInstances ∧
-      (s.leaveScope scope).slots.compensation.runs = (s.clearInside scope).slots.compensation.runs := by
-  simp [State.leaveScope]
-
-theorem leaveScope_signals (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope scope).signals = s.signals := by
-  simp [State.leaveScope, State.clearInside, State.recordCancelled]
-
-/-- Leaving a scope occurrence removes it and the scope occurrences below it, with the records they retain and the runs
-in its subtree, and keeps the counters: what a compensation run's release changes, read without a well-formed state. -/
-theorem leaveScope_compensation (s : State) (scope : ScopeOccurrenceId) :
-    (s.leaveScope scope).slots.compensation.retained =
-      (s.slots.compensation.retained.filter fun record =>
-        !((s.subtree scope).filter (· != scope)).contains record.scope).filter (·.scope != scope) ∧
-    (s.leaveScope scope).slots.compensation.runs = s.slots.compensation.runs.filter (!(s.subtree scope).contains ·.scope) ∧
-    (s.leaveScope scope).scopes = (s.scopes.filter fun entry =>
-      !((s.subtree scope).filter (· != scope)).contains entry.id).filter (·.id != scope) ∧
-    (s.leaveScope scope).activations = s.activations ∧ (s.leaveScope scope).nextIssue = s.nextIssue := ⟨rfl, rfl, rfl, rfl, rfl⟩
 
 /-- `State.removeOccurrence` leaves the scope occurrences the occurrence owns after removing its record. -/
 theorem removeOccurrence_eq (s : State) (id : Nat) :
@@ -855,22 +857,6 @@ theorem cancelOccurrence_ended {s : State} {id : Nat} {occurrence : Occurrence} 
     (s.cancelOccurrence id).draft.ended = ((s.withdrawOccurrence id).removeOccurrence id).draft.ended ++
       ([occurrence].filter (·.begun)).map fun o => (key ((s.withdrawOccurrence id).removeOccurrence id) o, .cancelled) := by
   simp [State.cancelOccurrence, found, State.recordCancelled, keyOf_eq]
-
-/-- Clearing a scope occurrence keeps the instance identity. -/
-theorem clearInside_instanceId (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
-    (s.clearInside scope keep).instanceId = s.instanceId := by
-  simp [State.clearInside, State.recordCancelled]
-
-/-- Clearing a scope occurrence queues and drops no signal, whatever it clears. -/
-theorem clearInside_signals (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
-    (s.clearInside scope keep).signals = s.signals := by
-  simp [State.clearInside, State.recordCancelled]
-
-/-- Clearing a scope occurrence only drops tokens, whatever it clears. -/
-theorem clearInside_tokens (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
-    (s.clearInside scope keep).tokens.Sublist s.tokens := by
-  simp only [State.clearInside, State.recordCancelled]
-  exact List.filter_sublist
 
 /-- The elements a scope occurrence declares (`State.childrenOf`) are a called process's children or the children of
 an element of the program. -/

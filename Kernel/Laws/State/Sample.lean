@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.State
+public import Kernel.Laws.State.Derived
 
 /-! # Laws of the kernel state: the sample's witnesses that read `State.root` or the program
 
