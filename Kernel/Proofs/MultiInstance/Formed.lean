@@ -473,9 +473,9 @@ def Framed (program : Program) (s : State) : Prop :=
 /-- The registered Multi-Instance hooks keep `Framed`: its `WellFormed` half by `Laws.MultiInstance.MultiInstanceOps`,
 its `RunsFramed` half by what each hook does. -/
 theorem multiInstanceKeeps_framed : Proofs.Step.MultiInstanceKeeps Framed where
-  arrive ctx header envelope loop occurrence state after holds member begun body named looped newest ran :=
+  arrive ctx header envelope loop occurrence state after holds member begun body named looped newest unrun ran :=
     ⟨(Proofs.Step.multiInstanceKeeps_of Proofs.Step.registeredOps_wellFormed.multiInstance).arrive ctx header envelope
-      loop occurrence state after holds.1 member begun body named looped newest ran,
+      loop occurrence state after holds.1 member begun body named looped newest unrun ran,
       arriveMultiInstance_framed holds.1 holds.2 member begun body named looped ran⟩
   completeBody ctx header envelope loop occurrence state after holds member ran :=
     ⟨(Proofs.Step.multiInstanceKeeps_of Proofs.Step.registeredOps_wellFormed.multiInstance).completeBody ctx header
@@ -728,9 +728,9 @@ theorem instanceCompleted_snapshots {ctx : Ctx} {body : Nat} {occurrence : Occur
 /-- The registered Multi-Instance hooks keep `Since`: its `WellFormed` and `Unstarted` parts by their feature record,
 its `Snapshots` part by what each hook sets. -/
 theorem since_multiInstanceKeeps (b : State) : Proofs.Step.MultiInstanceKeeps (Since b) where
-  arrive ctx header envelope loop occurrence state after holds member begun body named looped newest ran :=
+  arrive ctx header envelope loop occurrence state after holds member begun body named looped newest unrun ran :=
     have first := (unstarted_keeps b).arrive ctx header envelope loop occurrence state after ⟨holds.1, holds.2.1⟩ member
-      begun body named looped newest ran
+      begun body named looped newest unrun ran
     ⟨first.1, first.2, arriveMultiInstance_snapshots holds.1 holds.2.1 holds.2.2 member begun newest ran⟩
   completeBody ctx header envelope loop occurrence state after holds member ran :=
     have first := (unstarted_keeps b).completeBody ctx header envelope loop occurrence state after ⟨holds.1, holds.2.1⟩

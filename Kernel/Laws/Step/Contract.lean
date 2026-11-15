@@ -274,12 +274,13 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) : Prop
     occurrence.role = .element → hooks.arriveActivity ctx header payload occurrence state = .ok after →
     inv ctx.program after
   /-- A body occurrence arrives with the loop its element's envelope carries (`Step.bodyLoop?`), its start the newest the
-  draft holds, since `Step.begin` has just begun it (`Phases.newest`). -/
+  draft holds and no running body keyed by it, since `Step.begin` has just begun it (`Phases.newest`, `Phases.unrun`). -/
   arriveMultiInstance : ∀ ctx header envelope loop occurrence state after, inv ctx.program state →
     occurrence ∈ state.occurrences → occurrence.begun = true → occurrence.role = .multiInstanceBody →
     header.id = occurrence.element →
     ((ctx.program.element? header.id).bind (·.envelope?)).bind (·.multiInstance) = some loop →
     state.draft.started.getLast?.map (·.occurrence) = some (Laws.State.key state occurrence) →
+    (∀ run ∈ state.slots.multiInstances, run.occurrence ≠ occurrence.id) →
     hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after → inv ctx.program after
   arriveScope : ∀ ctx header payload occurrence entry state after, inv ctx.program state →
     occurrence ∈ state.occurrences →
@@ -437,6 +438,12 @@ structure Phases (inv : Program → State → Prop) : Prop where
   newest : ∀ program state request role sourceType, inv program state →
     (state.beginOccurrence request role sourceType).1.draft.started.getLast?.map (·.occurrence) =
       some (Laws.State.key (state.beginOccurrence request role sourceType).1 (state.beginOccurrence request role sourceType).2)
+  /-- `State.beginOccurrence` of an admitted request begins an occurrence no running Multi-Instance body is keyed by:
+  a fresh one is issued at the counter, above every body's, and a reservation is one no slot completes
+  (`Laws.State.Unclaimed`). -/
+  unrun : ∀ program state request role sourceType, inv program state → Admitted state request →
+    ∀ run ∈ (state.beginOccurrence request role sourceType).1.slots.multiInstances,
+      run.occurrence ≠ (state.beginOccurrence request role sourceType).2.id
   /-- An occurrence parked at a join is begun while it stands, so a join offered again hands over a begun one. -/
   parkedBegun : ∀ program state waiting occurrence, inv program state → waiting ∈ state.slots.parked →
     occurrence ∈ state.occurrences →

@@ -124,6 +124,7 @@ structure MultiInstanceKeeps (inv : Program → State → Prop) : Prop where
     occurrence.begun = true → occurrence.role = .multiInstanceBody → header.id = occurrence.element →
     ((ctx.program.element? header.id).bind (·.envelope?)).bind (·.multiInstance) = some loop →
     state.draft.started.getLast?.map (·.occurrence) = some (Laws.State.key state occurrence) →
+    (∀ run ∈ state.slots.multiInstances, run.occurrence ≠ occurrence.id) →
     Feature.MultiInstance.arriveMultiInstance ctx header envelope loop occurrence state = .ok after →
     inv ctx.program after
   completeBody : ∀ ctx header envelope loop occurrence state after, inv ctx.program state →
@@ -137,7 +138,7 @@ structure MultiInstanceKeeps (inv : Program → State → Prop) : Prop where
 theorem multiInstanceKeeps_of
     (ops : ∀ program, Laws.MultiInstance.MultiInstanceOps program (inv program) Laws.State.Settled) :
     MultiInstanceKeeps inv where
-  arrive _ _ _ _ _ _ _ holds member begun _ _ _ _ ran :=
+  arrive _ _ _ _ _ _ _ holds member begun _ _ _ _ _ ran :=
     Proofs.MultiInstance.arriveMultiInstance_keeps (ops _) holds member begun ran
   completeBody _ _ _ _ _ _ _ holds _ ran := Laws.MultiInstance.completeBody_keeps (ops _) holds ran
   instanceCompleted _ _ _ _ _ _ holds stands ran := Proofs.MultiInstance.instanceCompleted_keeps (ops _) holds stands ran
@@ -201,9 +202,9 @@ theorem registered_contract_of {inv : Program → State → Prop} (ops : Feature
   arriveActivity _ _ _ _ _ _ holds member begun unstarted role ran := by
     rw [Laws.Registry.hooks_arriveActivity] at ran
     exact Laws.Work.arriveActivity_keeps (ops.work _) holds member begun unstarted role ran
-  arriveMultiInstance _ _ _ _ _ _ _ holds member begun body named looped newest ran := by
+  arriveMultiInstance _ _ _ _ _ _ _ holds member begun body named looped newest unrun ran := by
     rw [Laws.Registry.hooks_arriveMultiInstance] at ran
-    exact multiInstance.arrive _ _ _ _ _ _ _ holds member begun body named looped newest ran
+    exact multiInstance.arrive _ _ _ _ _ _ _ holds member begun body named looped newest unrun ran
   arriveScope _ _ _ _ _ _ _ holds member begun ready ran := by
     rw [Laws.Registry.hooks_arriveScope] at ran
     exact Laws.Scopes.arriveScope_keeps (ops.scopes _) holds member begun ready ran

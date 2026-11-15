@@ -124,11 +124,12 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
     (bodied : occurrence.role = .multiInstanceBody →
       (((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true)
     (newest : state.draft.started.getLast?.map (·.occurrence) = some (Laws.State.key state occurrence))
+    (unrun : ∀ run ∈ state.slots.multiInstances, run.occurrence ≠ occurrence.id)
     (ran : dispatch hooks ctx occurrence entry trigger state = .ok after) : inv ctx.program after := by
   rcases dispatch_unstarted ran with ⟨_, _, ran⟩ | ⟨_, _, _, body⟩ | ⟨unstarted, single, arrives⟩
   · exact contract.arriveStart _ _ _ _ _ _ _ holds member begun ran
   · obtain ⟨body, named, looped, ran⟩ := body
-    exact contract.arriveMultiInstance _ _ _ _ _ _ _ holds member begun body named looped newest ran
+    exact contract.arriveMultiInstance _ _ _ _ _ _ _ holds member begun body named looped newest unrun ran
   have role : occurrence.role = .element := by
     cases body : occurrence.role
     · rfl
@@ -152,9 +153,10 @@ theorem begin_keeps (contract : HookContract hooks inv) (phases : Phases inv) (f
     roleOf_event (fun body => (roleOf_body.mp body).1) rfl origin
   have begunMember := facts.begun state request (roleOf ctx.program request) sourceType
   have newest := phases.newest _ state request (roleOf ctx.program request) sourceType holds
-  simp only [made] at begunHolds begunMember newest
+  have unrun := phases.unrun _ state request (roleOf ctx.program request) sourceType holds admitted
+  simp only [made] at begunHolds begunMember newest unrun
   exact dispatch_keeps contract begunHolds.1 begunMember.1 begunMember.2 begunHolds.2
-    (phases.bodied _ _ _ begunHolds.1 begunMember.1) newest dispatched
+    (phases.bodied _ _ _ begunHolds.1 begunMember.1) newest unrun dispatched
 
 /-- A request an arrival or a start makes names no reservation. -/
 theorem admitted_fresh {state : State} {element : ElementId} {scope : ScopeOccurrenceId} {incoming : Option FlowId}
