@@ -200,35 +200,6 @@ theorem dispatch_gateway {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {
     dispatch hooks ctx occurrence entry trigger state = hooks.arriveGateway ctx header payload occurrence state := by
   simp [dispatch, element, bodyLoop?, Laws.IL.envelope?_gateway]
 
-/-! ## Queued work whose scope occurrence is gone -/
-
-/-! A queued write, removal, compensation or compensation failure whose scope occurrence is absent fails the input as an
-invariant failure, whatever its hooks would do there (#121): no write reaches the instance root or leaves a variable set
-for a removed scope occurrence. -/
-
-theorem write_scope_gone {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrenceId} {writes : List (String × Value)}
-    {rule : WriteRule} {state : State} (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
-    (signalWork hooks ctx (.write scope writes rule)).perform state = .error (.semanticFailure "queued-work-scope-gone") := by
-  simp_all [signalWork, SignalWork.perform, stale, gone]
-
-theorem remove_scope_gone {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrenceId} {names : List String} {state : State}
-    (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
-    (signalWork hooks ctx (.remove scope names)).perform state = .error (.semanticFailure "queued-work-scope-gone") := by
-  simp_all [signalWork, SignalWork.perform, stale, gone]
-
-theorem compensate_scope_gone {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {state : State}
-    (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
-    (signalWork hooks ctx (.compensate scope activity trigger leave resume)).perform state =
-      .error (.semanticFailure "queued-work-scope-gone") := by
-  simp_all [signalWork, SignalWork.perform, stale, gone]
-
-theorem compensationFailed_scope_gone {hooks : Hooks} {ctx : Ctx} {handler : ScopeOccurrenceId} {code : String}
-    {message : Option String} {origin : Origin} {state : State} (absent : ∀ entry ∈ state.scopes, entry.id ≠ handler) :
-    (signalWork hooks ctx (.compensationFailed handler code message origin)).perform state =
-      .error (.semanticFailure "queued-work-scope-gone") := by
-  simp_all [signalWork, SignalWork.perform, stale, gone]
-
 /-! ## Decomposition
 
 What a committed `Step.step` is made of, one phase at a time, each read from one body of `Kernel.Step`: the input's
@@ -473,18 +444,6 @@ theorem fire_absent {hooks : Hooks} {ctx : Ctx} {item : Nat} {fired : Fired} {st
     (absent : state.openItems.find? (·.id == item) = none) : (signalWork hooks ctx (.fire item fired)).run state = .ok state := by
   simp [signalWork, absent]
 
-/-- A queued arming, Event-Based Gateway arming, scope arming, begin or `occur` whose scope occurrence was issued and is
-gone fails the input: these are the signals `Step.stale` reads a scope occurrence of. -/
-theorem scope_stale {hooks : Hooks} {ctx : Ctx} {signal : Signal} {scope : ScopeOccurrenceId} {state : State}
-    (names : (∃ host element, signal = .arm host element scope) ∨ signal = .armScope scope ∨
-      (∃ occurrence gateway, signal = .armGateway occurrence gateway scope) ∨
-      (∃ request : BeginRequest, signal = .begin request ∧ request.scope = scope) ∨
-      ∃ element leave writes rule, signal = .occur element scope leave writes rule)
-    (issued : scope.value < state.nextIssue) (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
-    (signalWork hooks ctx signal).perform state = .error (.unsupported "interrupted-before-wait") := by
-  rcases names with ⟨_, _, rfl⟩ | rfl | ⟨_, _, rfl⟩ | ⟨_, rfl, rfl⟩ | ⟨_, _, ⟨_, _, rfl⟩⟩ <;>
-    exact perform_stale (by simp_all [stale, signalWork])
-
 /-- What a signal's work names, as what it does something in or on (`Step.stale`) and what it acts from (`Step.gone`),
 is read from the signal alone, never from the hooks or the context: a lane reads a queued signal's targets from
 `Step.signalWork` of any hooks and context instead of enumerating `Signal`'s constructors. -/
@@ -495,7 +454,8 @@ theorem signalWork_targets (hooks hooks' : Hooks) (ctx ctx' : Ctx) (signal : Sig
   cases signal <;> simp [signalWork]
 
 /-- Work that does something in, or acts from, a scope occurrence that was issued and is gone fails the input, as
-interrupted before its wait (`perform_stale`) or as an invariant failure (`perform_gone`). -/
+interrupted before its wait (`perform_stale`) or as an invariant failure (`perform_gone`), whatever its hooks would do
+there: no write reaches the instance root or leaves a variable set for a removed scope occurrence (#121). -/
 theorem perform_absent {work : SignalWork} {state : State} {scope : ScopeOccurrenceId}
     (names : scope ∈ work.scopes ∨ scope ∈ work.requires) (issued : scope.value < state.nextIssue)
     (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
