@@ -136,6 +136,48 @@ theorem Advances.flowOrder {flowFrom : List ElementId → ElementId → Bool} {b
     (waiting : other ∈ run.pending ++ run.running.map (·.2)) : record ∉ started := fun begun =>
   law.respectsOrder begun waiting (.inr ⟨earlier, .inr (.inl flow)⟩)
 
+/-- So an advanced run is settled: none of its pending handlers is ready, since each one an advance kept waiting still
+waits for a handler that is pending or, having started, running. -/
+theorem Advances.settles {precedes : Compensable → Compensable → Prop} {run after : CompensationRun}
+    {started : List Compensable} (law : Advances precedes run after started) (record : Compensable) :
+    ¬ Ready precedes after record := fun ready => by
+  obtain ⟨pending, unready⟩ := (law.2.1 record).1 ready.1
+  refine unready ⟨pending, fun other waiting first => ?_⟩
+  refine ready.2 other ?_ first
+  rw [List.mem_append, law.2.2, List.mem_append]
+  rcases List.mem_append.mp waiting with waits | runs
+  · by_cases now : Ready precedes run other
+    · exact .inr (.inr ((law.1 other).2 now))
+    · exact .inl ((law.2.1 other).2 ⟨waits, now⟩)
+  · exact .inr (.inl runs)
+
+/-- An advance moves records between pending and running only: the run claims the same records after it. -/
+theorem Advances.claims {precedes : Compensable → Compensable → Prop} {run after : CompensationRun}
+    {started : List Compensable} (law : Advances precedes run after started) (record : Compensable) :
+    record ∈ claimed after ↔ record ∈ claimed run := by
+  simp only [claimed, List.mem_append, law.2.2, law.2.1 record, law.1 record]
+  by_cases now : Ready precedes run record
+  · exact ⟨fun _ => .inl now.1, fun _ => .inr (.inr now)⟩
+  · constructor
+    · rintro (⟨pending, -⟩ | runs | ready)
+      · exact .inl pending
+      · exact .inr runs
+      · exact absurd ready now
+    · rintro (pending | runs)
+      · exact .inl ⟨pending, now⟩
+      · exact .inr (.inl runs)
+
+/-- So a run a trigger took, with no handler running yet, claims after its first advance exactly the records the trigger
+selected: the retained ones in the scope occurrences it sees, the named Activity's only when it names one. -/
+theorem TakesOut.claimsSelected {covered : ScopeOccurrenceId → Prop} {activity : Option ElementId}
+    {before after : Compensations} {taken next : CompensationRun} {precedes : Compensable → Compensable → Prop}
+    {started : List Compensable} (law : TakesOut covered activity before after taken) (idle : taken.running = [])
+    (advanced : Advances precedes taken next started) (record : Compensable) :
+    record ∈ claimed next ↔
+      record ∈ before.retained ∧ covered record.scope ∧ ∀ named, activity = some named → record.subject = named := by
+  rw [advanced.claims, ← law.1 record]
+  simp [claimed, idle]
+
 /-- The thrower continues, and a Transaction's Cancel boundary is taken, exactly once the run has no pending and no
 running handler: `continued` lists the continuations the run's end gives, at most the one it was asked for. -/
 def EndsOnce (run : CompensationRun) (continuation : ElementId) (continued : List ElementId) : Prop :=
