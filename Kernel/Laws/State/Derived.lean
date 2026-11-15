@@ -56,6 +56,18 @@ where
       · exact (keyed_sublist rest).cons binding
       · exact (keyed_sublist rest).cons_cons binding
 
+/-- `keyed` keeps bindings whose names are already distinct as they are. -/
+theorem keyed_of_nodup : ∀ {bindings : List (String × Value)}, (bindings.map (·.1)).Nodup → keyed bindings = bindings
+  | [], _ => keyed_eq.1
+  | binding :: rest, distinct => by
+    obtain ⟨absent, restDistinct⟩ := List.nodup_cons.mp distinct
+    rw [keyed_eq.2, keyed_of_nodup restDistinct]
+    split
+    · rename_i repeated
+      obtain ⟨other, inside, named⟩ := List.any_eq_true.mp repeated
+      exact absurd (List.mem_map.mpr ⟨other, inside, beq_iff_eq.mp named⟩) absent
+    · rfl
+
 /-- The variable set a new scope occurrence installs binds each name at most once, whatever locals it was given (#147). -/
 theorem enterScope_names (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (occurrence : Option Nat)

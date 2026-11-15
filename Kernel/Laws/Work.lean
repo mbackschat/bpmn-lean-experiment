@@ -441,6 +441,12 @@ What a Call's own hooks do, for the former lanes of a called instance (`Kernel.P
 the occurrence or invokes the called instance, and its return queues the completion of the Call occurrence that owns
 the called root. -/
 
+/-- An Activity's inputs, when there are any, enter its own scope occurrence below its occurrence's, which owns it. -/
+theorem enterLocal_eq (header : Header) (inputs : List (String × Value)) (occurrence : Occurrence) (state : State) :
+    Feature.Work.enterLocal header inputs occurrence state =
+      if inputs.isEmpty then state else (state.enterScope header.id occurrence.scope inputs (some occurrence.id)).1 := by
+  unfold Feature.Work.enterLocal; rfl
+
 /-- The work record that names a Call is that Call's. -/
 theorem work_call {work : Work} {call : CallWork} (named : work.call? = some call) : work = .call call := by
   cases work with

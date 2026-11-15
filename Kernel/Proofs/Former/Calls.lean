@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.Step.Signals
+public import Kernel.Proofs.Frame
 public import Kernel.Laws.Work
 public import Kernel.Laws.State.Chain
 public import Kernel.Laws.Population
@@ -43,11 +44,14 @@ which `Step` calls when the Call's occurrence begins; the failed-source half is 
 
 P0 stated it for some mappings, which any list of literal mappings rebuilding the installed frame witnesses, so it is
 bound to the Call's own inputs; and it reads the before-state's context, which the occurrence's local scope occurrence,
-entered before the Call evaluates its inputs, leaves unchanged only in a well-formed state. -/
+entered before the Call evaluates its inputs, leaves unchanged only in a well-formed state and for an occurrence of the
+state, as `Step` hands the hook (`Laws.Step.HookContract.arriveActivity`): an occurrence whose scope occurrence is the
+next identifier to issue would enter its local scope occurrence as that very scope occurrence, and its Call's inputs
+would read the Activity's own locals (2026-11-15, rule 10). -/
 def CallInstallsSnapshot (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (header : Header) (payload : ActivityPayload) (work : CallWork) (occurrence : Occurrence)
     (state after : State) (root : ScopeOccurrence),
-    WellFormed ctx.program state → payload.work.call? = some work →
+    WellFormed ctx.program state → occurrence ∈ state.occurrences → payload.work.call? = some work →
     hooks.arriveActivity ctx header payload occurrence state = .ok after →
     root ∈ after.scopes → root.calledInstance.isSome → root.occurrence = some occurrence.id → root ∉ state.scopes →
     ∃ installed, ctx.evaluateMappings (state.evalContext ctx.program occurrence.scope) work.inputs = .ok (some installed) ∧
@@ -139,8 +143,73 @@ def CalledIdentityUnique (hooks : Hooks) : Prop :=
 
 /-! ## A Call's own hooks
 
-Generic in the hooks: a statement of `Hooks.completeCall` holds of every hooks record whose `completeCall` is Work's
-(`Laws.Work.completeCall_queues`); `Kernel.Proofs.Step` instantiates it at `Registry.hooks`. -/
+Generic in the hooks: a statement of `Hooks.arriveActivity` or `Hooks.completeCall` holds of every hooks record whose
+hook is Work's (`Laws.Work.arriveActivity_call`, `Laws.Work.completeCall_queues`); `Kernel.Proofs.Step` instantiates it
+at `Registry.hooks`. -/
+
+open Kernel.Laws.State (scopeIds)
+
+/-- Last writes are keyed already: one binding per name. -/
+private theorem keyed_lastWrites (made : List (String × Value)) : keyed (lastWrites made) = lastWrites made := by
+  rw [Laws.Hooks.lastWrites_eq]
+  exact Laws.State.keyed_of_nodup ((List.mergeSort_perm _ _).map _ |>.nodup_iff.mpr (Laws.State.keyed_names made))
+
+/-- An Activity's inputs, entered from a well-formed state, change nothing its scope occurrence's context reads, add only
+a scope occurrence that calls no instance, and leave every identifier below the next one to issue. -/
+private theorem enterLocal_facts {program : Program} {header : Header} {inputs : List (String × Value)}
+    {occurrence : Occurrence} {state : State} (formed : WellFormed program state) (member : occurrence ∈ state.occurrences) :
+    (Feature.Work.enterLocal header inputs occurrence state).evalContext program occurrence.scope =
+        state.evalContext program occurrence.scope ∧
+      (∀ root ∈ (Feature.Work.enterLocal header inputs occurrence state).scopes, root.calledInstance.isSome →
+        root ∈ state.scopes) ∧
+      ∀ entry ∈ (Feature.Work.enterLocal header inputs occurrence state).scopes,
+        entry.id ≠ ⟨(Feature.Work.enterLocal header inputs occurrence state).nextIssue⟩ := by
+  have below : ∀ entry ∈ state.scopes, entry.id.value < state.nextIssue := formed.issued.scopes
+  rw [Laws.Work.enterLocal_eq]
+  split
+  · exact ⟨rfl, fun _ inside _ => inside, fun entry inside same => by
+      have := below entry inside; rw [same] at this; exact Nat.lt_irrefl _ this⟩
+  · refine ⟨?_, fun root inside called => ?_, fun entry inside same => ?_⟩
+    · rw [Laws.Hooks.evalContext_eq, Laws.Hooks.evalContext_eq,
+        Laws.State.visible_enterScope formed (formed.owned.occurrenceScopes occurrence member)]
+      rw [Laws.State.enterScope_eq]
+    · rw [Laws.State.enterScope_eq] at inside
+      rcases List.mem_append.mp inside with old | new
+      · exact old
+      · rw [List.mem_singleton.mp new] at called; cases called
+    · rw [Laws.State.enterScope_eq] at inside same
+      rcases List.mem_append.mp inside with old | new
+      · have := below entry old; rw [same] at this; simp at this; omega
+      · rw [List.mem_singleton.mp new] at same; simp at same
+
+theorem callInstallsSnapshot {hooks : Hooks} {workHooks : Feature.Work.WorkHooks}
+    (arrive : hooks.arriveActivity = Feature.Work.arriveActivity workHooks) : CallInstallsSnapshot hooks := by
+  intro ctx header payload work occurrence state after root formed member called ran inside isCalled _ fresh
+  rw [arrive] at ran
+  rcases Laws.Work.arriveActivity_call called ran with ⟨held, rfl⟩ | ⟨inputs, entered, installed, invoked⟩
+  · rw [Laws.Hooks.hold_eq] at inside
+    exact absurd inside fresh
+  obtain ⟨definition, start, rfl, rest⟩ := invoked
+  obtain ⟨evaluated, armed, armedIs, rfl⟩ := rest
+  obtain ⟨context, rootsKept, unissued⟩ := enterLocal_facts (header := header) (inputs := inputs) formed member
+  refine ⟨installed, context ▸ evaluated, ?_⟩
+  obtain ⟨made, rfl⟩ := Laws.Hooks.evaluateMappings_some evaluated
+  have scopes : armed.scopes = (Feature.Work.enterLocal header inputs occurrence state).scopes ++
+      [{ id := ⟨(Feature.Work.enterLocal header inputs occurrence state).nextIssue⟩, element := some occurrence.element,
+         parent := some occurrence.scope, occurrence := some occurrence.id
+         calledInstance := some (State.calledInstanceId
+           ((Feature.Work.enterLocal header inputs occurrence state).instanceOf occurrence.scope)
+           (ctx.program.publicId occurrence.element) occurrence.activation) }] ∧
+      armed.variables = (Feature.Work.enterLocal header inputs occurrence state).variables ++
+        [{ scope := ⟨(Feature.Work.enterLocal header inputs occurrence state).nextIssue⟩,
+           entries := keyed (lastWrites made) }] := by
+    rcases armedIs with rfl | rfl <;> rw [Laws.State.enterCalled_eq _ _ _ _ _ unissued] <;> simp [Laws.State.signal_eq]
+  simp only [Laws.State.signal_eq] at inside ⊢
+  rw [scopes.1] at inside
+  rcases List.mem_append.mp inside with old | new
+  · exact absurd (rootsKept root old isCalled) fresh
+  · rw [List.mem_singleton.mp new, scopes.2, keyed_lastWrites]
+    exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl⟩
 
 theorem returnContinuesCaller {hooks : Hooks} (call : hooks.completeCall = Feature.Work.completeCall) :
     ReturnContinuesCaller hooks := by

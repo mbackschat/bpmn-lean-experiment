@@ -480,4 +480,18 @@ theorem evaluateMappings_failed {ctx : Ctx} {context : EvalContext} {mapping : M
   simp only [List.foldlM_cons, List.foldlM_nil, unresolved]
   cases mapping.dialect <;> rfl
 
+/-- The bindings an evaluation that ends available makes are the last writes of what its mappings bound. -/
+theorem evaluateMappings_some {ctx : Ctx} {context : EvalContext} {mappings : List Mapping}
+    {bindings : List (String × Value)} (evaluated : ctx.evaluateMappings context mappings = .ok (some bindings)) :
+    ∃ made, bindings = lastWrites made := by
+  unfold Ctx.evaluateMappings Ctx.evaluateMappingsWith at evaluated
+  simp only [bind, Except.bind] at evaluated
+  split at evaluated
+  · cases evaluated
+  · rename_i result _
+    simp only [pure, Except.pure, Except.ok.injEq] at evaluated
+    split at evaluated
+    · exact ⟨result.1, (Option.some.inj evaluated).symm⟩
+    · cases evaluated
+
 end Kernel.Laws.Hooks
