@@ -45,7 +45,9 @@ import {
   type Program,
   workCall,
 } from "../../il/types.js";
-import { expressionReads, joined, meets, races, type NameSet } from "../../il/footprint.js";
+import {
+  QueuingMechanism, QueuingSite, expressionReads, joined, meets, queuedAt, queuingMechanisms, races, type NameSet,
+} from "../../il/footprint.js";
 import { flowReaches } from "../../il/paths.js";
 import {
   VisitTag,
@@ -653,16 +655,46 @@ function rejoinFanOut(reading: Reading, program: Program, element: Element): str
     againstHolders(program, joinHolders(reading, program, element), pathOf(reading, program, [visit]));
 }
 
-/** The fan-outs of one element's run or entry besides a split's and a loop's, under `BranchSchedule.OrderInvariant`. */
+/**
+ * The check of `mechanism` at `element`, one per mechanism that queues at an element. A split's branches are checked at
+ * their flow (`concurrentBranches`) and a loop's instances at the loop (`admission-registry.ts` `loopInstances`), so at
+ * an element they find nothing.
+ */
+function mechanismConflict(mechanism: QueuingMechanism, reading: Reading, program: Program, element: Element): string | null {
+  switch (mechanism) {
+    case QueuingMechanism.Split:
+      return null;
+    case QueuingMechanism.Instances:
+      return null;
+    case QueuingMechanism.Signalled:
+      return signalFanOut(reading, program, element);
+    case QueuingMechanism.Escalated:
+      return escalationFanOut(reading, program, element);
+    case QueuingMechanism.Writes:
+      return writeFanOut(reading, program, element);
+    case QueuingMechanism.Compensating:
+      return compensationFanOut(reading, program, element);
+    case QueuingMechanism.Entered:
+      return implicitFanOut(reading, program, element);
+    case QueuingMechanism.Armed:
+      return armingFanOut(reading, program, element);
+    case QueuingMechanism.Rejoined:
+      return rejoinFanOut(reading, program, element);
+  }
+  return assertNever(mechanism);
+}
+
+/**
+ * The fan-outs of one element's run or entry, the mechanisms queued at an element in `queuingMechanisms`' order, under
+ * `BranchSchedule.OrderInvariant`.
+ */
 export function fanOutConflict(reading: Reading, program: Program, element: Element): string | null {
   switch (program.options.branchSchedule) {
     case BranchSchedule.DeclarationDepthFirst:
       return null;
     case BranchSchedule.OrderInvariant:
-      return signalFanOut(reading, program, element) ?? escalationFanOut(reading, program, element) ??
-        writeFanOut(reading, program, element) ?? compensationFanOut(reading, program, element) ??
-        implicitFanOut(reading, program, element) ?? armingFanOut(reading, program, element) ??
-        rejoinFanOut(reading, program, element);
+      return firstOf(queuingMechanisms.filter((mechanism) => queuedAt(mechanism) === QueuingSite.Element),
+        (mechanism) => mechanismConflict(mechanism, reading, program, element));
   }
   return assertNever(program.options.branchSchedule);
 }

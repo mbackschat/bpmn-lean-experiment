@@ -5,9 +5,10 @@ public import Kernel.Laws.Flow.Walk
 /-! # Laws of flow: the units one closure holds together, and when their order is immaterial
 
 P6's order-invariance premise ([PLAN, P6](../../../docs/PLAN.md#proof-wave)) as a declarative IL condition: `Apart`.
-`Concurrent` relates the accounts (`Kernel.Laws.Flow.Walk`) of two units of work one closure may hold together, one
-constructor per mechanism that queues more than one work item, and `Apart` holds of a program when no two such units
-race on a name or act on each other's work. Under `BranchSchedule.orderInvariant` admission enforces it with
+`Concurrent` relates the accounts (`Kernel.Laws.Flow.Walk`) of two units of work one closure may hold together, indexed
+by the mechanism that queues more than one work item (`Kernel.QueuingMechanism`, the list admission's checks iterate
+too), and `Apart` holds of a program when no two such units of any mechanism race on a name or act on each other's
+work. Under `BranchSchedule.orderInvariant` admission enforces it with
 `flow.concurrentWrite`, `flow.concurrentInterference` and `multiInstance.concurrentInstances`
 (`Kernel.Admission.Flow.Concurrency`); that it does stays scenario evidence, since a law may not name the admission
 evaluator. Where admission excludes a pair (`ClosedAt`, `Preempts`, `Contested`, `Ordered`), so does `Concurrent`.
@@ -406,16 +407,17 @@ def JoinHolder (program : Program) (join : Element) (holder : ElementId) : Prop 
         Calls program around process)) ∧
     ((around.envelope?).bind (·.multiInstance) ≠ none ∨ ¬ Solitary program around) ∧ holder = around.header.id
 
-/-- Two units of work one closure may hold together, in an order no input states, one constructor per mechanism that
-queues more than one work item. P6's provenance lemma, that two items queued together at a reachable closure state lie
-in distinct units of one case, has exactly these cases; the mechanisms that make a level hold two tokens at once
-(`ConcurrentLevel`, `Kernel.Admission.Flow.Concurrency.concurrentLevel`) must agree with them. -/
-inductive Concurrent (program : Program) : Account → Account → Prop where
+/-- Two units of work one closure may hold together, in an order no input states, indexed by the mechanism that queues
+them (`QueuingMechanism`, whose list admission's checks iterate too), one constructor per mechanism and two for
+`rejoined`. P6's provenance lemma, that two items queued together at a reachable closure state lie in distinct units of
+one case, has exactly these cases; the mechanisms that make a level hold two tokens at once (`ConcurrentLevel`,
+`Kernel.Admission.Flow.Concurrency.concurrentLevel`) must agree with them. -/
+inductive Concurrent (program : Program) : QueuingMechanism → Account → Account → Prop where
   /-- A split's branches: BPMN 2.0.2 §13.3.1 and Table 13.1 let them interleave in any order; `flow.concurrentWrite`
   and `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.concurrentBranches`). -/
   | split {flow : Flow} {other : FlowId} {left right : Account} : flow ∈ program.flows → Forks program flow.source →
       Leaving program flow.source other → other ≠ flow.id →
-      PathPair program (branch program flow.id) (branch program other) left right → Concurrent program left right
+      PathPair program (branch program flow.id) (branch program other) left right → Concurrent program .split left right
   /-- The children a Scope's entry begins together, without a start Event its implicitly begun ones: §13.3.4 begins
   them all, in no order (P1 census, G1); `flow.concurrentWrite` and `flow.concurrentInterference`
   (`Kernel.Admission.Flow.Concurrency.implicitFanOut`). -/
@@ -423,54 +425,60 @@ inductive Concurrent (program : Program) : Account → Account → Prop where
       scope ∈ program.elements → scope.scope? = some (header, payload) → EnteredChildren program header.id first →
       EnteredChildren program header.id second → first.header.id ≠ second.header.id →
       PathPair program (pathFrom (· = .enters first)) (pathFrom (· = .enters second)) left right →
-      Concurrent program left right
+      Concurrent program .entered left right
   /-- A parallel Multi-Instance body's instances: §13.3.7 orders them not at all, completion included;
   `multiInstance.concurrentInstances` (`Kernel.Admission.MultiInstance.concurrentInstances`). -/
   | instances {body : Element} {loop : MultiInstance} {left right : Account} : body ∈ program.elements →
-      Loop body loop → loop.mode = .parallel → InstancePair program body loop left right → Concurrent program left right
+      Loop body loop → loop.mode = .parallel → InstancePair program body loop left right →
+      Concurrent program .instances left right
   /-- A Signal throw's firings beside its continuation: §10.5.1, a Signal reaches every catcher;
   `flow.concurrentWrite` and `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.signalFanOut`). -/
   | signalled {thrower : Element} {left right : Account} : thrower ∈ program.elements → SignalThrow thrower →
-      SignalPair program thrower left right → Concurrent program left right
+      SignalPair program thrower left right → Concurrent program .signalled left right
   /-- An Escalation throw's continuation beside its non-interrupting catchers: §10.5.1, the thrower goes on;
   `flow.concurrentWrite` and `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.escalationFanOut`). -/
   | escalated {thrower : Element} : thrower ∈ program.elements → Escalates thrower →
-      Concurrent program ((continuationOf program thrower).account program)
+      Concurrent program .escalated ((continuationOf program thrower).account program)
         ((pathFrom fun visit => Catcher program thrower visit ∧ NonInterrupting visit).account program)
   /-- The Conditional firings one write offers, in evaluation order (Tables 10.89, 10.90; CIB-EXT-0035), a contest's
   members ranked by the input (CIB-LIM-0053); `flow.concurrentWrite` and `flow.concurrentInterference`
   (`Kernel.Admission.Flow.Concurrency.writeFanOut`). -/
   | writes {writer : Element} {left right : Account} : writer ∈ program.elements → WritePair program writer left right →
-      Concurrent program left right
+      Concurrent program .writes left right
   /-- The handler runs one Compensation throw or Cancel End begins together, in declaration order, unless their
   subjects are ordered in every run: §13.5.5, two handlers or a handler serving two subjects (`TwoRuns`);
   `flow.concurrentWrite` and `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.compensationFanOut`). -/
   | compensating {thrower first second : Element} : thrower ∈ program.elements → Compensates thrower →
       HandlersOf program thrower first → HandlersOf program thrower second → TwoRuns program first second →
-      ¬ Ordered program first second → Concurrent program (handlerAccount program first) (handlerAccount program second)
+      ¬ Ordered program first second →
+      Concurrent program .compensating (handlerAccount program first) (handlerAccount program second)
   /-- The Conditional items one arming finds true, beside the work the entry that armed them begins and beside each
   other: §13.4.4 gives simultaneous triggers no order (P1 census, G2); `flow.concurrentWrite` and
   `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.armingFanOut`). -/
   | armed {element : Element} {left right : Account} : element ∈ program.elements → ArmPair program element left right →
-      Concurrent program left right
+      Concurrent program .armed left right
   /-- The continuations of two Inclusive joins one quiescent closure offers again, in parking order: Table 13.3 activates
   a join by the state, giving two activated at once no order (P1 census, G4); `flow.concurrentWrite` and
   `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.rejoinFanOut`). -/
   | rejoined {first second : Element} : first ∈ program.elements → second ∈ program.elements → InclusiveJoin first →
       InclusiveJoin second → first.header.id ≠ second.header.id →
-      Concurrent program ((continuationOf program first).account program) ((continuationOf program second).account program)
+      Concurrent program .rejoined ((continuationOf program first).account program)
+        ((continuationOf program second).account program)
   /-- Two occurrences of one Inclusive join that two occurrences of its holder park at once (`JoinHolder`). -/
   | rejoinedItself {join : Element} {holder : ElementId} : join ∈ program.elements → InclusiveJoin join →
       JoinHolder program join holder →
-      Concurrent program (itselfHeld program (.completes join) (JoinHolder program join))
+      Concurrent program .rejoined (itselfHeld program (.completes join) (JoinHolder program join))
         (itselfHeld program (.completes join) (JoinHolder program join))
 
 /-- P6's order-invariance premise: no two units one closure may hold together race on a name or act on each other's
 work, so the order `Step.settle` runs them in is immaterial. An Error no catcher takes ends every unit (Table 10.88),
 which `Unhandled` counts as removing the whole instance. -/
 def Apart (program : Program) : Prop :=
-  ∀ left right, Concurrent program left right →
+  ∀ mechanism ∈ QueuingMechanism.all, ∀ left right, Concurrent program mechanism left right →
     ¬ Races left right ∧ ¬ Interferes program left right ∧ ¬ Interferes program right left
+
+theorem mechanism_mem_all (mechanism : QueuingMechanism) : mechanism ∈ QueuingMechanism.all := by
+  cases mechanism <;> simp [QueuingMechanism.all]
 
 /-! ## Non-vacuity
 
@@ -484,7 +492,7 @@ def quiet : Program :=
   { identity := { processId := "quiet", sourceSha256 := "", profile := "" }, elements := [], flows := [] }
 
 theorem quiet_apart : Apart quiet := by
-  intro left right concurrent
+  intro _ _ left right concurrent
   exfalso
   cases concurrent with
   | split member => simp [quiet] at member
@@ -503,7 +511,7 @@ theorem split_race_not_apart {program : Program} {flow : Flow} {other : FlowId} 
     (distinct : other ≠ flow.id) (toLeft : Targets program flow.id left) (toRight : Targets program other right)
     (runsLeft : ¬ Stops branchWalk left) (runsRight : ¬ Stops branchWalk right)
     (race : (runFootprint program left).races (runFootprint program right) = true) : ¬ Apart program := fun apart =>
-  (apart _ _ (.split member forks leaving distinct .paths)).1
+  (apart _ (mechanism_mem_all _) _ _ (.split member forks leaving distinct .paths)).1
     ⟨_, _, ⟨.enters left, .start ⟨left, toLeft, rfl⟩, .inr ⟨runsLeft, rfl⟩⟩,
       ⟨.enters right, .start ⟨right, toRight, rfl⟩, .inr ⟨runsRight, rfl⟩⟩, race⟩
 
@@ -512,7 +520,7 @@ theorem shared_handler_not_apart {program : Program} {thrower handler : Element}
     (ofFirst : SubjectOf program handler first) (ofSecond : SubjectOf program handler second) (distinct : first ≠ second)
     (unordered : ¬ Ordered program handler handler) (runs : ¬ BranchStop handler)
     (race : (runFootprint program handler).races (runFootprint program handler) = true) : ¬ Apart program := fun apart =>
-  (apart _ _ (.compensating member compensates handles handles (.inr ⟨rfl, first, ofFirst, ⟨second, ofSecond, distinct⟩⟩)
-    unordered)).1 ⟨_, _, .inr ⟨runs, rfl⟩, .inr ⟨runs, rfl⟩, race⟩
+  (apart _ (mechanism_mem_all _) _ _ (.compensating member compensates handles handles
+    (.inr ⟨rfl, first, ofFirst, ⟨second, ofSecond, distinct⟩⟩) unordered)).1 ⟨_, _, .inr ⟨runs, rfl⟩, .inr ⟨runs, rfl⟩, race⟩
 
 end Kernel.Laws.Flow

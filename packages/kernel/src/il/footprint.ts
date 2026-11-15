@@ -3,7 +3,8 @@
  * element reads and writes, over-approximated where the text cannot show it: a JUEL or foreign expression reads every
  * name, and a Multi-Instance definition reads every name when its element begins. `admission/flow.ts` compares branch
  * footprints for `BranchSchedule.OrderInvariant`, and `writes` is the one account of what an element writes, which that
- * closure walk and `feature/compensation.ts`'s data dependency both read.
+ * closure walk and `feature/compensation.ts`'s data dependency both read. The mechanisms whose units those comparisons
+ * pair (`QueuingMechanism`) are listed here once.
  */
 import {
   ExpressionTag,
@@ -133,3 +134,67 @@ export function writes(element: Element): NameSet {
     all: thrown?.installsAll === true,
   };
 }
+
+/**
+ * A mechanism of the kernel that queues more than one unit of work in one closure, in an order no input states (P1's
+ * census of the queuing sites). Admission's order checks under `BranchSchedule.OrderInvariant` range over
+ * `queuingMechanisms`, as `Kernel.Laws.Flow.Concurrent` does in Lean, so a new mechanism takes a case in each.
+ */
+export enum QueuingMechanism {
+  /** A split's branches (BPMN 2.0.2 §13.3.1, Table 13.1). */
+  Split = "split",
+  /** The children a Scope's entry begins without a start Event (§13.3.4). */
+  Entered = "entered",
+  /** A parallel Multi-Instance body's instances (§13.3.7). */
+  Instances = "instances",
+  /** A Signal throw's firings beside its continuation (§10.5.1). */
+  Signalled = "signalled",
+  /** An Escalation throw's continuation beside its non-interrupting catchers (§10.5.1). */
+  Escalated = "escalated",
+  /** The Conditional firings one write offers (Tables 10.89, 10.90). */
+  Writes = "writes",
+  /** The handler runs one Compensation throw or Cancel End begins (§13.5.5). */
+  Compensating = "compensating",
+  /** The Conditional items one arming finds true, beside the entry's begun work (§13.4.4). */
+  Armed = "armed",
+  /** The continuations of the Inclusive joins one quiescent closure offers again (Table 13.3). */
+  Rejoined = "rejoined",
+}
+
+/**
+ * Where a mechanism queues its units, and so where admission checks it: at a Sequence Flow's source, at a looping
+ * element, or at an element whose run or entry fans out.
+ */
+export enum QueuingSite {
+  Flow = "flow",
+  Loop = "loop",
+  Element = "element",
+}
+
+export function queuedAt(mechanism: QueuingMechanism): QueuingSite {
+  switch (mechanism) {
+    case QueuingMechanism.Split:
+      return QueuingSite.Flow;
+    case QueuingMechanism.Instances:
+      return QueuingSite.Loop;
+    case QueuingMechanism.Entered:
+    case QueuingMechanism.Signalled:
+    case QueuingMechanism.Escalated:
+    case QueuingMechanism.Writes:
+    case QueuingMechanism.Compensating:
+    case QueuingMechanism.Armed:
+    case QueuingMechanism.Rejoined:
+      return QueuingSite.Element;
+  }
+  return assertNever(mechanism);
+}
+
+/**
+ * Every mechanism, in the order `admission-registry.ts` `admitLocated` reaches its check: flows, then loops, then each
+ * element's fan-outs.
+ */
+export const queuingMechanisms: readonly QueuingMechanism[] = [
+  QueuingMechanism.Split, QueuingMechanism.Instances, QueuingMechanism.Signalled, QueuingMechanism.Escalated,
+  QueuingMechanism.Writes, QueuingMechanism.Compensating, QueuingMechanism.Entered, QueuingMechanism.Armed,
+  QueuingMechanism.Rejoined,
+];

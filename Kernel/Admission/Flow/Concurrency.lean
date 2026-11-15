@@ -440,15 +440,29 @@ def rejoinFanOut (reading : Reading) (program : Program) (element : Element) : O
         fun other => conflict program own (continuation reading program other)) <|>
       againstHolders program (joinHolders reading program element) (pathOf reading program [.completes element])
 
-/-- The fan-outs of one element's run or entry besides a split's and a loop's, under `BranchSchedule.orderInvariant`. -/
+/-- The check of `mechanism` at `element`, one per mechanism that queues at an element. A split's branches are checked
+at their flow (`concurrentBranches`) and a loop's instances at the loop (`Kernel.AdmissionRegistry.loopInstances`), so
+at an element they find nothing. -/
+def mechanismConflict (mechanism : QueuingMechanism) (reading : Reading) (program : Program) (element : Element) :
+    Option String :=
+  match mechanism with
+  | .split => none
+  | .instances => none
+  | .signalled => signalFanOut reading program element
+  | .escalated => escalationFanOut reading program element
+  | .writes => writeFanOut reading program element
+  | .compensating => compensationFanOut reading program element
+  | .entered => implicitFanOut reading program element
+  | .armed => armingFanOut reading program element
+  | .rejoined => rejoinFanOut reading program element
+
+/-- The fan-outs of one element's run or entry, the mechanisms queued at an element in `QueuingMechanism.all`'s order,
+under `BranchSchedule.orderInvariant`. -/
 def fanOutConflict (reading : Reading) (program : Program) (element : Element) : Option String :=
   match program.options.branchSchedule with
   | .declarationDepthFirst => none
-  | .orderInvariant =>
-    signalFanOut reading program element <|> escalationFanOut reading program element <|>
-      writeFanOut reading program element <|> compensationFanOut reading program element <|>
-      implicitFanOut reading program element <|> armingFanOut reading program element <|>
-      rejoinFanOut reading program element
+  | .orderInvariant => (QueuingMechanism.all.filter (·.queuedAt == .element)).findSome? fun mechanism =>
+    mechanismConflict mechanism reading program element
 
 /-- What the instances of a looping `element` do in the closure that begins them, which
 `Kernel.Admission.MultiInstance.concurrentInstances` reads. -/

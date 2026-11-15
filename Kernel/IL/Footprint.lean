@@ -7,7 +7,9 @@ public import Kernel.IL.Types
 What an expression, a mapping list or an element reads and writes, over-approximated where the text cannot show it: a
 JUEL or foreign expression reads every name, and a Multi-Instance definition reads every name when its element begins.
 `Kernel.Admission.Flow` compares branch footprints for `BranchSchedule.orderInvariant`, and `writes` is the one account of
-what an element writes, which that closure walk and `Kernel.Feature.Compensation`'s data dependency both read.
+what an element writes, which that closure walk and `Kernel.Feature.Compensation`'s data dependency both read. The
+mechanisms whose units those comparisons pair (`QueuingMechanism`) are listed here once, for admission's checks and
+`Kernel.Laws.Flow.Concurrent` alike.
 -/
 
 public section
@@ -86,5 +88,52 @@ def writes (element : Element) : NameSet :=
   let collection := ((element.envelope?).bind (·.multiInstance)).bind (·.outputCollection)
   { names := work ++ caught.flatMap catchWrites ++ ((thrown.map (·.installs)).getD []) ++ collection.toList
     all := thrown.any (·.installsAll) }
+
+/-- A mechanism of the kernel that queues more than one unit of work in one closure, in an order no input states (P1's
+census of the queuing sites). Admission's order checks under `BranchSchedule.orderInvariant` and
+`Kernel.Laws.Flow.Concurrent` both range over `QueuingMechanism.all`, so a new mechanism takes a case in each. -/
+inductive QueuingMechanism where
+  /-- A split's branches (BPMN 2.0.2 §13.3.1, Table 13.1). -/
+  | split
+  /-- The children a Scope's entry begins without a start Event (§13.3.4). -/
+  | entered
+  /-- A parallel Multi-Instance body's instances (§13.3.7). -/
+  | instances
+  /-- A Signal throw's firings beside its continuation (§10.5.1). -/
+  | signalled
+  /-- An Escalation throw's continuation beside its non-interrupting catchers (§10.5.1). -/
+  | escalated
+  /-- The Conditional firings one write offers (Tables 10.89, 10.90). -/
+  | writes
+  /-- The handler runs one Compensation throw or Cancel End begins (§13.5.5). -/
+  | compensating
+  /-- The Conditional items one arming finds true, beside the entry's begun work (§13.4.4). -/
+  | armed
+  /-- The continuations of the Inclusive joins one quiescent closure offers again (Table 13.3). -/
+  | rejoined
+
+/-- Where a mechanism queues its units, and so where admission checks it: at a Sequence Flow's source, at a looping
+element, or at an element whose run or entry fans out. -/
+inductive QueuingSite where
+  | flow
+  | loop
+  | element
+  deriving DecidableEq
+
+def QueuingMechanism.queuedAt : QueuingMechanism → QueuingSite
+  | .split => .flow
+  | .instances => .loop
+  | .entered => .element
+  | .signalled => .element
+  | .escalated => .element
+  | .writes => .element
+  | .compensating => .element
+  | .armed => .element
+  | .rejoined => .element
+
+/-- Every mechanism, in the order `Kernel.AdmissionRegistry.admitLocated` reaches its check: flows, then loops, then
+each element's fan-outs. An abbreviation, so that a law sees its members (`Kernel.Laws.Flow.mechanism_mem_all`). -/
+abbrev QueuingMechanism.all : List QueuingMechanism :=
+  [.split, .instances, .signalled, .escalated, .writes, .compensating, .entered, .armed, .rejoined]
 
 end Kernel
