@@ -284,7 +284,7 @@ theorem stepKeepsScopes {hooks : Hooks} (contract : ∀ before, Laws.Step.HookCo
     (pipeline : ∀ before, Laws.Step.PipelinePhases (KeepsScopes before)) (facts : Laws.Step.StateFacts) :
     StepKeepsScopes hooks := fun _ _ before _ formed ran =>
   (Laws.Step.running_keeps (contract before) (phases before) facts
-    (Laws.Step.complete_keeps (contract before) (phases before) (pipeline before) facts)
+    (Laws.Step.complete_keeps (contract before) (phases before).toClosurePhases (pipeline before) facts)
     ⟨Laws.State.reset_wellFormed formed, (KeepsScopes.self formed).2⟩ ran).2
 
 /-- `SubtreeRemoved` from the hooks' contract and `Step`'s phases of `KeepsScopes` of every before-state alone: its
@@ -295,7 +295,7 @@ theorem subtreeRemoved_of_keeps {hooks : Hooks} (contract : ∀ before, Laws.Ste
     SubtreeRemoved hooks :=
   subtreeRemoved (fun _ _ before _ formed ran =>
     (Laws.Step.running_keeps (contract before) (phases before) facts
-      (Laws.Step.complete_keeps (contract before) (phases before) (pipeline before) facts)
+      (Laws.Step.complete_keeps (contract before) (phases before).toClosurePhases (pipeline before) facts)
       ⟨Laws.State.reset_wellFormed formed, (KeepsScopes.self formed).2⟩ ran).1)
     (stepKeepsScopes contract phases pipeline facts)
 
@@ -581,13 +581,12 @@ theorem FrameAlongside.removeOccurrence {rel : State → Prop} (side : FrameAlon
   rw [Laws.State.removeOccurrence_eq, commutes]
   exact without _ _ none kept
 
-/-- What `Step`'s own phases keep of a property `rel` carried beside `WellFormed`, besides the hooks' state operations
-(`FrameAlongside`): journalling the draft, ordering the journal, beginning an admitted request in a scope occurrence
-that stands and cancelling an occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
-structure StepAlongside (rel : State → Prop) : Prop extends FrameAlongside rel where
+/-- What the phases a closure runs keep of a property `rel` carried beside `WellFormed`, besides the hooks' state
+operations (`FrameAlongside`): journalling the draft, beginning an admitted request in a scope occurrence that stands
+and cancelling an occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
+structure ClosureAlongside (rel : State → Prop) : Prop extends FrameAlongside rel where
   journal : ∀ program s (transition : Transition), WellFormed program s → rel s → transition.started = s.draft.started →
     transition.ended = s.draft.ended → rel { s with journal := transition :: s.journal, draft := {}, writes := [] }
-  runOrder : ∀ program s, WellFormed program s → rel s → rel { s with journal := s.journal.reverse }
   /-- Signals leave the queue. -/
   dequeue : ∀ program s signals, WellFormed program s → signals.Sublist s.signals → rel s → rel { s with signals }
   /-- Tokens leave the work stack. -/
@@ -599,17 +598,21 @@ structure StepAlongside (rel : State → Prop) : Prop extends FrameAlongside rel
     rel (s.beginOccurrence request role sourceType).1
   cancel : ∀ program s id, WellFormed program s → rel s → rel (s.cancelOccurrence id)
 
-/-- `Step`'s phases keep a property beside `WellFormed` that the state operations they apply keep: the phases that read
-`WellFormed` alone read its first half, and the others keep the second by `StepAlongside` of the step's program. -/
-theorem phases_alongside {rel : Program → State → Prop} (phases : Laws.Step.Phases WellFormed)
-    (side : ∀ program, StepAlongside (rel program)) :
-    Laws.Step.Phases fun program s => WellFormed program s ∧ rel program s where
+/-- What `Step`'s own phases keep of `rel` (`ClosureAlongside`) and ordering the journal once the closure settles. -/
+structure StepAlongside (rel : State → Prop) : Prop extends ClosureAlongside rel where
+  runOrder : ∀ program s, WellFormed program s → rel s → rel { s with journal := s.journal.reverse }
+
+/-- The phases a closure runs keep a property beside `WellFormed` that the state operations they apply keep: the
+phases that read `WellFormed` alone read its first half, and the others keep the second by `ClosureAlongside` of the
+step's program. -/
+theorem closurePhases_alongside {rel : Program → State → Prop} (phases : Laws.Step.ClosurePhases WellFormed)
+    (side : ∀ program, ClosureAlongside (rel program)) :
+    Laws.Step.ClosurePhases fun program s => WellFormed program s ∧ rel program s where
   clock _ s atMs holds :=
     ⟨phases.clock _ _ atMs holds.1,
       (side _).frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ holds.2⟩
   journal _ s transition holds started ended :=
     ⟨phases.journal _ _ transition holds.1 started ended, (side _).journal _ s transition holds.1 holds.2 started ended⟩
-  runOrder _ s holds := ⟨phases.runOrder _ _ holds.1, (side _).runOrder _ s holds.1 holds.2⟩
   dequeue _ s signals holds fewer :=
     ⟨phases.dequeue _ _ signals holds.1 fewer, (side _).dequeue _ s signals holds.1 fewer holds.2⟩
   untoken _ s tokens holds fewer :=
@@ -649,6 +652,14 @@ theorem phases_alongside {rel : Program → State → Prop} (phases : Laws.Step.
     ⟨⟨reserved.1, (side _).reserve _ s element scope holds.1 (pending.imp fun _ => And.imp_left And.right) holds.2⟩,
       reserved.2⟩
   cancel _ s id holds := ⟨phases.cancel _ _ id holds.1, (side _).cancel _ s id holds.1 holds.2⟩
+
+/-- `Step`'s phases keep a property beside `WellFormed` that the state operations they apply keep
+(`closurePhases_alongside`), ordering the journal by `StepAlongside.runOrder`. -/
+theorem phases_alongside {rel : Program → State → Prop} (phases : Laws.Step.Phases WellFormed)
+    (side : ∀ program, StepAlongside (rel program)) :
+    Laws.Step.Phases fun program s => WellFormed program s ∧ rel program s :=
+  { closurePhases_alongside phases.toClosurePhases fun program => (side program).toClosureAlongside with
+    runOrder := fun _ s holds => ⟨phases.runOrder _ _ holds.1, (side _).runOrder _ s holds.1 holds.2⟩ }
 
 /-- `Step`'s phases keep the scope occurrences of any before-state: journalling and ordering move no scope occurrence
 nor the counter, beginning issues at most one identity and enters no scope occurrence, and cancelling drops some
@@ -759,15 +770,16 @@ def MicroStepsKeep (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
     inv ctx.program after
 
 /-- The walk of `Laws.Step.Keeps` keeps a property beside `WellFormed` through each micro-step, with the completion
-pipeline as a premise: `Step`'s phases keep it by `StepAlongside` (`phases_alongside`). -/
+pipeline as a premise: the closure's phases keep it by `ClosureAlongside` (`closurePhases_alongside`). -/
 theorem microStepsKeep_alongside {hooks : Hooks} {rel : Program → State → Prop}
     (contract : Laws.Step.HookContract hooks fun program s => WellFormed program s ∧ rel program s)
-    (phases : Laws.Step.Phases WellFormed) (side : ∀ program, StepAlongside (rel program)) (facts : Laws.Step.StateFacts)
+    (phases : Laws.Step.ClosurePhases WellFormed) (side : ∀ program, ClosureAlongside (rel program))
+    (facts : Laws.Step.StateFacts)
     (pipeline : Laws.Step.PipelineKeeps hooks fun program s => WellFormed program s ∧ rel program s) :
     MicroStepsKeep hooks fun program s => WellFormed program s ∧ rel program s :=
-  ⟨fun _ _ _ _ _ runs holds ran => Laws.Step.microStep_keeps contract (phases_alongside phases side) pipeline
-      (fun _ transitioned => Laws.Step.transition_keeps contract (phases_alongside phases side) runs holds transitioned) ran,
-    fun _ _ _ holds step => Laws.Step.closureStep_keeps contract (phases_alongside phases side) facts pipeline holds step⟩
+  ⟨fun _ _ _ _ _ runs holds ran => Laws.Step.microStep_keeps contract (closurePhases_alongside phases side) pipeline
+      (fun _ transitioned => Laws.Step.transition_keeps contract (closurePhases_alongside phases side) runs holds transitioned) ran,
+    fun _ _ _ holds step => Laws.Step.closureStep_keeps contract (closurePhases_alongside phases side) facts pipeline holds step⟩
 
 /-- `Step`'s phases keep an input's end facts from its start: journalling the draft and ordering the journal permute
 them, and beginning and cancelling frame them (`Kernel.Laws.Step.EndsFrames`). -/

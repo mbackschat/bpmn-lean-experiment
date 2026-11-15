@@ -33,7 +33,7 @@ namespace Kernel.Proofs.MultiInstance
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds occurrenceIds Queues)
 open Kernel.Laws.MultiInstance (LoopOf IdsUnique Generated SnapshotFixed Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed
-  NumberedInOrder InstancesPlaced BeginsQueued SlotsCounted CountersHeld BeginsInOrder SequentialSlots ParallelSlots OutputsFit Collects)
+  NumberedInOrder InstancesPlaced BeginsQueued UnbegunUnlooped SlotsCounted CountersHeld BeginsInOrder SequentialSlots ParallelSlots OutputsFit Collects)
 
 /-- A running body's slots shaped by its loop's mode, its filled slots holding what its instances submitted, and its
 instances numbered in item order (`PMI-*`, `SMI-*`; the numbering of
@@ -70,12 +70,15 @@ proves it preserved, as P2 does `WellFormed`: by a committed input (`RunsShaped`
 the after-state), at a start (`RunsFormedAtStart`) and in every instance of a population run
 (`RunsFormedInPopulation`). The clauses besides `Shaped` and `Apart` are inductive strengthening: without them a
 body whose occurrence is no Multi-Instance element's would outlive its occurrence, and two runs of one occurrence would
-let a completion fill one and finish the other (root decision, 2026-11-14), and without `BeginsQueued` a before-state
-whose queues hold begins out of slot order would number its instances out of order (root decision, 2026-11-14). -/
+let a completion fill one and finish the other (root decision, 2026-11-14), without `BeginsQueued` a before-state
+whose queues hold begins out of slot order would number its instances out of order (root decision, 2026-11-14), and
+without `UnbegunUnlooped` a reservation of a looping element begun after a fresh instance would journal its lower
+activation last (root decision, 2026-11-14). -/
 structure RunsFormed (program : Program) (s : State) : Prop where
   keyed : RunsKeyed s
   formed : ∀ run ∈ s.slots.multiInstances, RunFormed program s run
   queued : BeginsQueued program s
+  unbegun : UnbegunUnlooped program s
 
 /-- A committed input from `before` to `after`, from a well-formed before-state that keeps the lane's slot invariant. -/
 def Commits (hooks : Hooks) (program : Program) (before after : State) : Prop :=
@@ -109,10 +112,12 @@ def RunsGenerated (hooks : Hooks) : Prop :=
     ((∀ earlier ∈ before.slots.multiInstances, earlier.occurrence ≠ run.occurrence) → Generated run run.instances.length) ∧
       ∀ earlier ∈ before.slots.multiInstances, earlier.occurrence = run.occurrence → SnapshotFixed earlier run
 
-/-- Within the input's journal, the instances of a Multi-Instance element begin in generation order. -/
+/-- Within the input's journal, the instances of a Multi-Instance element begin in generation order, under a program
+whose identifiers are unique: the IL contract (`Boundary.id`, `Kernel/IL/Types.lean:118`) keeps every reservation off a
+looping element, and a reservation of one keeps its lower activation when it begins after a fresh instance. -/
 def BeginOrder (hooks : Hooks) : Prop :=
   ∀ (program : Program) (before after : State) (element : ElementId) (loop : MultiInstance) (processInstance : String),
-    Commits hooks program before after → LoopOf program element loop →
+    IdsUnique program → Commits hooks program before after → LoopOf program element loop →
     BeginsInOrder (after.journal.flatMap (·.started)) processInstance element
 
 /-- Instances stay isolated: the instances of every running body after a committed input lie `Apart`. -/

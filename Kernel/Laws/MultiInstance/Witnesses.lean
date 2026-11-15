@@ -445,6 +445,16 @@ theorem looping_occur_rejected {program : Program} {loop : MultiInstance} (loopi
     ¬ BeginsQueued program { queuing with signals := [.occur review firstScope .outgoing [] .outward] } :=
   fun queued => queued.occurs review (.inl ⟨firstScope, .outgoing, [], .outward, List.mem_singleton_self _⟩) loop looping
 
+/-- Begun occurrences alone name no looping element unbegun. -/
+theorem entered_unbegun (program : Program) : UnbegunUnlooped program entered := fun o member unbegun => by
+  simp only [entered, bodyOccurrence, firstInstance, secondInstance, List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl | rfl <;> simp at unbegun
+
+/-- A reservation of a looping element breaks `UnbegunUnlooped`. -/
+theorem looping_reservation_rejected {program : Program} {loop : MultiInstance} (looping : LoopOf program review loop) :
+    ¬ UnbegunUnlooped program { entered with occurrences := [{ firstInstance with begun := false }] } :=
+  fun unlooped => unlooped _ (List.mem_singleton_self _) rfl loop looping
+
 /-- Two begins queued out of slot order break `BeginsQueued`. -/
 theorem reversed_begins_rejected {program : Program} :
     ¬ BeginsQueued program

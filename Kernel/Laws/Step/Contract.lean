@@ -378,15 +378,14 @@ begun in the scope occurrence it names; a queued begin is
 instance end records a failure exactly when it fails. The state operations' obligations are `Laws.State`'s. The phases
 only the completion pipeline runs are apart (`PipelinePhases`), and so is the reset that starts an input
 (`Laws.Step.running_keeps`): an invariant that counts an input's end facts holds across the pipeline only as a unit and
-from the input's start only (`Kernel.Laws.Step.Ends`). -/
-structure Phases (inv : Program → State → Prop) : Prop where
+from the input's start only (`Kernel.Laws.Step.Ends`), and so is ordering the journal at the input's end (`Phases`):
+an invariant that reads the order of the journal's facts cannot hold both before and after it. -/
+structure ClosurePhases (inv : Program → State → Prop) : Prop where
   clock : ∀ program state atMs, inv program state → inv program { state with logicalTimeMs := atMs }
   /-- `Step.conclude` journals the draft and empties it and the write log. -/
   journal : ∀ program state (transition : Transition), inv program state → transition.started = state.draft.started →
     transition.ended = state.draft.ended →
     inv program { state with journal := transition :: state.journal, draft := {}, writes := [] }
-  /-- `Step.orderJournal`. -/
-  runOrder : ∀ program state, inv program state → inv program { state with journal := state.journal.reverse }
   /-- Signals leave the queue: the closure's next, or a micro-step's sole completion that `Step.absorb` runs. -/
   dequeue : ∀ program state signals, inv program state → signals.Sublist state.signals →
     inv program { state with signals := signals }
@@ -475,6 +474,12 @@ structure Phases (inv : Program → State → Prop) : Prop where
     ∀ request, Laws.State.Queued (state.reserve element scope).1 request →
       (state.reserve element scope).2.id ∉ Laws.State.names request
   cancel : ∀ program state id, inv program state → inv program (state.cancelOccurrence id)
+
+/-- The phases of `ClosurePhases` and ordering the journal once the closure has settled (`Step.orderJournal`): what
+`Laws.Step.running_keeps` needs for an invariant of the committed state, while `Laws.Step.running_settles` gives the
+settled state before the ordering. -/
+structure Phases (inv : Program → State → Prop) : Prop extends ClosurePhases inv where
+  runOrder : ∀ program state, inv program state → inv program { state with journal := state.journal.reverse }
 
 /-- What the completion pipeline's own phases must keep of `inv` (`Step.complete`): starting the completing reservation
 and closing its items, removing its record and journalling its end. -/

@@ -193,6 +193,14 @@ structure BeginsQueued (program : Program) (s : State) : Prop where
     QueuedFor run queued request → run.instances[index]? = some (.active scope) →
     (∃ o ∈ s.occurrences, o.scope = scope ∧ o.continuation = .multiInstance run.occurrence) → index < queued
 
+/-- No reservation names a looping element: a reservation keeps the activation it was numbered with when it begins
+(`State.startReserved`, `State.beginOccurrence`), so one of a looping element begun after a fresh instance would journal
+a lower activation after a higher one (`BeginsInOrder`). It is inductive strengthening beside the begins still queued,
+established because every reservation names a `Laws.IL.Reservable` element or a boundary's identifier
+(`Laws.IL.BoundaryOf`), which `IdsUnique` keeps apart from looping elements (root decision, 2026-11-14). -/
+def UnbegunUnlooped (program : Program) (s : State) : Prop :=
+  ∀ o ∈ s.occurrences, o.begun = false → ∀ loop, ¬ LoopOf program o.element loop
+
 /-- Under `MultiInstanceCounters.cibLocals` each instance's scope occurrence is entered holding `loopCounter`, its
 zero-based index (CIB-INT-0018, `MultiInstanceActivityBehavior:76-78`): every active slot of `after` whose scope
 occurrence was issued since `before` has a variable set there binding it. -/

@@ -102,7 +102,7 @@ phases of `Step` (`Laws.Step.Phases`, `Laws.Step.PipelinePhases`) keep `WellForm
 theorem stepKeepsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hooks WellFormed)
     (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed) : StepKeepsWellFormed hooks :=
   fun _ _ _ _ formed ran => Laws.Step.running_keeps contract phases stateFacts
-    (Laws.Step.complete_keeps contract phases pipeline stateFacts) (Laws.State.reset_wellFormed formed) ran
+    (Laws.Step.complete_keeps contract phases.toClosurePhases pipeline stateFacts) (Laws.State.reset_wellFormed formed) ran
 
 /-- A committed start makes a well-formed state, from the same obligations and a well-formed fresh instance with its
 root's Event Sub-Process starts queued for arming. -/
@@ -112,7 +112,7 @@ theorem startIsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hoo
       WellFormed program ((State.initial instanceId variables businessKey).signal (.armScope State.root))) :
     StartIsWellFormed hooks :=
   fun program _ _ ran => Laws.Step.step_keeps contract phases stateFacts
-    (Laws.Step.complete_keeps contract phases pipeline stateFacts) (fun _ _ => Laws.State.reset_wellFormed)
+    (Laws.Step.complete_keeps contract phases.toClosurePhases pipeline stateFacts) (fun _ _ => Laws.State.reset_wellFormed)
     (initial program) (fun _ given => by simp at given) ran
 
 /-- A population run keeps every instance well-formed under its deployment's program when `Step.step` does

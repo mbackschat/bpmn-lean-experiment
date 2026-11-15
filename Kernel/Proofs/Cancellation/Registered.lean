@@ -79,6 +79,27 @@ theorem FrameAlongside.withdrawOccurrence (side : FrameAlongside rel) {program :
   rw [Laws.State.closeOwnItems_eq]
   exact side.frame s _ ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ held => held⟩ kept
 
+/-- Cancelling an occurrence of a well-formed state withdraws its items (`FrameAlongside.withdrawOccurrence`), removes
+it (`FrameAlongside.removeOccurrence`, given what dropping a record that owns no scope occurrence keeps) and journals
+its end and cancellation, which `ends` keeps. -/
+theorem FrameAlongside.cancelOccurrence (side : FrameAlongside rel)
+    (without : ∀ t id, (∀ entry ∈ t.scopes, entry.occurrence ≠ some id) → rel t → rel (Laws.State.withoutRecord t id))
+    (ends : ∀ t ended cancelled, rel t → rel { t with draft := { t.draft with ended, cancelled } })
+    {program : Program} {s : State} {id : Nat} (formed : WellFormed program s) (kept : rel s) :
+    rel (s.cancelOccurrence id) := by
+  cases found : s.occurrence? id with
+  | none =>
+    rw [Laws.State.cancelOccurrence_absent found]
+    exact kept
+  | some occurrence =>
+    obtain ⟨ended, cancelled, cancels⟩ := Laws.State.cancelOccurrence_some found
+    have withdrawn := (Laws.State.withdrawAll
+      (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) _
+      (Laws.State.disarm_wellFormed (Laws.State.closeOwnItems_wellFormed formed id) id)).1
+    rw [← Laws.State.withdrawOccurrence_eq] at withdrawn
+    rw [cancels]
+    exact ends _ ended cancelled (side.removeOccurrence without withdrawn (side.withdrawOccurrence formed kept id))
+
 theorem operations_alongside {rel : Program → State → Prop} (side : ∀ program, FrameAlongside (rel program))
     (ops : Operations WellFormed) : Operations fun program s => WellFormed program s ∧ rel program s where
   variablesHoused program s holds := ops.variablesHoused program s holds.1
@@ -510,7 +531,7 @@ theorem microStepsKeepEnds_registered (ops : Proofs.Step.RegisteredOps WellForme
     (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed) :
     MicroStepsKeepEnds Registry.hooks := by
   have kept := fun b => microStepsKeep_alongside (rel := fun _ => Laws.Step.EndsKept b none) (endsInv_contract ops b none)
-    phases (fun _ => endsKept_stepAlongside b) Proofs.State.stateFacts
+    phases.toClosurePhases (fun _ => (endsKept_stepAlongside b).toClosureAlongside) Proofs.State.stateFacts
     (Laws.Step.complete_ends (endsInv_contract ops b) phases pipeline Proofs.State.stateFacts)
   obtain ⟨cancelled, written⟩ := registered_quiet
   refine ⟨fun ctx cause transition b state after runs holds ran =>

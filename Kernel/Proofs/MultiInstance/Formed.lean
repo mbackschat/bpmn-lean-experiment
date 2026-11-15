@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Proofs.MultiInstance.Framed
+public import Kernel.Proofs.MultiInstance.Begins
 public import Kernel.Proofs.Step
 public import Kernel.Laws.Registry
 
@@ -10,7 +11,9 @@ Under the registered hooks `WellFormed` and the lane's slot invariant but its nu
 `Kernel.Proofs.MultiInstance.Framed`) hold through every committed input: the other feature records follow from
 `WellFormed`'s and `FrameAlongside` (`Proofs.Cancellation.featureOps_frame`), and the Multi-Instance hooks keep it by
 what `Laws.MultiInstance` proves each does (`multiInstanceKeeps_framed`). The lane's statements that read the slot
-invariant whole follow from what the numbering lane supplies (`NumberingKept`), `RunsFramed.formed` composing the two.
+invariant whole follow from what the numbering lane supplies (`NumberingKept`) and from the registered hooks keeping
+the reservations of looping elements unmade (`registered_unbegunKept`), `RunsFramed.formed` composing them; the same
+relation gives `BeginOrder` (`Kernel.Proofs.MultiInstance.Begins`).
 `RunsGenerated` follows from what an input keeps of its start's bodies (`Since`), carried from the input's reset start.
 The module imports the registry's Laws module because it composes the registered hooks, and so stays in every feature's
 rebuild cone (guard 15). Nothing executable imports this module.
@@ -24,7 +27,8 @@ open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
   InstancesPlaced BeginsQueued IdsUnique SequentialSlots OutputsFit)
-open Kernel.Proofs.Cancellation (phases_alongside featureOps_frame)
+open Kernel.Proofs.Cancellation (phases_alongside closurePhases_alongside featureOps_frame multiInstanceOps_alongside
+  Alongside ClosureAlongside)
 
 /-! ## What the Multi-Instance hooks keep
 
@@ -529,7 +533,7 @@ theorem framed_stepKeeps {program : Program} {input : Input}
     {before after : State} (holds : Framed program before)
     (ran : Step.step Registry.hooks program (some before) input = .ok after) : Framed program after :=
   Laws.Step.running_keeps framed_contract framed_phases Proofs.State.stateFacts
-    (Laws.Step.complete_keeps framed_contract framed_phases
+    (Laws.Step.complete_keeps framed_contract framed_phases.toClosurePhases
       (runsFramed_pipelinePhases Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
     (framed_reset holds) ran
 
@@ -537,9 +541,71 @@ theorem framed_stepKeeps {program : Program} {input : Input}
 theorem framed_start {program : Program} {input : Input}
     {after : State} (ran : Step.step Registry.hooks program none input = .ok after) : Framed program after :=
   Laws.Step.step_keeps framed_contract framed_phases Proofs.State.stateFacts
-    (Laws.Step.complete_keeps framed_contract framed_phases
+    (Laws.Step.complete_keeps framed_contract framed_phases.toClosurePhases
       (runsFramed_pipelinePhases Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
     (fun _ _ => framed_reset) (framed_initial program) (fun _ given => by simp at given) ran
+
+/-! ## The reservations of looping elements and the order instances begin in -/
+
+/-- The state operations the hooks apply keep `BeginsKept` (`Kernel.Proofs.MultiInstance.Begins`). -/
+theorem beginsKept_alongside (program : Program) : Alongside (BeginsKept program) where
+  frame _ _ moved held := held.frame (fun _ inside => moved.occurrences ▸ inside) moved.pending moved.journal
+    (congrArg (·.started) moved.draft)
+  signalBegin _ request _ held := held.signalBegin request
+  issue _ held := held.issue
+  enterScope _ _ element parent locals owner _ held := held.enterScope element parent locals owner
+  enterCalled _ _ called call variables definition formed held := held.enterCalled formed called call variables definition
+  reserve _ _ _ scope _ pending held := held.reserve (fun apart => PendingIn.unlooped apart pending) scope
+  leaveScope _ _ _ formed present _ held := held.leaveScope formed present
+  clearInside _ _ _ keep formed present _ held := held.clearInside formed present keep
+  disarm _ _ host _ held := held.disarm host
+  setVariable _ _ target name value _ held := held.setVariable target name value
+  removeVariable _ _ target name _ held := held.removeVariable target name
+  storeRuns _ _ compensation _ _ resumes held := held.storeRuns compensation resumes
+  instanceBegin _ request held := held.signalBegin request
+  defer _ requests held := held.defer requests
+  leaveInstance _ _ _ _ formed _ _ present held := held.leaveScope formed present
+  runs _ runs held := held.runs runs
+
+/-- The phases a closure runs keep `BeginsKept`; cancelling is `FrameAlongside.cancelOccurrence`. -/
+theorem beginsKept_closureAlongside (program : Program) : ClosureAlongside (BeginsKept program) where
+  toFrameAlongside := (beginsKept_alongside program).toFrameAlongside
+  journal _ _ transition _ held started _ := held.journal transition started
+  dequeue _ _ _ _ fewer held := held.dequeue fewer
+  untoken _ _ tokens _ _ held := held.untoken tokens
+  begin _ _ _ role sourceType formed _ admitted _ _ held := held.begin formed admitted role sourceType
+  cancel _ _ _ formed held := (beginsKept_alongside program).toFrameAlongside.cancelOccurrence
+    (fun _ id _ kept => kept.withoutRecord id) (fun _ _ _ kept => kept.draft _ rfl) formed held
+
+/-- The completion pipeline's own phases keep `BeginsKept` where they keep `WellFormed`. -/
+theorem beginsKept_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) :
+    Laws.Step.PipelinePhases fun program s => WellFormed program s ∧ BeginsKept program s where
+  startReserved _ _ occurrence sourceType holds member unnamed :=
+    ⟨pipeline.startReserved _ _ occurrence sourceType holds.1 member unnamed, holds.2.startReserved sourceType member⟩
+  removeOccurrence program _ occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
+    ⟨⟨removed.1, (beginsKept_alongside program).toFrameAlongside.removeOccurrence
+      (fun _ id _ kept => kept.withoutRecord id) holds.1 holds.2⟩, removed.2⟩
+  recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, holds.2.recordEnd key terminal⟩
+
+/-- The registered hooks keep `BeginsKept` beside `WellFormed`. -/
+theorem beginsKept_contract :
+    Laws.Step.HookContract Registry.hooks fun program s => WellFormed program s ∧ BeginsKept program s :=
+  Proofs.Step.registered_contract_of
+    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps
+      (fun program => (beginsKept_alongside program).toFrameAlongside) beginsKept_occursAlongside)
+    (Proofs.Step.multiInstanceKeeps_of fun program =>
+      multiInstanceOps_alongside (beginsKept_alongside program) (Proofs.Step.registeredOps_wellFormed.multiInstance program))
+    Proofs.State.stateFacts
+
+/-- The phases a closure runs keep `BeginsKept` beside `WellFormed`. -/
+theorem beginsKept_phases : Laws.Step.ClosurePhases fun program s => WellFormed program s ∧ BeginsKept program s :=
+  closurePhases_alongside Proofs.Step.phases.toClosurePhases beginsKept_closureAlongside
+
+/-- The registered hooks keep the reservations of looping elements unmade. -/
+theorem registered_unbegunKept : UnbegunKept Registry.hooks :=
+  unbegunKept_of beginsKept_contract beginsKept_phases (beginsKept_pipelinePhases Proofs.Step.pipelinePhases)
+    Proofs.State.stateFacts Proofs.Step.initial_wellFormed
 
 /-! ## The lane's statements -/
 
@@ -557,13 +623,14 @@ theorem registered_runsFormed (numbering : NumberingKept Registry.hooks) {progra
     (ran : Step.step Registry.hooks program (some before) input = .ok after) :
     WellFormed program after ∧ RunsFormed program after :=
   have framed := framed_stepKeeps ⟨formed, runs.framed⟩ ran
-  ⟨framed.1, framed.2.formed framed.1 (numbering.step _ _ _ _ apart formed runs ran)⟩
+  ⟨framed.1, framed.2.formed framed.1 (numbering.step _ _ _ _ apart formed runs ran)
+    (registered_unbegunKept.step _ _ _ _ apart formed runs.unbegun runs.queued.occurs ran)⟩
 
 /-- A committed start keeps the lane's slot invariant under the registered hooks, given the numbering lane's supply. -/
 theorem registered_runsFormedAtStart (numbering : NumberingKept Registry.hooks) : RunsFormedAtStart Registry.hooks :=
     fun _ _ _ apart ran =>
   have framed := framed_start ran
-  framed.2.formed framed.1 (numbering.start _ _ _ apart ran)
+  framed.2.formed framed.1 (numbering.start _ _ _ apart ran) (registered_unbegunKept.start _ _ _ apart ran)
 
 /-- Every instance a committed population run holds keeps the lane's slot invariant under the registered hooks, given
 the numbering lane's supply. -/
@@ -581,6 +648,12 @@ lane's supply. -/
 theorem registered_runsShaped (numbering : NumberingKept Registry.hooks) : RunsShaped Registry.hooks :=
   fun _ _ _ run loop apart ⟨formed, runs, _, ran⟩ member looped =>
     ((registered_runsFormed numbering apart formed runs ran).2.formed run member).shaped loop looped
+
+/-- Within a committed input's journal the instances of a Multi-Instance element begin in generation order under the
+registered hooks. -/
+theorem registered_beginOrder : BeginOrder Registry.hooks := fun _ _ _ _ _ processInstance apart ⟨formed, runs, _, ran⟩ looped =>
+  beginsInOrder_of beginsKept_contract beginsKept_phases (beginsKept_pipelinePhases Proofs.Step.pipelinePhases)
+    Proofs.State.stateFacts processInstance apart formed runs.unbegun runs.queued.occurs ran looped
 
 /-- A committed input keeps its well-formed before-state's scope occurrences under the registered hooks. -/
 theorem registered_stepKeepsScopes : Proofs.Cancellation.StepKeepsScopes Registry.hooks :=
@@ -770,7 +843,7 @@ input's start, which `Since` holds of though the before-state's draft may not be
 theorem since_stepKeeps {program : Program} {input : Input} {b after : State} (formed : WellFormed program b)
     (keyed : RunsKeyed b) (ran : Step.step Registry.hooks program (some b) input = .ok after) : Since b program after :=
   Laws.Step.running_keeps (since_contract b) (since_phases b) Proofs.State.stateFacts
-    (Laws.Step.complete_keeps (since_contract b) (since_phases b)
+    (Laws.Step.complete_keeps (since_contract b) (since_phases b).toClosurePhases
       (since_pipelinePhases b Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
     (since_reset formed keyed) ran
 

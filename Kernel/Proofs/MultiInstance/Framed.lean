@@ -28,7 +28,7 @@ namespace Kernel.Proofs.MultiInstance
 open Kernel
 open Kernel.Laws.State (WellFormed Within StrictlyWithin scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
-  InstancesPlaced BeginsQueued SequentialSlots ParallelSlots OutputsFit)
+  InstancesPlaced BeginsQueued UnbegunUnlooped SequentialSlots ParallelSlots OutputsFit)
 open Kernel.Proofs.Cancellation (FrameAlongside StepAlongside Unmoved LeavesOwned StoresHeldOrFresh RunningContext
   ActiveInstance)
 
@@ -71,15 +71,15 @@ theorem RunsFormed.framed {program : Program} {s : State} (formed : RunsFormed p
       (each.shaped loop looped).2.2.1⟩, each.bodyOwns, each.unowned, each.unheld⟩⟩
 
 /-- The lane's slot invariant of a well-formed state from its part without numbering, the numbering and identity of
-each running body's instances, and the instance begins still queued. -/
+each running body's instances, the instance begins still queued, and the reservations' elements. -/
 theorem RunsFramed.formed {program : Program} {s : State} (well : WellFormed program s) (framed : RunsFramed program s)
     (numbered : (∀ run ∈ s.slots.multiInstances, NumberedInOrder s run ∧ InstancesPlaced s run) ∧
-      BeginsQueued program s) : RunsFormed program s :=
+      BeginsQueued program s) (unbegun : UnbegunUnlooped program s) : RunsFormed program s :=
   ⟨framed.keyed, fun run member =>
     have each := framed.framed run member
     ⟨each.owned, fun loop looped => ⟨(each.shaped loop looped).1, (each.shaped loop looped).2.1,
       (each.shaped loop looped).2.2, (numbered.1 run member).1⟩, owned_apart well each.owned, each.bodyOwns, each.unowned,
-      each.unheld, (numbered.1 run member).2⟩, numbered.2⟩
+      each.unheld, (numbered.1 run member).2⟩, numbered.2, unbegun⟩
 
 /-! ## Carrying the invariant -/
 
