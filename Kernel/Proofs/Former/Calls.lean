@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.Step.Signals
+public import Kernel.Laws.Work
 public import Kernel.Laws.State.Chain
 public import Kernel.Laws.Population
 
@@ -135,5 +136,21 @@ def CalledIdentityUnique (hooks : Hooks) : Prop :=
       ∃ call ∈ after.occurrences, root.occurrence = some call.id ∧ root.calledInstance =
         some (State.calledInstanceId (after.instanceOf call.scope) (program.publicId call.element) call.activation)) ∧
     CallsFormed program after
+
+/-! ## A Call's own hooks
+
+Generic in the hooks: a statement of `Hooks.completeCall` holds of every hooks record whose `completeCall` is Work's
+(`Laws.Work.completeCall_queues`); `Kernel.Proofs.Step` instantiates it at `Registry.hooks`. -/
+
+theorem returnContinuesCaller {hooks : Hooks} (call : hooks.completeCall = Feature.Work.completeCall) :
+    ReturnContinuesCaller hooks := by
+  intro ctx header payload root occurrence state after _ ran
+  rw [call] at ran
+  obtain ⟨outputs, rfl⟩ := Laws.Work.completeCall_queues ran
+  rw [Laws.State.signal_eq]
+  refine ⟨⟨[.complete occurrence.id .outgoing outputs .outward], rfl, fun queued member id leave writes rule same => ?_⟩,
+    fun other inside _ => inside, fun item inside _ => inside, rfl⟩
+  rw [List.mem_singleton.mp member] at same
+  exact (Laws.Step.complete_inj same).1.symm
 
 end Kernel.Proofs.Former
