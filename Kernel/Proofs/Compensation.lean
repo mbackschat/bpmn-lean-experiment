@@ -5,6 +5,7 @@ public import Kernel.Laws.State.Transitions
 public import Kernel.IL.Paths
 public import Kernel.Laws.Population
 public import Kernel.Laws.State.Sample
+public import Kernel.Laws.Propagation
 
 /-! # Proofs: Compensation and Transaction (P5)
 
@@ -284,10 +285,26 @@ def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List S
 
 /-! ## Failure -/
 
-/-- `ctx` with every scope occurrence it calls a compensation handler's context answered as ordinary. -/
-def ordinaryHandlers (ctx : Ctx) : Ctx :=
-  { ctx with scopeRole := fun state scope =>
-      if ctx.scopeRole state scope = .compensationHandler then .ordinary else ctx.scopeRole state scope }
+/-- How the search `hooks.raise` runs, when it is Propagation's (`Feature.Propagation.raise`) over some `propagation`
+hooks, passes a scope occurrence `occurrence` that it calls a compensation handler's context: it offers the context's
+own Event Sub-Processes (`Feature.Propagation.handlerCandidates`) and the boundaries on its element, as at an ordinary
+scope occurrence, and when none of them catches it passes the context's Call outputs and goes on from
+`occurrence.parent`. Which candidates the context offers is open (#159); this says only that they are offered and the
+search then goes on. -/
+def PassesHandlerContext (hooks : Hooks) (ctx : Ctx) (raised : Raised) (origin : Origin) : Prop :=
+  ∀ propagation, hooks.raise = Feature.Propagation.raise propagation →
+    ∀ (state passed : State) (fuel : Nat) (current : ScopeOccurrenceId) (occurrence : ScopeOccurrence)
+      (handlers : List (ElementId × Subscription × Bool)),
+      state.scopes.find? (·.id == current) = some occurrence →
+      ctx.scopeRole state occurrence.id = .compensationHandler →
+      Feature.Propagation.handlerCandidates ctx raised origin state occurrence = .ok handlers →
+      Feature.Propagation.best? ctx raised (·.2.1.trigger) handlers = none →
+      (∀ element, occurrence.element = some element →
+        Feature.Propagation.best? ctx raised (·.subscription.trigger) (Feature.Propagation.boundariesOf ctx element) =
+          none) →
+      Feature.Propagation.passCallOutputs propagation ctx origin false occurrence state = .ok passed →
+      Feature.Propagation.searchScopes propagation ctx raised origin state (fuel + 1) (some current) =
+        Feature.Propagation.searchScopes propagation ctx raised origin passed fuel occurrence.parent
 
 /-- The queries a hook's context answers as `Step`'s for `hooks` does (`Step.context`): how a catch trigger catches a
 raised event, an Event Sub-Process's start, and what a scope occurrence is. -/
@@ -299,10 +316,10 @@ def StepQueries (hooks : Hooks) (ctx : Ctx) : Prop :=
 run's scope occurrence, under `propagatesFromTrigger` (CIB-INT-0038). Three parts:
 (a) `Hooks.failCompensation`, which `Step` calls for a queued `Signal.compensationFailed`, queues the failed end of the
 instance, naming the run's trigger and the handler, whatever the option;
-(b) under `propagatesFromTrigger` `Hooks.raise` passes a compensation handler's context as it passes any scope
-occurrence: its outcome is the one the search takes with the context answered as ordinary (`ordinaryHandlers`), so the
-search offers the context's own candidates, as for an ordinary scope occurrence, and goes on from its parent, which is
-the run's scope occurrence (`Laws.State.SlotsSettled.runsPlaced`); it queues no `compensationFailed`;
+(b) under `propagatesFromTrigger` the search `Hooks.raise` runs passes a compensation handler's context
+(`PassesHandlerContext`): it offers the context's own candidates and, when none catches, goes on from the context's
+parent, which for a running context is the run's scope occurrence (`Laws.State.SlotsSettled.runsPlaced`); and the raise
+queues no `compensationFailed`;
 (c) under `failsInstance` every `compensationFailed` a raise queues names a scope occurrence `Step` calls a compensation
 handler's context, a running context of a run.
 Which candidates the context's level offers is open (#159), and none of the three says it is skipped.
@@ -321,8 +338,7 @@ def HandlerFailure (hooks : Hooks) : Prop :=
         ("trigger", run.trigger) ∈ failure.related ∧ ∃ reference, ("handler", reference) ∈ failure.related) ∧
     (∀ (ctx : Ctx) (raised : Raised) (origin : Origin) (state : State),
       ctx.program.options.compensationHandlerFailure = .propagatesFromTrigger →
-      hooks.raise ctx raised origin state = hooks.raise (ordinaryHandlers ctx) raised origin state ∧
-      ∀ after, hooks.raise ctx raised origin state = .ok after → ∃ new, Queues state after new ∧
+      PassesHandlerContext hooks ctx raised origin ∧ ∀ after, hooks.raise ctx raised origin state = .ok after → ∃ new, Queues state after new ∧
         ∀ handler code message raisedFrom, Signal.compensationFailed handler code message raisedFrom ∉ new) ∧
     ∀ (ctx : Ctx) (raised : Raised) (origin : Origin) (state after : State), StepQueries hooks ctx →
       ctx.program.options.compensationHandlerFailure = .failsInstance →
