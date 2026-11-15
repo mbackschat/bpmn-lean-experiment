@@ -25,4 +25,8 @@ theorem compensate_ne_begin {scope : ScopeOccurrenceId} {activity : Option Eleme
     {leave : Option Nat} {resume : Option Resume} {request : BeginRequest} :
     Signal.compensate scope activity trigger leave resume ≠ .begin request := nofun
 
+/-- Queued begins of one request are one request. -/
+theorem begin_inj {request other : BeginRequest} (same : Signal.begin request = .begin other) : request = other :=
+  Signal.begin.inj same
+
 end Kernel.Laws.Step
