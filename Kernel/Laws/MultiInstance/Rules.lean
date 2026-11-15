@@ -11,7 +11,7 @@ running body's slot record `MultiInstanceRun` and the `State` around it, stated 
 `Kernel.Feature.MultiInstance`, so that what reads them alone, the witnesses (`Kernel.Laws.MultiInstance.Witnesses`),
 stays outside the feature's rebuild cone (guard 15): the instance count fixed on entry, a sequential re-read's item,
 generation numbering and the counter locals, ownership of the instance scope occurrences, sequential and parallel slot
-shapes, early completion and the output collection. `Kernel.Laws.MultiInstance` proves what the feature's hooks keep of
+shapes and the output collection. `Kernel.Laws.MultiInstance` proves what the feature's hooks keep of
 them.
 
 The mode of a loop is `MultiInstanceMode`, whose matching `Kernel.Feature.MultiInstance` owns (guard 1), so the
@@ -25,7 +25,6 @@ hold of everything, values that violate it. Nothing executable imports this modu
 namespace Kernel.Laws.MultiInstance
 
 open Kernel
-open Kernel.Laws.State (Within)
 open Kernel.Laws.Step (OccurPending)
 
 /-- The Multi-Instance loop characteristics the element `element` carries (BPMN 2.0.2 §10.3.8, Table 10.30). -/
@@ -277,19 +276,5 @@ def FormKept : Value → Value → Prop
 (`SnapshotFixed`): a grown collection adds no instance, and one shorter than the index generates none (CIB-INT-0043). -/
 def RereadItem (run : MultiInstanceRun) (current : List Value) (index : Nat) (item : Value) : Prop :=
   index < run.instances.length ∧ current[index]? = some item
-
-/-- An early completion: the completion condition held before every slot was filled, so the Activity completes, every
-remaining instance in its scope ends with all it holds, the body's slot record goes, and no output collection is
-written (`PMI-EARLY-01`). -/
-structure EndsEarly (before after : State) (run : MultiInstanceRun) (output : Option String) : Prop where
-  unfilled : ∃ slot ∈ run.instances, ∀ value, slot ≠ .completed value
-  slotsGone : ∀ other ∈ after.slots.multiInstances, other.occurrence ≠ run.occurrence
-  scopesGone : ∀ (index : Nat) (scope : ScopeOccurrenceId), run.instances[index]? = some (.active scope) →
-    ∀ inner ∈ after.scopes, ¬ Within before inner.id scope
-  occurrencesGone : ∀ (index : Nat) (scope : ScopeOccurrenceId), run.instances[index]? = some (.active scope) →
-    ∀ occurrence ∈ after.occurrences, ¬ Within before occurrence.scope scope
-  noOutput : ∀ name, output = some name → ∀ locals ∈ after.variables, ∀ value, (name, value) ∈ locals.entries →
-    ∃ earlier ∈ before.variables, earlier.scope = locals.scope ∧ (name, value) ∈ earlier.entries
-
 
 end Kernel.Laws.MultiInstance

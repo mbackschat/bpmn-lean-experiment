@@ -17,7 +17,6 @@ instance occurrences 5 (activation 1) and 6 (activation 2).
 namespace Kernel.Laws.MultiInstance
 
 open Kernel
-open Kernel.Laws.State (Within)
 
 def review : ElementId := ⟨"Review"⟩
 def root : ScopeOccurrenceId := ⟨0⟩
@@ -314,43 +313,6 @@ theorem grown_beyond_entry_rejected : ¬ RereadItem running [.string "a", .strin
 /-- A shortened collection gives the next index no item. -/
 theorem shortened_rejected : ∀ item, ¬ RereadItem running [.string "a"] 1 item := by
   simp [RereadItem]
-
-/-- The condition held after the first instance completed: the second instance's scope occurrence and occurrence go,
-with the slot record, and the output name `out` is not written. -/
-def endedEarly : State :=
-  { entered with
-    scopes := [{ id := root, element := none, parent := none }], occurrences := []
-    variables := [], slots := {} }
-
-def halfDone : MultiInstanceRun := { running with instances := [.completed none, .active secondScope] }
-
-theorem ends_early : EndsEarly { entered with slots := { multiInstances := [halfDone] } } endedEarly halfDone (some "out") where
-  unfilled := ⟨.active secondScope, by simp [halfDone], by simp⟩
-  slotsGone := by simp [endedEarly]
-  scopesGone := by
-    intro index scope slot inner member within
-    simp only [endedEarly, List.mem_singleton] at member
-    subst member
-    match index with
-    | 1 =>
-      simp [halfDone] at slot
-      subst slot
-      have := Within.parentless (s := { entered with slots := { multiInstances := [halfDone] } })
-        (by simp [entered, root, bodyScope, firstOwned, secondOwned, firstScope, secondScope]) within
-      simp [root, secondScope] at this
-    | 0 => simp [halfDone] at slot
-    | _ + 2 => simp [halfDone] at slot
-  occurrencesGone := by simp [endedEarly]
-  noOutput := by simp [endedEarly]
-
-/-- Writing a partial output collection is no early completion. -/
-theorem partial_output_rejected :
-    ¬ EndsEarly entered { endedEarly with variables := [{ scope := root, entries := [("out", .list [])] }] } halfDone
-      (some "out") := fun early => by
-  obtain ⟨earlier, member, _, entry⟩ :=
-    early.noOutput "out" rfl { scope := root, entries := [("out", .list [])] } (by simp) (.list []) (by simp)
-  simp only [entered, List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl <;> simp [firstLocals, secondLocals] at entry
 
 /-! ## Queued instance begins -/
 
