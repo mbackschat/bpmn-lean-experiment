@@ -42,6 +42,15 @@ theorem clearInside_shrinks (s : State) (scope : ScopeOccurrenceId) (keep : List
   rw [made]
   exact ⟨List.filter_sublist, rfl⟩
 
+/-- Clearing a scope occurrence drops the compensation records retained strictly inside it and the runs inside it, its
+own included, and keeps the others in order. -/
+theorem clearInside_compensation (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
+    (s.clearInside scope keep).slots.compensation =
+      { retained := s.slots.compensation.retained.filter (!((s.subtree scope).filter (· != scope)).contains ·.scope)
+        runs := s.slots.compensation.runs.filter (!(s.subtree scope).contains ·.scope) } := by
+  obtain ⟨_, made⟩ := clearInside_eq s scope keep
+  rw [made]
+
 /-- Leaving a scope occurrence keeps the slots its clearing leaves but the retained compensation records. -/
 theorem leaveScope_slots (s : State) (scope : ScopeOccurrenceId) :
     (s.leaveScope scope).slots.parked = (s.clearInside scope).slots.parked ∧
