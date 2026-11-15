@@ -684,4 +684,52 @@ theorem registered_valuesRejectedWhole : Former.ValuesRejectedWhole Registry.hoo
 theorem registered_returnContinuesCaller : Former.ReturnContinuesCaller Registry.hooks :=
   Former.returnContinuesCaller Laws.Registry.hooks_completeCall
 
+/-- A Call installs its evaluated inputs as its called root's variables under the registered hooks. -/
+theorem registered_callInstallsSnapshot : Former.CallInstallsSnapshot Registry.hooks :=
+  Former.callInstallsSnapshot Laws.Registry.hooks_arriveActivity
+
+/-- The registered hooks keep `WellFormed` and the lane invariant of called instances (`Former.Formed`): the feature
+records follow from `WellFormed`'s and the lane's frames. -/
+theorem formed_contract : Laws.Step.HookContract Registry.hooks Former.Formed :=
+  registered_contract_of
+    (Proofs.Cancellation.featureOps_frame registeredOps_wellFormed.toFeatureOps
+      (fun program => (Former.callsFormed_alongside program).toFrameAlongside) Former.callsFormed_occursAlongside)
+    (multiInstanceKeeps_of fun program => Proofs.Cancellation.multiInstanceOps_alongside
+      (Former.callsFormed_alongside program) (registeredOps_wellFormed.multiInstance program))
+    (Proofs.Cancellation.compensationKeeps_frame registeredOps_wellFormed Former.callsFormed_stores
+      Former.callsFormed_occursAlongside)
+    Proofs.State.stateFacts
+
+/-- A committed input or start under the registered hooks keeps `Former.Formed`, from a before-state that keeps it. -/
+theorem registered_formed {program : Program} {before : Option State} {input : Input} {after : State}
+    (entry : ∀ state, before = some state → Former.Formed program state)
+    (ran : Step.step Registry.hooks program before input = .ok after) : Former.Formed program after :=
+  Laws.Step.step_keeps formed_contract (Former.formed_phases phases) Proofs.State.stateFacts
+    (Laws.Step.complete_keeps formed_contract (Former.formed_phases phases).toClosurePhases
+      (Former.callsFormed_pipelinePhases pipelinePhases) Proofs.State.stateFacts)
+    (fun _ _ holds => Former.formed_reset holds)
+    (fun instanceId variables businessKey => ⟨initial_wellFormed program instanceId variables businessKey,
+      Former.callsFormed_initial program instanceId variables businessKey⟩)
+    entry ran
+
+/-- A committed start keeps the lane invariant of called instances under the registered hooks. -/
+theorem registered_callsFormedAtStart : Former.CallsFormedAtStart Registry.hooks := fun _ _ _ ran =>
+  (registered_formed (fun _ given => by cases given) ran).2
+
+/-- Every instance a committed population run holds keeps the lane invariant of called instances under the registered
+hooks. -/
+theorem registered_callsFormedInPopulation : Former.CallsFormedInPopulation Registry.hooks :=
+  fun _ _ _ ran member inside =>
+    (Laws.Population.runStimuli_held (good := Former.Formed)
+      ⟨fun _ _ _ _ holds stepped => registered_formed (fun _ given => by cases given; exact holds) stepped,
+        fun _ _ _ stepped => registered_formed (fun _ given => by cases given) stepped⟩
+      ran member inside).2
+
+/-- A committed input under the registered hooks names every called root it creates by its Call and keeps the lane
+invariant of called instances. -/
+theorem registered_calledIdentityUnique : Former.CalledIdentityUnique Registry.hooks :=
+  fun _ _ before _ _ formed calls ran =>
+    have after := registered_formed (before := some before) (fun _ given => by cases given; exact ⟨formed, calls⟩) ran
+    ⟨fun _ member _ called => after.2.named.owner after.1 member called, after.2⟩
+
 end Kernel.Proofs.Step
