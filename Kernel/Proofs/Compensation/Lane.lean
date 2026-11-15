@@ -666,12 +666,6 @@ theorem apart_of_fresh {s t : State}
       have positive := List.count_pos_iff.mpr inside
       exact Nat.lt_succ_of_lt (issued n (List.count_pos_iff.mp (by omega)))
 
-/-- The trigger a queued compensation or Cancel raise names reads only the scope occurrences and the instance. -/
-theorem queuedTrigger_congr {s t : State} (scopes : t.scopes = s.scopes) (named : t.instanceId = s.instanceId) :
-    queuedTrigger t = queuedTrigger s := by
-  funext x
-  cases x <;> simp [queuedTrigger, scopeIds, scopes, Laws.State.instanceOf_congr scopes named]
-
 /-! ## A trigger's new run -/
 
 /-- The queued triggers of a queue whose head is a compensation: its trigger, then those the rest names. -/

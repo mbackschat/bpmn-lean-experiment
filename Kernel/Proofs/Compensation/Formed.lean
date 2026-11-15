@@ -5,12 +5,15 @@ public import Kernel.Proofs.Compensation.Relation
 /-! # Proofs: the Compensation lane relation carried by the state operations
 
 What the state operations the hooks apply and `Step`'s phases keep of the lane relation `Formed` beside
-`Laws.State.WellFormed` (`Proofs.Frame.FrameAlongside`, `OccursAlongside`, `StepAlongside`). Its read set is the
-compensation slot, the issue and activation counters, the scope occurrences with their process instances, and the
-queued compensations' triggers and resumes and Cancel raises' origins. Every operation here keeps the compensation slot
-or keeps a sublist of its records and runs, issues only upward, counts only upward and keeps the process instance of
-every issued scope occurrence that stands, so `Formed` carries over (`Formed.shrink`): the queued triggers it names
-then shrink too, as a queued Cancel raise's scope occurrence was issued (`TriggersApart.issued`). The compensation
+`Laws.State.WellFormed` (`Proofs.Frame.FrameAlongside`, `Alongside`, `OccursAlongside`, `StepAlongside`, and the
+completion pipeline's phases). Its read set is the compensation slot, the issue and activation counters, the scope
+occurrences with their process instances, the unbegun occurrences' keys, and the queued compensations' triggers and
+resumes and Cancel raises' origins. Every operation here keeps the compensation slot or keeps a sublist of its records
+and runs, issues only upward, counts only upward, keeps the process instance of every issued scope occurrence that
+stands and reserves only at a fresh activation (`ReservesFresh`), so `Formed` carries over (`Formed.shrink`): the
+queued triggers it names then shrink too, as a queued Cancel raise's scope occurrence was issued
+(`TriggersApart.issued`). A throw's trigger is fresh (`thrower_fresh`), so its compensation and raise keep `Formed`
+with no premise beyond the record's (`formed_occursAlongside`). The compensation
 hooks themselves store runs and are proved directly (`Proofs.Step.CompensationKeeps`). It reads no feature, so it lies
 in no feature's rebuild cone (guard 15). Nothing executable imports this module.
 -/
@@ -436,70 +439,83 @@ theorem key_signals (s : State) (more : List Signal) (o : Occurrence) :
     Laws.State.key { s with signals := more } o = Laws.State.key s o := by
   simp [Laws.State.key, Laws.State.instanceOf_congr (s := s) (t := { s with signals := more }) rfl rfl]
 
+/-- `trigger` may be held next to what `s` holds: it is held nowhere yet, is no group's nested run's, was counted, and
+names no unbegun reservation. -/
+def FreshTrigger (s : State) (trigger : OccurrenceRef) : Prop :=
+  trigger ∉ heldTriggers s ∧ (∀ run ∈ s.slots.compensation.runs, resumesGroup run.resume = true → run.trigger ≠ trigger) ∧
+    Counted s (triggerKey trigger) ∧ ∀ o ∈ s.occurrences, o.begun = false → triggerKey trigger ≠ Laws.State.key s o
+
+/-- Queuing a signal that carries one trigger, a compensation's or a Cancel raise's, keeps `Formed` when the trigger it
+names in `s` is fresh (`FreshTrigger`), a raise's scope occurrence was issued, and it resumes no group. -/
+theorem Formed.append {precedes : Compensable → Compensable → Prop} {s : State} (formed : Formed precedes s)
+    (signal : Signal) {held : OccurrenceRef ⊕ Origin} (carries : Laws.Step.triggersOf [signal] = [held])
+    (resumes : ∀ resume ∈ Laws.Step.resumesOf [signal], resumesGroup resume = false)
+    (issued : ∀ origin, held = .inr origin → origin.scope.value < s.nextIssue)
+    (fresh : ∀ trigger, queuedTrigger s held = some trigger → FreshTrigger s trigger) :
+    Formed precedes (s.signal signal) := by
+  rw [Laws.State.signal_eq]
+  have same : queuedTrigger { s with signals := s.signals ++ [signal] } = queuedTrigger s := by
+    funext entry
+    rcases entry with _ | origin
+    · rfl
+    · have named := Laws.State.instanceOf_congr (s := s) (t := { s with signals := s.signals ++ [signal] }) rfl rfl
+        origin.scope
+      simp only [queuedTrigger, named]
+      rfl
+  have queued : queuedTriggers { s with signals := s.signals ++ [signal] } =
+      queuedTriggers s ++ (queuedTrigger s held).toList := by
+    unfold queuedTriggers
+    rw [same, Laws.Step.triggersOf_append, carries, List.filterMap_append]
+    cases found : queuedTrigger s held <;> simp [found]
+  have extra : ∀ trigger ∈ (queuedTrigger s held).toList, FreshTrigger s trigger := fun trigger inside =>
+    fresh trigger (by simpa using inside)
+  refine ⟨formed.claims, formed.retained, formed.unfinished, formed.completions, formed.issued, formed.settled,
+    formed.keyed, formed.runsIssued, ⟨?_, fun run member grouped inHeld => ?_, fun trigger member => ?_,
+      fun origin inside => ?_, fun o inside unbegun trigger member => ?_⟩, fun _ _ _ _ resume member => ?_⟩
+  · unfold heldTriggers
+    rw [queued, ← List.append_assoc]
+    refine List.nodup_append.mpr ⟨formed.triggers.apart, by cases queuedTrigger s held <;> simp, ?_⟩
+    intro other inside trigger named same
+    exact (extra trigger named).1 (same ▸ inside)
+  · rw [queued] at inHeld
+    rcases List.mem_append.mp inHeld with old | named
+    · exact formed.triggers.grouped run member grouped old
+    · exact (extra _ named).2.1 run member grouped rfl
+  · rw [queued, ← List.append_assoc] at member
+    rcases List.mem_append.mp member with old | named
+    · exact formed.triggers.counted trigger old
+    · exact (extra trigger named).2.2.1
+  · rw [Laws.Step.triggersOf_append, carries] at inside
+    rcases List.mem_append.mp inside with old | named
+    · exact formed.triggers.issued origin old
+    · exact issued origin (List.mem_singleton.mp named).symm
+  · rw [key_signals]
+    rw [queued, ← List.append_assoc] at member
+    rcases List.mem_append.mp member with old | named
+    · exact formed.triggers.unreserved o inside unbegun trigger old
+    · exact (extra trigger named).2.2.2 o inside unbegun
+  · have carried := Laws.Step.mem_resumesOf.mpr ⟨_, _, _, _, member⟩
+    rw [Laws.Step.resumesOf_append] at carried
+    rcases List.mem_append.mp carried with old | named
+    · obtain ⟨scope', activity', trigger', rest⟩ := Laws.Step.mem_resumesOf.mp old
+      obtain ⟨leave', inside⟩ := rest
+      exact formed.ungrouped scope' activity' trigger' leave' resume inside
+    · exact resumes resume named
+
 /-- Queuing a compensation keeps `Formed` when its trigger is held nowhere yet, is no group's nested run's, was
-counted, and its resume resumes no group. -/
+counted, names no unbegun reservation, and its resume resumes no group. -/
 theorem Formed.queue {precedes : Compensable → Compensable → Prop} {s : State} (formed : Formed precedes s)
     {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option Nat}
     {resume : Option Resume} (fresh : trigger ∉ heldTriggers s)
     (ungrouped : ∀ run ∈ s.slots.compensation.runs, resumesGroup run.resume = true → run.trigger ≠ trigger)
     (counted : Counted s (triggerKey trigger)) (unresumed : resumesGroup resume = false)
     (unreserved : ∀ o ∈ s.occurrences, o.begun = false → triggerKey trigger ≠ Laws.State.key s o) :
-    Formed precedes (s.signal (.compensate scope activity trigger leave resume)) := by
-  rw [Laws.State.signal_eq]
-  have same : queuedTrigger { s with signals := s.signals ++ [.compensate scope activity trigger leave resume] } =
-      queuedTrigger s := by
-    funext held
-    rcases held with _ | origin
-    · rfl
-    · have named := Laws.State.instanceOf_congr (s := s)
-        (t := { s with signals := s.signals ++ [.compensate scope activity trigger leave resume] }) rfl rfl origin.scope
-      simp only [queuedTrigger, named]
-      rfl
-  have queued : queuedTriggers { s with signals := s.signals ++ [.compensate scope activity trigger leave resume] } =
-      queuedTriggers s ++ [trigger] := by
-    unfold queuedTriggers
-    rw [same, Laws.Step.triggersOf_append, Laws.Step.triggersOf_compensate, List.filterMap_append]
-    rfl
-  have resumes : Laws.Step.resumesOf (s.signals ++ [.compensate scope activity trigger leave resume]) =
-      Laws.Step.resumesOf s.signals ++ [resume] := by
-    rw [Laws.Step.resumesOf_append]
-    rfl
-  refine ⟨formed.claims, formed.retained, formed.unfinished, formed.completions, formed.issued, formed.settled,
-    formed.keyed, formed.runsIssued, ⟨?_, fun run member grouped held => ?_, fun held member => ?_,
-      fun origin inside => ?_, fun o inside unbegun held member => ?_⟩, fun _ _ _ _ queuedResume member => ?_⟩
-  · unfold heldTriggers
-    rw [queued, ← List.append_assoc]
-    refine List.nodup_append.mpr ⟨formed.triggers.apart, List.nodup_cons.mpr ⟨by simp, .nil⟩, ?_⟩
-    intro held inside other named same
-    rw [List.mem_singleton.mp named] at same
-    exact fresh (same ▸ inside)
-  · rw [queued] at held
-    rcases List.mem_append.mp held with old | named
-    · exact formed.triggers.grouped run member grouped old
-    · exact ungrouped run member grouped (List.mem_singleton.mp named)
-  · rw [queued, ← List.append_assoc] at member
-    rcases List.mem_append.mp member with old | named
-    · exact formed.triggers.counted held old
-    · rw [List.mem_singleton.mp named]
-      exact counted
-  · rw [Laws.Step.triggersOf_append, Laws.Step.triggersOf_compensate] at inside
-    rcases List.mem_append.mp inside with old | named
-    · exact formed.triggers.issued origin old
-    · simp at named
-  · rw [key_signals]
-    rw [queued, ← List.append_assoc] at member
-    rcases List.mem_append.mp member with old | named
-    · exact formed.triggers.unreserved o inside unbegun held old
-    · rw [List.mem_singleton.mp named]
-      exact unreserved o inside unbegun
-  · have carried := Laws.Step.mem_resumesOf.mpr ⟨_, _, _, _, member⟩
-    rw [resumes] at carried
-    rcases List.mem_append.mp carried with old | named
-    · obtain ⟨scope', activity', trigger', rest⟩ := Laws.Step.mem_resumesOf.mp old
-      obtain ⟨leave', inside⟩ := rest
-      exact formed.ungrouped scope' activity' trigger' leave' queuedResume inside
-    · rw [List.mem_singleton.mp named]
-      exact unresumed
+    Formed precedes (s.signal (.compensate scope activity trigger leave resume)) :=
+  formed.append _ (Laws.Step.triggersOf_compensate _ _ _ _ _)
+    (fun _ inside => by rw [List.mem_singleton.mp inside]; exact unresumed) (fun _ named => by cases named)
+    fun _ named => by
+      simp only [queuedTrigger, Option.some.injEq] at named
+      exact named ▸ ⟨fresh, ungrouped, counted, unreserved⟩
 
 /-- A state whose issued scope occurrences that stand stood in `queue` in the same process instance names only
 triggers `queue` names from the same queued compensations and Cancel raises. -/
@@ -624,26 +640,115 @@ theorem formed_compensate (program : Program) (precedes : Compensable → Compen
     refine Laws.State.Counted.congr ?_ counted
     rw [cleared.activations, frame.2.2.1, steady.activations, made]
 
-/-- The features' records keep `Formed` where they reserve, queue an occurrence or a caught Cancel's compensation; a
-throw's compensation and raise (`throwCompensate`, `raise`) take a trigger from the thrower's occurrence, and that it
-is held nowhere yet is no consequence of `Formed` and `BegunFrom`: a reservation `Step` begins keeps the activation it
-was numbered with, which a held trigger may name, so the two are handed in. -/
-theorem formed_occursAlongside (program : Program) (precedes : Compensable → Compensable → Prop)
-    (throwCompensate : ∀ s occurrence scope activity trigger leave, WellFormed program s →
-      Laws.State.BegunFrom (fun t => WellFormed program t ∧ Formed precedes t) s occurrence →
-      trigger = { processInstanceId := s.instanceOf occurrence.scope, element := occurrence.element,
-                  activation := occurrence.activation } → Formed precedes s →
-      Formed precedes (s.signal (.compensate scope activity trigger none (some (.complete occurrence.id leave)))))
-    (raise : ∀ s raised occurrence, WellFormed program s →
-      Laws.State.RaisesFrom (fun t => WellFormed program t ∧ Formed precedes t) occurrence s → Formed precedes s →
-      Formed precedes (s.signal (.raise raised { element := occurrence.element, scope := occurrence.scope,
-                                                 activation := occurrence.activation }))) :
+/-- The trigger a queued compensation or Cancel raise names reads only the scope occurrences and the instance. -/
+theorem queuedTrigger_congr {s t : State} (scopes : t.scopes = s.scopes) (named : t.instanceId = s.instanceId) :
+    queuedTrigger t = queuedTrigger s := by
+  funext x
+  cases x <;> simp [queuedTrigger, scopeIds, scopes, Laws.State.instanceOf_congr scopes named]
+
+/-- A state with another's scope occurrences, instance identity and queued triggers names the same ones. -/
+theorem queuedTriggers_congr {s t : State} (scopes : t.scopes = s.scopes) (instanceId : t.instanceId = s.instanceId)
+    (triggers : Laws.Step.triggersOf t.signals = Laws.Step.triggersOf s.signals) : queuedTriggers t = queuedTriggers s := by
+  unfold queuedTriggers
+  rw [triggers, queuedTrigger_congr scopes instanceId]
+
+/-- The trigger a throw takes from its occurrence is fresh in a state that holds what the state its begin left held:
+a begin from a state that kept `Formed` began an unbegun reservation, whose key no held trigger names
+(`TriggersApart.unreserved`), or issued afresh above every counted activation (`Laws.State.Activated.fresh`); no other
+occurrence carries the thrower's key (`Laws.State.Distinct.keys`), and its counter counted it. The thrower stands. -/
+theorem thrower_fresh {program : Program} {precedes : Compensable → Compensable → Prop} {base t : State}
+    {occurrence : Occurrence}
+    (begun : Laws.State.BegunFrom (fun u => WellFormed program u ∧ Formed precedes u) base occurrence)
+    (well : WellFormed program t) (occurrences : t.occurrences = base.occurrences)
+    (activations : t.activations = base.activations) (scopes : t.scopes = base.scopes)
+    (instanceId : t.instanceId = base.instanceId) (compensation : t.slots.compensation = base.slots.compensation)
+    (triggers : Laws.Step.triggersOf t.signals = Laws.Step.triggersOf base.signals) :
+    occurrence ∈ t.occurrences ∧ FreshTrigger t { processInstanceId := t.instanceOf occurrence.scope,
+                                                  element := occurrence.element, activation := occurrence.activation } := by
+  obtain ⟨before, request, rest⟩ := begun
+  obtain ⟨role, sourceType, holds, rest⟩ := rest
+  obtain ⟨began, made⟩ := rest
+  have begins := Laws.State.beginOccurrence_begins holds.1.activations request role sourceType
+  rw [made] at begins
+  have instances : ∀ x, t.instanceOf x = before.instanceOf x := fun x =>
+    (Laws.State.instanceOf_congr scopes instanceId x).trans (begins.instances x)
+  have keyOf : triggerKey { processInstanceId := t.instanceOf occurrence.scope, element := occurrence.element,
+                            activation := occurrence.activation } = Laws.State.key t occurrence := by
+    unfold triggerKey Laws.State.key
+    rw [began.role]
+  have member : occurrence ∈ t.occurrences := by
+    rw [occurrences, begins.occurrences]
+    exact List.mem_append_right _ (List.mem_singleton_self _)
+  -- every trigger `t` holds is one the begin's state held, and names another key than the thrower's
+  have held : ∀ trigger ∈ t.slots.compensation.runs.map (·.trigger) ++ queuedTriggers t,
+      triggerKey trigger ≠ Laws.State.key t occurrence := fun trigger inside => by
+    have queued : queuedTriggers t = queuedTriggers before :=
+      queuedTriggers_congr (scopes.trans begins.scopes) (instanceId.trans begins.instanceId)
+        (by rw [triggers, begins.signals])
+    rw [queued, compensation, begins.slots] at inside
+    rw [← keyOf]
+    rcases begins.source with ⟨reserved, taken⟩ | issued
+    · obtain ⟨unbegun, -, placed⟩ := (began.reserved reserved.id taken.named).2 reserved taken.member rfl
+      have same : triggerKey { processInstanceId := t.instanceOf occurrence.scope, element := occurrence.element,
+                               activation := occurrence.activation } = Laws.State.key before reserved := by
+        unfold triggerKey Laws.State.key
+        rw [instances, begins.scope, placed began.scope, taken.element, taken.activation, ← taken.role, began.role]
+      rw [same]
+      exact holds.2.triggers.unreserved reserved taken.member unbegun trigger inside
+    · have apart := issued.activated.fresh (holds.2.triggers.counted trigger inside)
+      have roleIs : role = .element := issued.roled ▸ began.role
+      rw [roleIs] at apart
+      intro same
+      apply apart
+      rw [same]
+      unfold triggerKey
+      rw [instances, begins.scope, issued.element]
+  refine ⟨member, fun inHeld => ?_, fun run inside _ same => ?_, keyOf ▸ well.occurrencesCounted occurrence member,
+    fun o inside unbegun same => ?_⟩
+  · unfold heldTriggers at inHeld
+    rcases List.mem_append.mp inHeld with ran | queuedIn
+    · obtain ⟨run, chosen, named⟩ := List.mem_map.mp ran
+      exact held _ (List.mem_append_left _ (List.mem_map.mpr ⟨run, (List.mem_filter.mp chosen).1, named⟩)) keyOf
+    · exact held _ (List.mem_append_right _ queuedIn) keyOf
+  · exact held run.trigger (List.mem_append_left _ (List.mem_map.mpr ⟨run, inside, rfl⟩)) (same ▸ keyOf)
+  · have one := Laws.State.nodup_map_eq well.distinct.keys inside member (same.symm.trans keyOf)
+    rw [one, begins.isBegun] at unbegun
+    cases unbegun
+
+/-- The features' records keep `Formed` where they reserve, queue an occurrence or a caught Cancel's compensation, and
+where a throw queues its compensation or raises: its trigger is fresh (`thrower_fresh`), and a raise's scope occurrence,
+the thrower's, was issued. -/
+theorem formed_occursAlongside (program : Program) (precedes : Compensable → Compensable → Prop) :
     OccursAlongside program (Formed precedes) where
   reserve s element scope well _ kept := kept.reserve well element scope
   occur _ _ _ _ _ _ _ kept := kept.signal _
   compensate s scope activity trigger leave element at_ resumed _ source kept :=
     formed_compensate program precedes s scope activity trigger leave element at_ resumed source kept
-  throwCompensate := throwCompensate
-  raise := raise
+  throwCompensate s occurrence scope activity trigger leave well begun named kept := by
+    subst named
+    have fresh := (thrower_fresh begun well rfl rfl rfl rfl rfl rfl).2
+    exact kept.queue fresh.1 fresh.2.1 fresh.2.2.1 rfl fresh.2.2.2
+  raise s raised occurrence well raises kept := by
+    obtain ⟨base, begun, at_⟩ := raises
+    obtain ⟨member, fresh⟩ : occurrence ∈ s.occurrences ∧
+        FreshTrigger s { processInstanceId := s.instanceOf occurrence.scope, element := occurrence.element,
+                         activation := occurrence.activation } := by
+      rcases at_ with rfl | ⟨leave, rfl⟩
+      · exact thrower_fresh begun well rfl rfl rfl rfl rfl rfl
+      · rw [Laws.State.signal_eq] at well ⊢
+        exact thrower_fresh begun well rfl rfl rfl rfl rfl (by
+          rw [Laws.Step.triggersOf_append, show Laws.Step.triggersOf [Signal.complete occurrence.id leave [] .outward] = []
+            from rfl, List.append_nil])
+    cases cancels : raised.isCancel
+    · exact kept.signal _ (by rw [Laws.Step.triggersOf_raise, cancels]; rfl)
+    · obtain ⟨entry, inside, named⟩ := List.mem_map.mp (well.owned.occurrenceScopes occurrence member)
+      refine kept.append _ (by rw [Laws.Step.triggersOf_raise, cancels]; rfl) (fun _ inside => absurd inside List.not_mem_nil)
+        (fun origin same => ?_) fun trigger found => ?_
+      · cases same
+        rw [← named]
+        exact well.issued.scopes entry inside
+      · have stands : occurrence.scope ∈ scopeIds s := List.mem_map.mpr ⟨entry, inside, named⟩
+        simp only [queuedTrigger, stands, ite_true, Option.some.injEq] at found
+        exact found ▸ fresh
 
 end Kernel.Proofs.Compensation
