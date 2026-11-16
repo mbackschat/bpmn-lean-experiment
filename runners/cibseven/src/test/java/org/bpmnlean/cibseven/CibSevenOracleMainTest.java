@@ -18,6 +18,7 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -67,18 +68,34 @@ public class CibSevenOracleMainTest {
    */
   @Test
   public void leavesNoResidueForTheNextScenarioWhenCibCannotDeleteAFailedOne() throws Exception {
-    var undeletable = ScenarioJson.writeScenario(ScenarioJson.read(
-        PROJECT_ROOT.resolve("scenarios/open-rows/transaction-cancel-mixed/subjects-effect-first.scenario.json")));
+    // The witness is synthetic: its Compensation start declares isInterrupting="false", which CIB-LIM-0045 shows CIB
+    // runs as a concurrent in-flow-scope start and then fails, and repository models may not declare the attribute.
+    var mixed = PROJECT_ROOT.resolve("scenarios/open-rows/transaction-cancel-mixed/");
+    var compensationStart = "<bpmn:startEvent id=\"StartEvent_EspPack\">";
+    var order = Files.readString(mixed.resolve("order.bpmn"), StandardCharsets.UTF_8);
+    assertEquals(compensationStart, 1, order.split(Pattern.quote(compensationStart), -1).length - 1);
+    var undeletableOrder =
+        order.replace(compensationStart, "<bpmn:startEvent id=\"StartEvent_EspPack\" isInterrupting=\"false\">");
+    var root = temporary.getRoot().toPath();
+    Files.writeString(root.resolve("order-with-isinterrupting.bpmn"), undeletableOrder, StandardCharsets.UTF_8);
+    var source = ScenarioJson.read(mixed.resolve("subjects-effect-first.scenario.json"));
+    var undeletable = ScenarioJson.writeScenario(source)
+        .replace(source.bpmn().relativePath(), "order-with-isinterrupting.bpmn")
+        .replace(source.bpmn().sha256(), sha256(undeletableOrder));
+    var goodDirectory = Files.createDirectories(root.resolve("scenarios/user-task-discovery-completion"));
+    Files.copy(
+        PROJECT_ROOT.resolve("scenarios/user-task-discovery-completion/process.bpmn"),
+        goodDirectory.resolve("process.bpmn"));
     var good = ScenarioJson.writeScenario(ScenarioJson.read(
         PROJECT_ROOT.resolve("scenarios/user-task-discovery-completion/scenario.json")));
     var output = new StringWriter();
 
     CibSevenOracleMain.serve(
-        new StringReader(undeletable + System.lineSeparator() + good + System.lineSeparator()), output, PROJECT_ROOT);
+        new StringReader(undeletable + System.lineSeparator() + good + System.lineSeparator()), output, root);
 
     var lines = output.toString().lines().toList();
     assertEquals(2, lines.size());
-    assertTrue(lines.get(0).startsWith("{\"kind\":\"scenarioHarnessFailure\""));
+    assertTrue(lines.get(0), lines.get(0).startsWith("{\"kind\":\"scenarioHarnessFailure\""));
     assertEquals(
         ScenarioDiagnosticsProtocol.CleanupProjection.clean(),
         ScenarioJson.readResult(lines.get(1)).diagnostics().cleanup());
