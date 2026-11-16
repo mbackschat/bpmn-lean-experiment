@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_EscalationTriggerEsp"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-handler-failure-at-wait:escalation-trigger-esp">
+  <bpmn:escalation id="Escalation_Undo" name="Undo escalated" escalationCode="UNDO_ESCALATED" />
+  <bpmn:message id="Message_Compensate" name="compensateWork" />
+  <bpmn:process id="Process_EscalationTriggerEsp" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:userTask id="UserTask_Work" name="Do the work" />
+    <bpmn:boundaryEvent id="Boundary_CompensateWork" attachedToRef="UserTask_Work">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Work" />
+    </bpmn:boundaryEvent>
+    <bpmn:subProcess id="SubProcess_Undo" name="Undo the work" isForCompensation="true">
+      <bpmn:startEvent id="StartEvent_Undo" />
+      <bpmn:userTask id="UserTask_UndoReview" name="Review the undo" />
+      <bpmn:endEvent id="EndEvent_UndoEscalated">
+        <bpmn:escalationEventDefinition id="EscalationDefinition_Throw" escalationRef="Escalation_Undo" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_StartUndo_Review" sourceRef="StartEvent_Undo" targetRef="UserTask_UndoReview" />
+      <bpmn:sequenceFlow id="Flow_Review_EndUndo" sourceRef="UserTask_UndoReview" targetRef="EndEvent_UndoEscalated" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_Hold" name="Hold the order" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:subProcess id="EventSubProcess_Trigger" triggeredByEvent="true">
+      <bpmn:startEvent id="StartEvent_Trigger" isInterrupting="false">
+        <bpmn:messageEventDefinition id="MessageDefinition_Trigger" messageRef="Message_Compensate" />
+      </bpmn:startEvent>
+      <bpmn:intermediateThrowEvent id="IntermediateThrow_Work">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Throw" activityRef="UserTask_Work" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="UserTask_AfterThrow" name="Continue after compensation" />
+      <bpmn:endEvent id="EndEvent_Trigger" />
+      <bpmn:subProcess id="EventSubProcess_TriggerEscalation" triggeredByEvent="true">
+        <bpmn:startEvent id="StartEvent_TriggerEscalation" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationDefinition_Trigger" escalationRef="Escalation_Undo" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="UserTask_CaughtInTriggerEsp" name="Caught in the trigger's Event Sub-Process" />
+        <bpmn:endEvent id="EndEvent_CaughtInTriggerEsp" />
+        <bpmn:sequenceFlow id="Flow_TriggerEscalation_Caught" sourceRef="StartEvent_TriggerEscalation" targetRef="UserTask_CaughtInTriggerEsp" />
+        <bpmn:sequenceFlow id="Flow_CaughtInTriggerEsp_End" sourceRef="UserTask_CaughtInTriggerEsp" targetRef="EndEvent_CaughtInTriggerEsp" />
+      </bpmn:subProcess>
+      <bpmn:sequenceFlow id="Flow_Trigger_Throw" sourceRef="StartEvent_Trigger" targetRef="IntermediateThrow_Work" />
+      <bpmn:sequenceFlow id="Flow_Throw_AfterThrow" sourceRef="IntermediateThrow_Work" targetRef="UserTask_AfterThrow" />
+      <bpmn:sequenceFlow id="Flow_AfterThrow_End" sourceRef="UserTask_AfterThrow" targetRef="EndEvent_Trigger" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="EventSubProcess_Process" triggeredByEvent="true">
+      <bpmn:startEvent id="StartEvent_ProcessEscalation" isInterrupting="false">
+        <bpmn:escalationEventDefinition id="EscalationDefinition_Process" escalationRef="Escalation_Undo" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="UserTask_CaughtAtProcess" name="Caught at the process" />
+      <bpmn:endEvent id="EndEvent_CaughtAtProcess" />
+      <bpmn:sequenceFlow id="Flow_ProcessEscalation_Caught" sourceRef="StartEvent_ProcessEscalation" targetRef="UserTask_CaughtAtProcess" />
+      <bpmn:sequenceFlow id="Flow_CaughtAtProcess_End" sourceRef="UserTask_CaughtAtProcess" targetRef="EndEvent_CaughtAtProcess" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Start_Work" sourceRef="StartEvent_Start" targetRef="UserTask_Work" />
+    <bpmn:sequenceFlow id="Flow_Work_Hold" sourceRef="UserTask_Work" targetRef="UserTask_Hold" />
+    <bpmn:sequenceFlow id="Flow_Hold_Done" sourceRef="UserTask_Hold" targetRef="EndEvent_Done" />
+    <bpmn:association id="Association_CompensateWork" associationDirection="One" sourceRef="Boundary_CompensateWork" targetRef="SubProcess_Undo" />
+  </bpmn:process>
+</bpmn:definitions>

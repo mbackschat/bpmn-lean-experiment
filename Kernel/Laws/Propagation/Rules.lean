@@ -14,7 +14,7 @@ independent of `Kernel.Feature.Propagation`'s and `Kernel.Step`'s code: the sear
 raising scope occurrence outward and the first level holding a catcher wins, so a nearer catch-all precedes a farther
 exact code, while within one level the lowest precedence wins, an exact code before a catch-all, document order
 breaking ties (CIB-INT-0010); at a compensation handler's context the search stops under `failsInstance` and goes on
-from the trigger's scope occurrence under `propagatesFromTrigger` (I11); a caught interrupting event removes everything
+from the scope occurrence holding the compensated subject's record under `propagatesFromTrigger` (I11, #159); a caught interrupting event removes everything
 inside the interrupted scope occurrence, keeps every activation counter, and puts exactly one token on each of the
 catcher's flows in the parent; an Error no catcher takes fails the instance or ends only the throwing path, as the
 profile selects; an Escalation no catcher takes changes nothing beyond its thrower's own leave; and admission keeps
@@ -68,15 +68,16 @@ theorem Chosen.lowest {rank : ElementId → Option Nat} {levels : List (List Ele
 
 /-- Where a search that reaches a compensation handler's context (`handlerAt`, its index on the outward chain
 `outward`) looks: under `failsInstance` no further than that context; under `propagatesFromTrigger` on from the scope
-occurrence the trigger ran in, along its own chain `fromTrigger` (I11, D8). A search that meets no handler context
-walks the whole chain. -/
+occurrence holding the compensated subject's record, along its own chain `fromRecord`, the handler's model scopes, and
+never along the context's parent, the trigger's scope occurrence (I11, D8, #159). A search that meets no handler
+context walks the whole chain. -/
 def Searched (policy : CompensationHandlerFailure) (outward : List ScopeOccurrenceId) (handlerAt : Option Nat)
-    (fromTrigger searched : List ScopeOccurrenceId) : Prop :=
+    (fromRecord searched : List ScopeOccurrenceId) : Prop :=
   match handlerAt with
   | none => searched = outward
   | some index =>
     (policy = .failsInstance → searched = outward.take (index + 1)) ∧
-      (policy = .propagatesFromTrigger → searched = outward.take (index + 1) ++ fromTrigger)
+      (policy = .propagatesFromTrigger → searched = outward.take (index + 1) ++ fromRecord)
 
 /-! ## A caught interrupting event -/
 

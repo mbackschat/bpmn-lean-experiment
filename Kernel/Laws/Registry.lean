@@ -42,14 +42,16 @@ theorem hooks_arriveThrow : Registry.hooks.arriveThrow = Feature.Propagation.arr
   simp only [Registry.hooks]
 
 /-- Propagation searches for a catcher with Work's Error-path leave, Data's outward writes of the catch variables and of
-a Call's raised outputs, and Compensation's drop of the runs an interrupting catcher removes. -/
+a Call's raised outputs, Compensation's drop of the runs an interrupting catcher removes and its record of the handler
+running in a context. -/
 theorem hooks_raise : Registry.hooks.raise = Feature.Propagation.raise
     { mappedErrorOutputs := Feature.Work.mappedErrorOutputs Feature.Data.writeOutputs
       writeCaught := fun ctx scope writes => Feature.Data.writeOutputs ctx scope writes .outward
       callOutputs := fun ctx root state => do
         let (scope, writes) ← Feature.Work.Call.raisedOutputs ctx root state
         Feature.Data.writeOutputs ctx scope writes .outward state
-      dropRuns := Feature.Compensation.dropWithin } := by
+      dropRuns := Feature.Compensation.dropWithin
+      handlerRecord := Feature.Compensation.runningRecord } := by
   simp only [Registry.hooks]
 
 /-- Scopes arrives at every Scope. -/

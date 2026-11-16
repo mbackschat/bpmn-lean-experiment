@@ -1,13 +1,15 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Feature.Propagation.Candidates
 public import Kernel.Feature.Propagation.Throws
 
 /-! # Propagation: throw Events and the search for a catcher
 
 Owns matching on `Throw` and `Raised`. What a throw Event does when it arrives (`arriveThrow`) is
 `Kernel.Feature.Propagation.Throws`'s; an Error, Escalation or Cancel throw there queues a raise of its event from the
-scope occurrence it ran in, which this module takes (`raise`).
+scope occurrence it ran in, which this module takes (`raise`). Which catchers each level of the search offers, and the
+refusals that rest on where the raise runs, are `Kernel.Feature.Propagation.Candidates`'s.
 
 The search for a catcher ([BPMN 2.0.2 §13.5.3, §13.5.4](../../docs/reference/bpmn-2.0.2/README.md)) visits, in order:
 the boundaries of the Activity that raised it, if any; then, for each scope occurrence from the raising one outward,
@@ -15,8 +17,8 @@ the Event Sub-Processes the occurrence's element declares, then the boundaries o
 candidate sets the catch trigger with the lowest `Ctx.catches` precedence wins, document order breaking ties, so an
 exact code is preferred over a catch-all at the same level (CIB `ErrorEventDefinition#getPrecedence`) but never over a
 nearer catcher. Under `CompensationHandlerFailure.failsInstance` the search never passes the scope occurrence of a
-compensation handler: what reaches it uncaught is the handler's outcome; under `propagatesFromTrigger` it searches that
-context as an ordinary scope occurrence and goes on from its parent.
+compensation handler: what reaches it uncaught is the handler's outcome; under `propagatesFromTrigger` it goes on through
+the handler's model scopes, not the trigger's (`searchScopes`, CIB-INT-0038).
 A Multi-Instance instance's scope occurrence offers no boundaries of its own: they belong to the
 body, whose scope occurrence is the next one out (`BpmnParse:3291-3295`, BPMN 2.0.2 §13.5.3). A Sub-Process's Event
 Sub-Processes are offered once, in its instance's scope occurrence, never again in a Multi-Instance instance's or body's
@@ -35,27 +37,6 @@ public section
 
 namespace Kernel.Feature.Propagation
 
-/-- The catcher with the lowest precedence among `candidates`, the first in document order on a tie, with what it
-writes. -/
-def best? {α : Type} (ctx : Ctx) (raised : Raised) (trigger : α → Trigger) (candidates : List α) :
-    Option (α × List (String × Value)) :=
-  (candidates.foldl (fun chosen candidate =>
-    match ctx.catches raised (trigger candidate), chosen with
-    | none, _ => chosen
-    | some caught, none => some (caught, candidate)
-    | some caught, some (best, _) => if caught.rank < best.rank then some (caught, candidate) else chosen) none).map
-    fun (caught, candidate) => (candidate, caught.writes)
-
-def boundariesOf (ctx : Ctx) (element : ElementId) : List Boundary :=
-  (((ctx.program.element? element).bind (·.envelope?)).map (·.boundaries)).getD []
-
-/-- The Event Sub-Processes declared directly in `occurrence`, the process included, each with its start and whether it
-interrupts; a called root's are its called process's (`State.childrenOf`). -/
-def eventSubProcesses (ctx : Ctx) (state : State) (occurrence : ScopeOccurrence) : List (ElementId × Subscription × Bool) :=
-  (state.childrenOf ctx.program occurrence.id).filterMap fun child =>
-    child.scope?.bind fun (header, payload) => (ctx.eventStart payload).map fun (start, interrupting) =>
-      (header.id, start, interrupting)
-
 /-- An Escalation's thrower leaves once the search has decided, unless its catcher interrupts and so cancels it with
 the scope that holds it: CIB starts the catcher's handler and only then leaves the throw, and only when the catcher
 does not interrupt (`ThrowEscalationEventActivityBehavior.java:44-48`). Only an Escalation's search calls this;
@@ -66,61 +47,6 @@ def throwerLeaves (ctx : Ctx) (origin : Origin) (state : State) : State :=
   match standing, (ctx.program.element? origin.element).bind (·.event?) with
   | some occurrence, some (_, payload) => state.signal (.complete occurrence.id (throwLeave payload) [] .outward)
   | _, _ => state
-
-/-- Whether the search passes the Event Sub-Process a raise originates in however deep inside it the raise runs, or
-only when it runs directly in it. CIB's Error finder skips an ancestor flow scope at any depth
-(`bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java:41-58`, `pvm/process/ScopeImpl.java:170-182`), its
-Escalation finder only the thrower's direct flow scope (`bpmn/helper/EscalationEventDefinitionFinder.java:58-61`). No
-Event Sub-Process catches a Cancel (`start.cancel`), so its answer is never read. -/
-def passesHandlerAtAnyDepth : Raised → Bool
-  | .error _ _ => true
-  | .escalation _ => false
-  | .cancel => true
-
-/-- The scope occurrence held directly in `visited` that the chain from `current` outward passes through, if any;
-`fuel` bounds the walk by the number of scope occurrences. -/
-def heldOnChain (state : State) (visited : ScopeOccurrenceId) : Nat → ScopeOccurrenceId → Option ScopeOccurrence
-  | 0, _ => none
-  | fuel + 1, current =>
-    (state.scopes.find? (·.id == current)).bind fun occurrence =>
-      if occurrence.parent == some visited then some occurrence
-      else occurrence.parent.bind (heldOnChain state visited fuel)
-
-/-- Whether `occurrence` only wraps `held`, the scope occurrence directly inside it on the raise's chain, of its own
-element: a Multi-Instance body's scope occurrence around an instance's, an instance's around the Sub-Process instance's,
-or a compensation handler's context around the handler Sub-Process's. Its element's Event Sub-Processes belong to the
-innermost one, the Sub-Process instance, whose `Scopes.enter` armed them and where the search offered them, or passed
-the one the raise runs in, already: BPMN 2.0.2 §10.3.5 gives each Sub-Process instance its Event Sub-Processes, and CIB's
-finders visit each flow scope once, the Multi-Instance body `#multiInstanceBody` declaring none (#158). A called root
-wraps nothing: its Event Sub-Processes are its called process's, and a recursive Call's root holds a root of the same
-Call. -/
-def wrapsOwnScope (state : State) (occurrence : ScopeOccurrence) (held : Option ScopeOccurrence) : Bool :=
-  held.any (·.element == occurrence.element) && !state.calledRoot occurrence.id
-
-/-- The Event Sub-Processes of `occurrence` that may catch a raise from `origin` (PC-ERROR-02). One the raise
-originates inside is no candidate, so a rethrow passes the handler that runs it, or that an interrupting handler's
-completion is disposing of, to the host's boundaries and outward (BPMN 2.0.2 §13.5.4: "control passes to the boundary
-Event"; CIB-INT-0022). Refused under every profile, dynamic-only because they rest on what a running handler raises:
-an Escalation from deeper inside a handler that matches it (`escalation-rethrow-reenters-handler`), which CIB catches
-with that handler again; and a raise from an interrupting handler that another Event Sub-Process of the same scope would
-catch (`rethrow-caught-by-sibling-handler`), which CIB starts (CIB-DEV-0003). Both are restrictions of the `bpmn-2.0.2`
-meaning, never that meaning: §13.5.4 passes the running handler at any depth and starts no new handler while the parent
-is Failing or Terminating, so both raises would go on outward. A scope occurrence that only wraps one of its own element
-offers none (`wrapsOwnScope`). -/
-def handlerCandidates (ctx : Ctx) (raised : Raised) (origin : Origin) (state : State) (occurrence : ScopeOccurrence) :
-    Except Failure (List (ElementId × Subscription × Bool)) :=
-  let held := heldOnChain state occurrence.id (state.scopes.length + 1) origin.scope
-  if wrapsOwnScope state occurrence held then .ok [] else
-  let handlers := eventSubProcesses ctx state occurrence
-  match held.bind fun held => (handlers.find? (some ·.1 == held.element)).map (held, ·) with
-  | none => .ok handlers
-  | some (held, (element, start, interrupting)) =>
-    let others := handlers.filter (·.1 != element)
-    if (ctx.catches raised start.trigger).isSome && !passesHandlerAtAnyDepth raised && origin.scope != held.id then
-      .error (.unsupported "escalation-rethrow-reenters-handler") -- dynamic-only: how deep in its handler a raise runs
-    else if interrupting && (best? ctx raised (·.2.1.trigger) others).isSome then
-      .error (.unsupported "rethrow-caught-by-sibling-handler") -- dynamic-only: what a running handler raises
-    else .ok others
 
 /-- What Propagation asks of the features it may not import (ARCHITECTURE-SPEC "Modules and build shape"), which
 `Kernel.Registry` fills. `mappedErrorOutputs` (`Work.mappedErrorOutputs`): how the Activity `origin.host`, still running
@@ -133,12 +59,15 @@ root of a called instance writes into the caller, the Call's output mappings und
 item 2), applied before the search goes on so that an outer Call's pass reads it. `dropRuns`
 (`Compensation.dropWithin`): the compensation runs inside a scope occurrence an interrupting catcher has decided to
 interrupt go at once, as its items do (`State.withdrawOccurrence`), so that the leave a raising handler queued before
-the interruption advances no run the interruption removes. -/
+the interruption advances no run the interruption removes. `handlerRecord` (`Compensation.runningRecord`): the record
+whose handler or group runs in a compensation handler's context, which the search reads there under
+`propagatesFromTrigger`. -/
 structure PropagationHooks where
   mappedErrorOutputs : Ctx → Origin → List (String × Value) → State → Outcome := fun _ _ _ state => .ok state
   writeCaught : Ctx → ScopeOccurrenceId → List (String × Value) → State → Outcome := fun _ _ _ state => .ok state
   callOutputs : Ctx → ScopeOccurrence → State → Outcome := fun _ _ state => .ok state
   dropRuns : Ctx → ScopeOccurrenceId → State → State := fun _ _ state => state
+  handlerRecord : Ctx → ScopeOccurrenceId → State → Option Compensable := fun _ _ _ => none
 
 /-- The Activity `origin.host` that raised a business Error leaves, with its Error-path outputs, once the search has
 decided: after every Call output pass and the catcher's variables, before the interrupted host's outputs, the
@@ -328,34 +257,56 @@ def passCallOutputs (hooks : PropagationHooks) (ctx : Ctx) (origin : Origin) (ca
     else hooks.callOutputs ctx occurrence state
   | .none => .ok state
 
-/-- Whether a search passes a compensation handler's context on to the trigger's scope occurrence. -/
+/-- Whether a search passes a compensation handler's context on through the handler's model scopes. -/
 def propagatesFromTrigger (ctx : Ctx) : Bool :=
   match ctx.program.options.compensationHandlerFailure with
   | .propagatesFromTrigger => true
   | .failsInstance => false
   | .selected _ => false
 
-/-- Search outward from `current`; `fuel` bounds the walk by the number of scope occurrences. The search ends at the
-scope occurrence of a compensation handler (COMPH-FAIL-01), except under `propagatesFromTrigger`, where that context is
-searched like any scope occurrence (a group context offers the completed subject's own boundaries and Event
-Sub-Processes) and the search goes on from the context's parent, the scope occurrence the trigger ran in, as CIB's
-compensating execution is a child of the throwing one (`CompensationUtil.java:62-75`, CIB-INT-0038). A Multi-Instance
-instance contributes no boundaries. Each called root
-it visits passes the Call's outputs (`passCallOutputs`) before any catcher there or further out begins,
-caught or not (CIB registers `tree/OutputVariablesPropagator.java:34-43` as a pre-visitor of both searches). -/
+/-- A non-interrupting boundary of a compensated subject that caught at its handler's context fires into `scope`, the
+scope occurrence holding the subject's record, which declares the subject (`contextCatcher`), and the thrower leaves, as
+`leaveOccurrence` lets one leave its host's parent. -/
+def contextFires (hooks : PropagationHooks) (ctx : Ctx) (origin : Origin) (scope : ScopeOccurrenceId)
+    (boundary : Boundary) (state : State) : Outcome := do
+  let state ← catchDecided hooks ctx origin scope [] state
+  .ok (throwerLeaves ctx origin (boundary.fire none none scope [] state))
+
+/-- Search outward from `current`; `fuel` bounds the walk by the number of scope occurrences, and `jumped` is
+`some raising` when the search reached `current` from a compensation handler's context, with the handler the raise runs
+in. The search ends at the scope occurrence of a compensation handler (COMPH-FAIL-01), except under
+`propagatesFromTrigger`, where it goes on through the handler's model scopes (CIB-INT-0038): CIB runs the handler in a
+compensating execution under the throwing one, which carries its variables (`CompensationUtil.java:62-75`), but walks
+the handler's model flow scopes, each mapped onto an execution (`tree/ActivityExecutionHierarchyWalker.java:44-73`).
+So the context offers what `contextCatcher` offers of the completed subject, and the search goes on from the scope
+occurrence holding the subject's record (`Compensable.scope`), where every Event Sub-Process is a candidate
+(`jumpCandidates`), never from the context's parent, the trigger's scope occurrence; a group's context passes on the
+handler it was reached from. That scope occurrence is the subject's parent's, a group's context or, for a
+Multi-Instance instance's record, the body's, unless `ImplicitCompensation.refused` moved the record outward when a
+Sub-Process without a handler completed; no profile selects both. A Multi-Instance instance contributes no
+boundaries. Each called root it visits passes the Call's outputs (`passCallOutputs`) before any catcher there or further
+out begins, caught or not (CIB registers `tree/OutputVariablesPropagator.java:34-43` as a pre-visitor of both
+searches). -/
 def searchScopes (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origin : Origin) (state : State) :
-    Nat → Option ScopeOccurrenceId → Outcome
-  | 0, _ => exhausted hooks ctx raised origin none state
-  | _, none => exhausted hooks ctx raised origin none state
-  | fuel + 1, some current =>
+    Nat → Option (Option ElementId) → Option ScopeOccurrenceId → Outcome
+  | 0, _, _ => exhausted hooks ctx raised origin none state
+  | _, _, none => exhausted hooks ctx raised origin none state
+  | fuel + 1, jumped, some current =>
     match state.scopes.find? (·.id == current) with
     | none => .error (.semanticFailure .invariant "raise-from-missing-scope")
     | some occurrence =>
       let role := ctx.scopeRole state occurrence.id
-      if role == .compensationHandler && !propagatesFromTrigger ctx then
-        exhausted hooks ctx raised origin (some occurrence.id) state
+      if role == .compensationHandler then
+        if !propagatesFromTrigger ctx then exhausted hooks ctx raised origin (some occurrence.id) state
+        else match hooks.handlerRecord ctx occurrence.id state with
+          | none => .error (.semanticFailure .invariant "compensation-context-without-record")
+          | some record => do
+            let raising := record.handler.orElse fun _ => jumped.join
+            match ← contextCatcher ctx raised state record raising with
+            | some boundary => contextFires hooks ctx origin record.scope boundary state
+            | none => searchScopes hooks ctx raised origin state fuel (some raising) (some record.scope)
       else do
-      let handlers ← handlerCandidates ctx raised origin state occurrence
+      let handlers ← levelCandidates ctx raised origin state occurrence jumped
       let handled := best? ctx raised (·.2.1.trigger) handlers
       let attached := match occurrence.element, occurrence.parent with
         | some element, some _ => if role == .multiInstanceInstance then [] else boundariesOf ctx element
@@ -369,7 +320,7 @@ def searchScopes (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origi
         .ok (if interrupting then begun else throwerLeaves ctx origin begun)
       | none, some (boundary, writes), some parent =>
         leaveOccurrence hooks ctx raised origin occurrence parent boundary writes state
-      | none, _, _ => searchScopes hooks ctx raised origin state fuel occurrence.parent
+      | none, _, _ => searchScopes hooks ctx raised origin state fuel none occurrence.parent
 
 /-- `Signal.raise`. An Activity that raised the event (`origin.host`) is still running: its own boundaries are searched
 first, and a catching one installs its variables through the Activity's frame before the Activity leaves with its
@@ -382,6 +333,6 @@ def raise (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origin : Ori
   match origin.host, best? ctx raised (·.subscription.trigger) hostBoundaries with
   | some _, some (boundary, writes) =>
     (hooks.mappedErrorOutputs ctx origin (lastWrites writes) state).map (boundary.fire none none origin.scope [])
-  | _, _ => searchScopes hooks ctx raised origin state (state.scopes.length + 1) (some origin.scope)
+  | _, _ => searchScopes hooks ctx raised origin state (state.scopes.length + 1) none (some origin.scope)
 
 end Kernel.Feature.Propagation

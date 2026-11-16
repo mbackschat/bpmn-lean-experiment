@@ -418,6 +418,19 @@ export function dropWithin(_ctx: Ctx, scope: ScopeOccurrenceId, state: State): S
 }
 
 /**
+ * The record whose handler or group runs in the context `context`, of the first run holding it as `Step.scopeRole`
+ * reads it (`PropagationHooks.handlerRecord`): its scope is where the record was retained, which a group's children name
+ * as the group's context.
+ */
+export function runningRecord(_ctx: Ctx, context: ScopeOccurrenceId, state: State): Compensable | null {
+  for (const run of state.slots.compensation.runs) {
+    const running = run.running.find(([held]) => held === context);
+    if (running !== undefined) return running[1];
+  }
+  return null;
+}
+
+/**
  * `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `PropagatesFromTrigger` (I11)
  * the run goes on as `handlerCompleted` does unless the catcher interrupts a scope occurrence holding it, which drops the
  * run when the catch is decided (`dropWithin`), before the handler's leave arrives here; with no catcher, or one that

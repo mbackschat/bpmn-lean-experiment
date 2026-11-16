@@ -169,35 +169,35 @@ def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List S
 /-! ## Failure -/
 
 /-- How the search `hooks.raise` runs, when it is Propagation's (`Feature.Propagation.raise`) over some `propagation`
-hooks, passes a scope occurrence `occurrence` that it calls a compensation handler's context: it offers the context's
-own Event Sub-Processes (`Feature.Propagation.handlerCandidates`) and the boundaries on its element, as at an ordinary
-scope occurrence, and when none of them catches it passes the context's Call outputs and goes on from
-`occurrence.parent`. Which candidates the context offers is open (#159); this says only that they are offered and the
-search then goes on. -/
+hooks, passes a scope occurrence `occurrence` that it calls a compensation handler's context: it reads the record whose
+handler or group runs there (`propagation.handlerRecord`), offers what `Feature.Propagation.contextCatcher` offers of
+the completed subject, and when nothing there catches goes on from the scope occurrence holding that record,
+`record.scope`, through the handler's model scopes, never from `occurrence.parent`, the trigger's scope occurrence
+(#159), passing on the handler the raise runs in: the record's own, or for a group the one the search reached it from
+(`jumped`). -/
 def PassesHandlerContext (hooks : Hooks) (ctx : Ctx) (raised : Raised) (origin : Origin) : Prop :=
   ∀ propagation, hooks.raise = Feature.Propagation.raise propagation →
-    ∀ (state passed : State) (fuel : Nat) (current : ScopeOccurrenceId) (occurrence : ScopeOccurrence)
-      (handlers : List (ElementId × Subscription × Bool)),
+    ∀ (state : State) (fuel : Nat) (jumped : Option (Option ElementId)) (current : ScopeOccurrenceId)
+      (occurrence : ScopeOccurrence) (record : Compensable),
       state.scopes.find? (·.id == current) = some occurrence →
       ctx.scopeRole state occurrence.id = .compensationHandler →
-      Feature.Propagation.handlerCandidates ctx raised origin state occurrence = .ok handlers →
-      Feature.Propagation.best? ctx raised (·.2.1.trigger) handlers = none →
-      (∀ element, occurrence.element = some element →
-        Feature.Propagation.best? ctx raised (·.subscription.trigger) (Feature.Propagation.boundariesOf ctx element) =
-          none) →
-      Feature.Propagation.passCallOutputs propagation ctx origin false occurrence state = .ok passed →
-      Feature.Propagation.searchScopes propagation ctx raised origin state (fuel + 1) (some current) =
-        Feature.Propagation.searchScopes propagation ctx raised origin passed fuel occurrence.parent
+      propagation.handlerRecord ctx occurrence.id state = some record →
+      Feature.Propagation.contextCatcher ctx raised state record (record.handler.orElse fun _ => jumped.join) =
+        .ok none →
+      Feature.Propagation.searchScopes propagation ctx raised origin state (fuel + 1) jumped (some current) =
+        Feature.Propagation.searchScopes propagation ctx raised origin state fuel
+          (some (record.handler.orElse fun _ => jumped.join)) (some record.scope)
 
 /-- How the search `hooks.raise` runs, when it is Propagation's (`Feature.Propagation.raise`) over some `propagation`
 hooks, stops at a scope occurrence `occurrence` that it calls a compensation handler's context: the search is exhausted
 there, naming the context (`Feature.Propagation.exhausted`), and never reaches the context's parent. -/
 def StopsAtHandlerContext (hooks : Hooks) (ctx : Ctx) (raised : Raised) (origin : Origin) : Prop :=
   ∀ propagation, hooks.raise = Feature.Propagation.raise propagation →
-    ∀ (state : State) (fuel : Nat) (current : ScopeOccurrenceId) (occurrence : ScopeOccurrence),
+    ∀ (state : State) (fuel : Nat) (jumped : Option (Option ElementId)) (current : ScopeOccurrenceId)
+      (occurrence : ScopeOccurrence),
       state.scopes.find? (·.id == current) = some occurrence →
       ctx.scopeRole state occurrence.id = .compensationHandler →
-      Feature.Propagation.searchScopes propagation ctx raised origin state (fuel + 1) (some current) =
+      Feature.Propagation.searchScopes propagation ctx raised origin state (fuel + 1) jumped (some current) =
         Feature.Propagation.exhausted propagation ctx raised origin (some occurrence.id) state
 
 /-- The queries a hook's context answers as `Step`'s for `hooks` does (`Step.context`): how a catch trigger catches a
@@ -206,20 +206,19 @@ def StepQueries (hooks : Hooks) (ctx : Ctx) : Prop :=
   ctx.catches = hooks.catches ∧ ctx.eventStart = hooks.eventStart ∧ ctx.scopeRole = Step.scopeRole
 
 /-- Failure: an Error that leaves a compensation handler's context uncaught fails the instance under
-`CompensationHandlerFailure.failsInstance` (COMPH-FAIL-01) and is searched for on from the context's parent, the
-run's scope occurrence, under `propagatesFromTrigger` (CIB-INT-0038). Four parts:
+`CompensationHandlerFailure.failsInstance` (COMPH-FAIL-01) and is searched for on through the handler's model scopes,
+from the scope occurrence holding the handler's record, under `propagatesFromTrigger` (CIB-INT-0038, #159). Four
+parts:
 (a) `Hooks.failCompensation`, which `Step` calls for a queued `Signal.compensationFailed`, queues the failed end of the
 instance, naming the run's trigger and the handler, whatever the option;
 (b) under `propagatesFromTrigger` the search `Hooks.raise` runs passes a compensation handler's context
-(`PassesHandlerContext`): it offers the context's own candidates and, when none catches, goes on from the context's
-parent, which for a running context is the run's scope occurrence (`Laws.State.SlotsSettled.runsPlaced`); and the raise
-queues no `compensationFailed`;
+(`PassesHandlerContext`): it offers what the context offers of the completed subject and, when nothing there catches,
+goes on from the scope occurrence holding the handler's record, not from the context's parent, the run's scope
+occurrence; and the raise queues no `compensationFailed`;
 (c) under `failsInstance` every `compensationFailed` a raise queues names a scope occurrence `Step` calls a compensation
 handler's context, a running context of a run;
 (d) under `failsInstance` the search stops at a compensation handler's context (`StopsAtHandlerContext`): it is
 exhausted there, naming the context, and never searches past it (COMPH-FAIL-01).
-Which candidates the context's level offers under `propagatesFromTrigger` is open (#159), and no part says it is
-skipped.
 
 P0 said that under `propagatesFromTrigger` `Hooks.failCompensation` queues no failed end but a raise, and under
 `failsInstance` a failed end. That was false (P5 design probe `R3`): `Compensation.failCompensation` reads no option

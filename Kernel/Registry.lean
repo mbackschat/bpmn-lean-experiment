@@ -60,7 +60,8 @@ def hooks : Hooks :=
         callOutputs := fun ctx root state => do
           let (scope, writes) ← Feature.Work.Call.raisedOutputs ctx root state
           Feature.Data.writeOutputs ctx scope writes .outward state
-        dropRuns := Feature.Compensation.dropWithin }
+        dropRuns := Feature.Compensation.dropWithin
+        handlerRecord := Feature.Compensation.runningRecord }
     compensate := Feature.Compensation.compensate
     failCompensation := Feature.Compensation.failCompensation
     leave := Feature.Subscriptions.leave

@@ -34,13 +34,13 @@ theorem raise_cancel {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks} 
     ∃ passed, Laws.State.Steady state passed ∧ motive passed ∧ Laws.Propagation.CancelTaken ctx origin passed after := by
   rcases Laws.Propagation.raise_spec ran with ⟨_, _, _, rest⟩ | searched
   · exact absurd rest.1.1 (by simp [hostless])
-  · exact Laws.Propagation.searchScopes_cancel passes unstarted facts.cancel _ _ _ _ holds searched
+  · exact Laws.Propagation.searchScopes_cancel passes unstarted facts.cancel _ _ _ _ _ holds searched
 
 /-- What a raise queues (`Feature.Propagation.raise`): signals `quiet` admits, and a compensation handler's failure only
 under a profile that does not select `propagatesFromTrigger` and only at a scope occurrence `ctx.scopeRole` calls a
 compensation handler's context in a state the Call output passes on its way left, of which `motive` holds when it holds
 of the raise's state (COMPH-FAIL-01). Under `propagatesFromTrigger` it queues no such failure: the search goes on
-(`Laws.Propagation.searchScopes_onward`). -/
+(`Laws.Propagation.searchScopes_context`). -/
 theorem raise_queues {quiet : Signal → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (facts : Laws.Propagation.RaiseFacts) (steps : Laws.Propagation.QuietSteps quiet)
     (calm : Laws.Propagation.QuietHooks ctx quiet hooks) {motive : State → Prop} {raised : Raised} {origin : Origin}
@@ -52,7 +52,7 @@ theorem raise_queues {quiet : Signal → Prop} {ctx : Ctx} {hooks : Feature.Prop
   · obtain ⟨-, leaves, rfl⟩ := rest
     exact ((calm.mappedErrorOutputs _ _ _ _ leaves).trans (Laws.Propagation.fire_quiet facts steps _ _ _ _ _)).mono
       fun _ => Or.inl
-  · exact Laws.Propagation.searchScopes_queues facts steps calm passes _ _ _ _ holds searched
+  · exact Laws.Propagation.searchScopes_queues facts steps calm passes _ _ _ _ _ holds searched
 
 /-- What `hooks` registers for a raise: Propagation's arrival at a throw and search over `propagation`, Compensation's
 handler failure, Scopes' Event Sub-Process start, a Cancel caught only by a Cancel trigger, and search hooks that keep
@@ -184,7 +184,7 @@ theorem cancelCompensatesFirst_of {hooks : Hooks} {propagation : Feature.Propaga
 theorem handlerFailure_of {hooks : Hooks} {propagation : Feature.Propagation.PropagationHooks}
     (registered : RaiseRegistered hooks propagation) : HandlerFailure hooks := by
   refine ⟨fun ctx handler code message origin state after ran => ?_, fun ctx raised origin state selected => ?_,
-    fun ctx raised origin state after queries _ ran => ?_, fun _ _ _ fails _ _ _ _ _ _ found role =>
+    fun ctx raised origin state after queries _ ran => ?_, fun _ _ _ fails _ _ _ _ _ _ _ found role =>
       Laws.Propagation.searchScopes_stops found role (by rw [fails]; nofun)⟩
   · rw [registered.failCompensation] at ran
     obtain ⟨owner, _, _, rest⟩ := Laws.Compensation.failCompensation_spec ran
@@ -193,9 +193,9 @@ theorem handlerFailure_of {hooks : Hooks} {propagation : Feature.Propagation.Pro
     subst made
     rw [Laws.State.signal_eq]
     exact ⟨_, owner, rfl, rfl, rfl, first.mem, first.1, by simp, _, List.mem_cons_of_mem _ (List.mem_singleton.mpr rfl)⟩
-  · refine ⟨fun _ _ _ _ _ _ _ _ found _ offered unhandled unbounded pass =>
-      Laws.Propagation.searchScopes_onward found (fun _ => Laws.Propagation.propagatesFromTrigger_selected selected)
-        offered unhandled (fun element _ named _ _ => unbounded element named) pass, fun after ran => ?_⟩
+  · refine ⟨fun _ _ _ _ _ _ _ _ found role read unhandled =>
+      Laws.Propagation.searchScopes_context found role (Laws.Propagation.propagatesFromTrigger_selected selected) read
+        unhandled, fun after ran => ?_⟩
     rw [registered.raise] at ran
     obtain ⟨new, made, queued⟩ := raise_queues (motive := fun _ => True) raiseFacts
       notHandlerFailure_steps (notHandlerFailure_hooks registered ctx)

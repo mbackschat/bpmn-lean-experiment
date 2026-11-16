@@ -35,6 +35,7 @@ const propagationHooks: Propagation.PropagationHooks = {
     return passed.ok ? Data.writeOutputs(ctx, passed.value[0], passed.value[1], WriteRule.Outward, state) : passed;
   },
   dropRuns: Compensation.dropWithin,
+  handlerRecord: Compensation.runningRecord,
 };
 
 export const hooks: Hooks = {

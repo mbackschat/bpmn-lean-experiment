@@ -430,7 +430,7 @@ theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagat
         (fun _ member => by rw [steady.scopes, scopes] at member; exact member)
         (fun _ member => by rw [instances, entries] at member; exact member) linked
         (.inr (.inr (.inr ⟨raised, origin, by rw [heads]; exact List.mem_cons_self .., rfl, rfl⟩)))) listed).1
-  · exact Laws.Propagation.searchScopes_keeps ops search popped _ _ _ _ holds settled thrown (.refl _) (.inl rfl)
+  · exact Laws.Propagation.searchScopes_keeps ops search popped _ _ _ _ _ holds settled thrown (.refl _) (.inl rfl)
       searched
 
 /-- The registered hooks keep any invariant every feature's record but Multi-Instance's and Compensation's is filled

@@ -294,6 +294,12 @@ def dropWithin (_ : Ctx) (scope : ScopeOccurrenceId) (state : State) : State :=
   let compensation := state.slots.compensation
   store state { compensation with runs := compensation.runs.filter (!inside.contains ·.scope) }
 
+/-- The record whose handler or group runs in the context `context`, of the first run holding it as `Step.scopeRole`
+reads it (`Propagation.PropagationHooks.handlerRecord`): its scope is where the record was retained, which a group's
+children name as the group's context. -/
+def runningRecord (_ : Ctx) (context : ScopeOccurrenceId) (state : State) : Option Compensable :=
+  state.slots.compensation.runs.findSome? fun run => (run.running.find? (·.1 == context)).map (·.2)
+
 /-- `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `propagatesFromTrigger`
 (I11) the run goes on as `handlerCompleted` does unless the catcher interrupts a scope occurrence holding it, which drops
 the run when the catch is decided (`dropWithin`), before the handler's leave arrives here; with no catcher, or one that

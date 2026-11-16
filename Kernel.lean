@@ -22,6 +22,7 @@ public import Kernel.Feature.Decision
 public import Kernel.Feature.Flow
 public import Kernel.Feature.MultiInstance
 public import Kernel.Feature.Propagation
+public import Kernel.Feature.Propagation.Candidates
 public import Kernel.Feature.Propagation.Throws
 public import Kernel.Feature.Scopes
 public import Kernel.Feature.Starts
@@ -72,6 +73,7 @@ public import Kernel.Laws.MultiInstance.Witnesses
 public import Kernel.Laws.Population
 public import Kernel.Laws.Population.Timers
 public import Kernel.Laws.Propagation
+public import Kernel.Laws.Propagation.Candidates
 public import Kernel.Laws.Propagation.Rules
 public import Kernel.Laws.Propagation.Witnesses
 public import Kernel.Laws.Registry

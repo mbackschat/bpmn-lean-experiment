@@ -3,7 +3,8 @@
  *
  * Owns matching on `Throw` and `Raised`. What a throw Event does when it arrives (`arriveThrow`) is
  * `feature/propagation/throws.ts`'s; an Error, Escalation or Cancel throw there queues a raise of its event from the
- * scope occurrence it ran in, which this module takes (`raise`).
+ * scope occurrence it ran in, which this module takes (`raise`). Which catchers each level of the search offers, and the
+ * refusals that rest on where the raise runs, are `feature/propagation/candidates.ts`'s.
  *
  * The search for a catcher (BPMN 2.0.2 §13.5.3, §13.5.4) visits, in order: the boundaries of the Activity that raised
  * it, if any; then, for each scope occurrence from the raising one outward, the Event Sub-Processes the occurrence's
@@ -11,8 +12,8 @@
  * lowest `Ctx.catches` precedence wins, document order breaking ties, so an exact code is preferred over a catch-all at
  * the same level (CIB `ErrorEventDefinition#getPrecedence`) but never over a nearer catcher. Under
  * `CompensationHandlerFailure.failsInstance` the search never passes the scope occurrence of a compensation handler: what
- * reaches it uncaught is the handler's outcome; under `propagatesFromTrigger` it searches that context as an ordinary
- * scope occurrence and goes on from its parent. A Multi-Instance
+ * reaches it uncaught is the handler's outcome; under `propagatesFromTrigger` it goes on through the handler's model
+ * scopes, not the trigger's (`searchScopes`, CIB-INT-0038). A Multi-Instance
  * instance's scope occurrence offers no boundaries of its own: they belong to the body, whose scope occurrence is the
  * next one out (`BpmnParse:3291-3295`, BPMN 2.0.2 §13.5.3). A Sub-Process's Event Sub-Processes are offered once, in its
  * instance's scope occurrence, never again in a Multi-Instance instance's or body's or a compensation context that wraps
@@ -40,8 +41,6 @@ import {
   workCall,
   type Boundary,
   type ElementId,
-  type Subscription,
-  type Trigger,
 } from "../il/types.js";
 import {
   FailureTag,
@@ -64,14 +63,13 @@ import {
   signal,
   visible,
   type Binding,
+  type Compensable,
   type Origin,
   type Outcome,
   type Raised,
-  type Result,
   type ScopeOccurrence,
   type ScopeOccurrenceId,
   type State,
-  childrenOf,
   SemanticCause,
   semanticFailure,
 } from "../state.js";
@@ -79,39 +77,10 @@ import {
   ScopeRole, boundaryFire, clearInside, ctxOutputReads, ctxRequireMappingsWith, ctxRunsAsInstance, idleWithout, lastWrites,
   ownVariables, type Ctx,
 } from "../hooks.js";
+import { best, boundariesOf, contextCatcher, levelCandidates } from "./propagation/candidates.js";
 import { throwLeave, throwerRef } from "./propagation/throws.js";
 
 export { arriveThrow } from "./propagation/throws.js";
-
-/** The catcher with the lowest precedence among `candidates`, the first in document order on a tie, with what it writes. */
-function best<T>(ctx: Ctx, raised: Raised, trigger: (candidate: T) => Trigger, candidates: readonly T[]): readonly [T, readonly Binding[]] | null {
-  let chosen: readonly [number, readonly Binding[], T] | null = null;
-  for (const candidate of candidates) {
-    const caught = ctx.catches(raised, trigger(candidate));
-    if (caught === null) continue;
-    if (chosen === null || caught.rank < chosen[0]) chosen = [caught.rank, caught.writes, candidate];
-  }
-  return chosen === null ? null : [chosen[2], chosen[1]];
-}
-
-function boundariesOf(ctx: Ctx, element: ElementId): readonly Boundary[] {
-  const found = programElement(ctx.program, element);
-  return (found === null ? null : elementEnvelope(found))?.boundaries ?? [];
-}
-
-type Handler = readonly [ElementId, Subscription, boolean];
-
-/**
- * The Event Sub-Processes declared directly in `occurrence`, the process included, each with its start and whether it
- * interrupts; a called root's are its called process's (`childrenOf`).
- */
-function eventSubProcesses(ctx: Ctx, state: State, occurrence: ScopeOccurrence): readonly Handler[] {
-  return childrenOf(state, ctx.program, occurrence.id).flatMap((child) => {
-    const scope = elementScope(child);
-    const start = scope === null ? null : ctx.eventStart(scope[1]);
-    return scope === null || start === null ? [] : [[scope[0].id, start[0], start[1]] as const];
-  });
-}
 
 /**
  * An Escalation's thrower leaves once the search has decided, unless its catcher interrupts and so cancels it with the
@@ -130,78 +99,6 @@ function throwerLeaves(ctx: Ctx, origin: Origin, state: State): State {
 }
 
 /**
- * Whether the search passes the Event Sub-Process a raise originates in however deep inside it the raise runs, or only
- * when it runs directly in it. CIB's Error finder skips an ancestor flow scope at any depth
- * (`bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java:41-58`, `pvm/process/ScopeImpl.java:170-182`), its
- * Escalation finder only the thrower's direct flow scope (`bpmn/helper/EscalationEventDefinitionFinder.java:58-61`). No
- * Event Sub-Process catches a Cancel (`start.cancel`), so its answer is never read.
- */
-function passesHandlerAtAnyDepth(raised: Raised): boolean {
-  switch (raised.tag) {
-    case RaisedTag.Error: return true;
-    case RaisedTag.Escalation: return false;
-    case RaisedTag.Cancel: return true;
-  }
-  return assertNever(raised);
-}
-
-/** The scope occurrence held directly in `visited` that the chain from `start` outward passes through, if any. */
-function heldOnChain(state: State, visited: ScopeOccurrenceId, start: ScopeOccurrenceId): ScopeOccurrence | null {
-  let current: ScopeOccurrenceId | null = start;
-  for (let fuel = state.scopes.length + 1; fuel > 0 && current !== null; fuel -= 1) {
-    const at: ScopeOccurrenceId = current;
-    const occurrence = state.scopes.find((scope) => scope.id === at);
-    if (occurrence === undefined) return null;
-    if (occurrence.parent === visited) return occurrence;
-    current = occurrence.parent;
-  }
-  return null;
-}
-
-/**
- * Whether `occurrence` only wraps `held`, the scope occurrence directly inside it on the raise's chain, of its own
- * element: a Multi-Instance body's scope occurrence around an instance's, an instance's around the Sub-Process
- * instance's, or a compensation handler's context around the handler Sub-Process's. Its element's Event Sub-Processes
- * belong to the innermost one, the Sub-Process instance, whose `enter` armed them and where the search offered them, or
- * passed the one the raise runs in, already: BPMN 2.0.2 §10.3.5 gives each Sub-Process instance its Event
- * Sub-Processes, and CIB's finders visit each flow scope once, the Multi-Instance body `#multiInstanceBody` declaring
- * none (#158). A called root wraps nothing: its Event Sub-Processes are its called process's, and a recursive Call's
- * root holds a root of the same Call.
- */
-function wrapsOwnScope(state: State, occurrence: ScopeOccurrence, held: ScopeOccurrence | null): boolean {
-  return held !== null && held.element === occurrence.element && !calledRoot(state, occurrence.id);
-}
-
-/**
- * The Event Sub-Processes of `occurrence` that may catch a raise from `origin` (PC-ERROR-02). One the raise originates
- * inside is no candidate, so a rethrow passes the handler that runs it, or that an interrupting handler's completion is
- * disposing of, to the host's boundaries and outward (BPMN 2.0.2 §13.5.4: "control passes to the boundary Event";
- * CIB-INT-0022). Refused under every profile, dynamic-only because they rest on what a running handler raises: an
- * Escalation from deeper inside a handler that matches it (`escalation-rethrow-reenters-handler`), which CIB catches
- * with that handler again; and a raise from an interrupting handler that another Event Sub-Process of the same scope
- * would catch (`rethrow-caught-by-sibling-handler`), which CIB starts (CIB-DEV-0003). Both are restrictions of the
- * `bpmn-2.0.2` meaning, never that meaning: §13.5.4 passes the running handler at any depth and starts no new handler
- * while the parent is Failing or Terminating, so both raises would go on outward. A scope occurrence that only wraps one
- * of its own element offers none (`wrapsOwnScope`).
- */
-function handlerCandidates(ctx: Ctx, raised: Raised, origin: Origin, state: State, occurrence: ScopeOccurrence): Result<readonly Handler[]> {
-  const held = heldOnChain(state, occurrence.id, origin.scope);
-  if (wrapsOwnScope(state, occurrence, held)) return { ok: true, value: [] };
-  const handlers = eventSubProcesses(ctx, state, occurrence);
-  const running = held === null ? undefined : handlers.find(([element]) => element === held.element);
-  if (held === null || running === undefined) return { ok: true, value: handlers };
-  const [element, start, interrupting] = running;
-  const others = handlers.filter(([candidate]) => candidate !== element);
-  if (ctx.catches(raised, start.trigger) !== null && !passesHandlerAtAnyDepth(raised) && origin.scope !== held.id) {
-    return failed(FailureTag.Unsupported, "escalation-rethrow-reenters-handler"); // dynamic-only: how deep in its handler a raise runs
-  }
-  if (interrupting && best(ctx, raised, ([, subscription]) => subscription.trigger, others) !== null) {
-    return failed(FailureTag.Unsupported, "rethrow-caught-by-sibling-handler"); // dynamic-only: what a running handler raises
-  }
-  return { ok: true, value: others };
-}
-
-/**
  * What Propagation asks of the features it may not import (ARCHITECTURE-SPEC "Modules and build shape"), which
  * `registry.ts` fills. `mappedErrorOutputs` (`Work.mappedErrorOutputs`): how the Activity `origin.host`, still running
  * after its business Error, leaves once the search has decided, given the values its own boundary installs through its
@@ -213,12 +110,15 @@ function handlerCandidates(ctx: Ctx, raised: Raised, origin: Origin, state: Stat
  * goes on so that an outer Call's pass reads it. `dropRuns` (`Compensation.dropWithin`): the compensation runs inside a
  * scope occurrence an interrupting catcher has decided to interrupt go at once, as its items do (`withdrawOccurrence`),
  * so that the leave a raising handler queued before the interruption advances no run the interruption removes.
+ * `handlerRecord` (`Compensation.runningRecord`): the record whose handler or group runs in a compensation handler's
+ * context, which the search reads there under `propagatesFromTrigger`.
  */
 export interface PropagationHooks {
   readonly mappedErrorOutputs: (ctx: Ctx, origin: Origin, installed: readonly Binding[], state: State) => Outcome;
   readonly writeCaught: (ctx: Ctx, scope: ScopeOccurrenceId, writes: readonly Binding[], state: State) => Outcome;
   readonly callOutputs: (ctx: Ctx, root: ScopeOccurrence, state: State) => Outcome;
   readonly dropRuns: (ctx: Ctx, scope: ScopeOccurrenceId, state: State) => State;
+  readonly handlerRecord: (ctx: Ctx, context: ScopeOccurrenceId, state: State) => Compensable | null;
 }
 
 export const defaultPropagationHooks: PropagationHooks = {
@@ -226,6 +126,7 @@ export const defaultPropagationHooks: PropagationHooks = {
   writeCaught: (_ctx, _scope, _writes, state) => committed(state),
   callOutputs: (_ctx, _root, state) => committed(state),
   dropRuns: (_ctx, _scope, state) => state,
+  handlerRecord: () => null,
 };
 
 /**
@@ -500,7 +401,7 @@ function passCallOutputs(
   return assertNever(selected);
 }
 
-/** Whether a search passes a compensation handler's context on to the trigger's scope occurrence. */
+/** Whether a search passes a compensation handler's context on through the handler's model scopes. */
 function propagatesFromTrigger(ctx: Ctx): boolean {
   const failure = ctx.program.options.compensationHandlerFailure;
   switch (failure.tag) {
@@ -514,14 +415,32 @@ function propagatesFromTrigger(ctx: Ctx): boolean {
 }
 
 /**
- * Search outward from `start`; the fuel bounds the walk by the number of scope occurrences. The search ends at the
- * scope occurrence of a compensation handler (COMPH-FAIL-01), except under `PropagatesFromTrigger`, where that context is
- * searched like any scope occurrence (a group context offers the completed subject's own boundaries and Event
- * Sub-Processes) and the search goes on from the context's parent, the scope occurrence the trigger ran in, as CIB's
- * compensating execution is a child of the throwing one (`CompensationUtil.java:62-75`, CIB-INT-0038). A Multi-Instance
- * instance contributes no boundaries. Each called root
- * it visits passes the Call's outputs (`passCallOutputs`) before any catcher there or further out begins,
- * caught or not (CIB registers `tree/OutputVariablesPropagator.java:34-43` as a pre-visitor of both searches).
+ * A non-interrupting boundary of a compensated subject that caught at its handler's context fires into `scope`, the
+ * scope occurrence holding the subject's record, which declares the subject (`contextCatcher`), and the thrower leaves,
+ * as `leaveOccurrence` lets one leave its host's parent.
+ */
+function contextFires(hooks: PropagationHooks, ctx: Ctx, origin: Origin, scope: ScopeOccurrenceId, boundary: Boundary,
+  state: State): Outcome {
+  const decided = catchDecided(hooks, ctx, origin, scope, [], state);
+  return decided.ok ? committed(throwerLeaves(ctx, origin, boundaryFire(boundary, null, null, scope, [], decided.value))) : decided;
+}
+
+/**
+ * Search outward from `start`; the fuel bounds the walk by the number of scope occurrences, and `jumped` is set when the
+ * search reached the current scope occurrence from a compensation handler's context, `carried` then naming the handler
+ * the raise runs in. The search ends at the scope occurrence of a compensation handler (COMPH-FAIL-01), except under
+ * `PropagatesFromTrigger`, where it goes on through the handler's model scopes (CIB-INT-0038): CIB runs the handler in
+ * a compensating execution under the throwing one, which carries its variables (`CompensationUtil.java:62-75`), but
+ * walks the handler's model flow scopes, each mapped onto an execution
+ * (`tree/ActivityExecutionHierarchyWalker.java:44-73`). So the context offers what `contextCatcher` offers of the
+ * completed subject, and the search goes on from the scope occurrence holding the subject's record
+ * (`Compensable.scope`), where every Event Sub-Process is a candidate (`jumpCandidates`), never from the context's
+ * parent, the trigger's scope occurrence; a group's context passes on the handler it was reached from. That scope
+ * occurrence is the subject's parent's, a group's context or, for a Multi-Instance instance's record, the body's, unless
+ * `ImplicitCompensation.Refused` moved the record outward when a Sub-Process without a handler completed; no profile
+ * selects both. A Multi-Instance instance contributes no boundaries. Each called root it visits passes the Call's
+ * outputs (`passCallOutputs`) before any catcher there or further out begins, caught or not (CIB registers
+ * `tree/OutputVariablesPropagator.java:34-43` as a pre-visitor of both searches).
  */
 function searchScopes(
   hooks: PropagationHooks,
@@ -534,15 +453,27 @@ function searchScopes(
 ): Outcome {
   let state = start;
   let current = from;
+  let jumped = false;
+  let carried: ElementId | null = null;
   for (let fuel = bound; fuel > 0 && current !== null; fuel -= 1) {
     const at = current;
     const occurrence = state.scopes.find((scope) => scope.id === at);
     if (occurrence === undefined) return semanticFailure(SemanticCause.Invariant, "raise-from-missing-scope");
     const role = ctx.scopeRole(state, occurrence.id);
-    if (role === ScopeRole.CompensationHandler && !propagatesFromTrigger(ctx)) {
-      return exhausted(hooks, ctx, raised, origin, occurrence.id, state);
+    if (role === ScopeRole.CompensationHandler) {
+      if (!propagatesFromTrigger(ctx)) return exhausted(hooks, ctx, raised, origin, occurrence.id, state);
+      const record = hooks.handlerRecord(ctx, occurrence.id, state);
+      if (record === null) return semanticFailure(SemanticCause.Invariant, "compensation-context-without-record");
+      const raising: ElementId | null = record.handler ?? (jumped ? carried : null);
+      const caught = contextCatcher(ctx, raised, state, record, raising);
+      if (!caught.ok) return failedWith(caught.failure);
+      if (caught.value !== null) return contextFires(hooks, ctx, origin, record.scope, caught.value, state);
+      jumped = true;
+      carried = raising;
+      current = record.scope;
+      continue;
     }
-    const handlers = handlerCandidates(ctx, raised, origin, state, occurrence);
+    const handlers = levelCandidates(ctx, raised, origin, state, occurrence, jumped);
     if (!handlers.ok) return failedWith(handlers.failure);
     const handled = best(ctx, raised, ([, subscription]) => subscription.trigger, handlers.value);
     const attached = occurrence.element === null || occurrence.parent === null || role === ScopeRole.MultiInstanceInstance
@@ -563,6 +494,7 @@ function searchScopes(
     if (caught !== null && occurrence.parent !== null) {
       return leaveOccurrence(hooks, ctx, raised, origin, occurrence, occurrence.parent, caught[0], caught[1], state);
     }
+    jumped = false;
     current = occurrence.parent;
   }
   return exhausted(hooks, ctx, raised, origin, null, state);

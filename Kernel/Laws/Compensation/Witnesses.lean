@@ -228,18 +228,19 @@ theorem failure_searches_on_rejected : ¬ FailsInstance .failsInstance false (so
 /-- A failure a catcher inside the handler took is no case of the law. -/
 theorem caught_inside_unconstrained : FailsInstance .failsInstance true none begun := fun _ caught => by simp at caught
 
-theorem propagates_from_trigger : PropagatesFromTrigger .propagatesFromTrigger false both (some outer) begun :=
+theorem propagates_from_record : PropagatesFromTrigger .propagatesFromTrigger false innerRecord (some inner) begun :=
   fun _ _ => ⟨rfl, by simp [begun]⟩
 
 /-- Under `propagatesFromTrigger`, failing the instance in the handler's context is rejected. -/
 theorem propagates_fails_rejected :
-    ¬ PropagatesFromTrigger .propagatesFromTrigger false both (some outer) failedState := fun law =>
+    ¬ PropagatesFromTrigger .propagatesFromTrigger false innerRecord (some inner) failedState := fun law =>
   (law rfl rfl).2 rfl
 
-/-- Under `propagatesFromTrigger`, searching from the handler's context instead of the trigger's is rejected. -/
-theorem propagates_from_context_rejected :
-    ¬ PropagatesFromTrigger .propagatesFromTrigger false both (some inner) begun := fun law => by
+/-- Under `propagatesFromTrigger`, searching from the trigger's scope occurrence, the run's, instead of the one holding
+the handler's record is rejected. -/
+theorem propagates_from_trigger_rejected :
+    ¬ PropagatesFromTrigger .propagatesFromTrigger false innerRecord (some both.scope) begun := fun law => by
   have := (law rfl rfl).1
-  simp [both, inner, outer] at this
+  simp [both, innerRecord, recordB, inner, outer] at this
 
 end Kernel.Laws.Compensation

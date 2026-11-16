@@ -3,7 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.Laws.Except
 public import Kernel.Laws.Propagation.Rules
-import Kernel.Laws.Step.Elements
+public import Kernel.Laws.Propagation.Candidates
 public import Kernel.Feature.Propagation
 import all Kernel.Feature.Propagation
 public import Kernel.Feature.Propagation.Throws
@@ -14,7 +14,8 @@ import all Kernel.Feature.Propagation.Throws
 What `Kernel.Feature.Propagation`'s hooks keep and do, read from their bodies and stated in the vocabulary of
 `Kernel.Laws.Propagation.Rules`, which holds the laws of the
 [propagation semantics](../../docs/kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md#finding-the-catcher); their witnesses
-are in `Kernel.Laws.Propagation.Witnesses`. Nothing executable imports this module.
+are in `Kernel.Laws.Propagation.Witnesses`, and what a level of the search offers is
+`Kernel.Laws.Propagation.Candidates`'s. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -101,53 +102,6 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
   | cancel => cases ran; rw [named]; exact ops.raise _ _ _ complete left begun ⟨state, begunFrom, .inr ⟨_, rfl⟩⟩
 
 /-! ### The search -/
-
-/-- The candidate `Propagation.best?` picks is one of the candidates. -/
-theorem best?_mem {α : Type} {ctx : Ctx} {raised : Raised} {trigger : α → Trigger} {candidates : List α}
-    {chosen : α} {writes : List (String × Value)}
-    (found : Feature.Propagation.best? ctx raised trigger candidates = some (chosen, writes)) : chosen ∈ candidates := by
-  unfold Feature.Propagation.best? at found
-  obtain ⟨⟨caught, candidate⟩, folded, same⟩ := Option.map_eq_some_iff.mp found
-  have named : candidate = chosen := congrArg Prod.fst same
-  subst named
-  refine Laws.State.foldl_keeps (fun chosen => ∀ pair ∈ chosen, pair.2 ∈ candidates) _ candidates none
-    (fun chosen candidate inside held pair member => ?_) (by simp) _ folded
-  split at member
-  · exact held pair member
-  · cases member
-    exact inside
-  · split at member
-    · cases member
-      exact inside
-    · exact held pair member
-
-/-- A boundary `Propagation.boundariesOf` lists lies in the envelope of the element it was asked for. -/
-theorem boundariesOf_envelope {ctx : Ctx} {element : ElementId} {boundary : Boundary}
-    (member : boundary ∈ Feature.Propagation.boundariesOf ctx element) :
-    ∃ envelope, (ctx.program.element? element).bind (·.envelope?) = some envelope ∧ boundary ∈ envelope.boundaries := by
-  unfold Feature.Propagation.boundariesOf at member
-  cases found : (ctx.program.element? element).bind (·.envelope?) with
-  | none => simp [found] at member
-  | some envelope =>
-    rw [found] at member
-    exact ⟨envelope, rfl, member⟩
-
-/-- A boundary `Propagation.boundariesOf` lists is one of the program's. -/
-theorem boundariesOf_boundaryOf {ctx : Ctx} {element : ElementId} {boundary : Boundary}
-    (member : boundary ∈ Feature.Propagation.boundariesOf ctx element) : Laws.IL.BoundaryOf ctx.program boundary.id :=
-  let ⟨_, found, inside⟩ := boundariesOf_envelope member
-  Laws.IL.boundaryOf_envelope found inside
-
-/-- A boundary `Propagation.boundariesOf` lists hangs on the element it was asked for and lists its own outgoing
-flows. -/
-theorem boundariesOf_sourced {ctx : Ctx} {element : ElementId} {boundary : Boundary}
-    (member : boundary ∈ Feature.Propagation.boundariesOf ctx element) :
-    Laws.Flow.Linked ctx.program element boundary.id ∧
-      ∀ flow ∈ boundary.outgoing, Laws.Flow.Lists ctx.program boundary.id flow := by
-  obtain ⟨envelope, found, member⟩ := boundariesOf_envelope member
-  obtain ⟨host, located, has⟩ := Option.bind_eq_some_iff.mp found
-  exact ⟨.inr (.inr (.inr (.inl ⟨host, envelope, located, has, boundary, member, rfl⟩))),
-    fun _ inside => .inr ⟨host, Laws.IL.element?_mem located, envelope, has, boundary, member, rfl, inside⟩⟩
 
 /-- An Escalation's thrower leaves once the search has decided: the occurrence it finds has begun. -/
 theorem throwerLeaves_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationOps ctx.program inv) {origin : Origin}
@@ -316,63 +270,35 @@ theorem leaveOccurrence_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Featur
         (entered _ (steady.scopes ▸ present)) listed
       exact throwerLeaves_keeps ops fired (thrown.steady (same.trans steady.occurrences))
 
-/-- An Event Sub-Process `Propagation.eventSubProcesses` offers is a child the scope occurrence declares, started by
-the subscription `Ctx.eventStart` reads of it, under its own identifier. -/
-theorem eventSubProcesses_mem {ctx : Ctx} {state : State} {occurrence : ScopeOccurrence}
-    {handler : ElementId × Subscription × Bool}
-    (member : handler ∈ Feature.Propagation.eventSubProcesses ctx state occurrence) :
-    ∃ child ∈ state.childrenOf ctx.program occurrence.id, ∃ header payload, child.scope? = some (header, payload) ∧
-      ctx.eventStart payload = some (handler.2.1, handler.2.2) ∧ header.id = handler.1 := by
-  unfold Feature.Propagation.eventSubProcesses at member
-  obtain ⟨child, inside, made⟩ := List.mem_filterMap.mp member
-  obtain ⟨⟨header, payload⟩, isScope, made⟩ := Option.bind_eq_some_iff.mp made
-  obtain ⟨⟨start, interrupting⟩, started, same⟩ := Option.map_eq_some_iff.mp made
-  cases same
-  exact ⟨child, inside, header, payload, isScope, started, rfl⟩
-
-/-- The candidates `Propagation.handlerCandidates` offers are Event Sub-Processes the scope occurrence declares. -/
-theorem handlerCandidates_mem {ctx : Ctx} {raised : Raised} {origin : Origin} {state : State}
-    {occurrence : ScopeOccurrence} {handlers : List (ElementId × Subscription × Bool)}
-    (offered : Feature.Propagation.handlerCandidates ctx raised origin state occurrence = .ok handlers) :
-    ∀ handler ∈ handlers, handler ∈ Feature.Propagation.eventSubProcesses ctx state occurrence := by
-  unfold Feature.Propagation.handlerCandidates at offered
-  dsimp only at offered
-  split at offered
-  · cases offered
-    intro _ member
-    cases member
-  · split at offered
-    · cases offered
-      exact fun _ => id
-    · split at offered
-      · simp at offered
-      · split at offered
-        · simp at offered
-        · cases offered
-          exact fun _ member => (List.mem_filter.mp member).1
-
-/-- The Event Sub-Processes a search's handler candidates name are ones the scope occurrence declares
-(`Feature.Propagation.eventSubProcesses`). -/
-theorem handlerCandidates_children {ctx : Ctx} {raised : Raised} {origin : Origin} {state : State}
-    {occurrence : ScopeOccurrence} {handlers : List (ElementId × Subscription × Bool)}
-    (ran : Feature.Propagation.handlerCandidates ctx raised origin state occurrence = .ok handlers) :
-    ∀ handler ∈ handlers, ∃ child ∈ state.childrenOf ctx.program occurrence.id, child.header.id = handler.1 :=
-  fun handler member => by
-    obtain ⟨child, inside, header, rest⟩ := eventSubProcesses_mem (handlerCandidates_mem ran handler member)
-    obtain ⟨_, scoped_, -, named⟩ := rest
-    exact ⟨child, inside, by rw [Laws.Step.scope?_header scoped_]; exact named⟩
+theorem contextFires_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
+    (ops : PropagationOps ctx.program inv) (search : SearchHooks ctx inv hooks) {origin : Origin}
+    {scope : ScopeOccurrenceId} {boundary : Boundary} {subject : ElementId} {state after : State} (holds : inv state)
+    (settled : HostSettled origin state) (thrown : Thrown ctx.program origin state)
+    (member : boundary ∈ Feature.Propagation.boundariesOf ctx subject) (stands : ∃ entry ∈ state.scopes, entry.id = scope)
+    (declared : ∃ child ∈ state.childrenOf ctx.program scope, child.header.id = subject)
+    (ran : Feature.Propagation.contextFires hooks ctx origin scope boundary state = .ok after) : inv after := by
+  unfold Feature.Propagation.contextFires at ran
+  obtain ⟨decided, decision, ran⟩ := ok_bind ran
+  cases ran
+  obtain ⟨kept, steady, instances⟩ := catchDecided_keeps search holds settled decision
+  obtain ⟨linked, listed⟩ := boundariesOf_sourced member
+  have anchored : Laws.Flow.Anchored inv ctx.program decided boundary.id scope :=
+    Laws.Flow.Anchored.held holds steady.issued (fun _ inside => steady.scopes ▸ inside)
+      (fun _ inside => instances ▸ inside) linked (.inl (.inr (.inr (.inl ⟨stands, declared⟩))))
+  obtain ⟨fired, same⟩ := boundaryFire_keeps ops boundary none scope [] kept (boundariesOf_boundaryOf member) anchored listed
+  exact throwerLeaves_keeps ops fired (thrown.steady (same.trans steady.occurrences))
 
 theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (ops : PropagationOps ctx.program inv) (search : SearchHooks ctx inv hooks) {raised : Raised} {origin : Origin}
     {base : State} (popped : Popped inv (.raise raised origin) base) :
-    ∀ fuel current (state after : State), inv state → HostSettled origin state → Thrown ctx.program origin state →
+    ∀ fuel jumped current (state after : State), inv state → HostSettled origin state → Thrown ctx.program origin state →
       Steady base state → (current = some origin.scope ∨ origin.scope ∈ Laws.State.scopeIds base) →
-      Feature.Propagation.searchScopes hooks ctx raised origin state fuel current = .ok after → inv after
-  | 0, _, _, _, holds, settled, thrown, _, _, ran => exhausted_keeps ops search holds settled thrown (by
+      Feature.Propagation.searchScopes hooks ctx raised origin state fuel jumped current = .ok after → inv after
+  | 0, _, _, _, _, holds, settled, thrown, _, _, ran => exhausted_keeps ops search holds settled thrown (by
       simpa [Feature.Propagation.searchScopes] using ran)
-  | _ + 1, none, _, _, holds, settled, thrown, _, _, ran => exhausted_keeps ops search holds settled thrown (by
+  | _ + 1, _, none, _, _, holds, settled, thrown, _, _, ran => exhausted_keeps ops search holds settled thrown (by
       simpa [Feature.Propagation.searchScopes] using ran)
-  | fuel + 1, some current, state, after, holds, settled, thrown, walked, reached, ran => by
+  | fuel + 1, jumped, some current, state, after, holds, settled, thrown, walked, reached, ran => by
     unfold Feature.Propagation.searchScopes at ran
     split at ran
     · simp at ran
@@ -386,7 +312,16 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
         · exact standing
       dsimp only at ran
       split at ran
-      · exact exhausted_keeps ops search holds settled thrown ran
+      · split at ran
+        · exact exhausted_keeps ops search holds settled thrown ran
+        · split at ran
+          · simp at ran
+          · obtain ⟨caught, catcher, ran⟩ := ok_bind ran
+            cases caught with
+            | some boundary =>
+              obtain ⟨member, -, -, placed⟩ := contextCatcher_some catcher
+              exact contextFires_keeps ops search holds settled thrown member placed.1 placed.2 ran
+            | none => exact searchScopes_keeps ops search popped fuel _ _ _ _ holds settled thrown walked (.inr standing) ran
       · obtain ⟨handlers, candidates, ran⟩ := ok_bind ran
         obtain ⟨passed, pass, ran⟩ := ok_bind ran
         obtain ⟨kept, steady, passedInstances⟩ := passCallOutputs_keeps search holds pass
@@ -408,7 +343,7 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
           have begun := ops.begin _ element occurrence.id decidedKept ⟨occurrence, chain.scopes ▸ present, rfl⟩
             (Laws.Flow.Anchored.held holds chain.issued (fun _ inside => chain.scopes ▸ inside)
               (fun _ inside => instances ▸ inside) (.inl rfl) (.inl (.inr (.inr (.inl
-                ⟨⟨occurrence, present, rfl⟩, handlerCandidates_children candidates _ (best?_mem handled)⟩)))))
+                ⟨⟨occurrence, present, rfl⟩, levelCandidates_children candidates _ (best?_mem handled)⟩)))))
           split
           · exact begun
           · exact throwerLeaves_keeps ops begun (thrown.steady ((ops.signalOccurrences _ _).trans chain.occurrences))
@@ -420,7 +355,7 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
             · simp at inside
             · exact ⟨_, by assumption, by assumption, inside⟩
           · simp at inside
-        · exact searchScopes_keeps ops search popped fuel _ _ _ kept (settled.steady steady)
+        · exact searchScopes_keeps ops search popped fuel _ _ _ _ kept (settled.steady steady)
             (thrown.steady steady.occurrences) (walked.trans steady) (.inr standing) ran
 
 /-- `Hooks.raise`: a raise from a host one of whose boundaries catches it fires that boundary after the host's
@@ -430,7 +365,7 @@ theorem raise_spec {hooks : Feature.Propagation.PropagationHooks} {ctx : Ctx} {r
     (∃ boundary writes left, (origin.host.isSome ∧ boundary ∈ Feature.Propagation.boundariesOf ctx origin.element) ∧
       hooks.mappedErrorOutputs ctx origin (lastWrites writes) state = .ok left ∧
       after = boundary.fire none none origin.scope [] left) ∨
-    Feature.Propagation.searchScopes hooks ctx raised origin state (state.scopes.length + 1) (some origin.scope) =
+    Feature.Propagation.searchScopes hooks ctx raised origin state (state.scopes.length + 1) none (some origin.scope) =
       .ok after := by
   unfold Feature.Propagation.raise at ran
   dsimp only at ran
@@ -477,28 +412,6 @@ theorem passCallOutputs_motive {ctx : Ctx} {hooks : Feature.Propagation.Propagat
   unfold Feature.Propagation.passCallOutputs at ran
   repeat' split at ran
   all_goals first | (simp at ran; done) | (cases ran; exact ⟨.refl _, id⟩) | exact passes _ _ _ ran
-
-/-- The candidate `Propagation.best?` picks catches the event. -/
-theorem best?_catches {α : Type} {ctx : Ctx} {raised : Raised} {trigger : α → Trigger} {candidates : List α}
-    {chosen : α} {writes : List (String × Value)}
-    (found : Feature.Propagation.best? ctx raised trigger candidates = some (chosen, writes)) :
-    (ctx.catches raised (trigger chosen)).isSome := by
-  unfold Feature.Propagation.best? at found
-  obtain ⟨⟨caught, candidate⟩, folded, same⟩ := Option.map_eq_some_iff.mp found
-  have named : candidate = chosen := congrArg Prod.fst same
-  subst named
-  have kept : ctx.catches raised (trigger candidate) = some caught := by
-    refine Laws.State.foldl_keeps (fun chosen => ∀ pair ∈ chosen, ctx.catches raised (trigger pair.2) = some pair.1) _
-      candidates none (fun chosen candidate _ held pair member => ?_) (by simp) _ folded
-    split at member
-    · exact held pair member
-    · cases member
-      assumption
-    · split at member
-      · cases member
-        assumption
-      · exact held pair member
-  simp [kept]
 
 /-! ### A Cancel -/
 
@@ -547,12 +460,12 @@ theorem exhausted_cancel {ctx : Ctx} {hooks : Feature.Propagation.PropagationHoo
 theorem searchScopes_cancel {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks} {origin : Origin}
     {motive : State → Prop} (passes : PassesKeep ctx hooks motive) (unstarted : NoCancelStart ctx)
     (cancelled : Raised.cancel.isCancel = true) :
-    ∀ fuel current (state after : State), motive state →
-      Feature.Propagation.searchScopes hooks ctx .cancel origin state fuel current = .ok after →
+    ∀ fuel jumped current (state after : State), motive state →
+      Feature.Propagation.searchScopes hooks ctx .cancel origin state fuel jumped current = .ok after →
       ∃ passed, Steady state passed ∧ motive passed ∧ CancelTaken ctx origin passed after
-  | 0, _, _, _, _, ran => (exhausted_cancel (by simpa [Feature.Propagation.searchScopes] using ran)).elim
-  | _ + 1, none, _, _, _, ran => (exhausted_cancel (by simpa [Feature.Propagation.searchScopes] using ran)).elim
-  | fuel + 1, some current, state, after, holds, ran => by
+  | 0, _, _, _, _, _, ran => (exhausted_cancel (by simpa [Feature.Propagation.searchScopes] using ran)).elim
+  | _ + 1, _, none, _, _, _, ran => (exhausted_cancel (by simpa [Feature.Propagation.searchScopes] using ran)).elim
+  | fuel + 1, jumped, some current, state, after, holds, ran => by
     unfold Feature.Propagation.searchScopes at ran
     split at ran
     · simp at ran
@@ -560,14 +473,23 @@ theorem searchScopes_cancel {ctx : Ctx} {hooks : Feature.Propagation.Propagation
       have present := List.mem_of_find?_eq_some found
       dsimp only at ran
       split at ran
-      · exact (exhausted_cancel ran).elim
+      · split at ran
+        · exact (exhausted_cancel ran).elim
+        · split at ran
+          · simp at ran
+          · obtain ⟨caught, catcher, ran⟩ := ok_bind ran
+            cases caught with
+            | some boundary =>
+              have uncancelled := (contextCatcher_some catcher).2.2.1
+              simp [uncancelled] at cancelled
+            | none => exact searchScopes_cancel passes unstarted cancelled fuel _ _ _ _ holds ran
       · obtain ⟨handlers, offered, ran⟩ := ok_bind ran
         obtain ⟨passed, pass, ran⟩ := ok_bind ran
         obtain ⟨steady, keeps⟩ := passCallOutputs_motive passes pass
         split at ran
         · rename_i element start interrupting writes _ chosen
           have caught := best?_catches chosen
-          obtain ⟨child, inside, rest⟩ := eventSubProcesses_mem (handlerCandidates_mem offered _ (best?_mem chosen))
+          obtain ⟨child, inside, rest⟩ := eventSubProcesses_mem (levelCandidates_mem offered _ (best?_mem chosen))
           obtain ⟨header, payload, isScope, started⟩ := rest
           simp [unstarted state occurrence.id child inside header payload _ _ isScope started.1] at caught
         · rename_i boundary writes parent _ bounded parentIs
@@ -586,7 +508,7 @@ theorem searchScopes_cancel {ctx : Ctx} {hooks : Feature.Propagation.Propagation
               exact ⟨element, elementIs, envelope, located, member, caught⟩
           · simp at inside
         · obtain ⟨searched, further, kept, taken⟩ :=
-            searchScopes_cancel passes unstarted cancelled fuel _ _ _ (keeps holds) ran
+            searchScopes_cancel passes unstarted cancelled fuel _ _ _ _ (keeps holds) ran
           exact ⟨searched, steady.trans further, kept, taken⟩
 
 /-! ### Where a search stops -/
@@ -594,48 +516,65 @@ theorem searchScopes_cancel {ctx : Ctx} {hooks : Feature.Propagation.Propagation
 /-- At a compensation handler's context the search stops unless the profile selects `propagatesFromTrigger`: it is
 exhausted there, naming the context (COMPH-FAIL-01). -/
 theorem searchScopes_stops {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks} {raised : Raised}
-    {origin : Origin} {state : State} {fuel : Nat} {current : ScopeOccurrenceId} {occurrence : ScopeOccurrence}
-    (found : state.scopes.find? (·.id == current) = some occurrence)
+    {origin : Origin} {state : State} {fuel : Nat} {jumped : Option (Option ElementId)} {current : ScopeOccurrenceId}
+    {occurrence : ScopeOccurrence} (found : state.scopes.find? (·.id == current) = some occurrence)
     (handler : ctx.scopeRole state occurrence.id = .compensationHandler)
     (stopping : ctx.program.options.compensationHandlerFailure ≠ .propagatesFromTrigger) :
-    Feature.Propagation.searchScopes hooks ctx raised origin state (fuel + 1) (some current) =
+    Feature.Propagation.searchScopes hooks ctx raised origin state (fuel + 1) jumped (some current) =
       Feature.Propagation.exhausted hooks ctx raised origin (some occurrence.id) state := by
   cases option : ctx.program.options.compensationHandlerFailure <;>
     simp_all [Feature.Propagation.searchScopes, Feature.Propagation.propagatesFromTrigger]
 
-/-- Anywhere else, a compensation handler's context under `propagatesFromTrigger` included, the search offers the scope
-occurrence's candidates, its Event Sub-Processes (`handlerCandidates`) and the boundaries on its element unless it is a
-Multi-Instance instance's; when none of them catches, it passes the occurrence's Call outputs and goes on from its
-parent (CIB-INT-0038). Which candidates a handler's context offers is #159's to settle; this lemma reads them as the
-search does. -/
+/-- At a scope occurrence that is no compensation handler's context the search offers its candidates, its Event
+Sub-Processes (`levelCandidates`: every one right after a handler's context, else `handlerCandidates`) and the
+boundaries on its element unless it is a Multi-Instance instance's; when none of them catches, it passes the
+occurrence's Call outputs and goes on from its parent. -/
 theorem searchScopes_onward {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks} {raised : Raised}
-    {origin : Origin} {state passed : State} {fuel : Nat} {current : ScopeOccurrenceId} {occurrence : ScopeOccurrence}
-    {handlers : List (ElementId × Subscription × Bool)}
+    {origin : Origin} {state passed : State} {fuel : Nat} {jumped : Option (Option ElementId)}
+    {current : ScopeOccurrenceId} {occurrence : ScopeOccurrence} {handlers : List (ElementId × Subscription × Bool)}
     (found : state.scopes.find? (·.id == current) = some occurrence)
-    (onward : ctx.scopeRole state occurrence.id = .compensationHandler →
-      Feature.Propagation.propagatesFromTrigger ctx = true)
-    (offered : Feature.Propagation.handlerCandidates ctx raised origin state occurrence = .ok handlers)
+    (ordinary : ctx.scopeRole state occurrence.id ≠ .compensationHandler)
+    (offered : Feature.Propagation.levelCandidates ctx raised origin state occurrence jumped = .ok handlers)
     (unhandled : Feature.Propagation.best? ctx raised (·.2.1.trigger) handlers = none)
     (unbounded : ∀ element parent, occurrence.element = some element → occurrence.parent = some parent →
       ctx.scopeRole state occurrence.id ≠ .multiInstanceInstance →
       Feature.Propagation.best? ctx raised (·.subscription.trigger) (Feature.Propagation.boundariesOf ctx element) = none)
     (pass : Feature.Propagation.passCallOutputs hooks ctx origin false occurrence state = .ok passed) :
-    Feature.Propagation.searchScopes hooks ctx raised origin state (fuel + 1) (some current) =
-      Feature.Propagation.searchScopes hooks ctx raised origin passed fuel occurrence.parent := by
-  have goesOn : (ctx.scopeRole state occurrence.id == .compensationHandler &&
-      !Feature.Propagation.propagatesFromTrigger ctx) = false := by
+    Feature.Propagation.searchScopes hooks ctx raised origin state (fuel + 1) jumped (some current) =
+      Feature.Propagation.searchScopes hooks ctx raised origin passed fuel none occurrence.parent := by
+  have goesOn : (ctx.scopeRole state occurrence.id == .compensationHandler) = false := by
     cases role : ctx.scopeRole state occurrence.id <;> simp_all
   simp only [Feature.Propagation.searchScopes, found, goesOn, offered, unhandled, Option.isSome_none, pass, bind,
     Except.bind, Bool.false_eq_true, ↓reduceIte]
   cases elementIs : occurrence.element with
-  | none => rfl
+  | none => simp [best?_nil]
   | some element =>
     cases parentIs : occurrence.parent with
-    | none => rfl
+    | none => simp [best?_nil]
     | some parent =>
       by_cases instance_ : ctx.scopeRole state occurrence.id = .multiInstanceInstance
-      · simp [instance_, Feature.Propagation.best?]
+      · simp [instance_, best?_nil]
       · simp [instance_, unbounded element parent elementIs parentIs instance_]
+
+/-- At a compensation handler's context under `propagatesFromTrigger` the search reads the record whose handler or
+group runs there (`PropagationHooks.handlerRecord`) and offers what `contextCatcher` offers of its completed subject;
+when nothing there catches it goes on from the scope occurrence holding that record, never from the context's parent,
+the trigger's scope occurrence, passing on the handler the raise runs in: the record's own, or for a group the one the
+search reached it from (#159, CIB-INT-0038). -/
+theorem searchScopes_context {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks} {raised : Raised}
+    {origin : Origin} {state : State} {fuel : Nat} {jumped : Option (Option ElementId)} {current : ScopeOccurrenceId}
+    {occurrence : ScopeOccurrence} {record : Compensable}
+    (found : state.scopes.find? (·.id == current) = some occurrence)
+    (context : ctx.scopeRole state occurrence.id = .compensationHandler)
+    (selected : Feature.Propagation.propagatesFromTrigger ctx = true)
+    (read : hooks.handlerRecord ctx occurrence.id state = some record)
+    (unhandled : Feature.Propagation.contextCatcher ctx raised state record
+      (record.handler.orElse fun _ => jumped.join) = .ok none) :
+    Feature.Propagation.searchScopes hooks ctx raised origin state (fuel + 1) jumped (some current) =
+      Feature.Propagation.searchScopes hooks ctx raised origin state fuel
+        (some (record.handler.orElse fun _ => jumped.join)) (some record.scope) := by
+  simp only [Feature.Propagation.searchScopes, found, context, selected, read, unhandled, beq_self_eq_true,
+    Bool.not_true, Bool.false_eq_true, ↓reduceIte, bind, Except.bind]
 
 /-- Under `CompensationHandlerFailure.propagatesFromTrigger` the search passes a compensation handler's context. -/
 theorem propagatesFromTrigger_selected {ctx : Ctx}
@@ -761,6 +700,16 @@ theorem leaveOccurrence_quiet {raised : Raised} {origin : Origin} {occurrence : 
         (throwerLeaves_quiet facts steps _ _)
 
 include facts steps calm in
+theorem contextFires_quiet {origin : Origin} {scope : ScopeOccurrenceId} {boundary : Boundary} {state after : State}
+    (ran : Feature.Propagation.contextFires hooks ctx origin scope boundary state = .ok after) :
+    Appends quiet state after := by
+  unfold Feature.Propagation.contextFires at ran
+  obtain ⟨decided, decision, ran⟩ := ok_bind ran
+  cases ran
+  exact ((catchDecided_quiet calm decision).trans (fire_quiet facts steps _ _ _ _ _)).trans
+    (throwerLeaves_quiet facts steps _ _)
+
+include facts steps calm in
 /-- A search exhausted at `handler` queues a compensation handler's failure only at a context it stopped at. -/
 theorem exhausted_queues {motive : State → Prop} {raised : Raised} {origin : Origin}
     {handler : Option ScopeOccurrenceId} {state after : State}
@@ -797,25 +746,34 @@ include facts steps calm in
 (`HandlerFailed`), in a state the Call output passes on its way left. -/
 theorem searchScopes_queues {motive : State → Prop} {raised : Raised} {origin : Origin}
     (passes : PassesKeep ctx hooks motive) :
-    ∀ fuel current (state after : State), motive state →
-      Feature.Propagation.searchScopes hooks ctx raised origin state fuel current = .ok after →
+    ∀ fuel jumped current (state after : State), motive state →
+      Feature.Propagation.searchScopes hooks ctx raised origin state fuel jumped current = .ok after →
       Appends (fun signal => quiet signal ∨ HandlerFailed ctx motive origin signal) state after
-  | 0, _, _, _, _, ran => exhausted_queues facts steps calm (handler := none) (fun _ named => nomatch named)
+  | 0, _, _, _, _, _, ran => exhausted_queues facts steps calm (handler := none) (fun _ named => nomatch named)
       (by simpa [Feature.Propagation.searchScopes] using ran)
-  | _ + 1, none, _, _, _, ran => exhausted_queues facts steps calm (handler := none) (fun _ named => nomatch named)
+  | _ + 1, _, none, _, _, _, ran => exhausted_queues facts steps calm (handler := none) (fun _ named => nomatch named)
       (by simpa [Feature.Propagation.searchScopes] using ran)
-  | fuel + 1, some current, state, after, holds, ran => by
+  | fuel + 1, jumped, some current, state, after, holds, ran => by
     unfold Feature.Propagation.searchScopes at ran
     split at ran
     · simp at ran
     · rename_i occurrence found
       dsimp only at ran
       split at ran
-      · rename_i stopping
-        simp only [Bool.and_eq_true, beq_iff_eq, Bool.not_eq_true'] at stopping
-        exact exhausted_queues facts steps calm (fun _ named => by
-          cases named
-          exact ⟨stopping.2, state, holds, stopping.1⟩) ran
+      · rename_i role
+        simp only [beq_iff_eq] at role
+        split at ran
+        · rename_i stopping
+          simp only [Bool.not_eq_true'] at stopping
+          exact exhausted_queues facts steps calm (fun _ named => by
+            cases named
+            exact ⟨stopping, state, holds, role⟩) ran
+        · split at ran
+          · simp at ran
+          · obtain ⟨caught, _, ran⟩ := ok_bind ran
+            cases caught with
+            | some boundary => exact (contextFires_quiet facts steps calm ran).mono fun _ => Or.inl
+            | none => exact searchScopes_queues passes fuel _ _ _ _ holds ran
       · obtain ⟨handlers, _, ran⟩ := ok_bind ran
         obtain ⟨passed, pass, ran⟩ := ok_bind ran
         have lift : Appends (fun signal => quiet signal ∨ HandlerFailed ctx motive origin signal) state passed :=
@@ -836,7 +794,7 @@ theorem searchScopes_queues {motive : State → Prop} {raised : Raised} {origin 
           · exact begun
           · exact begun.trans (throwerLeaves_quiet facts steps _ _)
         · exact lift.trans ((leaveOccurrence_quiet facts steps calm ran).mono fun _ => Or.inl)
-        · exact lift.trans (searchScopes_queues passes fuel _ _ _ (keeps holds) ran)
+        · exact lift.trans (searchScopes_queues passes fuel _ _ _ _ (keeps holds) ran)
 
 end Queues
 

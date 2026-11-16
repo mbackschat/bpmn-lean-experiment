@@ -75,31 +75,32 @@ theorem silent_caught_rejected : ¬ Chosen rank [[silent], [exact]] none := fun 
 def raising : ScopeOccurrenceId := ⟨3⟩
 def handlerContext : ScopeOccurrenceId := ⟨2⟩
 def above : ScopeOccurrenceId := ⟨1⟩
+def recordScope : ScopeOccurrenceId := ⟨0⟩
 def triggerScope : ScopeOccurrenceId := ⟨0⟩
 
 theorem stops_at_handler :
-    Searched .failsInstance [raising, handlerContext, above] (some 1) [triggerScope] [raising, handlerContext] :=
+    Searched .failsInstance [raising, handlerContext, above] (some 1) [recordScope] [raising, handlerContext] :=
   ⟨fun _ => rfl, fun wrong => by simp at wrong⟩
 
 /-- Under `failsInstance`, searching past the handler's context is rejected. -/
 theorem past_handler_rejected :
-    ¬ Searched .failsInstance [raising, handlerContext, above] (some 1) [triggerScope] [raising, handlerContext, above] :=
+    ¬ Searched .failsInstance [raising, handlerContext, above] (some 1) [recordScope] [raising, handlerContext, above] :=
   fun law => by
     have := law.1 rfl
     simp [raising, handlerContext, above] at this
 
-theorem on_from_trigger :
-    Searched .propagatesFromTrigger [raising, handlerContext, above] (some 1) [triggerScope]
-      [raising, handlerContext, triggerScope] :=
+theorem on_from_record :
+    Searched .propagatesFromTrigger [raising, handlerContext, above] (some 1) [recordScope]
+      [raising, handlerContext, recordScope] :=
   ⟨fun wrong => by simp at wrong, fun _ => rfl⟩
 
-/-- Under `propagatesFromTrigger`, going on to the handler context's own enclosing chain instead of the trigger's is
-rejected. -/
+/-- Under `propagatesFromTrigger`, going on to the handler context's parent, the trigger's scope occurrence, instead of
+the scope occurrence holding the subject's record is rejected. -/
 theorem on_from_context_rejected :
-    ¬ Searched .propagatesFromTrigger [raising, handlerContext, above] (some 1) [triggerScope]
+    ¬ Searched .propagatesFromTrigger [raising, handlerContext, above] (some 1) [recordScope]
       [raising, handlerContext, above] := fun law => by
   have := law.2 rfl
-  simp [above, triggerScope] at this
+  simp [above, recordScope] at this
 
 def boundaryFlow : FlowId := ⟨"ToRecovery"⟩
 def counter : ActivationCount := { processInstance := "p", element := exact, role := .element, count := 2 }
