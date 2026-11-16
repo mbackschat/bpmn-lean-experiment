@@ -87,7 +87,7 @@ Each row of the kernel status map's Row status table, in its order, with its ker
 | PC-SIGNAL-03 | accepted | 10 | case-signal-subscriptions | callActivity, embeddedSubProcess, eventSubProcess, intermediateCatchSignalEvent, multiInstanceActivity, noneEndEvent, noneStartEvent, parallelGateway, process, sequenceFlow, signalBoundaryEvent, signalIntermediateThrowEvent, userTask | — |
 | PC-SIGNAL-04 | accepted | 32 | shift-handover-signal-start | intermediateCatchSignalEvent, noneEndEvent, process, sequenceFlow, signalStartEvent, userTask | signal.duplicateName |
 | PC-CONDITION-01 | accepted | 21 | — | — | expression.juel.engineContext |
-| PC-CONDITION-02 | accepted | 29 | expedited-order-conditional-start | conditionalStartEvent, noneEndEvent, process, sequenceFlow, userTask | start.condition, start.condition.duplicate |
+| PC-CONDITION-02 | accepted | 31 | expedited-order-conditional-start | conditionalStartEvent, noneEndEvent, process, sequenceFlow, userTask | start.condition, start.condition.duplicate |
 | PC-CONDITION-03 | accepted | 79 | answer-conditional-contests | conditionalBoundaryEvent, eventBasedGateway, intermediateCatchConditionalEvent, noneEndEvent, noneStartEvent, parallelGateway, process, sequenceFlow, userTask | expression.juel.engineContext |
 | PC-CONDITION-04 | accepted | 83 | answer-conditional-contests | conditionalBoundaryEvent, eventBasedGateway, intermediateCatchConditionalEvent, noneEndEvent, noneStartEvent, parallelGateway, process, sequenceFlow, userTask | expression.juel.engineContext |
 | PC-CONDITION-05 | accepted | 9 | — | — | expression.juel.engineContext |
