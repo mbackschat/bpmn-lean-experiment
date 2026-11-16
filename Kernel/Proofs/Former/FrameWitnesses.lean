@@ -240,7 +240,7 @@ theorem unstood_reserve_rejected :
         { leftReservation with signals := [] } ∧
       ¬ PlacedLane (topCalled program definition) ({ leftReservation with signals := [] }.reserve ⟨"T"⟩ ⟨5⟩).1 := by
   have lane : PlacedLane (topCalled program definition) leftReservation :=
-    rootOnly_lane program definition rfl rfl (by decide) rfl rfl rfl rfl
+    rootOnly_lane program definition rfl rfl (by decide +kernel) rfl rfl rfl rfl
       (fun signal member => ⟨_, _, by simpa [leftReservation] using member, by simp [Laws.State.root_eq],
         by simp [leftReservation]⟩)
       (by simp [leftReservation])
@@ -273,7 +273,7 @@ theorem unstood_subscription_rejected :
       Laws.Flow.Anchored (PlacedLane (topCalled program definition)) (topCalled program definition) leftRun sharedX.id ⟨5⟩ ∧
       ¬ PlacedLane (topCalled program definition) (leftRun.reserve sharedX.id ⟨5⟩).1 := by
   have lane : PlacedLane (topCalled program definition) leftRun :=
-    rootOnly_lane program definition rfl rfl (by decide) rfl rfl rfl rfl (by simp [leftRun])
+    rootOnly_lane program definition rfl rfl (by decide +kernel) rfl rfl rfl rfl (by simp [leftRun])
       (by simp [leftRun, leftRunRecord, Laws.State.root_eq])
   refine ⟨lane, fun ⟨entry, member, named⟩ => ?_,
     .inl ⟨sharedHost "T", by simp [topCalled], _, Laws.IL.envelope?_scope _ _, sharedX, by simp, rfl⟩,
