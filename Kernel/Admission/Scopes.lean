@@ -66,6 +66,16 @@ def eventSubProcessBoundary (payload : ScopePayload) : Option String :=
   if (eventSubProcess? payload).isSome && !payload.envelope.boundaries.isEmpty then some "scope.eventSubProcess.boundary"
   else none
 
+/-- `camunda:inputOutput` is a CIB extension BPMN 2.0.2 does not define, and CIB refuses it on an Event Sub-Process at
+deployment whatever it holds (`BpmnParse.java:4837-4840`), so the kernel refuses its parameters there under every
+profile (CIB-LIM-0059). The reader carries them as `ioParameter` mappings and their input targets as locals. -/
+def eventSubProcessIoParameter (payload : ScopePayload) : Option String :=
+  let mappings := payload.envelope.inputs ++ payload.envelope.outputs
+  if (eventSubProcess? payload).isSome &&
+      (mappings.any (·.dialect == .ioParameter) || !payload.localVariables.isEmpty) then
+    some "scope.eventSubProcess.ioParameter"
+  else none
+
 /-- Under `ScopeStart.required` (CIB-LIM-0024) an embedded Sub-Process or Transaction holds a start Event: CIB refuses
 deploying a Sub-Process without one (`BpmnParse.java:967-968`) and fails entering such a Transaction, which has no
 initial activity (`SubProcessActivityBehavior.java:41-43`). An Event Sub-Process always holds its triggering start. -/
@@ -87,7 +97,8 @@ def scope (program : Program) (header : Header) (payload : ScopePayload) : Optio
     some "scope.multiInstance"
   else if payload.localVariables.any (!declared.contains ·) then some "scope.localVariableWithoutInput"
   else
-    eventSubProcessBoundary payload <|> transaction program.options.transactionMethods payload <|> withoutStart program header payload <|>
+    eventSubProcessBoundary payload <|> eventSubProcessIoParameter payload <|>
+      transaction program.options.transactionMethods payload <|> withoutStart program header payload <|>
       implicitStart program header
 
 /-- Every parent is a Scope that lists the element as a child, every child a Scope lists, an element or a boundary of

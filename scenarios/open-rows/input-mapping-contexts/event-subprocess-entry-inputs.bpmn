@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_EventSubProcessEntryInputs" targetNamespace="urn:bpmn-lean:scenarios:input-mapping-contexts:event-subprocess-entry-inputs">
+  <process id="Process_EventSubProcessEntryInputs" name="Remind about a prepared order through an Event Sub-Process with an input" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <userTask id="UserTask_Prepare" name="Prepare" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Prepare" sourceRef="StartEvent_Start" targetRef="UserTask_Prepare" />
+    <sequenceFlow id="Flow_Prepare_Done" sourceRef="UserTask_Prepare" targetRef="EndEvent_Done" />
+    <subProcess id="SubProcess_Remind" name="Remind" triggeredByEvent="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="second">${first}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_Remind" isInterrupting="false">
+        <timerEventDefinition id="TimerEventDefinition_Remind">
+          <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+        </timerEventDefinition>
+      </startEvent>
+      <userTask id="UserTask_Echo" name="Echo">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenSecond">${second}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <endEvent id="EndEvent_Remind" />
+      <sequenceFlow id="Flow_Remind_Echo" sourceRef="StartEvent_Remind" targetRef="UserTask_Echo" />
+      <sequenceFlow id="Flow_Echo_Remind" sourceRef="UserTask_Echo" targetRef="EndEvent_Remind" />
+    </subProcess>
+  </process>
+</definitions>

@@ -727,6 +727,7 @@ export const mvpBpmnRestrictions: ReadonlyArray<MvpBpmnRestriction> = Object.fre
   refusal("scope.eventSubProcess.boundary", "A Boundary Event on an Event Sub-Process: it is outside normal flow (§10.3.5), so the boundary's exception flow has nowhere to lead (§13.5.4).", "SCOPES-SEMANTICS-SPEC; CIB-LIM-0005"),
   refusal("scope.eventSubProcess.errorDuplicateCode", "Two Error Event Sub-Processes of one scope with the same code (§10.5.6).", "PROPAGATION-SEMANTICS-SPEC"),
   refusal("scope.eventSubProcess.escalationDuplicate", "Two Escalation Event Sub-Processes of one scope declaring one code: §10.5.6 allows one handler per Event Declaration.", "PROPAGATION-SEMANTICS-SPEC; CIB-LIM-0021"),
+  refusal("scope.eventSubProcess.ioParameter", "camunda:inputOutput parameters on an Event Sub-Process: a CIB deployment error, and an extension BPMN does not define.", "SCOPES-SEMANTICS-SPEC; CIB-LIM-0059"),
   refusal("scope.withoutStart", "Under scopeStart = required, an embedded Sub-Process or Transaction without a start Event: CIB cannot deploy or enter it.", "SCOPES-SEMANTICS-SPEC; CIB-LIM-0024"),
   refusal("signal.duplicateName", "Two Signal subscriptions of one CIB event scope and start mark with one name.", "SUBSCRIPTIONS-SEMANTICS-SPEC; CIB-LIM-0026"),
   refusal("source.loopBodyWhitespace", "A Multi-Instance loop body with a whitespace-only text node, which bpmn-moddle drops.", "EXPRESSION-SEMANTICS-SPEC"),

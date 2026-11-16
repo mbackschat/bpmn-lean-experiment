@@ -1,8 +1,8 @@
 /**
  * Refusal tests of `admission/scopes.ts`: a Scope the kernel can begin and run. A Scope without a none start Event
- * begins only Activities, a Transaction runs the compensate method, an Event Sub-Process carries no loop, a local variable
- * needs the input mapping that gives it its initial value, and a compensation handler sits beside its subject or inside
- * it (`admission/flow.ts` `handlerReference`).
+ * begins only Activities, a Transaction runs the compensate method, an Event Sub-Process carries no loop and no
+ * parameters, a local variable needs the input mapping that gives it its initial value, and a compensation handler sits
+ * beside its subject or inside it (`admission/flow.ts` `handlerReference`).
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -28,6 +28,13 @@ const compensate: Json = { compensation: { payload: { activity: null, waitForCom
 
 /** `T` becomes an Event Sub-Process started by a Timer, with the boundaries `env` names. */
 const timerEventSubProcess = (env: Json = {}) => task(scope("T", eventSubProcess(duration("PT1S"), false), {}, env));
+
+/** `T` becomes a Scope of `kind` with the envelope `env`, declaring the local `local` when `env` has inputs. */
+const parameterized = (kind: Json | string, env: Json) =>
+  task(scope("T", kind, { localVariables: env.inputs === undefined ? [] : ["local"] }, env));
+const timerStart = eventSubProcess(duration("PT1S"), false);
+const inputParameter: Json = { inputs: [mapping("local", variable("y"))] };
+const outputParameter: Json = { outputs: [mapping("out", variable("y"))] };
 
 /**
  * `T` becomes a Sub-Process `XS -> U -> XE` whose User Task `U` is compensable by the unconnected handler `H` inside
@@ -160,6 +167,19 @@ export const rows: readonly Row[] = [
     description: "a boundary on an Event Sub-Process",
     mutate: timerEventSubProcess({ boundaries: [boundary("B", duration("PT1S"))] }),
     control: timerEventSubProcess(),
+  },
+  {
+    // CIB-LIM-0059: CIB refuses `camunda:inputOutput` on an Event Sub-Process (`BpmnParse.java:4837-4840`).
+    code: "scope.eventSubProcess.ioParameter",
+    description: "an input parameter on an Event Sub-Process; an embedded Sub-Process may carry it",
+    mutate: parameterized(timerStart, inputParameter),
+    control: parameterized("embedded", inputParameter),
+  },
+  {
+    code: "scope.eventSubProcess.ioParameter",
+    description: "an output parameter on an Event Sub-Process; an embedded Sub-Process may carry it",
+    mutate: parameterized(timerStart, outputParameter),
+    control: parameterized("embedded", outputParameter),
   },
   {
     code: "compensation.implicit",

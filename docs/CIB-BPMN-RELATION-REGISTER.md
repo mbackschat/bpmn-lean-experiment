@@ -28,7 +28,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | CIB interpretations of BPMN gaps or inconsistencies | 41 | 1 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 47 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 14 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 53 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 54 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1595,6 +1595,16 @@ BPMN 2.0.2 §10.4.2 executes an Activity's output Data Associations "When an Act
 **Evidence:** Pinned `pvm/runtime/operation/PvmAtomicOperationCancelActivity.java:60` (the boundary's `deleteCascade` of its host), `pvm/runtime/operation/PvmAtomicOperationDeleteCascadeFireActivityEnd.java:83-89` (`destroy(alwaysSkipIoMappings)`, false unless the flag is set), `ProcessEngineConfiguration.java:418` (the flag's default `false`), `persistence/entity/ExecutionEntity.java:518-525` (`destroy` executes the output parameters) and `bpmn/parser/BpmnParse.java:4803-4814` (an Activity with `camunda:inputOutput` becomes a scope); the retained answer of [card-declined-reaches-the-transaction-boundary](../scenarios/open-rows/journey-booking-recovery/README.md) (profile `cibseven-2.2.0`, Verify run 43370273960), whose state after `s04-card-declined` and every later state hold `bookingDecision` in CIB and not in the kernel, while every command outcome and open wait agree.
 
 **Boundary:** Activities with `camunda:inputOutput` output parameters that an interrupting Error boundary removes with its host, other than the thrower and the host CIB-EXT-0016 covers; this entry owns that witness in the ledger. The same `deleteCascade` removes the region of every interrupting boundary and an interrupting Event Sub-Process's `clearScope` removes its scope's children (**H**: no retained witness separates those triggers yet). The Sub-Processes an Error leaves between its thrower and the catching host are the same mechanism, which CIB-EXT-0016 excludes from its claim. A Call's `camunda:out` does not run there (`ExecutionEntity.java:523-525` runs only `camunda:inputOutput`). No profile selects CIB's writes: an output mapping of an Activity that does not complete has no BPMN reading, and CIB differences are classified, not imitated (root decision 2026-11-13).
+
+### CIB-LIM-0059 — CIB refuses `camunda:inputOutput` on an Event Sub-Process
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile, since the kernel refuses the same form at admission under every profile (`scope.eventSubProcess.ioParameter`); not a deviation
+
+`camunda:inputOutput` is a CIB extension BPMN 2.0.2 does not define. CIB Seven `2.2.0` accepts it on an ordinary embedded Sub-Process (CIB-EXT-0020) and refuses it at deployment on a Sub-Process with `triggeredByEvent="true"`, whatever parameters it holds, an empty block included. The kernel refuses an Event Sub-Process whose envelope carries an `ioParameter` mapping or which declares a local, under every profile.
+
+**Evidence:** Pinned `bpmn/parser/BpmnParse.java:4837-4840`, reached from `parseActivityInputOutput` (`:4788-4799`), and `bpmn/parser/BpmnParseUtil.java:70-78`, which returns a mapping for an empty block too; the kernel refuses the witness `event-subprocess-entry` of [input-mapping-contexts](../scenarios/open-rows/input-mapping-contexts/README.md) (profile `cibseven-2.2.0`) with `scope.eventSubProcess.ioParameter`, and its CIB answer is owed to the hosted retake, expected to refuse the deployment.
+
+**Boundary:** Parameters on the Event Sub-Process itself; those of the Activities inside it stay admitted, and its Data Associations remain CIB-LIM-0013's. An empty `<camunda:inputOutput/>` reaches the IL as nothing, since the IL carries parameters and no block, so the kernel admits it while CIB refuses the deployment; an IL presence flag would close the difference if a corpus model ever holds one.
 
 ## Extension register
 

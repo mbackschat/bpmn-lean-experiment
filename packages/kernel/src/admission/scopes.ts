@@ -1,6 +1,7 @@
 /** Admission of Scopes and scope membership, transcribed from `Kernel/Admission/Scopes.lean`. A refusal carries a stable code. */
 import {
   ImplicitCompensation,
+  MappingDialect,
   ScopeKindTag,
   ScopeStart,
   TransactionMethodTag,
@@ -114,6 +115,19 @@ function eventSubProcessBoundary(payload: ScopePayload): string | null {
 }
 
 /**
+ * `camunda:inputOutput` is a CIB extension BPMN 2.0.2 does not define, and CIB refuses it on an Event Sub-Process at
+ * deployment whatever it holds (`BpmnParse.java:4837-4840`), so the kernel refuses its parameters there under every
+ * profile (CIB-LIM-0059). The reader carries them as `ioParameter` mappings and their input targets as locals.
+ */
+function eventSubProcessIoParameter(payload: ScopePayload): string | null {
+  if (eventSubProcessOf(payload) === null) return null;
+  const mappings = [...payload.envelope.inputs, ...payload.envelope.outputs];
+  return mappings.some((mapping) => mapping.dialect === MappingDialect.IoParameter) || payload.localVariables.length > 0
+    ? "scope.eventSubProcess.ioParameter"
+    : null;
+}
+
+/**
  * Under `ScopeStart.Required` (CIB-LIM-0024) an embedded Sub-Process or Transaction holds a start Event: CIB refuses
  * deploying a Sub-Process without one (`BpmnParse.java:967-968`) and fails entering such a Transaction, which has no
  * initial activity (`SubProcessActivityBehavior.java:41-43`). An Event Sub-Process always holds its triggering start.
@@ -140,7 +154,8 @@ export function scope(program: Program, header: Header, payload: ScopePayload): 
     return "scope.multiInstance";
   }
   if (payload.localVariables.some((name) => !declared.includes(name))) return "scope.localVariableWithoutInput";
-  return eventSubProcessBoundary(payload) ?? transaction(program.options.transactionMethods, payload) ?? withoutStart(program, header, payload) ??
+  return eventSubProcessBoundary(payload) ?? eventSubProcessIoParameter(payload) ??
+    transaction(program.options.transactionMethods, payload) ?? withoutStart(program, header, payload) ??
     implicitStart(program, header);
 }
 

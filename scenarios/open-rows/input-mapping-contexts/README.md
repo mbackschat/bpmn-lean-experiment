@@ -12,6 +12,7 @@ The Process variables of every schedule are `first` (`process-first`), `order` (
 | [mi-entry-inputs](mi-entry-inputs.bpmn) | sequential Multi-Instance User Task *Visit* with cardinality `${count}` |
 | [mi-entry-portable-inputs](mi-entry-portable-inputs.bpmn), [mi-entry-portable-inputs-parallel](mi-entry-portable-inputs-parallel.bpmn) | sequential and parallel Multi-Instance User Task *Visit* with cardinality `${count}` and the seven inputs, none of which reads a counter or the item |
 | [captured-snapshot](captured-snapshot.bpmn) | Service Task *Send* (`${bpmnLeanEffectHandler}`, `asyncBefore`) |
+| [event-subprocess-entry-inputs](event-subprocess-entry-inputs.bpmn) | non-interrupting Timer Event Sub-Process *Remind* beside the User Task *Prepare*, declaring one input `second` (`${first}`) read by the task *Echo* inside it |
 
 | Schedule | Model | Case it separates | Row |
 |---|---|---|---|
@@ -23,6 +24,7 @@ The Process variables of every schedule are `first` (`process-first`), `order` (
 | [multi-instance-entry-portable-sequential](multi-instance-entry-portable-sequential.scenario.json) | [mi-entry-portable-inputs](mi-entry-portable-inputs.bpmn) | The seven inputs at each entry of a sequential Multi-Instance User Task; the first body is completed so the second opens, whose `second` shows whether it reads the Process `first` or the first body's input `first`. *multi-instance-entry* reads `loopCounter` in the same inputs, which the kernel refuses ([CIB-LIM-0019](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-lim-0019-a-looping-activitys-own-input-mapping-that-reads-its-counters-or-item-is-refused)), so this schedule is the entry case both engines run. | PC-DATA-05 |
 | [multi-instance-entry-portable-parallel](multi-instance-entry-portable-parallel.scenario.json) | [mi-entry-portable-inputs-parallel](mi-entry-portable-inputs-parallel.bpmn) | The same inputs at both entries of a parallel Multi-Instance User Task, both open from the start; the first body is completed. | PC-DATA-05 |
 | [captured-snapshot](captured-snapshot.scenario.json) | [captured-snapshot](captured-snapshot.bpmn) | A Service Task's expression, structured and plain inputs; a `setVariables` command rewrites all three sources while the effect is open, then the effect returns. | PC-DATA-05 |
+| [event-subprocess-entry](event-subprocess-entry.scenario.json) | [event-subprocess-entry-inputs](event-subprocess-entry-inputs.bpmn) | The start only: CIB refuses `camunda:inputOutput` on an Event Sub-Process at deployment and the kernel refuses it as `scope.eventSubProcess.ioParameter` ([CIB-LIM-0059](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-lim-0059--cib-refuses-camundainputoutput-on-an-event-sub-process), [#149](https://github.com/mbackschat/bpmn-lean-experiment/issues/149)); its CIB evidence is owed to the hosted retake. | PC-DATA-05 |
 
 Notes for the target runners:
 

@@ -1,0 +1,38 @@
+{
+  "kind": "scenario",
+  "id": "input-mapping-contexts-event-subprocess-entry",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "input-mapping-contexts-event-subprocess-entry-inputs",
+    "relativePath": "scenarios/open-rows/input-mapping-contexts/event-subprocess-entry-inputs.bpmn",
+    "sha256": "251d89a39ba4febcf67537d426fe3a3fb984c726b461424a53f2ee3c64fe04a8",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "first",
+          "value": {
+            "kind": "string",
+            "value": "process-first"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnParseUtil.java"
+    ]
+  }
+}
