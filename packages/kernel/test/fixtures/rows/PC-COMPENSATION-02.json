@@ -495,7 +495,9 @@
             }
           },
           "children": [
-            "Task_UndoGroundTravel"
+            "Start_UndoGroundTravel",
+            "Task_UndoGroundTravel",
+            "End_UndoGroundTravel"
           ],
           "localVariables": [],
           "items": [],
@@ -512,6 +514,30 @@
             "asyncBefore": false,
             "asyncAfter": false
           }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_UndoGroundTravel",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_UndoGroundTravel"
+          },
+          "sourceType": "startEvent",
+          "parent": "EventSubProcess_UndoGroundTravel"
+        },
+        "payload": {
+          "subscription": {
+            "trigger": "compensation",
+            "outputs": [],
+            "alternatives": [],
+            "parallelMultiple": false
+          },
+          "outgoing": [
+            "Flow_UndoGroundTravel_Start_Task"
+          ]
         }
       }
     },
@@ -538,8 +564,12 @@
             }
           },
           "envelope": {
-            "incoming": [],
-            "outgoing": [],
+            "incoming": [
+              "Flow_UndoGroundTravel_Start_Task"
+            ],
+            "outgoing": [
+              "Flow_UndoGroundTravel_Task_End"
+            ],
             "inputs": [
               {
                 "target": "DataInput_TravelDetails",
@@ -560,6 +590,32 @@
             "asyncBefore": false,
             "asyncAfter": false
           }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_UndoGroundTravel",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_UndoGroundTravel"
+          },
+          "sourceType": "endEvent",
+          "parent": "EventSubProcess_UndoGroundTravel"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_UndoGroundTravel_Task_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
         }
       }
     },
@@ -641,6 +697,18 @@
     }
   ],
   "flows": [
+    {
+      "id": "Flow_UndoGroundTravel_Start_Task",
+      "source": "Start_UndoGroundTravel",
+      "target": "Task_UndoGroundTravel",
+      "condition": null
+    },
+    {
+      "id": "Flow_UndoGroundTravel_Task_End",
+      "source": "Task_UndoGroundTravel",
+      "target": "End_UndoGroundTravel",
+      "condition": null
+    },
     {
       "id": "Flow_ArrangeGroundTravel_Start_Task",
       "source": "Start_ArrangeGroundTravel",

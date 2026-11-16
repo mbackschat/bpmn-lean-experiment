@@ -309,7 +309,9 @@
             }
           },
           "children": [
-            "UserTask_UndoProcess"
+            "StartEvent_EspProcess",
+            "UserTask_UndoProcess",
+            "EndEvent_EspProcess"
           ],
           "localVariables": [],
           "items": [],
@@ -326,6 +328,30 @@
             "asyncBefore": false,
             "asyncAfter": false
           }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_EspProcess",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_EspProcess"
+          },
+          "sourceType": "startEvent",
+          "parent": "EventSubProcess_Process"
+        },
+        "payload": {
+          "subscription": {
+            "trigger": "compensation",
+            "outputs": [],
+            "alternatives": [],
+            "parallelMultiple": false
+          },
+          "outgoing": [
+            "Flow_EspProcess_Undo"
+          ]
         }
       }
     },
@@ -357,8 +383,12 @@
             }
           },
           "envelope": {
-            "incoming": [],
-            "outgoing": [],
+            "incoming": [
+              "Flow_EspProcess_Undo"
+            ],
+            "outgoing": [
+              "Flow_UndoProcess_End"
+            ],
             "inputs": [],
             "outputs": [],
             "boundaries": [],
@@ -369,6 +399,32 @@
             "asyncBefore": false,
             "asyncAfter": false
           }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_EspProcess",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_EspProcess"
+          },
+          "sourceType": "endEvent",
+          "parent": "EventSubProcess_Process"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_UndoProcess_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
         }
       }
     }
@@ -384,6 +440,18 @@
       "id": "Flow_Work_End",
       "source": "UserTask_Work",
       "target": "EndEvent_Done",
+      "condition": null
+    },
+    {
+      "id": "Flow_EspProcess_Undo",
+      "source": "StartEvent_EspProcess",
+      "target": "UserTask_UndoProcess",
+      "condition": null
+    },
+    {
+      "id": "Flow_UndoProcess_End",
+      "source": "UserTask_UndoProcess",
+      "target": "EndEvent_EspProcess",
       "condition": null
     }
   ],
