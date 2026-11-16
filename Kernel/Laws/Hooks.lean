@@ -2,7 +2,6 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Laws.Data.Values
-public import Kernel.Laws.State
 import all Kernel.Hooks
 
 /-! # Laws of the hooks module

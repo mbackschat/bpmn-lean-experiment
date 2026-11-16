@@ -242,18 +242,6 @@ theorem openSubscription_eq (state : State) (kind : OpenKind) (element : Element
                occurrence := (state.reserve element scope).2.id, attachedTo := host, passive }] } := by
   simp only [State.openSubscription, State.issue]
 
-/-- Queuing a signal issues nothing, and a subscription issues its reservation and its item: the counter only grows,
-so a state that kept a property and issued no more bounds what the later state names (`Laws.Flow.Anchored`). -/
-theorem signal_nextIssue (state : State) (signal : Signal) : (state.signal signal).nextIssue = state.nextIssue := by
-  simp only [State.signal]
-
-theorem openSubscription_issues (state : State) (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId)
-    (host : Option Nat) (passive : Bool) :
-    state.nextIssue ≤ (state.openSubscription kind element scope host passive).1.nextIssue := by
-  rw [openSubscription_eq]
-  simp only [State.reserve, State.activate, State.issue]
-  omega
-
 /-- A scope occurrence is entered at the counter, below its parent, with its locals keyed. -/
 theorem enterScope_eq (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (occurrence : Option Nat) :
@@ -779,16 +767,6 @@ theorem leaveScope_eq (s : State) (scope : ScopeOccurrenceId) :
       slots := (s.leaveScope scope).slots } ∧
     (s.leaveScope scope).instanceId = s.instanceId := by
   simp [State.leaveScope, State.clearInside, State.recordCancelled]
-
-/-- Clearing and leaving a scope occurrence issue nothing. -/
-theorem clearInside_nextIssue (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
-    (s.clearInside scope keep).nextIssue = s.nextIssue := by
-  obtain ⟨_, shape⟩ := clearInside_eq s scope keep
-  rw [shape]
-
-theorem leaveScope_nextIssue (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope scope).nextIssue = s.nextIssue := by
-  rw [leaveScope_eq s scope |>.1]
-  exact clearInside_nextIssue s scope []
 
 /-- `State.removeOccurrence` leaves the scope occurrences the occurrence owns after removing its record. -/
 theorem removeOccurrence_eq (s : State) (id : Nat) :

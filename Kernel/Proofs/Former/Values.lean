@@ -2,7 +2,7 @@ module
 
 public import Kernel.Laws.Step.Inputs
 public import Kernel.Laws.Data.Values
-import Kernel.Laws.State.Chain
+import Kernel.Laws.State.Counters
 
 /-! # Proofs: the former lanes, values and mapping sources (P7)
 
@@ -60,8 +60,7 @@ theorem failedSourcesRead : FailedSourcesRead := by
   refine ⟨fun association => ?_, fun parameter => ?_, fun copied => ?_⟩
   · simp only [association]; rfl
   · simp only [parameter]; rfl
-  · simp only [copied, Laws.Hooks.lastWrites_eq, Laws.State.keyed_eq.2, Laws.State.keyed_eq.1, List.any_nil,
-      Bool.false_eq_true, ↓reduceIte, List.mergeSort_singleton]
+  · simp only [copied, Laws.Hooks.lastWrites_eq, Laws.State.keyed_single, List.mergeSort_singleton]
     show Except.ok ((some [(mapping.target, Value.null)]).bind (·.lookup mapping.target)) = _
     simp
 

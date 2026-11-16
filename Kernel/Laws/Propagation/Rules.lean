@@ -5,6 +5,7 @@ public import Kernel.Laws.State.Frames
 public import Kernel.Laws.IL
 public import Kernel.Laws.Flow.Sources
 public import Kernel.Laws.Hooks
+import Kernel.Laws.State.Counters
 
 /-! # Laws of propagation: the rules
 

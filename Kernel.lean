@@ -81,6 +81,7 @@ public import Kernel.Laws.State.Begin
 public import Kernel.Laws.State.Chain
 public import Kernel.Laws.State.Claim
 public import Kernel.Laws.State.Clear
+public import Kernel.Laws.State.Counters
 public import Kernel.Laws.State.Derived
 public import Kernel.Laws.State.Enter
 public import Kernel.Laws.State.Fire

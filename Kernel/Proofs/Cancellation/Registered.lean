@@ -5,6 +5,7 @@ public import Kernel.Proofs.Step.Contract
 public import Kernel.Proofs.State
 public import Kernel.Laws.State.Fire
 public import Kernel.Laws.Registry
+import Kernel.Laws.State.Counters
 
 /-! # Proofs: cancellation over the registered hooks
 

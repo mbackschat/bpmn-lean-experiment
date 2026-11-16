@@ -3,6 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.Laws.State.Invariant
 public import Kernel.Laws.Hooks
+import Kernel.Laws.State.Counters
 public import Kernel.Laws.Except
 public import Kernel.Laws.Step.Contract
 import Kernel.Laws.Step.Elements
