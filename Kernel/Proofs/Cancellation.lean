@@ -311,77 +311,77 @@ theorem ScopesKept.enter {before s t : State} (kept : ScopesKept before s) (issu
     exact Nat.le_refl _
 
 /-- The state operations the hooks apply keep the scope occurrences of any before-state. -/
-theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) where
+theorem scopesKept_alongside (before : State) (program : Program) : Alongside program (ScopesKept before) where
   frame _ _ moved kept := kept.shrink (by rw [moved.scopes]; exact .refl _) moved.nextIssue
-  emit _ s _ _ _ _ _ kept := by rw [Laws.State.emit_eq]; exact kept
-  complete _ s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
-  park _ _ _ _ _ kept := kept
-  arm _ s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
-  armGateway _ s _ _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
-  raise _ s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
-  signalBegin _ s _ _ _ _ kept := by
+  emit s _ _ _ _ _ kept := by rw [Laws.State.emit_eq]; exact kept
+  complete s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
+  park _ _ _ _ kept := kept
+  arm s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
+  armGateway s _ _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
+  raise s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
+  signalBegin s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
   issue s kept := by
     rw [Laws.State.issue_eq]
     exact kept.enter rfl fun _ member => .inl member
-  enterScope _ s element parent locals owner _ _ kept := by
+  enterScope s element parent locals owner _ _ kept := by
     rw [Laws.State.enterScope_eq]
     exact kept.enter rfl fun entry member => (List.mem_append.mp member).imp_right fun fresh => by
       rw [List.mem_singleton.mp fresh]
-  reserve _ s element scope _ _ _ kept :=
+  reserve s element scope _ _ _ kept :=
     have reserves := Laws.State.reserve_reserves s element scope
     kept.enter reserves.nextIssue fun _ member => .inl (reserves.scopes ▸ member)
-  leaveScope _ s scope _ _ _ kept :=
+  leaveScope s scope _ _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2
-  clearInside _ s scope keep _ _ _ kept :=
+  clearInside s scope keep _ _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).1 scope keep).1 ((Laws.State.removal_shrinks s).1 scope keep).2
-  disarm _ s host _ kept := by
+  disarm s host _ kept := by
     rw [Laws.State.disarm_eq]
     exact kept
-  setVariable _ s target name value _ kept :=
+  setVariable s target name value _ kept :=
     have same := Laws.State.setVariable_same s target name value
     kept.shrink (by rw [same.scopes]; exact .refl _) same.nextIssue
-  removeVariable _ s target name _ kept :=
+  removeVariable s target name _ kept :=
     have same := Laws.State.removeVariable_same s target name
     kept.shrink (by rw [same.scopes]; exact .refl _) same.nextIssue
-  instanceBegin _ s _ _ _ kept := by
+  instanceBegin s _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
-  defer _ s _ _ _ kept := by
+  defer s _ _ _ kept := by
     rw [Laws.State.deferBegins_eq]
     exact kept
-  leaveInstance _ s _ scope _ _ _ _ kept :=
+  leaveInstance s _ scope _ _ _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2
-  runs _ _ _ _ _ kept := kept.shrink (.refl _) rfl
+  runs _ _ _ _ kept := kept.shrink (.refl _) rfl
 
 /-- Storing compensation runs keeps the scope occurrences of any before-state. -/
-theorem scopesKept_stores (before : State) : StoresAlongside (ScopesKept before) :=
-  { (scopesKept_alongside before).toFrameAlongside with storeRuns := fun _ _ _ _ _ _ _ kept => kept.shrink (.refl _) rfl }
+theorem scopesKept_stores (before : State) (program : Program) : StoresAlongside program (ScopesKept before) :=
+  { (scopesKept_alongside before program).toFrameAlongside with storeRuns := fun _ _ _ _ _ _ kept => kept.shrink (.refl _) rfl }
 
 /-- `Step`'s phases keep the scope occurrences of any before-state: journalling and ordering move no scope occurrence
 nor the counter, beginning issues at most one identity and enters no scope occurrence, and cancelling drops some
 (`Laws.State.removal_shrinks`). -/
-theorem scopesKept_stepAlongside (before : State) : StepAlongside (ScopesKept before) where
-  toFrameAlongside := (scopesKept_alongside before).toFrameAlongside
-  journal _ _ _ _ kept _ _ := kept
-  runOrder _ _ _ kept := kept
-  dequeue _ _ _ _ _ kept := kept
-  untoken _ _ _ _ _ kept := kept
-  begin _ s request role sourceType formed _ _ _ _ kept :=
+theorem scopesKept_stepAlongside (before : State) (program : Program) : StepAlongside program (ScopesKept before) where
+  toFrameAlongside := (scopesKept_alongside before program).toFrameAlongside
+  journal _ _ _ kept _ _ := kept
+  runOrder _ _ kept := kept
+  dequeue _ _ _ _ kept := kept
+  untoken _ _ _ _ kept := kept
+  begin s request role sourceType formed _ _ _ _ kept :=
     have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
     kept.grow (by
       rcases begins.source with ⟨_, reserved⟩ | fresh
       · exact Nat.le_of_eq reserved.nextIssue.symm
       · rw [fresh.nextIssue]
         exact Nat.le_succ _) fun _ member => .inl (begins.scopes ▸ member)
-  cancel _ s id _ kept :=
+  cancel s id _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).2.2.2 id).1 ((Laws.State.removal_shrinks s).2.2.2 id).2
 
 /-- `Step`'s phases keep `KeepsScopes before` where they keep `WellFormed`. -/
 theorem keepsScopes_phases (phases : Laws.Step.Phases WellFormed) (before : State) :
     Laws.Step.Phases (KeepsScopes before) :=
-  phases_alongside phases fun _ => scopesKept_stepAlongside before
+  phases_alongside phases (scopesKept_stepAlongside before)
 
 /-- The completion pipeline's own phases keep `KeepsScopes before` where they keep `WellFormed`: starting a reservation
 keeps the scope occurrences, removing an occurrence drops some (`Laws.State.removal_shrinks`), and journalling an end
@@ -438,7 +438,7 @@ def MicroStepsKeep (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
 pipeline as a premise: the closure's phases keep it by `ClosureAlongside` (`closurePhases_alongside`). -/
 theorem microStepsKeep_alongside {hooks : Hooks} {rel : Program → State → Prop}
     (contract : Laws.Step.HookContract hooks fun program s => WellFormed program s ∧ rel program s)
-    (phases : Laws.Step.ClosurePhases WellFormed) (side : ∀ program, ClosureAlongside (rel program))
+    (phases : Laws.Step.ClosurePhases WellFormed) (side : ∀ program, ClosureAlongside program (rel program))
     (facts : Laws.Step.StateFacts)
     (pipeline : Laws.Step.PipelineKeeps hooks fun program s => WellFormed program s ∧ rel program s) :
     MicroStepsKeep hooks fun program s => WellFormed program s ∧ rel program s :=

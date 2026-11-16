@@ -203,65 +203,67 @@ strictly within it, disarming a host, and a variable write or removal. Every fea
 and `rel` but `Laws.MultiInstance.MultiInstanceOps` and the compensation records follows from its record of `WellFormed`
 and this one, with `OccursAlongside` where it reserves, queues a trigger or enters a called root; those two compensation
 records also store runs (`StoresAlongside`). The flows an outflow queues are read off states that kept `srel`
-beside `WellFormed` (`Laws.Flow.FlowOps`); a property that reads no flow token takes any. -/
-structure FrameAlongside (rel : State → Prop) (srel : State → Prop := rel) : Prop where
+beside `WellFormed` (`Laws.Flow.FlowOps`); a property that reads no flow token takes any. The record is stated at the
+one `program` a run executes, as the builders read it (`Proofs.Cancellation.featureOps_frame`), so a property that reads
+the program may hold of that program only. -/
+structure FrameAlongside (program : Program) (rel : State → Prop) (srel : State → Prop := rel) : Prop where
   frame : ∀ s t, Unmoved s t → rel s → rel t
   /-- Flow tokens queued in the scope occurrence of an occurrence they continue from (`Laws.Flow.LeavesFrom`). -/
-  emit : ∀ program s occurrence flows, WellFormed program s → (∃ entry ∈ s.scopes, entry.id = occurrence.scope) →
+  emit : ∀ s occurrence flows, WellFormed program s → (∃ entry ∈ s.scopes, entry.id = occurrence.scope) →
     Laws.Flow.LeavesFrom (fun held => WellFormed program held ∧ srel held) program s occurrence (.flows flows) → rel s →
     rel (s.emit flows occurrence.scope)
   /-- A completion by flows offered where its occurrence lies, or by a held compensation run's resume (`CompletesFrom`). -/
-  complete : ∀ program s id leave writes rule, CompletesFrom rel program s id leave → rel s →
+  complete : ∀ s id leave writes rule, CompletesFrom rel program s id leave → rel s →
     rel (s.signal (.complete id leave writes rule))
   /-- A begun occurrence parked at a join in its scope occurrence, on the flow it arrived by. -/
-  park : ∀ program s waiting, WellFormed program s → (∃ occurrence ∈ s.occurrences,
+  park : ∀ s waiting, WellFormed program s → (∃ occurrence ∈ s.occurrences,
     occurrence.id = waiting.occurrence ∧ occurrence.begun = true ∧ occurrence.scope = waiting.scope ∧
       occurrence.incoming = some waiting.flow) → rel s →
     rel { s with slots := { s.slots with parked := s.slots.parked ++ [waiting] } }
   /-- The arming of an occurrence's boundaries, of its element in its scope occurrence. -/
-  arm : ∀ program s host element scope, WellFormed program s → (∃ occurrence ∈ s.occurrences,
+  arm : ∀ s host element scope, WellFormed program s → (∃ occurrence ∈ s.occurrences,
     occurrence.id = host ∧ occurrence.element = element ∧ occurrence.scope = scope) → rel s →
     rel (s.signal (.arm host element scope))
   /-- The arming of the arms of the Event-Based Gateway an occurrence arrived at (`Laws.Flow.GatewayOf`), in its scope
   occurrence. -/
-  armGateway : ∀ program s occurrence header payload, WellFormed program s → occurrence ∈ s.occurrences →
+  armGateway : ∀ s occurrence header payload, WellFormed program s → occurrence ∈ s.occurrences →
     Laws.Flow.GatewayOf program s occurrence header payload → rel s →
     rel (s.signal (.armGateway occurrence.id header.id occurrence.scope))
   /-- A raise other than a Cancel at the element and scope occurrence of an occurrence there, as an effect's business
   Error is raised from the occurrence its item waits for (`Laws.Work.WorkOps.raise`). -/
-  raise : ∀ program s raised origin, WellFormed program s → raised.isCancel = false →
+  raise : ∀ s raised origin, WellFormed program s → raised.isCancel = false →
     (∃ occurrence ∈ s.occurrences, occurrence.element = origin.element ∧ occurrence.scope = origin.scope) → rel s →
     rel (s.signal (.raise raised origin))
   /-- A begin that fits, from where `Laws.Flow.BeginAnchored` says. -/
-  signalBegin : ∀ program s request, WellFormed program s → BeginFits s request →
+  signalBegin : ∀ s request, WellFormed program s → BeginFits s request →
     Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ rel t) program s request → rel s →
     rel (s.signal (.begin request))
   issue : ∀ s, rel s → rel s.issue.1
   /-- Entering a scope occurrence of an element anchored where it is entered (`Laws.Flow.Anchored`). -/
-  enterScope : ∀ program s element parent locals owner, WellFormed program s →
+  enterScope : ∀ s element parent locals owner, WellFormed program s →
     Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s element parent → rel s →
     rel (s.enterScope element parent locals owner).1
   /-- The reservation a `Signal.occur` taken off a queue that kept `rel` asks for (`Laws.State.Popped`). -/
-  reserve : ∀ program s element scope, WellFormed program s → Laws.Step.PendingIn rel element →
+  reserve : ∀ s element scope, WellFormed program s → Laws.Step.PendingIn rel element →
     (∃ leave writes rule, Laws.State.Popped (fun t => WellFormed program t ∧ rel t)
       (.occur element scope leave writes rule) s) → rel s →
     rel (s.reserve element scope).1
-  leaveScope : ∀ program s scope, WellFormed program s → scope ∈ scopeIds s → LeavesOwned s scope → rel s →
+  leaveScope : ∀ s scope, WellFormed program s → scope ∈ scopeIds s → LeavesOwned s scope → rel s →
     rel (s.leaveScope scope)
-  clearInside : ∀ program s scope keep, WellFormed program s → scope ∈ scopeIds s →
+  clearInside : ∀ s scope keep, WellFormed program s → scope ∈ scopeIds s →
     (∀ o ∈ s.occurrences, o.id ∈ keep → ¬ Laws.State.StrictlyWithin s o.scope scope) → rel s →
     rel (s.clearInside scope keep)
-  disarm : ∀ program s host, WellFormed program s → rel s → rel (s.disarm host)
-  setVariable : ∀ program s target name value, WellFormed program s → rel s → rel (s.setVariable target name value)
-  removeVariable : ∀ program s target name, WellFormed program s → rel s → rel (s.removeVariable target name)
+  disarm : ∀ s host, WellFormed program s → rel s → rel (s.disarm host)
+  setVariable : ∀ s target name value, WellFormed program s → rel s → rel (s.setVariable target name value)
+  removeVariable : ∀ s target name, WellFormed program s → rel s → rel (s.removeVariable target name)
 
 /-- `FrameAlongside` with storing compensation runs whose running contexts were held or are no active Multi-Instance
 instance (`StoresHeldOrFresh`), that resume only by reservations pending (`ResumesPending`) and whose records come
 from the state they replace (`Laws.Compensation.StoredFrom`): what the records of
 `Laws.Compensation.CompensationOps` and `Laws.Compensation.RunsOps` beside `WellFormed` follow from. A property that
 reads the runs themselves proves what the compensation hooks keep of it directly (`Proofs.Step.CompensationKeeps`). -/
-structure StoresAlongside (rel : State → Prop) : Prop extends FrameAlongside rel where
-  storeRuns : ∀ program s (compensation : Compensations), WellFormed program s →
+structure StoresAlongside (program : Program) (rel : State → Prop) : Prop extends FrameAlongside program rel where
+  storeRuns : ∀ s (compensation : Compensations), WellFormed program s →
     StoresHeldOrFresh s compensation → ResumesPending rel s compensation →
     Laws.Compensation.StoredFrom program s (Laws.Compensation.ResumeQueued (fun t => WellFormed program t ∧ rel t) s)
       compensation → rel s → rel { s with slots := { s.slots with compensation } }
@@ -270,23 +272,24 @@ structure StoresAlongside (rel : State → Prop) : Prop extends FrameAlongside r
 `Laws.MultiInstance.MultiInstanceOps`: queuing and deferring the begins of instances, leaving an active Multi-Instance
 instance's scope occurrence and replacing the Multi-Instance runs. The scope occurrences kept and an input's end facts
 read no queued begin and no runs. -/
-structure Alongside (rel : State → Prop) (srel : State → Prop := rel) : Prop extends FrameAlongside rel srel where
-  instanceBegin : ∀ program s request, WellFormed program s →
+structure Alongside (program : Program) (rel : State → Prop) (srel : State → Prop := rel) : Prop
+    extends FrameAlongside program rel srel where
+  instanceBegin : ∀ s request, WellFormed program s →
     Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ rel t) program s request → rel s →
     rel (s.signal (.begin request))
-  defer : ∀ program s requests, WellFormed program s →
+  defer : ∀ s requests, WellFormed program s →
     (∀ request ∈ requests, Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ rel t) program s request) → rel s →
     rel (s.deferBegins requests)
   /-- The Multi-Instance runs replaced by runs whose elements are anchored at their scope occurrences. -/
-  leaveInstance : ∀ program s run scope, WellFormed program s → run ∈ s.slots.multiInstances →
+  leaveInstance : ∀ s run scope, WellFormed program s → run ∈ s.slots.multiInstances →
     Iteration.active scope ∈ run.instances → scope ∈ scopeIds s → rel s → rel (s.leaveScope scope)
-  runs : ∀ program s (runs : List MultiInstanceRun), WellFormed program s →
+  runs : ∀ s (runs : List MultiInstanceRun), WellFormed program s →
     (∀ run ∈ runs, Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s run.element run.scope) → rel s →
     rel { s with slots := { s.slots with multiInstances := runs } }
 
 /-- A queued signal that queues no begin, makes no reservation and carries no trigger, no resume and places no work moves nothing `rel`
 reads. -/
-theorem FrameAlongside.signal {rel : State → Prop} (side : FrameAlongside rel) {s : State} (kept : rel s)
+theorem FrameAlongside.signal {rel : State → Prop} {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s)
     (signal : Signal)
     (quiet : Laws.Step.beginsOf [signal] = [] ∧ Laws.Step.occursOf [signal] = [] ∧ Laws.Step.triggersOf [signal] = [] :=
       by exact ⟨rfl, rfl, rfl⟩) (unresumed : Laws.Step.resumesOf [signal] = [] := by exact rfl)
@@ -309,9 +312,9 @@ theorem FrameAlongside.signal {rel : State → Prop} (side : FrameAlongside rel)
 no scope occurrence keeps: `State.removeOccurrence` drops the record and then leaves the scope occurrences it owns,
 which ends where leaving them first, each owned and from a well-formed state, and dropping the record last ends, since
 the record lies outside each of them (`Laws.State.leaveScope_withoutRecord`); with no record, nothing owns one. -/
-theorem FrameAlongside.removeOccurrence {rel : State → Prop} (side : FrameAlongside rel)
+theorem FrameAlongside.removeOccurrence {rel : State → Prop} {program : Program} (side : FrameAlongside program rel)
     (without : ∀ t id, (∀ entry ∈ t.scopes, entry.occurrence ≠ some id) → rel t → rel (Laws.State.withoutRecord t id))
-    {program : Program} {s : State} {id : Nat} (formed : WellFormed program s) (kept : rel s) :
+    {s : State} {id : Nat} (formed : WellFormed program s) (kept : rel s) :
     rel (s.removeOccurrence id) := by
   by_cases absent : id ∉ occurrenceIds s
   · have unowned : ∀ entry ∈ s.scopes, entry.occurrence ≠ some id := fun entry inside owns => by
@@ -361,7 +364,7 @@ theorem FrameAlongside.removeOccurrence {rel : State → Prop} (side : FrameAlon
           · exact later
       obtain ⟨commutes, kept, none⟩ := ih (t.leaveScope first.id) (left.wellFormed formed present notRoot)
         ((left.occurrences record).mpr ⟨member, outside⟩) (List.nodup_cons.mp nodup).2 restPlaced restUnowned
-        (side.leaveScope _ t first.id formed present (.inl ⟨first, firstMember, rfl, record.id, firstOwned⟩) kept)
+        (side.leaveScope t first.id formed present (.inl ⟨first, firstMember, rfl, record.id, firstOwned⟩) kept)
       simp only [List.foldl_cons]
       rw [Laws.State.leaveScope_withoutRecord t record.id first.id apart]
       exact ⟨commutes, kept, none⟩
@@ -379,23 +382,23 @@ theorem FrameAlongside.removeOccurrence {rel : State → Prop} (side : FrameAlon
 
 /-- Withdrawing an occurrence's items closes its own, disarms it and withdraws the items inside the scope occurrences
 it owns, which only the disarming may move anything `rel` reads of. -/
-theorem FrameAlongside.withdrawOccurrence {rel : State → Prop} (side : FrameAlongside rel) {program : Program} {s : State}
+theorem FrameAlongside.withdrawOccurrence {rel : State → Prop} {program : Program} (side : FrameAlongside program rel) {s : State}
     (formed : WellFormed program s) (kept : rel s) (id : Nat) : rel (s.withdrawOccurrence id) := by
   obtain ⟨items, frame⟩ := Laws.State.withdrawAll_frame
     (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
   rw [Laws.State.withdrawOccurrence_eq, frame]
   refine side.frame ((s.closeOwnItems id).disarm id) _ .same
-    (side.disarm program _ id (Laws.State.closeOwnItems_wellFormed formed id) ?_)
+    (side.disarm _ id (Laws.State.closeOwnItems_wellFormed formed id) ?_)
   rw [Laws.State.closeOwnItems_eq]
   exact side.frame s _ .same kept
 
 /-- Cancelling an occurrence of a well-formed state withdraws its items (`FrameAlongside.withdrawOccurrence`), removes
 it (`FrameAlongside.removeOccurrence`, given what dropping a record that owns no scope occurrence keeps) and journals
 its end and cancellation, which `ends` keeps. -/
-theorem FrameAlongside.cancelOccurrence {rel : State → Prop} (side : FrameAlongside rel)
+theorem FrameAlongside.cancelOccurrence {rel : State → Prop} {program : Program} (side : FrameAlongside program rel)
     (without : ∀ t id, (∀ entry ∈ t.scopes, entry.occurrence ≠ some id) → rel t → rel (Laws.State.withoutRecord t id))
     (ends : ∀ t ended cancelled, rel t → rel { t with draft := { t.draft with ended, cancelled } })
-    {program : Program} {s : State} {id : Nat} (formed : WellFormed program s) (kept : rel s) :
+    {s : State} {id : Nat} (formed : WellFormed program s) (kept : rel s) :
     rel (s.cancelOccurrence id) := by
   cases found : s.occurrence? id with
   | none =>
@@ -413,43 +416,43 @@ theorem FrameAlongside.cancelOccurrence {rel : State → Prop} (side : FrameAlon
 /-- What the phases a closure runs keep of a property `rel` carried beside `WellFormed`, besides the hooks' state
 operations (`FrameAlongside`): journalling the draft, beginning an admitted request in a scope occurrence that stands
 and cancelling an occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
-structure ClosureAlongside (rel : State → Prop) : Prop extends FrameAlongside rel where
-  journal : ∀ program s (transition : Transition), WellFormed program s → rel s → transition.started = s.draft.started →
+structure ClosureAlongside (program : Program) (rel : State → Prop) : Prop extends FrameAlongside program rel where
+  journal : ∀ s (transition : Transition), WellFormed program s → rel s → transition.started = s.draft.started →
     transition.ended = s.draft.ended → rel { s with journal := transition :: s.journal, draft := {}, writes := [] }
   /-- Signals leave the queue. -/
-  dequeue : ∀ program s signals, WellFormed program s → signals.Sublist s.signals → rel s → rel { s with signals }
+  dequeue : ∀ s signals, WellFormed program s → signals.Sublist s.signals → rel s → rel { s with signals }
   /-- Tokens leave the work stack. -/
-  untoken : ∀ program s tokens, WellFormed program s → tokens.Sublist s.tokens → rel s → rel { s with tokens }
+  untoken : ∀ s tokens, WellFormed program s → tokens.Sublist s.tokens → rel s → rel { s with tokens }
   /-- A begin of the request's role, fresh or taken off a queue that kept `rel` (`Laws.Step.BeginOrigin`). -/
-  begin : ∀ program s request role sourceType, WellFormed program s → Laws.Step.ScopeStands s request.scope →
+  begin : ∀ s request role sourceType, WellFormed program s → Laws.Step.ScopeStands s request.scope →
     Laws.Step.Admitted s request → role = Step.roleOf program request →
     Laws.Step.BeginOrigin (fun program s => WellFormed program s ∧ rel s) program s request → rel s →
     rel (s.beginOccurrence request role sourceType).1
-  cancel : ∀ program s id, WellFormed program s → rel s → rel (s.cancelOccurrence id)
+  cancel : ∀ s id, WellFormed program s → rel s → rel (s.cancelOccurrence id)
 
 /-- What `Step`'s own phases keep of `rel` (`ClosureAlongside`) and ordering the journal once the closure settles. -/
-structure StepAlongside (rel : State → Prop) : Prop extends ClosureAlongside rel where
-  runOrder : ∀ program s, WellFormed program s → rel s → rel { s with journal := s.journal.reverse }
+structure StepAlongside (program : Program) (rel : State → Prop) : Prop extends ClosureAlongside program rel where
+  runOrder : ∀ s, WellFormed program s → rel s → rel { s with journal := s.journal.reverse }
 
 section Items
 
 variable {rel : State → Prop}
 
 /-- Holding an occurrence moves nothing `rel` reads. -/
-theorem FrameAlongside.hold (side : FrameAlongside rel) {s : State} (kept : rel s) (held : Held) :
+theorem FrameAlongside.hold {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s) (held : Held) :
     rel (s.hold held) := by
   rw [Laws.Hooks.hold_eq]
   exact side.frame s _ .same kept
 
 /-- An open item is an issue and an added item. -/
-theorem FrameAlongside.openItem (side : FrameAlongside rel) {s : State} (kept : rel s) (kind : OpenKind)
+theorem FrameAlongside.openItem {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s) (kind : OpenKind)
     (occurrence : Occurrence) : rel (s.openItem kind occurrence) := by
   refine side.frame s.issue.1 _ ?_ (side.issue s kept)
   rw [Laws.State.openItem_eq, Laws.State.issue_eq]
   exact .same
 
 /-- A subscription is a reservation of a reservable element, an issue and an added item. -/
-theorem FrameAlongside.openSubscription (side : FrameAlongside rel) {program : Program}
+theorem FrameAlongside.openSubscription {program : Program} (side : FrameAlongside program rel)
     (occurs : OccursAlongside program rel) {s : State} (formed : WellFormed program s) (kept : rel s)
     (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool)
     (reservable : Laws.IL.Reservable program element)
@@ -461,13 +464,13 @@ theorem FrameAlongside.openSubscription (side : FrameAlongside rel) {program : P
   exact .same
 
 /-- Closing an item moves nothing `rel` reads. -/
-theorem FrameAlongside.closeItem (side : FrameAlongside rel) {s : State} (kept : rel s) (id : Nat) :
+theorem FrameAlongside.closeItem {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s) (id : Nat) :
     rel (s.closeItem id) := by
   rw [Laws.State.closeItem_eq]
   exact side.frame s _ .same kept
 
 /-- Withdrawing the items inside a scope occurrence moves nothing `rel` reads. -/
-theorem FrameAlongside.withdrawInside (side : FrameAlongside rel) {s : State} (kept : rel s)
+theorem FrameAlongside.withdrawInside {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s)
     (scope : ScopeOccurrenceId) : rel (s.withdrawInside scope) := by
   rw [Laws.State.withdrawInside_eq]
   exact side.frame s _ .same kept

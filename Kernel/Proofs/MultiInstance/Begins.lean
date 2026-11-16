@@ -464,45 +464,45 @@ end Walk
 /-! ## The frame records -/
 
 /-- The state operations the hooks apply keep `BeginsKept`. -/
-theorem beginsKept_alongside (program : Program) : Alongside (BeginsKept program) where
+theorem beginsKept_alongside (program : Program) : Alongside program (BeginsKept program) where
   frame _ _ moved held := held.frame (fun _ inside => moved.occurrences ▸ inside) moved.pending moved.journal
     (congrArg (·.started) moved.draft)
-  emit _ _ _ _ _ _ _ held := by
+  emit _ _ _ _ _ _ held := by
     rw [Laws.State.emit_eq]
     exact held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
-  complete _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
-  park _ _ _ _ _ held := held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
-  arm _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
-  armGateway _ _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
-  raise _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
-  signalBegin _ _ request _ _ _ held := held.signalBegin request
+  complete _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
+  park _ _ _ _ held := held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
+  arm _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
+  armGateway _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
+  raise _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
+  signalBegin _ request _ _ _ held := held.signalBegin request
   issue _ held := held.issue
-  enterScope _ _ element parent locals owner _ _ held := held.enterScope element parent locals owner
-  reserve _ _ _ scope _ pending _ held :=
+  enterScope _ element parent locals owner _ _ held := held.enterScope element parent locals owner
+  reserve _ _ scope _ pending _ held :=
     held.reserve (fun apart => PendingIn.unlooped (fun _ kept => (kept apart).occurs) pending) scope
-  leaveScope _ _ _ formed present _ held := held.leaveScope formed present
-  clearInside _ _ _ keep formed present _ held := held.clearInside formed present keep
-  disarm _ _ host _ held := held.disarm host
-  setVariable _ _ target name value _ held := held.setVariable target name value
-  removeVariable _ _ target name _ held := held.removeVariable target name
-  instanceBegin _ _ request _ _ held := held.signalBegin request
-  defer _ _ requests _ _ held := held.defer requests
-  leaveInstance _ _ _ _ formed _ _ present held := held.leaveScope formed present
-  runs _ _ runs _ _ held := held.runs runs
+  leaveScope _ _ formed present _ held := held.leaveScope formed present
+  clearInside _ _ keep formed present _ held := held.clearInside formed present keep
+  disarm _ host _ held := held.disarm host
+  setVariable _ target name value _ held := held.setVariable target name value
+  removeVariable _ target name _ held := held.removeVariable target name
+  instanceBegin _ request _ _ held := held.signalBegin request
+  defer _ requests _ _ held := held.defer requests
+  leaveInstance _ _ _ formed _ _ present held := held.leaveScope formed present
+  runs _ runs _ _ held := held.runs runs
 
 /-- Storing compensation runs that resume only by pending reservations keeps `BeginsKept`. -/
-theorem beginsKept_stores (program : Program) : StoresAlongside (BeginsKept program) :=
+theorem beginsKept_stores (program : Program) : StoresAlongside program (BeginsKept program) :=
   { (beginsKept_alongside program).toFrameAlongside with
-    storeRuns := fun _ _ compensation _ _ resumes _ held => held.storeRuns compensation resumes }
+    storeRuns := fun _ compensation _ _ resumes _ held => held.storeRuns compensation resumes }
 
 /-- The phases a closure runs keep `BeginsKept`; cancelling is `FrameAlongside.cancelOccurrence`. -/
-theorem beginsKept_closureAlongside (program : Program) : ClosureAlongside (BeginsKept program) where
+theorem beginsKept_closureAlongside (program : Program) : ClosureAlongside program (BeginsKept program) where
   toFrameAlongside := (beginsKept_alongside program).toFrameAlongside
-  journal _ _ transition _ held started _ := held.journal transition started
-  dequeue _ _ _ _ fewer held := held.dequeue fewer
-  untoken _ _ tokens _ _ held := held.untoken tokens
-  begin _ _ _ role sourceType formed _ admitted _ _ held := held.begin formed admitted role sourceType
-  cancel _ _ _ formed held := (beginsKept_alongside program).toFrameAlongside.cancelOccurrence
+  journal _ transition _ held started _ := held.journal transition started
+  dequeue _ _ _ fewer held := held.dequeue fewer
+  untoken _ tokens _ _ held := held.untoken tokens
+  begin _ _ role sourceType formed _ admitted _ _ held := held.begin formed admitted role sourceType
+  cancel _ _ formed held := (beginsKept_alongside program).toFrameAlongside.cancelOccurrence
     (fun _ id _ kept => kept.withoutRecord id) (fun _ _ _ kept => kept.draft _ rfl) formed held
 
 /-- The completion pipeline's own phases keep `BeginsKept` where they keep `WellFormed`. -/

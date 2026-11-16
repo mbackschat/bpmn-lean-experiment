@@ -316,34 +316,35 @@ theorem Formed.clearInside {precedes : Compensable → Compensable → Prop} {pr
 /-! ## The frame -/
 
 /-- The state operations the hooks apply keep `Formed`. -/
-theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) : FrameAlongside (Formed precedes) where
+theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) (program : Program) :
+    FrameAlongside program (Formed precedes) where
   frame _ _ moved kept := kept.unmoved moved
-  emit _ s _ _ _ _ _ kept := by
+  emit s _ _ _ _ _ kept := by
     rw [Laws.State.emit_eq]
     exact kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
-  complete _ _ _ _ _ _ _ kept := kept.signal _
-  park _ _ _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
-  arm _ _ _ _ _ _ _ kept := kept.signal _
-  armGateway _ _ _ _ _ _ _ _ kept := kept.signal _
-  raise _ _ _ _ _ cancel _ kept := kept.signal _ (by rw [Laws.Step.triggersOf_raise, cancel]; rfl)
-  signalBegin _ _ _ _ _ _ kept := kept.signal _
+  complete _ _ _ _ _ _ kept := kept.signal _
+  park _ _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
+  arm _ _ _ _ _ _ kept := kept.signal _
+  armGateway _ _ _ _ _ _ _ kept := kept.signal _
+  raise _ _ _ _ cancel _ kept := kept.signal _ (by rw [Laws.Step.triggersOf_raise, cancel]; rfl)
+  signalBegin _ _ _ _ _ kept := kept.signal _
   issue s kept := by
     rw [Laws.State.issue_eq]
     exact kept.same rfl rfl (Nat.le_succ _) rfl rfl (.refl _)
-  enterScope _ s element parent locals owner well _ kept := by
+  enterScope s element parent locals owner well _ kept := by
     rw [Laws.State.enterScope_eq]
     exact kept.enter well rfl rfl rfl rfl rfl rfl rfl rfl rfl
-  reserve _ s element scope well _ _ kept := kept.reserve well element scope
-  leaveScope _ _ _ well present _ kept := kept.leaveScope well present
-  clearInside _ _ _ keep well present housed kept := kept.clearInside well present keep housed
-  disarm _ s host _ kept := by
+  reserve s element scope well _ _ kept := kept.reserve well element scope
+  leaveScope _ _ well present _ kept := kept.leaveScope well present
+  clearInside _ _ keep well present housed kept := kept.clearInside well present keep housed
+  disarm s host _ kept := by
     rw [Laws.State.disarm_eq]
     exact kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _) fun _ inside => (List.mem_filter.mp inside).1
-  setVariable _ s target name value _ kept :=
+  setVariable s target name value _ kept :=
     have same := Laws.State.setVariable_same s target name value
     kept.same same.scopes same.instanceId (Nat.le_of_eq same.nextIssue.symm) same.activations (congrArg (·.compensation) same.slots)
       (by rw [same.signals]; exact .refl _) fun _ inside => by rwa [same.occurrences] at inside
-  removeVariable _ s target name _ kept :=
+  removeVariable s target name _ kept :=
     have same := Laws.State.removeVariable_same s target name
     kept.same same.scopes same.instanceId (Nat.le_of_eq same.nextIssue.symm) same.activations (congrArg (·.compensation) same.slots)
       (by rw [same.signals]; exact .refl _) fun _ inside => by rwa [same.occurrences] at inside
@@ -357,13 +358,14 @@ theorem Formed.withoutRecord {precedes : Compensable → Compensable → Prop} {
 
 /-- `Step`'s own phases keep `Formed`: journalling, taking signals and tokens off, beginning, cancelling and ordering
 the journal change nothing it reads but the queue, which they shorten, and a begin's counters, which grow. -/
-theorem formed_stepAlongside (precedes : Compensable → Compensable → Prop) : StepAlongside (Formed precedes) where
-  toFrameAlongside := formed_frameAlongside precedes
-  journal _ _ _ _ kept _ _ := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
-  runOrder _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
-  dequeue _ _ _ _ fewer kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl fewer
-  untoken _ _ _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
-  begin _ s request role sourceType well _ _ _ _ kept := by
+theorem formed_stepAlongside (precedes : Compensable → Compensable → Prop) (program : Program) :
+    StepAlongside program (Formed precedes) where
+  toFrameAlongside := formed_frameAlongside precedes program
+  journal _ _ _ kept _ _ := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
+  runOrder _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
+  dequeue _ _ _ fewer kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl fewer
+  untoken _ _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
+  begin s request role sourceType well _ _ _ _ kept := by
     have begins := Laws.State.beginOccurrence_begins well.activations request role sourceType
     have counters : s.nextIssue ≤ (s.beginOccurrence request role sourceType).1.nextIssue ∧
         ∀ key, Counted s key → Counted (s.beginOccurrence request role sourceType).1 key := by
@@ -383,19 +385,20 @@ theorem formed_stepAlongside (precedes : Compensable → Compensable → Prop) :
     rw [begins.slots] at member
     have stands := kept.retained record member
     rwa [scopeIds, ← begins.scopes] at stands
-  cancel _ s id well kept := (formed_frameAlongside precedes).cancelOccurrence (fun _ id _ held => held.withoutRecord id)
+  cancel s id well kept := (formed_frameAlongside precedes program).cancelOccurrence (fun _ id _ held => held.withoutRecord id)
     (fun _ _ _ held => held.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)) (id := id) well kept
 
 /-- The Multi-Instance record's operations keep `Formed`: an instance's begin and the deferred begins queue no trigger,
 an instance's scope occurrence is left as any that stands, and the Multi-Instance runs are no part of what it reads. -/
-theorem formed_alongside (precedes : Compensable → Compensable → Prop) : Alongside (Formed precedes) where
-  toFrameAlongside := formed_frameAlongside precedes
-  instanceBegin _ _ _ _ _ kept := kept.signal _
-  defer _ s requests _ _ kept := by
+theorem formed_alongside (precedes : Compensable → Compensable → Prop) (program : Program) :
+    Alongside program (Formed precedes) where
+  toFrameAlongside := formed_frameAlongside precedes program
+  instanceBegin _ _ _ _ kept := kept.signal _
+  defer s requests _ _ kept := by
     rw [Laws.State.deferBegins_eq]
     exact kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
-  leaveInstance _ _ _ _ well _ _ present kept := kept.leaveScope well present
-  runs _ _ _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
+  leaveInstance _ _ _ well _ _ present kept := kept.leaveScope well present
+  runs _ _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
 
 /-- The completion pipeline's own phases keep `Formed` beside `WellFormed` where they keep `WellFormed`: starting a
 reservation begins it under its key and closing its items moves nothing `Formed` reads, removing an occurrence leaves
@@ -431,7 +434,7 @@ theorem formed_pipelinePhases (precedes : Program → Compensable → Compensabl
     exact started.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
   removeOccurrence _ s occurrence holds member free :=
     have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
-    ⟨⟨removed.1, (formed_frameAlongside _).removeOccurrence (fun _ id _ held => held.withoutRecord id) holds.1 holds.2⟩,
+    ⟨⟨removed.1, (formed_frameAlongside _ _).removeOccurrence (fun _ id _ held => held.withoutRecord id) holds.1 holds.2⟩,
       removed.2⟩
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
     rw [Laws.State.recordEnd_eq]

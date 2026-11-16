@@ -66,7 +66,7 @@ theorem enterBody_placed {program : Program} {occurrence : Occurrence} {state : 
           (.arm occurrence.id element occurrence.scope))
         { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
           occurrence := occurrence.id, collection, instances := List.replicate count .waiting } := by
-  have entered := (runsFramed_frameAlongside program).enterScope program state element occurrence.scope locals
+  have entered := (runsFramed_frameAlongside program).enterScope state element occurrence.scope locals
     (some occurrence.id) formed (named ▸ Laws.Flow.Anchored.occurrence member) framed
   have none : ∀ scope, Iteration.active scope ∉ List.replicate count Iteration.waiting := fun _ active => by
     cases List.eq_of_mem_replicate active
@@ -303,57 +303,58 @@ theorem source_unlooped {program : Program} {element : ElementId} (apart : IdsUn
   source.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept.2 apart).2.occurs)
 
 /-- The state operations the hooks apply keep the numbering beside the slot invariant. -/
-theorem framedNumbered_frameAlongside (program : Program) : StoresAlongside (FramedNumbered program) where
+theorem framedNumbered_frameAlongside (program : Program) :
+    StoresAlongside program (FramedNumbered program) where
   frame s t moved kept := ⟨(runsFramed_frameAlongside program).frame s t moved kept.1, fun apart =>
     (kept.2 apart).unmoved moved.scopes moved.occurrences moved.multiInstances moved.begins moved.deferred
       fun element pending => .inl (moved.pending element pending)⟩
-  emit other s occurrence flows formed stands continues kept :=
-    ⟨(runsFramed_frameAlongside program).emit other s occurrence flows formed stands
+  emit s occurrence flows formed stands continues kept :=
+    ⟨(runsFramed_frameAlongside program).emit s occurrence flows formed stands
       (continues.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1, fun apart => by
       rw [Laws.State.emit_eq]
       exact (kept.2 apart).unmoved rfl rfl rfl rfl
         (by rw [Laws.Step.deferredOf_append, Laws.Step.deferredOf_flows, List.append_nil]) fun _ pending => .inl pending⟩
-  complete other s id leave writes rule source kept :=
-    ⟨(runsFramed_frameAlongside program).complete other s id leave writes rule (source.mono fun _ held => held.1) kept.1,
+  complete s id leave writes rule source kept :=
+    ⟨(runsFramed_frameAlongside program).complete s id leave writes rule (source.mono fun _ held => held.1) kept.1,
       fun apart => (kept.2 apart).signalOther Laws.Step.complete_apart⟩
-  park other s waiting formed waits kept := ⟨(runsFramed_frameAlongside program).park other s waiting formed waits kept.1,
+  park s waiting formed waits kept := ⟨(runsFramed_frameAlongside program).park s waiting formed waits kept.1,
     fun apart => (kept.2 apart).unmoved rfl rfl rfl rfl rfl fun _ pending => .inl pending⟩
-  arm other s host element scope formed hosted kept :=
-    ⟨(runsFramed_frameAlongside program).arm other s host element scope formed hosted kept.1,
+  arm s host element scope formed hosted kept :=
+    ⟨(runsFramed_frameAlongside program).arm s host element scope formed hosted kept.1,
       fun apart => (kept.2 apart).signalOther Laws.Step.arm_apart⟩
-  raise other s raised origin formed cancel hosted kept :=
-    ⟨(runsFramed_frameAlongside program).raise other s raised origin formed cancel hosted kept.1,
+  raise s raised origin formed cancel hosted kept :=
+    ⟨(runsFramed_frameAlongside program).raise s raised origin formed cancel hosted kept.1,
       fun apart => (kept.2 apart).signalOther ⟨fun _ => nofun, fun _ _ _ _ _ => nofun, fun _ _ _ _ _ => nofun⟩⟩
-  armGateway other s occurrence header payload formed member gateway kept :=
-    ⟨(runsFramed_frameAlongside program).armGateway other s occurrence header payload formed member gateway kept.1,
+  armGateway s occurrence header payload formed member gateway kept :=
+    ⟨(runsFramed_frameAlongside program).armGateway s occurrence header payload formed member gateway kept.1,
       fun apart => (kept.2 apart).signalOther Laws.Step.armGateway_apart⟩
-  signalBegin other s request formed fits anchored kept := ⟨(runsFramed_frameAlongside program).signalBegin other s
+  signalBegin s request formed fits anchored kept := ⟨(runsFramed_frameAlongside program).signalBegin s
     request formed fits (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
     fun apart => (kept.2 apart).signalBegin kept.1.owns fits.1 fits.2⟩
   issue s kept := ⟨(runsFramed_frameAlongside program).issue s kept.1, fun apart => (kept.2 apart).issue⟩
-  enterScope other s element parent locals owner formed anchored kept :=
-    ⟨(runsFramed_frameAlongside program).enterScope other s element parent locals owner formed
+  enterScope s element parent locals owner formed anchored kept :=
+    ⟨(runsFramed_frameAlongside program).enterScope s element parent locals owner formed
       (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
       fun apart => (kept.2 apart).enterScope formed kept.1.owns element parent locals owner⟩
-  reserve _ s element scope formed pending _ kept :=
+  reserve s element scope formed pending _ kept :=
     ⟨reserve_runsFramed s element scope kept.1, fun apart =>
       (kept.2 apart).reserve formed (PendingIn.unlooped (fun _ kept => (kept.2 apart).2.occurs) pending)⟩
-  leaveScope other s scope formed present leaves kept :=
-    ⟨(runsFramed_frameAlongside program).leaveScope other s scope formed present leaves kept.1,
+  leaveScope s scope formed present leaves kept :=
+    ⟨(runsFramed_frameAlongside program).leaveScope s scope formed present leaves kept.1,
       fun apart => (kept.2 apart).leaveScope formed kept.1.owns present⟩
-  clearInside other s scope keep formed present outside kept :=
-    ⟨(runsFramed_frameAlongside program).clearInside other s scope keep formed present outside kept.1,
+  clearInside s scope keep formed present outside kept :=
+    ⟨(runsFramed_frameAlongside program).clearInside s scope keep formed present outside kept.1,
       fun apart => (kept.2 apart).clearInside formed kept.1.owns present keep⟩
-  disarm other s host formed kept :=
-    ⟨(runsFramed_frameAlongside program).disarm other s host formed kept.1, fun apart => (kept.2 apart).disarm host⟩
-  setVariable other s target name value formed kept :=
-    ⟨(runsFramed_frameAlongside program).setVariable other s target name value formed kept.1,
+  disarm s host formed kept :=
+    ⟨(runsFramed_frameAlongside program).disarm s host formed kept.1, fun apart => (kept.2 apart).disarm host⟩
+  setVariable s target name value formed kept :=
+    ⟨(runsFramed_frameAlongside program).setVariable s target name value formed kept.1,
       fun apart => (kept.2 apart).setVariable target name value⟩
-  removeVariable other s target name formed kept :=
-    ⟨(runsFramed_frameAlongside program).removeVariable other s target name formed kept.1,
+  removeVariable s target name formed kept :=
+    ⟨(runsFramed_frameAlongside program).removeVariable s target name formed kept.1,
       fun apart => (kept.2 apart).removeVariable target name⟩
-  storeRuns other s compensation formed fresh resumes provenance kept :=
-    ⟨(runsFramed_frameAlongside program).storeRuns other s compensation formed fresh
+  storeRuns s compensation formed fresh resumes provenance kept :=
+    ⟨(runsFramed_frameAlongside program).storeRuns s compensation formed fresh
       (fun run member element at_ leave resumed => (resumes run member element at_ leave resumed).imp_right
         fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩) (provenance.weaken fun _ held => ⟨held.1, held.2.1⟩)
       kept.1,
@@ -454,10 +455,10 @@ theorem composed_phases : Laws.Step.Phases Composed :=
       ⟨phases.journal _ _ transition holds.1 started ended, unmoved holds.2 rfl rfl rfl rfl rfl⟩
     runOrder := fun _ s holds => ⟨phases.runOrder _ _ holds.1, unmoved holds.2 rfl rfl rfl rfl rfl⟩
     dequeue := fun _ s signals holds fewer => ⟨phases.dequeue _ _ signals holds.1 fewer,
-      (runsFramed_stepAlongside _).dequeue _ s signals holds.1 fewer holds.2.1,
+      (runsFramed_stepAlongside _).dequeue s signals holds.1 fewer holds.2.1,
       fun apart => (holds.2.2 apart).dequeue fewer (.refl _)⟩
     untoken := fun _ s tokens holds fewer => ⟨phases.untoken _ _ tokens holds.1 fewer,
-      (runsFramed_stepAlongside _).untoken _ s tokens holds.1 fewer holds.2.1,
+      (runsFramed_stepAlongside _).untoken s tokens holds.1 fewer holds.2.1,
       fun apart => (holds.2.2 apart).dequeue (.refl _) fewer⟩
     queueWrite := fun _ _ scope writes rule holds =>
       ⟨phases.queueWrite _ _ scope writes rule holds.1, (framedNumbered_frameAlongside _).signal holds.2 _⟩
@@ -483,18 +484,18 @@ theorem composed_phases : Laws.Step.Phases Composed :=
     endInstance := fun _ s status failure holds recorded => by
       refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩
       rw [Laws.Step.endInstance_eq]
-      exact unmoved ((framedNumbered_frameAlongside _).clearInside _ s State.root [] holds.1 holds.1.rooted.1
+      exact unmoved ((framedNumbered_frameAlongside _).clearInside s State.root [] holds.1 holds.1.rooted.1
         (fun _ _ none => by cases none) holds.2) rfl rfl rfl rfl rfl
     begin := fun _ s request role sourceType holds stands admitted roled bodied assigned origin =>
       have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled bodied assigned
         (origin.mono fun _ held => held.1)
-      ⟨⟨begun.1, (runsFramed_stepAlongside _).begin _ s request role sourceType holds.1 stands admitted assigned
+      ⟨⟨begun.1, (runsFramed_stepAlongside _).begin s request role sourceType holds.1 stands admitted assigned
         (origin.mono fun _ held => ⟨held.1, held.2.1⟩) holds.2.1,
         fun apart => numbered_begin apart holds.1 stands admitted assigned origin holds.2⟩, begun.2⟩
     reserve := fun _ s element scope holds stands pending popped =>
       have reserved := phases.reserve _ _ element scope holds.1 stands (pending.imp fun _ => And.imp_left And.left)
         (popped.imp fun _ => Exists.imp fun _ => Exists.imp fun _ queued => queued.imp fun _ held => held.1)
-      ⟨⟨reserved.1, (framedNumbered_frameAlongside _).reserve _ s element scope holds.1
+      ⟨⟨reserved.1, (framedNumbered_frameAlongside _).reserve s element scope holds.1
         (pending.imp fun _ => And.imp_left And.right) popped holds.2⟩, reserved.2⟩
     cancel := fun _ s id holds => ⟨phases.cancel _ _ id holds.1, (framedNumbered_frameAlongside _).cancelOccurrence
       framedNumbered_withoutRecord (fun _ _ _ kept => unmoved kept rfl rfl rfl rfl rfl) holds.1 holds.2⟩ }
@@ -692,7 +693,7 @@ open Kernel.Laws.MultiInstance (SnapshotFixed recorded)
 theorem unstarted_keeps (b : State) :
     Proofs.Step.MultiInstanceKeeps fun program s => WellFormed program s ∧ Unstarted b s :=
   Proofs.Step.multiInstanceKeeps_of fun program =>
-    Proofs.Cancellation.multiInstanceOps_alongside (unstarted_alongside b)
+    Proofs.Cancellation.multiInstanceOps_alongside (unstarted_alongside b program)
       (Proofs.Step.registeredOps_wellFormed.multiInstance program)
 
 /-- Entering instances from a record that keeps `Snapshots` sets one that keeps its snapshot and slot count. -/
@@ -811,15 +812,15 @@ theorem since_multiInstanceKeeps (b : State) : Proofs.Step.MultiInstanceKeeps (S
 /-- The registered hooks keep `Since`. -/
 theorem since_contract (b : State) : Laws.Step.HookContract Registry.hooks (Since b) :=
   Proofs.Step.registered_contract_of
-    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps (fun _ => (since_frameAlongside b).toFrameAlongside)
+    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps (fun program => (since_frameAlongside b program).toFrameAlongside)
       (since_occursAlongside b))
     (since_multiInstanceKeeps b)
-    (compensationKeeps_frame Proofs.Step.registeredOps_wellFormed (fun _ => since_frameAlongside b) (since_occursAlongside b))
+    (compensationKeeps_frame Proofs.Step.registeredOps_wellFormed (since_frameAlongside b) (since_occursAlongside b))
     Proofs.State.stateFacts
 
 /-- `Step`'s phases keep `Since`. -/
 theorem since_phases (b : State) : Laws.Step.Phases (Since b) :=
-  phases_alongside Proofs.Step.phases fun _ => since_stepAlongside b
+  phases_alongside Proofs.Step.phases (since_stepAlongside b)
 
 /-- An input's start: the well-formed `b` with its journal, outbox, draft and writes cleared keeps `Since b`, since
 every body's occurrence has settled (`Laws.State.SlotsSettled.bodies`) and one record per body occurrence is held. -/

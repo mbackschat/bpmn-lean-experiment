@@ -407,17 +407,17 @@ instances (`formed_frameAlongside`, `formed_occursAlongside`, `formed_alongside`
 theorem registeredFormed_contract : Laws.Step.HookContract Registry.hooks RegisteredFormed :=
   Proofs.Step.registered_contract_of
     (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps
-      (fun program => formed_frameAlongside (DependsIn Registry.hooks footprintReads footprintWrites program))
+      (fun program => formed_frameAlongside (DependsIn Registry.hooks footprintReads footprintWrites program) program)
       (fun program => formed_occursAlongside program (DependsIn Registry.hooks footprintReads footprintWrites program)))
     (Proofs.Step.multiInstanceKeeps_of fun program =>
-      multiInstanceOps_alongside (formed_alongside (DependsIn Registry.hooks footprintReads footprintWrites program))
+      multiInstanceOps_alongside (formed_alongside (DependsIn Registry.hooks footprintReads footprintWrites program) program)
         (Proofs.Step.registeredOps_wellFormed.multiInstance program))
     registered_compensationKeeps Proofs.State.stateFacts
 
 /-- `Step`'s phases keep `RegisteredFormed`. -/
 theorem registeredFormed_phases : Laws.Step.Phases RegisteredFormed :=
   phases_alongside Proofs.Step.phases fun program =>
-    formed_stepAlongside (DependsIn Registry.hooks footprintReads footprintWrites program)
+    formed_stepAlongside (DependsIn Registry.hooks footprintReads footprintWrites program) program
 
 /-- Clearing an input's journal, outbox, draft and writes keeps `RegisteredFormed`. -/
 theorem registeredFormed_reset {program : Program} {s : State} (holds : RegisteredFormed program s) :

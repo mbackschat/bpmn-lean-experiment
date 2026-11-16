@@ -681,41 +681,41 @@ theorem CallsFormed.enterCalled (formed : WellFormed under s) (holds : CallsForm
 end Carry
 
 /-- The state operations the hooks apply keep the lane invariant. -/
-theorem callsFormed_alongside (program : Program) : Alongside (CallsFormed program) where
+theorem callsFormed_alongside (program : Program) : Alongside program (CallsFormed program) where
   frame _ _ moved held := held.same moved.scopes (fun _ member => moved.occurrences ▸ member) moved.instanceId
-  emit _ _ _ _ _ _ _ held := held.same (by rw [Laws.State.emit_eq])
+  emit _ _ _ _ _ _ held := held.same (by rw [Laws.State.emit_eq])
     (by rw [Laws.State.emit_eq]; exact fun _ member => member) (by rw [Laws.State.emit_eq])
-  complete _ _ id leave writes rule _ held := held.signal (.complete id leave writes rule)
-  park _ _ _ _ _ held := held.same rfl (fun _ member => member) rfl
-  arm _ _ host element scope _ _ held := held.signal (.arm host element scope)
-  armGateway _ _ occurrence header _ _ _ _ held := held.signal (.armGateway occurrence.id header.id occurrence.scope)
-  raise _ _ raised origin _ _ _ held := held.signal (.raise raised origin)
-  signalBegin _ _ request _ _ _ held := held.signal (.begin request)
+  complete _ id leave writes rule _ held := held.signal (.complete id leave writes rule)
+  park _ _ _ _ held := held.same rfl (fun _ member => member) rfl
+  arm _ host element scope _ _ held := held.signal (.arm host element scope)
+  armGateway _ occurrence header _ _ _ _ held := held.signal (.armGateway occurrence.id header.id occurrence.scope)
+  raise _ raised origin _ _ _ held := held.signal (.raise raised origin)
+  signalBegin _ request _ _ _ held := held.signal (.begin request)
   issue _ held := held.same (by rw [Laws.State.issue_eq]) (by rw [Laws.State.issue_eq]; exact fun _ member => member)
     (by rw [Laws.State.issue_eq])
-  enterScope _ _ element parent locals owner formed _ held := held.entered formed element parent locals owner
-  reserve _ _ element scope formed _ _ held := held.reserved formed element scope
-  leaveScope _ _ _ formed present _ held := held.left formed (Laws.State.leaveScope_left formed present)
-  clearInside _ _ _ keep formed present kept held :=
+  enterScope _ element parent locals owner formed _ held := held.entered formed element parent locals owner
+  reserve _ element scope formed _ _ held := held.reserved formed element scope
+  leaveScope _ _ formed present _ held := held.left formed (Laws.State.leaveScope_left formed present)
+  clearInside _ _ keep formed present kept held :=
     held.cleared formed (Laws.State.clearInside_cleared formed present keep) kept
-  disarm _ _ host _ held := held.same (by rw [Laws.State.disarm_eq])
+  disarm _ host _ held := held.same (by rw [Laws.State.disarm_eq])
     (by rw [Laws.State.disarm_eq]; exact fun _ member => (List.mem_filter.mp member).1) (by rw [Laws.State.disarm_eq])
-  setVariable _ s target name value _ held :=
+  setVariable s target name value _ held :=
     have same := Laws.State.setVariable_same s target name value
     held.same same.scopes (fun _ member => same.occurrences ▸ member) same.instanceId
-  removeVariable _ s target name _ held :=
+  removeVariable s target name _ held :=
     have same := Laws.State.removeVariable_same s target name
     held.same same.scopes (fun _ member => same.occurrences ▸ member) same.instanceId
-  instanceBegin _ _ request _ _ held := held.signal (.begin request)
-  defer _ _ requests _ _ held := held.same (by rw [Laws.State.deferBegins_eq]) (by rw [Laws.State.deferBegins_eq]; exact fun _ member => member)
+  instanceBegin _ request _ _ held := held.signal (.begin request)
+  defer _ requests _ _ held := held.same (by rw [Laws.State.deferBegins_eq]) (by rw [Laws.State.deferBegins_eq]; exact fun _ member => member)
     (by rw [Laws.State.deferBegins_eq])
-  leaveInstance _ _ _ _ formed _ _ present held := held.left formed (Laws.State.leaveScope_left formed present)
-  runs _ _ _ _ _ held := held.same rfl (fun _ member => member) rfl
+  leaveInstance _ _ _ formed _ _ present held := held.left formed (Laws.State.leaveScope_left formed present)
+  runs _ _ _ _ held := held.same rfl (fun _ member => member) rfl
 
 /-- Storing compensation runs keeps the lane invariant. -/
-theorem callsFormed_stores (program : Program) : StoresAlongside (CallsFormed program) :=
+theorem callsFormed_stores (program : Program) : StoresAlongside program (CallsFormed program) :=
   { (callsFormed_alongside program).toFrameAlongside with
-    storeRuns := fun _ _ _ _ _ _ _ held => held.same rfl (fun _ member => member) rfl }
+    storeRuns := fun _ _ _ _ _ _ held => held.same rfl (fun _ member => member) rfl }
 
 /-- The features' reservations, queued triggers and a Call's entry of its called root keep the lane invariant. -/
 theorem callsFormed_occursAlongside (program : Program) : OccursAlongside program (CallsFormed program) where
@@ -728,15 +728,15 @@ theorem callsFormed_occursAlongside (program : Program) : OccursAlongside progra
     held.enterCalled formed member role activity unowned variables definition
 
 /-- `Step`'s own phases keep the lane invariant; cancelling is `Proofs.Frame.FrameAlongside.cancelOccurrence`. -/
-theorem callsFormed_stepAlongside (program : Program) : StepAlongside (CallsFormed program) where
+theorem callsFormed_stepAlongside (program : Program) : StepAlongside program (CallsFormed program) where
   toFrameAlongside := (callsFormed_alongside program).toFrameAlongside
-  journal _ _ _ _ held _ _ := held.same rfl (fun _ member => member) rfl
-  dequeue _ _ _ _ _ held := held.same rfl (fun _ member => member) rfl
-  untoken _ _ _ _ _ held := held.same rfl (fun _ member => member) rfl
-  begin _ _ request role sourceType formed _ admitted _ _ held := held.begun formed request role sourceType admitted.2.1
-  cancel _ _ _ formed held := (callsFormed_alongside program).toFrameAlongside.cancelOccurrence
+  journal _ _ _ held _ _ := held.same rfl (fun _ member => member) rfl
+  dequeue _ _ _ _ held := held.same rfl (fun _ member => member) rfl
+  untoken _ _ _ _ held := held.same rfl (fun _ member => member) rfl
+  begin _ request role sourceType formed _ admitted _ _ held := held.begun formed request role sourceType admitted.2.1
+  cancel _ _ formed held := (callsFormed_alongside program).toFrameAlongside.cancelOccurrence
     (fun _ id _ kept => kept.withoutRecord id) (fun _ _ _ kept => kept.same rfl (fun _ member => member) rfl) formed held
-  runOrder _ _ _ held := held.same rfl (fun _ member => member) rfl
+  runOrder _ _ held := held.same rfl (fun _ member => member) rfl
 
 /-- `WellFormed` and the lane invariant of called instances. -/
 def Formed (program : Program) (s : State) : Prop :=
