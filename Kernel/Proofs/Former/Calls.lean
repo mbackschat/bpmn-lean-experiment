@@ -7,6 +7,7 @@ public import Kernel.Laws.State.Chain
 public import Kernel.Laws.State.Begin
 public import Kernel.Laws.Population
 public import Kernel.Proofs.Former.Placed
+public import Kernel.Proofs.Former.PlacedLane
 
 /-! # Proofs: the former lanes, Calls (P7)
 
@@ -16,8 +17,8 @@ return continues exactly the Call occurrence that owns the root, and each derive
 called instance. Each statement is over a hooks parameter and closes when `Kernel.Proofs.Step` proves it of
 `Registry.hooks`.
 
-The model premise is that a process's authored identifiers are distinct (`PublicIdsApart`), which the codec does not
-check. The names of called roots are a lane invariant beside `Laws.State.WellFormed`, as P4's `RunsFormed` is
+The model premises are that a process's authored identifiers are distinct (`PublicIdsApart`), which the codec does not
+check, and, for identities apart, that the program's references stay in one process (`ReferencesPlaced`). The names of called roots are a lane invariant beside `Laws.State.WellFormed`, as P4's `RunsFormed` is
 (`CallsFormed`): held at a start, in every instance of a population run and across a committed input, by every state
 operation the hooks and `Step` apply. Nothing executable imports this module.
 -/
@@ -348,23 +349,25 @@ def CallsFormedInPopulation (hooks : Hooks) : Prop :=
 
 /-- PC-SCOPE-05: an invocation creates exactly the derived identity, and keeps call associations valid. Every called
 root an input creates belongs to a present Call occurrence and is named `State.calledInstanceId` of its caller's
-instance, the Call's authored identifier and its activation; and the lane invariant holds after the input. That two
-called roots with one instance identifier are one scope occurrence (`IdentitiesApart`) follows from the lane invariant
-only where every occurrence lies in the process its instance runs (root decision C-7, 2026-11-15).
+instance, the Call's authored identifier and its activation; the lane invariant and the placement lane hold after the
+input; and two called roots with one instance identifier are one scope occurrence (`IdentitiesApart`).
 
-P0 stated it of every well-formed before-state, which is false twice. A program whose process lists two Calls with
-one authored identifier names both instances alike at one activation (`PublicIdsApart`). And a well-formed state
+P0 stated it of every well-formed before-state, which is false three times. A program whose process lists two Calls
+with one authored identifier names both instances alike at one activation (`PublicIdsApart`). A well-formed state
 whose called roots are already named alike, or misnamed, is no state a run reaches: `WellFormed` does not speak of
 called identities, so the before-state keeps the lane invariant (`CallsFormed`), which `CallsFormedAtStart` and
-`CallsFormedInPopulation` establish. -/
+`CallsFormedInPopulation` establish. And identities stay apart only where every occurrence lies in the process its
+instance runs (root decision C-7, 2026-11-15): the before-state keeps the placement lane (`PlacedLane`, which
+`PlacedAtStart` and `PlacedInPopulation` establish) under the model premise that the program's references stay in
+one process and its identifiers are unique (`ReferencesPlaced`). -/
 def CalledIdentityUnique (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before after : State),
-    PublicIdsApart program → WellFormed program before → CallsFormed program before →
-    Step.step hooks program (some before) input = .ok after →
+    PublicIdsApart program → ReferencesPlaced program → WellFormed program before → CallsFormed program before →
+    PlacedLane program before → Step.step hooks program (some before) input = .ok after →
     (∀ root ∈ after.scopes, root ∉ before.scopes → root.calledInstance.isSome →
       ∃ call ∈ after.occurrences, root.occurrence = some call.id ∧ root.calledInstance =
         some (State.calledInstanceId (after.instanceOf call.scope) (program.publicId call.element) call.activation)) ∧
-    CallsFormed program after
+    CallsFormed program after ∧ PlacedLane program after ∧ IdentitiesApart after
 
 /-! ## A Call's own hooks
 

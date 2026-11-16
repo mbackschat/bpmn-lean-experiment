@@ -742,13 +742,6 @@ theorem registered_callsFormedInPopulation : Former.CallsFormedInPopulation Regi
         fun _ _ _ stepped => registered_formed (fun _ given => by cases given) stepped⟩
       ran member inside).2
 
-/-- A committed input under the registered hooks names every called root it creates by its Call and keeps the lane
-invariant of called instances. -/
-theorem registered_calledIdentityUnique : Former.CalledIdentityUnique Registry.hooks :=
-  fun _ _ before _ _ formed calls ran =>
-    have after := registered_formed (before := some before) (fun _ given => by cases given; exact ⟨formed, calls⟩) ran
-    ⟨fun _ member _ called => after.2.named.owner after.1 member called, after.2⟩
-
 /-- The registered hooks keep `WellFormed` and the placement lane under its premise (`Former.PlacedForm`): the feature
 records follow from `WellFormed`'s and the lane's frames. -/
 theorem placed_contract : Laws.Step.HookContract Registry.hooks Former.PlacedForm :=
@@ -794,5 +787,14 @@ theorem registered_placedInPopulation : Former.PlacedInPopulation Registry.hooks
       ⟨fun _ _ _ _ holds stepped => registered_placedForm (fun _ given => by cases given; exact holds) stepped,
         fun _ _ _ stepped => registered_placedForm (fun _ given => by cases given) stepped⟩
       ran member inside).2 references
+
+/-- A committed input under the registered hooks names every called root it creates by its Call, keeps the lane
+invariant of called instances and the placement lane, and leaves each called identity naming one instance. -/
+theorem registered_calledIdentityUnique : Former.CalledIdentityUnique Registry.hooks :=
+  fun _ _ before _ apart references formed calls placed ran =>
+    have after := registered_formed (before := some before) (fun _ given => by cases given; exact ⟨formed, calls⟩) ran
+    have placedAfter := registered_placed references formed placed ran
+    ⟨fun _ member _ called => after.2.named.owner after.1 member called, after.2, placedAfter,
+      Former.identitiesApart_of after.1 after.2 (Former.ownersPlaced_of after.1 after.2 placedAfter.placed apart)⟩
 
 end Kernel.Proofs.Step
