@@ -59,8 +59,19 @@ count, collection and condition it evaluates then or later in the closure. -/
 def beginReads (element : Element) : NameSet :=
   (element.envelope?.map fun envelope => (mappingReads envelope.inputs).union { all := envelope.multiInstance.isSome }).getD {}
 
+/-- Whether an Event Sub-Process writes every name when its start begins it: a delivery's own variables are input
+data, unknown at admission, which the begin writes outward from the new occurrence (`Step.writeStart`) under
+`DeliveryVariables.installs` for a Message start (CIB-EXT-0025) and `SignalPayload.variables` for a Signal start
+(CIB-EXT-0043). -/
+def deliveredWrites (program : Program) (element : Element) : Bool :=
+  ((element.scope?).bind fun (_, payload) => payload.kind.start?).any fun start =>
+    let view := triggerView start.trigger
+    (view.message.isSome && program.options.deliveryVariables == .installs) ||
+      (view.signal.isSome && program.options.signalPayload == .variables)
+
 /-- What `element` reads and writes when it runs through in the closure: it begins, its outputs read their sources
-and write their targets, a Call maps its inputs and outputs, and its outgoing conditions are evaluated. -/
+and write their targets, a Call maps its inputs and outputs, its outgoing conditions are evaluated, and an Event
+Sub-Process whose start carries a delivery's variables writes every name (`deliveredWrites`). -/
 def footprint (program : Program) (element : Element) : Footprint :=
   let outputs := (element.envelope?.map (·.outputs)).getD []
   let call := element.activity?.bind fun (_, payload) => payload.work.call?
@@ -69,17 +80,19 @@ def footprint (program : Program) (element : Element) : Footprint :=
   let callOutputs := (call.map fun work => work.outputs.map (·.target)).getD []
   { reads := ((beginReads element).union (mappingReads outputs)).union
       (((call.map fun work => mappingReads work.inputs).getD {}).union conditions),
-    writes := { names := outputs.map (·.target) ++ callOutputs, all := call.any (·.propagateAllOutputs) } }
+    writes := { names := outputs.map (·.target) ++ callOutputs,
+                all := call.any (·.propagateAllOutputs) || deliveredWrites program element } }
 
 /-- The names a catch writes when it fires: its output mappings' targets and the variables its trigger sets from what
 it caught, an Error's code and message and an Escalation's code (CIB-EXT-0028). -/
 def catchWrites (subscription : Subscription) : List String :=
   subscription.outputs.map (·.target) ++ (triggerView subscription.trigger).variables
 
-/-- What `element` writes when it runs, beside its envelope's and a Call's outputs (`footprint`) and what a boundary
-writes when it fires (`catchWrites`): its work's results, its catch's or start's writes, what its Signal throw's
-receivers install, a Signal's `camunda:in` targets or every name (CIB-EXT-0043), and its loop's output collection. A
-loop's counters and items stay in scope occurrences of its own. -/
+/-- What `element` writes when it runs, beside its envelope's and a Call's outputs and an Event Sub-Process start's
+delivered variables, which need the program's options (`footprint`), and what a boundary writes when it fires
+(`catchWrites`): its work's results, its catch's or start's writes, what its Signal throw's receivers install, a
+Signal's `camunda:in` targets or every name (CIB-EXT-0043), and its loop's output collection. A loop's counters and
+items stay in scope occurrences of its own. -/
 def writes (element : Element) : NameSet :=
   let work := (element.activity?.map fun (_, payload) => payload.work.results).getD []
   let caught := (element.event?.bind (·.2.catch?)).toList ++ (element.start?.bind (·.2.subscription)).toList ++

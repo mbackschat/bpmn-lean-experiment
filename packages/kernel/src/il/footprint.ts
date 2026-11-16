@@ -7,7 +7,9 @@
  * pair (`QueuingMechanism`) are listed here once.
  */
 import {
+  DeliveryVariables,
   ExpressionTag,
+  SignalPayload,
   SimpleBooleanTag,
   assertNever,
   elementActivity,
@@ -84,8 +86,24 @@ export function beginReads(element: Element): NameSet {
 }
 
 /**
+ * Whether an Event Sub-Process writes every name when its start begins it: a delivery's own variables are input data,
+ * unknown at admission, which the begin writes outward from the new occurrence (`step.ts#writeStart`) under
+ * `DeliveryVariables.Installs` for a Message start (CIB-EXT-0025) and `SignalPayload.Variables` for a Signal start
+ * (CIB-EXT-0043).
+ */
+export function deliveredWrites(program: Program, element: Element): boolean {
+  const scope = elementScope(element);
+  const start = scope === null ? null : scopeKindStart(scope[1].kind);
+  if (start === null) return false;
+  const view = triggerView(start.trigger);
+  return (view.message !== null && program.options.deliveryVariables === DeliveryVariables.Installs) ||
+    (view.signal !== null && program.options.signalPayload === SignalPayload.Variables);
+}
+
+/**
  * What `element` reads and writes when it runs through in the closure: it begins, its outputs read their sources and
- * write their targets, a Call maps its inputs and outputs, and its outgoing conditions are evaluated.
+ * write their targets, a Call maps its inputs and outputs, its outgoing conditions are evaluated, and an Event
+ * Sub-Process whose start carries a delivery's variables writes every name (`deliveredWrites`).
  */
 export function footprint(program: Program, element: Element): Footprint {
   const outputs = elementEnvelope(element)?.outputs ?? [];
@@ -99,7 +117,7 @@ export function footprint(program: Program, element: Element): Footprint {
     reads: union(union(beginReads(element), mappingReads(outputs)), union(call === null ? noNames : mappingReads(call.inputs), conditions)),
     writes: {
       names: [...outputs.map((mapping) => mapping.target), ...(call?.outputs ?? []).map((mapping) => mapping.target)],
-      all: call?.propagateAllOutputs === true,
+      all: call?.propagateAllOutputs === true || deliveredWrites(program, element),
     },
   };
 }
@@ -113,10 +131,11 @@ export function catchWrites(subscription: Subscription): readonly string[] {
 }
 
 /**
- * What `element` writes when it runs, beside its envelope's and a Call's outputs (`footprint`) and what a boundary
- * writes when it fires (`catchWrites`): its work's results, its catch's or start's writes, what its Signal throw's
- * receivers install, a Signal's `camunda:in` targets or every name (CIB-EXT-0043), and its loop's output collection. A
- * loop's counters and items stay in scope occurrences of its own.
+ * What `element` writes when it runs, beside its envelope's and a Call's outputs and an Event Sub-Process start's
+ * delivered variables, which need the program's options (`footprint`), and what a boundary writes when it fires
+ * (`catchWrites`): its work's results, its catch's or start's writes, what its Signal throw's receivers install, a
+ * Signal's `camunda:in` targets or every name (CIB-EXT-0043), and its loop's output collection. A loop's counters and
+ * items stay in scope occurrences of its own.
  */
 export function writes(element: Element): NameSet {
   const activity = elementActivity(element);
