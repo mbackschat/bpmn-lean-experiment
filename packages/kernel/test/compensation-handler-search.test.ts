@@ -1,5 +1,5 @@
 /**
- * Where the search for a catcher goes after a compensation handler's context under `propagatesFromTrigger`
+ * Where the search for a catcher goes after a compensation handler's context under `propagatesFromHandler`
  * (docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md, CIB-INT-0038, #159): through the handler's model scopes, not
  * the trigger's. The context stands for the completed subject's place and offers the subject's catchers only when the
  * subject encloses the handler; the search then goes on from the scope occurrence holding the subject's record. A
@@ -21,7 +21,7 @@ import {
   chain, compensateAll, complete, drive, driveFrom, handlerScope, parts, raiseError, throwing, userTask, waiting,
 } from "./compensation-support.ts";
 
-const propagates: Json = { compensationHandlerFailure: "propagatesFromTrigger" };
+const propagates: Json = { compensationHandlerFailure: "propagatesFromHandler" };
 const undo = escalationTrigger({ code: "UNDO" });
 const raiseUndo: Json = { escalation: { payload: { code: "UNDO" } } };
 

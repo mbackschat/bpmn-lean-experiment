@@ -37,9 +37,9 @@ theorem raise_cancel {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks} 
   · exact Laws.Propagation.searchScopes_cancel passes unstarted facts.cancel _ _ _ _ _ holds searched
 
 /-- What a raise queues (`Feature.Propagation.raise`): signals `quiet` admits, and a compensation handler's failure only
-under a profile that does not select `propagatesFromTrigger` and only at a scope occurrence `ctx.scopeRole` calls a
+under a profile that does not select `propagatesFromHandler` and only at a scope occurrence `ctx.scopeRole` calls a
 compensation handler's context in a state the Call output passes on its way left, of which `motive` holds when it holds
-of the raise's state (COMPH-FAIL-01). Under `propagatesFromTrigger` it queues no such failure: the search goes on
+of the raise's state (COMPH-FAIL-01). Under `propagatesFromHandler` it queues no such failure: the search goes on
 (`Laws.Propagation.searchScopes_context`). -/
 theorem raise_queues {quiet : Signal → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (facts : Laws.Propagation.RaiseFacts) (steps : Laws.Propagation.QuietSteps quiet)
@@ -194,7 +194,7 @@ theorem handlerFailure_of {hooks : Hooks} {propagation : Feature.Propagation.Pro
     rw [Laws.State.signal_eq]
     exact ⟨_, owner, rfl, rfl, rfl, first.mem, first.1, by simp, _, List.mem_cons_of_mem _ (List.mem_singleton.mpr rfl)⟩
   · refine ⟨fun _ _ _ _ _ _ _ _ found role read unhandled =>
-      Laws.Propagation.searchScopes_context found role (Laws.Propagation.propagatesFromTrigger_selected selected) read
+      Laws.Propagation.searchScopes_context found role (Laws.Propagation.propagatesFromHandler_selected selected) read
         unhandled, fun after ran => ?_⟩
     rw [registered.raise] at ran
     obtain ⟨new, made, queued⟩ := raise_queues (motive := fun _ => True) raiseFacts
@@ -203,7 +203,7 @@ theorem handlerFailure_of {hooks : Hooks} {propagation : Feature.Propagation.Pro
     refine ⟨new, made, fun handler code message raisedFrom member => ?_⟩
     rcases queued _ member with quiet | ⟨stopping, -⟩
     · exact quiet handler code message raisedFrom rfl
-    · rw [Laws.Propagation.propagatesFromTrigger_selected selected] at stopping
+    · rw [Laws.Propagation.propagatesFromHandler_selected selected] at stopping
       cases stopping
   · rw [registered.raise] at ran
     obtain ⟨new, made, queued⟩ := raise_queues (motive := fun s => s.slots = state.slots) raiseFacts

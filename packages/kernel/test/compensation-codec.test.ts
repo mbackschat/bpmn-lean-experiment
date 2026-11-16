@@ -13,7 +13,7 @@ import type { Json } from "./admission-refusal-support.ts";
 
 const nonDefault: Json = {
   compensationOrder: "allAtOnce",
-  compensationHandlerFailure: "propagatesFromTrigger",
+  compensationHandlerFailure: "propagatesFromHandler",
   implicitCompensation: "everySubProcess",
   errorExitCompensation: "compensatesContained",
   multiInstanceCompensation: "perInstance",

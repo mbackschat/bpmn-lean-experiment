@@ -18,7 +18,7 @@ namespace Kernel.Admission.Profile
 def compensationHandlerFailure : CompensationHandlerFailure → Option String
   | .failsInstance => none
   | .selected _ => some "profile.compensationHandlerFailure.selected"
-  | .propagatesFromTrigger => none
+  | .propagatesFromHandler => none
 
 /-- What the program's own shape reaches, for the options that govern only such programs. -/
 structure Reach where

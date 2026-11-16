@@ -63,7 +63,7 @@ export type KernelProfileOptions = Readonly<{
   multiInstanceFinalBody: "conditionEveryCompletion" | "modeSpecific";
   multiInstanceOutputs: "aggregates" | "none";
   compensationOrder: "dependency" | "allAtOnce";
-  compensationHandlerFailure: "failsInstance" | "propagatesFromTrigger" | Readonly<{ selected: Readonly<{ code: string }> }>;
+  compensationHandlerFailure: "failsInstance" | "propagatesFromHandler" | Readonly<{ selected: Readonly<{ code: string }> }>;
   implicitCompensation: "refused" | "everySubProcess";
   errorExitCompensation: "drops" | "compensatesContained";
   multiInstanceCompensation: "perSubProcessInstance" | "perInstance";
@@ -126,7 +126,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     multiInstanceFinalBody: selects("CIB-INT-0009") ? "modeSpecific" : "conditionEveryCompletion",
     multiInstanceOutputs: selects("CIB-LIM-0001") ? "none" : "aggregates",
     compensationOrder: "dependency",
-    compensationHandlerFailure: selects("CIB-INT-0038") ? "propagatesFromTrigger" : "failsInstance",
+    compensationHandlerFailure: selects("CIB-INT-0038") ? "propagatesFromHandler" : "failsInstance",
     implicitCompensation: selects("CIB-INT-0036") ? "everySubProcess" : "refused",
     errorExitCompensation: "drops",
     multiInstanceCompensation: "perSubProcessInstance",

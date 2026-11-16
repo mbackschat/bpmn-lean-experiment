@@ -87,7 +87,7 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `multiInstanceFinalBody` | `conditionEveryCompletion`, `modeSpecific` |
 | `multiInstanceOutputs` | `aggregates`, `none` |
 | `compensationOrder` | `dependency`, `allAtOnce` |
-| `compensationHandlerFailure` | `failsInstance`, `selected {code}`, `propagatesFromTrigger` |
+| `compensationHandlerFailure` | `failsInstance`, `selected {code}`, `propagatesFromHandler` |
 | `implicitCompensation` | `refused`, `everySubProcess` |
 | `errorExitCompensation` | `drops`, `compensatesContained` |
 | `multiInstanceCompensation` | `perSubProcessInstance`, `perInstance` |

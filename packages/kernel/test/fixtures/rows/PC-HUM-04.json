@@ -159,7 +159,7 @@
     "multiInstanceFinalBody": "modeSpecific",
     "multiInstanceOutputs": "none",
     "compensationOrder": "dependency",
-    "compensationHandlerFailure": "propagatesFromTrigger",
+    "compensationHandlerFailure": "propagatesFromHandler",
     "implicitCompensation": "everySubProcess",
     "errorExitCompensation": "drops",
     "multiInstanceCompensation": "perSubProcessInstance",

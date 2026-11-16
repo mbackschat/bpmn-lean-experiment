@@ -431,7 +431,7 @@ export function runningRecord(_ctx: Ctx, context: ScopeOccurrenceId, state: Stat
 }
 
 /**
- * `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `PropagatesFromTrigger` (I11)
+ * `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `PropagatesFromHandler` (I11)
  * the run goes on as `handlerCompleted` does unless the catcher interrupts a scope occurrence holding it, which drops the
  * run when the catch is decided (`dropWithin`), before the handler's leave arrives here; with no catcher, or one that
  * does not interrupt, the run goes on. Under `FailsInstance` the failure that follows ends the instance, so nothing
@@ -440,7 +440,7 @@ export function runningRecord(_ctx: Ctx, context: ScopeOccurrenceId, state: Stat
 export function handlerEnded(ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State): Outcome {
   const failure = ctx.program.options.compensationHandlerFailure;
   switch (failure.tag) {
-    case CompensationHandlerFailureTag.PropagatesFromTrigger:
+    case CompensationHandlerFailureTag.PropagatesFromHandler:
       return state.slots.compensation.runs.some((candidate) => candidate.running.some(([context]) => context === occurrence.scope))
         ? handlerCompleted(ctx, run, occurrence, state)
         : committed(state);

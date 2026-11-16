@@ -287,13 +287,13 @@ def FailsInstance (policy : CompensationHandlerFailure) (caughtInside : Bool) (s
     (after : State) : Prop :=
   policy = .failsInstance → caughtInside = false → searchedFrom = none ∧ Failed after
 
-/-- Under `compensationHandlerFailure = propagatesFromTrigger` (I11, CIB-INT-0038), an Error that no catcher inside the
+/-- Under `compensationHandlerFailure = propagatesFromHandler` (I11, CIB-INT-0038), an Error that no catcher inside the
 handler's context takes is searched for further from the scope occurrence holding the handler's `record`, through the
 handler's model scopes, as CIB walks the handler's model flow scopes, not the scope occurrence the trigger ran in (#159);
 the instance does not fail for it there. -/
-def PropagatesFromTrigger (policy : CompensationHandlerFailure) (caughtInside : Bool) (record : Compensable)
+def PropagatesFromHandler (policy : CompensationHandlerFailure) (caughtInside : Bool) (record : Compensable)
     (searchedFrom : Option ScopeOccurrenceId) (after : State) : Prop :=
-  policy = .propagatesFromTrigger → caughtInside = false → searchedFrom = some record.scope ∧ after.status ≠ .failed
+  policy = .propagatesFromHandler → caughtInside = false → searchedFrom = some record.scope ∧ after.status ≠ .failed
 
 /-! ## Where stored records come from -/
 

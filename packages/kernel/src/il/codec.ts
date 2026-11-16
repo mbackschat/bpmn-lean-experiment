@@ -452,7 +452,7 @@ const flow = struct<Flow>("Flow", { id: string, source: string, target: string, 
 const compensationHandlerFailure = inductive<CompensationHandlerFailure>("CompensationHandlerFailure", {
   [CompensationHandlerFailureTag.FailsInstance]: {},
   [CompensationHandlerFailureTag.Selected]: { code: string },
-  [CompensationHandlerFailureTag.PropagatesFromTrigger]: {},
+  [CompensationHandlerFailureTag.PropagatesFromHandler]: {},
 });
 
 const profileOptions = struct<ProfileOptions>("ProfileOptions", {

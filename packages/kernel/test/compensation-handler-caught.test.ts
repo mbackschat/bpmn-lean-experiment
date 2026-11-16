@@ -1,5 +1,5 @@
 /**
- * A handler's Error that an interrupting catcher takes under `propagatesFromTrigger`
+ * A handler's Error that an interrupting catcher takes under `propagatesFromHandler`
  * (docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md I11, D8): the catcher drops the run with the scope it
  * interrupts, so the run begins no further handler, whichever catcher form takes the Error. `B`'s handler `HB`, an
  * effect, runs first (`A -> B` orders it before `A`'s `HA`, I1) and reports the Error `UNDO`.
@@ -11,7 +11,7 @@ import { activity, boundary, end, errorTrigger, eventSubProcess, flow, scope, se
 import type { Json } from "./admission-refusal-support.ts";
 import { chain, compensateAll, complete, drive, handlerTask, instance, parts, userTask, waiting } from "./compensation-support.ts";
 
-const options: Json = { compensationHandlerFailure: "propagatesFromTrigger" };
+const options: Json = { compensationHandlerFailure: "propagatesFromHandler" };
 const undo = errorTrigger({ code: "UNDO" });
 
 /** The unconnected Service Task handler `id` in `parent`. */

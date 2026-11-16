@@ -17,7 +17,7 @@ the Event Sub-Processes the occurrence's element declares, then the boundaries o
 candidate sets the catch trigger with the lowest `Ctx.catches` precedence wins, document order breaking ties, so an
 exact code is preferred over a catch-all at the same level (CIB `ErrorEventDefinition#getPrecedence`) but never over a
 nearer catcher. Under `CompensationHandlerFailure.failsInstance` the search never passes the scope occurrence of a
-compensation handler: what reaches it uncaught is the handler's outcome; under `propagatesFromTrigger` it goes on through
+compensation handler: what reaches it uncaught is the handler's outcome; under `propagatesFromHandler` it goes on through
 the handler's model scopes, not the trigger's (`searchScopes`, CIB-INT-0038).
 A Multi-Instance instance's scope occurrence offers no boundaries of its own: they belong to the
 body, whose scope occurrence is the next one out (`BpmnParse:3291-3295`, BPMN 2.0.2 §13.5.3). A Sub-Process's Event
@@ -61,7 +61,7 @@ item 2), applied before the search goes on so that an outer Call's pass reads it
 interrupt go at once, as its items do (`State.withdrawOccurrence`), so that the leave a raising handler queued before
 the interruption advances no run the interruption removes. `handlerRecord` (`Compensation.runningRecord`): the record
 whose handler or group runs in a compensation handler's context, which the search reads there under
-`propagatesFromTrigger`. -/
+`propagatesFromHandler`. -/
 structure PropagationHooks where
   mappedErrorOutputs : Ctx → Origin → List (String × Value) → State → Outcome := fun _ _ _ state => .ok state
   writeCaught : Ctx → ScopeOccurrenceId → List (String × Value) → State → Outcome := fun _ _ _ state => .ok state
@@ -258,9 +258,9 @@ def passCallOutputs (hooks : PropagationHooks) (ctx : Ctx) (origin : Origin) (ca
   | .none => .ok state
 
 /-- Whether a search passes a compensation handler's context on through the handler's model scopes. -/
-def propagatesFromTrigger (ctx : Ctx) : Bool :=
+def propagatesFromHandler (ctx : Ctx) : Bool :=
   match ctx.program.options.compensationHandlerFailure with
-  | .propagatesFromTrigger => true
+  | .propagatesFromHandler => true
   | .failsInstance => false
   | .selected _ => false
 
@@ -275,7 +275,7 @@ def contextFires (hooks : PropagationHooks) (ctx : Ctx) (origin : Origin) (scope
 /-- Search outward from `current`; `fuel` bounds the walk by the number of scope occurrences, and `jumped` is
 `some raising` when the search reached `current` from a compensation handler's context, with the handler the raise runs
 in. The search ends at the scope occurrence of a compensation handler (COMPH-FAIL-01), except under
-`propagatesFromTrigger`, where it goes on through the handler's model scopes (CIB-INT-0038): CIB runs the handler in a
+`propagatesFromHandler`, where it goes on through the handler's model scopes (CIB-INT-0038): CIB runs the handler in a
 compensating execution under the throwing one, which carries its variables (`CompensationUtil.java:62-75`), but walks
 the handler's model flow scopes, each mapped onto an execution (`tree/ActivityExecutionHierarchyWalker.java:44-73`).
 So the context offers what `contextCatcher` offers of the completed subject, and the search goes on from the scope
@@ -297,7 +297,7 @@ def searchScopes (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origi
     | some occurrence =>
       let role := ctx.scopeRole state occurrence.id
       if role == .compensationHandler then
-        if !propagatesFromTrigger ctx then exhausted hooks ctx raised origin (some occurrence.id) state
+        if !propagatesFromHandler ctx then exhausted hooks ctx raised origin (some occurrence.id) state
         else match hooks.handlerRecord ctx occurrence.id state with
           | none => .error (.semanticFailure .invariant "compensation-context-without-record")
           | some record => do

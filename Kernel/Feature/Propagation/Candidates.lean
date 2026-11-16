@@ -103,7 +103,7 @@ def handlerCandidates (ctx : Ctx) (raised : Raised) (origin : Origin) (state : S
       .error (.unsupported "rethrow-caught-by-sibling-handler") -- dynamic-only: what a running handler raises
     else .ok others
 
-/-- What a compensation handler's context offers a raise under `propagatesFromTrigger` (#159), as the Event
+/-- What a compensation handler's context offers a raise under `propagatesFromHandler` (#159), as the Event
 Sub-Processes and the boundaries of `record`'s completed subject, whose place the context stands for: the subject's
 catchers only when the subject encloses `raising`, the handler the raise runs in, in the model, as CIB's search walks
 the handler's model flow scopes (`tree/ActivityExecutionHierarchyWalker.java:44-73`); its Event Sub-Processes but one

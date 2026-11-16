@@ -90,14 +90,14 @@ theorem past_handler_rejected :
     simp [raising, handlerContext, above] at this
 
 theorem on_from_record :
-    Searched .propagatesFromTrigger [raising, handlerContext, above] (some 1) [recordScope]
+    Searched .propagatesFromHandler [raising, handlerContext, above] (some 1) [recordScope]
       [raising, handlerContext, recordScope] :=
   ⟨fun wrong => by simp at wrong, fun _ => rfl⟩
 
-/-- Under `propagatesFromTrigger`, going on to the handler context's parent, the trigger's scope occurrence, instead of
+/-- Under `propagatesFromHandler`, going on to the handler context's parent, the trigger's scope occurrence, instead of
 the scope occurrence holding the subject's record is rejected. -/
 theorem on_from_context_rejected :
-    ¬ Searched .propagatesFromTrigger [raising, handlerContext, above] (some 1) [recordScope]
+    ¬ Searched .propagatesFromHandler [raising, handlerContext, above] (some 1) [recordScope]
       [raising, handlerContext, above] := fun law => by
   have := law.2 rfl
   simp [above, recordScope] at this

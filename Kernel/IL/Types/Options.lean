@@ -92,9 +92,13 @@ inductive CompensationHandlerFailure where
   /-- COMPH-FAIL-01. -/
   | failsInstance
   | selected (code : String)
-  /-- An Error leaving a handler propagates from the scope occurrence the trigger ran in, as CIB's compensating
-  execution is a child of the throwing one (`CompensationUtil.java:62-75`). -/
-  | propagatesFromTrigger
+  /-- An Error or Escalation leaving a handler is searched through the handler's own model scopes: its compensation
+  context stands for the subject's place, and the search goes on from the scope occurrence holding the subject's
+  record outward (CIB-INT-0038); CIB searches the model flow scopes (`ActivityExecutionHierarchyWalker.java:44-73`)
+  while the handler's data reads the throwing execution's chain (`CompensationUtil.java:62-75`). It assumes a
+  completed Sub-Process's records stay in its own scope occurrence until compensation, which no profile that selects
+  it contradicts (`ImplicitCompensation.refused` moves them to the parent). -/
+  | propagatesFromHandler
   deriving DecidableEq, Repr
 
 /-- Whether a completed Sub-Process without a compensation handler keeps its inner records as one group. -/

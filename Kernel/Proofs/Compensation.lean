@@ -207,11 +207,11 @@ def StepQueries (hooks : Hooks) (ctx : Ctx) : Prop :=
 
 /-- Failure: an Error that leaves a compensation handler's context uncaught fails the instance under
 `CompensationHandlerFailure.failsInstance` (COMPH-FAIL-01) and is searched for on through the handler's model scopes,
-from the scope occurrence holding the handler's record, under `propagatesFromTrigger` (CIB-INT-0038, #159). Four
+from the scope occurrence holding the handler's record, under `propagatesFromHandler` (CIB-INT-0038, #159). Four
 parts:
 (a) `Hooks.failCompensation`, which `Step` calls for a queued `Signal.compensationFailed`, queues the failed end of the
 instance, naming the run's trigger and the handler, whatever the option;
-(b) under `propagatesFromTrigger` the search `Hooks.raise` runs passes a compensation handler's context
+(b) under `propagatesFromHandler` the search `Hooks.raise` runs passes a compensation handler's context
 (`PassesHandlerContext`): it offers what the context offers of the completed subject and, when nothing there catches,
 goes on from the scope occurrence holding the handler's record, not from the context's parent, the run's scope
 occurrence; and the raise queues no `compensationFailed`;
@@ -220,10 +220,10 @@ handler's context, a running context of a run;
 (d) under `failsInstance` the search stops at a compensation handler's context (`StopsAtHandlerContext`): it is
 exhausted there, naming the context, and never searches past it (COMPH-FAIL-01).
 
-P0 said that under `propagatesFromTrigger` `Hooks.failCompensation` queues no failed end but a raise, and under
+P0 said that under `propagatesFromHandler` `Hooks.failCompensation` queues no failed end but a raise, and under
 `failsInstance` a failed end. That was false (P5 design probe `R3`): `Compensation.failCompensation` reads no option
 and always queues the failed end; it is reached only under `failsInstance`, since the search queues
-`compensationFailed` only there (`Propagation.searchScopes`), and under `propagatesFromTrigger` the search goes on.
+`compensationFailed` only there (`Propagation.searchScopes`), and under `propagatesFromHandler` the search goes on.
 COMPH-FAIL-01 and CIB-INT-0038 are kept. -/
 def HandlerFailure (hooks : Hooks) : Prop :=
   (∀ (ctx : Ctx) (handler : ScopeOccurrenceId) (code : String) (message : Option String) (origin : Origin)
@@ -233,7 +233,7 @@ def HandlerFailure (hooks : Hooks) : Prop :=
         failure.message = message ∧ run ∈ state.slots.compensation.runs ∧ handler ∈ run.running.map (·.1) ∧
         ("trigger", run.trigger) ∈ failure.related ∧ ∃ reference, ("handler", reference) ∈ failure.related) ∧
     (∀ (ctx : Ctx) (raised : Raised) (origin : Origin) (state : State),
-      ctx.program.options.compensationHandlerFailure = .propagatesFromTrigger →
+      ctx.program.options.compensationHandlerFailure = .propagatesFromHandler →
       PassesHandlerContext hooks ctx raised origin ∧ ∀ after, hooks.raise ctx raised origin state = .ok after → ∃ new, Queues state after new ∧
         ∀ handler code message raisedFrom, Signal.compensationFailed handler code message raisedFrom ∉ new) ∧
     (∀ (ctx : Ctx) (raised : Raised) (origin : Origin) (state after : State), StepQueries hooks ctx →

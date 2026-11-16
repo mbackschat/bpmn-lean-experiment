@@ -243,13 +243,13 @@ theorem handlerCompleted_spec (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence 
   unfold Feature.Compensation.handlerCompleted; rfl
 
 /-- A committed `Hooks.handlerEnded` released the handler's context when the handler failure policy is
-`propagatesFromTrigger` and a run holds it, and changed nothing otherwise. -/
+`propagatesFromHandler` and a run holds it, and changed nothing otherwise. -/
 theorem handlerEnded_spec {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Occurrence} {state after : State}
     (ran : Feature.Compensation.handlerEnded ctx run occurrence state = .ok after) :
-    (ctx.program.options.compensationHandlerFailure = .propagatesFromTrigger ∧
+    (ctx.program.options.compensationHandlerFailure = .propagatesFromHandler ∧
         (∃ owner ∈ state.slots.compensation.runs, Holds occurrence.scope owner) ∧
         Feature.Compensation.release ctx occurrence.scope state (Feature.Compensation.runBound ctx state) = .ok after) ∨
-      (¬ (ctx.program.options.compensationHandlerFailure = .propagatesFromTrigger ∧
+      (¬ (ctx.program.options.compensationHandlerFailure = .propagatesFromHandler ∧
           ∃ owner ∈ state.slots.compensation.runs, Holds occurrence.scope owner) ∧ after = state) := by
   have held : state.slots.compensation.runs.any (·.running.any (·.1 == occurrence.scope)) = true ↔
       ∃ owner ∈ state.slots.compensation.runs, Holds occurrence.scope owner := by

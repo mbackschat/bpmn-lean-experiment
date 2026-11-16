@@ -513,17 +513,17 @@ theorem searchScopes_cancel {ctx : Ctx} {hooks : Feature.Propagation.Propagation
 
 /-! ### Where a search stops -/
 
-/-- At a compensation handler's context the search stops unless the profile selects `propagatesFromTrigger`: it is
+/-- At a compensation handler's context the search stops unless the profile selects `propagatesFromHandler`: it is
 exhausted there, naming the context (COMPH-FAIL-01). -/
 theorem searchScopes_stops {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks} {raised : Raised}
     {origin : Origin} {state : State} {fuel : Nat} {jumped : Option (Option ElementId)} {current : ScopeOccurrenceId}
     {occurrence : ScopeOccurrence} (found : state.scopes.find? (·.id == current) = some occurrence)
     (handler : ctx.scopeRole state occurrence.id = .compensationHandler)
-    (stopping : ctx.program.options.compensationHandlerFailure ≠ .propagatesFromTrigger) :
+    (stopping : ctx.program.options.compensationHandlerFailure ≠ .propagatesFromHandler) :
     Feature.Propagation.searchScopes hooks ctx raised origin state (fuel + 1) jumped (some current) =
       Feature.Propagation.exhausted hooks ctx raised origin (some occurrence.id) state := by
   cases option : ctx.program.options.compensationHandlerFailure <;>
-    simp_all [Feature.Propagation.searchScopes, Feature.Propagation.propagatesFromTrigger]
+    simp_all [Feature.Propagation.searchScopes, Feature.Propagation.propagatesFromHandler]
 
 /-- At a scope occurrence that is no compensation handler's context the search offers its candidates, its Event
 Sub-Processes (`levelCandidates`: every one right after a handler's context, else `handlerCandidates`) and the
@@ -556,7 +556,7 @@ theorem searchScopes_onward {ctx : Ctx} {hooks : Feature.Propagation.Propagation
       · simp [instance_, best?_nil]
       · simp [instance_, unbounded element parent elementIs parentIs instance_]
 
-/-- At a compensation handler's context under `propagatesFromTrigger` the search reads the record whose handler or
+/-- At a compensation handler's context under `propagatesFromHandler` the search reads the record whose handler or
 group runs there (`PropagationHooks.handlerRecord`) and offers what `contextCatcher` offers of its completed subject;
 when nothing there catches it goes on from the scope occurrence holding that record, never from the context's parent,
 the trigger's scope occurrence, passing on the handler the raise runs in: the record's own, or for a group the one the
@@ -566,7 +566,7 @@ theorem searchScopes_context {ctx : Ctx} {hooks : Feature.Propagation.Propagatio
     {occurrence : ScopeOccurrence} {record : Compensable}
     (found : state.scopes.find? (·.id == current) = some occurrence)
     (context : ctx.scopeRole state occurrence.id = .compensationHandler)
-    (selected : Feature.Propagation.propagatesFromTrigger ctx = true)
+    (selected : Feature.Propagation.propagatesFromHandler ctx = true)
     (read : hooks.handlerRecord ctx occurrence.id state = some record)
     (unhandled : Feature.Propagation.contextCatcher ctx raised state record
       (record.handler.orElse fun _ => jumped.join) = .ok none) :
@@ -576,17 +576,17 @@ theorem searchScopes_context {ctx : Ctx} {hooks : Feature.Propagation.Propagatio
   simp only [Feature.Propagation.searchScopes, found, context, selected, read, unhandled, beq_self_eq_true,
     Bool.not_true, Bool.false_eq_true, ↓reduceIte, bind, Except.bind]
 
-/-- Under `CompensationHandlerFailure.propagatesFromTrigger` the search passes a compensation handler's context. -/
-theorem propagatesFromTrigger_selected {ctx : Ctx}
-    (selected : ctx.program.options.compensationHandlerFailure = .propagatesFromTrigger) :
-    Feature.Propagation.propagatesFromTrigger ctx = true := by
-  simp [Feature.Propagation.propagatesFromTrigger, selected]
+/-- Under `CompensationHandlerFailure.propagatesFromHandler` the search passes a compensation handler's context. -/
+theorem propagatesFromHandler_selected {ctx : Ctx}
+    (selected : ctx.program.options.compensationHandlerFailure = .propagatesFromHandler) :
+    Feature.Propagation.propagatesFromHandler ctx = true := by
+  simp [Feature.Propagation.propagatesFromHandler, selected]
 
 /-- Under `CompensationHandlerFailure.failsInstance` the search stops at a compensation handler's context. -/
-theorem propagatesFromTrigger_failsInstance {ctx : Ctx}
+theorem propagatesFromHandler_failsInstance {ctx : Ctx}
     (selected : ctx.program.options.compensationHandlerFailure = .failsInstance) :
-    Feature.Propagation.propagatesFromTrigger ctx = false := by
-  simp [Feature.Propagation.propagatesFromTrigger, selected]
+    Feature.Propagation.propagatesFromHandler ctx = false := by
+  simp [Feature.Propagation.propagatesFromHandler, selected]
 
 /-! ### What a raise queues -/
 
@@ -600,10 +600,10 @@ structure QuietHooks (ctx : Ctx) (quiet : Signal → Prop) (hooks : Feature.Prop
   dropRuns : ∀ scope state, (hooks.dropRuns ctx scope state).signals = state.signals
 
 /-- `signal` is the failure of a compensation handler's context that a search stopping there queues: only when the
-profile does not select `propagatesFromTrigger`, and only at a scope occurrence `ctx.scopeRole` calls a compensation
+profile does not select `propagatesFromHandler`, and only at a scope occurrence `ctx.scopeRole` calls a compensation
 handler's context in a state `motive` holds of. -/
 def HandlerFailed (ctx : Ctx) (motive : State → Prop) (origin : Origin) (signal : Signal) : Prop :=
-  Feature.Propagation.propagatesFromTrigger ctx = false ∧ ∃ handler, (∃ code message,
+  Feature.Propagation.propagatesFromHandler ctx = false ∧ ∃ handler, (∃ code message,
     signal = .compensationFailed handler code message origin) ∧
     ∃ stopped, motive stopped ∧ ctx.scopeRole stopped handler = .compensationHandler
 
@@ -713,7 +713,7 @@ include facts steps calm in
 /-- A search exhausted at `handler` queues a compensation handler's failure only at a context it stopped at. -/
 theorem exhausted_queues {motive : State → Prop} {raised : Raised} {origin : Origin}
     {handler : Option ScopeOccurrenceId} {state after : State}
-    (stopped : ∀ scope, handler = some scope → Feature.Propagation.propagatesFromTrigger ctx = false ∧
+    (stopped : ∀ scope, handler = some scope → Feature.Propagation.propagatesFromHandler ctx = false ∧
       ∃ level, motive level ∧ ctx.scopeRole level scope = .compensationHandler)
     (ran : Feature.Propagation.exhausted hooks ctx raised origin handler state = .ok after) :
     Appends (fun signal => quiet signal ∨ HandlerFailed ctx motive origin signal) state after := by

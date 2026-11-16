@@ -300,14 +300,14 @@ children name as the group's context. -/
 def runningRecord (_ : Ctx) (context : ScopeOccurrenceId) (state : State) : Option Compensable :=
   state.slots.compensation.runs.findSome? fun run => (run.running.find? (·.1 == context)).map (·.2)
 
-/-- `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `propagatesFromTrigger`
+/-- `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `propagatesFromHandler`
 (I11) the run goes on as `handlerCompleted` does unless the catcher interrupts a scope occurrence holding it, which drops
 the run when the catch is decided (`dropWithin`), before the handler's leave arrives here; with no catcher, or one that
 does not interrupt, the run goes on. Under `failsInstance` the failure that follows ends the instance, so nothing
 changes. -/
 def handlerEnded (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence : Occurrence) (state : State) : Outcome :=
   match ctx.program.options.compensationHandlerFailure with
-  | .propagatesFromTrigger =>
+  | .propagatesFromHandler =>
     if state.slots.compensation.runs.any (·.running.any (·.1 == occurrence.scope)) then
       handlerCompleted ctx run occurrence state
     else .ok state

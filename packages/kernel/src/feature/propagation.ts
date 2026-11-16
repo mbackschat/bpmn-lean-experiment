@@ -12,7 +12,7 @@
  * lowest `Ctx.catches` precedence wins, document order breaking ties, so an exact code is preferred over a catch-all at
  * the same level (CIB `ErrorEventDefinition#getPrecedence`) but never over a nearer catcher. Under
  * `CompensationHandlerFailure.failsInstance` the search never passes the scope occurrence of a compensation handler: what
- * reaches it uncaught is the handler's outcome; under `propagatesFromTrigger` it goes on through the handler's model
+ * reaches it uncaught is the handler's outcome; under `propagatesFromHandler` it goes on through the handler's model
  * scopes, not the trigger's (`searchScopes`, CIB-INT-0038). A Multi-Instance
  * instance's scope occurrence offers no boundaries of its own: they belong to the body, whose scope occurrence is the
  * next one out (`BpmnParse:3291-3295`, BPMN 2.0.2 §13.5.3). A Sub-Process's Event Sub-Processes are offered once, in its
@@ -111,7 +111,7 @@ function throwerLeaves(ctx: Ctx, origin: Origin, state: State): State {
  * scope occurrence an interrupting catcher has decided to interrupt go at once, as its items do (`withdrawOccurrence`),
  * so that the leave a raising handler queued before the interruption advances no run the interruption removes.
  * `handlerRecord` (`Compensation.runningRecord`): the record whose handler or group runs in a compensation handler's
- * context, which the search reads there under `propagatesFromTrigger`.
+ * context, which the search reads there under `propagatesFromHandler`.
  */
 export interface PropagationHooks {
   readonly mappedErrorOutputs: (ctx: Ctx, origin: Origin, installed: readonly Binding[], state: State) => Outcome;
@@ -402,10 +402,10 @@ function passCallOutputs(
 }
 
 /** Whether a search passes a compensation handler's context on through the handler's model scopes. */
-function propagatesFromTrigger(ctx: Ctx): boolean {
+function propagatesFromHandler(ctx: Ctx): boolean {
   const failure = ctx.program.options.compensationHandlerFailure;
   switch (failure.tag) {
-    case CompensationHandlerFailureTag.PropagatesFromTrigger:
+    case CompensationHandlerFailureTag.PropagatesFromHandler:
       return true;
     case CompensationHandlerFailureTag.FailsInstance:
     case CompensationHandlerFailureTag.Selected:
@@ -429,7 +429,7 @@ function contextFires(hooks: PropagationHooks, ctx: Ctx, origin: Origin, scope: 
  * Search outward from `start`; the fuel bounds the walk by the number of scope occurrences, and `jumped` is set when the
  * search reached the current scope occurrence from a compensation handler's context, `carried` then naming the handler
  * the raise runs in. The search ends at the scope occurrence of a compensation handler (COMPH-FAIL-01), except under
- * `PropagatesFromTrigger`, where it goes on through the handler's model scopes (CIB-INT-0038): CIB runs the handler in
+ * `PropagatesFromHandler`, where it goes on through the handler's model scopes (CIB-INT-0038): CIB runs the handler in
  * a compensating execution under the throwing one, which carries its variables (`CompensationUtil.java:62-75`), but
  * walks the handler's model flow scopes, each mapped onto an execution
  * (`tree/ActivityExecutionHierarchyWalker.java:44-73`). So the context offers what `contextCatcher` offers of the
@@ -461,7 +461,7 @@ function searchScopes(
     if (occurrence === undefined) return semanticFailure(SemanticCause.Invariant, "raise-from-missing-scope");
     const role = ctx.scopeRole(state, occurrence.id);
     if (role === ScopeRole.CompensationHandler) {
-      if (!propagatesFromTrigger(ctx)) return exhausted(hooks, ctx, raised, origin, occurrence.id, state);
+      if (!propagatesFromHandler(ctx)) return exhausted(hooks, ctx, raised, origin, occurrence.id, state);
       const record = hooks.handlerRecord(ctx, occurrence.id, state);
       if (record === null) return semanticFailure(SemanticCause.Invariant, "compensation-context-without-record");
       const raising: ElementId | null = record.handler ?? (jumped ? carried : null);

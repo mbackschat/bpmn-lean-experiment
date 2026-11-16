@@ -174,6 +174,6 @@ test("an Escalation a compensation handler Sub-Process's own handler relays pass
     flows: [flow("hl1", "HLS", "HLX"), flow("hl2", "HLX", "HLN"), flow("hl3", "HLN", "HLE"), flow("r1", "RS", "RW"), flow("r2", "RW", "RE")],
   });
   const undo = handlerScope("H", [userTask("HR", null, "H"), throwing("HX", raiseEscalation("X"), "H"), userTask("HC", null, "H")]);
-  const program = chain([userTask("U", "H")], compensateAll, parts(undo, relay), { compensationHandlerFailure: "propagatesFromTrigger" });
+  const program = chain([userTask("U", "H")], compensateAll, parts(undo, relay), { compensationHandlerFailure: "propagatesFromHandler" });
   assert.deepEqual(waiting(drive(program, complete("U"), complete("HR"))), ["HC", "HLN", "RW"]);
 });
