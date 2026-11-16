@@ -32,8 +32,9 @@ Each former theorem by row, and what it is here:
   runs as an Activity through `Step`'s one pipeline.
 - PC-HUM-04: the closure burst bound (never proved). Not applicable: `Step.closureBound` and `Step.closureWorkBound`
   make an overlong closure `unsupported`, dynamic-only.
-- PC-HUM-04: `prepared_end_declared_entry_pair` (`DTB-COMMUTE-01`). Proved as a corollary of P6's
-  `Proofs.Concurrency.SchedulesAgree` under `Laws.Flow.Apart`: `Proofs.Concurrency.endBesideEntry`.
+- PC-HUM-04: `prepared_end_declared_entry_pair` (`DTB-COMMUTE-01`). Restated as a corollary of P6's
+  `Proofs.Concurrency.SchedulesAgree` under `Laws.Flow.Apart`, `Proofs.Concurrency.endBesideEntry`; open while that
+  theorem is (#163).
 - PC-SCOPE-04: `invokeState?_installs_snapshot`, `copyValues?_absent_is_null` (`CVM-IN-01`). Restated:
   `CallInstallsSnapshot` (`Kernel.Proofs.Former.Calls`) and `FailedSourcesRead` (`Kernel.Proofs.Former.Values`).
 - PC-SCOPE-04: the read, write and owner isolation lemmas (`CVM-ISOLATE-01`). Restated: `CalledReadsIsolated`,
@@ -41,7 +42,8 @@ Each former theorem by row, and what it is here:
 - PC-SCOPE-04: `returnState?_writes_outputs_from_caller` (`CVM-OUT-01`). Restated: `OutputsAtNearestOwner` and, for a
   Scope's item, `OutputsAtDeclaringOccurrence`.
 - PC-SCOPE-04: `returnState?_retires_called_frames` (`CVM-RETIRE-01`). Restated as P3's
-  `Proofs.Cancellation.SubtreeRemoved` of the called root.
+  `Proofs.Cancellation.SubtreeRemoved` of the called root. A called root created and removed within one input is not
+  covered, since the theorem reads the before-state's scope occurrences.
 - PC-SCOPE-05: invocation keeps call associations valid and creates exactly the derived identity. Restated:
   `CalledIdentityUnique` (`Kernel.Proofs.Former.Calls`).
 - PC-SCOPE-05: return continues exactly its caller and keeps every other record, root, wait and token
