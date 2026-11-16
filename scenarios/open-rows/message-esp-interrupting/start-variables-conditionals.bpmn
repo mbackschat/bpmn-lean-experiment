@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_StartVariablesConditionals"
+  targetNamespace="urn:bpmn-lean:scenarios:message-esp-interrupting:start-variables-conditionals">
+  <bpmn:message id="Message_Abort" name="abortRegion" />
+  <bpmn:escalation id="Escalation_Seen" name="Note seen inside" escalationCode="NOTE_SEEN" />
+  <bpmn:process id="Process_StartVariablesConditionals" name="A delivered note and the Conditionals it may reach" isExecutable="true">
+    <bpmn:startEvent id="Start_Order" />
+    <bpmn:parallelGateway id="Fork_Order" />
+    <bpmn:subProcess id="Region" name="Inspect the lot">
+      <bpmn:startEvent id="Start_Inner" />
+      <bpmn:intermediateCatchEvent id="Catch_Inside" name="Note says go">
+        <bpmn:conditionalEventDefinition id="CED_Inside" camunda:variableName="note">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${note == 'go'}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:intermediateThrowEvent id="Throw_Seen">
+        <bpmn:escalationEventDefinition id="EscalationDefinition_Throw" escalationRef="Escalation_Seen" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:endEvent id="End_Inner" />
+      <bpmn:sequenceFlow id="Flow_Start_Inner_Catch_Inside" sourceRef="Start_Inner" targetRef="Catch_Inside" />
+      <bpmn:sequenceFlow id="Flow_Catch_Inside_Throw_Seen" sourceRef="Catch_Inside" targetRef="Throw_Seen" />
+      <bpmn:sequenceFlow id="Flow_Throw_Seen_End_Inner" sourceRef="Throw_Seen" targetRef="End_Inner" />
+      <bpmn:subProcess id="ESP_RegionAbort" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_RegionAbort">
+          <bpmn:messageEventDefinition id="MED_RegionAbort" messageRef="Message_Abort" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Abort_Handler" name="Record the aborted lot" />
+        <bpmn:endEvent id="End_Abort_Handler" />
+        <bpmn:sequenceFlow id="Flow_Start_RegionAbort_Abort_Handler" sourceRef="Start_RegionAbort" targetRef="Abort_Handler" />
+        <bpmn:sequenceFlow id="Flow_Abort_Handler_End_Abort_Handler" sourceRef="Abort_Handler" targetRef="End_Abort_Handler" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:userTask id="Finish" name="Release the order" />
+    <bpmn:endEvent id="End_Order" />
+    <bpmn:intermediateCatchEvent id="Catch_Outside" name="Note says go">
+      <bpmn:conditionalEventDefinition id="CED_Outside" camunda:variableName="note">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${note == 'go'}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Seen_Outside" name="Act on the note" />
+    <bpmn:endEvent id="End_Outside" />
+    <bpmn:subProcess id="ESP_Seen" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Seen" isInterrupting="false">
+        <bpmn:escalationEventDefinition id="EscalationDefinition_Seen" escalationRef="Escalation_Seen" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Seen_Inside" name="Record that the region saw the note" />
+      <bpmn:endEvent id="End_Seen" />
+      <bpmn:sequenceFlow id="Flow_Start_Seen_Seen_Inside" sourceRef="Start_Seen" targetRef="Seen_Inside" />
+      <bpmn:sequenceFlow id="Flow_Seen_Inside_End_Seen" sourceRef="Seen_Inside" targetRef="End_Seen" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Start_Order_Fork_Order" sourceRef="Start_Order" targetRef="Fork_Order" />
+    <bpmn:sequenceFlow id="Flow_Fork_Order_Region" sourceRef="Fork_Order" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Fork_Order_Catch_Outside" sourceRef="Fork_Order" targetRef="Catch_Outside" />
+    <bpmn:sequenceFlow id="Flow_Region_Finish" sourceRef="Region" targetRef="Finish" />
+    <bpmn:sequenceFlow id="Flow_Finish_End_Order" sourceRef="Finish" targetRef="End_Order" />
+    <bpmn:sequenceFlow id="Flow_Catch_Outside_Seen_Outside" sourceRef="Catch_Outside" targetRef="Seen_Outside" />
+    <bpmn:sequenceFlow id="Flow_Seen_Outside_End_Outside" sourceRef="Seen_Outside" targetRef="End_Outside" />
+  </bpmn:process>
+</bpmn:definitions>

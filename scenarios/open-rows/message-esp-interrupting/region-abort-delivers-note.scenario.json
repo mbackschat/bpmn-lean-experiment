@@ -1,0 +1,120 @@
+{
+  "kind": "scenario",
+  "id": "message-esp-interrupting-region-abort-delivers-note",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-esp-interrupting-start-variables-conditionals",
+    "relativePath": "scenarios/open-rows/message-esp-interrupting/start-variables-conditionals.bpmn",
+    "sha256": "c07520f4408b132fcb0665e1e254e7d11d7af193b6cbfa06d1c0fb3bfb877574",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "wait"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-Start_RegionAbort",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_RegionAbort",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Abort"
+        }
+      },
+      "variables": [
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "go"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Seen_Inside",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Seen_Inside",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Seen_Outside",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Seen_Outside",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Abort_Handler",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Abort_Handler",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Finish",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Finish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §13.5.4",
+      "BPMN 2.0.2 §13.5.5"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/EventHandlerImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/scope/VariableListenerInvocationListener.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/PvmExecutionImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/operation/PvmAtomicOperationInterruptScope.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/operation/PvmAtomicOperationActivityStart.java"
+    ]
+  }
+}
