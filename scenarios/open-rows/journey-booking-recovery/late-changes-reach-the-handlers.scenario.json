@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "journey-booking-recovery-process",
     "relativePath": "scenarios/open-rows/journey-booking-recovery/booking.bpmn",
-    "sha256": "7605ab6507f23e285323f31fe5883e4daca65379d2d09e0e4b969c344a05c753",
+    "sha256": "8f930278bddfd369bd5a85c529ea684f9e2d048f1b14e03548e66023566b1e9c",
     "sourceOverlay": {
       "id": "booking-handlers",
       "sha256": "9ac3ed205e54acb159a2e935364b95ecba544a72433161699427634c8435b104"

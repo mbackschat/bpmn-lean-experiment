@@ -53,7 +53,7 @@
         <bpmn:endEvent id="EndEvent_Inner" />
 
         <bpmn:subProcess id="EventSubProcess_Inner" triggeredByEvent="true">
-          <bpmn:startEvent id="StartEvent_EspInner" isInterrupting="false">
+          <bpmn:startEvent id="StartEvent_EspInner">
             <bpmn:compensateEventDefinition id="CompensateDefinition_EspInner" />
           </bpmn:startEvent>
           <bpmn:sequenceFlow id="Flow_EspInner_Undo" sourceRef="StartEvent_EspInner" targetRef="UserTask_UndoInner" />
@@ -83,7 +83,7 @@
       <bpmn:endEvent id="EndEvent_Outer" />
 
       <bpmn:subProcess id="EventSubProcess_Outer" triggeredByEvent="true">
-        <bpmn:startEvent id="StartEvent_EspOuter" isInterrupting="false">
+        <bpmn:startEvent id="StartEvent_EspOuter">
           <bpmn:compensateEventDefinition id="CompensateDefinition_EspOuter" />
         </bpmn:startEvent>
         <bpmn:sequenceFlow id="Flow_EspOuter_Undo" sourceRef="StartEvent_EspOuter" targetRef="UserTask_UndoOuter" />

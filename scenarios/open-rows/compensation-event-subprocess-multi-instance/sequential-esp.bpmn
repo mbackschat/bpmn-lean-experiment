@@ -26,7 +26,7 @@
       <bpmn:sequenceFlow id="Flow_Visit_End" sourceRef="UserTask_Visit" targetRef="EndEvent_Visit" />
       <bpmn:endEvent id="EndEvent_Visit" />
       <bpmn:subProcess id="EventSubProcess_Visit" triggeredByEvent="true">
-        <bpmn:startEvent id="StartEvent_EspVisit" isInterrupting="false">
+        <bpmn:startEvent id="StartEvent_EspVisit">
           <bpmn:compensateEventDefinition id="CompensateDefinition_EspVisit" />
         </bpmn:startEvent>
         <bpmn:sequenceFlow id="Flow_Esp_Undo" sourceRef="StartEvent_EspVisit" targetRef="UserTask_UndoVisitParent" />

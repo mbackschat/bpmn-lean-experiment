@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "transaction-cancel-mixed-order",
     "relativePath": "scenarios/open-rows/transaction-cancel-mixed/order.bpmn",
-    "sha256": "5df8a4aa73caa9ccf7f8e3418cd6676ba4cb7cdb1ddff2dadf850b166a2582c8",
+    "sha256": "c207156ec037cca26d26110c4ffa38cc2adadaf1564d5ffe056b3d31727476a5",
     "sourceOverlay": null
   },
   "stimuli": [

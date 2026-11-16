@@ -11,7 +11,7 @@
     <bpmn:sequenceFlow id="Flow_Work_End" sourceRef="UserTask_Work" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
     <bpmn:subProcess id="EventSubProcess_Process" triggeredByEvent="true">
-      <bpmn:startEvent id="StartEvent_EspProcess" isInterrupting="false">
+      <bpmn:startEvent id="StartEvent_EspProcess">
         <bpmn:compensateEventDefinition id="CompensateDefinition_EspProcess" />
       </bpmn:startEvent>
       <bpmn:sequenceFlow id="Flow_EspProcess_Undo" sourceRef="StartEvent_EspProcess" targetRef="UserTask_UndoProcess" />

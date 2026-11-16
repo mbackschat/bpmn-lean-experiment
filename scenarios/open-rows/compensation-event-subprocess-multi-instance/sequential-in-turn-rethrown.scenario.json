@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-event-subprocess-multi-instance-sequential-esp",
     "relativePath": "scenarios/open-rows/compensation-event-subprocess-multi-instance/sequential-esp.bpmn",
-    "sha256": "9f86562ec61b0a5170c4270f6f44da13d73e6debf0065aa688eddcb2b4de73ce",
+    "sha256": "248754a03fc0725e63448c2c280e4dfbfd9fd0d3e51b2f5d200632520316dd0e",
     "sourceOverlay": null
   },
   "stimuli": [

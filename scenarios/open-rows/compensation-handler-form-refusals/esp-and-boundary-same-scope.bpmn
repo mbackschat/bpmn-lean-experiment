@@ -14,7 +14,7 @@
       <bpmn:sequenceFlow id="Flow_Work_End" sourceRef="UserTask_Work" targetRef="EndEvent_Region" />
       <bpmn:endEvent id="EndEvent_Region" />
       <bpmn:subProcess id="EventSubProcess_Region" triggeredByEvent="true">
-        <bpmn:startEvent id="StartEvent_EspRegion" isInterrupting="false">
+        <bpmn:startEvent id="StartEvent_EspRegion">
           <bpmn:compensateEventDefinition id="CompensateDefinition_EspRegion" />
         </bpmn:startEvent>
         <bpmn:sequenceFlow id="Flow_EspRegion_Undo" sourceRef="StartEvent_EspRegion" targetRef="UserTask_UndoRegion" />

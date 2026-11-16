@@ -54,8 +54,7 @@
         triggeredByEvent="true">
         <bpmn:startEvent
           id="Start_UndoGroundTravel"
-          name="Begin ground travel cancellation"
-          isInterrupting="false">
+          name="Begin ground travel cancellation">
           <bpmn:outgoing>Flow_UndoGroundTravel_Start_Task</bpmn:outgoing>
           <bpmn:compensateEventDefinition id="Compensate_UndoGroundTravel" />
         </bpmn:startEvent>

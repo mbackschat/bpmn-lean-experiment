@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "branch-fan-out-order-handlers-in-reentered-scope",
     "relativePath": "scenarios/open-rows/branch-fan-out-order/handlers-in-reentered-scope.bpmn",
-    "sha256": "f177b0cce6af3324f279c5879e50c30a8cf78460e49f28d30680147163d7d461",
+    "sha256": "28985a63f230eb4e12664bcdf80bde59ad6f4f34d183624799eb22d8cb781c4d",
     "sourceOverlay": null
   },
   "stimuli": [

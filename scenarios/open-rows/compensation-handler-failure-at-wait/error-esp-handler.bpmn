@@ -14,7 +14,7 @@
       <bpmn:sequenceFlow id="Flow_StartSubject_Work" sourceRef="StartEvent_Subject" targetRef="UserTask_Work" />
       <bpmn:sequenceFlow id="Flow_Work_EndSubject" sourceRef="UserTask_Work" targetRef="EndEvent_Subject" />
       <bpmn:subProcess id="EventSubProcess_Undo" triggeredByEvent="true">
-        <bpmn:startEvent id="StartEvent_Undo" isInterrupting="false">
+        <bpmn:startEvent id="StartEvent_Undo">
           <bpmn:compensateEventDefinition id="CompensateDefinition_Undo" />
         </bpmn:startEvent>
         <bpmn:userTask id="UserTask_UndoReview" name="Review the undo" />

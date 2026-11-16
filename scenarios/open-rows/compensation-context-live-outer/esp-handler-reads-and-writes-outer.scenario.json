@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-context-live-outer-esp-reads-and-writes-outer",
     "relativePath": "scenarios/open-rows/compensation-context-live-outer/esp-reads-and-writes-outer.bpmn",
-    "sha256": "07b6edae302e000fc5d57f2bb894a4007d44a7d0975313293513a22dcead3dc5",
+    "sha256": "6b297a166ec190aadbe61930ba01f727dcf6a351010af91a53a26dadba8dd953",
     "sourceOverlay": null
   },
   "stimuli": [

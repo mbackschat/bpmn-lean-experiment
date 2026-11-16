@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-context-capture",
     "relativePath": "scenarios/open-rows/compensation-context/capture.bpmn",
-    "sha256": "1c5e7bd40ad7157e30aff051e4aa6d6b6a52c1e63d183e1434e535411d80f975",
+    "sha256": "880d32db1bef6e32294bf97d878c310e75cf52a73eea25d873679f431a04d6b8",
     "sourceOverlay": null
   },
   "stimuli": [

@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-event-subprocess-throws-throw-parent-activity",
     "relativePath": "scenarios/open-rows/compensation-event-subprocess-throws/throw-parent-activity.bpmn",
-    "sha256": "11af686a4bed51ccb4a40d5b37c46431cf0e9bec51a891de4e8cea528bd5be51",
+    "sha256": "7233b4145e4b06f7a9a6a15d27c985199ddd4ec87888016383ee85edf83079b6",
     "sourceOverlay": null
   },
   "stimuli": [

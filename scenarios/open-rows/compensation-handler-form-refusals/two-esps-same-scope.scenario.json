@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-handler-form-refusals-two-esps-same-scope",
     "relativePath": "scenarios/open-rows/compensation-handler-form-refusals/two-esps-same-scope.bpmn",
-    "sha256": "eac82dce924c30a13d687a71b1f4a6521459d7efc7832e51e65b1e6bd11c3a8d",
+    "sha256": "992384d827bee71d793fe6bbdeeda45d57bd143d69afda82c15e20379c16f726",
     "sourceOverlay": null
   },
   "stimuli": [

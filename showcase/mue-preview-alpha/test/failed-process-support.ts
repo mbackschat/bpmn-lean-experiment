@@ -16,7 +16,7 @@ import type { EffectHandler } from "../src/host-worker.ts";
 import { alphaTaskQueue, processWorkflowId } from "../src/process-address.ts";
 
 export const compensationProfile = "bpmn-2.0.2";
-export const compensationSourceSha256 = "516073af27fbe95c319918b248c2563c2505263e7542db6f3e8d981f82d8dc93";
+export const compensationSourceSha256 = "6c1256cf8a820c273ec7910480dc23c9c66089b569d4c875cd2023f4762212df";
 export const failureCode = "undo-failed";
 export const failureMessage = "Travel cancellation handler failed — réservation 😀";
 const failedTravelDetails = "Decline ground-travel cancellation TRAVEL-4711";

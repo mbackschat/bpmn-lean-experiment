@@ -2,7 +2,7 @@
   "identity": {
     "processId": "Process_Compensation",
     "namespace": "https://bpmn-lean.org/scenarios/compensation-source-checkpoint",
-    "sourceSha256": "516073af27fbe95c319918b248c2563c2505263e7542db6f3e8d981f82d8dc93",
+    "sourceSha256": "6c1256cf8a820c273ec7910480dc23c9c66089b569d4c875cd2023f4762212df",
     "profile": "bpmn-2.0.2",
     "deployment": null
   },
@@ -491,7 +491,7 @@
                 "alternatives": [],
                 "parallelMultiple": false
               },
-              "interrupting": false
+              "interrupting": true
             }
           },
           "children": [

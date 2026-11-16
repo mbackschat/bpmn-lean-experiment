@@ -57,7 +57,7 @@
       <bpmn:sequenceFlow id="Flow_PackSnapshotted_End" sourceRef="UserTask_PackSnapshotted" targetRef="EndEvent_Snapshotted" />
       <bpmn:endEvent id="EndEvent_Snapshotted" />
       <bpmn:subProcess id="EventSubProcess_Snapshotted" triggeredByEvent="true">
-        <bpmn:startEvent id="StartEvent_UndoSnapshotted" isInterrupting="false">
+        <bpmn:startEvent id="StartEvent_UndoSnapshotted">
           <bpmn:compensateEventDefinition id="CompensateDefinition_Snapshotted" />
         </bpmn:startEvent>
         <bpmn:sequenceFlow id="Flow_UndoSnapshotted_Task" sourceRef="StartEvent_UndoSnapshotted" targetRef="UserTask_UndoSnapshotted" />

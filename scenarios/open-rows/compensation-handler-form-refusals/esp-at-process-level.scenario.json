@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-handler-form-refusals-esp-at-process-level",
     "relativePath": "scenarios/open-rows/compensation-handler-form-refusals/esp-at-process-level.bpmn",
-    "sha256": "e9df43d4c44bbc0ebbbe1632d3e6c4eac8c48cfb795c60d4d8b941184a43b156",
+    "sha256": "6bdeef46ecf2edfd9c728a065954f7ef259ad87484376e583245979c0310393f",
     "sourceOverlay": null
   },
   "stimuli": [

@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-handler-consumption-esp-consumes-one-of-two",
     "relativePath": "scenarios/open-rows/compensation-handler-consumption/esp-consumes-one-of-two.bpmn",
-    "sha256": "1ef87aec58f3feb031cae590be77f097b215c6d3c65a888c9b0a14d33197f16e",
+    "sha256": "67aba2b9fee59af4b749dec15951994b1218acbf341817ae1d706588b9a2d6b3",
     "sourceOverlay": null
   },
   "stimuli": [

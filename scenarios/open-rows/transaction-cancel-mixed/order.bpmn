@@ -64,7 +64,7 @@
         <bpmn:sequenceFlow id="Flow_PackItems_End" sourceRef="UserTask_PackItems" targetRef="EndEvent_PackInner" />
         <bpmn:endEvent id="EndEvent_PackInner" />
         <bpmn:subProcess id="EventSubProcess_Pack" triggeredByEvent="true">
-          <bpmn:startEvent id="StartEvent_EspPack" isInterrupting="false">
+          <bpmn:startEvent id="StartEvent_EspPack">
             <bpmn:compensateEventDefinition id="CompensateDefinition_Pack" />
           </bpmn:startEvent>
           <bpmn:sequenceFlow id="Flow_EspPack_Unpack" sourceRef="StartEvent_EspPack" targetRef="UserTask_Unpack" />

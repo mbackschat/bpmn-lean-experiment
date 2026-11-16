@@ -65,7 +65,7 @@
         </serviceTask>
         <endEvent id="HotelReserved" />
         <subProcess id="RoomRelease" name="Release the room" triggeredByEvent="true">
-          <startEvent id="RoomReleaseRequested" isInterrupting="false">
+          <startEvent id="RoomReleaseRequested">
             <compensateEventDefinition id="RoomReleaseRequested_Compensation" />
           </startEvent>
           <serviceTask id="ReleaseRoom" name="Release the room" implementation="urn:bpmn-lean:effect-protocol:activity-v1"

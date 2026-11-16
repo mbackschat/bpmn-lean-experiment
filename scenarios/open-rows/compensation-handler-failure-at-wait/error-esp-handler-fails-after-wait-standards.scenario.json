@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-handler-failure-at-wait-error-esp-handler",
     "relativePath": "scenarios/open-rows/compensation-handler-failure-at-wait/error-esp-handler.bpmn",
-    "sha256": "fc2cc2c743aaa923e9f81bbd757106052dcda96e227b945256329c9c8573a85c",
+    "sha256": "bace9616f2a3bd01e91e29547df462ac3332ed2be82dad94dfd313c22964b0fe",
     "sourceOverlay": null
   },
   "stimuli": [

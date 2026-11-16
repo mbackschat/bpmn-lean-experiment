@@ -23,7 +23,7 @@
       </bpmn:boundaryEvent>
       <bpmn:userTask id="UserTask_UndoB" name="Undo B" isForCompensation="true" />
       <bpmn:subProcess id="EventSubProcess_Group" triggeredByEvent="true">
-        <bpmn:startEvent id="StartEvent_UndoGroup" isInterrupting="false">
+        <bpmn:startEvent id="StartEvent_UndoGroup">
           <bpmn:compensateEventDefinition id="CompensateDefinition_UndoGroup" />
         </bpmn:startEvent>
         <bpmn:userTask id="UserTask_UndoGroup" name="Undo the group" />

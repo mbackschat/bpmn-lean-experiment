@@ -8,7 +8,7 @@
       <endEvent id="BookEnded_A" />
       <sequenceFlow id="Flow_BookInner_A" sourceRef="BookStarted_A" targetRef="BookEnded_A" />
       <subProcess id="Undo_A" triggeredByEvent="true">
-        <startEvent id="UndoStarted_A" isInterrupting="false"><compensateEventDefinition /></startEvent>
+        <startEvent id="UndoStarted_A"><compensateEventDefinition /></startEvent>
         <subProcess id="Write_A">
           <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">a</camunda:outputParameter></camunda:inputOutput></extensionElements>
           <startEvent id="WriteStarted_A" />
@@ -25,7 +25,7 @@
       <endEvent id="BookEnded_B" />
       <sequenceFlow id="Flow_BookInner_B" sourceRef="BookStarted_B" targetRef="BookEnded_B" />
       <subProcess id="Undo_B" triggeredByEvent="true">
-        <startEvent id="UndoStarted_B" isInterrupting="false"><compensateEventDefinition /></startEvent>
+        <startEvent id="UndoStarted_B"><compensateEventDefinition /></startEvent>
         <subProcess id="Write_B">
           <extensionElements><camunda:inputOutput><camunda:outputParameter name="outcome">b</camunda:outputParameter></camunda:inputOutput></extensionElements>
           <startEvent id="WriteStarted_B" />

@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "branch-fan-out-order-handlers-returning",
     "relativePath": "scenarios/open-rows/branch-fan-out-order/handlers-returning.bpmn",
-    "sha256": "4e1d16474ec98f2c6cac010d19d22e16d9e142c520cd408d8300ba3f37d79cca",
+    "sha256": "6ebb0d592d01b8547b3c711d9cf0196a3c88d3f6a9ac71fbb541028c978ead68",
     "sourceOverlay": null
   },
   "stimuli": [

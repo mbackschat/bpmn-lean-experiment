@@ -39,7 +39,7 @@
       <bpmn:sequenceFlow id="Flow_Inside_End" sourceRef="UserTask_Inside" targetRef="EndEvent_Typed" />
       <bpmn:endEvent id="EndEvent_Typed" />
       <bpmn:subProcess id="EventSubProcess_Typed" triggeredByEvent="true">
-        <bpmn:startEvent id="StartEvent_EspTyped" isInterrupting="false">
+        <bpmn:startEvent id="StartEvent_EspTyped">
           <bpmn:compensateEventDefinition id="CompensateDefinition_Typed" />
         </bpmn:startEvent>
         <bpmn:sequenceFlow id="Flow_EspTyped_Undo" sourceRef="StartEvent_EspTyped" targetRef="UserTask_UndoTyped" />

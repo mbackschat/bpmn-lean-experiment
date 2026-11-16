@@ -17,4 +17,4 @@ Bodies are addressed by activation in generation order. After the bodies complet
 | [sequential-in-turn-consumed](sequential-in-turn-consumed.scenario.json) | sequential-esp | 1, 2, 3 | false |
 | [sequential-in-turn-rethrown](sequential-in-turn-rethrown.scenario.json) | sequential-esp | 1, 2, 3 | true |
 
-The Compensation start events are written `isInterrupting="false"`, the form the existing project models use; whether the omitted attribute (the XML Schema default `true`) changes CIB's behavior is not separated here. The schedules carry no expected snapshot, handler order or Process state; the retained CIB evidence is the answer.
+The Compensation start events declare no `isInterrupting`, which BPMN 2.0.2 Table 10.87 does not apply to them. The schedules carry no expected snapshot, handler order or Process state; the retained CIB evidence is the answer.

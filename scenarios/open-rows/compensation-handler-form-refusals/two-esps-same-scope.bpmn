@@ -14,7 +14,7 @@
       <bpmn:sequenceFlow id="Flow_Work_End" sourceRef="UserTask_Work" targetRef="EndEvent_Region" />
       <bpmn:endEvent id="EndEvent_Region" />
       <bpmn:subProcess id="EventSubProcess_First" triggeredByEvent="true">
-        <bpmn:startEvent id="StartEvent_EspFirst" isInterrupting="false">
+        <bpmn:startEvent id="StartEvent_EspFirst">
           <bpmn:compensateEventDefinition id="CompensateDefinition_EspFirst" />
         </bpmn:startEvent>
         <bpmn:sequenceFlow id="Flow_EspFirst_Undo" sourceRef="StartEvent_EspFirst" targetRef="UserTask_UndoFirst" />
@@ -23,7 +23,7 @@
         <bpmn:endEvent id="EndEvent_EspFirst" />
       </bpmn:subProcess>
       <bpmn:subProcess id="EventSubProcess_Second" triggeredByEvent="true">
-        <bpmn:startEvent id="StartEvent_EspSecond" isInterrupting="false">
+        <bpmn:startEvent id="StartEvent_EspSecond">
           <bpmn:compensateEventDefinition id="CompensateDefinition_EspSecond" />
         </bpmn:startEvent>
         <bpmn:sequenceFlow id="Flow_EspSecond_Undo" sourceRef="StartEvent_EspSecond" targetRef="UserTask_UndoSecond" />
