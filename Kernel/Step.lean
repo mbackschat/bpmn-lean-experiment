@@ -119,7 +119,9 @@ occurrence `occurrence` entered, never from the parent, so a name the Event Sub-
 that item (BPMN 2.0.2 §10.4.2), any other at its nearest owner, as CIB's `setVariables` on the parent's execution does
 (CIB-EXT-0025). They are written in the begin's own micro-step, after an interrupting start's clearing and the entry,
 before any arming or begin the entry queued runs; a queued write would run after a removal an earlier firing queued and
-fail as `gone` where the arming fails as `stale` (`Kernel.Step.Stale`). -/
+fail as `gone` where the arming fails as `stale` (`Kernel.Step.Stale`). The entered scope occurrence exists because
+admission refuses a looping Event Sub-Process (`scope.multiInstance`), whose begin would enter a Multi-Instance body
+instead; admitting one makes `start-writes-without-scope` reachable. -/
 def writeStart (hooks : Hooks) (ctx : Ctx) (occurrence : Nat) (writes : List (String × Value)) (state : State) : Outcome :=
   if writes.isEmpty then .ok state
   else match state.localScope? occurrence with
