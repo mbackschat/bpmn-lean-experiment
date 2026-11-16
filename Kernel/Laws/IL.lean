@@ -106,6 +106,33 @@ theorem start?_scope (header : Header) (payload : ScopePayload) : (Element.scope
 theorem start?_gateway (header : Header) (payload : GatewayPayload) : (Element.gateway header payload).start? = none := by
   simp only [Element.start?]
 
+/-- A Scope is one, and no other element is. -/
+theorem scope?_scope (header : Header) (payload : ScopePayload) :
+    (Element.scope header payload).scope? = some (header, payload) := by simp only [Element.scope?]
+
+theorem scope?_activity (header : Header) (payload : ActivityPayload) : (Element.activity header payload).scope? = none := by
+  simp only [Element.scope?]
+
+theorem scope?_event (header : Header) (payload : EventPayload) : (Element.event header payload).scope? = none := by
+  simp only [Element.scope?]
+
+theorem scope?_gateway (header : Header) (payload : GatewayPayload) : (Element.gateway header payload).scope? = none := by
+  simp only [Element.scope?]
+
+theorem scope?_start (header : Header) (payload : StartPayload) : (Element.start header payload).scope? = none := by
+  simp only [Element.scope?]
+
+/-- A Scope's envelope is its payload's. -/
+theorem envelope?_scope (header : Header) (payload : ScopePayload) :
+    (Element.scope header payload).envelope? = some payload.envelope := by
+  simp only [Element.envelope?]
+
+/-- A process a Call resolves to is one the program declares. -/
+theorem calledProcessFor_mem {program : Program} {resolution : CalledElementResolution} {callerDeployment : Option Nat}
+    {work : CallWork} {process : CalledProcess}
+    (member : process ∈ program.calledProcessFor resolution callerDeployment work) : process ∈ program.processes :=
+  (List.mem_filter.mp member).1
+
 /-- A start Event is no Activity, so an Activity's item is never a start Event's. -/
 theorem activity?_start (header : Header) (payload : StartPayload) : (Element.start header payload).activity? = none := by
   simp only [Element.activity?]
@@ -173,6 +200,36 @@ theorem element?_isSome {program : Program} {element : Element} (member : elemen
   unfold Program.element?
   exact List.find?_isSome.mpr ⟨element, member, by simp⟩
 
+/-- `Program.element?` finds nothing under an identifier none of the program's elements carries. -/
+theorem element?_none {program : Program} {id : ElementId}
+    (absent : ∀ element ∈ program.elements, element.header.id ≠ id) : program.element? id = none := by
+  unfold Program.element?
+  exact List.find?_eq_none.mpr fun element member => by simpa using absent element member
+
+/-- `Program.element?` finds the one element of the program that carries an identifier. -/
+theorem element?_unique {program : Program} {id : ElementId} {element : Element} (member : element ∈ program.elements)
+    (named : element.header.id = id) (unique : ∀ other ∈ program.elements, other.header.id = id → other = element) :
+    program.element? id = some element := by
+  cases found : program.element? id with
+  | none =>
+    unfold Program.element? at found
+    simpa [named] using List.find?_eq_none.mp found element member
+  | some other => rw [unique other (element?_mem found) (element?_header found)]
+
+/-- In a program whose elements have no parent, every header lies at the top level of the called process listing its
+identifier, or of the root process when none does (`Program.processOf`). -/
+theorem processOf_parentless {program : Program} {header : Header}
+    (parentless : ∀ element ∈ program.elements, element.header.parent = none) :
+    program.processOf header = program.processes.find? (·.children.contains header.id) := by
+  have top : (program.element? header.id).bind (·.header.parent) = none := by
+    cases found : program.element? header.id with
+    | none => rfl
+    | some element => simpa using parentless element (element?_mem found)
+  unfold Program.processOf
+  cases program.elements.length with
+  | zero => rfl
+  | succ => simp only [Program.processOf.outermost, top]
+
 /-- The authored identifier of an element `Program.element?` finds is its own origin's. -/
 theorem publicId_element {program : Program} {id : ElementId} {element : Element}
     (found : program.element? id = some element) : program.publicId id = ⟨element.header.origin.sourceId⟩ := by
@@ -196,11 +253,50 @@ theorem boundary?_boundaryOf {program : Program} {id : ElementId} {host : Elemen
   have equal : located = boundary := congrArg Prod.snd same
   exact ⟨⟨element, member, envelope, has, located, List.mem_of_find?_eq_some find, named⟩, equal ▸ named⟩
 
+/-- The boundary `Program.boundary?` finds is one its host's envelope declares, under the identifier it was asked for. -/
+theorem boundary?_declared {program : Program} {id : ElementId} {host : Element} {boundary : Boundary}
+    (found : program.boundary? id = some (host, boundary)) :
+    host ∈ program.elements ∧ ∃ envelope, host.envelope? = some envelope ∧ boundary ∈ envelope.boundaries ∧
+      boundary.id = id := by
+  unfold Program.boundary? at found
+  obtain ⟨element, member, made⟩ := List.exists_of_findSome?_eq_some found
+  obtain ⟨located, inside, same⟩ := Option.map_eq_some_iff.mp made
+  obtain ⟨envelope, has, find⟩ := Option.bind_eq_some_iff.mp inside
+  have named : located.id = id := by simpa using List.find?_some find
+  obtain ⟨hosted, equal⟩ := Prod.mk.inj same
+  subst hosted equal
+  exact ⟨member, envelope, has, List.mem_of_find?_eq_some find, named⟩
+
+/-- `Program.boundary?` finds something under the identifier of every boundary an element's envelope declares. -/
+theorem boundary?_isSome {program : Program} {host : Element} {envelope : Envelope} {boundary : Boundary}
+    (member : host ∈ program.elements) (has : host.envelope? = some envelope) (inside : boundary ∈ envelope.boundaries) :
+    (program.boundary? boundary.id).isSome := by
+  unfold Program.boundary?
+  rw [List.findSome?_isSome_iff]
+  refine ⟨host, member, ?_⟩
+  rw [has, Option.bind_some, Option.isSome_map]
+  exact List.find?_isSome.mpr ⟨boundary, inside, beq_self_eq_true _⟩
+
+/-- `Program.boundary?` resolves an identifier the first element declares as its only boundary to that element,
+whatever later elements declare. -/
+theorem boundary?_first {program : Program} {first : Element} {rest : List Element} {envelope : Envelope}
+    {boundary : Boundary} (elements : program.elements = first :: rest) (has : first.envelope? = some envelope)
+    (only : envelope.boundaries = [boundary]) : program.boundary? boundary.id = some (first, boundary) := by
+  unfold Program.boundary?
+  rw [elements, List.findSome?_cons, has, Option.bind_some, only]
+  simp
+
 /-- A child `Program.children` lists is one of the program's elements. -/
 theorem mem_children {program : Program} {parent : Option ElementId} {element : Element}
     (member : element ∈ program.children parent) : element ∈ program.elements := by
   unfold Program.children at member
   exact (List.mem_filter.mp member).1
+
+/-- An element of the program whose header names a parent is one of that parent's children. -/
+theorem children_mem {program : Program} {parent : ElementId} {element : Element} (member : element ∈ program.elements)
+    (named : element.header.parent = some parent) : element ∈ program.children (some parent) := by
+  unfold Program.children
+  exact List.mem_filter.mpr ⟨member, by simp [named]⟩
 
 /-- A process-level element of a called process (`Program.processChildren`) is one of the program's elements. -/
 theorem mem_processChildren {program : Program} {process : CalledProcess} {element : Element}

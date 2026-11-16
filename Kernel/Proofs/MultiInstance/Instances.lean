@@ -580,7 +580,7 @@ theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loo
     have waiting : ∀ slot ∈ List.replicate count Iteration.waiting, slot = .waiting := fun _ inside =>
       List.eq_of_mem_replicate inside
     obtain ⟨entering, slots, _⟩ := enterBody_entering ops formed member begun header.id
-      (fun current kept present => ops.arm current occurrence _ kept present begun named) locals unarmed collection _ waiting
+      (enterBody_enters ops formed member begun named) (fun current kept present => ops.arm current occurrence _ kept present begun named) locals unarmed collection _ waiting
     have enteredHeld : Numbered ctx.program (if unarmed then
         (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1.signal

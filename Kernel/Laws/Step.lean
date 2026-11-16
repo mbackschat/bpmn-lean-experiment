@@ -1,7 +1,6 @@
 module
 
 public import Kernel.Step
-public import Kernel.Laws.IL
 public import Kernel.Laws.Hooks
 public import Kernel.Laws.Step.Ran
 import all Kernel.Step

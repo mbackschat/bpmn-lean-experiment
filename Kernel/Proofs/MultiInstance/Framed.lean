@@ -306,13 +306,13 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside (RunsFra
   armGateway _ s _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
-  signalBegin s _ _ kept := by
+  signalBegin _ s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
   issue s kept := by
     rw [Laws.State.issue_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
-  enterScope _ s element parent locals owner formed kept := by
+  enterScope _ s element parent locals owner formed _ kept := by
     rw [Laws.State.enterScope_eq]
     refine kept.carry (.grow (fun entry inside => ?_) (fun _ inside => List.mem_append_left _ inside) rfl rfl
       fun _ present => present)
@@ -320,7 +320,7 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside (RunsFra
     · exact .inl old
     · rw [List.mem_singleton.mp new]
       exact .inr (counter_fresh formed)
-  reserve _ s element scope _ _ kept := reserve_runsFramed s element scope kept
+  reserve _ s element scope _ _ _ kept := reserve_runsFramed s element scope kept
   leaveScope _ _ _ formed present leaves kept := leaveScope_runsFramed formed present leaves kept
   clearInside _ _ _ keep formed present _ kept := kept.carry (clearInside_carries formed present keep kept)
   disarm _ s host formed kept := by
@@ -341,14 +341,14 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside (RunsFra
 
 /-- Subscriptions' reservations and queued occurrences keep the lane's slot invariant but its numbering. -/
 theorem runsFramed_occursAlongside (program : Program) : OccursAlongside program (RunsFramed program) where
-  reserve s element scope _ _ kept := reserve_runsFramed s element scope kept
-  occur s _ _ _ _ _ _ kept := by
+  reserve s element scope _ _ _ kept := reserve_runsFramed s element scope kept
+  occur s _ _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
-  compensate s _ _ _ _ _ _ _ _ _ kept := by
+  compensate s _ _ _ _ _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
-  throwCompensate s _ _ _ _ _ _ _ _ kept := by
+  throwCompensate s _ _ _ _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
   raise s _ _ _ _ kept := by
@@ -634,15 +634,15 @@ theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
   armGateway _ s _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
-  signalBegin s _ _ kept := by
+  signalBegin _ s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
   issue s kept := by
     rw [Laws.State.issue_eq]
     exact kept.move (.same rfl rfl rfl (Nat.le_succ _) rfl)
-  enterScope _ s element parent locals owner formed kept :=
+  enterScope _ s element parent locals owner formed _ kept :=
     kept.move (.ofEnds (Laws.Step.enterScope_frame formed element parent locals owner) (by rw [Laws.State.enterScope_eq]))
-  reserve _ s element scope formed _ kept := kept.reserve formed
+  reserve _ s element scope formed _ _ kept := kept.reserve formed
   leaveScope _ _ _ formed present _ kept :=
     kept.move (.ofEnds (Laws.Step.leaveScope_frame formed present) (Laws.State.leaveScope_left formed present).started)
   clearInside _ _ _ keep formed present inside kept :=
@@ -655,15 +655,15 @@ theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
   removeVariable _ s target name _ kept :=
     kept.move (.ofEnds (Laws.Step.removeVariable_frame s target name)
       (congrArg (·.started) (Laws.State.removeVariable_same s target name).draft))
-  instanceBegin s _ kept := by
+  instanceBegin _ s _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
-  defer s _ kept := by
+  defer _ s _ _ _ kept := by
     rw [Laws.State.deferBegins_eq]
     exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
   leaveInstance _ _ _ _ formed _ _ present kept :=
     kept.move (.ofEnds (Laws.Step.leaveScope_frame formed present) (Laws.State.leaveScope_left formed present).started)
-  runs _ _ kept := kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+  runs _ _ _ _ _ kept := kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
 
 /-- Storing compensation runs keeps `Unstarted`: it moves no occurrence and no start. -/
 theorem unstarted_stores (b : State) : StoresAlongside (Unstarted b) :=
@@ -687,16 +687,16 @@ theorem snapshots_frameAlongside (b : State) : StoresAlongside (Snapshots b) whe
   armGateway _ s _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.same rfl
-  signalBegin s _ _ kept := by
+  signalBegin _ s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.same rfl
   issue s kept := by
     rw [Laws.State.issue_eq]
     exact kept.same rfl
-  enterScope _ s element parent locals owner _ kept := by
+  enterScope _ s element parent locals owner _ _ kept := by
     rw [Laws.State.enterScope_eq]
     exact kept.same rfl
-  reserve _ s element scope _ _ kept := kept.reserve element scope
+  reserve _ s element scope _ _ _ kept := kept.reserve element scope
   leaveScope _ _ _ formed present _ kept := kept.shrink (Laws.State.leaveScope_left formed present).slots.bodies
   clearInside _ _ _ keep formed present _ kept :=
     kept.shrink (Laws.State.clearInside_cleared formed present keep).slots.bodies
@@ -727,12 +727,14 @@ theorem since_frameAlongside (b : State) : StoresAlongside fun s => Unstarted b 
     armGateway := fun program s occurrence header payload formed member gateway kept =>
       ⟨one.armGateway program s occurrence header payload formed member gateway kept.1,
         two.armGateway program s occurrence header payload formed member gateway kept.2⟩
-    signalBegin := fun s request fits kept => ⟨one.signalBegin s request fits kept.1, two.signalBegin s request fits kept.2⟩
+    signalBegin := fun program s request formed fits anchored kept =>
+      ⟨one.signalBegin program s request formed fits (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
+        two.signalBegin program s request formed fits (anchored.mono fun _ held => ⟨held.1, held.2.2⟩) kept.2⟩
     issue := fun s kept => ⟨one.issue s kept.1, two.issue s kept.2⟩
-    enterScope := fun program s element parent locals owner formed kept =>
-      ⟨one.enterScope program s element parent locals owner formed kept.1,
-        two.enterScope program s element parent locals owner formed kept.2⟩
-    reserve := fun _ _ element scope formed _ kept => ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
+    enterScope := fun program s element parent locals owner formed anchored kept =>
+      ⟨one.enterScope program s element parent locals owner formed (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
+        two.enterScope program s element parent locals owner formed (anchored.mono fun _ held => ⟨held.1, held.2.2⟩) kept.2⟩
+    reserve := fun _ _ element scope formed _ _ kept => ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
     leaveScope := fun program s scope formed present leaves kept =>
       ⟨one.leaveScope program s scope formed present leaves kept.1, two.leaveScope program s scope formed present leaves kept.2⟩
     clearInside := fun program s scope keep formed present inside kept =>
@@ -753,14 +755,14 @@ theorem since_frameAlongside (b : State) : StoresAlongside fun s => Unstarted b 
 `Laws.Step.EndsStep` says, keep the draft's starts and keep every body's record. -/
 theorem since_occursAlongside (b : State) (program : Program) :
     OccursAlongside program fun s => Unstarted b s ∧ Snapshots b s where
-  reserve _ element scope formed _ kept := ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
-  occur s _ _ _ _ _ _ kept := by
+  reserve _ element scope formed _ _ kept := ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
+  occur s _ _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
-  compensate s _ _ _ _ _ _ _ _ _ kept := by
+  compensate s _ _ _ _ _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
-  throwCompensate s _ _ _ _ _ _ _ _ kept := by
+  throwCompensate s _ _ _ _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
   raise s _ _ _ _ kept := by

@@ -43,7 +43,8 @@ structure Placed (program : Program) (s : State) : Prop where
   `references` names each element once.
 - An element lies in its parent's process (membership: every parent is a Scope listing it), and the elements on one
   level (`Program.siblings`) in one process.
-- A boundary lies in its host's process (`Admission.Flow.place`: a boundary sits where its host does).
+- A boundary lies in its host's process (`Admission.Flow.place`: a boundary sits where its host does), and no two
+  envelopes declare one boundary identifier (`boundaryIds`).
 - A flow joins two endpoints of one process (`flowReference`: one `place`), and every flow an element or boundary lists
   as outgoing, as its default or as a gateway's candidate or default, leaves it (`listReference`, `gatewayReference`).
 - A compensation handler lies in its subject's process (`handlerReference`: in its subject's place, or its child). -/
@@ -57,6 +58,18 @@ structure ReferencesPlaced (program : Program) : Prop where
     definitionAt program element.header.id = definitionAt program header.id
   boundaries : ∀ id host boundary, program.boundary? id = some (host, boundary) →
     definitionAt program id = definitionAt program host.header.id
+  /-- Boundary identifiers are pairwise distinct across all envelopes of `Program.elements`: two declarations of one
+  identifier are one declaration, so `Program.boundary?`, which returns the first, finds every boundary an envelope
+  declares under its host. It is the identifier contract `Laws.MultiInstance.IdsUnique` cites, which compiled programs
+  satisfy and the codec does not check: a boundary Event carries an `xsd:ID`, the reader refuses a document with a
+  duplicate identifier by `parser.warning` (`packages/bpmn-source/src/kernel-reader/schema.ts:12-15`), and assembling a
+  called process renames its element and boundary identifiers alike by their deployment (`carriedId`,
+  `packages/bpmn-source/src/kernel-reader/assembly.ts:27`, applied at `:128`, `:139` and `:235`), which keeps distinct
+  identifiers distinct. Without it a boundary declared in a second envelope lies where the first declaration's host
+  does (`Proofs.Former.shared_boundaryId_rejected`). -/
+  boundaryIds : ∀ first ∈ program.elements, ∀ second ∈ program.elements, ∀ envelope envelope',
+    first.envelope? = some envelope → second.envelope? = some envelope' → ∀ boundary ∈ envelope.boundaries,
+    ∀ boundary' ∈ envelope'.boundaries, boundary.id = boundary'.id → first = second ∧ boundary = boundary'
   flows : ∀ flow ∈ program.flows, definitionAt program flow.target = definitionAt program flow.source
   outgoing : ∀ id element, program.element? id = some element → ∀ flow ∈ element.outgoing, program.source? flow = some id
   boundaryOutgoing : ∀ id host boundary, program.boundary? id = some (host, boundary) →

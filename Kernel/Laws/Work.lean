@@ -2,7 +2,9 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Feature.Work
-import Kernel.Laws.IL
+public import Kernel.Laws.Flow.Sources
+import Kernel.Laws.Step.Elements
+import Kernel.Laws.State
 import all Kernel.Feature.Work
 import all Kernel.Feature.Work.Call
 
@@ -194,8 +196,10 @@ structure WorkOps (program : Program) (inv : State → Prop) : Prop where
   housed : ∀ state occurrence, inv state → occurrence ∈ state.occurrences →
     ∃ entry ∈ state.scopes, entry.id = occurrence.scope
   hold : ∀ state held, inv state → inv (state.hold held)
-  /-- An Activity's own scope occurrence, entered below its occurrence's, which owns it; it is no called root. -/
+  /-- An Activity's own scope occurrence, of its element, entered below its occurrence's, which owns it; it is no
+  called root. -/
   enter : ∀ state element locals occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    element = occurrence.element →
     inv (state.enterScope element occurrence.scope locals (some occurrence.id)).1 ∧
       (state.enterScope element occurrence.scope locals (some occurrence.id)).1.occurrences = state.occurrences ∧
       ∀ root ∈ (state.enterScope element occurrence.scope locals (some occurrence.id)).1.scopes,
@@ -219,8 +223,9 @@ structure WorkOps (program : Program) (inv : State → Prop) : Prop where
         entry.id = (state.enterCalled program call variables definition).2
   armScope : ∀ state scope, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
     inv (state.signal (.armScope scope))
-  /-- A begin that names no reservation. -/
+  /-- A begin that names no reservation, of a top-level element of the process the called root it begins in runs. -/
   begin : ∀ state element scope, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
+    Laws.Flow.CalledAnchor program state element scope →
     inv (state.signal (.begin { element, scope }))
 
 /-- `reopen` replaces only what an open item that waits for an effect or an incident waits for. -/
@@ -345,7 +350,7 @@ theorem completeCall_keeps {inv : State → Prop} (ops : WorkOps program inv) {c
 root. -/
 theorem enterLocal_keeps {inv : State → Prop} (ops : WorkOps program inv) {header : Header} {inputs : List (String × Value)}
     {occurrence : Occurrence} {state : State} (holds : inv state) (member : occurrence ∈ state.occurrences)
-    (begun : occurrence.begun = true) :
+    (begun : occurrence.begun = true) (named : header.id = occurrence.element) :
     inv (Feature.Work.enterLocal header inputs occurrence state) ∧
       occurrence ∈ (Feature.Work.enterLocal header inputs occurrence state).occurrences ∧
       ∀ root ∈ (Feature.Work.enterLocal header inputs occurrence state).scopes, root.calledInstance.isSome →
@@ -353,7 +358,7 @@ theorem enterLocal_keeps {inv : State → Prop} (ops : WorkOps program inv) {hea
   unfold Feature.Work.enterLocal
   split
   · exact ⟨holds, member, fun _ inside _ => inside⟩
-  · obtain ⟨entered, same, called⟩ := ops.enter state header.id inputs occurrence holds member begun
+  · obtain ⟨entered, same, called⟩ := ops.enter state header.id inputs occurrence holds member begun named
     exact ⟨entered, same ▸ member, called⟩
 
 /-- Opening a begun occurrence's work item, arming its boundaries or not, keeps `inv`. -/
@@ -387,20 +392,68 @@ theorem called_keeps {inv : State → Prop} (ops : WorkOps program inv) {occurre
     (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
     (role : occurrence.role = .element) (isActivity : ((program.element? occurrence.element).bind (·.activity?)).isSome)
     (unowned : ∀ root ∈ state.scopes, root.calledInstance.isSome → root.occurrence ≠ some occurrence.id)
-    (variables : List (String × Value)) (definition : DefinitionRef) (start : ElementId) (armed : State → State)
+    (variables : List (String × Value)) (process : CalledProcess) (listed : process ∈ program.processes)
+    (start : ElementId) (top : ∃ child ∈ program.processChildren process, child.header.id = start)
+    (armed : State → State)
     (arming : ∀ current, inv current → occurrence ∈ current.occurrences →
-      inv (armed current) ∧ (armed current).scopes = current.scopes) :
-    inv (((armed (state.enterCalled program occurrence variables definition).1).signal
-      (.armScope (state.enterCalled program occurrence variables definition).2)).signal
-        (.begin { element := start, scope := (state.enterCalled program occurrence variables definition).2 })) := by
+      inv (armed current) ∧ (armed current).scopes = current.scopes ∧
+        (armed current).slots.instances = current.slots.instances) :
+    inv (((armed (state.enterCalled program occurrence variables process.definition).1).signal
+      (.armScope (state.enterCalled program occurrence variables process.definition).2)).signal
+        (.begin { element := start, scope := (state.enterCalled program occurrence variables process.definition).2 })) := by
   obtain ⟨entered, same, root⟩ :=
-    ops.enterCalled state occurrence variables definition holds member begun role isActivity unowned
-  obtain ⟨armedHolds, armedScopes⟩ := arming _ entered (by rw [same]; exact member)
-  have stands : ∃ entry ∈ (armed (state.enterCalled program occurrence variables definition).1).scopes,
-      entry.id = (state.enterCalled program occurrence variables definition).2 := by
+    ops.enterCalled state occurrence variables process.definition holds member begun role isActivity unowned
+  obtain ⟨armedHolds, armedScopes, armedInstances⟩ := arming _ entered (by rw [same]; exact member)
+  have anchored : Laws.Flow.CalledAnchor program
+      ((armed (state.enterCalled program occurrence variables process.definition).1).signal
+        (.armScope (state.enterCalled program occurrence variables process.definition).2)) start
+      (state.enterCalled program occurrence variables process.definition).2 := by
+    obtain ⟨⟨entry, inside, named, called⟩, recorded⟩ :=
+      Laws.State.enterCalled_root state program occurrence variables process.definition
+    obtain ⟨child, child_inside, child_named⟩ := top
+    rw [Laws.State.signal_eq]
+    exact ⟨⟨entry, armedScopes ▸ inside, named, called⟩, _, armedInstances ▸ recorded, rfl, process, listed, rfl, child,
+      child_inside, child_named⟩
+  have stands : ∃ entry ∈ (armed (state.enterCalled program occurrence variables process.definition).1).scopes,
+      entry.id = (state.enterCalled program occurrence variables process.definition).2 := by
     rw [armedScopes]
     exact root
-  exact ops.begin _ _ _ (ops.armScope _ _ armedHolds stands) (by rw [(ops.kept _ _).2]; exact stands)
+  exact ops.begin _ _ _ (ops.armScope _ _ armedHolds stands) (by rw [(ops.kept _ _).2]; exact stands) anchored
+
+/-- The process a Call resolves is one the program declares. -/
+theorem calledProcess_mem {ctx : Ctx} {header : Header} {work : CallWork} {process : CalledProcess}
+    (resolved : Feature.Work.Call.calledProcess ctx header work = .ok process) : process ∈ ctx.program.processes := by
+  unfold Feature.Work.Call.calledProcess at resolved
+  split at resolved
+  · cases resolved
+  rw [apply_ite (fun x : Except Failure CalledProcess => x = .ok process)] at resolved
+  split at resolved
+  · cases resolved
+  split at resolved
+  · rename_i found
+    cases resolved
+    have member : process ∈ ctx.program.calledProcessFor ctx.program.options.calledElementResolution
+        (ctx.program.callerDeployment header) work := by
+      rw [found]; exact List.mem_singleton_self _
+    exact Laws.IL.calledProcessFor_mem member
+  · cases resolved
+
+/-- The none start a Call begins is one of its called process's top-level elements. -/
+theorem findSome?_start {children : List Element} {start : Header}
+    (found : children.findSome? (fun child => child.start?.bind fun (start, payload) =>
+      if payload.subscription.isNone then some start else none) = some start) :
+    ∃ child ∈ children, child.header.id = start.id := by
+  obtain ⟨child, inside, picked⟩ := List.exists_of_findSome?_eq_some found
+  cases typed : child.start? with
+  | none => rw [typed] at picked; cases picked
+  | some pair =>
+    rw [typed] at picked
+    obtain ⟨header, payload⟩ := pair
+    simp only [Option.bind_some] at picked
+    split at picked
+    · cases picked
+      exact ⟨child, inside, by rw [Laws.Step.start?_header typed]⟩
+    · cases picked
 
 /-- A Call's invocation keeps `inv`: it enters the called root, arms its boundaries or not, then queues the root's
 Event Sub-Process arming and its none start's begin. -/
@@ -415,9 +468,14 @@ theorem invoke_keeps {inv : State → Prop} {ctx : Ctx} (ops : WorkOps ctx.progr
   simp only [bind, Except.bind] at ran
   repeat' split at ran
   all_goals cases ran
-  · exact called_keeps ops holds member begun role isActivity unowned _ _ _ (fun current => current) fun _ held _ => ⟨held, rfl⟩
-  · exact called_keeps ops holds member begun role isActivity unowned _ _ _ (fun current => current.signal (.arm occurrence.id
-      header.id occurrence.scope)) fun _ held present => ⟨ops.arm _ _ _ held present begun named, (ops.kept _ _).2⟩
+  all_goals have listed := calledProcess_mem (by assumption)
+  all_goals have top := findSome?_start (by assumption)
+  · exact called_keeps ops holds member begun role isActivity unowned _ _ listed _ top (fun current => current)
+      fun _ held _ => ⟨held, rfl, rfl⟩
+  · exact called_keeps ops holds member begun role isActivity unowned _ _ listed _ top (fun current => current.signal
+      (.arm occurrence.id header.id occurrence.scope)) fun _ held present =>
+        ⟨ops.arm _ _ _ held present begun named, (ops.kept _ _).2,
+          (congrArg (fun t : State => t.slots.instances) (Laws.State.signal_eq _ _)).trans rfl⟩
 
 /-- `Hooks.arriveActivity` keeps `inv` for a begun occurrence that owns no scope occurrence yet. -/
 theorem arriveActivity_keeps {inv : State → Prop} {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
@@ -433,15 +491,15 @@ theorem arriveActivity_keeps {inv : State → Prop} {hooks : Feature.Work.WorkHo
   all_goals first
     | (cases ran; done)
     | (cases ran; exact ops.hold _ _ holds)
-    | (cases ran; exact ops.completeBegun _ _ _ _ _ (enterLocal_keeps ops holds member begun).1
-        (enterLocal_keeps ops holds member begun).2.1 begun fun _ same => by cases same)
-    | (cases ran; exact openWork_keeps ops (enterLocal_keeps ops holds member begun).1
-        (enterLocal_keeps ops holds member begun).2.1 begun unstarted role named)
-    | exact evaluateDecision_keeps ops (enterLocal_keeps ops holds member begun).1
-        (enterLocal_keeps ops holds member begun).2.1 begun ran
-    | exact invoke_keeps ops (enterLocal_keeps ops holds member begun).1
-        (enterLocal_keeps ops holds member begun).2.1 begun role (by rw [activity]; rfl)
-        (fun root inside _ => unowned root ((enterLocal_keeps ops holds member begun).2.2 root inside ‹_›)) named ran
+    | (cases ran; exact ops.completeBegun _ _ _ _ _ (enterLocal_keeps ops holds member begun named).1
+        (enterLocal_keeps ops holds member begun named).2.1 begun fun _ same => by cases same)
+    | (cases ran; exact openWork_keeps ops (enterLocal_keeps ops holds member begun named).1
+        (enterLocal_keeps ops holds member begun named).2.1 begun unstarted role named)
+    | exact evaluateDecision_keeps ops (enterLocal_keeps ops holds member begun named).1
+        (enterLocal_keeps ops holds member begun named).2.1 begun ran
+    | exact invoke_keeps ops (enterLocal_keeps ops holds member begun named).1
+        (enterLocal_keeps ops holds member begun named).2.1 begun role (by rw [activity]; rfl)
+        (fun root inside _ => unowned root ((enterLocal_keeps ops holds member begun named).2.2 root inside ‹_›)) named ran
 
 /-! ## Calls
 

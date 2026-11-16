@@ -33,25 +33,53 @@ theorem foldl_prefix {α β : Type} (P : List β → α → Prop) (f : α → β
     foldl_prefix P f whole rest (pre ++ [b]) (f a b) (by rw [← split]; simp) step (step pre b rest a split.symm holds)
 
 /-- What a body keeps while it enters and queues its instances, `instances` its slots so far: `inv`, that its
-occurrence has settled, its scope occurrence, its instances' placement and the scope occurrences the queued begins
-name. -/
+occurrence has settled, its scope occurrence, its instances' placement, the scope occurrences the queued begins name,
+each entered for the begin's element and calling no instance, and where its element lies: it is held, or its scope
+occurrence was entered for its element and calls no instance. -/
 def Entering (inv : State → Prop) (settled : State → Nat → Prop) (run : MultiInstanceRun) (state : State)
     (instances : List Iteration) (requests : List BeginRequest) : Prop :=
   inv state ∧ settled state run.occurrence ∧ run.scope ∈ Laws.State.scopeIds state ∧
     Laws.State.Placed state { run with instances } ∧
-    ∀ request ∈ requests, Laws.State.names request = [] ∧ request.scope ∈ Laws.State.scopeIds state
+    (∀ request ∈ requests, Laws.State.names request = [] ∧ request.scope ∈ Laws.State.scopeIds state ∧
+      request.incoming = none ∧ ∃ entry ∈ state.scopes, entry.id = request.scope ∧
+        entry.element = some request.element ∧ entry.calledInstance = none) ∧
+    (run ∈ state.slots.multiInstances ∨ ∃ entry ∈ state.scopes, entry.id = run.scope ∧
+      entry.element = some run.element ∧ entry.calledInstance = none)
 
-/-- A change that keeps the scope occurrences and the counter keeps what a body keeps while it enters. -/
+/-- A change that keeps the scope occurrences, the counter and the bodies' slot records keeps what a body keeps while
+it enters. -/
 theorem Entering.frame {run : MultiInstanceRun}
     {state after : State} {instances : List Iteration} {requests : List BeginRequest}
     (entering : Entering inv settled run state instances requests) (holds : inv after)
     (carried : settled after run.occurrence) (scopes : after.scopes = state.scopes)
-    (issued : after.nextIssue = state.nextIssue) : Entering inv settled run after instances requests := by
+    (issued : after.nextIssue = state.nextIssue) (runs : after.slots.multiInstances = state.slots.multiInstances) :
+    Entering inv settled run after instances requests := by
   obtain ⟨_, _, stands, rest⟩ := entering
-  obtain ⟨placed, queued⟩ := rest
+  obtain ⟨placed, queued, held⟩ := rest
   have same : Laws.State.scopeIds after = Laws.State.scopeIds state := by simp [Laws.State.scopeIds, scopes]
   exact ⟨holds, carried, same ▸ stands, placed.transport (Nat.le_of_eq issued.symm)
-    (fun _ member => .inl (scopes ▸ member)), fun request member => same ▸ queued request member⟩
+    (fun _ member => .inl (scopes ▸ member)), fun request member =>
+      have ⟨bare, standing, rest⟩ := queued request member
+      ⟨bare, same ▸ standing, rest.1, scopes ▸ rest.2⟩, held.imp (fun inside => runs ▸ inside) fun entered => scopes ▸ entered⟩
+
+/-- Where a body's element lies while it enters: in its scope occurrence, held or entered for it. -/
+theorem Entering.anchored {program : Program} {run : MultiInstanceRun} {state : State} {instances : List Iteration}
+    {requests : List BeginRequest} (entering : Entering inv settled run state instances requests) :
+    Laws.Flow.Anchored inv program state run.element run.scope := by
+  refine ⟨run.element, .inl rfl, .inl ?_⟩
+  rcases entering.2.2.2.2.2 with held | ⟨entry, member, facts⟩
+  · exact .inr (.inr (.inr (.inr (.inl ⟨run, held, rfl, rfl⟩))))
+  · exact .inr (.inl ⟨entry, member, facts.2.1, .inr ⟨facts.1, facts.2.2⟩⟩)
+
+/-- A begin a body queues comes from the scope occurrence entered for its instance. -/
+theorem Entering.begins {program : Program} {run : MultiInstanceRun} {state : State} {instances : List Iteration}
+    {requests : List BeginRequest} (entering : Entering inv settled run state instances requests)
+    {request : BeginRequest} (member : request ∈ requests) : Laws.Flow.BeginAnchored inv program state request := by
+  obtain ⟨bare, -, rest⟩ := entering.2.2.2.2.1 request member
+  obtain ⟨incoming, entry, inside, facts⟩ := rest
+  refine ⟨⟨request.element, .inl rfl, .inl (.inr (.inl ⟨entry, inside, facts.2.1, .inr ⟨facts.1, facts.2.2⟩⟩))⟩,
+    fun _ _ reserved => ?_, fun _ some_ => by rw [incoming] at some_; cases some_⟩
+  simp [Laws.State.names, reserved] at bare
 
 /-- `run` with slot `index` filled by `output` and the result names `results`: the slot record an instance's
 completion sets (`MultiInstance.instanceCompleted`). -/

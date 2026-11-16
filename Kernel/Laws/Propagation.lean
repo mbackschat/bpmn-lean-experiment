@@ -4,6 +4,7 @@ public import Kernel.Hooks
 public import Kernel.Laws.Hooks
 public import Kernel.Laws.Except
 public import Kernel.Laws.Propagation.Rules
+import Kernel.Laws.Step.Elements
 public import Kernel.Feature.Propagation
 import all Kernel.Feature.Propagation
 
@@ -39,13 +40,15 @@ invariant over the queued triggers reads. -/
 an instance under `ctx`: each keeps `inv` and is `Steady`, the Error-path leave of a settled host. -/
 structure SearchHooks (ctx : Ctx) (inv : State → Prop) (hooks : Feature.Propagation.PropagationHooks) : Prop where
   mappedErrorOutputs : ∀ origin installed state after, inv state → HostSettled origin state →
-    hooks.mappedErrorOutputs ctx origin installed state = .ok after → inv after ∧ Steady state after
+    hooks.mappedErrorOutputs ctx origin installed state = .ok after → inv after ∧ Steady state after ∧
+      after.slots.instances = state.slots.instances
   writeCaught : ∀ scope writes state after, inv state → hooks.writeCaught ctx scope writes state = .ok after →
-    inv after ∧ Steady state after
+    inv after ∧ Steady state after ∧ after.slots.instances = state.slots.instances
   callOutputs : ∀ root state after, inv state → hooks.callOutputs ctx root state = .ok after →
-    inv after ∧ Steady state after
+    inv after ∧ Steady state after ∧ after.slots.instances = state.slots.instances
   dropRuns : ∀ scope state, inv state →
-    inv (hooks.dropRuns ctx scope state) ∧ Steady state (hooks.dropRuns ctx scope state)
+    inv (hooks.dropRuns ctx scope state) ∧ Steady state (hooks.dropRuns ctx scope state) ∧
+      (hooks.dropRuns ctx scope state).slots.instances = state.slots.instances
 
 /-- A throw leaves by its element's own outgoing flows or by none. -/
 theorem throwLeave_unnamed (payload : EventPayload) :
@@ -93,7 +96,7 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
     split at ran
     · cases ran
     · cases ran
-      exact ops.compensate _ _ _ _ _ _ holds member begun begunFrom (by rw [named]; rfl)
+      exact ops.compensate _ _ _ _ _ _ holds member begun begunFrom (throwLeave_unnamed payload) (by rw [named]; rfl)
   | cancel => cases ran; rw [named]; exact ops.raise _ _ _ complete left begun ⟨state, begunFrom, .inr ⟨_, rfl⟩⟩
 
 /-! ### The search -/
@@ -117,32 +120,33 @@ theorem best?_mem {α : Type} {ctx : Ctx} {raised : Raised} {trigger : α → Tr
       exact inside
     · exact held pair member
 
-/-- A boundary `Propagation.boundariesOf` lists is one of the program's. -/
-theorem boundariesOf_boundaryOf {ctx : Ctx} {element : ElementId} {boundary : Boundary}
-    (member : boundary ∈ Feature.Propagation.boundariesOf ctx element) : Laws.IL.BoundaryOf ctx.program boundary.id := by
+/-- A boundary `Propagation.boundariesOf` lists lies in the envelope of the element it was asked for. -/
+theorem boundariesOf_envelope {ctx : Ctx} {element : ElementId} {boundary : Boundary}
+    (member : boundary ∈ Feature.Propagation.boundariesOf ctx element) :
+    ∃ envelope, (ctx.program.element? element).bind (·.envelope?) = some envelope ∧ boundary ∈ envelope.boundaries := by
   unfold Feature.Propagation.boundariesOf at member
   cases found : (ctx.program.element? element).bind (·.envelope?) with
   | none => simp [found] at member
   | some envelope =>
     rw [found] at member
-    exact Laws.IL.boundaryOf_envelope found member
+    exact ⟨envelope, rfl, member⟩
 
-/-- A caught boundary fires: it cancels its host if it interrupts one, and a fresh occurrence occurs. -/
-theorem boundaryFire_keeps {inv : State → Prop} (ops : PropagationOps program inv) (boundary : Boundary)
-    (host : Option Nat) (scope : ScopeOccurrenceId) (writes : List (String × Value)) {state : State} (holds : inv state)
-    (bounded : Laws.IL.BoundaryOf program boundary.id) :
-    inv (boundary.fire host none scope writes state) ∧ (boundary.fire host none scope writes state).occurrences =
-      state.occurrences := by
-  rw [Laws.Hooks.fire_eq]
-  have interrupted : inv (if boundary.interrupting then host.elim state (state.signal <| .cancel ·) else state) ∧
-      (if boundary.interrupting then host.elim state (state.signal <| .cancel ·) else state).occurrences =
-        state.occurrences := by
-    split
-    · cases host with
-      | none => exact ⟨holds, rfl⟩
-      | some owner => exact ⟨ops.cancel _ _ holds, ops.signalOccurrences _ _⟩
-    · exact ⟨holds, rfl⟩
-  exact ⟨ops.occur _ _ _ _ _ _ interrupted.1 bounded, (ops.signalOccurrences _ _).trans interrupted.2⟩
+/-- A boundary `Propagation.boundariesOf` lists is one of the program's. -/
+theorem boundariesOf_boundaryOf {ctx : Ctx} {element : ElementId} {boundary : Boundary}
+    (member : boundary ∈ Feature.Propagation.boundariesOf ctx element) : Laws.IL.BoundaryOf ctx.program boundary.id :=
+  let ⟨_, found, inside⟩ := boundariesOf_envelope member
+  Laws.IL.boundaryOf_envelope found inside
+
+/-- A boundary `Propagation.boundariesOf` lists hangs on the element it was asked for and lists its own outgoing
+flows. -/
+theorem boundariesOf_sourced {ctx : Ctx} {element : ElementId} {boundary : Boundary}
+    (member : boundary ∈ Feature.Propagation.boundariesOf ctx element) :
+    Laws.Flow.Linked ctx.program element boundary.id ∧
+      ∀ flow ∈ boundary.outgoing, Laws.Flow.Lists ctx.program boundary.id flow := by
+  obtain ⟨envelope, found, member⟩ := boundariesOf_envelope member
+  obtain ⟨host, located, has⟩ := Option.bind_eq_some_iff.mp found
+  exact ⟨.inr (.inr (.inr (.inl ⟨host, envelope, located, has, boundary, member, rfl⟩))),
+    fun _ inside => .inr ⟨host, Laws.IL.element?_mem located, envelope, has, boundary, member, rfl, inside⟩⟩
 
 /-- An Escalation's thrower leaves once the search has decided: the occurrence it finds has begun. -/
 theorem throwerLeaves_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationOps ctx.program inv) {origin : Origin}
@@ -165,35 +169,35 @@ theorem throwerLeaves_keeps {inv : State → Prop} {ctx : Ctx} (ops : Propagatio
 theorem hostLeaves_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (search : SearchHooks ctx inv hooks) {origin : Origin} {state after : State} (holds : inv state)
     (settled : HostSettled origin state) (ran : Feature.Propagation.hostLeaves hooks ctx origin state = .ok after) :
-    inv after ∧ Steady state after := by
+    inv after ∧ Steady state after ∧ after.slots.instances = state.slots.instances := by
   unfold Feature.Propagation.hostLeaves at ran
   split at ran
   · exact search.mappedErrorOutputs _ _ _ _ holds settled ran
   · cases ran
-    exact ⟨holds, .refl _⟩
+    exact ⟨holds, .refl _, rfl⟩
 
 theorem catchDecided_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (search : SearchHooks ctx inv hooks) {origin : Origin} {scope : ScopeOccurrenceId} {writes : List (String × Value)}
     {state after : State} (holds : inv state) (settled : HostSettled origin state)
     (ran : Feature.Propagation.catchDecided hooks ctx origin scope writes state = .ok after) :
-    inv after ∧ Steady state after := by
+    inv after ∧ Steady state after ∧ after.slots.instances = state.slots.instances := by
   unfold Feature.Propagation.catchDecided at ran
   dsimp only at ran
   split at ran
   · exact hostLeaves_keeps search holds settled (by simpa [bind, Except.bind] using ran)
   · obtain ⟨written, wrote, ran⟩ := ok_bind ran
-    obtain ⟨kept, steady⟩ := search.writeCaught _ _ _ _ holds wrote
-    obtain ⟨left, more⟩ := hostLeaves_keeps search kept (settled.steady steady) ran
-    exact ⟨left, steady.trans more⟩
+    obtain ⟨kept, steady, instances⟩ := search.writeCaught _ _ _ _ holds wrote
+    obtain ⟨left, more, moreInstances⟩ := hostLeaves_keeps search kept (settled.steady steady) ran
+    exact ⟨left, steady.trans more, moreInstances.trans instances⟩
 
 theorem passCallOutputs_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (search : SearchHooks ctx inv hooks) {origin : Origin} {catches : Bool} {occurrence : ScopeOccurrence}
     {state after : State} (holds : inv state)
     (ran : Feature.Propagation.passCallOutputs hooks ctx origin catches occurrence state = .ok after) :
-    inv after ∧ Steady state after := by
+    inv after ∧ Steady state after ∧ after.slots.instances = state.slots.instances := by
   unfold Feature.Propagation.passCallOutputs at ran
   repeat' split at ran
-  all_goals first | (simp at ran; done) | (cases ran; exact ⟨holds, .refl _⟩) |
+  all_goals first | (simp at ran; done) | (cases ran; exact ⟨holds, .refl _, rfl⟩) |
     exact search.callOutputs _ _ _ holds ran
 
 /-- The walk an uncaught Error's path takes to its instance's root changes nothing. -/
@@ -213,7 +217,7 @@ theorem exhausted_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Prop
     (ran : Feature.Propagation.exhausted hooks ctx raised origin handler state = .ok after) : inv after := by
   unfold Feature.Propagation.exhausted at ran
   obtain ⟨left, leaves, ran⟩ := ok_bind ran
-  obtain ⟨kept, steady⟩ := hostLeaves_keeps search holds settled leaves
+  obtain ⟨kept, steady, -⟩ := hostLeaves_keeps search holds settled leaves
   split at ran
   · cases ran
     exact ops.failCompensation _ _ _ _ _ kept
@@ -256,46 +260,106 @@ theorem cancelledScope_stands {origin : Origin} {occurrence : ScopeOccurrence} {
 
 theorem interruptedOutputs_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationOps ctx.program inv)
     {occurrence : ScopeOccurrence} {parent : ScopeOccurrenceId} {state after : State} (holds : inv state)
-    (ran : Feature.Propagation.interruptedOutputs ctx occurrence parent state = .ok after) : inv after := by
+    (ran : Feature.Propagation.interruptedOutputs ctx occurrence parent state = .ok after) :
+    inv after ∧ after.scopes = state.scopes := by
   unfold Feature.Propagation.interruptedOutputs at ran
   dsimp only at ran
   repeat' split at ran
-  all_goals first | (cases ran; exact holds) | skip
+  all_goals first | (cases ran; exact ⟨holds, rfl⟩) | skip
   obtain ⟨outputs, _, made⟩ := ok_map ran
   subst made
-  exact ops.write _ _ _ _ holds
+  exact ⟨ops.write _ _ _ _ holds, (ops.signalFrame _ _).1⟩
 
 theorem leaveOccurrence_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (ops : PropagationOps ctx.program inv) (search : SearchHooks ctx inv hooks) {raised : Raised} {origin : Origin}
     {occurrence : ScopeOccurrence} {parent : ScopeOccurrenceId} {boundary : Boundary} {writes : List (String × Value)}
     {base state after : State} (holds : inv state) (settled : HostSettled origin state)
     (thrown : Thrown ctx.program origin state) (popped : Popped inv (.raise raised origin) base) (steady : Steady base state)
-    (standing : origin.scope ∈ Laws.State.scopeIds base) (present : occurrence ∈ state.scopes) (bounded : Laws.IL.BoundaryOf ctx.program boundary.id)
+    (standing : origin.scope ∈ Laws.State.scopeIds base) (present : occurrence ∈ state.scopes)
+    (attached : ∃ element, occurrence.element = some element ∧ occurrence.parent = some parent ∧
+      boundary ∈ Feature.Propagation.boundariesOf ctx element)
     (ran : Feature.Propagation.leaveOccurrence hooks ctx raised origin occurrence parent boundary writes state = .ok after) :
     inv after := by
+  obtain ⟨element, named, parented, member⟩ := attached
+  have bounded := boundariesOf_boundaryOf member
+  obtain ⟨linked, listed⟩ := boundariesOf_sourced member
+  have entered : ∀ t, occurrence ∈ t.scopes → Laws.Flow.Anchored inv ctx.program t boundary.id parent :=
+    fun _ inside => ⟨element, linked, .inl (.inr (.inl ⟨occurrence, inside, named, .inl parented⟩))⟩
+  have flows : ∀ selected, Leave.flows boundary.outgoing = .flows selected → ∀ flow ∈ selected,
+      Laws.Flow.Lists ctx.program boundary.id flow := fun _ same flow inside => by cases same; exact listed flow inside
   unfold Feature.Propagation.leaveOccurrence at ran
   split at ran
   · rename_i cancels
     cases ran
-    obtain ⟨entry, inside, named⟩ := cancelledScope_stands (origin := origin) present
+    obtain ⟨entry, inside, same⟩ := cancelledScope_stands (origin := origin) present
     repeat' split
     all_goals first
-      | exact ops.rollBack _ _ _ _ _ _ _ holds ⟨entry, inside, named⟩ bounded
-          ⟨base, raised, origin, state, popped, standing, cancels, steady, .inl rfl, rfl⟩
-      | exact ops.rollBack _ _ _ _ _ _ _ (ops.disarm _ _ holds).1 ⟨entry, (ops.disarm _ _ holds).2 ▸ inside, named⟩
+      | exact ops.rollBack _ _ _ _ _ _ _ holds ⟨entry, inside, same⟩ bounded
+          ⟨base, raised, origin, state, popped, standing, cancels, steady, .inl rfl, rfl⟩ (entered _ present) flows
+      | exact ops.rollBack _ _ _ _ _ _ _ (ops.disarm _ _ holds).1 ⟨entry, (ops.disarm _ _ holds).2 ▸ inside, same⟩
           bounded ⟨base, raised, origin, state, popped, standing, cancels, steady, .inr ⟨_, rfl⟩, rfl⟩
+          (entered _ ((ops.disarm _ _ holds).2 ▸ present)) flows
   · split at ran
-    · obtain ⟨dropped, steady⟩ := search.dropRuns occurrence.id state holds
+    · obtain ⟨dropped, steady, -⟩ := search.dropRuns occurrence.id state holds
       obtain ⟨decided, decision, ran⟩ := ok_bind ran
-      obtain ⟨kept, _⟩ := catchDecided_keeps search dropped (settled.steady steady) decision
+      obtain ⟨kept, decidedSteady, -⟩ := catchDecided_keeps search dropped (settled.steady steady) decision
       obtain ⟨outputs, out, made⟩ := ok_map ran
       subst made
-      exact (boundaryFire_keeps ops _ _ _ _ (interruptedOutputs_keeps ops kept out) bounded).1
+      obtain ⟨written, scopes⟩ := interruptedOutputs_keeps ops kept out
+      exact (boundaryFire_keeps ops _ _ _ _ written bounded
+        (entered _ (by rw [scopes, decidedSteady.scopes, steady.scopes]; exact present)) listed).1
     · obtain ⟨decided, decision, ran⟩ := ok_bind ran
-      obtain ⟨kept, steady⟩ := catchDecided_keeps search holds settled decision
+      obtain ⟨kept, steady, -⟩ := catchDecided_keeps search holds settled decision
       cases ran
       obtain ⟨fired, same⟩ := boundaryFire_keeps ops boundary occurrence.occurrence parent [] kept bounded
+        (entered _ (steady.scopes ▸ present)) listed
       exact throwerLeaves_keeps ops fired (thrown.steady (same.trans steady.occurrences))
+
+/-- An Event Sub-Process `Propagation.eventSubProcesses` offers is a child the scope occurrence declares, started by
+the subscription `Ctx.eventStart` reads of it, under its own identifier. -/
+theorem eventSubProcesses_mem {ctx : Ctx} {state : State} {occurrence : ScopeOccurrence}
+    {handler : ElementId × Subscription × Bool}
+    (member : handler ∈ Feature.Propagation.eventSubProcesses ctx state occurrence) :
+    ∃ child ∈ state.childrenOf ctx.program occurrence.id, ∃ header payload, child.scope? = some (header, payload) ∧
+      ctx.eventStart payload = some (handler.2.1, handler.2.2) ∧ header.id = handler.1 := by
+  unfold Feature.Propagation.eventSubProcesses at member
+  obtain ⟨child, inside, made⟩ := List.mem_filterMap.mp member
+  obtain ⟨⟨header, payload⟩, isScope, made⟩ := Option.bind_eq_some_iff.mp made
+  obtain ⟨⟨start, interrupting⟩, started, same⟩ := Option.map_eq_some_iff.mp made
+  cases same
+  exact ⟨child, inside, header, payload, isScope, started, rfl⟩
+
+/-- The candidates `Propagation.handlerCandidates` offers are Event Sub-Processes the scope occurrence declares. -/
+theorem handlerCandidates_mem {ctx : Ctx} {raised : Raised} {origin : Origin} {state : State}
+    {occurrence : ScopeOccurrence} {handlers : List (ElementId × Subscription × Bool)}
+    (offered : Feature.Propagation.handlerCandidates ctx raised origin state occurrence = .ok handlers) :
+    ∀ handler ∈ handlers, handler ∈ Feature.Propagation.eventSubProcesses ctx state occurrence := by
+  unfold Feature.Propagation.handlerCandidates at offered
+  dsimp only at offered
+  split at offered
+  · cases offered
+    intro _ member
+    cases member
+  · split at offered
+    · cases offered
+      exact fun _ => id
+    · split at offered
+      · simp at offered
+      · split at offered
+        · simp at offered
+        · cases offered
+          exact fun _ member => (List.mem_filter.mp member).1
+
+/-- The Event Sub-Processes a search's handler candidates name are ones the scope occurrence declares
+(`Feature.Propagation.eventSubProcesses`). -/
+theorem handlerCandidates_children {ctx : Ctx} {raised : Raised} {origin : Origin} {state : State}
+    {occurrence : ScopeOccurrence} {handlers : List (ElementId × Subscription × Bool)}
+    (ran : Feature.Propagation.handlerCandidates ctx raised origin state occurrence = .ok handlers) :
+    ∀ handler ∈ handlers, ∃ child ∈ state.childrenOf ctx.program occurrence.id, child.header.id = handler.1 :=
+  fun handler member => by
+    obtain ⟨child, inside, header, rest⟩ := eventSubProcesses_mem (handlerCandidates_mem ran handler member)
+    obtain ⟨_, scoped_, -, named⟩ := rest
+    exact ⟨child, inside, by rw [Laws.Step.scope?_header scoped_]; exact named⟩
 
 theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (ops : PropagationOps ctx.program inv) (search : SearchHooks ctx inv hooks) {raised : Raised} {origin : Origin}
@@ -322,22 +386,28 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
       dsimp only at ran
       split at ran
       · exact exhausted_keeps ops search holds settled thrown ran
-      · obtain ⟨handlers, _, ran⟩ := ok_bind ran
+      · obtain ⟨handlers, candidates, ran⟩ := ok_bind ran
         obtain ⟨passed, pass, ran⟩ := ok_bind ran
-        obtain ⟨kept, steady⟩ := passCallOutputs_keeps search holds pass
+        obtain ⟨kept, steady, passedInstances⟩ := passCallOutputs_keeps search holds pass
         split at ran
-        · rename_i element start interrupting writes _
+        · rename_i element start interrupting writes handled
           have dropped : inv (if interrupting then hooks.dropRuns ctx occurrence.id passed else passed) ∧
-              Steady passed (if interrupting then hooks.dropRuns ctx occurrence.id passed else passed) := by
+              Steady passed (if interrupting then hooks.dropRuns ctx occurrence.id passed else passed) ∧
+              (if interrupting then hooks.dropRuns ctx occurrence.id passed else passed).slots.instances =
+                passed.slots.instances := by
             split
             · exact search.dropRuns _ _ kept
-            · exact ⟨kept, .refl _⟩
+            · exact ⟨kept, .refl _, rfl⟩
           obtain ⟨decided, decision, ran⟩ := ok_bind ran
-          obtain ⟨decidedKept, decidedSteady⟩ :=
-            catchDecided_keeps search dropped.1 (settled.steady (steady.trans dropped.2)) decision
+          obtain ⟨decidedKept, decidedSteady, decidedInstances⟩ :=
+            catchDecided_keeps search dropped.1 (settled.steady (steady.trans dropped.2.1)) decision
           cases ran
-          have chain := (steady.trans dropped.2).trans decidedSteady
+          have chain := (steady.trans dropped.2.1).trans decidedSteady
+          have instances := (decidedInstances.trans dropped.2.2).trans passedInstances
           have begun := ops.begin _ element occurrence.id decidedKept ⟨occurrence, chain.scopes ▸ present, rfl⟩
+            (Laws.Flow.Anchored.held holds (fun _ inside => chain.scopes ▸ inside) (fun _ inside => instances ▸ inside)
+              (.inl rfl) (.inl (.inr (.inr (.inl
+                (handlerCandidates_children candidates _ (best?_mem handled)))))))
           split
           · exact begun
           · exact throwerLeaves_keeps ops begun (thrown.steady ((ops.signalOccurrences _ _).trans chain.occurrences))
@@ -347,29 +417,29 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
           split at inside
           · split at inside
             · simp at inside
-            · exact boundariesOf_boundaryOf inside
+            · exact ⟨_, by assumption, by assumption, inside⟩
           · simp at inside
         · exact searchScopes_keeps ops search popped fuel _ _ _ kept (settled.steady steady)
             (thrown.steady steady.occurrences) (walked.trans steady) (.inr standing) ran
 
-/-- `Hooks.raise` keeps `inv` for a raise whose host is settled and whose origin, an Event's, names begun occurrences,
-taken off a queue that kept `inv`. -/
-theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
-    (ops : PropagationOps ctx.program inv) (search : SearchHooks ctx inv hooks) {raised : Raised} {origin : Origin}
-    {state after : State} (holds : inv state) (settled : HostSettled origin state) (thrown : Thrown ctx.program origin state)
-    (popped : Popped inv (.raise raised origin) state)
-    (ran : Feature.Propagation.raise hooks ctx raised origin state = .ok after) : inv after := by
+/-- `Hooks.raise`: a raise from a host one of whose boundaries catches it fires that boundary after the host's
+Error-path leave; any other raise searches outward from its scope occurrence. -/
+theorem raise_spec {hooks : Feature.Propagation.PropagationHooks} {ctx : Ctx} {raised : Raised} {origin : Origin}
+    {state after : State} (ran : Feature.Propagation.raise hooks ctx raised origin state = .ok after) :
+    (∃ boundary writes left, (origin.host.isSome ∧ boundary ∈ Feature.Propagation.boundariesOf ctx origin.element) ∧
+      hooks.mappedErrorOutputs ctx origin (lastWrites writes) state = .ok left ∧
+      after = boundary.fire none none origin.scope [] left) ∨
+    Feature.Propagation.searchScopes hooks ctx raised origin state (state.scopes.length + 1) (some origin.scope) =
+      .ok after := by
   unfold Feature.Propagation.raise at ran
   dsimp only at ran
   split at ran
   · obtain ⟨left, leaves, made⟩ := ok_map ran
-    subst made
     have inside := best?_mem ‹Feature.Propagation.best? _ _ _ _ = some _›
-    refine (boundaryFire_keeps ops _ _ _ _ (search.mappedErrorOutputs _ _ _ _ holds settled leaves).1 ?_).1
     split at inside
     · simp at inside
-    · exact boundariesOf_boundaryOf inside
-  · exact searchScopes_keeps ops search popped _ _ _ _ holds settled thrown (.refl _) (.inl rfl) ran
+    · exact .inl ⟨_, _, left, ⟨by simp [‹origin.host = some _›], inside⟩, leaves, made⟩
+  · exact .inr ran
 
 /-! ## Cancellation
 
@@ -428,52 +498,6 @@ theorem best?_catches {α : Type} {ctx : Ctx} {raised : Raised} {trigger : α �
         assumption
       · exact held pair member
   simp [kept]
-
-/-- A boundary `Propagation.boundariesOf` lists lies in the envelope of the element it was asked for. -/
-theorem boundariesOf_envelope {ctx : Ctx} {element : ElementId} {boundary : Boundary}
-    (member : boundary ∈ Feature.Propagation.boundariesOf ctx element) :
-    ∃ envelope, (ctx.program.element? element).bind (·.envelope?) = some envelope ∧ boundary ∈ envelope.boundaries := by
-  unfold Feature.Propagation.boundariesOf at member
-  cases found : (ctx.program.element? element).bind (·.envelope?) with
-  | none => simp [found] at member
-  | some envelope =>
-    rw [found] at member
-    exact ⟨envelope, rfl, member⟩
-
-/-- An Event Sub-Process `Propagation.eventSubProcesses` offers is a child the scope occurrence declares, started by
-the subscription `Ctx.eventStart` reads of it. -/
-theorem eventSubProcesses_mem {ctx : Ctx} {state : State} {occurrence : ScopeOccurrence}
-    {handler : ElementId × Subscription × Bool}
-    (member : handler ∈ Feature.Propagation.eventSubProcesses ctx state occurrence) :
-    ∃ child ∈ state.childrenOf ctx.program occurrence.id, ∃ header payload, child.scope? = some (header, payload) ∧
-      ctx.eventStart payload = some (handler.2.1, handler.2.2) := by
-  unfold Feature.Propagation.eventSubProcesses at member
-  obtain ⟨child, inside, made⟩ := List.mem_filterMap.mp member
-  obtain ⟨⟨header, payload⟩, isScope, made⟩ := Option.bind_eq_some_iff.mp made
-  obtain ⟨⟨start, interrupting⟩, started, same⟩ := Option.map_eq_some_iff.mp made
-  cases same
-  exact ⟨child, inside, header, payload, isScope, started⟩
-
-/-- The candidates `Propagation.handlerCandidates` offers are Event Sub-Processes the scope occurrence declares. -/
-theorem handlerCandidates_mem {ctx : Ctx} {raised : Raised} {origin : Origin} {state : State}
-    {occurrence : ScopeOccurrence} {handlers : List (ElementId × Subscription × Bool)}
-    (offered : Feature.Propagation.handlerCandidates ctx raised origin state occurrence = .ok handlers) :
-    ∀ handler ∈ handlers, handler ∈ Feature.Propagation.eventSubProcesses ctx state occurrence := by
-  unfold Feature.Propagation.handlerCandidates at offered
-  dsimp only at offered
-  split at offered
-  · cases offered
-    intro _ member
-    cases member
-  · split at offered
-    · cases offered
-      exact fun _ => id
-    · split at offered
-      · simp at offered
-      · split at offered
-        · simp at offered
-        · cases offered
-          exact fun _ member => (List.mem_filter.mp member).1
 
 /-! ### A Cancel -/
 
@@ -544,7 +568,7 @@ theorem searchScopes_cancel {ctx : Ctx} {hooks : Feature.Propagation.Propagation
           have caught := best?_catches chosen
           obtain ⟨child, inside, rest⟩ := eventSubProcesses_mem (handlerCandidates_mem offered _ (best?_mem chosen))
           obtain ⟨header, payload, isScope, started⟩ := rest
-          simp [unstarted state occurrence.id child inside header payload _ _ isScope started] at caught
+          simp [unstarted state occurrence.id child inside header payload _ _ isScope started.1] at caught
         · rename_i boundary writes parent _ bounded parentIs
           have inside := best?_mem bounded
           have caught := best?_catches bounded
@@ -563,22 +587,6 @@ theorem searchScopes_cancel {ctx : Ctx} {hooks : Feature.Propagation.Propagation
         · obtain ⟨searched, further, kept, taken⟩ :=
             searchScopes_cancel passes unstarted cancelled fuel _ _ _ (keeps holds) ran
           exact ⟨searched, steady.trans further, kept, taken⟩
-
-/-- A committed Cancel raise from a thrower with no host, where no Event Sub-Process start catches a Cancel
-(`NoCancelStart`): its search passes the Call outputs on its way, leaving `passed`, of which `motive` holds when it holds
-of the raise's state and which is `Steady` from it, and a boundary catches it there, rolling back its scope occurrence
-and queueing its compensation (`CancelTaken`). -/
-theorem raise_cancel {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks} {origin : Origin}
-    {motive : State → Prop} {state after : State} (facts : RaiseFacts) (passes : PassesKeep ctx hooks motive)
-    (unstarted : NoCancelStart ctx) (holds : motive state) (hostless : origin.host = none)
-    (ran : Feature.Propagation.raise hooks ctx .cancel origin state = .ok after) :
-    ∃ passed, Steady state passed ∧ motive passed ∧ CancelTaken ctx origin passed after := by
-  unfold Feature.Propagation.raise at ran
-  dsimp only at ran
-  split at ran
-  · rename_i hosted _
-    simp [hostless] at hosted
-  · exact searchScopes_cancel passes unstarted facts.cancel _ _ _ _ holds ran
 
 /-! ### Where a search stops -/
 
@@ -828,24 +836,6 @@ theorem searchScopes_queues {motive : State → Prop} {raised : Raised} {origin 
           · exact begun.trans (throwerLeaves_quiet facts steps _ _)
         · exact lift.trans ((leaveOccurrence_quiet facts steps calm ran).mono fun _ => Or.inl)
         · exact lift.trans (searchScopes_queues passes fuel _ _ _ (keeps holds) ran)
-
-include facts steps calm in
-/-- What a raise queues (`Feature.Propagation.raise`): signals `quiet` admits, and a compensation handler's failure only
-under a profile that does not select `propagatesFromTrigger` and only at a scope occurrence `ctx.scopeRole` calls a
-compensation handler's context in a state the Call output passes on its way left, of which `motive` holds when it holds
-of the raise's state (COMPH-FAIL-01). Under `propagatesFromTrigger` it queues no such failure: the search goes on
-(`searchScopes_onward`). -/
-theorem raise_queues {motive : State → Prop} {raised : Raised} {origin : Origin} {state after : State}
-    (passes : PassesKeep ctx hooks motive) (holds : motive state)
-    (ran : Feature.Propagation.raise hooks ctx raised origin state = .ok after) :
-    Appends (fun signal => quiet signal ∨ HandlerFailed ctx motive origin signal) state after := by
-  unfold Feature.Propagation.raise at ran
-  dsimp only at ran
-  split at ran
-  · obtain ⟨left, leaves, made⟩ := ok_map ran
-    subst made
-    exact ((calm.mappedErrorOutputs _ _ _ _ leaves).trans (fire_quiet facts steps _ _ _ _ _)).mono fun _ => Or.inl
-  · exact searchScopes_queues facts steps calm passes _ _ _ _ holds ran
 
 end Queues
 

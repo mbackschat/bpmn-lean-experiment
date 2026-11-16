@@ -22,6 +22,38 @@ namespace Kernel.Proofs.Compensation
 open Kernel
 open Kernel.Laws.State (Queues)
 
+/-- A committed Cancel raise from a thrower with no host, where no Event Sub-Process start catches a Cancel
+(`Laws.Propagation.NoCancelStart`): its search passes the Call outputs on its way, leaving `passed`, of which `motive`
+holds when it holds of the raise's state and which is `Steady` from it, and a boundary catches it there, rolling back its
+scope occurrence and queueing its compensation (`Laws.Propagation.CancelTaken`). -/
+theorem raise_cancel {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks} {origin : Origin}
+    {motive : State → Prop} {state after : State} (facts : Laws.Propagation.RaiseFacts)
+    (passes : Laws.Propagation.PassesKeep ctx hooks motive) (unstarted : Laws.Propagation.NoCancelStart ctx)
+    (holds : motive state) (hostless : origin.host = none)
+    (ran : Feature.Propagation.raise hooks ctx .cancel origin state = .ok after) :
+    ∃ passed, Laws.State.Steady state passed ∧ motive passed ∧ Laws.Propagation.CancelTaken ctx origin passed after := by
+  rcases Laws.Propagation.raise_spec ran with ⟨_, _, _, rest⟩ | searched
+  · exact absurd rest.1.1 (by simp [hostless])
+  · exact Laws.Propagation.searchScopes_cancel passes unstarted facts.cancel _ _ _ _ holds searched
+
+/-- What a raise queues (`Feature.Propagation.raise`): signals `quiet` admits, and a compensation handler's failure only
+under a profile that does not select `propagatesFromTrigger` and only at a scope occurrence `ctx.scopeRole` calls a
+compensation handler's context in a state the Call output passes on its way left, of which `motive` holds when it holds
+of the raise's state (COMPH-FAIL-01). Under `propagatesFromTrigger` it queues no such failure: the search goes on
+(`Laws.Propagation.searchScopes_onward`). -/
+theorem raise_queues {quiet : Signal → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
+    (facts : Laws.Propagation.RaiseFacts) (steps : Laws.Propagation.QuietSteps quiet)
+    (calm : Laws.Propagation.QuietHooks ctx quiet hooks) {motive : State → Prop} {raised : Raised} {origin : Origin}
+    {state after : State} (passes : Laws.Propagation.PassesKeep ctx hooks motive) (holds : motive state)
+    (ran : Feature.Propagation.raise hooks ctx raised origin state = .ok after) :
+    Laws.Propagation.Appends (fun signal => quiet signal ∨ Laws.Propagation.HandlerFailed ctx motive origin signal)
+      state after := by
+  rcases Laws.Propagation.raise_spec ran with ⟨_, _, _, rest⟩ | searched
+  · obtain ⟨-, leaves, rfl⟩ := rest
+    exact ((calm.mappedErrorOutputs _ _ _ _ leaves).trans (Laws.Propagation.fire_quiet facts steps _ _ _ _ _)).mono
+      fun _ => Or.inl
+  · exact Laws.Propagation.searchScopes_queues facts steps calm passes _ _ _ _ holds searched
+
 /-- What `hooks` registers for a raise: Propagation's arrival at a throw and search over `propagation`, Compensation's
 handler failure, Scopes' Event Sub-Process start, a Cancel caught only by a Cancel trigger, and search hooks that keep
 what a Cancel raise's statement reads. -/
@@ -124,7 +156,7 @@ theorem cancelCompensatesFirst_of {hooks : Hooks} {propagation : Feature.Propaga
       { element := header.id, scope := occurrence.scope, activation := occurrence.activation }, ?_, rfl, rfl, rfl, rfl⟩
     simp only [Queues, Laws.State.signal_eq, List.append_assoc]
   · rw [registered.raise] at ran
-    obtain ⟨passed, steady, kept, taken⟩ := Laws.Propagation.raise_cancel
+    obtain ⟨passed, steady, kept, taken⟩ := raise_cancel
       (motive := fun s => s.tokens = state.tokens ∧ s.signals = state.signals) raiseFacts
       (fun root s next pass => have frame := registered.callOutputs ctx root s next pass
         ⟨frame.1, fun held => ⟨frame.2.1.trans held.1, frame.2.2.1.trans held.2⟩⟩)
@@ -163,7 +195,7 @@ theorem handlerFailure_of {hooks : Hooks} {propagation : Feature.Propagation.Pro
       Laws.Propagation.searchScopes_onward found (fun _ => Laws.Propagation.propagatesFromTrigger_selected selected)
         offered unhandled (fun element _ named _ _ => unbounded element named) pass, fun after ran => ?_⟩
     rw [registered.raise] at ran
-    obtain ⟨new, made, queued⟩ := Laws.Propagation.raise_queues (motive := fun _ => True) raiseFacts
+    obtain ⟨new, made, queued⟩ := raise_queues (motive := fun _ => True) raiseFacts
       notHandlerFailure_steps (notHandlerFailure_hooks registered ctx)
       (fun root s next pass => ⟨(registered.callOutputs ctx root s next pass).1, fun _ => trivial⟩) trivial ran
     refine ⟨new, made, fun handler code message raisedFrom member => ?_⟩
@@ -172,7 +204,7 @@ theorem handlerFailure_of {hooks : Hooks} {propagation : Feature.Propagation.Pro
     · rw [Laws.Propagation.propagatesFromTrigger_selected selected] at stopping
       cases stopping
   · rw [registered.raise] at ran
-    obtain ⟨new, made, queued⟩ := Laws.Propagation.raise_queues (motive := fun s => s.slots = state.slots) raiseFacts
+    obtain ⟨new, made, queued⟩ := raise_queues (motive := fun s => s.slots = state.slots) raiseFacts
       notHandlerFailure_steps (notHandlerFailure_hooks registered ctx)
       (fun root s next pass => have frame := registered.callOutputs ctx root s next pass
         ⟨frame.1, fun held => frame.2.2.2.trans held⟩) rfl ran

@@ -325,14 +325,14 @@ theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) 
   park _ _ _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
   arm _ _ _ _ _ _ _ kept := kept.signal _
   armGateway _ _ _ _ _ _ _ _ kept := kept.signal _
-  signalBegin _ _ _ kept := kept.signal _
+  signalBegin _ _ _ _ _ _ kept := kept.signal _
   issue s kept := by
     rw [Laws.State.issue_eq]
     exact kept.same rfl rfl (Nat.le_succ _) rfl rfl (.refl _)
-  enterScope _ s element parent locals owner well kept := by
+  enterScope _ s element parent locals owner well _ kept := by
     rw [Laws.State.enterScope_eq]
     exact kept.enter well rfl rfl rfl rfl rfl rfl rfl rfl rfl
-  reserve _ s element scope well _ kept := kept.reserve well element scope
+  reserve _ s element scope well _ _ kept := kept.reserve well element scope
   leaveScope _ _ _ well present _ kept := kept.leaveScope well present
   clearInside _ _ _ keep well present housed kept := kept.clearInside well present keep housed
   disarm _ s host _ kept := by
@@ -389,12 +389,12 @@ theorem formed_stepAlongside (precedes : Compensable → Compensable → Prop) :
 an instance's scope occurrence is left as any that stands, and the Multi-Instance runs are no part of what it reads. -/
 theorem formed_alongside (precedes : Compensable → Compensable → Prop) : Alongside (Formed precedes) where
   toFrameAlongside := formed_frameAlongside precedes
-  instanceBegin _ _ kept := kept.signal _
-  defer s requests kept := by
+  instanceBegin _ _ _ _ _ kept := kept.signal _
+  defer _ s requests _ _ kept := by
     rw [Laws.State.deferBegins_eq]
     exact kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
   leaveInstance _ _ _ _ well _ _ present kept := kept.leaveScope well present
-  runs _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
+  runs _ _ _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
 
 /-- The completion pipeline's own phases keep `Formed` beside `WellFormed` where they keep `WellFormed`: starting a
 reservation begins it under its key and closing its items moves nothing `Formed` reads, removing an occurrence leaves
@@ -724,11 +724,11 @@ where a throw queues its compensation or raises: its trigger is fresh (`thrower_
 the thrower's, was issued. -/
 theorem formed_occursAlongside (program : Program) (precedes : Compensable → Compensable → Prop) :
     OccursAlongside program (Formed precedes) where
-  reserve s element scope well _ kept := kept.reserve well element scope
-  occur _ _ _ _ _ _ _ kept := kept.signal _
-  compensate s scope activity trigger leave element at_ resumed _ source kept :=
+  reserve s element scope well _ _ kept := kept.reserve well element scope
+  occur _ _ _ _ _ _ _ _ kept := kept.signal _
+  compensate s scope activity trigger leave element at_ resumed _ source _ kept :=
     formed_compensate program precedes s scope activity trigger leave element at_ resumed source kept
-  throwCompensate s occurrence scope activity trigger leave well begun named kept := by
+  throwCompensate s occurrence scope activity trigger leave well begun named _ kept := by
     subst named
     have fresh := (thrower_fresh begun well rfl rfl rfl rfl rfl).2
     exact kept.queue fresh.1 fresh.2.1 fresh.2.2.1 rfl fresh.2.2.2

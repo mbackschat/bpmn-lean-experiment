@@ -171,6 +171,32 @@ theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame
   · intro run member stands record inside element named
     exact place (held.pending run (moved.compensation ▸ member) (present stands) record inside element named)
 
+/-! ## Boundaries under `ReferencesPlaced` -/
+
+/-- `Program.boundary?` finds every boundary an envelope of the program declares under its host, since no two envelopes
+declare one boundary identifier (`ReferencesPlaced.boundaryIds`). -/
+theorem ReferencesPlaced.boundary?_declared {program : Program} (refs : ReferencesPlaced program) {host : Element}
+    {envelope : Envelope} {boundary : Boundary} (member : host ∈ program.elements) (has : host.envelope? = some envelope)
+    (inside : boundary ∈ envelope.boundaries) : program.boundary? boundary.id = some (host, boundary) := by
+  obtain ⟨⟨found, declared⟩, same⟩ := Option.isSome_iff_exists.mp (Laws.IL.boundary?_isSome member has inside)
+  obtain ⟨present, envelope', declaration⟩ := Laws.IL.boundary?_declared same
+  obtain ⟨has', inside', named⟩ := declaration
+  obtain ⟨rfl, rfl⟩ := refs.boundaryIds found present host member envelope' envelope has' has declared inside' boundary
+    inside named
+  exact same
+
+/-- A boundary an envelope of the program declares lies in its host's process. -/
+theorem ReferencesPlaced.declared_placed {program : Program} (refs : ReferencesPlaced program) {host : Element}
+    {envelope : Envelope} {boundary : Boundary} (member : host ∈ program.elements) (has : host.envelope? = some envelope)
+    (inside : boundary ∈ envelope.boundaries) : definitionAt program boundary.id = definitionAt program host.header.id :=
+  refs.boundaries _ _ _ (refs.boundary?_declared member has inside)
+
+/-- Every outgoing flow of a boundary an envelope of the program declares leaves that boundary. -/
+theorem ReferencesPlaced.declared_leaves {program : Program} (refs : ReferencesPlaced program) {host : Element}
+    {envelope : Envelope} {boundary : Boundary} (member : host ∈ program.elements) (has : host.envelope? = some envelope)
+    (inside : boundary ∈ envelope.boundaries) : ∀ flow ∈ boundary.outgoing, program.source? flow = some boundary.id :=
+  refs.boundaryOutgoing _ _ _ (refs.boundary?_declared member has inside)
+
 /-! ## Rejection witnesses
 
 Each clause rejects a state holding work of a program without elements, so of the root process, inside a called
@@ -211,7 +237,7 @@ theorem definitionAt_empty (element : ElementId) : definitionAt { program with e
 /-- A program without elements lists no flow. -/
 theorem empty_lists (element : ElementId) (flow : FlowId) : ¬ Laws.Flow.Lists { program with elements := [] } element flow
   | .inl ⟨_, found, _⟩ => by rw [empty_element?] at found; cases found
-  | .inr ⟨_, _, found, _⟩ => by rw [empty_boundary?] at found; cases found
+  | .inr ⟨_, member, _⟩ => by simp at member
 
 /-- A program without elements offers no flow. -/
 theorem empty_offered (s : State) (scope : ScopeOccurrenceId) (flow : FlowId) :
@@ -398,6 +424,70 @@ theorem unprocessed_calledAnchor_rejected (anchor : ElementId) :
   obtain ⟨_, _, _, process⟩ := entry
   obtain ⟨found, member, _⟩ := process
   simp at member
+
+/-- A state without Multi-Instance runs anchors nothing by one (`Laws.Flow.RunAnchor`). -/
+theorem unrun_runAnchor_rejected (anchor : ElementId) (scope : ScopeOccurrenceId) :
+    ¬ Laws.Flow.RunAnchor (placedState definition) anchor scope := fun ⟨_, member, _⟩ => by
+  simp [placedState] at member
+
+/-- A state without compensation runs anchors nothing by a pending record (`Laws.Flow.RecordAnchor`). -/
+theorem unrun_recordAnchor_rejected (anchor : ElementId) (scope : ScopeOccurrenceId) :
+    ¬ Laws.Flow.RecordAnchor (placedState definition) anchor scope := fun ⟨_, member, _⟩ => by
+  simp [placedState] at member
+
+/-- A state none of whose compensation runs resumes by a reservation is the source of none (`Laws.Flow.ResumedBy`). -/
+theorem unresumed_resumedBy_rejected (state : State) (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave) :
+    ¬ Laws.Flow.ResumedBy (fun held => held.slots.compensation.runs = []) state element scope leave := by
+  intro resumed
+  obtain ⟨held, empty, rest⟩ := resumed
+  obtain ⟨_, _, found⟩ := rest
+  obtain ⟨run, member, _⟩ := found
+  simp [empty] at member
+
+/-- The Cancel boundary both of `sharedBoundary`'s hosts declare. -/
+def sharedX : Boundary :=
+  { id := ⟨"X"⟩, sourceId := "X", subscription := { trigger := .cancel }, interrupting := true, outgoing := [] }
+
+/-- A parentless Scope declaring `sharedX`. -/
+def sharedHost (id : String) : Element :=
+  .scope { id := ⟨id⟩, origin := { sourceId := id }, sourceType := "subProcess", parent := none }
+    { kind := .embedded, children := [], envelope := { boundaries := [sharedX] } }
+
+/-- Two hosts declaring `sharedX`: `A` in the root process and `B` at the top level of the called process of
+`definition`. -/
+def sharedBoundary : Program :=
+  { program with elements := [sharedHost "A", sharedHost "B"], processes := [{ definition, children := [⟨"B"⟩] }] }
+
+/-- Two envelopes in different processes declaring one boundary identifier break `ReferencesPlaced.boundaryIds`:
+`Program.boundary?` resolves the identifier to the first, so the second declaration is not found under its host, and
+`definitionAt` reads the boundary in the root process although `B` lies in the called one. -/
+theorem shared_boundaryId_rejected :
+    (sharedBoundary program definition).boundary? sharedX.id = some (sharedHost "A", sharedX) ∧
+      (sharedBoundary program definition).boundary? sharedX.id ≠ some (sharedHost "B", sharedX) ∧
+      definitionAt (sharedBoundary program definition) sharedX.id ≠
+        definitionAt (sharedBoundary program definition) (sharedHost "B").header.id := by
+  have first : (sharedBoundary program definition).boundary? sharedX.id = some (sharedHost "A", sharedX) :=
+    Laws.IL.boundary?_first rfl (Laws.IL.envelope?_scope _ _) rfl
+  have hosts : ∀ element ∈ (sharedBoundary program definition).elements,
+      element = sharedHost "A" ∨ element = sharedHost "B" := fun _ member => by simpa [sharedBoundary] using member
+  have unboundary : (sharedBoundary program definition).element? sharedX.id = none :=
+    Laws.IL.element?_none fun element member => by
+      rcases hosts element member with rfl | rfl <;> simp [sharedHost, sharedX, Laws.IL.header_scope]
+  have second : (sharedBoundary program definition).element? (sharedHost "B").header.id = some (sharedHost "B") :=
+    Laws.IL.element?_unique (by simp [sharedBoundary]) rfl fun other member named => by
+      rcases hosts other member with rfl | rfl
+      · simp [sharedHost, Laws.IL.header_scope] at named
+      · rfl
+  have top := fun header => Laws.IL.processOf_parentless (program := sharedBoundary program definition)
+    (header := header) fun element member => by
+      rcases hosts element member with rfl | rfl <;> simp [sharedHost, Laws.IL.header_scope]
+  refine ⟨first, fun found => ?_, fun same => ?_⟩
+  · rw [first] at found
+    have named := congrArg (fun found : Element × Boundary => found.1.header.id) (Option.some.inj found)
+    simp [sharedHost, Laws.IL.header_scope] at named
+  · simp only [definitionAt, unboundary, second, first, top, Option.map_none, Option.map_some, Option.orElse_none,
+      Option.orElse_some, Option.bind_some] at same
+    simp [sharedBoundary, sharedHost, Laws.IL.header_scope] at same
 
 end Witnesses
 

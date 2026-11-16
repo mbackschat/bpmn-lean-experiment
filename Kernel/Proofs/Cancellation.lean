@@ -318,17 +318,17 @@ theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) wh
   park _ _ _ _ _ kept := kept
   arm _ s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
   armGateway _ s _ _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
-  signalBegin s _ _ kept := by
+  signalBegin _ s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
   issue s kept := by
     rw [Laws.State.issue_eq]
     exact kept.enter rfl fun _ member => .inl member
-  enterScope _ s element parent locals owner _ kept := by
+  enterScope _ s element parent locals owner _ _ kept := by
     rw [Laws.State.enterScope_eq]
     exact kept.enter rfl fun entry member => (List.mem_append.mp member).imp_right fun fresh => by
       rw [List.mem_singleton.mp fresh]
-  reserve _ s element scope _ _ kept :=
+  reserve _ s element scope _ _ _ kept :=
     have reserves := Laws.State.reserve_reserves s element scope
     kept.enter reserves.nextIssue fun _ member => .inl (reserves.scopes ▸ member)
   leaveScope _ s scope _ _ _ kept :=
@@ -344,15 +344,15 @@ theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) wh
   removeVariable _ s target name _ kept :=
     have same := Laws.State.removeVariable_same s target name
     kept.shrink (by rw [same.scopes]; exact .refl _) same.nextIssue
-  instanceBegin s _ kept := by
+  instanceBegin _ s _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
-  defer s _ kept := by
+  defer _ s _ _ _ kept := by
     rw [Laws.State.deferBegins_eq]
     exact kept
   leaveInstance _ s _ scope _ _ _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2
-  runs _ _ kept := kept.shrink (.refl _) rfl
+  runs _ _ _ _ _ kept := kept.shrink (.refl _) rfl
 
 /-- Storing compensation runs keeps the scope occurrences of any before-state. -/
 theorem scopesKept_stores (before : State) : StoresAlongside (ScopesKept before) :=

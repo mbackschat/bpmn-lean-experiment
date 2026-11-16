@@ -25,10 +25,12 @@ def Listed (element : Element) (flow : FlowId) : Prop :=
       ∃ candidates default, (payload.kind = .exclusive candidates default ∨ payload.kind = .inclusive candidates default) ∧
         (flow ∈ candidates ∨ default = some flow))
 
-/-- `flow` is one the element or boundary `id` lists (`Listed`, or a boundary's outgoing flow). -/
+/-- `flow` is one the element or boundary `id` lists (`Listed`, or the outgoing flow of a boundary an element's envelope
+declares under `id`, read where the feature finds it rather than through `Program.boundary?`). -/
 def Lists (program : Program) (id : ElementId) (flow : FlowId) : Prop :=
   (∃ element, program.element? id = some element ∧ Listed element flow) ∨
-    ∃ host boundary, program.boundary? id = some (host, boundary) ∧ flow ∈ boundary.outgoing
+    ∃ host ∈ program.elements, ∃ envelope, host.envelope? = some envelope ∧
+      ∃ boundary ∈ envelope.boundaries, boundary.id = id ∧ flow ∈ boundary.outgoing
 
 /-- `flow` is offered in the scope occurrence `scope` of `state`: an occurrence there lists it, a catching Link on its
 level does (`Feature.Flow.linkCatches`), or the gateway a join wait of it was parked for does. -/
@@ -74,13 +76,15 @@ def LeavesFrom (inv : State → Prop) (program : Program) (state : State) (occur
         Signal.occur occurrence.element occurrence.scope (.flows named) writes rule ∈ held.signals)
 
 /-- One IL reference that keeps `element` in the process `anchor` belongs to (what `Proofs.Former.ReferencesPlaced`
-states of admitted programs): `element` is `anchor`, a child or the parent of it, a boundary attached to it, the target
-of a flow that leaves it, or one of its compensation handlers. -/
+states of admitted programs): `element` is `anchor`, a child or the parent of it, a boundary its envelope declares, the
+target of a flow it lists (`Lists`), or one of its compensation handlers. A boundary and a flow are read where the
+feature finds them, off the element `anchor` names, not by their own identifiers. -/
 def Linked (program : Program) (anchor element : ElementId) : Prop :=
   element = anchor ∨ (∃ child ∈ program.children (some anchor), child.header.id = element) ∨
     (∃ child ∈ program.children (some element), child.header.id = anchor) ∨
-    (∃ host boundary, program.boundary? element = some (host, boundary) ∧ host.header.id = anchor) ∨
-    (∃ flow, program.source? flow = some anchor ∧ program.target? flow = some element) ∨
+    (∃ host envelope, program.element? anchor = some host ∧ host.envelope? = some envelope ∧
+      ∃ boundary ∈ envelope.boundaries, boundary.id = element) ∨
+    (∃ flow, Lists program anchor flow ∧ program.target? flow = some element) ∨
     ∃ found envelope, program.element? anchor = some found ∧ found.envelope? = some envelope ∧
       element ∈ envelope.compensationHandlers
 
@@ -92,25 +96,37 @@ def CalledAnchor (program : Program) (state : State) (anchor : ElementId) (scope
     ∃ entry ∈ state.slots.instances, entry.root = scope ∧ ∃ process ∈ program.processes,
       entry.definition = some process.definition ∧ ∃ child ∈ program.processChildren process, child.header.id = anchor
 
+/-- A Multi-Instance run of `state` holds its instances in `scope` for its element `anchor`. -/
+def RunAnchor (state : State) (anchor : ElementId) (scope : ScopeOccurrenceId) : Prop :=
+  ∃ run ∈ state.slots.multiInstances, run.element = anchor ∧ run.scope = scope
+
+/-- A compensation run of `state` in `scope` holds a pending record whose subject or handler is `anchor`. -/
+def RecordAnchor (state : State) (anchor : ElementId) (scope : ScopeOccurrenceId) : Prop :=
+  ∃ run ∈ state.slots.compensation.runs, run.scope = scope ∧
+    ∃ record ∈ run.pending, record.subject = anchor ∨ record.handler = some anchor
+
 /-- What `state` holds that places `anchor` where the scope occurrence `scope` lies: an occurrence of it there, a scope
 occurrence of it entered there or, calling no instance, `scope` itself, an element the scope occurrence declares
-(`State.childrenOf`), or a top-level element of the process the called root `scope` runs (`CalledAnchor`). -/
+(`State.childrenOf`), a top-level element of the process the called root `scope` runs (`CalledAnchor`), a
+Multi-Instance run's element (`RunAnchor`) or a pending compensation record's subject or handler (`RecordAnchor`). -/
 def AnchoredBy (program : Program) (state : State) (anchor : ElementId) (scope : ScopeOccurrenceId) : Prop :=
   (∃ occurrence ∈ state.occurrences, occurrence.scope = scope ∧ occurrence.element = anchor) ∨
     (∃ entry ∈ state.scopes, entry.element = some anchor ∧
       (entry.parent = some scope ∨ entry.id = scope ∧ entry.calledInstance = none)) ∨
-    (∃ child ∈ state.childrenOf program scope, child.header.id = anchor) ∨ CalledAnchor program state anchor scope
+    (∃ child ∈ state.childrenOf program scope, child.header.id = anchor) ∨ CalledAnchor program state anchor scope ∨
+    RunAnchor state anchor scope ∨ RecordAnchor state anchor scope
 
 /-- Where work queued for `element` in the scope occurrence `scope` of `state` comes from: one reference (`Linked`) from
 an anchor that `state` places there (`AnchoredBy`), or that a state `held` that kept `inv`, and whose scope occurrences
-and instance entries include `state`'s, placed there or queued an arming for there. -/
+and instance entries include `state`'s, placed there, queued an arming for there, or queued a raise from there. -/
 def Anchored (inv : State → Prop) (program : Program) (state : State) (element : ElementId)
     (scope : ScopeOccurrenceId) : Prop :=
   ∃ anchor, Linked program anchor element ∧ (AnchoredBy program state anchor scope ∨
     ∃ held, inv held ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
       (∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) ∧ (AnchoredBy program held anchor scope ∨
         (∃ host, Signal.arm host anchor scope ∈ held.signals) ∨
-        ∃ occurrence, Signal.armGateway occurrence anchor scope ∈ held.signals))
+        (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ held.signals) ∨
+        ∃ raised origin, Signal.raise raised origin ∈ held.signals ∧ origin.element = anchor ∧ origin.scope = scope))
 
 /-- An anchor read under `inv` is one read under anything `inv` implies. -/
 theorem Anchored.mono {inv weaker : State → Prop} {program : Program} {state : State} {element : ElementId}
@@ -123,6 +139,72 @@ theorem Anchored.mono {inv weaker : State → Prop} {program : Program} {state :
 theorem Anchored.occurrence {inv : State → Prop} {program : Program} {state : State} {occurrence : Occurrence}
     (member : occurrence ∈ state.occurrences) : Anchored inv program state occurrence.element occurrence.scope :=
   ⟨occurrence.element, .inl rfl, .inl (.inl ⟨occurrence, member, rfl, rfl⟩)⟩
+
+/-- Work linked to an anchor that a state `held` that kept `inv`, with `state`'s scope occurrences and instance entries,
+places or queued an arming for, is anchored in `state`. -/
+theorem Anchored.held {inv : State → Prop} {program : Program} {held state : State} {anchor element : ElementId}
+    {scope : ScopeOccurrenceId} (holds : inv held) (scopes : ∀ entry ∈ state.scopes, entry ∈ held.scopes)
+    (instances : ∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) (linked : Linked program anchor element)
+    (source : AnchoredBy program held anchor scope ∨ (∃ host, Signal.arm host anchor scope ∈ held.signals) ∨
+      (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ held.signals) ∨
+      ∃ raised origin, Signal.raise raised origin ∈ held.signals ∧ origin.element = anchor ∧ origin.scope = scope) :
+    Anchored inv program state element scope :=
+  ⟨anchor, linked, .inr ⟨held, holds, scopes, instances, source⟩⟩
+
+/-- Work anchored in a state that kept `inv` stays anchored in one whose scope occurrences and instance entries it
+includes, read off that state. -/
+theorem Anchored.weaken {inv : State → Prop} {program : Program} {state after : State} {element : ElementId}
+    {scope : ScopeOccurrenceId} (holds : inv state) (anchored : Anchored inv program state element scope)
+    (scopes : ∀ entry ∈ after.scopes, entry ∈ state.scopes)
+    (instances : ∀ entry ∈ after.slots.instances, entry ∈ state.slots.instances) :
+    Anchored inv program after element scope := by
+  obtain ⟨anchor, linked, source⟩ := anchored
+  refine ⟨anchor, linked, .inr ?_⟩
+  rcases source with here | ⟨held, kept, rest⟩
+  · exact ⟨state, holds, scopes, instances, .inl here⟩
+  · obtain ⟨heldScopes, heldInstances, there⟩ := rest
+    exact ⟨held, kept, fun _ inside => heldScopes _ (scopes _ inside),
+      fun _ inside => heldInstances _ (instances _ inside), there⟩
+
+/-- Where a begin queued in `state` comes from: its element anchored in the scope occurrence it begins in
+(`Anchored`), the reservation it names lying there or in the scope occurrence that one was entered in without calling
+an instance, and its incoming flow ending at its element. -/
+structure BeginAnchored (inv : State → Prop) (program : Program) (state : State) (request : BeginRequest) : Prop where
+  element : Anchored inv program state request.element request.scope
+  reserved : ∀ occurrence ∈ state.occurrences, request.reserved = some occurrence.id →
+    occurrence.scope = request.scope ∨
+      ∃ entry ∈ state.scopes, entry.id = request.scope ∧ entry.parent = some occurrence.scope ∧ entry.calledInstance = none
+  incoming : ∀ flow, request.incoming = some flow → program.target? flow = some request.element
+
+/-- A compensation run of a state `held` that kept `inv`, whose scope occurrences and instance entries include
+`state`'s, resumes by reserving `element` in `scope` and leaving by `leave`: where the reservation a run's end queues
+comes from. -/
+def ResumedBy (inv : State → Prop) (state : State) (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave) :
+    Prop :=
+  ∃ held, inv held ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
+    (∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) ∧
+    ∃ run ∈ held.slots.compensation.runs, run.resume = some (.occur element scope leave)
+
+/-- Where a reservation of `element` in `scope`, leaving by `leave`, queued in `state` comes from: an anchor there
+(`Anchored`) with named flows its element lists (`Lists`), or a compensation run's resume (`ResumedBy`). -/
+def OccurAnchored (inv : State → Prop) (program : Program) (state : State) (element : ElementId)
+    (scope : ScopeOccurrenceId) (leave : Leave) : Prop :=
+  (Anchored inv program state element scope ∧
+    ∀ selected, leave = .flows selected → ∀ flow ∈ selected, Lists program element flow) ∨
+    ResumedBy inv state element scope leave
+
+/-- A begin's source read under `inv` is one read under anything `inv` implies. -/
+theorem BeginAnchored.mono {inv weaker : State → Prop} {program : Program} {state : State} {request : BeginRequest}
+    (anchored : BeginAnchored inv program state request) (implies : ∀ s, inv s → weaker s) :
+    BeginAnchored weaker program state request :=
+  ⟨anchored.element.mono implies, anchored.reserved, anchored.incoming⟩
+
+/-- A reservation's source read under `inv` is one read under anything `inv` implies. -/
+theorem OccurAnchored.mono {inv weaker : State → Prop} {program : Program} {state : State} {element : ElementId}
+    {scope : ScopeOccurrenceId} {leave : Leave} (anchored : OccurAnchored inv program state element scope leave)
+    (implies : ∀ s, inv s → weaker s) : OccurAnchored weaker program state element scope leave :=
+  anchored.imp (fun ⟨there, listed⟩ => ⟨there.mono implies, listed⟩)
+    fun ⟨held, holds, rest⟩ => ⟨held, implies held holds, rest⟩
 
 /-- A continuation by flows that come from a source continues by any reordering of them. -/
 theorem LeavesFrom.flows {inv : State → Prop} {program : Program} {state : State} {occurrence : Occurrence}

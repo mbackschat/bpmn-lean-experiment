@@ -2,6 +2,8 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Laws.State.Derived
+public import Kernel.Laws.Flow.Sources
+import Kernel.Laws.Step.Elements
 public import Kernel.Feature.Scopes
 import all Kernel.Feature.Scopes
 
@@ -104,7 +106,7 @@ Scopes' share of the proof wave's state-invariant lane (P2), stated over `Scopes
 which is begun. -/
 
 /-- What Scopes' hooks need of the state operations they apply, for an invariant `inv`. -/
-structure ScopesOps (inv : State → Prop) : Prop where
+structure ScopesOps (program : Program) (inv : State → Prop) : Prop where
   /-- The occurrence that owns a standing scope occurrence is begun. -/
   owner : ∀ state scope occurrence, inv state → scope ∈ state.scopes → occurrence ∈ state.occurrences →
     scope.occurrence = some occurrence.id → occurrence.begun = true
@@ -124,10 +126,11 @@ structure ScopesOps (inv : State → Prop) : Prop where
       ∀ id ∈ inner.toList,
         Laws.State.Beginnable (state.clearInside occurrence.scope (occurrence.id :: inner.toList)) occurrence.scope id ∧
         Laws.State.Unclaimed (state.clearInside occurrence.scope (occurrence.id :: inner.toList)) id
-  /-- A Scope's occurrence entered below the scope occurrence its begun occurrence runs in, which owns it: the
-  occurrences stay, the entered scope occurrence stands, and a reservation claimable in the parent is claimable in it. -/
+  /-- A Scope's occurrence entered below the scope occurrence its begun occurrence runs in, which owns it and runs its
+  element: the occurrences stay, the entered scope occurrence stands, and a reservation claimable in the parent is
+  claimable in it. -/
   enter : ∀ state element locals occurrence (inner : Option Nat), inv state → occurrence ∈ state.occurrences →
-    occurrence.begun = true →
+    occurrence.begun = true → element = occurrence.element →
     (∀ id ∈ inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id) →
     inv (state.enterScope element occurrence.scope locals (some occurrence.id)).1 ∧
       (state.enterScope element occurrence.scope locals (some occurrence.id)).1.occurrences = state.occurrences ∧
@@ -143,13 +146,14 @@ structure ScopesOps (inv : State → Prop) : Prop where
   /-- The arming of the Event Sub-Process starts of a scope occurrence that stands. -/
   armScope : ∀ state scope, inv state → scope ∈ Laws.State.scopeIds state → inv (state.signal (.armScope scope))
   /-- A begin that continues by its flows, in a scope occurrence that stands and some occurrence owns if it names a
-  reservation, naming distinct reservations beginnable there that nothing claims, and no Event Sub-Process start's. -/
+  reservation, naming distinct reservations beginnable there that nothing claims, and no Event Sub-Process start's,
+  from where `Laws.Flow.BeginAnchored` says. -/
   begin : ∀ state request, inv state → request.scope ∈ Laws.State.scopeIds state → request.inner = none →
     request.continuation = .flow →
     (∀ id, request.reserved = some id → ∃ entry ∈ state.scopes, entry.id = request.scope ∧ entry.occurrence.isSome) →
     (Laws.State.names request).Nodup →
     (∀ id ∈ Laws.State.names request, Laws.State.Beginnable state request.scope id ∧ Laws.State.Unclaimed state id) →
-    inv (state.signal (.begin request))
+    Laws.Flow.BeginAnchored inv program state request → inv (state.signal (.begin request))
   /-- An arming keeps the scope occurrences and leaves reservations claimable. -/
   armed : ∀ state host element hostScope scope (inner : Option Nat),
     (∀ id ∈ inner.toList, Laws.State.Beginnable state scope id ∧ Laws.State.Unclaimed state id) →
@@ -166,7 +170,7 @@ structure ScopesOps (inv : State → Prop) : Prop where
   signalScopes : ∀ (state : State) signal, (state.signal signal).scopes = state.scopes
 
 /-- `Hooks.completeScope` keeps `inv`: an idle Scope completes its owner. -/
-theorem completeScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {header : Header}
+theorem completeScope_keeps {inv : State → Prop} {ctx : Ctx} (ops : ScopesOps ctx.program inv) {header : Header}
     {payload : ScopePayload} {scope : ScopeOccurrence} {owner : Occurrence} {state after : State} (holds : inv state)
     (member : scope ∈ state.scopes) (owned : owner ∈ state.occurrences) (link : scope.occurrence = some owner.id)
     (ran : Feature.Scopes.completeScope ctx header payload scope owner state = .ok after) : inv after := by
@@ -177,33 +181,102 @@ theorem completeScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : 
   · cases ran
     exact ops.complete _ _ _ _ _ holds owned (ops.owner _ _ _ holds member owned link) fun _ same => by cases same
 
-/-- Bare begins of a Scope's implicit start, queued in a scope occurrence that stands, keep `inv`. -/
-theorem implicitBegins_keeps {inv : State → Prop} (ops : ScopesOps inv) {scope : ScopeOccurrenceId} :
-    ∀ (elements : List ElementId) (state : State), inv state → scope ∈ Laws.State.scopeIds state →
-      inv (elements.foldl (fun state element => state.signal (.begin { element, scope })) state)
-  | [], _, holds, _ => holds
-  | element :: rest, state, holds, stands => by
-    refine implicitBegins_keeps ops rest _ (ops.begin _ _ holds stands rfl rfl (fun _ none => by cases none)
-      (by simp [Laws.State.names])
-      (by simp [Laws.State.names])) ?_
-    simpa [Laws.State.scopeIds, ops.signalScopes] using stands
+/-- A begin of a child of the element a scope occurrence calling no instance was entered for, in it, naming only a
+reservation that lies where that scope occurrence was entered, and no incoming flow, comes from that entry. -/
+theorem entered_anchored {inv : State → Prop} {program : Program} {state : State} {request : BeginRequest}
+    {entry : ScopeOccurrence} {anchor : ElementId} (member : entry ∈ state.scopes) (named : entry.id = request.scope)
+    (element : entry.element = some anchor) (uncalled : entry.calledInstance = none)
+    (child : ∃ child ∈ program.children (some anchor), child.header.id = request.element)
+    (reserved : ∀ occurrence ∈ state.occurrences, request.reserved = some occurrence.id →
+      entry.parent = some occurrence.scope)
+    (incoming : request.incoming = none) : Laws.Flow.BeginAnchored inv program state request :=
+  ⟨⟨anchor, .inr (.inl child), .inl (.inr (.inl ⟨entry, member, element, .inr ⟨named, uncalled⟩⟩))⟩,
+    fun occurrence inside same => .inr ⟨entry, member, named, reserved occurrence inside same, uncalled⟩,
+    fun _ some_ => by rw [incoming] at some_; cases some_⟩
 
-/-- A scope occurrence entered for an occurrence belongs to it. -/
+/-- Bare begins of a Scope's implicit start, children of the element a scope occurrence that stands and calls no
+instance was entered for, queued in it, keep `inv`. -/
+theorem implicitBegins_keeps {inv : State → Prop} {program : Program} (ops : ScopesOps program inv)
+    {scope : ScopeOccurrenceId} {anchor : ElementId} :
+    ∀ (elements : List ElementId) (state : State), inv state →
+      (∃ entry ∈ state.scopes, entry.id = scope ∧ entry.element = some anchor ∧ entry.calledInstance = none) →
+      (∀ element ∈ elements, ∃ child ∈ program.children (some anchor), child.header.id = element) →
+      inv (elements.foldl (fun state element => state.signal (.begin { element, scope })) state)
+  | [], _, holds, _, _ => holds
+  | element :: rest, state, holds, ⟨entry, member, named, rest_⟩, children => by
+    have stands : scope ∈ Laws.State.scopeIds state := List.mem_map.mpr ⟨entry, member, named⟩
+    refine implicitBegins_keeps ops rest _ (ops.begin _ _ holds stands rfl rfl (fun _ none => by cases none)
+      (by simp [Laws.State.names]) (by simp [Laws.State.names])
+      (entered_anchored member named rest_.1 rest_.2 (children element (List.mem_cons_self ..))
+        (fun _ _ none => by cases none) rfl)) ?_ fun other later => children other (List.mem_cons_of_mem _ later)
+    rw [ops.signalScopes]
+    exact ⟨entry, member, named, rest_⟩
+
+/-- A scope occurrence entered for an occurrence belongs to it, runs the element it was entered for, lies in the scope
+occurrence it was entered in, and calls no instance. -/
 theorem enterScope_owned (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (id : Nat) :
     ∃ entry ∈ (state.enterScope element parent locals (some id)).1.scopes,
-      entry.id = (state.enterScope element parent locals (some id)).2 ∧ entry.occurrence.isSome := by
+      entry.id = (state.enterScope element parent locals (some id)).2 ∧ entry.occurrence.isSome ∧
+        entry.element = some element ∧ entry.parent = some parent ∧ entry.calledInstance = none := by
   rw [Laws.State.enterScope_eq]
-  exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl⟩
+  exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl, rfl, rfl⟩
+
+/-- The start Event `Feature.Scopes.innerStart?` chooses is a child of the Scope. -/
+theorem innerStart?_child {ctx : Ctx} {scope start : ElementId} {payload : ScopePayload}
+    (chosen : Feature.Scopes.innerStart? ctx scope payload = some start) :
+    ∃ child ∈ ctx.program.children (some scope), child.header.id = start := by
+  unfold Feature.Scopes.innerStart? at chosen
+  obtain ⟨⟨header, typed⟩, found, rfl⟩ := Option.map_eq_some_iff.mp chosen
+  have member : (header, typed) ∈ (ctx.program.children (some scope)).filterMap Element.start? := by
+    split at found <;> exact List.mem_of_find?_eq_some found
+  obtain ⟨child, inside, started⟩ := List.mem_filterMap.mp member
+  exact ⟨child, inside, congrArg Header.id (Laws.Step.start?_header started)⟩
+
+/-- A monadic fold that keeps its accumulator or appends the element's identifier collects only identifiers of the
+elements it folds over, beyond its start. -/
+theorem foldlM_ids (step : List ElementId → Element → Except Failure (List ElementId))
+    (appends : ∀ begun child after, step begun child = .ok after →
+      ∀ name ∈ after, name ∈ begun ∨ name = child.header.id) :
+    ∀ (children : List Element) begun result, children.foldlM step begun = .ok result →
+      ∀ name ∈ result, name ∈ begun ∨ ∃ child ∈ children, child.header.id = name
+  | [], begun, result, ran, name, member => by
+    simp only [List.foldlM, pure, Except.pure, Except.ok.injEq] at ran
+    exact .inl (ran ▸ member)
+  | child :: rest, begun, result, ran, name, member => by
+    simp only [List.foldlM, bind, Except.bind] at ran
+    split at ran
+    · cases ran
+    · rename_i after stepped
+      rcases foldlM_ids step appends rest after result ran name member with old | ⟨found, inside, same⟩
+      · exact (appends begun child after stepped name old).imp id fun same => ⟨child, List.mem_cons_self .., same.symm⟩
+      · exact .inr ⟨found, List.mem_cons_of_mem _ inside, same⟩
+
+/-- The children `Feature.Scopes.implicitStart` begins are children of the Scope. -/
+theorem implicitStart_children {ctx : Ctx} {scope : ElementId} {begun : List ElementId}
+    (ran : Feature.Scopes.implicitStart ctx scope = .ok begun) :
+    ∀ element ∈ begun, ∃ child ∈ ctx.program.children (some scope), child.header.id = element := by
+  intro element member
+  unfold Feature.Scopes.implicitStart at ran
+  refine (foldlM_ids _ (fun begun child after stepped id inside => ?_) _ [] begun ran element member).resolve_left
+    (by simp)
+  split at stepped
+  · cases stepped
+    exact .inl inside
+  · split at stepped
+    · cases stepped
+      simpa using inside
+    · cases stepped
 
 /-- Entering a Scope keeps `inv`: the entry, the arming of its boundaries and Event Sub-Process starts, and the begin of
-its start Event, an Event Sub-Process's triggered start with the reservation its firing held, or its implicit
-start. -/
-theorem enter_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {header : Header} {payload : ScopePayload}
-    {occurrence : Occurrence} {entry : ScopeEntry} {state after : State} (holds : inv state)
+its start Event, an Event Sub-Process's triggered start with the reservation its firing held, which lies where the Scope
+is entered, or its implicit start. -/
+theorem enter_keeps {inv : State → Prop} {ctx : Ctx} (ops : ScopesOps ctx.program inv) {header : Header}
+    {payload : ScopePayload} {occurrence : Occurrence} {entry : ScopeEntry} {state after : State} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (named : header.id = occurrence.element)
     (claimable : ∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧
       Laws.State.Unclaimed state id)
+    (lies : ∀ found ∈ state.occurrences, found.id ∈ entry.inner.toList → found.scope = occurrence.scope)
     (ran : Feature.Scopes.enter ctx header payload occurrence entry state = .ok after) : inv after := by
   unfold Feature.Scopes.enter at ran
   simp only [bind, Except.bind] at ran
@@ -211,22 +284,23 @@ theorem enter_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {he
   · cases ran
   rename_i locals _
   obtain ⟨entered, occurrences, stands, ready⟩ :=
-    ops.enter state header.id (locals ++ entry.locals) occurrence entry.inner holds member begun claimable
+    ops.enter state header.id (locals ++ entry.locals) occurrence entry.inner holds member begun named claimable
   have owned := enterScope_owned state header.id occurrence.scope (locals ++ entry.locals) occurrence.id
   generalize state.enterScope header.id occurrence.scope (locals ++ entry.locals) (some occurrence.id) = pair
     at entered occurrences stands ready owned ran
   obtain ⟨entered_, scope⟩ := pair
-  dsimp only at entered occurrences stands ready ran
-  have armed : ∃ armed : State, inv armed ∧ armed.scopes = entered_.scopes ∧
+  dsimp only at entered occurrences stands ready owned ran
+  have armed : ∃ armed : State, inv armed ∧ armed.scopes = entered_.scopes ∧ armed.occurrences = entered_.occurrences ∧
       (∀ id ∈ entry.inner.toList, Laws.State.Beginnable armed scope id ∧ Laws.State.Unclaimed armed id) ∧
       (if payload.envelope.boundaries.isEmpty || payload.envelope.multiInstance.isSome then entered_
         else entered_.signal (.arm occurrence.id header.id occurrence.scope)) = armed := by
     split
-    · exact ⟨entered_, entered, rfl, ready, rfl⟩
+    · exact ⟨entered_, entered, rfl, rfl, ready, rfl⟩
     · obtain ⟨sameScopes, stillReady⟩ := ops.armed _ _ _ _ _ _ ready
-      exact ⟨_, ops.arm _ _ _ entered (occurrences ▸ member) begun named, sameScopes, stillReady, rfl⟩
+      exact ⟨_, ops.arm _ _ _ entered (occurrences ▸ member) begun named, sameScopes,
+        by rw [Laws.State.signal_eq], stillReady, rfl⟩
   obtain ⟨armed, armedHolds, armedScopes, rest⟩ := armed
-  obtain ⟨armedReady, armedIs⟩ := rest
+  obtain ⟨armedOccurrences, armedReady, armedIs⟩ := rest
   rw [armedIs] at ran
   have armedStands : scope ∈ Laws.State.scopeIds armed := by
     simpa [Laws.State.scopeIds, armedScopes] using stands
@@ -234,28 +308,37 @@ theorem enter_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {he
   have starts_ := ops.armScope armed scope armedHolds armedStands
   have scopedStands : scope ∈ Laws.State.scopeIds (armed.signal (.armScope scope)) := by
     simpa [Laws.State.scopeIds, scopedScopes] using armedStands
+  obtain ⟨opened, inside, same, rest⟩ := owned
+  obtain ⟨isOwned, element_, parent, uncalled⟩ := rest
+  have scopedMember : opened ∈ (armed.signal (.armScope scope)).scopes := by
+    rw [scopedScopes, armedScopes]
+    exact inside
   split at ran
-  · cases ran
+  · rename_i start chosen
+    cases ran
     have names : ∀ element, Laws.State.names { element, scope, reserved := entry.inner } = entry.inner.toList := by
       simp [Laws.State.names]
-    refine ops.begin _ _ starts_ scopedStands rfl rfl (fun _ _ => ?_) ?_ ?_
-    · rw [Laws.State.signal_eq, armedScopes]
-      exact owned
+    refine ops.begin _ _ starts_ scopedStands rfl rfl (fun _ _ => ⟨opened, scopedMember, same, isOwned⟩) ?_ ?_
+      (entered_anchored scopedMember same element_ uncalled (innerStart?_child chosen) (fun found found_ held => ?_) rfl)
     · rw [names]
       cases entry.inner <;> simp
     · rw [names]
       exact scopedReady
+    · rw [Laws.State.signal_eq, armedOccurrences, occurrences] at found_
+      rw [lies found found_ (by simp [show entry.inner = some found.id from held])]
+      exact parent
   · split at ran
     · cases ran
-    · rename_i begun_ _
+    · rename_i begun_ started
       split at ran
       · cases ran
       · cases ran
-        exact implicitBegins_keeps ops _ _ starts_ scopedStands
+        exact implicitBegins_keeps ops _ _ starts_ ⟨opened, scopedMember, same, element_, uncalled⟩
+          (implicitStart_children started)
 
 /-- `Hooks.arriveScope` keeps `inv`: an interrupting Event Sub-Process first clears its parent occurrence, keeping its
 own occurrence and its start Event's reservation, which lies there; then the Scope is entered. -/
-theorem arriveScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ctx} {header : Header}
+theorem arriveScope_keeps {inv : State → Prop} {ctx : Ctx} (ops : ScopesOps ctx.program inv) {header : Header}
     {payload : ScopePayload} {occurrence : Occurrence} {entry : ScopeEntry} {state after : State} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (named : header.id = occurrence.element)
     (ready : ∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧
@@ -263,18 +346,23 @@ theorem arriveScope_keeps {inv : State → Prop} (ops : ScopesOps inv) {ctx : Ct
     (ran : Feature.Scopes.arriveScope ctx header payload occurrence entry state = .ok after) : inv after := by
   have claimable : ∀ id ∈ entry.inner.toList, Laws.State.Beginnable state occurrence.scope id ∧
       Laws.State.Unclaimed state id := fun id inner => ⟨(ready id inner).1, (ready id inner).2.1⟩
+  have lies : ∀ found ∈ state.occurrences, found.id ∈ entry.inner.toList → found.scope = occurrence.scope :=
+    fun found inside reserved => (ready found.id reserved).2.2 found inside rfl
   unfold Feature.Scopes.arriveScope at ran
   split at ran
-  · exact enter_keeps ops holds member begun named claimable ran
-  · exact enter_keeps ops holds member begun named claimable ran
+  · exact enter_keeps ops holds member begun named claimable lies ran
+  · exact enter_keeps ops holds member begun named claimable lies ran
   · rename_i interrupting _
     split at ran
     · cases ran
     · dsimp only at ran
       cases interrupting
-      · exact enter_keeps ops holds member begun named claimable ran
+      · exact enter_keeps ops holds member begun named claimable lies ran
       · obtain ⟨cleared, stays, clearedReady⟩ := ops.clear state occurrence entry.inner holds member begun ready
-        exact enter_keeps ops cleared stays begun named clearedReady ran
+        refine enter_keeps ops cleared stays begun named clearedReady (fun found inside reserved => ?_) ran
+        obtain ⟨_, shape⟩ := Laws.State.clearInside_eq state occurrence.scope (occurrence.id :: entry.inner.toList)
+        rw [shape] at inside
+        exact lies found (List.mem_filter.mp inside).1 reserved
 
 /-! ## Cancellation
 

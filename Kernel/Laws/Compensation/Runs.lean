@@ -55,8 +55,9 @@ structure RunsOps (inv : State → Prop) (settled : State → Nat → Prop) : Pr
       Laws.Step.PendingIn inv element) →
     inv { state with slots := { state.slots with compensation } } ∧
       ∀ id, settled state id → settled { state with slots := { state.slots with compensation } } id
-  /-- A context entered below a scope occurrence that stands. -/
+  /-- A context entered below a scope occurrence that stands, for a pending record's subject or handler there. -/
   enter : ∀ state element parent locals, inv state → parent ∈ state.scopes.map (·.id) →
+    Laws.Flow.RecordAnchor state element parent →
     inv (state.enterScope element parent locals none).1 ∧
       ∀ id, settled state id → settled (state.enterScope element parent locals none).1 id
   entered : ∀ (state : State) element parent locals, (state.enterScope element parent locals none).2 = ⟨state.nextIssue⟩ ∧
@@ -73,12 +74,14 @@ structure RunsOps (inv : State → Prop) (settled : State → Nat → Prop) : Pr
     (∃ held, inv held ∧ ∃ run ∈ held.slots.compensation.runs, run.resume = some (.complete id leave)) →
     inv (state.signal (.complete id leave writes rule)) ∧
       ∀ other, settled state other → settled (state.signal (.complete id leave writes rule)) other
-  /-- An ended run's resume, pending in a state that kept `inv`. -/
+  /-- An ended run's resume, pending in a state that kept `inv`, which held the run (`Laws.Flow.ResumedBy`). -/
   occur : ∀ state element scope leave writes rule, inv state → Laws.Step.PendingIn inv element →
+    Laws.Flow.ResumedBy inv state element scope leave →
     inv (state.signal (.occur element scope leave writes rule)) ∧
     ∀ other, settled state other → settled (state.signal (.occur element scope leave writes rule)) other
-  /-- A handler's begin in its context. -/
+  /-- A handler's begin in its context, entered for it without calling an instance. -/
   begin : ∀ state handler context scope, inv state → context ∈ state.scopes.map (·.id) →
+    (∃ entry ∈ state.scopes, entry.id = context ∧ entry.element = some handler ∧ entry.calledInstance = none) →
     inv (state.signal (.begin { element := handler, scope := context, continuation := .compensation scope })) ∧
       ∀ other, settled state other →
         settled (state.signal (.begin { element := handler, scope := context, continuation := .compensation scope })) other

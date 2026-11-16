@@ -215,11 +215,13 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : ClosurePhases
   cases dispatchSignal_ok ran with
   | onArm host scope ran =>
     obtain ⟨hostIssued, scopeIssued, hosted⟩ := phases.armIssued _ _ _ _ _ holds head
-    exact contract.arm _ _ _ _ _ _ popped (stands _ (host hostIssued)) (scope scopeIssued) hosted ran
+    exact contract.arm _ _ _ _ _ _ popped (stands _ (host hostIssued)) (scope scopeIssued) hosted
+      ⟨queue, holds, heads, rfl⟩ ran
   | onArmScope scope ran => exact contract.armScope _ _ _ _ popped (scope (phases.armScopeIssued _ queue _ holds head)) ran
   | onArmGateway occurrence scope ran =>
     obtain ⟨occurrenceIssued, scopeIssued, hosted⟩ := phases.armGatewayIssued _ _ _ _ _ holds head
-    exact contract.armGateway _ _ _ _ _ _ popped (stands _ (occurrence occurrenceIssued)) (scope scopeIssued) hosted ran
+    exact contract.armGateway _ _ _ _ _ _ popped (stands _ (occurrence occurrenceIssued)) (scope scopeIssued) hosted
+      ⟨queue, holds, heads, rfl⟩ ran
   | onRaise ran =>
     obtain ⟨raisable, settled⟩ := phases.raisable _ _ _ _ _ holds heads
     exact contract.raise _ _ _ _ _ popped raisable settled ⟨queue, holds, heads, rfl⟩ ran
@@ -237,6 +239,7 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : ClosurePhases
   | onRemove stands ran => exact contract.removeVariables _ _ _ _ _ popped stands ran
   | onOccur stands ran =>
     obtain ⟨reserved, free⟩ := phases.reserve _ _ _ _ popped stands ⟨queue, holds, .inl ⟨_, _, _, _, head⟩⟩
+      ⟨_, _, _, queue, holds, heads, rfl⟩
     obtain ⟨occurrences, element, scope, placed⟩ := facts.reserve { queue with signals := rest } _ _
     obtain ⟨issue, scopes, instances⟩ := placed
     refine pipeline _ _ _ _ _ _ _ reserved free (fun occurrence member named => ?_) ran

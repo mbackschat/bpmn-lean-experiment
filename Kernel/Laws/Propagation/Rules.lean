@@ -3,6 +3,8 @@ module
 public import Kernel.Hooks
 public import Kernel.Laws.State.Frames
 public import Kernel.Laws.IL
+public import Kernel.Laws.Flow.Sources
+public import Kernel.Laws.Hooks
 
 /-! # Laws of propagation: the rules
 
@@ -154,10 +156,10 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
   fire : ∀ state item fired, inv state → inv (state.signal (.fire item fired))
   /-- A Signal throw's broadcast intent. -/
   outbox : ∀ state outbox, inv state → inv { state with outbox }
-  /-- The compensation a begun occurrence's throw queues, which completes it once it ends; the occurrence was begun from
-  a state that kept `inv`, and is the trigger. -/
+  /-- The compensation a begun occurrence's throw queues, which completes it once it ends by no named flow; the
+  occurrence was begun from a state that kept `inv`, and is the trigger. -/
   compensate : ∀ state occurrence scope activity trigger leave, inv state → occurrence ∈ state.occurrences →
-    occurrence.begun = true → BegunFrom inv state occurrence →
+    occurrence.begun = true → BegunFrom inv state occurrence → (∀ selected, leave = .flows selected → selected = []) →
     trigger = { processInstanceId := state.instanceOf occurrence.scope, element := occurrence.element,
                 activation := occurrence.activation } →
     inv (state.signal (.compensate scope activity trigger none (some (.complete occurrence.id leave))))
@@ -172,13 +174,17 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
     inv (state.openItem kind occurrence)
   /-- A queued signal keeps the occurrences. -/
   signalOccurrences : ∀ (state : State) signal, (state.signal signal).occurrences = state.occurrences
-  /-- A caught Event Sub-Process's begin, naming no reservation, in a scope occurrence that stands. -/
+  /-- A queued signal keeps the scope occurrences and the instance entries. -/
+  signalFrame : ∀ (state : State) signal, (state.signal signal).scopes = state.scopes ∧
+    (state.signal signal).slots.instances = state.slots.instances
+  /-- A caught Event Sub-Process's begin, naming no reservation, in a scope occurrence that stands and declares it. -/
   begin : ∀ state element scope, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
-    inv (state.signal (.begin { element, scope }))
+    Laws.Flow.Anchored inv program state element scope → inv (state.signal (.begin { element, scope }))
   /-- An interrupting boundary's cancellation of its host. -/
   cancel : ∀ state id, inv state → inv (state.signal (.cancel id))
-  /-- A caught boundary's fresh occurrence. -/
+  /-- A caught boundary's fresh occurrence, anchored where it occurs, leaving by flows it lists. -/
   occur : ∀ state element scope leave writes rule, inv state → Laws.IL.BoundaryOf program element →
+    Laws.Flow.OccurAnchored inv program state element scope leave →
     inv (state.signal (.occur element scope leave writes rule))
   /-- An interrupted Scope's output mappings. -/
   write : ∀ state scope writes rule, inv state → inv (state.signal (.write scope writes rule))
@@ -190,9 +196,12 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
   /-- A rolled-back Transaction's disarmed boundaries, keeping the scope occurrences. -/
   disarm : ∀ state host, inv state → inv (state.disarm host) ∧ (state.disarm host).scopes = state.scopes
   /-- A caught Cancel's rollback: the scope occurrence, which stands, cleared, then its compensation queued, which takes
-  the boundary once it ends and the trigger of the Cancel raise it was taken off. -/
+  the boundary, anchored where it occurs before the clearing and leaving by flows it lists, once it ends, and the
+  trigger of the Cancel raise it was taken off. -/
   rollBack : ∀ state scope trigger leave element parent flows, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
     Laws.IL.BoundaryOf program element → RollsBack inv trigger state →
+    Laws.Flow.Anchored inv program state element parent →
+    (∀ selected, flows = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program element flow) →
     inv ((state.clearInside scope).signal (.compensate scope none trigger leave (some (.occur element parent flows))))
 
 /-- Firing each of a Signal throw's receivers keeps `inv` and the occurrences. -/
@@ -292,5 +301,31 @@ structure QuietSteps (quiet : Signal → Prop) : Prop where
   write : ∀ scope writes rule, quiet (.write scope writes rule)
   fail : ∀ failure, quiet (.endInstance .failed (some failure))
   compensate : ∀ scope activity trigger leave resume, quiet (.compensate scope activity trigger leave resume)
+
+/-- A caught boundary, anchored where it occurs and listing its outgoing flows, fires: it cancels its host if it
+interrupts one, and a fresh occurrence occurs. -/
+theorem boundaryFire_keeps {program : Program} {inv : State → Prop} (ops : PropagationOps program inv) (boundary : Boundary)
+    (host : Option Nat) (scope : ScopeOccurrenceId) (writes : List (String × Value)) {state : State} (holds : inv state)
+    (bounded : Laws.IL.BoundaryOf program boundary.id) (anchored : Laws.Flow.Anchored inv program state boundary.id scope)
+    (listed : ∀ flow ∈ boundary.outgoing, Laws.Flow.Lists program boundary.id flow) :
+    inv (boundary.fire host none scope writes state) ∧ (boundary.fire host none scope writes state).occurrences =
+      state.occurrences := by
+  rw [Laws.Hooks.fire_eq]
+  have interrupted : inv (if boundary.interrupting then host.elim state (state.signal <| .cancel ·) else state) ∧
+      (if boundary.interrupting then host.elim state (state.signal <| .cancel ·) else state).occurrences =
+        state.occurrences ∧ Laws.Flow.Anchored inv program
+          (if boundary.interrupting then host.elim state (state.signal <| .cancel ·) else state) boundary.id scope := by
+    split
+    · cases host with
+      | none => exact ⟨holds, rfl, anchored⟩
+      | some owner =>
+        exact ⟨ops.cancel _ _ holds, ops.signalOccurrences _ _, anchored.weaken holds
+          (fun _ inside => by rwa [Option.elim_some, (ops.signalFrame _ _).1] at inside)
+          (fun _ inside => by rwa [Option.elim_some, (ops.signalFrame _ _).2] at inside)⟩
+    · exact ⟨holds, rfl, anchored⟩
+  exact ⟨ops.occur _ _ _ _ _ _ interrupted.1 bounded
+      (.inl ⟨interrupted.2.2, fun _ same flow inside => by cases same; exact listed flow inside⟩),
+    (ops.signalOccurrences _ _).trans interrupted.2.1⟩
+
 
 end Kernel.Laws.Propagation

@@ -67,7 +67,7 @@ theorem enterBody_placed {program : Program} {occurrence : Occurrence} {state : 
         { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
           occurrence := occurrence.id, collection, instances := List.replicate count .waiting } := by
   have entered := (runsFramed_frameAlongside program).enterScope program state element occurrence.scope locals
-    (some occurrence.id) formed framed
+    (some occurrence.id) formed (named ▸ Laws.Flow.Anchored.occurrence member) framed
   have none : ∀ scope, Iteration.active scope ∉ List.replicate count Iteration.waiting := fun _ active => by
     cases List.eq_of_mem_replicate active
   have placed : RunPlaced (state.enterScope element occurrence.scope locals (some occurrence.id)).1
@@ -111,7 +111,9 @@ theorem arriveMultiInstance_framed {ctx : Ctx} {header : Header} {envelope : Env
     obtain ⟨enteredFramed, placed⟩ := enterBody_placed formed framed member body header.id named.symm locals unarmed
       collection count
     exact beginInstances_framed (enterBody_entering (Proofs.Step.registeredOps_wellFormed.multiInstance
-      ctx.program) formed member begun header.id (fun current kept present =>
+      ctx.program) formed member begun header.id
+      (enterBody_enters (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program) formed member begun named)
+      (fun current kept present =>
         (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program).arm current occurrence _ kept present begun named)
       locals unarmed collection _ waiting).1 enteredFramed placed
       (fun _ => ⟨[], [], List.replicate count .waiting, by simp, by simp, by simp, by simp, waiting⟩)
@@ -322,13 +324,15 @@ theorem framedNumbered_frameAlongside (program : Program) : StoresAlongside (Fra
   armGateway other s occurrence header payload formed member gateway kept :=
     ⟨(runsFramed_frameAlongside program).armGateway other s occurrence header payload formed member gateway kept.1,
       fun apart => (kept.2 apart).signalOther Laws.Step.armGateway_apart⟩
-  signalBegin s request fits kept := ⟨(runsFramed_frameAlongside program).signalBegin s request fits kept.1,
+  signalBegin other s request formed fits anchored kept := ⟨(runsFramed_frameAlongside program).signalBegin other s
+    request formed fits (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
     fun apart => (kept.2 apart).signalBegin kept.1.owns fits.1 fits.2⟩
   issue s kept := ⟨(runsFramed_frameAlongside program).issue s kept.1, fun apart => (kept.2 apart).issue⟩
-  enterScope other s element parent locals owner formed kept :=
-    ⟨(runsFramed_frameAlongside program).enterScope other s element parent locals owner formed kept.1,
+  enterScope other s element parent locals owner formed anchored kept :=
+    ⟨(runsFramed_frameAlongside program).enterScope other s element parent locals owner formed
+      (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
       fun apart => (kept.2 apart).enterScope formed kept.1.owns element parent locals owner⟩
-  reserve _ s element scope formed pending kept :=
+  reserve _ s element scope formed pending _ kept :=
     ⟨reserve_runsFramed s element scope kept.1, fun apart =>
       (kept.2 apart).reserve formed (PendingIn.unlooped (fun _ kept => (kept.2 apart).2.occurs) pending)⟩
   leaveScope other s scope formed present leaves kept :=
@@ -356,26 +360,27 @@ theorem framedNumbered_frameAlongside (program : Program) : StoresAlongside (Fra
 /-- Subscriptions' reservations and queued occurrences keep the numbering beside the slot invariant: each names a
 reservable element, a boundary or one pending in a state that kept it, none looping. -/
 theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside program (FramedNumbered program) where
-  reserve s element scope formed reservable kept :=
-    ⟨(runsFramed_occursAlongside program).reserve s element scope formed reservable kept.1, fun apart =>
+  reserve s element scope formed reservable anchored kept :=
+    ⟨(runsFramed_occursAlongside program).reserve s element scope formed reservable (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
+      fun apart =>
       (kept.2 apart).reserve formed (reservable_unlooped apart reservable)⟩
-  occur s element scope leave writes rule source kept :=
+  occur s element scope leave writes rule source anchored kept :=
     ⟨(runsFramed_occursAlongside program).occur s element scope leave writes rule
-      (source.imp_right fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩) kept.1, fun apart =>
+      (source.imp_right fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩) (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1, fun apart =>
       (kept.2 apart).signalPending rfl fun named inside => by
         rw [List.mem_singleton.mp inside]
         exact source_unlooped apart source⟩
-  compensate s scope activity trigger leave element at_ resumed source rolls kept :=
+  compensate s scope activity trigger leave element at_ resumed source rolls anchored kept :=
     ⟨(runsFramed_occursAlongside program).compensate s scope activity trigger leave element at_ resumed
       (source.imp_right fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩)
       (rolls.imp fun _ => And.imp_right (And.imp_right (And.imp_right
-        (Laws.State.RollsBack.imp fun _ => And.imp_right And.left)))) kept.1, fun apart =>
+        (Laws.State.RollsBack.imp fun _ => And.imp_right And.left)))) (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1, fun apart =>
       (kept.2 apart).signalPending rfl fun named inside => by
         rw [List.mem_singleton.mp inside]
         exact source_unlooped apart source⟩
-  throwCompensate s occurrence scope activity trigger leave formed begunFrom named kept :=
+  throwCompensate s occurrence scope activity trigger leave formed begunFrom named unnamed kept :=
     ⟨(runsFramed_occursAlongside program).throwCompensate s occurrence scope activity trigger leave formed
-      (begunFrom.imp fun _ => And.imp_right And.left) named kept.1, fun apart =>
+      (begunFrom.imp fun _ => And.imp_right And.left) named unnamed kept.1, fun apart =>
       (kept.2 apart).signalPending rfl fun _ inside => absurd inside List.not_mem_nil⟩
   raise s raised occurrence formed raises kept :=
     ⟨(runsFramed_occursAlongside program).raise s raised occurrence formed
@@ -482,14 +487,13 @@ theorem composed_phases : Laws.Step.Phases Composed :=
       ⟨⟨begun.1, (runsFramed_stepAlongside _).begin _ s request role sourceType holds.1 stands admitted assigned
         (origin.mono fun _ held => ⟨held.1, held.2.1⟩) holds.2.1,
         fun apart => numbered_begin apart holds.1 stands admitted assigned origin holds.2⟩, begun.2⟩
-    reserve := fun _ s element scope holds stands pending =>
+    reserve := fun _ s element scope holds stands pending popped =>
       have reserved := phases.reserve _ _ element scope holds.1 stands (pending.imp fun _ => And.imp_left And.left)
+        (popped.imp fun _ => Exists.imp fun _ => Exists.imp fun _ queued => queued.imp fun _ held => held.1)
       ⟨⟨reserved.1, (framedNumbered_frameAlongside _).reserve _ s element scope holds.1
-        (pending.imp fun _ => And.imp_left And.right) holds.2⟩, reserved.2⟩
-    cancel := fun _ s id holds => ⟨phases.cancel _ _ id holds.1,
-      (framedNumbered_frameAlongside _).cancelOccurrence framedNumbered_withoutRecord (fun _ _ _ kept =>
-        ⟨kept.1.carry (.equal rfl rfl rfl rfl), fun apart => (kept.2 apart).unmoved rfl rfl rfl rfl rfl
-          fun _ pending => .inl pending⟩) holds.1 holds.2⟩ }
+        (pending.imp fun _ => And.imp_left And.right) popped holds.2⟩, reserved.2⟩
+    cancel := fun _ s id holds => ⟨phases.cancel _ _ id holds.1, (framedNumbered_frameAlongside _).cancelOccurrence
+      framedNumbered_withoutRecord (fun _ _ _ kept => unmoved kept rfl rfl rfl rfl rfl) holds.1 holds.2⟩ }
 
 /-- The completion pipeline's own phases keep `Composed`. -/
 theorem composed_pipelinePhases : Laws.Step.PipelinePhases Composed :=
@@ -729,7 +733,9 @@ theorem arriveMultiInstance_snapshots {ctx : Ctx} {header : Header} {envelope : 
       cases unarmed <;> simp only [Bool.false_eq_true, ↓reduceIte, Laws.State.signal_eq, Laws.State.enterScope_eq] <;>
         exact kept.same rfl
     refine beginInstances_snapshots (enterBody_entering (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program)
-      formed member begun header.id (fun current kept present =>
+      formed member begun header.id
+      (enterBody_enters (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program) formed member begun named)
+      (fun current kept present =>
         (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program).arm current occurrence _ kept present begun named)
       locals unarmed collection _ fun _ inside => List.eq_of_mem_replicate inside).1
       enteredKept (fun earlier inside same => absurd same (fresh earlier inside)) fun _ => ?_

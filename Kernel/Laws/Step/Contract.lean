@@ -528,15 +528,19 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
     (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) → hooks.triggerActivity ctx header payload item fired state = .ok after → inv ctx.program after
   trigger : ∀ ctx item fired state after, inv ctx.program state → item ∈ state.openItems →
     hooks.trigger ctx item fired state = .ok after → inv ctx.program after
+  /-- An arming is taken off a queue that kept `inv`. -/
   arm : ∀ ctx host element scope state after, inv ctx.program state → OccurrenceStands state host →
     ScopeStands state scope →
     (∀ occurrence ∈ state.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope) →
+    Laws.State.Popped (inv ctx.program) (.arm host element scope) state →
     hooks.arm ctx host element scope state = .ok after → inv ctx.program after
   armScope : ∀ ctx scope state after, inv ctx.program state → ScopeStands state scope →
     hooks.armScope ctx scope state = .ok after → inv ctx.program after
+  /-- An Event-Based Gateway's arming is taken off a queue that kept `inv`. -/
   armGateway : ∀ ctx occurrence gateway scope state after, inv ctx.program state → OccurrenceStands state occurrence →
     ScopeStands state scope →
     (∀ found ∈ state.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope) →
+    Laws.State.Popped (inv ctx.program) (.armGateway occurrence gateway scope) state →
     hooks.armGateway ctx occurrence gateway scope state = .ok after → inv ctx.program after
   /-- A raise finds what its origin names and a settled host, as the closure takes it off a queue that kept `inv`. -/
   raise : ∀ ctx event origin state after, inv ctx.program state → Laws.State.Raisable ctx.program state origin →
@@ -687,9 +691,10 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop where
       ∀ found ∈ (state.beginOccurrence request role sourceType).1.occurrences, found.id = id →
         found.scope = (state.beginOccurrence request role sourceType).2.scope
   /-- `State.reserve` for `Signal.occur`, in a scope occurrence that stands, of an element the signal reserved in a
-  state that kept `inv`; nothing queued names the reservation. -/
+  state that kept `inv`, taken off a queue that kept it; nothing queued names the reservation. -/
   reserve : ∀ program state element scope, inv program state → ScopeStands state scope →
     PendingIn (inv program) element →
+    (∃ leave writes rule, Laws.State.Popped (inv program) (.occur element scope leave writes rule) state) →
     inv program (state.reserve element scope).1 ∧
     ∀ request, Laws.State.Queued (state.reserve element scope).1 request →
       (state.reserve element scope).2.id ∉ Laws.State.names request

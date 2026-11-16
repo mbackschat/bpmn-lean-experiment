@@ -689,11 +689,11 @@ theorem callsFormed_alongside (program : Program) : Alongside (CallsFormed progr
   park _ _ _ _ _ held := held.same rfl (fun _ member => member) rfl
   arm _ _ host element scope _ _ held := held.signal (.arm host element scope)
   armGateway _ _ occurrence header _ _ _ _ held := held.signal (.armGateway occurrence.id header.id occurrence.scope)
-  signalBegin _ request _ held := held.signal (.begin request)
+  signalBegin _ _ request _ _ _ held := held.signal (.begin request)
   issue _ held := held.same (by rw [Laws.State.issue_eq]) (by rw [Laws.State.issue_eq]; exact fun _ member => member)
     (by rw [Laws.State.issue_eq])
-  enterScope _ _ element parent locals owner formed held := held.entered formed element parent locals owner
-  reserve _ _ element scope formed _ held := held.reserved formed element scope
+  enterScope _ _ element parent locals owner formed _ held := held.entered formed element parent locals owner
+  reserve _ _ element scope formed _ _ held := held.reserved formed element scope
   leaveScope _ _ _ formed present _ held := held.left formed (Laws.State.leaveScope_left formed present)
   clearInside _ _ _ keep formed present kept held :=
     held.cleared formed (Laws.State.clearInside_cleared formed present keep) kept
@@ -705,11 +705,11 @@ theorem callsFormed_alongside (program : Program) : Alongside (CallsFormed progr
   removeVariable _ s target name _ held :=
     have same := Laws.State.removeVariable_same s target name
     held.same same.scopes (fun _ member => same.occurrences ▸ member) same.instanceId
-  instanceBegin _ request held := held.signal (.begin request)
-  defer _ requests held := held.same (by rw [Laws.State.deferBegins_eq]) (by rw [Laws.State.deferBegins_eq]; exact fun _ member => member)
+  instanceBegin _ _ request _ _ held := held.signal (.begin request)
+  defer _ _ requests _ _ held := held.same (by rw [Laws.State.deferBegins_eq]) (by rw [Laws.State.deferBegins_eq]; exact fun _ member => member)
     (by rw [Laws.State.deferBegins_eq])
   leaveInstance _ _ _ _ formed _ _ present held := held.left formed (Laws.State.leaveScope_left formed present)
-  runs _ _ held := held.same rfl (fun _ member => member) rfl
+  runs _ _ _ _ _ held := held.same rfl (fun _ member => member) rfl
 
 /-- Storing compensation runs keeps the lane invariant. -/
 theorem callsFormed_stores (program : Program) : StoresAlongside (CallsFormed program) :=
@@ -718,10 +718,10 @@ theorem callsFormed_stores (program : Program) : StoresAlongside (CallsFormed pr
 
 /-- The features' reservations, queued triggers and a Call's entry of its called root keep the lane invariant. -/
 theorem callsFormed_occursAlongside (program : Program) : OccursAlongside program (CallsFormed program) where
-  reserve _ element scope formed _ held := held.reserved formed element scope
-  occur _ element scope leave writes rule _ held := held.signal (.occur element scope leave writes rule)
-  compensate _ _ _ _ _ _ _ _ _ _ held := held.signal _
-  throwCompensate _ _ _ _ _ _ _ _ _ held := held.signal _
+  reserve _ element scope formed _ _ held := held.reserved formed element scope
+  occur _ element scope leave writes rule _ _ held := held.signal (.occur element scope leave writes rule)
+  compensate _ _ _ _ _ _ _ _ _ _ _ held := held.signal _
+  throwCompensate _ _ _ _ _ _ _ _ _ _ held := held.signal _
   raise _ _ _ _ _ held := held.signal _
   enterCalled _ _ variables definition formed member _ role activity unowned held :=
     held.enterCalled formed member role activity unowned variables definition

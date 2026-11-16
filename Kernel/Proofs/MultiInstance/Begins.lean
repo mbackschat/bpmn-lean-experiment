@@ -350,14 +350,14 @@ theorem BeginsKept.recordEnd {program : Program} {s : State} (key : OccurrenceKe
 /-- A reservation or queued occurrence a subscription makes names a reservable element, a boundary's identifier or one
 pending in a state that kept the relation, none of which loops under a program whose identifiers are unique. -/
 theorem beginsKept_occursAlongside (program : Program) : OccursAlongside program (BeginsKept program) where
-  reserve s _ scope _ reservable held := held.reserve (fun apart => reservable_unlooped apart reservable) scope
-  occur s element scope leave writes rule named held := held.signal _ fun apart other inside => by
+  reserve s _ scope _ reservable _ held := held.reserve (fun apart => reservable_unlooped apart reservable) scope
+  occur s element scope leave writes rule named _ held := held.signal _ fun apart other inside => by
     rw [List.mem_singleton.mp inside]
     exact named.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept apart).occurs)
-  compensate s scope activity trigger leave element at_ resumed named _ held := held.signal _ fun apart other inside => by
+  compensate s scope activity trigger leave element at_ resumed named _ _ held := held.signal _ fun apart other inside => by
     rw [List.mem_singleton.mp inside]
     exact named.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept apart).occurs)
-  throwCompensate s _ _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
+  throwCompensate s _ _ _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   raise s _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   enterCalled _ call variables definition formed _ _ _ _ _ held :=
     held.enterCalled formed program call variables definition
@@ -474,20 +474,20 @@ theorem beginsKept_alongside (program : Program) : Alongside (BeginsKept program
   park _ _ _ _ _ held := held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
   arm _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   armGateway _ _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
-  signalBegin _ request _ held := held.signalBegin request
+  signalBegin _ _ request _ _ _ held := held.signalBegin request
   issue _ held := held.issue
-  enterScope _ _ element parent locals owner _ held := held.enterScope element parent locals owner
-  reserve _ _ _ scope _ pending held :=
+  enterScope _ _ element parent locals owner _ _ held := held.enterScope element parent locals owner
+  reserve _ _ _ scope _ pending _ held :=
     held.reserve (fun apart => PendingIn.unlooped (fun _ kept => (kept apart).occurs) pending) scope
   leaveScope _ _ _ formed present _ held := held.leaveScope formed present
   clearInside _ _ _ keep formed present _ held := held.clearInside formed present keep
   disarm _ _ host _ held := held.disarm host
   setVariable _ _ target name value _ held := held.setVariable target name value
   removeVariable _ _ target name _ held := held.removeVariable target name
-  instanceBegin _ request held := held.signalBegin request
-  defer _ requests held := held.defer requests
+  instanceBegin _ _ request _ _ held := held.signalBegin request
+  defer _ _ requests _ _ held := held.defer requests
   leaveInstance _ _ _ _ formed _ _ present held := held.leaveScope formed present
-  runs _ runs held := held.runs runs
+  runs _ _ runs _ _ held := held.runs runs
 
 /-- Storing compensation runs that resume only by pending reservations keeps `BeginsKept`. -/
 theorem beginsKept_stores (program : Program) : StoresAlongside (BeginsKept program) :=

@@ -63,10 +63,11 @@ theorem closurePhases_alongside {rel : Program → State → Prop} (phases : Law
     have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled bodied assigned
       (origin.mono fun _ held => held.1)
     ⟨⟨begun.1, (side _).begin _ s request role sourceType holds.1 stands admitted assigned origin holds.2⟩, begun.2⟩
-  reserve _ s element scope holds stands pending :=
+  reserve _ s element scope holds stands pending popped :=
     have reserved := phases.reserve _ _ element scope holds.1 stands (pending.imp fun _ => And.imp_left And.left)
-    ⟨⟨reserved.1, (side _).reserve _ s element scope holds.1 (pending.imp fun _ => And.imp_left And.right) holds.2⟩,
-      reserved.2⟩
+      (popped.imp fun _ => Exists.imp fun _ => Exists.imp fun _ queued => queued.imp fun _ held => held.1)
+    ⟨⟨reserved.1, (side _).reserve _ s element scope holds.1 (pending.imp fun _ => And.imp_left And.right) popped
+      holds.2⟩, reserved.2⟩
   cancel _ s id holds := ⟨phases.cancel _ _ id holds.1, (side _).cancel _ s id holds.1 holds.2⟩
 
 /-- `Step`'s phases keep a property beside `WellFormed` that the state operations they apply keep

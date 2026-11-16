@@ -38,20 +38,23 @@ kept `WellFormed` and `rel` (`Laws.State.BegunFrom`, `Laws.State.RaisesFrom`); a
 `program`, which names the root by the Call's authored identifier, for a present begun Call of the element role, of an
 Activity the program declares, that owns no called root yet (`Laws.Work.WorkOps.enterCalled`). -/
 structure OccursAlongside (program : Program) (rel : State → Prop) : Prop where
-  reserve : ∀ s element scope, WellFormed program s → Reservable program element → rel s →
+  reserve : ∀ s element scope, WellFormed program s → Reservable program element →
+    Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s element scope → rel s →
     rel (s.reserve element scope).1
-  occur : ∀ s element scope leave writes rule, (BoundaryOf program element ∨ PendingIn rel element) → rel s →
+  occur : ∀ s element scope leave writes rule, (BoundaryOf program element ∨ PendingIn rel element) →
+    Laws.Flow.OccurAnchored (fun t => WellFormed program t ∧ rel t) program s element scope leave → rel s →
     rel (s.signal (.occur element scope leave writes rule))
   compensate : ∀ s scope activity trigger leave element at_ resumed,
     (BoundaryOf program element ∨ PendingIn rel element) →
     (∃ before, s = before.clearInside scope ∧ WellFormed program before ∧ scope ∈ scopeIds before ∧
-      Laws.State.RollsBack (fun t => WellFormed program t ∧ rel t) trigger before) → rel s →
+      Laws.State.RollsBack (fun t => WellFormed program t ∧ rel t) trigger before) →
+    Laws.Flow.OccurAnchored (fun t => WellFormed program t ∧ rel t) program s element at_ resumed → rel s →
     rel (s.signal (.compensate scope activity trigger leave (some (.occur element at_ resumed))))
   throwCompensate : ∀ s occurrence scope activity trigger leave, WellFormed program s →
     Laws.State.BegunFrom (fun t => WellFormed program t ∧ rel t) s occurrence →
     trigger = { processInstanceId := s.instanceOf occurrence.scope, element := occurrence.element,
-                activation := occurrence.activation } → rel s →
-    rel (s.signal (.compensate scope activity trigger none (some (.complete occurrence.id leave))))
+                activation := occurrence.activation } → (∀ selected, leave = .flows selected → selected = []) →
+    rel s → rel (s.signal (.compensate scope activity trigger none (some (.complete occurrence.id leave))))
   raise : ∀ s raised occurrence, WellFormed program s →
     Laws.State.RaisesFrom (fun t => WellFormed program t ∧ rel t) occurrence s → rel s →
     rel (s.signal (.raise raised { element := occurrence.element, scope := occurrence.scope,
@@ -223,11 +226,19 @@ structure FrameAlongside (rel : State → Prop) (srel : State → Prop := rel) :
   armGateway : ∀ program s occurrence header payload, WellFormed program s → occurrence ∈ s.occurrences →
     Laws.Flow.GatewayOf program s occurrence header payload → rel s →
     rel (s.signal (.armGateway occurrence.id header.id occurrence.scope))
-  signalBegin : ∀ s request, BeginFits s request → rel s → rel (s.signal (.begin request))
+  /-- A begin that fits, from where `Laws.Flow.BeginAnchored` says. -/
+  signalBegin : ∀ program s request, WellFormed program s → BeginFits s request →
+    Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ rel t) program s request → rel s →
+    rel (s.signal (.begin request))
   issue : ∀ s, rel s → rel s.issue.1
-  enterScope : ∀ program s element parent locals owner, WellFormed program s → rel s →
+  /-- Entering a scope occurrence of an element anchored where it is entered (`Laws.Flow.Anchored`). -/
+  enterScope : ∀ program s element parent locals owner, WellFormed program s →
+    Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s element parent → rel s →
     rel (s.enterScope element parent locals owner).1
-  reserve : ∀ program s element scope, WellFormed program s → Laws.Step.PendingIn rel element → rel s →
+  /-- The reservation a `Signal.occur` taken off a queue that kept `rel` asks for (`Laws.State.Popped`). -/
+  reserve : ∀ program s element scope, WellFormed program s → Laws.Step.PendingIn rel element →
+    (∃ leave writes rule, Laws.State.Popped (fun t => WellFormed program t ∧ rel t)
+      (.occur element scope leave writes rule) s) → rel s →
     rel (s.reserve element scope).1
   leaveScope : ∀ program s scope, WellFormed program s → scope ∈ scopeIds s → LeavesOwned s scope → rel s →
     rel (s.leaveScope scope)
@@ -252,11 +263,18 @@ structure StoresAlongside (rel : State → Prop) : Prop extends FrameAlongside r
 instance's scope occurrence and replacing the Multi-Instance runs. The scope occurrences kept and an input's end facts
 read no queued begin and no runs. -/
 structure Alongside (rel : State → Prop) (srel : State → Prop := rel) : Prop extends FrameAlongside rel srel where
-  instanceBegin : ∀ s request, rel s → rel (s.signal (.begin request))
-  defer : ∀ s requests, rel s → rel (s.deferBegins requests)
+  instanceBegin : ∀ program s request, WellFormed program s →
+    Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ rel t) program s request → rel s →
+    rel (s.signal (.begin request))
+  defer : ∀ program s requests, WellFormed program s →
+    (∀ request ∈ requests, Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ rel t) program s request) → rel s →
+    rel (s.deferBegins requests)
+  /-- The Multi-Instance runs replaced by runs whose elements are anchored at their scope occurrences. -/
   leaveInstance : ∀ program s run scope, WellFormed program s → run ∈ s.slots.multiInstances →
     Iteration.active scope ∈ run.instances → scope ∈ scopeIds s → rel s → rel (s.leaveScope scope)
-  runs : ∀ s (runs : List MultiInstanceRun), rel s → rel { s with slots := { s.slots with multiInstances := runs } }
+  runs : ∀ program s (runs : List MultiInstanceRun), WellFormed program s →
+    (∀ run ∈ runs, Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s run.element run.scope) → rel s →
+    rel { s with slots := { s.slots with multiInstances := runs } }
 
 /-- A queued signal that queues no begin, makes no reservation and carries no trigger, no resume and places no work moves nothing `rel`
 reads. -/
@@ -426,9 +444,11 @@ theorem FrameAlongside.openItem (side : FrameAlongside rel) {s : State} (kept : 
 theorem FrameAlongside.openSubscription (side : FrameAlongside rel) {program : Program}
     (occurs : OccursAlongside program rel) {s : State} (formed : WellFormed program s) (kept : rel s)
     (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool)
-    (reservable : Laws.IL.Reservable program element) : rel (s.openSubscription kind element scope host passive).1 := by
+    (reservable : Laws.IL.Reservable program element)
+    (anchored : Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s element scope) :
+    rel (s.openSubscription kind element scope host passive).1 := by
   refine side.frame (s.reserve element scope).1.issue.1 _ ?_
-    (side.issue _ (occurs.reserve s element scope formed reservable kept))
+    (side.issue _ (occurs.reserve s element scope formed reservable anchored kept))
   rw [Laws.State.openSubscription_eq, Laws.State.issue_eq]
   exact .same
 

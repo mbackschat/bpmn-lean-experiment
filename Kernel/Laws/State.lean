@@ -266,6 +266,18 @@ theorem enterCalled_eq (state : State) (program : Program) (call : Occurrence) (
   intro entry member
   simp [fresh entry member]
 
+/-- A Call's called root calls an instance and has the instance entry recording the definition the Call bound, whatever
+identifiers stood before. -/
+theorem enterCalled_root (state : State) (program : Program) (call : Occurrence) (variables : List (String × Value))
+    (definition : DefinitionRef) :
+    (∃ root ∈ (state.enterCalled program call variables definition).1.scopes,
+      root.id = (state.enterCalled program call variables definition).2 ∧ root.calledInstance.isSome) ∧
+    { root := (state.enterCalled program call variables definition).2, definition := some definition } ∈
+      (state.enterCalled program call variables definition).1.slots.instances := by
+  simp only [State.enterCalled, State.enterScope, State.issue]
+  refine ⟨⟨_, List.mem_map.mpr ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl⟩, ?_, ?_⟩, by simp⟩ <;>
+    simp
+
 /-- A called instance's identifier spells its caller's instance, then the Call's authored identifier, each after its
 UTF-8 byte length, then the activation. -/
 theorem calledInstanceId_eq (caller : String) (call : ElementId) (activation : Nat) :
