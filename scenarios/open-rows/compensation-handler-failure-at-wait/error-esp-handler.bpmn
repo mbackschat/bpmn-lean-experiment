@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ErrorEspHandler"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-handler-failure-at-wait:error-esp-handler">
+  <bpmn:error id="Error_UndoFailed" name="Undo failed" errorCode="UNDO_FAILED" />
+  <bpmn:process id="Process_ErrorEspHandler" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:subProcess id="SubProcess_Subject" name="Subject">
+      <bpmn:startEvent id="StartEvent_Subject" />
+      <bpmn:userTask id="UserTask_Work" name="Do the work" />
+      <bpmn:endEvent id="EndEvent_Subject" />
+      <bpmn:sequenceFlow id="Flow_StartSubject_Work" sourceRef="StartEvent_Subject" targetRef="UserTask_Work" />
+      <bpmn:sequenceFlow id="Flow_Work_EndSubject" sourceRef="UserTask_Work" targetRef="EndEvent_Subject" />
+      <bpmn:subProcess id="EventSubProcess_Undo" triggeredByEvent="true">
+        <bpmn:startEvent id="StartEvent_Undo" isInterrupting="false">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_Undo" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="UserTask_UndoReview" name="Review the undo" />
+        <bpmn:endEvent id="EndEvent_UndoFailed">
+          <bpmn:errorEventDefinition id="ErrorDefinition_UndoFailed" errorRef="Error_UndoFailed" />
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_StartUndo_UndoReview" sourceRef="StartEvent_Undo" targetRef="UserTask_UndoReview" />
+        <bpmn:sequenceFlow id="Flow_UndoReview_EndUndoFailed" sourceRef="UserTask_UndoReview" targetRef="EndEvent_UndoFailed" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Start_Subject" sourceRef="StartEvent_Start" targetRef="SubProcess_Subject" />
+    <bpmn:sequenceFlow id="Flow_Subject_All" sourceRef="SubProcess_Subject" targetRef="IntermediateThrow_All" />
+    <bpmn:sequenceFlow id="Flow_All_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:sequenceFlow id="Flow_After_Done" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

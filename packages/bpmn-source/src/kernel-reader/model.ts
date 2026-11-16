@@ -243,8 +243,6 @@ export type ReadContext = Readonly<{
   childrenOf: (container: ElementRecord) => ReadonlyArray<ModelNode>;
   compensation: ReadonlyArray<CompensationSubject>;
   handlers: ReadonlySet<string>;
-  /** Ids of the elements a compensation Event Sub-Process erases along with itself. */
-  erased: ReadonlySet<string>;
   bindings: ReadonlyArray<EffectBinding>;
   inertAttributes: ReadonlySet<string>;
   expressionLanguage: string | null;

@@ -506,6 +506,26 @@ test("a compensation handler stays in the container that declares it", async () 
   assert.deepEqual(children(nested, "T"), ["U", "H"]);
 });
 
+test("a Compensation Event Sub-Process is read whole, its start, end and flows included, whatever its end throws", async () => {
+  const body = (end: string): string => model(`<bpmn:subProcess id="T"><bpmn:userTask id="U"/>
+    <bpmn:subProcess id="Undo" triggeredByEvent="true">
+      <bpmn:startEvent id="UndoStart"><bpmn:compensateEventDefinition/></bpmn:startEvent>
+      <bpmn:task id="UndoTask"/><bpmn:endEvent id="UndoEnd">${end}</bpmn:endEvent>
+      <bpmn:sequenceFlow id="u1" sourceRef="UndoStart" targetRef="UndoTask"/>
+      <bpmn:sequenceFlow id="u2" sourceRef="UndoTask" targetRef="UndoEnd"/>
+    </bpmn:subProcess></bpmn:subProcess>`, `<bpmn:escalation id="Esc" escalationCode="UNDO_ESCALATED"/>`);
+  for (const end of ["", `<bpmn:escalationEventDefinition escalationRef="Esc"/>`]) {
+    const p = await program(body(end));
+    assert.deepEqual(element(p, "Undo").scope.payload.children, ["UndoStart", "UndoTask", "UndoEnd"]);
+    assert.deepEqual(p.flows.map((flow: Json) => flow.id).filter((id: string) => id.startsWith("u")), ["u1", "u2"]);
+    assert.deepEqual(element(p, "UndoStart").start.payload.outgoing, ["u1"]);
+    assert.deepEqual(element(p, "UndoTask").activity.payload.envelope.incoming, ["u1"]);
+    assert.deepEqual(element(p, "UndoEnd").event.payload.incoming, ["u2"]);
+  }
+  const escalated = await program(body(`<bpmn:escalationEventDefinition escalationRef="Esc"/>`));
+  assert.equal(element(escalated, "UndoEnd").event.payload.role.throw.record.escalation.payload.code, "UNDO_ESCALATED");
+});
+
 test("a condition with no named language is read as JUEL (CIB-EXT-0030), never as Simple Boolean", async () => {
   const flowWith = (language: string): string => model(`<bpmn:exclusiveGateway id="X" default="z"/><bpmn:endEvent id="E"/>
     <bpmn:sequenceFlow id="c" sourceRef="X" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"${language}>isPresent(a)</bpmn:conditionExpression></bpmn:sequenceFlow>

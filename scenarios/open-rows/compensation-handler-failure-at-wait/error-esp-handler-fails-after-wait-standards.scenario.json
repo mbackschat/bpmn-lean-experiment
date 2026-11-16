@@ -1,0 +1,68 @@
+{
+  "kind": "scenario",
+  "id": "compensation-handler-failure-at-wait-error-esp-handler-fails-after-wait-standards",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "compensation-handler-failure-at-wait-error-esp-handler",
+    "relativePath": "scenarios/open-rows/compensation-handler-failure-at-wait/error-esp-handler.bpmn",
+    "sha256": "fc2cc2c743aaa923e9f81bbd757106052dcda96e227b945256329c9c8573a85c",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s01-complete-UserTask_Work-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_UndoReview-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoReview",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_After-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_After",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.3",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.5"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

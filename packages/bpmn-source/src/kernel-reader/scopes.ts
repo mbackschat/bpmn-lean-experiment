@@ -14,8 +14,7 @@ import type { KernelJson } from "./wire.js";
 export function childIds(ctx: ReadContext, container: ElementRecord): string[] {
   const compensationBoundaries = new Set(ctx.compensation.map((entry) => entry.boundary));
   const own = ctx.childrenOf(container)
-    .filter((node) => !compensationBoundaries.has(requireId(node.element)) && !ctx.handlers.has(requireId(node.element)) &&
-      !ctx.erased.has(requireId(node.element)))
+    .filter((node) => !compensationBoundaries.has(requireId(node.element)) && !ctx.handlers.has(requireId(node.element)))
     .map((node) => requireId(node.element));
   const handled = ctx.compensation.filter((entry) => entry.container === container);
   return [...own, ...handled.filter((entry) => entry.boundary !== null).map((entry) => entry.handler),

@@ -94,7 +94,7 @@ function createContext(definitions: ElementRecord, parsed: Awaited<ReturnType<ty
   const compensation = indexCompensation(scan.nodes, scan.containers);
   // Flows keep document order, never the identifiers', so every `outgoing` list is declaration order: CIB's branch
   // schedule (CIB-OP-0016) and Exclusive candidate order read it, and a renaming cannot change either (PC-BASIC-03).
-  const flows = scan.flows.filter((flow) => !compensation.erased.has(String(flow.id)));
+  const flows = scan.flows;
   const tracker = createExtensionTracker(definitions);
   return {
     ...tracker,
@@ -108,7 +108,6 @@ function createContext(definitions: ElementRecord, parsed: Awaited<ReturnType<ty
     childrenOf: (container) => [...scan.nodes.values()].filter((node) => node.container === container),
     compensation: compensation.subjects,
     handlers: compensation.handlers,
-    erased: compensation.erased,
     bindings: parsed.bindings,
     inertAttributes: parsed.inertAttributes,
     expressionLanguage: Object.hasOwn(definitions, "expressionLanguage") ? text(definitions, "expressionLanguage") : null,
@@ -151,13 +150,12 @@ function readNode(ctx: ReadContext, node: ModelNode): Built {
 
 /** Every element below a compensation handler follows that handler in the element list. */
 function handlerDescendants(ctx: ReadContext, handler: string): ModelNode[] {
-  const below = [...ctx.nodes.values()].filter((node) => {
+  return [...ctx.nodes.values()].filter((node) => {
     for (let parent = node.parent; parent !== null; parent = ctx.nodes.get(parent)?.parent ?? null) {
       if (parent === handler) return true;
     }
     return false;
   });
-  return below.filter((node) => !ctx.erased.has(requireId(node.element)));
 }
 
 function buildProgramElements(ctx: ReadContext): KernelJson[] {
@@ -165,7 +163,7 @@ function buildProgramElements(ctx: ReadContext): KernelJson[] {
   const inHandler = new Set(ctx.compensation.flatMap((entry) => handlerDescendants(ctx, entry.handler).map((node) => requireId(node.element))));
   const normal = [...ctx.nodes.values()].filter((node) => {
     const id = requireId(node.element);
-    return !ctx.handlers.has(id) && !inHandler.has(id) && !ctx.erased.has(id) && !deferredBoundaries.has(id);
+    return !ctx.handlers.has(id) && !inHandler.has(id) && !deferredBoundaries.has(id);
   });
   const built = normal.map((node) => readNode(ctx, node));
   for (const entry of ctx.compensation) {
