@@ -17,6 +17,8 @@ so that a scope occurrence of the root process places nothing of it.
   stands lies under the process root (`FrameAlongside.reserve`, `OccursAlongside.reserve` ask it to stand).
 - `foreign_incoming_rejected`: a fresh begin arriving by a flow of another process records that flow
   (`Laws.Step.FreshSource` ties the flow a fresh begin arrives by to the token it took).
+- `foreign_begin_rejected`: a queued begin arriving by a flow of another process than its element's
+  (`BeginPlaced.incoming`).
 
 Nothing executable imports this module.
 -/
@@ -324,6 +326,16 @@ theorem foreign_incoming_rejected (g : FlowId) (ends : (topCalled program defini
     have same := lane.incoming _ begun.1 g ⟨"T"⟩ (Laws.State.beginOccurrence_incoming _ _ _ _) ends
     rw [fresh.1, topCalled_placed, topCalled_undeclared] at same
     cases same
+
+/-- A queued begin of `E` in the process root arriving by a flow that ends at `T`, of the called process, breaks
+`BeginPlaced.incoming` (`PlacedLane.begins`). -/
+theorem foreign_begin_rejected (g : FlowId) (ends : (topCalled program definition).target? g = some ⟨"T"⟩) :
+    ¬ PlacedLane (topCalled program definition) { placedState definition with
+        signals := [.begin { element := ⟨"E"⟩, scope := State.root, incoming := some g }] } := fun lane => by
+  have same := (lane.begins _ (.inl (List.mem_singleton_self _)) (by simp [Laws.State.scopeIds, placedState])).incoming g
+    ⟨"T"⟩ rfl ends
+  rw [topCalled_placed, topCalled_undeclared] at same
+  cases same
 
 end FrameWitnesses
 

@@ -361,6 +361,28 @@ theorem misplaced_begin_rejected :
     (lane.begins _ (.inl (List.mem_singleton_self _)) (placed_present definition)).element
     (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
 
+/-- A queued begin in the called root naming a reservation of the root process breaks `BeginPlaced.reserved`
+(`PlacedLane.begins`). -/
+theorem misplaced_reserved_rejected :
+    ¬ PlacedLane { program with elements := [] } { placedState definition with
+        occurrences := [{ id := 3, element := ⟨"A"⟩, scope := State.root, activation := 1 }]
+        signals := [.begin { element := ⟨"A"⟩, scope := ⟨1⟩, reserved := some 3 }] } := fun lane =>
+  placed_misplaced (definition := definition)
+    ((lane.begins _ (.inl (List.mem_singleton_self _)) (placed_present definition)).reserved _
+      (List.mem_singleton_self _) rfl)
+    (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
+
+/-- A join wait of an occurrence in the called root on a flow ending at an element of the root process breaks
+`PlacedLane.parked`: the gateway the wait joins at lies in another process than its occurrence. -/
+theorem misplaced_parked_rejected (flow : FlowId) (target : ElementId)
+    (ends : ({ program with elements := [] } : Program).target? flow = some target) :
+    ¬ PlacedLane { program with elements := [] } { placedState definition with
+        occurrences := [{ id := 3, element := ⟨"A"⟩, scope := ⟨1⟩, activation := 1 }]
+        slots := { (placedState definition).slots with parked := [{ occurrence := 3, flow, scope := ⟨1⟩ }] } } :=
+  fun lane => placed_misplaced (definition := definition)
+    (lane.parked _ (List.mem_singleton_self _) _ (List.mem_singleton_self _) rfl target ends)
+    (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
+
 /-- A queued reservation of the root process inside a called instance breaks `PlacedLane.occurs`. -/
 theorem misplaced_occur_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
