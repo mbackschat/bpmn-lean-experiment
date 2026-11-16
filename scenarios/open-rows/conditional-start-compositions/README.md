@@ -2,7 +2,7 @@
 
 Answer-free schedules for [PC-CONDITION-02](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list): a root Conditional Start evaluated against the context a start stimulus submits, with a numeric condition over several value types, a Boolean condition over a true, false, null and absent flag, several conditions in one process, the same condition on two starts, and two versions of one process. The [subscriptions semantics](../../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md#starts) and [population semantics](../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#start-selection) own the meaning; these inputs only exercise it, and the retained CIB Seven `2.2.0` answer is the row's target. The profile is `cibseven-2.2.0` with no source overlay.
 
-A Condition start stimulus carries the context as its start variables and names the Start Event it addresses, except in the two schedules that say they name none. Every other schedule then completes the User Task of its Start Event's path, an input that addresses no occurrence when the start created no instance.
+A Condition start stimulus carries the context as its start variables and names the Start Event it addresses, except in the two schedules that say they name none. Every other schedule but [kernel-expedited-order-outside-domain](kernel-expedited-order-outside-domain.scenario.json) then completes the User Task of its Start Event's path, an input that addresses no occurrence when the start created no instance.
 
 ## Models
 
@@ -39,7 +39,10 @@ A Condition start stimulus carries the context as its start variables and names 
 | [layout-only-conditions-start](layout-only-conditions-start.scenario.json) | layout-only-conditions | `amount` 2500, naming *Large online order*; kernel-only. |
 | [lexeme-differing-conditions-start](lexeme-differing-conditions-start.scenario.json) | lexeme-differing-conditions | `amount` 2500, naming *Large online order*; kernel-only. |
 | [operator-differing-conditions-start](operator-differing-conditions-start.scenario.json) | operator-differing-conditions | `amount` 2500, naming *Large online order*; kernel-only. |
+| [kernel-expedited-order-outside-domain](kernel-expedited-order-outside-domain.scenario.json) | expedited-order | Kernel-only: `expedite` as the five-level Map of [start-over-depth-bound](../structured-value-bounds/start-over-depth-bound.scenario.json), one container level beyond the value domain, and no completion: the start is rejected `value-outside-domain` before the condition reads it and starts no instance. |
 
 The population witnesses of these rows, which need more than one instance or definition, are in [conditional-start-population](../conditional-start-population/README.md).
 
 The schedules carry no expected instance, task or variable; the retained CIB evidence is the answer.
+
+[kernel-expedited-order-outside-domain](kernel-expedited-order-outside-domain.scenario.json) names no CIB revision (`not-applicable`), so no CIB run takes it, and the differential compares the Lean kernel with the TypeScript kernel on it: CIB stores a value of any depth and commits ([CIB-LIM-0014](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-lim-0014-the-portable-value-domain-rejects-at-ingress-a-value-cib-stores)), which [structured-value-bounds](../structured-value-bounds/README.md) already retains.

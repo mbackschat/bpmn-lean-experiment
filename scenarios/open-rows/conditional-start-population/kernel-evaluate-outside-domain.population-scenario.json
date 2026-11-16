@@ -1,0 +1,94 @@
+{
+  "kind": "populationScenario",
+  "id": "conditional-start-population-kernel-evaluate-outside-domain",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "large-order",
+      "bpmn": {
+        "id": "conditional-start-compositions-large-order",
+        "relativePath": "scenarios/open-rows/conditional-start-compositions/large-order.bpmn",
+        "sha256": "7b319695497c8a24063f90b108ddbc778acb3c4399a516edc99299f1a784b161",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "expedited-order",
+      "bpmn": {
+        "id": "conditional-start-compositions-expedited-order",
+        "relativePath": "scenarios/open-rows/conditional-start-compositions/expedited-order.bpmn",
+        "sha256": "60bdc2243409f9a3f6ea54ca592e4b76da164420c79512375a4a58f9f9623ec7",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "evaluateConditions",
+      "commandId": "s01-evaluate-outside-domain",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 2500
+          }
+        },
+        {
+          "name": "expedite",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "b",
+                      "value": {
+                        "kind": "list",
+                        "value": [
+                          {
+                            "kind": "map",
+                            "value": [
+                              {
+                                "name": "c",
+                                "value": {
+                                  "kind": "list",
+                                  "value": [
+                                    {
+                                      "kind": "integer",
+                                      "value": 1
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "at": 0
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}
