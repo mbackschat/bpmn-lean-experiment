@@ -2,7 +2,7 @@
 
 ## Status
 
-Adopted delivery target, selected by the owner. The inventory boundary and its partition into 115 delivery rows were independently approved on 2026-10-11 ([approval record](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#status)); the partition specifies required practical depth, not implemented support. Since the kernel rewrite (W0.4) this document keeps only the target, its bounded contract decisions, the rows and their dependencies. [PLAN](PLAN.md#mechanism-tracks-then-rows) assigns every row to its mechanism track and owns sequencing; the [kernel status map](kernel/KERNEL-STATUS-MAP.md#row-status) records what the kernel implements per row; the [architecture specification](kernel/ARCHITECTURE-SPEC.md#definition-of-done-for-a-row) owns the definition of done. The owner accepted the target as reached on 2026-11-14, within the disclosed limits of the [PC-ACCEPT-01 approval record](#pc-accept-01-approval-record) ([acceptance record](#pc-accept-02-acceptance-record)).
+Adopted delivery target, selected by the owner. The inventory boundary and its partition into 115 delivery rows were independently approved on 2026-10-11 ([approval record](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#status)); the partition specifies required practical depth, not implemented support. Since the kernel rewrite (W0.4) this document keeps only the target, its bounded contract decisions, the rows and their dependencies. [PLAN](PLAN.md#mechanism-tracks-then-rows) assigns every row to its mechanism track and owns sequencing; the [kernel status map](kernel/KERNEL-STATUS-MAP.md#row-status) records what the kernel implements per row; the [architecture specification](kernel/ARCHITECTURE-SPEC.md#definition-of-done-for-a-row) owns the definition of done. The owner accepted the target as reached on 2026-11-14, within the disclosed limits of the [PC-ACCEPT-01 approval record](#pc-accept-01-approval-record) ([acceptance record](#pc-accept-02-acceptance-record)), and on 2026-11-16 within the limits as the [proof-wave reconciliation record](#proof-wave-reconciliation-record) changes them ([acceptance record](#proof-wave-acceptance-record)).
 
 ## Objective and boundary
 
@@ -308,6 +308,10 @@ The PC-ACCEPT-01 limits change as follows; limits 1, 4, 5, 6, 8 and 11 are uncha
 6. Limit 10 (Product 2 and distribution) gains #171, the intermittent RC catalog journey failure above; the evaluation distribution is the stack built from source at `bca882990`.
 
 Open issues at this record: every behavioral one is named in the limits above or in the PC-ACCEPT-01 record's limits (less #81, #83 and #121); the rest are engineering and guard debt that changes no behavior claim (#67, #92, #93, #101, #107, #110, #112, #115 and #167).
+
+#### Proof-wave acceptance record
+
+The owner accepted on 2026-11-16 the [proof-wave reconciliation record](#proof-wave-reconciliation-record), bound to code head `bca882990` (main `d044669fe`), with its changes to the PC-ACCEPT-01 limits and its open issues; the owner delegated the check of its findings and arguments to the root, which rechecked them before recording. Practical CIB7 Coverage stays reached within those limits. Version and tag, the separate MUE acceptance, production-history compatibility and production scale stay outside this acceptance; no tag was requested.
 
 ## Optional integrations and exclusions
 
