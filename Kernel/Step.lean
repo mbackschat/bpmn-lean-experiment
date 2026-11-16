@@ -114,12 +114,27 @@ def roleOf (program : Program) (request : BeginRequest) : ActivationRole :=
   | .flow => if loops then .multiInstanceBody else .element
   | .compensation _ => if loops then .multiInstanceBody else .element
 
-/-- Begin the occurrence `request` names and hand it to its feature (`requireScope`). -/
+/-- An Event Sub-Process start's values (`BeginRequest.writes`), written outward from the scope occurrence its begun
+occurrence `occurrence` entered, never from the parent, so a name the Event Sub-Process declares an item for lands in
+that item (BPMN 2.0.2 §10.4.2), any other at its nearest owner, as CIB's `setVariables` on the parent's execution does
+(CIB-EXT-0025). They are written in the begin's own micro-step, after an interrupting start's clearing and the entry,
+before any arming or begin the entry queued runs; a queued write would run after a removal an earlier firing queued and
+fail as `gone` where the arming fails as `stale` (`Kernel.Step.Stale`). -/
+def writeStart (hooks : Hooks) (ctx : Ctx) (occurrence : Nat) (writes : List (String × Value)) (state : State) : Outcome :=
+  if writes.isEmpty then .ok state
+  else match state.localScope? occurrence with
+    | some scope => hooks.writeOutputs ctx scope writes .outward state
+    | none => .error (.semanticFailure .invariant "start-writes-without-scope")
+
+/-- Begin the occurrence `request` names, hand it to its feature (`requireScope`) and write its start's values
+(`writeStart`). -/
 def begin (hooks : Hooks) (ctx : Ctx) (request : BeginRequest) (state : State) : Outcome := do
   let some sourceType := ctx.program.sourceType? request.element | .error (.semanticFailure .invariant "begin-without-element")
   requireScope state request.scope
   let (state, occurrence) := state.beginOccurrence request (roleOf ctx.program request) sourceType
-  deferred ctx.program state (dispatch hooks ctx occurrence { locals := request.locals, inner := request.inner } request.trigger state)
+  deferred ctx.program state do
+    let entered ← dispatch hooks ctx occurrence { inner := request.inner } request.trigger state
+    writeStart hooks ctx occurrence.id request.writes entered
 
 /-- What follows an occurrence that left: its continuation, or, for one raised away, only a compensation run, which
 learns that its handler ended without completing (`Hooks.handlerEnded`). -/

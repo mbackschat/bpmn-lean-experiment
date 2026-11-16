@@ -154,20 +154,32 @@ theorem arrive_ok {hooks : Hooks} {ctx : Ctx} {flow : FlowId} {scope : ScopeOccu
   unfold arrive at ran
   split at ran <;> first | simp at ran; done | exact ⟨_, by assumption, ran⟩
 
-/-- A committed begin issued the occurrence `State.beginOccurrence` makes, numbered under `Step.roleOf`, and dispatched
-it to its element's hook. -/
+/-- A committed begin issued the occurrence `State.beginOccurrence` makes, numbered under `Step.roleOf`, dispatched it
+to its element's hook and wrote its start's values (`writeStart_ok`). -/
 theorem begin_ok {hooks : Hooks} {ctx : Ctx} {request : BeginRequest} {state next : State}
     (ran : begin hooks ctx request state = .ok next) :
-    ∃ sourceType begun occurrence, ctx.program.sourceType? request.element = some sourceType ∧
+    ∃ sourceType begun occurrence entered, ctx.program.sourceType? request.element = some sourceType ∧
       state.beginOccurrence request (roleOf ctx.program request) sourceType = (begun, occurrence) ∧
-      dispatch hooks ctx occurrence { locals := request.locals, inner := request.inner } request.trigger begun =
-        .ok next := by
+      dispatch hooks ctx occurrence { inner := request.inner } request.trigger begun = .ok entered ∧
+      writeStart hooks ctx occurrence.id request.writes entered = .ok next := by
   unfold begin at ran
   split at ran
   · rename_i sourceType known
     obtain ⟨_, _, ran⟩ := bind_ok ran
-    exact ⟨sourceType, _, _, known, by simp, deferred_ok ran⟩
+    obtain ⟨entered, dispatched, written⟩ := bind_ok (deferred_ok ran)
+    exact ⟨sourceType, _, _, entered, known, by simp, dispatched, written⟩
   · simp at ran
+
+/-- A begin writes no start values, or writes them outward from the scope occurrence its occurrence owns. -/
+theorem writeStart_ok {hooks : Hooks} {ctx : Ctx} {occurrence : Nat} {writes : List (String × Value)} {state after : State}
+    (ran : writeStart hooks ctx occurrence writes state = .ok after) : (writes = [] ∧ after = state) ∨ writes ≠ [] ∧
+      ∃ scope, state.localScope? occurrence = some scope ∧ hooks.writeOutputs ctx scope writes .outward state = .ok after := by
+  unfold writeStart at ran
+  split at ran
+  · exact .inl ⟨List.isEmpty_iff.mp ‹_›, (Except.ok.inj ran).symm⟩
+  · split at ran
+    · exact .inr ⟨fun empty => by simp_all, _, ‹_›, ran⟩
+    · simp at ran
 
 /-- An Event's occurrence numbers under its element's counter: an Event has no envelope, so no Multi-Instance body. -/
 theorem roleOf_event {program : Program} {request : BeginRequest}
@@ -575,13 +587,13 @@ theorem fireItem_ok {hooks : Hooks} {ctx : Ctx} {item : OpenItem} {fired : Fired
   unfold fireItem at ran
   split at ran <;> first | exact .inl ⟨_, _, ‹_›, ran⟩ | exact .inr ran
 
-/-- An idle scope occurrence completes through the hook of the occurrence that owns it: a Scope's, a Call's or a
-Multi-Instance body's. -/
-theorem completeIdleScope_ok {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrence} {state after : State}
+/-- What `completeIdleScope` ran, which `completeIdleScope_ok` and `completeIdleScope_called` state. -/
+private theorem completeIdleScope_owner {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrence} {state after : State}
     (ran : completeIdleScope hooks ctx scope state = .ok after) :
     ∃ id occurrence, scope.occurrence = some id ∧ state.occurrence? id = some occurrence ∧
       ((∃ header payload, hooks.completeScope ctx header payload scope occurrence state = .ok after) ∨
-        (∃ header payload, hooks.completeCall ctx header payload scope occurrence state = .ok after) ∨
+        (∃ header payload, scope.calledInstance.isSome = true ∧
+          hooks.completeCall ctx header payload scope occurrence state = .ok after) ∨
         ∃ header envelope loop, hooks.completeBody ctx header envelope loop occurrence state = .ok after) := by
   unfold completeIdleScope at ran
   dsimp only at ran
@@ -606,11 +618,22 @@ theorem completeIdleScope_ok {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrenc
         | activity header payload =>
           dsimp only at ran
           split at ran
-          · exact .inr (.inl ⟨_, _, ran⟩)
+          · exact .inr (.inl ⟨_, _, ‹_›, ran⟩)
           · simp at ran
         | event header payload => simp at ran
         | gateway header payload => simp at ran
         | start header payload => simp at ran
+
+/-- An idle scope occurrence completes through the hook of the occurrence that owns it: a Scope's, a Call's or a
+Multi-Instance body's. -/
+theorem completeIdleScope_ok {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrence} {state after : State}
+    (ran : completeIdleScope hooks ctx scope state = .ok after) :
+    ∃ id occurrence, scope.occurrence = some id ∧ state.occurrence? id = some occurrence ∧
+      ((∃ header payload, hooks.completeScope ctx header payload scope occurrence state = .ok after) ∨
+        (∃ header payload, hooks.completeCall ctx header payload scope occurrence state = .ok after) ∨
+        ∃ header envelope loop, hooks.completeBody ctx header envelope loop occurrence state = .ok after) := by
+  obtain ⟨id, occurrence, owned, ⟨found, completed⟩⟩ := completeIdleScope_owner ran
+  exact ⟨id, occurrence, owned, found, completed.imp_right (.imp_left fun ⟨header, payload, _, ran⟩ => ⟨header, payload, ran⟩)⟩
 
 /-- The closure takes the oldest token or the newest. -/
 theorem nextToken_shape {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
@@ -661,35 +684,9 @@ theorem completeIdleScope_called (facts : StateFacts) {hooks : Hooks} {ctx : Ctx
         (∃ header payload, scope.calledInstance.isSome = true ∧
           hooks.completeCall ctx header payload scope occurrence state = .ok after) ∨
         ∃ header envelope loop, hooks.completeBody ctx header envelope loop occurrence state = .ok after) := by
-  unfold completeIdleScope at ran
-  dsimp only at ran
-  cases owner : scope.occurrence.bind state.occurrence? with
-  | none => simp [owner] at ran
-  | some occurrence =>
-    simp only [owner] at ran
-    obtain ⟨id, owned, found⟩ := Option.bind_eq_some_iff.mp owner
-    obtain ⟨member, named⟩ := facts.found _ _ _ found
-    refine ⟨occurrence, member, named ▸ owned, ?_⟩
-    cases known : ctx.program.element? occurrence.element with
-    | none => simp [known] at ran
-    | some element =>
-      simp only [known] at ran
-      cases loop : bodyLoop? element occurrence with
-      | some pair =>
-        simp only [loop] at ran
-        exact .inr (.inr ⟨_, _, _, ran⟩)
-      | none =>
-        simp only [loop] at ran
-        cases element with
-        | scope header payload => exact .inl ⟨_, _, ran⟩
-        | activity header payload =>
-          dsimp only at ran
-          split at ran
-          · exact .inr (.inl ⟨_, _, ‹_›, ran⟩)
-          · simp at ran
-        | event header payload => simp at ran
-        | gateway header payload => simp at ran
-        | start header payload => simp at ran
+  obtain ⟨_, occurrence, owned, ⟨found, completed⟩⟩ := completeIdleScope_owner ran
+  obtain ⟨member, named⟩ := facts.found _ _ _ found
+  exact ⟨occurrence, member, named ▸ owned, completed⟩
 
 /-- A parked join offered again ran its gateway's hook on the state the closure reached, for an occurrence it found. -/
 theorem reoffer_ok {hooks : Hooks} {ctx : Ctx} {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId}

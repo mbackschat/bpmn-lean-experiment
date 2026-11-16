@@ -114,22 +114,22 @@ structure SubscriptionsOps (program : Program) (inv : State → Prop) : Prop whe
   /-- A start Event's item closed, then its Event Sub-Process, the start's parent (`Laws.Flow.Linked`), begun with the
   item's reservation; an interrupting start withdraws the items of its scope occurrence first, a cycle Timer reopens
   first. -/
-  insideBegin : ∀ state item element locals, inv state → item ∈ state.openItems →
+  insideBegin : ∀ state item element writes, inv state → item ∈ state.openItems →
     ((program.element? item.element).bind (·.start?)).isSome = true → Laws.Flow.Linked program item.element element →
     inv (((state.closeItem item.id).withdrawInside item.scope).signal
-      (.begin { element, scope := item.scope, locals, inner := some item.occurrence }))
-  closeBegin : ∀ state item element locals, inv state → item ∈ state.openItems →
+      (.begin { element, scope := item.scope, writes, inner := some item.occurrence }))
+  closeBegin : ∀ state item element writes, inv state → item ∈ state.openItems →
     ((program.element? item.element).bind (·.start?)).isSome = true → Laws.Flow.Linked program item.element element →
-    inv ((state.closeItem item.id).signal (.begin { element, scope := item.scope, locals, inner := some item.occurrence }))
-  reopenBegin : ∀ state item detail element locals, inv state → item ∈ state.openItems →
+    inv ((state.closeItem item.id).signal (.begin { element, scope := item.scope, writes, inner := some item.occurrence }))
+  reopenBegin : ∀ state item detail element writes, inv state → item ∈ state.openItems →
     ((program.element? item.element).bind (·.start?)).isSome = true → Laws.IL.Reservable program item.element →
     Laws.Flow.Linked program item.element element →
     inv (((state.closeItem item.id).openSubscription (.timer detail) item.element item.scope item.attachedTo
-      item.passive).1.signal (.begin { element, scope := item.scope, locals, inner := some item.occurrence }))
+      item.passive).1.signal (.begin { element, scope := item.scope, writes, inner := some item.occurrence }))
   /-- An Event Sub-Process, the start's parent, begun without a reservation in the item's scope occurrence. -/
-  bareBegin : ∀ state item element locals, inv state → item ∈ state.openItems →
+  bareBegin : ∀ state item element writes, inv state → item ∈ state.openItems →
     Laws.Flow.Linked program item.element element →
-    inv (state.signal (.begin { element, scope := item.scope, locals }))
+    inv (state.signal (.begin { element, scope := item.scope, writes }))
 
 /-- A monadic left fold in `Except` keeps what each step keeps of the items folded. -/
 private theorem foldlM_holds {α β : Type} {holds : β → Prop} {f : β → α → Except Failure β} :

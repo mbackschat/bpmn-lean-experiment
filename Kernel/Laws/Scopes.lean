@@ -284,9 +284,9 @@ theorem enter_keeps {inv : State → Prop} {ctx : Ctx} (ops : ScopesOps ctx.prog
   · cases ran
   rename_i locals _
   obtain ⟨entered, occurrences, stands, ready⟩ :=
-    ops.enter state header.id (locals ++ entry.locals) occurrence entry.inner holds member begun named claimable
-  have owned := enterScope_owned state header.id occurrence.scope (locals ++ entry.locals) occurrence.id
-  generalize state.enterScope header.id occurrence.scope (locals ++ entry.locals) (some occurrence.id) = pair
+    ops.enter state header.id locals occurrence entry.inner holds member begun named claimable
+  have owned := enterScope_owned state header.id occurrence.scope locals occurrence.id
+  generalize state.enterScope header.id occurrence.scope locals (some occurrence.id) = pair
     at entered occurrences stands ready owned ran
   obtain ⟨entered_, scope⟩ := pair
   dsimp only at entered occurrences stands ready owned ran

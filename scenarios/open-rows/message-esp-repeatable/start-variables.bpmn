@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_StartVariables"
+  targetNamespace="urn:bpmn-lean:scenarios:message-esp-repeatable:start-variables">
+  <bpmn:message id="Message_Note" name="note" />
+  <bpmn:message id="Message_RegionNote" name="regionNote" />
+  <bpmn:process id="Process_StartVariables" name="Notes delivered to Event Sub-Process starts" isExecutable="true">
+    <bpmn:startEvent id="Start_Order" />
+    <bpmn:subProcess id="Region" name="Inspect the lot">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="note">local</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="Start_Inner" />
+      <bpmn:userTask id="Inner" name="Inspect the lot" />
+      <bpmn:endEvent id="End_Inner" />
+      <bpmn:sequenceFlow id="Flow_Start_Inner_Inner" sourceRef="Start_Inner" targetRef="Inner" />
+      <bpmn:sequenceFlow id="Flow_Inner_End_Inner" sourceRef="Inner" targetRef="End_Inner" />
+      <bpmn:subProcess id="ESP_RegionNote" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_RegionNote" isInterrupting="false">
+          <bpmn:messageEventDefinition id="MED_RegionNote" messageRef="Message_RegionNote" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Handle_RegionNote" name="Read the lot note" />
+        <bpmn:endEvent id="End_RegionNote" />
+        <bpmn:sequenceFlow id="Flow_Start_RegionNote_Handle_RegionNote" sourceRef="Start_RegionNote" targetRef="Handle_RegionNote" />
+        <bpmn:sequenceFlow id="Flow_Handle_RegionNote_End_RegionNote" sourceRef="Handle_RegionNote" targetRef="End_RegionNote" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:userTask id="Finish" name="Release the order" />
+    <bpmn:endEvent id="End_Order" />
+    <bpmn:sequenceFlow id="Flow_Start_Order_Region" sourceRef="Start_Order" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Region_Finish" sourceRef="Region" targetRef="Finish" />
+    <bpmn:sequenceFlow id="Flow_Finish_End_Order" sourceRef="Finish" targetRef="End_Order" />
+    <bpmn:subProcess id="ESP_Note" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Note" isInterrupting="false">
+        <bpmn:messageEventDefinition id="MED_Note" messageRef="Message_Note" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Handle_Note" name="Read the order note" />
+      <bpmn:endEvent id="End_Note" />
+      <bpmn:sequenceFlow id="Flow_Start_Note_Handle_Note" sourceRef="Start_Note" targetRef="Handle_Note" />
+      <bpmn:sequenceFlow id="Flow_Handle_Note_End_Note" sourceRef="Handle_Note" targetRef="End_Note" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

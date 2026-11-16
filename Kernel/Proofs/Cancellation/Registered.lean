@@ -385,10 +385,10 @@ theorem item_anchored {inv : State → Prop} {program : Program} {s t : State} {
 /-- A begin in an open item's scope occurrence, of an element linked to what the item waits on, naming no reservation
 and no incoming flow, comes from the item's reservation. -/
 theorem item_begins {inv : State → Prop} {program : Program} {s t : State} {item : OpenItem} {element : ElementId}
-    {locals : List (String × Value)} {inner : Option Nat} (formed : WellFormed program s) (member : item ∈ s.openItems)
+    {writes : List (String × Value)} {inner : Option Nat} (formed : WellFormed program s) (member : item ∈ s.openItems)
     (kept : ∀ occurrence ∈ s.occurrences, occurrence ∈ t.occurrences)
     (linked : Laws.Flow.Linked program item.element element) :
-    Laws.Flow.BeginAnchored inv program t { element, scope := item.scope, locals, inner } :=
+    Laws.Flow.BeginAnchored inv program t { element, scope := item.scope, writes, inner } :=
   ⟨item_anchored formed member kept linked, fun _ _ none => (by cases none), fun _ none => by cases none⟩
 
 theorem subscriptionsOps_alongside {program : Program} (side : FrameAlongside program rel)

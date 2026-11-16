@@ -1,0 +1,134 @@
+{
+  "kind": "scenario",
+  "id": "message-esp-repeatable-process-note-repeated",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-esp-repeatable-start-variables",
+    "relativePath": "scenarios/open-rows/message-esp-repeatable/start-variables.bpmn",
+    "sha256": "644b15ecc1b92101d128ec5b3fe00d17060d5752a5157b207a20c27bb190f93b",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-Start_Note",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_Note",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Note"
+        }
+      },
+      "variables": [
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "first"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s03-deliver-Start_Note",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_Note",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Note"
+        }
+      },
+      "variables": [
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "second"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Handle_Note",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Note",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Handle_Note",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Note",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Inner",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Inner",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-Finish",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Finish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.3.5",
+      "BPMN 2.0.2 \u00a710.5.5",
+      "BPMN 2.0.2 \u00a713.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/EventHandlerImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/scope/AbstractVariableScope.java"
+    ]
+  }
+}

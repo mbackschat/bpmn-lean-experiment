@@ -215,8 +215,8 @@ theorem fired_complete {state : State} (formed : Laws.State.WellFormed program s
 `WellFormed`. -/
 theorem fired_begin {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
     (fired : Laws.State.Fired program state item) (start : ((program.element? item.element).bind (·.start?)).isSome = true)
-    (element : ElementId) (locals : List (String × Value)) : Laws.State.WellFormed program
-      (state.signal (.begin { element, scope := item.scope, locals, inner := some item.occurrence })) :=
+    (element : ElementId) (writes : List (String × Value)) : Laws.State.WellFormed program
+      (state.signal (.begin { element, scope := item.scope, writes, inner := some item.occurrence })) :=
   have ⟨beginnable, unclaimed, placed⟩ := fired.2.2.2.2 start
   Laws.State.signal_named_wellFormed formed fired.1 (by simp [Laws.State.names])
     (fun id named => by

@@ -1480,6 +1480,20 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/message-esp-interrupting/process-cancel-inside-region.cibseven-evidence.json",
+    "firstDifference": "trace[6].variables.length",
+    "owners": [
+      "CIB-LIM-0013"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-esp-interrupting/process-cancel-while-work-open.cibseven-evidence.json",
+    "firstDifference": "trace[4].variables.length",
+    "owners": [
+      "CIB-LIM-0013"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/message-esp-interrupting/process-cancel-without-payload.cibseven-evidence.json",
     "firstDifference": "trace[3].outcome",
     "owners": [

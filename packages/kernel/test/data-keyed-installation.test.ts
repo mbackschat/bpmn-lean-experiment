@@ -3,8 +3,9 @@
  * §10.4.2) and CIB keys a scope's variables by name, so where an installer's sources bind a name twice the last binding
  * stands. The kernel's codecs accept a binding list that repeats a name, which the scenario contract and the CIB runner
  * refuse (`scripts/scenario-binding-order.ts`, `ScenarioVariableBindings.requireCanonical`), so these inputs have no
- * scenario form; the two installers are `State.initial` (a start's variables) and `State.enterScope` (here an Event
- * Sub-Process start's delivered Message variables).
+ * scenario form. A start's variables install at the root (`State.initial`); an Event Sub-Process start's delivered
+ * Message variables are written outward from its occurrence (#150), here to the root under `atInstanceRoot`, one write
+ * per binding, so the last stands there too.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -18,7 +19,7 @@ import {
 import type { Json } from "./admission-refusal-support.ts";
 
 function admitted(json: Json): Program {
-  const decoded = decodeProgram(wired(withOptions(json, { deliveryVariables: "installs" })));
+  const decoded = decodeProgram(wired(withOptions(json, { deliveryVariables: "installs", undeclaredWrite: "atInstanceRoot" })));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   assert.equal(admit(decoded.value), null);
   return decoded.value;
@@ -54,12 +55,13 @@ test("a start that binds a name twice installs the last binding at the root", ()
   assert.deepEqual(frame(run(program, [begin(twice("outcome"))]), 0), [["outcome", { tag: "string", value: "second" }]]);
 });
 
-test("an Event Sub-Process start whose delivered variables bind a name twice installs the last binding in its frame", () => {
+test("an Event Sub-Process start whose delivered variables bind a name twice leaves the last binding at the root", () => {
   const state = run(program, [begin(), {
     kind: "deliver", commandId: "deliver", occurrence: { processInstanceId: "I", elementId: "HS", activation: 1 },
     trigger: { kind: "message", channel: { kind: "directMessage", messageId: "M" } }, variables: twice("outcome"),
   }]);
   const handler = state.scopes.find((entry) => entry.element === "H");
   assert.ok(handler !== undefined, "the Event Sub-Process has begun");
-  assert.deepEqual(frame(state, handler.id), [["outcome", { tag: "string", value: "second" }]]);
+  assert.deepEqual(frame(state, handler.id), []);
+  assert.deepEqual(frame(state, 0), [["outcome", { tag: "string", value: "second" }]]);
 });

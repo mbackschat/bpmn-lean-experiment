@@ -694,7 +694,9 @@ function fireCatch(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscripti
 
 /**
  * An Event Sub-Process start fired: an interrupting start closes, a non-interrupting one continues as `afterFiring`
- * says. The scopes feature starts the occurrence, which begins the start Event with the reservation, if any.
+ * says. The scopes feature starts the occurrence, which begins the start Event with the reservation, if any; the values
+ * the firing admitted are written outward from the new occurrence once it is entered (`step.ts#writeStart`), never
+ * installed as its locals.
  */
 function fireEventStart(hooks: SubscriptionsHooks, ctx: Ctx, eventSubProcess: ElementId, item: OpenItem, fired: Fired, state: State): Outcome {
   const element = programElement(ctx.program, eventSubProcess);
@@ -710,7 +712,7 @@ function fireEventStart(hooks: SubscriptionsHooks, ctx: Ctx, eventSubProcess: El
     : afterFiring(current, item);
   return committed(signal(after, {
     tag: SignalTag.Begin,
-    request: beginRequest({ element: eventSubProcess, scope: item.scope, locals: values, inner }),
+    request: beginRequest({ element: eventSubProcess, scope: item.scope, writes: values, inner }),
   }));
 }
 

@@ -47,7 +47,7 @@ def implicitStart (ctx : Ctx) (scope : ElementId) : Except Failure (List Element
 def enter (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurrence : Occurrence) (entry : ScopeEntry)
     (state : State) : Outcome := do
   let locals ← ctx.requireMappings (state.evalContext ctx.program occurrence.scope) payload.envelope.inputs
-  let (state, scope) := state.enterScope header.id occurrence.scope (locals ++ entry.locals) (some occurrence.id)
+  let (state, scope) := state.enterScope header.id occurrence.scope locals (some occurrence.id)
   let state :=
     if payload.envelope.boundaries.isEmpty || payload.envelope.multiInstance.isSome then state
     else state.signal (.arm occurrence.id header.id occurrence.scope)

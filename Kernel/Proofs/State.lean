@@ -107,6 +107,7 @@ theorem stateFacts : Laws.Step.StateFacts where
   removeVariable := Laws.State.removeVariable_frame
   declaring _ _ _ _ found := Laws.State.declaring?_stands found
   owner _ _ _ _ found := Laws.State.owner?_holds found
+  localScope _ _ _ found := Laws.State.localScope?_stands found
   instanceRoot := Laws.State.instanceRoot_stands
   parentBusy := Laws.State.busyScopes_parent
 

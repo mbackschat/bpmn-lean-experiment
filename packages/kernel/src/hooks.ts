@@ -563,7 +563,6 @@ export function boundaryFire(
  * Event, when a subscription triggered it.
  */
 export interface ScopeEntry {
-  readonly locals: readonly Binding[];
   readonly inner: number | null;
 }
 

@@ -324,7 +324,6 @@ def Boundary.fire (boundary : Boundary) (host reserved : Option Nat) (scope : Sc
 /-- What a Scope begins with besides its evaluated inputs. `inner` is the reservation of an Event Sub-Process's start
 Event, when a subscription triggered it. -/
 structure ScopeEntry where
-  locals : List (String × Value) := []
   inner : Option Nat := none
   deriving Repr
 

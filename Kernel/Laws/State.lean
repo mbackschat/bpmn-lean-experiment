@@ -350,6 +350,12 @@ theorem calledRoot_eq (state : State) (scope : ScopeOccurrenceId) :
     state.calledRoot scope = ((state.scopes.find? (·.id == scope)).bind (·.calledInstance)).isSome := by
   simp only [State.calledRoot]
 
+/-- The scope occurrence an occurrence owns stands. -/
+theorem localScope?_stands {state : State} {host : Nat} {scope : ScopeOccurrenceId}
+    (found : state.localScope? host = some scope) : ∃ entry ∈ state.scopes, entry.id = scope := by
+  obtain ⟨entry, member, same⟩ := Option.map_eq_some_iff.mp (by simpa only [State.localScope?] using found)
+  exact ⟨entry, List.mem_of_find?_eq_some member, same⟩
+
 /-- A frame shows every name but an item of a Scope other than its own element. -/
 theorem shows_eq (state : State) (program : Program) (scope : ScopeOccurrenceId) (name : String) :
     state.shows program scope name =

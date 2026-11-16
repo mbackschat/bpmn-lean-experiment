@@ -67,7 +67,9 @@ theorem exclusiveArrival : ExclusiveArrival := by
   obtain ⟨reached, reachedTarget, begun_⟩ := Laws.Step.arrive_ok arrived
   have same : reached = gateway := Option.some.inj (reachedTarget.symm.trans target)
   subst same
-  obtain ⟨sourceType, begun, occurrence, ⟨_, made, dispatched⟩⟩ := Laws.Step.begin_ok begun_
+  obtain ⟨sourceType, begun, occurrence, ⟨entered, ⟨_, made, ⟨dispatched, written⟩⟩⟩⟩ := Laws.Step.begin_ok begun_
+  obtain ⟨_, unwritten⟩ := (Laws.Step.writeStart_ok written).resolve_right fun ⟨nonempty, _⟩ => nonempty (by simp)
+  subst unwritten
   have fresh := Laws.State.beginOccurrence_fresh (state := state) (sourceType := sourceType)
     (role := Step.roleOf ctx.program { element := reached, scope, incoming := some flow })
     (request := { element := reached, scope, incoming := some flow }) (by simp)
@@ -435,18 +437,18 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
       (fired_hangs formed member) item.passive (Laws.State.triggers_await.1 detail)
     exact fired_complete reopened kept leave writes .outward
   occur _ _ _ _ _ formed _ _ _ _ := queue_wellFormed formed trivial
-  insideBegin _ item element locals formed member start _ := by
+  insideBegin _ item element writes formed member start _ := by
     obtain ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
     obtain ⟨withdrawn, kept⟩ := Laws.State.withdrawInside_fired closed fired item.scope
-    exact fired_begin withdrawn kept start element locals
-  closeBegin _ _ element locals formed member start _ :=
+    exact fired_begin withdrawn kept start element writes
+  closeBegin _ _ element writes formed member start _ :=
     have ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
-    fired_begin closed fired start element locals
-  reopenBegin _ item detail element locals formed member start _ _ := by
+    fired_begin closed fired start element writes
+  reopenBegin _ item detail element writes formed member start _ _ := by
     obtain ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
     obtain ⟨reopened, kept⟩ := Laws.State.openSubscription_fired closed fired (.timer detail) item.element fired.1
       (fired_hangs formed member) item.passive (Laws.State.triggers_await.1 detail)
-    exact fired_begin reopened kept start element locals
+    exact fired_begin reopened kept start element writes
   bareBegin _ item _ _ formed member _ := bareBegin_wellFormed formed rfl (formed.owned.itemScopes item member)
 
 /-- The compensation hooks' operations record (`Laws.Compensation.CompensationOps`) of `WellFormed`. -/

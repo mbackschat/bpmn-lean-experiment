@@ -773,6 +773,8 @@ structure StateFacts : Prop where
     ScopeStands state found
   owner : ∀ (state : State) scope name found, state.owner? scope name = some found →
     ∃ variables ∈ state.variables, variables.scope = found
+  /-- The scope occurrence an occurrence owns stands. -/
+  localScope : ∀ (state : State) host scope, state.localScope? host = some scope → ScopeStands state scope
   /-- An instance root is the process root or a scope occurrence that stands. -/
   instanceRoot : ∀ (state : State) scope, state.instanceRoot scope = State.root ∨ ScopeStands state (state.instanceRoot scope)
   /-- A scope occurrence with a child is busy. -/

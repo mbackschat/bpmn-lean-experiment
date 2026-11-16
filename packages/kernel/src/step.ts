@@ -28,7 +28,7 @@ import {
   ActivationRole, CauseTag, CommandActionTag, ContinuationTag, FailureTag, FiredTag, InputTag,
   InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence, beginRequest,
   busyScopes, closeOwnItems, committed, emptyDraft, entryCount, failed, failedWith, idle, initial, instanceOf,
-  keyOf, occurrenceOf, ownScope, recordEnd, reserve, root, signal as enqueue, startReserved, type BeginRequest,
+  keyOf, localScope, occurrenceOf, ownScope, recordEnd, reserve, root, signal as enqueue, startReserved, type BeginRequest,
   type Binding, type Cause, type CommandInput, type EffectInput, type Fired, type IncidentDetail, type Input,
   type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceRef, type OpenItem, type Outcome,
   type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartInput, type StartTrigger, type State,
@@ -107,14 +107,22 @@ function roleOf(program: Program, request: BeginRequest): ActivationRole {
   return assertNever(request.continuation);
 }
 
-/** Begin the occurrence `request` names and hand it to its feature (`requireScope`). */
+/** Lean's `Step.writeStart`: an Event Sub-Process start's values, written outward from the scope occurrence it entered. */
+function writeStart(hooks: Hooks, ctx: Ctx, occurrence: number, writes: readonly Binding[], state: State): Outcome {
+  if (writes.length === 0) return committed(state);
+  const scope = localScope(state, occurrence);
+  return scope === null ? semanticFailure(SemanticCause.Invariant, "start-writes-without-scope") : hooks.writeOutputs(ctx, scope, writes, WriteRule.Outward, state);
+}
+
+/** Begin the occurrence `request` names, hand it to its feature (`requireScope`) and write its start's values (`writeStart`). */
 function begin(hooks: Hooks, ctx: Ctx, request: BeginRequest, state: State): Outcome {
   const sourceType = programSourceType(ctx.program, request.element);
   if (sourceType === null) return semanticFailure(SemanticCause.Invariant, "begin-without-element");
   const missing = requireScope(state, request.scope);
   if (missing !== null) return missing;
   const [begun, occurrence] = beginOccurrence(state, request, roleOf(ctx.program, request), sourceType);
-  return deferred(ctx.program, begun, dispatch(hooks, ctx, occurrence, { locals: request.locals, inner: request.inner }, request.trigger, begun));
+  const entered = dispatch(hooks, ctx, occurrence, { inner: request.inner }, request.trigger, begun);
+  return deferred(ctx.program, begun, entered.ok ? writeStart(hooks, ctx, occurrence.id, request.writes, entered.value) : entered);
 }
 
 /**

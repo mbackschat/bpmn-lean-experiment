@@ -100,7 +100,7 @@ function implicitStart(ctx: Ctx, scope: ElementId): Result<readonly ElementId[]>
 function enter(ctx: Ctx, header: Header, payload: ScopePayload, occurrence: Occurrence, entry: ScopeEntry, state: State): Outcome {
   const locals = ctxRequireMappings(ctx, evalContext(state, ctx.program, occurrence.scope), payload.envelope.inputs);
   if (!locals.ok) return locals;
-  const [entered, scope] = enterScope(state, header.id, occurrence.scope, [...locals.value, ...entry.locals], occurrence.id);
+  const [entered, scope] = enterScope(state, header.id, occurrence.scope, locals.value, occurrence.id);
   const armed = payload.envelope.boundaries.length === 0 || payload.envelope.multiInstance !== null
     ? entered
     : signal(entered, { tag: SignalTag.Arm, host: occurrence.id, element: header.id, scope: occurrence.scope });

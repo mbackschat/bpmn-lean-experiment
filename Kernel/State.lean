@@ -115,15 +115,16 @@ inductive Fired where
   deriving Repr
 
 /-- What `Step.begin` starts: `reserved` names a subscription's reservation to begin instead of a fresh occurrence;
-for an Event Sub-Process, `locals` are the new occurrence's extra locals and `inner` the reservation of its start
-Event; `trigger` is what fired a start Event. -/
+for an Event Sub-Process, `writes` are the values the start writes outward from the new occurrence (mapped Data Outputs,
+then delivered variables; `Step.writeStart`) and `inner` the reservation of its start Event; `trigger` is what fired a
+start Event. -/
 structure BeginRequest where
   element : ElementId
   scope : ScopeOccurrenceId
   continuation : Continuation := .flow
   incoming : Option FlowId := none
   reserved : Option Nat := none
-  locals : List (String × Value) := []
+  writes : List (String × Value) := []
   inner : Option Nat := none
   trigger : StartTrigger := .none
   deriving Repr

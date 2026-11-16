@@ -164,8 +164,9 @@ export type Fired =
 
 /**
  * What `Step.begin` starts: `reserved` names a subscription's reservation to begin instead of a fresh occurrence; for an
- * Event Sub-Process, `locals` are the new occurrence's extra locals and `inner` the reservation of its start Event;
- * `trigger` is what fired a start Event.
+ * Event Sub-Process, `writes` are the values the start writes outward from the new occurrence (mapped Data Outputs, then
+ * delivered variables; `step.ts#writeStart`) and `inner` the reservation of its start Event; `trigger` is what fired a
+ * start Event.
  */
 export interface BeginRequest {
   readonly element: ElementId;
@@ -173,7 +174,7 @@ export interface BeginRequest {
   readonly continuation: Continuation;
   readonly incoming: FlowId | null;
   readonly reserved: number | null;
-  readonly locals: readonly Binding[];
+  readonly writes: readonly Binding[];
   readonly inner: number | null;
   readonly trigger: StartTrigger;
 }
@@ -207,7 +208,7 @@ export function beginRequest(fields: Pick<BeginRequest, "element" | "scope"> & P
     continuation: flowContinuation,
     incoming: null,
     reserved: null,
-    locals: [],
+    writes: [],
     inner: null,
     trigger: noStartTrigger,
     ...fields,

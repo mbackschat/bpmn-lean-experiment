@@ -172,12 +172,13 @@ theorem dispatch_keeps (contract : HookContract hooks inv) {ctx : Ctx} {occurren
   | atThrow named ran => exact contract.arriveThrow _ _ _ _ _ _ _ holds member begun unstarted role named (begunFrom role) ran
   | atLink named ran => exact contract.arriveLink _ _ _ _ _ _ holds member begun named ran
 
-/-- A begin keeps `inv`: it begins only in a scope occurrence that stands, and hands the begun occurrence on. -/
+/-- A begin keeps `inv`: it begins only in a scope occurrence that stands, hands the begun occurrence on and writes its
+start's values from a scope occurrence that stands. -/
 theorem begin_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts) {ctx : Ctx}
     {request : BeginRequest} {state after : State} (holds : inv ctx.program state) (admitted : Admitted state request)
     (origin : BeginOrigin inv ctx.program state request) (ran : begin hooks ctx request state = .ok after) :
     inv ctx.program after := by
-  obtain ⟨sourceType, begun, occurrence, ⟨_, made, dispatched⟩⟩ := begin_ok ran
+  obtain ⟨sourceType, begun, occurrence, ⟨entered, ⟨_, made, ⟨dispatched, written⟩⟩⟩⟩ := begin_ok ran
   have begunHolds := phases.begin _ state request (roleOf ctx.program request) sourceType holds (begin_scope ran) admitted
     roleOf_event (fun body => (roleOf_body.mp body).1) rfl origin
   have begunMember := facts.begun state request (roleOf ctx.program request) sourceType
@@ -189,9 +190,12 @@ theorem begin_keeps (contract : HookContract hooks inv) (phases : ClosurePhases 
   have throws : occurrence.role = .element → Laws.State.BeginsThrow state request occurrence := fun role =>
     ⟨List.mem_map.mpr ⟨entry, standing, named⟩,
       fun id reserved => (admitted.2.1 id (by simp [Laws.State.names, reserved])).1, role⟩
-  exact dispatch_keeps contract begunHolds.1 begunMember.1 begunMember.2 begunHolds.2
+  have enteredHolds := dispatch_keeps contract begunHolds.1 begunMember.1 begunMember.2 begunHolds.2
     (phases.bodied _ _ _ begunHolds.1 begunMember.1) newest unrun unowned
     (fun role => ⟨state, request, _, sourceType, holds, throws role, made⟩) dispatched
+  rcases writeStart_ok written with ⟨_, same⟩ | ⟨_, _, owned, ran⟩
+  · exact same ▸ enteredHolds
+  · exact (contract.writeOutputs _ _ _ _ _ _ enteredHolds (facts.localScope _ _ _ owned) ran).1
 
 /-- A request an arrival or a start makes names no reservation. -/
 theorem admitted_fresh {state : State} {element : ElementId} {scope : ScopeOccurrenceId} {incoming : Option FlowId}

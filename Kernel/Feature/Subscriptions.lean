@@ -382,7 +382,9 @@ def fireCatch (hooks : SubscriptionsHooks) (ctx : Ctx) (subscription : Subscript
   .ok (state.signal (.complete item.occurrence .outgoing values .outward))
 
 /-- An Event Sub-Process start fired: an interrupting start closes, a non-interrupting one continues as `afterFiring`
-says. The scopes feature starts the occurrence, which begins the start Event with the reservation, if any. -/
+says. The scopes feature starts the occurrence, which begins the start Event with the reservation, if any; the values
+the firing admitted are written outward from the new occurrence once it is entered (`Step.writeStart`), never installed
+as its locals. -/
 def fireEventStart (hooks : SubscriptionsHooks) (ctx : Ctx) (eventSubProcess : ElementId) (item : OpenItem) (fired : Fired) (state : State) :
     Outcome := do
   let start := (ctx.program.element? eventSubProcess).bind (·.scope?) |>.bind fun (_, payload) => ctx.eventStart payload
@@ -393,7 +395,7 @@ def fireEventStart (hooks : SubscriptionsHooks) (ctx : Ctx) (eventSubProcess : E
     let (state, inner) :=
       if interrupting then ((state.closeItem item.id).withdrawInside item.scope, some item.occurrence)
       else afterFiring state item
-    .ok (state.signal (.begin { element := eventSubProcess, scope := item.scope, locals := values, inner }))
+    .ok (state.signal (.begin { element := eventSubProcess, scope := item.scope, writes := values, inner }))
 
 /-- `Hooks.trigger`: the item's element is a boundary, a catch Event or an Event Sub-Process start Event. -/
 def trigger (hooks : SubscriptionsHooks) (ctx : Ctx) (item : OpenItem) (fired : Fired) (state : State) : Outcome :=
