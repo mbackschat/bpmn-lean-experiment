@@ -2,7 +2,7 @@
  * Refusal tests of `admission/scopes.ts`: a Scope the kernel can begin and run. A Scope without a none start Event
  * begins only Activities, a Transaction runs the compensate method, an Event Sub-Process carries no loop and no
  * parameters, a local variable needs the input mapping that gives it its initial value, and a compensation handler sits
- * beside its subject or inside it (`admission/flow.ts` `handlerReference`).
+ * beside its subject or inside it (`admission/flow.ts` `handlerReference`, `compensation.handlerPlacement`).
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -216,20 +216,20 @@ export const rows: readonly Row[] = [
     control: boundaryConnected(false, true),
   },
   {
-    // `BpmnParse.parseAssociations` (`BpmnParse.java:848-883`) resolves an Association within one process's scopes.
-    code: "il.reference",
+    // CIB-LIM-0060: `BpmnParse.parseAssociations` (`BpmnParse.java:848-883`) never links a handler of another process.
+    code: "compensation.handlerPlacement",
     description: "a compensation handler in another process than its subject",
     mutate: calledHandler(false),
     control: calledHandler(true),
   },
   {
-    code: "il.reference",
+    code: "compensation.handlerPlacement",
     description: "a compensation handler outside the Sub-Process its subject sits in",
     mutate: outerHandler,
     control: retaining(),
   },
   {
-    code: "il.reference",
+    code: "compensation.handlerPlacement",
     description: "a compensation handler inside a Sub-Process beside its subject",
     mutate: nestedHandler(false),
     control: nestedHandler(true),
@@ -252,6 +252,7 @@ test("scopes: an element its parent does not list, or a child naming another par
   assert.equal(refusalOf(listing(["XS"]), true), null);
   assert.equal(refusalOf(listing([]), true), "il.reference");
   assert.equal(refusalOf(listing(["XS", "E"]), true), "il.reference");
+  // A dangling handler is malformed IL; a misplaced one that resolves is `compensation.handlerPlacement`.
   assert.equal(refusalOf(task(activity("T", userWork(), { compensationHandlers: ["Missing"] }))(base())), "il.reference");
 });
 

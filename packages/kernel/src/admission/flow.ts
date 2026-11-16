@@ -127,14 +127,21 @@ function gatewayReference(payload: GatewayPayload): boolean {
     (defaultFlow === null || (payload.outgoing.includes(defaultFlow) && !candidates.includes(defaultFlow)));
 }
 
+/** An element's compensation handlers name elements. */
+function handlerResolves(program: Program, element: Element): boolean {
+  return (elementEnvelope(element)?.compensationHandlers ?? []).every((id) => programElement(program, id) !== null);
+}
+
 /**
  * An element's compensation handlers are elements in its own place, as the handler its compensation boundary's
  * Association names is, or its children, as its Compensation Event Sub-Process is. `feature/compensation.ts` begins a
  * handler in a context inside the scope occurrence its subject completed in, an occurrence of the parent of a handler
  * beside the subject, and for a Compensation Event Sub-Process a context holding the subject's own variables, so a handler
- * anywhere else would run outside its Scope. CIB resolves an Association from the scope declaring it, among that scope's
- * activities and its own compensation handlers (`BpmnParse.parseAssociations`, `BpmnParse.java:848-883`), so it never
- * links a handler of another process.
+ * anywhere else would run outside its Scope; BPMN 2.0.2 gives a handler meaning only within its subject's compensation
+ * visibility scope (§10.3, Table 10.3, `isForCompensation`). CIB links a handler of another process never, and one at
+ * another level of the same process when the Association lies in a scope holding both, where it runs in its own model
+ * scope (`BpmnParse.java:848-901`, CIB-LIM-0060); the reader refuses every other Association
+ * (`compensation.associationScope`).
  */
 function handlerReference(program: Program, element: Element): boolean {
   const subject = elementHeader(element).id;
@@ -146,8 +153,10 @@ function handlerReference(program: Program, element: Element): boolean {
 
 /**
  * Every identifier names exactly one element, boundary or flow, and every flow and compensation handler reference
- * resolves where it is used: a dangling or misplaced reference would be read as no reference at all. Scope membership is
- * `scopes.ts` `membership`.
+ * resolves where it is used: a dangling or misplaced reference would be read as no reference at all (`il.reference`).
+ * Once they resolve, a compensation handler outside its subject's place and children is
+ * `compensation.handlerPlacement`, a placement restriction on a well-formed program rather than malformed IL. Scope
+ * membership is `scopes.ts` `membership`.
  */
 export function references(program: Program): string | null {
   const elements = program.elements.map((element) => elementHeader(element).id);
@@ -155,12 +164,14 @@ export function references(program: Program): string | null {
   const resolved = distinct([...elements, ...boundaries]) && distinct(program.flows.map((flow) => flow.id)) &&
     program.flows.every((flow) => flowReference(program, flow)) &&
     program.elements.every((element) => listReference(program, element)) &&
-    program.elements.every((element) => handlerReference(program, element)) &&
+    program.elements.every((element) => handlerResolves(program, element)) &&
     program.elements.every((element) => {
       const gateway = elementGateway(element);
       return gateway === null || gatewayReference(gateway[1]);
     });
-  return resolved ? null : "il.reference";
+  if (!resolved) return "il.reference";
+  const placed = program.elements.every((element) => handlerReference(program, element));
+  return placed ? null : "compensation.handlerPlacement";
 }
 
 // Gateways.

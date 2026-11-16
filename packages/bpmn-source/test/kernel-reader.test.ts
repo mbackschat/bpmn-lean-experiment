@@ -486,6 +486,26 @@ test("semantic choices are emitted in full shape and left to Kernel.Admission", 
   assert.deepEqual(element(compensationInput, "H").activity.payload.envelope.inputs, [{ target: "I", source: { variable: { name: "Prop" } }, dialect: "dataAssociation" }]);
 });
 
+test("a compensation handler stays in the container that declares it", async () => {
+  const compensable = `<bpmn:userTask id="U"/><bpmn:boundaryEvent id="B" attachedToRef="U"><bpmn:compensateEventDefinition/></bpmn:boundaryEvent>`;
+  const handler = `<bpmn:manualTask id="H" isForCompensation="true"/>`;
+  const association = `<bpmn:association id="A" sourceRef="B" targetRef="H"/>`;
+  const children = (p: Json, id: string): string[] => element(p, id).scope.payload.children;
+  const parent = (p: Json, id: string): string | null => (Object.values(element(p, id))[0] as Json).header.parent;
+  // CIB links each (`BpmnParse.java:848-883`, recursive `CoreActivity.findActivity`); admission refuses the first two
+  // as `compensation.handlerPlacement`, so the reader must not move the handler beside its subject.
+  const outside = await program(model(`<bpmn:subProcess id="T">${compensable}</bpmn:subProcess>${handler}${association}`));
+  assert.equal(parent(outside, "H"), null);
+  assert.deepEqual(children(outside, "T"), ["U"]);
+  assert.deepEqual(element(outside, "U").activity.payload.envelope.compensationHandlers, ["H"]);
+  const sibling = await program(model(`${compensable}<bpmn:subProcess id="Y">${handler}</bpmn:subProcess>${association}`));
+  assert.equal(parent(sibling, "H"), "Y");
+  assert.deepEqual(children(sibling, "Y"), ["H"]);
+  const nested = await program(model(`<bpmn:subProcess id="T">${compensable}${handler}</bpmn:subProcess>${association}`));
+  assert.equal(parent(nested, "H"), "T");
+  assert.deepEqual(children(nested, "T"), ["U", "H"]);
+});
+
 test("a condition with no named language is read as JUEL (CIB-EXT-0030), never as Simple Boolean", async () => {
   const flowWith = (language: string): string => model(`<bpmn:exclusiveGateway id="X" default="z"/><bpmn:endEvent id="E"/>
     <bpmn:sequenceFlow id="c" sourceRef="X" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"${language}>isPresent(a)</bpmn:conditionExpression></bpmn:sequenceFlow>

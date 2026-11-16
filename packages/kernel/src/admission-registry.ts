@@ -79,7 +79,8 @@ function activityOrigin(program: Program, header: Header, payload: ActivityPaylo
  * it `isForCompensation` (Table 10.3), the one reading of a handler (`elementIsCompensationActivity`), so an associated
  * element without the mark and a marked one with a Sequence Flow, whether an Association names it or not, are refused;
  * CIB refuses both at deployment (`BpmnParse.java:905-910`, `:4327-4337`). A Compensation Event Sub-Process carries no
- * mark and is placed by `processEventSubProcess`.
+ * mark and is placed by `processEventSubProcess`. Where a handler sits relative to its subject is `admission/flow.ts`
+ * `handlerReference` (`compensation.handlerPlacement`).
  */
 function handlerPlacement(program: Program, header: Header, envelope: Envelope, eventSubProcess: boolean): string | null {
   if (eventSubProcess) return null;

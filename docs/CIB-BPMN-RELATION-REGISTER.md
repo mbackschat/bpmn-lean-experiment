@@ -28,7 +28,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | CIB interpretations of BPMN gaps or inconsistencies | 41 | 1 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 47 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 14 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 54 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 55 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1605,6 +1605,16 @@ BPMN 2.0.2 §10.4.2 executes an Activity's output Data Associations "When an Act
 **Evidence:** Pinned `bpmn/parser/BpmnParse.java:4837-4840`, reached from `parseActivityInputOutput` (`:4788-4799`), and `bpmn/parser/BpmnParseUtil.java:70-78`, which returns a mapping for an empty block too; the kernel refuses the witness `event-subprocess-entry` of [input-mapping-contexts](../scenarios/open-rows/input-mapping-contexts/README.md) (profile `cibseven-2.2.0`) with `scope.eventSubProcess.ioParameter`, and its CIB answer is owed to the hosted retake, expected to refuse the deployment.
 
 **Boundary:** Parameters on the Event Sub-Process itself; those of the Activities inside it stay admitted, and its Data Associations remain CIB-LIM-0013's. An empty `<camunda:inputOutput/>` reaches the IL as nothing, since the IL carries parameters and no block, so the kernel admits it while CIB refuses the deployment; an IL presence flag would close the difference if a corpus model ever holds one.
+
+### CIB-LIM-0060 — CIB links a compensation Association only from a scope holding its boundary and its handler
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile, since the kernel refuses every such placement under every profile (`compensation.associationScope` at reading, `compensation.handlerPlacement` at admission); not a deviation
+
+BPMN 2.0.2 gives a Compensation Activity meaning only within its subject's compensation visibility scope (§10.3, Table 10.3, `isForCompensation`; §10.7.1). CIB Seven `2.2.0` resolves a compensation Association in the Process or Sub-Process that declares it, searching the activities nested in that scope and its own pending handlers, and deploys an Association it cannot resolve without linking it. An Association declared in a scope that does not hold both its boundary and its handler links nothing, so its subject compensates nothing; a handler of another Process is never linked, wherever the Association lies. An Association declared in a scope holding both links a handler at another level of the same Process, outside its subject's Sub-Process or inside a sibling Sub-Process, which then runs in its own model scope. The kernel reader keeps every handler in the container that declares it and refuses an Association whose declaring container does not hold both ends (`compensation.associationScope`), since the IL cannot carry where an Association is declared; admission refuses a linked handler outside its subject's place and children (`compensation.handlerPlacement`).
+
+**Evidence:** Pinned `bpmn/parser/BpmnParse.java:723-742` (`parseScope` parses the Associations of each scope), `:848-883` (`parseAssociations`), `:886-901` and `:928-934` (a pending handler parsed into the declaring scope), `core/model/CoreActivity.java:42-54` (the recursive `findActivity`) and `bpmn/behavior/AbstractBpmnActivityBehavior.java:53-61` (no handler, no compensate subscription); the reader's and admission's refusal tests of the five placements ([#165](https://github.com/mbackschat/bpmn-lean-experiment/issues/165)). No retained CIB answer witnesses a placement.
+
+**Boundary:** A handler beside its subject, or a Compensation Event Sub-Process inside it, linked from a scope holding both, stays admitted. A Collaboration-level Association is parsed by neither CIB nor the reader: its boundary is read without a handler, so its subject is compensable in neither engine, and the handler, marked `isForCompensation`, is never begun.
 
 ## Extension register
 

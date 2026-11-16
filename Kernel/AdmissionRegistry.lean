@@ -35,7 +35,8 @@ def activityOrigin (program : Program) (header : Header) (payload : ActivityPayl
 marks it `isForCompensation` (Table 10.3), the one reading of a handler (`Element.isCompensationActivity`), so an
 associated element without the mark and a marked one with a Sequence Flow, whether an Association names it or not, are
 refused; CIB refuses both at deployment (`BpmnParse.java:905-910`, `:4327-4337`). A Compensation Event Sub-Process
-carries no mark and is placed by `processEventSubProcess`. -/
+carries no mark and is placed by `processEventSubProcess`. Where a handler sits relative to its subject is
+`Admission.Flow.handlerReference` (`compensation.handlerPlacement`). -/
 def handlerPlacement (program : Program) (header : Header) (envelope : Envelope) (eventSubProcess : Bool) :
     Option String :=
   if eventSubProcess then none

@@ -51,13 +51,19 @@ def listReference (program : Program) (element : Element) : Bool :=
       envelope.defaultFlow.all element.outgoing.contains &&
       envelope.boundaries.all fun boundary => distinct boundary.outgoing && boundary.outgoing.all (leaves boundary.id))
 
+/-- An element's compensation handlers name elements. -/
+def handlerResolves (program : Program) (element : Element) : Bool :=
+  ((element.envelope?.map (·.compensationHandlers)).getD []).all fun id => (program.element? id).isSome
+
 /-- An element's compensation handlers are elements in its own place, as the handler its compensation boundary's
 Association names is, or its children, as its Compensation Event Sub-Process is. `Kernel.Feature.Compensation` begins a
 handler in a context inside the scope occurrence its subject completed in, an occurrence of the parent of a handler
 beside the subject, and for a Compensation Event Sub-Process a context holding the subject's own variables, so a handler
-anywhere else would run outside its Scope. CIB resolves an Association from the scope declaring it, among that scope's
-activities and its own compensation handlers (`BpmnParse.parseAssociations`, `BpmnParse.java:848-883`), so it never
-links a handler of another process. -/
+anywhere else would run outside its Scope; BPMN 2.0.2 gives a handler meaning only within its subject's compensation
+visibility scope (§10.3, Table 10.3, `isForCompensation`). CIB links a handler of another process never, and one at
+another level of the same process when the Association lies in a scope holding both, where it runs in its own model
+scope (`BpmnParse.java:848-901`, CIB-LIM-0060); the reader refuses every other Association
+(`compensation.associationScope`). -/
 def handlerReference (program : Program) (element : Element) : Bool :=
   ((element.envelope?.map (·.compensationHandlers)).getD []).all fun id =>
     (program.element? id).any fun target =>
@@ -84,15 +90,18 @@ def gatewayReference (payload : GatewayPayload) : Bool :=
       default.all fun flow => payload.outgoing.contains flow && !candidates.contains flow
 
 /-- Every identifier names exactly one element, boundary or flow, and every flow and compensation handler reference
-resolves where it is used: a dangling or misplaced reference would be read as no reference at all. Scope membership is
+resolves where it is used: a dangling or misplaced reference would be read as no reference at all (`il.reference`).
+Once they resolve, a compensation handler outside its subject's place and children is `compensation.handlerPlacement`, a
+placement restriction on a well-formed program rather than malformed IL. Scope membership is
 `Kernel.Admission.Scopes.membership`. -/
 def references (program : Program) : Option String :=
   let elements := program.elements.map (·.header.id)
   let boundaries := program.elements.flatMap fun element => (element.envelope?.map (·.boundaries.map (·.id))).getD []
   if distinct (elements ++ boundaries) && distinct (program.flows.map (·.id)) &&
       program.flows.all (flowReference program) && program.elements.all (listReference program) &&
-      program.elements.all (handlerReference program) &&
-      program.elements.all fun element => element.gateway?.all fun (_, payload) => gatewayReference payload then none
+      program.elements.all (handlerResolves program) &&
+      program.elements.all fun element => element.gateway?.all fun (_, payload) => gatewayReference payload then
+    if program.elements.all (handlerReference program) then none else some "compensation.handlerPlacement"
   else some "il.reference"
 
 /-! ## Gateways -/

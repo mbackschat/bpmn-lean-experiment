@@ -72,6 +72,14 @@ const ending = (definition: string, roots = ""): string => model(`<bpmn:endEvent
 const inputAssociation = (association: string, data = ""): string =>
   model(`<bpmn:property id="Prop"/><bpmn:dataObject id="Obj"/>${data}<bpmn:userTask id="U"><bpmn:ioSpecification><bpmn:dataInput id="I"/><bpmn:inputSet/><bpmn:outputSet/></bpmn:ioSpecification>${association}</bpmn:userTask>`);
 
+/** A User Task `U` with the compensation boundary `B`, the handler `H` and the Association `A` from `B` to `H`. */
+const compensable = `<bpmn:userTask id="U"/><bpmn:boundaryEvent id="B" attachedToRef="U"><bpmn:compensateEventDefinition/></bpmn:boundaryEvent>`;
+const compensationHandler = `<bpmn:manualTask id="H" isForCompensation="true"/>`;
+const compensationAssociation = `<bpmn:association id="A" sourceRef="B" targetRef="H"/>`;
+/** `P` holding `body` and a second Process `Q` holding `other`. */
+const twoProcesses = (body: string, other: string): string =>
+  model(body).replace("</bpmn:process>", `</bpmn:process><bpmn:process id="Q" isExecutable="true">${other}</bpmn:process>`);
+
 export const rows: readonly Row[] = [
   // Preservation of the source bytes.
   {
@@ -418,6 +426,25 @@ export const rows: readonly Row[] = [
     evidence: "camunda:candidateUsers",
     refused: { xml: model(`<bpmn:userTask id="U" camunda:candidateUsers="bob, "/>`) },
     control: { xml: model(`<bpmn:userTask id="U" camunda:candidateUsers="bob"/>`) },
+  },
+  {
+    // CIB-LIM-0060: CIB links an Association only from a scope holding both its ends (`BpmnParse.java:848-883`).
+    code: "compensation.associationScope",
+    description: "a compensation Association to a handler in another Process",
+    refused: { xml: twoProcesses(compensable + compensationAssociation, compensationHandler) },
+    control: { xml: model(compensable + compensationHandler + compensationAssociation) },
+  },
+  {
+    code: "compensation.associationScope",
+    description: "a compensation Association declared in another Process than its boundary and handler",
+    refused: { xml: twoProcesses(compensable + compensationHandler, `<bpmn:task id="Q1"/>${compensationAssociation}`) },
+    control: { xml: twoProcesses(compensable + compensationHandler + compensationAssociation, `<bpmn:task id="Q1"/>`) },
+  },
+  {
+    code: "compensation.associationScope",
+    description: "a compensation Association declared in a Sub-Process holding neither its boundary nor its handler",
+    refused: { xml: model(`${compensable}${compensationHandler}<bpmn:subProcess id="Y"><bpmn:task id="Y1"/>${compensationAssociation}</bpmn:subProcess>`) },
+    control: { xml: model(`<bpmn:subProcess id="Y">${compensable}${compensationHandler}${compensationAssociation}</bpmn:subProcess>`) },
   },
   {
     code: "reader.multiInstanceWithoutCount",

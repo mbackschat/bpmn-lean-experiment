@@ -44,6 +44,11 @@ export enum ReadRefusalCode {
   /** A candidate list entry empty after Java's trim, which CIB publishes as a candidate with the empty ID (CIB-EXT-0011). */
   EmptyCandidateEntry = "reader.emptyCandidateEntry",
   ConditionExpressionType = "reader.conditionExpressionType",
+  /**
+   * A compensation Association declared in a Process or Sub-Process that does not hold both its boundary and its
+   * handler, which CIB deploys without linking (CIB-LIM-0060); the IL has no field for where it is declared.
+   */
+  CompensationAssociationScope = "compensation.associationScope",
   DecisionSchema = "decision.schema",
 }
 
@@ -220,7 +225,10 @@ export type CompensationSubject = Readonly<{
   handler: string;
   /** The compensation boundary Event of an Activity subject, `null` for a compensation Event Sub-Process. */
   boundary: string | null;
-  /** The container the handler joins as a child: the subject's container, or the subject Sub-Process itself. */
+  /**
+   * The container that declares the handler, which lists it as a child: never relocated to its subject's, so admission
+   * sees where it sits; for a Compensation Event Sub-Process the subject Sub-Process itself.
+   */
   container: ElementRecord;
 }>;
 
