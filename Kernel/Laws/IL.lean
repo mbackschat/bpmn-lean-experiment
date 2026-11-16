@@ -164,6 +164,21 @@ theorem outgoing_gateway (header : Header) (payload : GatewayPayload) :
     (Element.gateway header payload).outgoing = payload.outgoing := by
   simp only [Element.outgoing]
 
+theorem header_gateway (header : Header) (payload : GatewayPayload) :
+    (Element.gateway header payload).header = header := by simp only [Element.header]
+
+theorem outgoing_event (header : Header) (payload : EventPayload) :
+    (Element.event header payload).outgoing = payload.outgoing := by simp only [Element.outgoing]
+
+theorem activity?_scope (header : Header) (payload : ScopePayload) : (Element.scope header payload).activity? = none := by
+  simp only [Element.activity?]
+
+theorem activity?_event (header : Header) (payload : EventPayload) : (Element.event header payload).activity? = none := by
+  simp only [Element.activity?]
+
+theorem activity?_gateway (header : Header) (payload : GatewayPayload) :
+    (Element.gateway header payload).activity? = none := by simp only [Element.activity?]
+
 /-- A Call's work record names its Call, and no other work record names one: `Kernel.Laws.Work`, which owns matching
 on `Work`, reads `Work.call?` by these. -/
 theorem call?_call (work : CallWork) : (Work.call work).call? = some work := by simp only [Work.call?]
@@ -321,6 +336,14 @@ theorem mem_processChildren {program : Program} {process : CalledProcess} {eleme
   unfold Program.processChildren at member
   obtain ⟨_, _, found⟩ := List.mem_filterMap.mp member
   exact element?_mem found
+
+/-- An element on a level (`Program.siblings`) is one of the program's elements. -/
+theorem mem_siblings {program : Program} {header : Header} {element : Element}
+    (member : element ∈ program.siblings header) : element ∈ program.elements := by
+  unfold Program.siblings at member
+  split at member
+  · exact mem_processChildren member
+  · exact mem_children member
 
 /-- An Event Sub-Process kind's start subscription is the one it carries. -/
 theorem start?_eventSubProcess (start : Subscription) (interrupting : Bool) :

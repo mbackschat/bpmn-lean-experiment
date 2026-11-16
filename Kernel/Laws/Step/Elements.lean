@@ -34,4 +34,21 @@ theorem gateway?_outgoing {element : Element} {header : Header} {payload : Gatew
   cases element <;> simp_all [Laws.IL.gateway?_gateway, Laws.IL.outgoing_gateway, Laws.IL.gateway?_activity,
     Laws.IL.gateway?_scope, Laws.IL.gateway?_event, Laws.IL.gateway?_start]
 
+/-- A gateway's header is its element's. -/
+theorem gateway?_header {element : Element} {header : Header} {payload : GatewayPayload}
+    (typed : element.gateway? = some (header, payload)) : element.header = header := by
+  cases element <;> simp_all [Laws.IL.gateway?_gateway, Laws.IL.header_gateway, Laws.IL.gateway?_activity,
+    Laws.IL.gateway?_scope, Laws.IL.gateway?_event, Laws.IL.gateway?_start]
+
+/-- An Event's outgoing flows are its payload's. -/
+theorem event?_outgoing {element : Element} {header : Header} {payload : EventPayload}
+    (typed : element.event? = some (header, payload)) : element.outgoing = payload.outgoing := by
+  cases element <;> simp_all [Laws.IL.event?_event, Laws.IL.outgoing_event, Laws.IL.event?_activity,
+    Laws.IL.event?_scope, Laws.IL.event?_gateway, Laws.IL.event?_start]
+
+/-- An Activity is no Scope. -/
+theorem activity?_scope? {element : Element} (typed : element.activity?.isSome) : element.scope? = none := by
+  cases element <;> simp_all [Laws.IL.activity?_activity, Laws.IL.scope?_activity, Laws.IL.activity?_scope,
+    Laws.IL.activity?_event, Laws.IL.activity?_gateway, Laws.IL.activity?_start]
+
 end Kernel.Laws.Step

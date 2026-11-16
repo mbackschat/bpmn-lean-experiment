@@ -128,7 +128,10 @@ public import Kernel.Proofs.Former.Calls
 public import Kernel.Proofs.Former.FrameWitnesses
 public import Kernel.Proofs.Former.Placed
 public import Kernel.Proofs.Former.PlacedAnchors
+public import Kernel.Proofs.Former.PlacedCarry
+public import Kernel.Proofs.Former.PlacedFrame
 public import Kernel.Proofs.Former.PlacedLane
+public import Kernel.Proofs.Former.PlacedSources
 public import Kernel.Proofs.Former.Placement
 public import Kernel.Proofs.Former.Values
 public import Kernel.Proofs.Frame
