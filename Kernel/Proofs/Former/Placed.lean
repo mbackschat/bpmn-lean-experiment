@@ -1,6 +1,7 @@
 module
 
 public import Kernel.State
+public import Kernel.Laws.MultiInstance.Rules
 
 /-! # Proofs: the former lanes, placement (P7)
 
@@ -47,7 +48,10 @@ structure Placed (program : Program) (s : State) : Prop where
   envelopes declare one boundary identifier (`boundaryIds`).
 - A flow joins two endpoints of one process (`flowReference`: one `place`), and every flow an element or boundary lists
   as outgoing, as its default or as a gateway's candidate or default, leaves it (`listReference`, `gatewayReference`).
-- A compensation handler lies in its subject's process (`handlerReference`: in its subject's place, or its child). -/
+- A compensation handler lies in its subject's process (`handlerReference`: in its subject's place, or its child).
+- No two elements share an identifier (`ids`): the IL identifier contract `Laws.MultiInstance.IdsUnique` cites, read
+  in place, so that `Program.element?` finds every element and the outgoing flows of a catching Link found among its
+  siblings leave it (`Proofs.Former.shared_linkId_rejected`). -/
 structure ReferencesPlaced (program : Program) : Prop where
   rootChildren : ∀ element ∈ program.children none, definitionAt program element.header.id = none
   processChildren : ∀ process ∈ program.processes, ∀ element ∈ program.processChildren process,
@@ -82,5 +86,6 @@ structure ReferencesPlaced (program : Program) : Prop where
     ∀ flow, (flow ∈ candidates ∨ default = some flow) → flow ∈ payload.outgoing
   handlers : ∀ element ∈ program.elements, ∀ envelope, element.envelope? = some envelope →
     ∀ handler ∈ envelope.compensationHandlers, definitionAt program handler = definitionAt program element.header.id
+  ids : Laws.MultiInstance.IdsUnique program
 
 end Kernel.Proofs.Former

@@ -160,7 +160,7 @@ theorem rootOnly_lane {s : State} (scopes : s.scopes = [{ id := State.root, elem
   refine ⟨⟨⟨⟨{ root := State.root }, by simp [instances], rfl⟩, ?_, by simp [occurrences]⟩, by simp [instances],
     by simpa [instances, Laws.State.root_eq] using issued, by simp [instances, Laws.State.root_eq], ?_, by simp [occurrences], by simp [parked],
     by simp [compensation]⟩, by simp [tokens], ?_, ?_, ?_, ?_, ?_, ?_, by simp [compensation], by simp [compensation],
-    ?_, ?_, fun run member stands => absurd (only _ stands) (runs run member).1, ?_, ?_⟩
+    ?_, ?_, fun run member stands => absurd (only _ stands) (runs run member).1, ?_, ?_, by simp [parked]⟩
   · intro entry member called; simp [scopes] at member; subst member; simp at called
   · intro entry member element parent named; simp [scopes] at member; subst member; simp at named
   · intro request queued

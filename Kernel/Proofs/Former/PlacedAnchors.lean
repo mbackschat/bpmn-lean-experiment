@@ -117,6 +117,12 @@ theorem nodup_map_unique {α β : Type} {f : α → β} :
     · exact absurd (List.mem_map.mpr ⟨_, inFirst, same⟩) nodup.1
     · exact nodup_map_unique nodup.2 inFirst inSecond same
 
+/-- Under unique element identifiers (`Laws.MultiInstance.IdsUnique`) `Program.element?` finds every element by its
+own identifier. -/
+theorem element?_member {program : Program} (ids : Laws.MultiInstance.IdsUnique program) {element : Element}
+    (member : element ∈ program.elements) : program.element? element.header.id = some element :=
+  Laws.IL.element?_unique member rfl fun _ other named => nodup_map_unique ids.headers other member named
+
 /-- An element of the process an instance entry of a called root records is placed in that called root. -/
 theorem placed_called {program : Program} {s : State} (formed : WellFormed program s) (lane : PlacedLane program s)
     {root : ScopeOccurrence} (member : root ∈ s.scopes) {name : String} (called : root.calledInstance = some name)

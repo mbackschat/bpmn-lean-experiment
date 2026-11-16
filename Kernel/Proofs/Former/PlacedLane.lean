@@ -105,6 +105,10 @@ structure PlacedLane (program : Program) (s : State) : Prop extends PlacedCore p
       (∃ record ∈ s.slots.compensation.retained, record.scope = x) ∨
       (∃ run ∈ s.slots.compensation.runs, run.scope = x ∧ run.pending ≠ []) ∨
       ∃ run ∈ s.slots.multiInstances, run.scope = x) → x.value < s.nextIssue
+  /-- A join wait lies in the scope occurrence of every occurrence of its number, as `park` parks it, so a completion
+  offered where the wait lies is offered where its occurrence does (`Proofs.Former.split_wait_rejected`). -/
+  waits : ∀ waiting ∈ s.slots.parked, ∀ occurrence ∈ s.occurrences, occurrence.id = waiting.occurrence →
+    occurrence.scope = waiting.scope
 
 /-- An update of nothing the lane reads keeps it (`Proofs.Frame.Unmoved`). -/
 theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame.Unmoved s t)
@@ -117,7 +121,9 @@ theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame
   have signal : ∀ signal ∈ t.signals, Laws.Step.placing signal = true → signal ∈ s.signals := moved.placings
   have resumed : ∀ resume, resume ∈ Laws.Step.resumesOf t.signals → resume ∈ Laws.Step.resumesOf s.signals :=
     fun _ inside => moved.resumes ▸ inside
-  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    fun waiting member occurrence inside named =>
+      held.waits waiting (moved.parked waiting member) occurrence (moved.occurrences ▸ inside) named⟩
   · rw [moved.instances]; exact held.placed.rooted
   · intro root member called
     rw [moved.instances]
@@ -403,6 +409,16 @@ theorem unissued_occur_rejected :
     have := lane.issued ⟨5⟩ (.inl ⟨⟨"A"⟩, .outgoing, .inl ⟨[], .outward, List.mem_singleton_self _⟩⟩)
     simp [placedState] at this
 
+/-- A join wait outside its occurrence's scope occurrence breaks `PlacedLane.waits`: a completion offered where the
+wait lies, here in the called root, would name flows of another process than the occurrence's, here the root's. -/
+theorem split_wait_rejected :
+    ¬ PlacedLane program { placedState definition with
+        occurrences := [{ id := 3, element := ⟨"A"⟩, scope := State.root, activation := 1 }]
+        slots := { (placedState definition).slots with parked := [{ occurrence := 3, flow := ⟨"F"⟩, scope := ⟨1⟩ }] } } :=
+  fun lane => by
+    have := lane.waits _ (List.mem_singleton_self _) _ (List.mem_singleton_self _) rfl
+    simp [Laws.State.root_eq] at this
+
 /-- A queued compensation resuming a completion by a named flow breaks `PlacedLane.compensates`. -/
 theorem named_compensate_rejected (flow : FlowId) (thrown : OccurrenceRef) :
     ¬ PlacedLane program { placedState definition with
@@ -513,6 +529,56 @@ theorem shared_boundaryId_rejected :
   · simp only [definitionAt, unboundary, second, first, top, Option.map_none, Option.map_some, Option.orElse_none,
       Option.orElse_some, Option.bind_some] at same
     simp [sharedBoundary, sharedHost, Laws.IL.header_scope] at same
+
+/-- The flow `F` from `T` to `T`. -/
+def sharedF : Flow := { id := ⟨"F"⟩, source := ⟨"T"⟩, target := ⟨"T"⟩ }
+
+/-- A catching Link `L` at the root process's level, leaving by `sharedF`. -/
+def sharedLink : Element :=
+  .event { id := ⟨"L"⟩, origin := { sourceId := "L" }, sourceType := "intermediateCatchEvent", parent := none }
+    { role := .linkCatch "N", placement := .intermediate, outgoing := [sharedF.id] }
+
+/-- A root-process Scope `L`, the catching Link `L`, and `T` at the top level of the called process of `definition`. -/
+def sharedLinkId : Program :=
+  { program with elements := [sharedHost "L", sharedLink, sharedHost "T"], flows := [sharedF],
+                 processes := [{ definition, children := [⟨"T"⟩] }] }
+
+/-- Two elements sharing the identifier `L` break `ReferencesPlaced.ids`, which the lane needs: the catching Link `L`
+on the root process's level (`Program.children none`) offers `F` (`Laws.Flow.Offered`), whose target `T` runs the called
+process, while `ReferencesPlaced.outgoing` reads only the element `Program.element?` resolves `L` to, the Scope. -/
+theorem shared_linkId_rejected :
+    ¬ Laws.MultiInstance.IdsUnique (sharedLinkId program definition) ∧
+      sharedLink ∈ (sharedLinkId program definition).elements ∧ sharedLink.header.parent = none ∧
+      sharedLink.event?.map (·.2.outgoing) = some [sharedF.id] ∧ sharedF ∈ (sharedLinkId program definition).flows ∧
+      definitionAt (sharedLinkId program definition) sharedF.target ≠
+        definitionAt (sharedLinkId program definition) sharedLink.header.id := by
+  have link : sharedLink.header.id = ⟨"L"⟩ ∧ sharedLink.header.parent = none := by
+    simp [sharedLink, Laws.IL.header_event]
+  have members : ∀ element ∈ (sharedLinkId program definition).elements,
+      element = sharedHost "L" ∨ element = sharedLink ∨ element = sharedHost "T" := fun _ member => by
+    simpa [sharedLinkId] using member
+  have parentless : ∀ element ∈ (sharedLinkId program definition).elements, element.header.parent = none :=
+    fun element member => by
+      rcases members element member with rfl | rfl | rfl <;> simp [sharedHost, Laws.IL.header_scope, link]
+  have top := fun header => Laws.IL.processOf_parentless (program := sharedLinkId program definition) (header := header)
+    parentless
+  have scopeT : (sharedLinkId program definition).element? ⟨"T"⟩ = some (sharedHost "T") :=
+    Laws.IL.element?_unique (by simp [sharedLinkId]) (by simp [sharedHost, Laws.IL.header_scope])
+      fun other member named => by
+        rcases members other member with rfl | rfl | rfl
+        · simp [sharedHost, Laws.IL.header_scope] at named
+        · simp [link] at named
+        · rfl
+  obtain ⟨found, scopeL⟩ := Option.isSome_iff_exists.mp
+    (Laws.IL.element?_isSome (program := sharedLinkId program definition) (element := sharedLink) (by simp [sharedLinkId]))
+  have foundL := Laws.IL.element?_header scopeL
+  refine ⟨fun ids => ?_, by simp [sharedLinkId], link.2, by simp [sharedLink, Laws.IL.event?_event], by
+    simp [sharedLinkId], fun same => ?_⟩
+  · have := ids.headers
+    simp [sharedLinkId, sharedHost, Laws.IL.header_scope, link] at this
+  · simp only [sharedF, definitionAt, scopeT, scopeL, Option.map_some, Option.orElse_some, Option.bind_some, top,
+      foundL] at same
+    simp [sharedLinkId, sharedHost, Laws.IL.header_scope, link] at same
 
 /-- A called root's instance entry without a definition breaks `PlacedLane.rootDefinition`. -/
 theorem undefined_called_rejected :
