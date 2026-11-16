@@ -261,8 +261,7 @@ theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → P
     (phases : Phases WellFormed) (pipeline : PipelinePhases WellFormed) (facts : StateFacts) :
     PipelineKeeps hooks (EndsInv b none) := by
   intro ctx id leave writes rule state after holds free source ran
-  rcases complete_ok ran with ⟨_, same⟩ | ⟨occurrence, sourceType, begun, pipeline⟩
-  · exact same ▸ holds
+  obtain ⟨occurrence, sourceType, begun, pipeline⟩ := complete_ok ran
   obtain ⟨left, selected, written, pipeline⟩ := pipeline
   obtain ⟨found, _, leaving, pipeline⟩ := pipeline
   obtain ⟨made, choosing, writing, finishes⟩ := pipeline

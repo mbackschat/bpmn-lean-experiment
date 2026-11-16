@@ -82,7 +82,8 @@ theorem nextToken_rest {ctx : Ctx} {state : State} {token : Token} {rest : List 
 /-- Queued work whose scope occurrence is gone fails its closure micro-step with `queued-work-scope-gone`, after a
 transaction boundary too: the input's outcome is that invariant failure, never `unsupported` (#121, #148). -/
 theorem microStep_scope_gone {hooks : Hooks} {ctx : Ctx} {signal : Signal} {state : State}
-    (fresh : stale state (signalWork hooks ctx signal) = false) (absent : gone state (signalWork hooks ctx signal) = true) :
+    (fresh : stale state (signalWork hooks ctx signal) = false)
+    (absent : gone state (signalWork hooks ctx signal) = some "queued-work-scope-gone") :
     microStep hooks ctx (.signal (signalName signal)) none State.root (dispatchSignal hooks ctx signal) state =
       .error (.semanticFailure .invariant "queued-work-scope-gone") :=
   microStep_invariant (dispatchSignal_eq ▸ perform_gone fresh absent)

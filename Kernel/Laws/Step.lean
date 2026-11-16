@@ -89,11 +89,6 @@ theorem settle_induction {hooks : Hooks} {ctx : Ctx} (invariant : State → Prop
               (.finish running (by assumption) (by assumption) (by assumption) offered (by assumption) ran)
           · cases ran; exact holds
 
-/-- The closure has nothing left to run in `state` but, once its root is idle, the instance's completion: no queued
-signal, no token to move, no idle scope occurrence and no parked join that fires when it is offered again. -/
-@[expose] def Quiescent (hooks : Hooks) (ctx : Ctx) (state : State) : Prop :=
-  state.signals = [] ∧ nextToken ctx state = none ∧ idleScope? ctx state = none ∧ reoffer? hooks ctx state = .ok none
-
 /-- A committed closure stopped where `Step.settle` stops: at a state that is not running, at a quiescent state whose
 root is busy, or with the instance's completion micro-step from a quiescent state whose root is idle. Which hooks
 `Step.conclude` then runs decides the completed state's status, so it is not stated here. -/
@@ -204,8 +199,7 @@ theorem dispatch_gateway {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {
 What a committed `Step.step` is made of, one phase at a time, each read from one body of `Kernel.Step`: the input's
 own transition and the closure (`step_eq`, `onRunning_eq`, from which `Kernel.Laws.Step.Inputs` derives `step_ok` and
 `onRunning_ok`), a micro-step's absorbed completion and its transition (`absorb_ok`, `conclude_ok`), the completion
-pipeline (`complete_ok`, `continueAfter_ok`) and the queued work of a signal whose target is gone (`perform_stale`,
-`perform_gone`, `complete_absent`, `fire_absent`). A proof composes these and never opens `Kernel.Step`. -/
+pipeline (`complete_ok`, `continueAfter_ok`) and queued work whose target is gone; a proof never opens `Kernel.Step`. -/
 
 /-- An instance end clears the instance root and records the status and failure. -/
 theorem endInstance_eq {status : InstanceStatus} {failure : Option InstanceFailure} {state : State} :
@@ -351,6 +345,15 @@ theorem admitChoices_error {hooks : Hooks} {ctx : Ctx} {failure : Failure}
   dsimp only at ran
   split at ran <;> (try split at ran) <;> first | simp at ran; done | exact ⟨_, (Except.error.inj ran).symm⟩
 
+private theorem perform_ok {work : SignalWork} {state after : State} (ran : work.perform state = .ok after) :
+    stale state work = false ∧ gone state work = none ∧ work.run state = .ok after := by
+  unfold SignalWork.perform at ran
+  split at ran
+  · simp at ran
+  · split at ran
+    · simp at ran
+    · exact ⟨by simpa using ‹¬stale state work = true›, ‹_›, ran⟩
+
 /-- A committed absorb left the micro-step's state as it was, or ran the micro-step's sole completion after taking it
 off the queue. -/
 theorem absorb_ok {hooks : Hooks} {ctx : Ctx} {before : Nat} {state after : State}
@@ -359,7 +362,7 @@ theorem absorb_ok {hooks : Hooks} {ctx : Ctx} {before : Nat} {state after : Stat
       complete hooks ctx occurrence leave writes rule { state with signals := state.signals.take before } = .ok after := by
   unfold absorb at ran
   split at ran
-  · exact .inr ⟨_, _, _, _, by assumption, ran⟩
+  · exact .inr ⟨_, _, _, _, by assumption, by simpa [signalWork] using (perform_ok ran).2.2⟩
   · exact .inl (Except.ok.inj ran).symm
 
 /-- A committed transition journalled the draft, emptied it and the write log, told `Hooks.cancelled` of each cancelled
@@ -392,13 +395,12 @@ theorem continueAfter_ok {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {
     | exact .inr (.inr (.inr ⟨_, .inl ran⟩))
     | exact .inr (.inr (.inr ⟨_, .inr ran⟩))
 
-/-- The completion pipeline (`Step.complete`): an occurrence that is gone is dropped; otherwise its reservation, if it
+/-- The completion pipeline (`Step.complete`): a committed completion found its occurrence; its reservation, if it
 is one, starts, its own items close, `Hooks.leave` disarms what hangs on it, `Hooks.select` resolves how it leaves,
 `Hooks.writeOutputs` makes its writes, and it finishes (`Finishes`). -/
 theorem complete_ok {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writes : List (String × Value)}
     {rule : WriteRule} {state after : State} (ran : complete hooks ctx id leave writes rule state = .ok after) :
-    (state.occurrence? id = none ∧ after = state) ∨
-      ∃ occurrence sourceType begun left selected written,
+    ∃ occurrence sourceType begun left selected written,
         state.occurrence? id = some occurrence ∧ ctx.program.sourceType? occurrence.element = some sourceType ∧
         hooks.leave ctx (state.startReserved occurrence sourceType).2
           ((state.startReserved occurrence sourceType).1.closeOwnItems id) = .ok left ∧
@@ -408,7 +410,7 @@ theorem complete_ok {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writ
         Finishes hooks ctx id begun writes selected written after := by
   unfold complete at ran
   cases found : state.occurrence? id with
-  | none => simp only [found] at ran; exact .inl ⟨rfl, (Except.ok.inj ran).symm⟩
+  | none => simp [found] at ran
   | some occurrence =>
     simp only [found] at ran
     cases known : ctx.program.sourceType? occurrence.element with
@@ -420,7 +422,7 @@ theorem complete_ok {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writ
       obtain ⟨left, leaving, ran⟩ := bind_ok ran
       obtain ⟨selected, selecting, ran⟩ := bind_ok ran
       obtain ⟨written, writing, ran⟩ := bind_ok ran
-      refine .inr ⟨occurrence, sourceType, begun, left, selected, written, rfl, known, by simpa [reserved] using leaving,
+      refine ⟨occurrence, sourceType, begun, left, selected, written, rfl, known, by simpa [reserved] using leaving,
         by simp [reserved], selecting, writing, ?_⟩
       split at ran
       · exact .raised ran
@@ -435,37 +437,45 @@ theorem complete_ok {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writ
 
 /-! ### Queued work whose target is gone
 
-What `Kernel/Step/Stale.lean` lets the closure meet: a queued signal naming a scope occurrence or occurrence that was
-issued and has since been removed. Such work is inert: a begin, an arming and an `occur` whose target is gone fail the
-input (`perform_stale`, CIB-LIM-0055's `interrupted-before-wait`); a write, a removal, a compensation and a
-compensation's failure whose scope occurrence is gone fail it too (`perform_gone`, #121); a completion of an occurrence
-that is gone and a firing of an item that is gone change nothing (`complete_absent`, `fire_absent`), and a
-cancellation of an occurrence that is gone changes nothing (`Laws.State.cancelOccurrence_absent`). -/
+What `Kernel/Step/Stale.lean` lets the closure meet: queued work naming a target issued and since removed, which is
+inert. A begin, an arming and an `occur` whose target is gone fail the input (`perform_stale`, CIB-LIM-0055); a write, a
+removal, a compensation or its failure whose scope occurrence is gone (#121), and a completion or a cancellation whose
+occurrence is gone (#151), fail it as invariant failures (`perform_gone`, `complete_occurrence_gone`,
+`cancel_occurrence_gone`, `complete_absent`); a firing of an item that is gone changes nothing (`fire_absent`). -/
 
 theorem perform_stale {work : SignalWork} {state : State} (refused : stale state work = true) :
     work.perform state = .error (.unsupported "interrupted-before-wait") := by
   simp [SignalWork.perform, refused]
 
-theorem perform_gone {work : SignalWork} {state : State} (fresh : stale state work = false) (absent : gone state work = true) :
-    work.perform state = .error (.semanticFailure .invariant "queued-work-scope-gone") := by
+theorem perform_gone {work : SignalWork} {state : State} {code : String} (fresh : stale state work = false)
+    (absent : gone state work = some code) : work.perform state = .error (.semanticFailure .invariant code) := by
   simp [SignalWork.perform, fresh, absent]
 
 theorem complete_absent {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writes : List (String × Value)}
     {rule : WriteRule} {state : State} (absent : state.occurrence? id = none) :
-    complete hooks ctx id leave writes rule state = .ok state := by
+    complete hooks ctx id leave writes rule state = .error (.semanticFailure .invariant "queued-work-occurrence-gone") := by
   simp [complete, absent]
+
+theorem complete_occurrence_gone {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writes : List (String × Value)}
+    {rule : WriteRule} {state : State} (absent : state.occurrence? id = none) : dispatchSignal hooks ctx
+      (.complete id leave writes rule) state = .error (.semanticFailure .invariant "queued-work-occurrence-gone") := by
+  simp [dispatchSignal, signalWork, SignalWork.perform, stale, gone, absent]
+
+theorem cancel_occurrence_gone {hooks : Hooks} {ctx : Ctx} {id : Nat} {state : State} (absent : state.occurrence? id = none) :
+    dispatchSignal hooks ctx (.cancel id) state = .error (.semanticFailure .invariant "queued-work-occurrence-gone") := by
+  simp [dispatchSignal, signalWork, SignalWork.perform, stale, gone, absent]
 
 theorem fire_absent {hooks : Hooks} {ctx : Ctx} {item : Nat} {fired : Fired} {state : State}
     (absent : state.openItems.find? (·.id == item) = none) : (signalWork hooks ctx (.fire item fired)).run state = .ok state := by
   simp [signalWork, absent]
 
-/-- What a signal's work names, as what it does something in or on (`Step.stale`) and what it acts from (`Step.gone`),
-is read from the signal alone, never from the hooks or the context: a lane reads a queued signal's targets from
-`Step.signalWork` of any hooks and context instead of enumerating `Signal`'s constructors. -/
+/-- What a signal's work names (`Step.stale`, `Step.gone`) is read from the signal alone, never from the hooks or the
+context: a lane reads a queued signal's targets from `Step.signalWork` of any hooks and context, not `Signal`'s cases. -/
 theorem signalWork_targets (hooks hooks' : Hooks) (ctx ctx' : Ctx) (signal : Signal) :
     (signalWork hooks ctx signal).scopes = (signalWork hooks' ctx' signal).scopes ∧
       (signalWork hooks ctx signal).occurrences = (signalWork hooks' ctx' signal).occurrences ∧
-      (signalWork hooks ctx signal).requires = (signalWork hooks' ctx' signal).requires := by
+      (signalWork hooks ctx signal).requires = (signalWork hooks' ctx' signal).requires ∧
+      (signalWork hooks ctx signal).acts = (signalWork hooks' ctx' signal).acts := by
   cases signal <;> simp [signalWork]
 
 /-- Work that does something in, or acts from, a scope occurrence that was issued and is gone fails the input, as
@@ -488,8 +498,9 @@ theorem perform_absent {work : SignalWork} {state : State} {scope : ScopeOccurre
         simp only [Bool.or_eq_true, List.any_eq_true]
         exact .inl ⟨scope, named, by simp [issued, none]⟩
       simp [refused] at fresh
-    · unfold gone
-      exact List.any_eq_true.mpr ⟨scope, named, by simp [none]⟩
+    · have scopeGone : work.requires.any (fun scope => !state.scopes.any (·.id == scope)) = true :=
+        List.any_eq_true.mpr ⟨scope, named, by simp [none]⟩
+      simp [gone, scopeGone]
 
 /-! ### What an addressed input's lookups and jobs read
 
@@ -714,15 +725,6 @@ theorem reoffer_ok {hooks : Hooks} {ctx : Ctx} {state : State} {gateway : Elemen
         exact ⟨_, _, _, _, ⟨last, kept.1, rfl, element, sameTarget ▸ targeted, isGateway⟩, found, offering⟩
     · simp at stepped
 
-private theorem perform_ok {work : SignalWork} {state after : State} (ran : work.perform state = .ok after) :
-    stale state work = false ∧ gone state work = false ∧ work.run state = .ok after := by
-  unfold SignalWork.perform at ran
-  split at ran
-  · simp at ran
-  · split at ran
-    · simp at ran
-    · exact ⟨by simpa using ‹¬stale state work = true›, by simpa using ‹¬gone state work = true›, ran⟩
-
 private theorem scope_of_fresh {state : State} {work : SignalWork} {scope : ScopeOccurrenceId}
     (fresh : stale state work = false) (named : scope ∈ work.scopes) (issued : scope.value < state.nextIssue) :
     ScopeStands state scope := by
@@ -750,16 +752,15 @@ private theorem occurrence_of_fresh {state : State} {work : SignalWork} {id : Na
   | some occurrence => exact ⟨occurrence, rfl⟩
 
 private theorem scope_of_present {state : State} {work : SignalWork} {scope : ScopeOccurrenceId}
-    (present : gone state work = false) (named : scope ∈ work.requires) : ScopeStands state scope := by
+    (present : gone state work = none) (named : scope ∈ work.requires) : ScopeStands state scope := by
   cases standing : state.scopes.any (·.id == scope) with
   | true =>
     obtain ⟨entry, member, same⟩ := List.any_eq_true.mp standing
     exact ⟨entry, member, by simpa using same⟩
   | false =>
-    have absent : gone state work = true := by
-      unfold gone
-      exact List.any_eq_true.mpr ⟨scope, named, by simp [standing]⟩
-    simp [absent] at present
+    have scopeGone : work.requires.any (fun scope => !state.scopes.any (·.id == scope)) = true :=
+      List.any_eq_true.mpr ⟨scope, named, by simp [standing]⟩
+    simp [gone, scopeGone] at present
 
 /-- A committed queued signal ran its work, once what it names stood (`Performed`). -/
 theorem dispatchSignal_ok {hooks : Hooks} {ctx : Ctx} {signal : Signal} {state after : State}

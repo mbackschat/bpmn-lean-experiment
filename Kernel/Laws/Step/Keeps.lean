@@ -66,8 +66,7 @@ it ran through, which keep the scope occurrences and add no instance entry. -/
 theorem complete_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) (pipeline : PipelinePhases inv)
     (facts : StateFacts) : PipelineKeeps hooks inv := by
   intro ctx id leave writes rule state after holds free source ran
-  rcases complete_ok ran with ⟨_, same⟩ | ⟨occurrence, sourceType, begun, pipeline⟩
-  · exact same ▸ holds
+  obtain ⟨occurrence, sourceType, begun, pipeline⟩ := complete_ok ran
   obtain ⟨left, selected, written, pipeline⟩ := pipeline
   obtain ⟨found, _, leaving, pipeline⟩ := pipeline
   obtain ⟨made, choosing, writing, finishes⟩ := pipeline

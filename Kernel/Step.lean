@@ -137,15 +137,16 @@ def continueAfter (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (leave :
 /-- The one completion pipeline: disarm, write, retain, continue, remove and journal, in that order. The occurrence's
 record and owned scope go before its continuation runs, so that a continuation leaving its instance or handler scope
 does not cancel the occurrence that just completed. An occurrence raised away gets no retention, outflow or
-continuation, only a compensation run's notice (`continueAfter`). A completion naming an occurrence that is gone is dropped defensively, and no admitted schedule reaches it
-(a 2026-11-11 probe catching one throw at interrupting Signal boundaries on a Sub-Process and on a task inside it did
-not): signals run first in, first out, and an interrupting firing withdraws the items inside at once, so a thrower's
-completion runs before any cancellation its receivers queue. The kernel thus completes a thrower its receiver then
+continuation, only a compensation run's notice (`continueAfter`). A completion naming an occurrence that is gone is an
+invariant failure (`queued-work-occurrence-gone`, as `Step.gone` refuses it first), never dropped, and no admitted
+schedule reaches it (a 2026-11-11 probe catching one throw at interrupting Signal boundaries on a Sub-Process and on a
+task inside it did not): signals run first in, first out, and an interrupting firing withdraws the items inside at once,
+so a thrower's completion runs before any cancellation its receivers queue. The kernel thus completes a thrower its receiver then
 removes, where CIB leaves it only after its receivers ran (`ThrowSignalEventActivityBehavior#execute`); the order
 matters only once a per-activity end state is observed. -/
 def complete (hooks : Hooks) (ctx : Ctx) (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule)
     (state : State) : Outcome := do
-  let some occurrence := state.occurrence? id | .ok state
+  let some occurrence := state.occurrence? id | .error (.semanticFailure .invariant "queued-work-occurrence-gone")
   let some sourceType := ctx.program.sourceType? occurrence.element | .error (.semanticFailure .invariant "complete-without-element")
   let (state, occurrence) := state.startReserved occurrence sourceType
   let state ← hooks.leave ctx occurrence (state.closeOwnItems id)
@@ -179,14 +180,14 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
     { scopes := [scope], occurrences := [occurrence], run := hooks.armGateway ctx occurrence gateway scope }
   | .raise event origin => { run := hooks.raise ctx event origin }
   | .begin request => { scopes := [request.scope], run := begin hooks ctx request }
-  | .complete occurrence leave writes rule => { run := complete hooks ctx occurrence leave writes rule }
+  | .complete occurrence leave writes rule => { acts := [occurrence], run := complete hooks ctx occurrence leave writes rule }
   | .write scope writes rule => { requires := [scope], run := hooks.writeOutputs ctx scope writes rule }
   | .remove scope names => { requires := [scope], run := hooks.removeVariables ctx scope names }
   | .occur element scope leave writes rule => { scopes := [scope], run := fun state => do
     requireScope state scope
     let (state, occurrence) := state.reserve element scope
     complete hooks ctx occurrence.id leave writes rule state }
-  | .cancel occurrence => { run := fun state => .ok (state.cancelOccurrence occurrence) }
+  | .cancel occurrence => { acts := [occurrence], run := fun state => .ok (state.cancelOccurrence occurrence) }
   | .fire item fired => { run := fun state =>
     match state.openItems.find? (·.id == item) with
     | some open_ => fireItem hooks ctx open_ fired state
@@ -201,11 +202,13 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
 def dispatchSignal (hooks : Hooks) (ctx : Ctx) (signal : Signal) (state : State) : Outcome :=
   (signalWork hooks ctx signal).perform state
 
-/-- Run a completion when it is the only signal the micro-step enqueued, inside the micro-step. -/
+/-- Run a completion when it is the only signal the micro-step enqueued, inside the micro-step, as `dispatchSignal` runs
+it (`SignalWork.perform`). -/
 def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome :=
   match state.signals.drop before with
   | [.complete occurrence leave writes rule] =>
-    complete hooks ctx occurrence leave writes rule { state with signals := state.signals.take before }
+    (signalWork hooks ctx (.complete occurrence leave writes rule)).perform
+      { state with signals := state.signals.take before }
   | _ => .ok state
 
 /-- Turn the draft into one `Transition` and tell the features what the micro-step removed and wrote. -/

@@ -141,9 +141,10 @@ function continueAfter(hooks: Hooks, ctx: Ctx, occurrence: Occurrence, leave: Le
  * The one completion pipeline: disarm, write, retain, continue, remove and journal, in that order. The occurrence's
  * record and owned scope go before its continuation runs, so that a continuation leaving its instance or handler scope
  * does not cancel the occurrence that just completed. An occurrence raised away gets no retention, outflow or
- * continuation, only a compensation run's notice (`continueAfter`). A completion naming an occurrence that is gone is dropped defensively, and no admitted schedule reaches
- * it (a 2026-11-11 probe catching one throw at interrupting Signal boundaries on a Sub-Process and on a task inside it
- * did not): signals run first in, first out, and an interrupting firing withdraws the items inside at once, so a
+ * continuation, only a compensation run's notice (`continueAfter`). A completion naming an occurrence that is gone is an
+ * invariant failure (`queued-work-occurrence-gone`, as `gone` refuses it first), never dropped, and no admitted schedule
+ * reaches it (a 2026-11-11 probe catching one throw at interrupting Signal boundaries on a Sub-Process and on a task
+ * inside it did not): signals run first in, first out, and an interrupting firing withdraws the items inside at once, so a
  * thrower's completion runs before any cancellation its receivers queue. The kernel thus completes a thrower its
  * receiver then removes, where CIB leaves it only after its receivers ran (`ThrowSignalEventActivityBehavior#execute`);
  * the order matters only once a per-activity end state is observed.
@@ -152,7 +153,7 @@ function complete(
   hooks: Hooks, ctx: Ctx, id: number, requested: Leave, writes: readonly Binding[], rule: WriteRule, before: State,
 ): Outcome {
   const found = occurrenceOf(before, id);
-  if (found === null) return committed(before);
+  if (found === null) return semanticFailure(SemanticCause.Invariant, "queued-work-occurrence-gone");
   const sourceType = programSourceType(ctx.program, found.element);
   if (sourceType === null) return semanticFailure(SemanticCause.Invariant, "complete-without-element");
   const [started, occurrence] = startReserved(before, found, sourceType);
@@ -198,8 +199,8 @@ function endInstance(status: InstanceStatus, failure: InstanceFailure | null, st
 
 const other = (
   run: (state: State) => Outcome, scopes: readonly ScopeOccurrenceId[] = [], occurrences: readonly number[] = [],
-  requires: readonly ScopeOccurrenceId[] = [],
-): SignalRun => ({ completion: false, run, scopes, occurrences, requires });
+  requires: readonly ScopeOccurrenceId[] = [], acts: readonly number[] = [],
+): SignalRun => ({ completion: false, run, scopes, occurrences, requires, acts });
 
 /** `Kernel.Step.signalWork`: what a queued signal does and the targets it names (`step/stale.ts`). */
 function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
@@ -217,7 +218,7 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
     case SignalTag.Complete:
       return {
         completion: true, run: (state) => complete(hooks, ctx, next.occurrence, next.leave, next.writes, next.rule, state), scopes: [],
-        occurrences: [], requires: [],
+        occurrences: [], requires: [], acts: [next.occurrence],
       };
     case SignalTag.Write:
       return other((state) => hooks.writeOutputs(ctx, next.scope, next.writes, next.rule, state), [], [], [next.scope]);
@@ -231,7 +232,7 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
         return complete(hooks, ctx, occurrence.id, next.leave, next.writes, next.rule, reserved);
       }, [next.scope]);
     case SignalTag.Cancel:
-      return other((state) => committed(cancelOccurrence(state, next.occurrence)));
+      return other((state) => committed(cancelOccurrence(state, next.occurrence)), [], [], [], [next.occurrence]);
     case SignalTag.Fire:
       return other((state) => {
         const open = state.openItems.find((item) => item.id === next.item);
@@ -255,11 +256,11 @@ function dispatchSignal(hooks: Hooks, ctx: Ctx, next: Signal): (state: State) =>
   return (state) => perform(work, state);
 }
 
-/** Run a completion when it is the only signal the micro-step enqueued, inside the micro-step. */
+/** Run a completion when it is the only signal the micro-step enqueued, inside the micro-step, as `dispatchSignal` runs it. */
 function absorb(hooks: Hooks, ctx: Ctx, before: number, state: State): Outcome {
   const queued = state.signals.slice(before);
   const sole = queued.length === 1 && queued[0] !== undefined ? signalRun(hooks, ctx, queued[0]) : null;
-  return sole?.completion === true ? sole.run({ ...state, signals: state.signals.slice(0, before) }) : committed(state);
+  return sole?.completion === true ? perform(sole, { ...state, signals: state.signals.slice(0, before) }) : committed(state);
 }
 
 /** Turn the draft into one `Transition` and tell the features what the micro-step removed and wrote. */

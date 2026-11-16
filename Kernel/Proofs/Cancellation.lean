@@ -131,7 +131,7 @@ theorem queuedWorkInert {hooks : Hooks} : QueuedWorkInert hooks := by
   obtain ⟨_, _, body, _⟩ := Laws.Step.microStep_ok ran
   rw [Laws.Step.dispatchSignal_eq] at body
   obtain ⟨other, otherCtx, names⟩ := acts
-  obtain ⟨scopes, _, requires⟩ := Laws.Step.signalWork_targets hooks other ctx otherCtx next
+  obtain ⟨scopes, _, requires, _⟩ := Laws.Step.signalWork_targets hooks other ctx otherCtx next
   rcases Laws.Step.perform_absent (state := { state with signals := rest }) (by rw [scopes, requires]; exact names)
       issued fun entry member same => removed (List.mem_map.mpr ⟨entry, member, same⟩) with failed | failed <;>
     rw [failed] at body <;> cases body

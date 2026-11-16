@@ -5,9 +5,10 @@ public import Kernel.Laws.Step.Contract
 /-! # Laws of the step function: what a committed body ran
 
 The shapes `Kernel.Laws.Step`'s decomposition states of `Kernel.Step`'s bodies, one constructor or alternative per
-hook or state operation a committed body can have run: a closure's micro-step (`ClosureStep`), a start and a running
-input's transition (`StartRan`, `RunsTransition`), the end of the completion pipeline (`Finishes`), a begun
-occurrence's dispatch (`Arrives`, `BodyArrives`), a queued signal's work (`Performed`) and a command (`Commands`).
+hook or state operation a committed body can have run: a closure's micro-step (`ClosureStep`) and where a closure
+stops (`Quiescent`), a start and a running input's transition (`StartRan`, `RunsTransition`), the end of the
+completion pipeline (`Finishes`), a begun occurrence's dispatch (`Arrives`, `BodyArrives`), a queued signal's work
+(`Performed`) and a command (`Commands`).
 They name bodies without reading them, so they sit below `Kernel.Laws.Step`, which proves them of the bodies, and keep
 that module to its body equations; so does the decomposition of a committed bind (`bind_ok`). Nothing executable
 imports this module.
@@ -54,6 +55,11 @@ inductive ClosureStep (hooks : Hooks) (ctx : Ctx) : State → State → Prop whe
       microStep hooks ctx (.idle State.root) none State.root (fun state => .ok (endInstance .completed none state))
         state = .ok after → ClosureStep hooks ctx state after
 
+
+/-- The closure has nothing left to run in `state` but, once its root is idle, the instance's completion: no queued
+signal, no token to move, no idle scope occurrence and no parked join that fires when it is offered again. -/
+def Quiescent (hooks : Hooks) (ctx : Ctx) (state : State) : Prop :=
+  state.signals = [] ∧ nextToken ctx state = none ∧ idleScope? ctx state = none ∧ reoffer? hooks ctx state = .ok none
 
 /-- The context `Step.step` gives every hook of `input`'s closure. -/
 def inputCtx (hooks : Hooks) (program : Program) (input : Input) : Ctx :=

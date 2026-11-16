@@ -413,7 +413,7 @@ A Signal throw evaluates, in CIB's order, its business key, its payload and its 
 (`ThrowSignalEventActivityBehavior.java:48-51`); the first failure decides. It then fires every open item of the
 Signal's address in its own State, the root instance tree, before it leaves, and appends one `BroadcastIntent` for the
 other States (CIB-OP-0019): receivers are listed before any is delivered, so one armed during the delivery is not, an
-item gone by its turn is skipped (`Step`'s `fire`), and the thrower leaves only if its occurrence still stands. -/
+item gone by its turn is skipped (`Step`'s `fire`), and the thrower leaves before any receiver's cancellation (#151). -/
 
 /-- A business key (CIB-EXT-0040): a String, `null` being none; another type is CIB's failed cast, which rolls back. -/
 def signalBusinessKey (ctx : Ctx) (context : EvalContext) : Option Expression → Except Failure (Option String)
