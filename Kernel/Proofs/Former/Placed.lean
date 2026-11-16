@@ -37,21 +37,26 @@ structure Placed (program : Program) (s : State) : Prop where
     definitionAt program occurrence.element = entry.definition
 
 /-- The program's references stay in one process: what admission refuses as `il.reference` otherwise
-(`Admission.Flow.references`, `Admission.Scopes.membership`), read in the process vocabulary of `definitionAt`.
+(`Admission.Flow.references`, `Admission.Scopes.membership`) or assembly guarantees, read in the process vocabulary of
+`definitionAt`.
 
 - A root-process element (`Program.children none`) belongs to the root process, and a called process's top level
-  (`Program.processChildren`) to that process: membership's called processes list parentless elements only, and
-  `references` names each element once.
+  (`Program.processChildren`) to that process. This rests on the assembler, not on a refusal: membership checks only
+  that a called process lists parentless elements (`parentOf child == some none`, `Kernel/Admission/Scopes.lean:109`),
+  and the process child lists are disjoint because assembly renames each called process's identifiers by its
+  deployment (`carriedId`, `packages/bpmn-source/src/kernel-reader/assembly.ts:27`, applied at `:235`).
 - An element lies in its parent's process (membership: every parent is a Scope listing it), and the elements on one
-  level (`Program.siblings`) in one process.
+  level (`Program.siblings`) in one process; at the process level, through the same disjoint child lists.
 - A boundary lies in its host's process (`Admission.Flow.place`: a boundary sits where its host does), and no two
   envelopes declare one boundary identifier (`boundaryIds`).
 - A flow joins two endpoints of one process (`flowReference`: one `place`), and every flow an element or boundary lists
   as outgoing, as its default or as a gateway's candidate or default, leaves it (`listReference`, `gatewayReference`).
 - A compensation handler lies in its subject's process (`handlerReference`: in its subject's place, or its child).
-- No two elements share an identifier (`ids`): the IL identifier contract `Laws.MultiInstance.IdsUnique` cites, read
-  in place, so that `Program.element?` finds every element and the outgoing flows of a catching Link found among its
-  siblings leave it (`Proofs.Former.shared_linkId_rejected`). -/
+- No two elements share an identifier (`ids`): admission refuses a repeated element or boundary identifier as
+  `il.reference` (`Admission.Flow.references`, `distinct (elements ++ boundaries)`, `Kernel/Admission/Flow.lean:92`). It
+  is the IL identifier contract `Laws.MultiInstance.IdsUnique` cites, read in place, so that `Program.element?` finds
+  every element and the outgoing flows of a catching Link found among its siblings leave it
+  (`Proofs.Former.shared_linkId_rejected`). -/
 structure ReferencesPlaced (program : Program) : Prop where
   rootChildren : ∀ element ∈ program.children none, definitionAt program element.header.id = none
   processChildren : ∀ process ∈ program.processes, ∀ element ∈ program.processChildren process,
@@ -64,13 +69,15 @@ structure ReferencesPlaced (program : Program) : Prop where
     definitionAt program id = definitionAt program host.header.id
   /-- Boundary identifiers are pairwise distinct across all envelopes of `Program.elements`: two declarations of one
   identifier are one declaration, so `Program.boundary?`, which returns the first, finds every boundary an envelope
-  declares under its host. It is the identifier contract `Laws.MultiInstance.IdsUnique` cites, which compiled programs
-  satisfy and the codec does not check: a boundary Event carries an `xsd:ID`, the reader refuses a document with a
-  duplicate identifier by `parser.warning` (`packages/bpmn-source/src/kernel-reader/schema.ts:12-15`), and assembling a
-  called process renames its element and boundary identifiers alike by their deployment (`carriedId`,
+  declares under its host. Admission refuses a repeated boundary identifier as `il.reference`
+  (`Admission.Flow.references`, `distinct (elements ++ boundaries)`, `Kernel/Admission/Flow.lean:92`). It is the
+  identifier contract `Laws.MultiInstance.IdsUnique` cites, which compiled programs satisfy and the codec does not
+  check: a boundary Event carries an `xsd:ID`, the reader refuses a document with a duplicate identifier by
+  `parser.warning` (`packages/bpmn-source/src/kernel-reader/schema.ts:12-15`), and assembling a called process renames
+  its element and boundary identifiers alike by their deployment (`carriedId`,
   `packages/bpmn-source/src/kernel-reader/assembly.ts:27`, applied at `:128`, `:139` and `:235`), which keeps distinct
-  identifiers distinct. Without it a boundary declared in a second envelope lies where the first declaration's host
-  does (`Proofs.Former.shared_boundaryId_rejected`). -/
+  identifiers distinct. Without it a boundary declared in a second envelope lies where the first declaration's host does
+  (`Proofs.Former.shared_boundaryId_rejected`). -/
   boundaryIds : ∀ first ∈ program.elements, ∀ second ∈ program.elements, ∀ envelope envelope',
     first.envelope? = some envelope → second.envelope? = some envelope' → ∀ boundary ∈ envelope.boundaries,
     ∀ boundary' ∈ envelope'.boundaries, boundary.id = boundary'.id → first = second ∧ boundary = boundary'
