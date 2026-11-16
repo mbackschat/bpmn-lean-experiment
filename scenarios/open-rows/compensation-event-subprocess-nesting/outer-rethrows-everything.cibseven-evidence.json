@@ -1,0 +1,1385 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "compensation-event-subprocess-nesting-outer-rethrows-everything",
+    "sha256": "dc46595a732d920153d454ca0370ffd7e56e844d66484bb68c4f725c195350a1"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "bebb41a73dccc8f7cea020423212ce40a02a20c6ab1ade5929eb73159855ed58"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-start"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_OuterWork-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-start"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_InnerWork-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-start"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-set-variables-UserTask_Mid-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Mid-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoOuter-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoInner-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_UndoOuterWork-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_UndoInnerWork-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_After-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_OuterWork",
+            "name": "Outer work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_OuterWork-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_InnerWork",
+            "name": "Inner work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_InnerWork-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Mid",
+            "name": "Between the parents and the throw"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-set-variables-UserTask_Mid-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Mid",
+            "name": "Between the parents and the throw"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Mid-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoOuter",
+            "name": "Undo the outer parent"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoOuter-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoInner",
+            "name": "Undo the inner parent"
+          },
+          {
+            "elementId": "UserTask_UndoOuterWork",
+            "name": "Undo outer work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoInner-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoOuterWork",
+            "name": "Undo outer work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_UndoOuterWork-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_After",
+            "name": "Continue"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_UndoInnerWork-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_After",
+            "name": "Continue"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_After-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_OuterWork-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_InnerWork-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-set-variables-UserTask_Mid-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Mid-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoOuter-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoInner-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_UndoOuterWork-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_UndoInnerWork-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_After-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_OuterWork-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_InnerWork-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-set-variables-UserTask_Mid-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Mid-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoOuter-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoInner-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_UndoOuterWork-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_UndoInnerWork-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_After-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-start"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_OuterWork",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Outer work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-complete-UserTask_OuterWork-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-start"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_InnerWork",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inner work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_InnerWork-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-start"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Mid",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Between the parents and the throw",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-set-variables-UserTask_Mid-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Mid",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Between the parents and the throw",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Mid-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoOuter",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the outer parent",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenOuter",
+                  "value": {
+                    "kind": "string",
+                    "value": "outer-packed"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-UserTask_UndoOuter-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoInner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the inner parent",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenInner",
+                  "value": {
+                    "kind": "string",
+                    "value": "inner-packed"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoOuterWork",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo outer work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenOuterWork",
+                  "value": {
+                    "kind": "string",
+                    "value": "outer-packed"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-UserTask_UndoInner-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoOuterWork",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo outer work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenOuterWork",
+                  "value": {
+                    "kind": "string",
+                    "value": "outer-packed"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-complete-UserTask_UndoOuterWork-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_After",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Continue",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-complete-UserTask_UndoInnerWork-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_After",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Continue",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s09-complete-UserTask_After-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "innerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-inner"
+            }
+          },
+          {
+            "name": "outerLocal",
+            "value": {
+              "kind": "string",
+              "value": "root-outer"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "rethrowInner",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "rethrowOuter",
+            "value": {
+              "kind": "string",
+              "value": "all"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

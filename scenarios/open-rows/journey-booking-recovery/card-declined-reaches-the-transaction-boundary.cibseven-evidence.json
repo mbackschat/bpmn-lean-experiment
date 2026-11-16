@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "journey-booking-recovery-card-declined-reaches-the-transaction-boundary",
-    "sha256": "2e42c99295bb4ff5647815c2d3f440138e711a45a0e0bb5d29e4fd43aace8e6f"
+    "sha256": "6d539ef35a63c2392ab87c0b288a560a244bdbb8a4bcf9555c8aad5cb7df07ea"
   },
   "profile": {
     "id": "cibseven-2.2.0",

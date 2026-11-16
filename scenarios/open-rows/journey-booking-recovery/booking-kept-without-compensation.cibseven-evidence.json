@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "journey-booking-recovery-booking-kept-without-compensation",
-    "sha256": "940f473fc07f64720790b65446133430a9f3ea1cb3bf03991e19f5cec0303770"
+    "sha256": "0c24f665a075b7e4cec6e4f2843e1ef42dea36e3e572239465264b32bc919f25"
   },
   "profile": {
     "id": "cibseven-2.2.0",

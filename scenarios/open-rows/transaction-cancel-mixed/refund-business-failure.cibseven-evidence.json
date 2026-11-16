@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "transaction-cancel-mixed-refund-business-failure",
-    "sha256": "74ae634c296e104bf2aa81936a1b9c793daf091096429bd4585c6a3dc073230f"
+    "sha256": "adf7d2b7c4b2e1520593b277f9e525b336bd602b8657cbea0c46ffafe8be122e"
   },
   "profile": {
     "id": "cibseven-2.2.0",

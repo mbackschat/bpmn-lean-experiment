@@ -1,0 +1,1595 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "compensation-handler-bodies-typed-data-reaches-handlers",
+    "sha256": "73308d41ee17c5bd41871df73e73f6dde109f7f0fc168703316ca511134ee88a"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "bebb41a73dccc8f7cea020423212ce40a02a20c6ab1ade5929eb73159855ed58"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "125",
+              "scale": 1
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "125",
+              "scale": 1
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Inside-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "125",
+              "scale": 1
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-set-variables-UserTask_Pause-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "5",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "z"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Pause-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "5",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "z"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoWork-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "5",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "z"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoTyped-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "5",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "z"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_After-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "5",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "z"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Work",
+            "name": "Do the work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Inside",
+            "name": "Work inside the parent"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Inside-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Pause",
+            "name": "Pause before compensating"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-set-variables-UserTask_Pause-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Pause",
+            "name": "Pause before compensating"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Pause-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoTyped",
+            "name": "Undo the typed parent"
+          },
+          {
+            "elementId": "UserTask_UndoWork",
+            "name": "Undo the work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoWork-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoTyped",
+            "name": "Undo the typed parent"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoTyped-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_After",
+            "name": "Continue"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_After-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Inside-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-set-variables-UserTask_Pause-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Pause-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoWork-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoTyped-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_After-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Inside-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-set-variables-UserTask_Pause-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Pause-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoWork-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoTyped-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_After-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "125",
+              "scale": 1
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Do the work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-complete-UserTask_Work-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "125",
+              "scale": 1
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Inside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work inside the parent",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Inside-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "125",
+              "scale": 1
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Pause",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pause before compensating",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-set-variables-UserTask_Pause-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "5",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "z"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Pause",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pause before compensating",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Pause-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "5",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "z"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoTyped",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the typed parent",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenSnapCount",
+                  "value": {
+                    "kind": "integer",
+                    "value": 4
+                  }
+                },
+                {
+                  "name": "seenSnapFlag",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "seenSnapRatio",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "125",
+                    "scale": 1
+                  }
+                },
+                {
+                  "name": "seenSnapTags",
+                  "value": {
+                    "kind": "stringList",
+                    "value": [
+                      "x",
+                      "y"
+                    ]
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoWork",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenCount",
+                  "value": {
+                    "kind": "integer",
+                    "value": 4
+                  }
+                },
+                {
+                  "name": "seenFlag",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "seenRatio",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "5",
+                    "scale": 0
+                  }
+                },
+                {
+                  "name": "seenTags",
+                  "value": {
+                    "kind": "stringList",
+                    "value": [
+                      "z"
+                    ]
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-UserTask_UndoWork-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "5",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "z"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoTyped",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the typed parent",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenSnapCount",
+                  "value": {
+                    "kind": "integer",
+                    "value": 4
+                  }
+                },
+                {
+                  "name": "seenSnapFlag",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "seenSnapRatio",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "125",
+                    "scale": 1
+                  }
+                },
+                {
+                  "name": "seenSnapTags",
+                  "value": {
+                    "kind": "stringList",
+                    "value": [
+                      "x",
+                      "y"
+                    ]
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-UserTask_UndoTyped-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "5",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "z"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_After",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Continue",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-complete-UserTask_After-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "ratio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "5",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapCount",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "snapFlag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "snapRatio",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "0",
+              "scale": 0
+            }
+          },
+          {
+            "name": "snapTags",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "z"
+              ]
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

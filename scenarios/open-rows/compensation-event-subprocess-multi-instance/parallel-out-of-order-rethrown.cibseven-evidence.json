@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "compensation-event-subprocess-multi-instance-parallel-out-of-order-rethrown",
-    "sha256": "2a3ebad96888f517d898274f51eb4b4e49e684ffd656049cbe65763cf36fc060"
+    "sha256": "8a1ca3ecdd146f11ce3e1fa286918e555250401822d6c8922f38c562aad5d931"
   },
   "profile": {
     "id": "cibseven-2.2.0",
@@ -338,6 +338,102 @@
             }
           }
         ]
+      },
+      {
+        "afterCommandId": "s10-complete-UserTask_UndoVisit-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-complete-UserTask_UndoVisit-3",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-complete-UserTask_After-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ]
       }
     ],
     "taskQueries": [
@@ -476,12 +572,30 @@
           {
             "elementId": "UserTask_UndoVisit",
             "name": "Undo the work"
-          },
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-complete-UserTask_UndoVisit-2",
+        "tasks": [
           {
             "elementId": "UserTask_UndoVisit",
             "name": "Undo the work"
           }
         ]
+      },
+      {
+        "afterCommandId": "s11-complete-UserTask_UndoVisit-3",
+        "tasks": [
+          {
+            "elementId": "UserTask_After",
+            "name": "Continue"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-complete-UserTask_After-1",
+        "tasks": []
       }
     ],
     "timerJobs": [
@@ -523,6 +637,18 @@
       },
       {
         "afterCommandId": "s09-complete-UserTask_UndoVisit-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s10-complete-UserTask_UndoVisit-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s11-complete-UserTask_UndoVisit-3",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s12-complete-UserTask_After-1",
         "jobs": []
       }
     ],
@@ -566,6 +692,18 @@
       {
         "afterCommandId": "s09-complete-UserTask_UndoVisit-1",
         "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s10-complete-UserTask_UndoVisit-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s11-complete-UserTask_UndoVisit-3",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s12-complete-UserTask_After-1",
+        "state": "COMPLETED"
       }
     ]
   },
@@ -575,7 +713,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rolledBack"
+      "outcome": "committed"
     },
     "trace": [
       {
@@ -1481,7 +1619,7 @@
       {
         "kind": "command",
         "commandId": "s09-complete-UserTask_UndoVisit-1",
-        "outcome": "rolledBack"
+        "outcome": "committed"
       },
       {
         "kind": "state",
@@ -1516,36 +1654,6 @@
           }
         ],
         "openWaits": [
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_UndoVisit",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Undo the work",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": [
-                {
-                  "name": "seenStop",
-                  "value": {
-                    "kind": "string",
-                    "value": "late"
-                  }
-                }
-              ]
-            },
-            "input": "command"
-          },
           {
             "id": {
               "processInstanceId": "Instance_1",
@@ -1607,6 +1715,177 @@
             "input": "command"
           }
         ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s10-complete-UserTask_UndoVisit-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoVisit",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenStop",
+                  "value": {
+                    "kind": "string",
+                    "value": "late"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s11-complete-UserTask_UndoVisit-3",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_After",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Continue",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s12-complete-UserTask_After-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ],
+        "openWaits": []
       }
     ]
   }

@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "journey-booking-recovery-no-car-recovered-at-the-call-boundary",
-    "sha256": "37125b789b54e0623a9e989004d52db8f80f51d70618bb8d770f9a26ccb1ac23"
+    "sha256": "ced1fd6fda65123e567fbe7d34f3e699d57dc8e80e33dfc1fb96e929bcf4646d"
   },
   "profile": {
     "id": "cibseven-2.2.0",

@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "journey-booking-recovery-cancel-leaves-unfinished-work-uncompensated",
-    "sha256": "4d04189456598543fb5b5e79c331b5a525f654be1bd5401a7fabc8856977b3e6"
+    "sha256": "6cc2e2a74759706f8e81305b17701e73a385497c29da2bed9812c4f5fb12e6d5"
   },
   "profile": {
     "id": "cibseven-2.2.0",

@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "compensation-handler-form-refusals-esp-at-process-level",
-    "sha256": "7542a8c1bb1990b84ae862e8cb7e151068db37f18c397212e2c2ad572e90b83f"
+    "sha256": "870bd16d6ce32874f9f028b92192b58eec97c08cb3348f95666edb2e25d3d302"
   },
   "profile": {
     "id": "cibseven-2.2.0",

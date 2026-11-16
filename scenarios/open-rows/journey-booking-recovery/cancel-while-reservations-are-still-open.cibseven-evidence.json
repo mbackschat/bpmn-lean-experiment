@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "journey-booking-recovery-cancel-while-reservations-are-still-open",
-    "sha256": "f109c55f0ef4de319fd6a4be4e9f9fdee3130cb71d788238a5044f8ea7429800"
+    "sha256": "cb83a4128ec78de984e78f9202e6a7f998bdfce471c85101f87dbb4963274f54"
   },
   "profile": {
     "id": "cibseven-2.2.0",
