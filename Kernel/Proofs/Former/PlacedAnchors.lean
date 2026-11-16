@@ -57,6 +57,17 @@ theorem parent_present {program : Program} {s : State} (formed : WellFormed prog
     rw [(formed.rooted.2.1 entry member).mpr same] at link; cases link
   exact Laws.State.Within.present (Laws.State.Within.through formed.distinct.scopes member link up other) formed.rooted.1
 
+/-- `PlacedLane.scopes`, read only where the parent stands, says of a well-formed state what it says unguarded: every
+parent stands there. -/
+theorem scopes_unguarded {program : Program} {s : State} (formed : WellFormed program s) :
+    (∀ entry ∈ s.scopes, ∀ element parent, entry.element = some element → entry.parent = some parent →
+      parent ∈ scopeIds s → PlacedIn program s element parent) ↔
+    ∀ entry ∈ s.scopes, ∀ element parent, entry.element = some element → entry.parent = some parent →
+      PlacedIn program s element parent :=
+  ⟨fun guarded entry member element parent named link =>
+    guarded entry member element parent named link (parent_present formed member link),
+   fun unguarded entry member element parent named link _ => unguarded entry member element parent named link⟩
+
 /-- The ends of an `InstanceLinked` path are one scope occurrence, or both stand. -/
 theorem instanceLinked_present {program : Program} {s : State} (formed : WellFormed program s)
     {x y : ScopeOccurrenceId} (linked : InstanceLinked program s x y) : x = y ∨ x ∈ scopeIds s ∧ y ∈ scopeIds s := by
@@ -189,7 +200,7 @@ theorem childrenOf_placed {program : Program} {s : State} (refs : ReferencesPlac
   · rw [(lane.rootBare entry member).mpr parentOf] at elementOf
     cases elementOf
   rcases calledOf : entry.calledInstance with _ | name
-  · exact (lane.scopes entry member element parent elementOf parentOf).rooted
+  · exact (lane.scopes entry member element parent elementOf parentOf (parent_present formed member parentOf)).rooted
       (instanceRoot_child formed member calledOf parentOf)
   obtain ⟨recorded, recordedIn, rooted⟩ := lane.placed.entered entry member (by simp [calledOf])
   obtain ⟨bound, boundFound⟩ : ∃ bound, s.slots.instances.find? (·.root == entry.id) = some bound :=
@@ -236,11 +247,11 @@ theorem anchoredBy_placed {program : Program} {s : State} (refs : ReferencesPlac
       ⟨run, member, rfl, rfl⟩ | ⟨run, member, rfl, rest⟩
   · exact lane.placed.occurrences occurrence member
   · rcases link with link | ⟨rfl, free⟩
-    · exact lane.scopes entry member anchor scope named link
+    · exact lane.scopes entry member anchor scope named link (parent_present formed member link)
     rcases parentOf : entry.parent with _ | parent
     · rw [(lane.rootBare entry member).mpr parentOf] at named
       cases named
-    exact (lane.scopes entry member anchor parent named parentOf).rooted (instanceRoot_child formed member free parentOf)
+    exact (lane.scopes entry member anchor parent named parentOf (parent_present formed member parentOf)).rooted (instanceRoot_child formed member free parentOf)
   · exact childrenOf_placed refs formed lane inside stands
   · exact calledAnchor_placed refs formed lane called
   · exact lane.runs run member stands

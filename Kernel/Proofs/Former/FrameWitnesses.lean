@@ -152,15 +152,15 @@ theorem rootOnly_lane {s : State} (scopes : s.scopes = [{ id := State.root, elem
     (instances : s.slots.instances = [{ root := State.root }]) (issued : 0 < s.nextIssue) (occurrences : s.occurrences = [])
     (tokens : s.tokens = []) (parked : s.slots.parked = []) (compensation : s.slots.compensation = {})
     (signals : ∀ signal ∈ s.signals, ∃ element scope, signal = .occur element scope .outgoing [] .outward ∧
-      scope ≠ State.root)
-    (runs : ∀ run ∈ s.slots.multiInstances, run.scope ≠ State.root) :
+      scope ≠ State.root ∧ scope.value < s.nextIssue)
+    (runs : ∀ run ∈ s.slots.multiInstances, run.scope ≠ State.root ∧ run.scope.value < s.nextIssue) :
     PlacedLane (topCalled program definition) s := by
   have only : ∀ x : ScopeOccurrenceId, x ∈ Laws.State.scopeIds s → x = State.root := fun x inside => by
     simpa [Laws.State.scopeIds, scopes] using inside
   refine ⟨⟨⟨⟨{ root := State.root }, by simp [instances], rfl⟩, ?_, by simp [occurrences]⟩, by simp [instances],
     by simpa [instances, Laws.State.root_eq] using issued, by simp [instances, Laws.State.root_eq], ?_, by simp [occurrences], by simp [parked],
     by simp [compensation]⟩, by simp [tokens], ?_, ?_, ?_, ?_, ?_, ?_, by simp [compensation], by simp [compensation],
-    ?_, ?_, fun run member stands => absurd (only _ stands) (runs run member), ?_⟩
+    ?_, ?_, fun run member stands => absurd (only _ stands) (runs run member).1, ?_, ?_⟩
   · intro entry member called; simp [scopes] at member; subst member; simp at called
   · intro entry member element parent named; simp [scopes] at member; subst member; simp at named
   · intro request queued
@@ -174,7 +174,7 @@ theorem rootOnly_lane {s : State} (scopes : s.scopes = [{ id := State.root, elem
     rcases pending with ⟨writes, rule, queued⟩ | queued | ⟨run, member, _⟩
     · obtain ⟨_, _, same, apart⟩ := signals _ queued
       cases same
-      exact ⟨fun stands => absurd (only _ stands) apart, fun _ named => by cases named⟩
+      exact ⟨fun stands => absurd (only _ stands) apart.1, fun _ named => by cases named⟩
     · obtain ⟨_, compensates⟩ := Laws.Step.mem_resumesOf.mp queued
       obtain ⟨_, _, _, inside⟩ := compensates
       obtain ⟨_, _, same, _⟩ := signals _ inside
@@ -190,10 +190,7 @@ theorem rootOnly_lane {s : State} (scopes : s.scopes = [{ id := State.root, elem
     have reserves := (occur_apart same).2
     change [] = _ at reserves
     cases reserves
-  · intro id leave writes rule queued; obtain ⟨_, _, same, _⟩ := signals _ queued
-    have reserves := (occur_apart same).2
-    change [] = _ at reserves
-    cases reserves
+  · intro _ _ _ _ _ occurrence member; simp [occurrences] at member
   · intro id leave queued
     obtain ⟨_, compensates⟩ := Laws.Step.mem_resumesOf.mp queued
     obtain ⟨_, _, _, inside⟩ := compensates
@@ -207,6 +204,27 @@ theorem rootOnly_lane {s : State} (scopes : s.scopes = [{ id := State.root, elem
     have reserves := (occur_apart same).2
     change [] = _ at reserves
     cases reserves
+  · intro x work
+    rcases work with ⟨element, leave, pending⟩ | ⟨raised, origin, queued, _⟩ | ⟨record, member, _⟩ | ⟨run, member, _⟩ |
+        ⟨run, member, rfl⟩
+    · rcases pending with ⟨writes, rule, queued⟩ | queued | ⟨run, member, _⟩
+      · obtain ⟨_, _, same, apart⟩ := signals _ queued
+        cases same
+        exact apart.2
+      · obtain ⟨_, compensates⟩ := Laws.Step.mem_resumesOf.mp queued
+        obtain ⟨_, _, _, inside⟩ := compensates
+        obtain ⟨_, _, same, _⟩ := signals _ inside
+        have resumes := (occur_apart same).1
+        change [_] = [] at resumes
+        cases resumes
+      · simp [compensation] at member
+    · obtain ⟨_, _, same, _⟩ := signals _ queued
+      have reserves := (occur_apart same).2
+      change [] = _ at reserves
+      cases reserves
+    · simp [compensation] at member
+    · simp [compensation] at member
+    · exact (runs run member).2
 
 /-- The process root and a reservation of `T` queued for `⟨5⟩`, issued and left. -/
 def leftReservation : State :=
@@ -223,7 +241,8 @@ theorem unstood_reserve_rejected :
       ¬ PlacedLane (topCalled program definition) ({ leftReservation with signals := [] }.reserve ⟨"T"⟩ ⟨5⟩).1 := by
   have lane : PlacedLane (topCalled program definition) leftReservation :=
     rootOnly_lane program definition rfl rfl (by decide) rfl rfl rfl rfl
-      (fun signal member => ⟨_, _, by simpa [leftReservation] using member, by simp [Laws.State.root_eq]⟩)
+      (fun signal member => ⟨_, _, by simpa [leftReservation] using member, by simp [Laws.State.root_eq],
+        by simp [leftReservation]⟩)
       (by simp [leftReservation])
   refine ⟨lane, fun ⟨entry, member, named⟩ => ?_, ⟨leftReservation, lane, rfl, rfl⟩, fun after => ?_⟩
   · simp [leftReservation] at member; subst member; simp [Laws.State.root_eq] at named

@@ -11,8 +11,9 @@ entries keep apart roots that were issued; a scope occurrence that calls no inst
 occurrence's incoming flow ends at an element of its own process, and a join wait's gateway lies where its occurrence
 does (`PlacedCore`, what a queued completion's flows are read under); a flow token's target, a queued or deferred begin,
 a reservation still to be made, an arming, a compensation record and a run's pending records are placed where they will
-run, a queued completion's named flows come from where its occurrence lies (`Proofs.Frame.CompletesFrom`), and a
-compensation resumes a completion by no named flow. The model premise is `ReferencesPlaced`. Nothing executable imports
+run, a queued completion's named flows end where its occurrence lies, a compensation resumes a completion by no named
+flow, and the scope occurrences queued and held work names were issued, so a scope occurrence entered later is none of
+them. The model premise is `ReferencesPlaced`. Nothing executable imports
 this module.
 -/
 
@@ -43,17 +44,17 @@ structure BeginPlaced (program : Program) (s : State) (request : BeginRequest) :
   incoming : ∀ flow target, request.incoming = some flow → program.target? flow = some target →
     definitionAt program target = definitionAt program request.element
 
-/-- What a queued completion's named flows are read under (`Proofs.Frame.CompletesFrom`): `Placed`, instance entries
-with apart and issued roots, the process root's running the root process, scope occurrences placed by their elements, incoming flows within their occurrence's
-process, a join wait's gateway placed where its occurrence lies, and compensation runs that resume a completion by no
-named flow. -/
+/-- What the lane says of what stands: `Placed`, instance entries with apart and issued roots, the process root's
+running the root process, scope occurrences placed by their elements where their parents stand, incoming flows within
+their occurrence's process, a join wait's gateway placed where its occurrence lies, and compensation runs that resume a
+completion by no named flow. -/
 structure PlacedCore (program : Program) (s : State) : Prop where
   placed : Placed program s
   rootsApart : (s.slots.instances.map (·.root)).Nodup
   rootsIssued : ∀ entry ∈ s.slots.instances, entry.root.value < s.nextIssue
   rootDefinition : ∀ entry ∈ s.slots.instances, entry.root = State.root ↔ entry.definition = none
   scopes : ∀ entry ∈ s.scopes, ∀ element parent, entry.element = some element → entry.parent = some parent →
-    PlacedIn program s element parent
+    parent ∈ scopeIds s → PlacedIn program s element parent
   incoming : ∀ occurrence ∈ s.occurrences, ∀ flow target, occurrence.incoming = some flow →
     program.target? flow = some target → definitionAt program target = definitionAt program occurrence.element
   parked : ∀ waiting ∈ s.slots.parked, ∀ occurrence ∈ s.occurrences, occurrence.id = waiting.occurrence →
@@ -80,8 +81,10 @@ structure PlacedLane (program : Program) (s : State) : Prop extends PlacedCore p
     PlacedIn program s element scope
   gateways : ∀ occurrence gateway scope, Signal.armGateway occurrence gateway scope ∈ s.signals → scope ∈ scopeIds s →
     PlacedIn program s gateway scope
-  completes : ∀ id leave writes rule, Signal.complete id leave writes rule ∈ s.signals →
-    Proofs.Frame.CompletesFrom (PlacedCore program) program s id leave
+  /-- A queued completion's named flows end where an occurrence of its number lies. -/
+  completes : ∀ id selected writes rule, Signal.complete id (.flows selected) writes rule ∈ s.signals →
+    ∀ occurrence ∈ s.occurrences, occurrence.id = id → ∀ flow ∈ selected, ∀ target, program.target? flow = some target →
+      PlacedIn program s target occurrence.scope
   compensates : ∀ id leave, some (Resume.complete id leave) ∈ Laws.Step.resumesOf s.signals → Unnamed leave
   records : ∀ record ∈ s.slots.compensation.retained, record.scope ∈ scopeIds s →
     ∀ element ∈ recordElements record, PlacedIn program s element record.scope
@@ -95,20 +98,13 @@ structure PlacedLane (program : Program) (s : State) : Prop extends PlacedCore p
   /-- A queued raise's origin is placed where it was raised. -/
   raises : ∀ raised origin, Signal.raise raised origin ∈ s.signals → origin.scope ∈ scopeIds s →
     PlacedIn program s origin.element origin.scope
-
-/-- A completion's source covers a later state whose occurrences of its identity, scope occurrences and instance entries
-are among the state's. -/
-theorem completesFrom_carry {rel : State → Prop} {program : Program} {s t : State} {id : Nat} {leave : Leave}
-    (source : Proofs.Frame.CompletesFrom rel program s id leave)
-    (occurrences : ∀ occurrence ∈ t.occurrences, occurrence.id = id → occurrence ∈ s.occurrences)
-    (scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes)
-    (instances : ∀ entry ∈ t.slots.instances, entry ∈ s.slots.instances) :
-    Proofs.Frame.CompletesFrom rel program t id leave := by
-  refine source.imp (fun offered selected same flow member => ?_) fun resumed => resumed
-  obtain ⟨held, holds, kept, rest⟩ := offered selected same flow member
-  obtain ⟨wider, more, rest⟩ := rest
-  exact ⟨held, holds, fun occurrence inside named => kept occurrence (occurrences occurrence inside named) named,
-    fun entry inside => wider entry (scopes entry inside), fun entry inside => more entry (instances entry inside), rest⟩
+  /-- The scope occurrences the clauses above read only while they stand were issued, so a scope occurrence entered
+  later is none of them (`Proofs.Former.unissued_enter_rejected`). -/
+  issued : ∀ x, ((∃ element leave, OccurAt s element x leave) ∨
+      (∃ raised origin, Signal.raise raised origin ∈ s.signals ∧ origin.scope = x) ∨
+      (∃ record ∈ s.slots.compensation.retained, record.scope = x) ∨
+      (∃ run ∈ s.slots.compensation.runs, run.scope = x ∧ run.pending ≠ []) ∨
+      ∃ run ∈ s.slots.multiInstances, run.scope = x) → x.value < s.nextIssue
 
 /-- An update of nothing the lane reads keeps it (`Proofs.Frame.Unmoved`). -/
 theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame.Unmoved s t)
@@ -121,7 +117,7 @@ theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame
   have signal : ∀ signal ∈ t.signals, Laws.Step.placing signal = true → signal ∈ s.signals := moved.placings
   have resumed : ∀ resume, resume ∈ Laws.Step.resumesOf t.signals → resume ∈ Laws.Step.resumesOf s.signals :=
     fun _ inside => moved.resumes ▸ inside
-  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · rw [moved.instances]; exact held.placed.rooted
   · intro root member called
     rw [moved.instances]
@@ -131,8 +127,8 @@ theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame
   · rw [moved.instances]; exact held.rootsApart
   · rw [moved.instances, moved.nextIssue]; exact held.rootsIssued
   · rw [moved.instances]; exact held.rootDefinition
-  · intro entry member element parent named link
-    exact place (held.scopes entry (moved.scopes ▸ member) element parent named link)
+  · intro entry member element parent named link stands
+    exact place (held.scopes entry (moved.scopes ▸ member) element parent named link (present stands))
   · intro occurrence member
     exact held.incoming occurrence (moved.occurrences ▸ member)
   · intro waiting member occurrence inside named target ends
@@ -162,13 +158,10 @@ theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame
     exact place (held.arms host element scope (signal _ queued rfl) (present stands))
   · intro occurrence gateway scope queued stands
     exact place (held.gateways occurrence gateway scope (signal _ queued rfl) (present stands))
-  · intro id leave writes rule queued
-    by_cases named : ∃ selected, leave = .flows selected ∧ selected ≠ []
-    · obtain ⟨selected, rfl, nonempty⟩ := named
-      have old := signal _ queued (Laws.Step.placing_named nonempty)
-      exact completesFrom_carry (held.completes id _ writes rule old)
-        (fun occurrence inside _ => moved.occurrences ▸ inside) (fun entry inside => moved.scopes ▸ inside) instances
-    · exact .unnamed fun selected same => Classical.byContradiction fun nonempty => named ⟨selected, same, nonempty⟩
+  · intro id selected writes rule queued occurrence member named flow inside target ends
+    have nonempty : selected ≠ [] := fun empty => by rw [empty] at inside; cases inside
+    exact place (held.completes id selected writes rule (signal _ queued (Laws.Step.placing_named nonempty)) occurrence
+      (moved.occurrences ▸ member) named flow inside target ends)
   · intro id leave queued
     exact held.compensates id leave (resumed _ queued)
   · intro record member stands element inside
@@ -184,6 +177,17 @@ theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame
     exact place (held.runs run (moved.multiInstances ▸ member) (present stands))
   · intro raised origin queued stands
     exact place (held.raises raised origin (signal _ queued rfl) (present stands))
+  · intro x work
+    rw [moved.nextIssue]
+    refine held.issued x (work.imp (fun ⟨element, leave, pending⟩ => ⟨element, leave, ?_⟩) (Or.imp
+      (fun ⟨raised, origin, queued, same⟩ => ⟨raised, origin, signal _ queued rfl, same⟩)
+      (Or.imp (fun ⟨record, member, same⟩ => ⟨record, moved.compensation ▸ member, same⟩)
+        (Or.imp (fun ⟨run, member, same⟩ => ⟨run, moved.compensation ▸ member, same⟩)
+          fun ⟨run, member, same⟩ => ⟨run, moved.multiInstances ▸ member, same⟩))))
+    rcases pending with ⟨writes, rule, queued⟩ | queued | ⟨run, member, resumes⟩
+    · exact .inl ⟨writes, rule, signal _ queued rfl⟩
+    · exact .inr (.inl (resumed _ queued))
+    · exact .inr (.inr ⟨run, moved.compensation ▸ member, resumes⟩)
 
 /-! ## Boundaries under `ReferencesPlaced` -/
 
@@ -330,7 +334,8 @@ theorem misplaced_scope_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
         scopes := (placedState definition).scopes ++ [{ id := ⟨2⟩, element := some ⟨"S"⟩, parent := some ⟨1⟩ }] } :=
   fun lane => placed_misplaced (definition := definition)
-    (lane.scopes _ (List.mem_append_right _ (List.mem_singleton_self _)) _ _ rfl rfl)
+    (lane.scopes _ (List.mem_append_right _ (List.mem_singleton_self _)) _ _ rfl rfl
+      (by simp [scopeIds, placedState, placedCalled]))
     (placed_root (.called placedCalled "I-call" (by simp [placedState]) rfl) (by simp)
       (by simp [scopeIds, placedState, placedCalled, Laws.State.root_eq]) rfl)
     (by simp [placedState])
@@ -379,18 +384,24 @@ theorem misplaced_gateway_rejected :
     (lane.gateways _ _ _ (List.mem_singleton_self _) (placed_present definition)) (placed_calledRoot (definition := definition) rfl)
     (by simp [placedState])
 
-/-- A queued completion by a flow nothing offers breaks `PlacedLane.completes`. -/
-theorem sourceless_complete_rejected (flow : FlowId) :
+/-- A queued completion of an occurrence in the called root by a flow ending at an element of the root process breaks
+`PlacedLane.completes`. -/
+theorem misplaced_complete_rejected (flow : FlowId) (target : ElementId)
+    (ends : ({ program with elements := [] } : Program).target? flow = some target) :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        signals := [.complete 3 (.flows [flow]) [] .outward] } := fun lane => by
-  rcases lane.completes _ _ _ _ (List.mem_singleton_self _) with offered | ⟨held, _, core, resumed⟩
-  · obtain ⟨held, _, _, rest⟩ := offered _ rfl flow (List.mem_singleton_self _)
-    obtain ⟨_, _, source⟩ := rest
-    rcases source with ⟨occurrence, _, _, offers⟩ | ⟨waiting, _, _, offers⟩
-    · exact empty_offered program held _ flow offers
-    · exact empty_offered program held _ flow offers
-  · obtain ⟨run, member, resumes⟩ := resumed
-    cases core.resumes run member 3 _ resumes _ rfl
+        occurrences := [{ id := 3, element := ⟨"A"⟩, scope := ⟨1⟩, activation := 1 }]
+        signals := [.complete 3 (.flows [flow]) [] .outward] } := fun lane =>
+  placed_misplaced (definition := definition)
+    (lane.completes 3 [flow] [] .outward (List.mem_singleton_self _) _ (List.mem_singleton_self _) rfl flow
+      (List.mem_singleton_self _) target ends)
+    (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
+
+/-- A reservation queued for a scope occurrence not yet issued breaks `PlacedLane.issued`. -/
+theorem unissued_occur_rejected :
+    ¬ PlacedLane program { placedState definition with signals := [.occur ⟨"A"⟩ ⟨5⟩ .outgoing [] .outward] } :=
+  fun lane => by
+    have := lane.issued ⟨5⟩ (.inl ⟨⟨"A"⟩, .outgoing, .inl ⟨[], .outward, List.mem_singleton_self _⟩⟩)
+    simp [placedState] at this
 
 /-- A queued compensation resuming a completion by a named flow breaks `PlacedLane.compensates`. -/
 theorem named_compensate_rejected (flow : FlowId) (thrown : OccurrenceRef) :
