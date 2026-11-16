@@ -1,0 +1,539 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-esp-repeatable-region-note-overwrites-local",
+    "sha256": "3404647f13d64e45691626c04ad3d37714161b12639525f139e189c1924cfe1f"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "bebb41a73dccc8f7cea020423212ce40a02a20c6ab1ade5929eb73159855ed58"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_RegionNote",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-complete-Handle_RegionNote",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s04-complete-Inner",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s05-complete-Finish",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Inner",
+            "name": "Inspect the lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_RegionNote",
+        "tasks": [
+          {
+            "elementId": "Handle_RegionNote",
+            "name": "Read the lot note"
+          },
+          {
+            "elementId": "Inner",
+            "name": "Inspect the lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Handle_RegionNote",
+        "tasks": [
+          {
+            "elementId": "Inner",
+            "name": "Inspect the lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Inner",
+        "tasks": [
+          {
+            "elementId": "Finish",
+            "name": "Release the order"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Finish",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": [
+          {
+            "elementId": "Start_Note",
+            "eventName": "note",
+            "messageId": "Message_Note",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Start_RegionNote",
+            "eventName": "regionNote",
+            "messageId": "Message_RegionNote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_RegionNote",
+        "subscriptions": [
+          {
+            "elementId": "Start_Note",
+            "eventName": "note",
+            "messageId": "Message_Note",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Start_RegionNote",
+            "eventName": "regionNote",
+            "messageId": "Message_RegionNote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Handle_RegionNote",
+        "subscriptions": [
+          {
+            "elementId": "Start_Note",
+            "eventName": "note",
+            "messageId": "Message_Note",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Start_RegionNote",
+            "eventName": "regionNote",
+            "messageId": "Message_RegionNote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Inner",
+        "subscriptions": [
+          {
+            "elementId": "Start_Note",
+            "eventName": "note",
+            "messageId": "Message_Note",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Finish",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_RegionNote",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-Handle_RegionNote",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-Inner",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-Finish",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_RegionNote",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-Handle_RegionNote",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-Inner",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-Finish",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Note"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_RegionNote",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_RegionNote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-deliver-Start_RegionNote",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handle_RegionNote",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Read the lot note",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Note"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_RegionNote",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_RegionNote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-Handle_RegionNote",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Note"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_RegionNote",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_RegionNote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-Inner",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Finish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Release the order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Note"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-Finish",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

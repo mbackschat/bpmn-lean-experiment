@@ -1,0 +1,574 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-esp-interrupting-region-abort-delivers-note",
+    "sha256": "25cbea6a2dbd495f27b3f38d83cbcdd2630089e163e430a8222499666bdf2f3f"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "bebb41a73dccc8f7cea020423212ce40a02a20c6ab1ade5929eb73159855ed58"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "wait"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_RegionAbort",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "go"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Seen_Inside",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "go"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Seen_Outside",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "go"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Abort_Handler",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "go"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Finish",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "go"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_RegionAbort",
+        "tasks": [
+          {
+            "elementId": "Abort_Handler",
+            "name": "Record the aborted lot"
+          },
+          {
+            "elementId": "Seen_Outside",
+            "name": "Act on the note"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Seen_Inside",
+        "tasks": [
+          {
+            "elementId": "Abort_Handler",
+            "name": "Record the aborted lot"
+          },
+          {
+            "elementId": "Seen_Outside",
+            "name": "Act on the note"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Seen_Outside",
+        "tasks": [
+          {
+            "elementId": "Abort_Handler",
+            "name": "Record the aborted lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Abort_Handler",
+        "tasks": [
+          {
+            "elementId": "Finish",
+            "name": "Release the order"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Finish",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": [
+          {
+            "elementId": "Start_RegionAbort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_RegionAbort",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s03-complete-Seen_Inside",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s04-complete-Seen_Outside",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s05-complete-Abort_Handler",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s06-complete-Finish",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_RegionAbort",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-Seen_Inside",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-Seen_Outside",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-Abort_Handler",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-Finish",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_RegionAbort",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-Seen_Inside",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-Seen_Outside",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-Abort_Handler",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-Finish",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "wait"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Inside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": "note",
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": "note",
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_RegionAbort",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-deliver-Start_RegionAbort",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "go"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Abort_Handler",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the aborted lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Seen_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Act on the note",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-Seen_Inside",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "go"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Abort_Handler",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the aborted lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Seen_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Act on the note",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-Seen_Outside",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "go"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Abort_Handler",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the aborted lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-Abort_Handler",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "go"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Finish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Release the order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-Finish",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "go"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "input-mapping-contexts-event-subprocess-entry",
+    "sha256": "30c0252ef51646193297122fe2c97dd9ce352023a4696774de14a5ed69306547"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "bebb41a73dccc8f7cea020423212ce40a02a20c6ab1ade5929eb73159855ed58"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [],
+    "taskQueries": [],
+    "timerJobs": [],
+    "historicProcessStates": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "unsupported"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "unsupported"
+      }
+    ]
+  }
+}
