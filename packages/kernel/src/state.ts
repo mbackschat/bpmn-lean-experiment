@@ -373,7 +373,29 @@ export enum FailureTag {
   Unsupported = "unsupported",
 }
 
-export interface Failure { readonly tag: FailureTag; readonly code: string; }
+/**
+ * Why a semantic failure happened, which its producer states. `Model`: the model's data reaches it, so CIB's job fails
+ * alike (CIB-EXT-0027). `Invariant`: admission or the kernel's own construction excludes it, so reaching it is a kernel
+ * defect, which `step/jobs.ts#deferred` passes through every boundary unchanged.
+ */
+export enum SemanticCause {
+  Model = "model",
+  Invariant = "invariant",
+}
+
+/** A step's failure (Lean's `Failure`): a semantic failure carries its `SemanticCause`, which only the step reads. */
+export type Failure =
+  | { readonly tag: Exclude<FailureTag, FailureTag.SemanticFailure>; readonly code: string }
+  | { readonly tag: FailureTag.SemanticFailure; readonly code: string; readonly cause: SemanticCause };
+
+/**
+ * A failure as a contract records it (`recorded`): without a cause, so no decoder invents one and no equality of records
+ * compares one. The wire never carries a cause; `cause?: never` makes passing a step's `Failure` here a type error.
+ */
+export interface RecordedFailure { readonly tag: FailureTag; readonly code: string; readonly cause?: never }
+
+/** `failure` without its cause. */
+export function recorded(failure: Failure): RecordedFailure { return { tag: failure.tag, code: failure.code }; }
 
 /** Lean's `Except Failure α`. */
 export type Result<T> =
@@ -384,7 +406,13 @@ export type Outcome = Result<State>;
 
 export function committed<T>(value: T): Result<T> { return { ok: true, value }; }
 
-export function failed<T>(tag: FailureTag, code: string): Result<T> { return { ok: false, failure: { tag, code } }; }
+export function failed<T>(tag: Exclude<FailureTag, FailureTag.SemanticFailure>, code: string): Result<T> {
+  return { ok: false, failure: { tag, code } };
+}
+
+export function semanticFailure<T>(cause: SemanticCause, code: string): Result<T> {
+  return { ok: false, failure: { tag: FailureTag.SemanticFailure, code, cause } };
+}
 
 /** An `Except` failure carried to another result type. */
 export function failedWith<T>(failure: Failure): Result<T> { return { ok: false, failure }; }

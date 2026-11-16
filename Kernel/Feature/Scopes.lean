@@ -56,7 +56,7 @@ def enter (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurrence : O
   | some start => .ok (state.signal (.begin { element := start, scope, reserved := entry.inner }))
   | none =>
     match ← implicitStart ctx header.id with
-    | [] => .error (.semanticFailure "scope-without-start-event")
+    | [] => .error (.semanticFailure .invariant "scope-without-start-event")
     | begun => .ok (begun.foldl (fun state element => state.signal (.begin { element, scope })) state)
 
 /-- A Scope's occurrence began. An interrupting Event Sub-Process first clears its parent occurrence, its other Event
@@ -69,7 +69,7 @@ def arriveScope (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurren
   | .embedded => enter ctx header payload occurrence entry state
   | .transaction _ => enter ctx header payload occurrence entry state
   | .eventSubProcess _ interrupting =>
-    if occurrence.incoming.isSome then .error (.semanticFailure "flow-into-event-subprocess")
+    if occurrence.incoming.isSome then .error (.semanticFailure .invariant "flow-into-event-subprocess")
     else
       let cleared := if interrupting then state.clearInside occurrence.scope (occurrence.id :: entry.inner.toList) else state
       enter ctx header payload occurrence entry cleared

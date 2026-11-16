@@ -40,7 +40,7 @@ structure Progress where
   steps : List StepResult := []
   ledger : List LedgerEntry := []
   occurrences : List TimerOccurrence := []
-  inputFailures : List (String × Failure) := []
+  inputFailures : List (String × RecordedFailure) := []
   inputCascades : List (String × List FanOutEntry) := []
 
 /-- The deploy ordinals of the refused deployments, which no copy may come from. -/
@@ -87,14 +87,14 @@ def apply (hooks : Hooks) (admission : Program → Option String) (progress : Pr
     .ok { progress with deployments := progress.deployments ++
       [{ deploymentId := progress.deployments.length + 1, definitionRef, versions := [], outcome := .refused code }] }
   | .input instanceId definitionRef commandId input =>
-    let failed (failure : Failure) : Progress :=
+    let failed (failure : RecordedFailure) : Progress :=
       { progress with inputFailures := progress.inputFailures ++ [(commandId, failure)] }
     match progress.deploymentFor instanceId definitionRef with
     | none => .ok (failed (.rejected "definition-not-deployed"))
     | some deployment =>
       let before := (progress.instances.find? (·.state.instanceId == instanceId)).map (·.state)
       match Step.step hooks deployment.program before input with
-      | .error failure => .ok (failed failure)
+      | .error failure => .ok (failed failure.recorded)
       | .ok state => do
         let others := progress.instances.filter (·.state.instanceId != instanceId)
         let fanning ← cascadeOf hooks progress.registry commandId state.logicalTimeMs cascadeBound

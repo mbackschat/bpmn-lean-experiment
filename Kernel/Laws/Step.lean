@@ -303,7 +303,7 @@ theorem command_eq {hooks : Hooks} {ctx : Ctx} {data : CommandInput} {state : St
         | some item =>
           match (ctx.program.element? item.element).bind (·.activity?) with
           | some (header, payload) => hooks.completeUserTask ctx header payload item values state
-          | none => .error (.semanticFailure "activity-item-without-activity")
+          | none => .error (.semanticFailure .invariant "activity-item-without-activity")
       | .retryIncident generation => incident fun item detail => hooks.retryIncident ctx item detail generation state
       | .cancelIncidentProcess generation => incident fun _ detail => hooks.cancelIncidentProcess ctx detail generation state
       | .setVariables values =>
@@ -325,6 +325,18 @@ theorem microStep_rejected {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element 
     (rejected : body state = .error (.rejected code)) :
     microStep hooks ctx cause element owner body state = .error (.rejected code) := by
   simp [microStep, bind, Except.bind, rejected, deferred]
+
+/-- An invariant failure passes a transaction boundary unchanged, crossed or not: never CIB-EXT-0027's limitation (#148). -/
+theorem deferred_invariant {program : Program} {state : State} {code : String} :
+    deferred program state (.error (.semanticFailure .invariant code)) = .error (.semanticFailure .invariant code) := by
+  simp [deferred]
+
+/-- A micro-step whose body fails with an invariant failure fails with it, after a transaction boundary too (#148). -/
+theorem microStep_invariant {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Option ElementId}
+    {owner : ScopeOccurrenceId} {body : State → Outcome} {state : State} {code : String}
+    (faulted : body state = .error (.semanticFailure .invariant code)) :
+    microStep hooks ctx cause element owner body state = .error (.semanticFailure .invariant code) := by
+  simp [microStep, bind, Except.bind, faulted, deferred_invariant]
 
 /-- The clock fails only by rejecting the input's time. -/
 theorem advanceClock_error {at? : Option Nat} {state : State} {failure : Failure}
@@ -435,7 +447,7 @@ theorem perform_stale {work : SignalWork} {state : State} (refused : stale state
   simp [SignalWork.perform, refused]
 
 theorem perform_gone {work : SignalWork} {state : State} (fresh : stale state work = false) (absent : gone state work = true) :
-    work.perform state = .error (.semanticFailure "queued-work-scope-gone") := by
+    work.perform state = .error (.semanticFailure .invariant "queued-work-scope-gone") := by
   simp [SignalWork.perform, fresh, absent]
 
 theorem complete_absent {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writes : List (String × Value)}
@@ -463,7 +475,7 @@ theorem perform_absent {work : SignalWork} {state : State} {scope : ScopeOccurre
     (names : scope ∈ work.scopes ∨ scope ∈ work.requires) (issued : scope.value < state.nextIssue)
     (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
     work.perform state = .error (.unsupported "interrupted-before-wait") ∨
-      work.perform state = .error (.semanticFailure "queued-work-scope-gone") := by
+      work.perform state = .error (.semanticFailure .invariant "queued-work-scope-gone") := by
   have none : state.scopes.any (·.id == scope) = false :=
     List.any_eq_false.mpr fun entry member same => absent entry member (by simpa using same)
   cases fresh : stale state work with
@@ -608,12 +620,6 @@ theorem nextToken_shape {ctx : Ctx} {state : State} {token : Token} {rest : List
       subst first same
       obtain ⟨front, split⟩ := List.getLast?_eq_some_iff.mp found
       exact .inr (by rw [split, List.dropLast_concat])
-
-theorem nextToken_rest {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
-    (next : nextToken ctx state = some (token, rest)) : rest.Sublist state.tokens := by
-  rcases nextToken_shape next with ⟨_, queued⟩ | queued <;> rw [queued]
-  · exact List.sublist_cons_self token rest
-  · exact List.sublist_append_left rest [token]
 
 theorem idleScope_mem {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
     (idle : idleScope? ctx state = some scope) : scope ∈ state.scopes := by

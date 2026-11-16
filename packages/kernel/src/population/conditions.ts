@@ -6,7 +6,7 @@
  */
 import { assertNever, elementStart, programChildren, programPublicId, triggerCondition, type Header, type Program } from "../il/types.js";
 import type { Hooks } from "../hooks.js";
-import { StartTriggerTag, type Result, type StartInput } from "../state.js";
+import { StartTriggerTag, recorded, type Result, type StartInput } from "../state.js";
 import { admittedStartsFired, context } from "../step.js";
 import {
   FanOutEntryTag,
@@ -93,7 +93,7 @@ export function evaluateStart(
         conditionChoices: [],
       };
       const verdict = conditionalStartVerdict(hooks, deployment.program, input);
-      if (!verdict.ok) return { ok: true, value: [instances, { tag: FanOutEntryTag.Failed, target: receiver, failure: verdict.failure }, null] };
+      if (!verdict.ok) return { ok: true, value: [instances, { tag: FanOutEntryTag.Failed, target: receiver, failure: recorded(verdict.failure) }, null] };
       if (!verdict.value) return { ok: true, value: [instances, null, null] };
       const started = startInstance(hooks, deployment, receiver.startEvent, input);
       if (!started.ok) return started;

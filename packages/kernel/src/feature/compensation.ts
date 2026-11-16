@@ -75,6 +75,8 @@ import {
   type ScopeOccurrence,
   type ScopeOccurrenceId,
   type State,
+  SemanticCause,
+  semanticFailure,
 } from "../state.js";
 import { ScopeRole, ctxRunsAsInstance, leaveScope, type Ctx } from "../hooks.js";
 
@@ -246,7 +248,7 @@ function isRun(scope: ScopeOccurrenceId, trigger: OccurrenceRef): (run: Compensa
 function beginHandler(
   ctx: Ctx, trigger: OccurrenceRef, scope: ScopeOccurrenceId, state: State, record: Compensable, fuel: number,
 ): Result<readonly [State, ScopeOccurrenceId]> {
-  if (fuel === 0) return failed(FailureTag.SemanticFailure, "compensation-run-depth");
+  if (fuel === 0) return semanticFailure(SemanticCause.Invariant, "compensation-run-depth");
   const handler = record.handler;
   if (handler === null) {
     const [entered, context] = enterScope(state, record.subject, scope, record.snapshot, null);
@@ -259,9 +261,9 @@ function beginHandler(
     return advanced.ok ? committed([advanced.value, context]) : advanced;
   }
   const element = programElement(ctx.program, handler);
-  if (element === null) return failed(FailureTag.SemanticFailure, "compensation-handler-missing");
+  if (element === null) return semanticFailure(SemanticCause.Invariant, "compensation-handler-missing");
   if (elementActivity(element) === null && elementScope(element) === null) {
-    return failed(FailureTag.SemanticFailure, "compensation-handler-not-activity");
+    return semanticFailure(SemanticCause.Invariant, "compensation-handler-not-activity");
   }
   const [entered, context] = enterScope(state, handler, scope, record.snapshot, null);
   const compensation = entered.slots.compensation;
@@ -299,11 +301,11 @@ function resumeRun(ctx: Ctx, state: State, resume: Resume | null, fuel: number):
  * `resume`. Another run in the same scope neither delays nor ends it.
  */
 function advance(ctx: Ctx, scope: ScopeOccurrenceId, trigger: OccurrenceRef, state: State, fuel: number): Outcome {
-  if (fuel === 0) return failed(FailureTag.SemanticFailure, "compensation-run-depth");
+  if (fuel === 0) return semanticFailure(SemanticCause.Invariant, "compensation-run-depth");
   const compensation = state.slots.compensation;
   const matches = isRun(scope, trigger);
   const run = compensation.runs.find(matches);
-  if (run === undefined) return failed(FailureTag.SemanticFailure, "compensation-run-missing");
+  if (run === undefined) return semanticFailure(SemanticCause.Invariant, "compensation-run-missing");
   const remaining = [...run.pending, ...run.running.map(([, record]) => record)];
   const isReady = (record: Compensable): boolean => !remaining.some((other) => precedes(ctx, record, other));
   const ready = run.pending.filter(isReady);
@@ -337,9 +339,9 @@ function advance(ctx: Ctx, scope: ScopeOccurrenceId, trigger: OccurrenceRef, sta
  * context and never by its scope, which a second run may share (#103), starts what that releases.
  */
 function release(ctx: Ctx, context: ScopeOccurrenceId, state: State, fuel: number): Outcome {
-  if (fuel === 0) return failed(FailureTag.SemanticFailure, "compensation-run-depth");
+  if (fuel === 0) return semanticFailure(SemanticCause.Invariant, "compensation-run-depth");
   const owner = state.slots.compensation.runs.find((candidate) => candidate.running.some(([running]) => running === context));
-  if (owner === undefined) return failed(FailureTag.SemanticFailure, "compensation-run-missing");
+  if (owner === undefined) return semanticFailure(SemanticCause.Invariant, "compensation-run-missing");
   const left = leaveScope(state, context);
   const compensation = left.slots.compensation;
   const matches = isRun(owner.scope, owner.trigger);
@@ -450,15 +452,15 @@ export function failCompensation(
   state: State,
 ): Outcome {
   const context = state.scopes.find((scope) => scope.id === handler);
-  if (context === undefined) return failed(FailureTag.SemanticFailure, "compensation-handler-gone");
+  if (context === undefined) return semanticFailure(SemanticCause.Invariant, "compensation-handler-gone");
   const run = state.slots.compensation.runs.find((candidate) => candidate.running.some(([held]) => held === handler));
-  if (run === undefined) return failed(FailureTag.SemanticFailure, "compensation-handler-without-run");
+  if (run === undefined) return semanticFailure(SemanticCause.Invariant, "compensation-handler-without-run");
   const element = context.element;
-  if (element === null) return failed(FailureTag.SemanticFailure, "compensation-handler-without-element");
+  if (element === null) return semanticFailure(SemanticCause.Invariant, "compensation-handler-without-element");
   let handlerActivation = origin.activation;
   if (origin.element !== element) {
     const started = state.occurrences.find((candidate) => candidate.scope === handler && candidate.element === element);
-    if (started === undefined) return failed(FailureTag.SemanticFailure, "compensation-handler-not-started");
+    if (started === undefined) return semanticFailure(SemanticCause.Invariant, "compensation-handler-not-started");
     handlerActivation = started.activation;
   }
   const failure: InstanceFailure = {

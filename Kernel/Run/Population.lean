@@ -226,7 +226,7 @@ def stimuliOfPopulation (declared : List Declared) (sources : List DeploymentSou
     harnessRefusal "population-sources-unused" s!"{sources.length} deployment sources, {sources.length - pending.length} deployments"
   pure stimuli
 
-def failureFields (failure : Failure) : List (String × Json) :=
+def failureFields {σ : Type} (failure : FailureOf σ) : List (String × Json) :=
   [("outcome", Json.str (Codec.failureName failure)), ("code", Json.str (Codec.failureCode failure))]
 
 def receiverJson : Population.Receiver → Json

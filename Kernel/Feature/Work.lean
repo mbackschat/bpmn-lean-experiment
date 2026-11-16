@@ -28,12 +28,12 @@ the writes a decision task makes against the variables visible from its scope oc
 occurrence (CIB-EXT-0025). -/
 structure WorkHooks where
   runDecision : Program → RuleWork → List (String × Value) → Except Failure (List (String × Value)) :=
-    fun _ _ _ => .error (.unsupported "work-rule")
+    fun _ _ _ => .error (.semanticFailure .invariant "work-rule") -- a registry without the hook
   criteriaHold : State → ScopeOccurrenceId → List CorrelationMatch → Except Failure Bool :=
-    fun _ _ _ => .error (.unsupported "work-criteria") -- dynamic-only: a registry without the hook
+    fun _ _ _ => .error (.semanticFailure .invariant "work-criteria") -- a registry without the hook
   /-- `Kernel.Feature.Subscriptions.payloadBindings`: what a Message payload writes through the outputs that read it. -/
   payloadBindings : Ctx → Nat → List Mapping → Value → Except Failure (List (String × Value)) :=
-    fun _ _ _ _ => .error (.unsupported "work-payload") -- dynamic-only: a registry without the hook
+    fun _ _ _ _ => .error (.semanticFailure .invariant "work-payload") -- a registry without the hook
 
 /-- The neutral descriptor of a Script Task's effect
 ([script semantics](../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). -/
@@ -272,7 +272,7 @@ is written outward from the frame first, so an output of its name is written aft
 so that the interrupted host's outputs the search evaluates next read them; the Activity's removal is queued as raised. -/
 def mappedErrorOutputs (write : Ctx → ScopeOccurrenceId → List (String × Value) → WriteRule → State → Outcome)
     (ctx : Ctx) (origin : Origin) (installed : List (String × Value)) (state : State) : Outcome := do
-  let some host := origin.host | .error (.semanticFailure "error-exit-without-host")
+  let some host := origin.host | .error (.semanticFailure .invariant "error-exit-without-host")
   let envelope := (ctx.program.element? origin.element).bind (·.envelope?)
   let frame := state.localScope? host
   let held := (origin.patch ++ (frame.map state.ownVariables).getD []).map (·.1)
@@ -319,7 +319,7 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
     match ctx.program.options.technicalFailure, item.kind.view.effect with
     -- Dynamic-only: a host failure is an input; no admission can tell whether it will arrive.
     | .hostFailure, _ => .error (.unsupported "effect-technical-failure")
-    | .incident, none => .error (.semanticFailure "effect-result-without-effect")
+    | .incident, none => .error (.semanticFailure .invariant "effect-result-without-effect")
     | .incident, some detail =>
       -- Each failure is the next incident generation of the occurrence, so a command its issuer took from an earlier
       -- incident is stale (CIB-EXT-0013; `fulfilment-repeated-incident` publishes generation 2 after one retry).
@@ -360,12 +360,12 @@ admits them only under `DeliveryVariables.installs`. -/
 def triggerActivity (hooks : WorkHooks) (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item : OpenItem)
     (fired : Fired) (state : State) : Outcome :=
   match fired with
-  | .timer _ => .error (.semanticFailure "activity-timer-without-timer")
-  | .signal _ => .error (.semanticFailure "activity-signal-without-signal")
-  | .condition _ => .error (.semanticFailure "activity-condition-without-condition")
+  | .timer _ => .error (.semanticFailure .invariant "activity-timer-without-timer")
+  | .signal _ => .error (.semanticFailure .invariant "activity-signal-without-signal")
+  | .condition _ => .error (.semanticFailure .invariant "activity-condition-without-condition")
   | .message delivery =>
     match item.kind.view.channel with
-    | none => .error (.semanticFailure "activity-message-without-message")
+    | none => .error (.semanticFailure .invariant "activity-message-without-message")
     | some channel =>
       if delivery.payload.any (!inValueDomain ·) then .error (.rejected "value-outside-domain")
       else if delivery.trigger.channel? != some channel then .error (.rejected "message-channel-mismatch")
@@ -387,7 +387,7 @@ def triggerActivity (hooks : WorkHooks) (ctx : Ctx) (_ : Header) (payload : Acti
 /-- `Hooks.completeCall`: only a Call Activity starts a called instance. -/
 def completeCall (ctx : Ctx) (header : Header) (payload : ActivityPayload) (root : ScopeOccurrence)
     (owner : Occurrence) (state : State) : Outcome :=
-  let notCall : Outcome := .error (.semanticFailure "called-instance-without-call")
+  let notCall : Outcome := .error (.semanticFailure .invariant "called-instance-without-call")
   match payload.work with
   | .call work => Call.returnFromCall ctx header payload work root owner state
   | .none => notCall

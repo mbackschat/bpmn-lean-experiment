@@ -46,6 +46,8 @@ import {
   type ScopeOccurrence,
   type ScopeOccurrenceId,
   type State,
+  SemanticCause,
+  semanticFailure,
 } from "../../state.js";
 import { ctxEvaluateMappings, evalContext, type Ctx } from "../../hooks.js";
 
@@ -78,7 +80,7 @@ function calledProcess(ctx: Ctx, header: Header, work: CallWork): Result<CalledP
       const deployment = programCallerDeployment(ctx.program, header);
       const [process, ...others] = programCalledProcessFor(ctx.program, resolution, deployment, work);
       return process === undefined || others.length > 0
-        ? failed(FailureTag.SemanticFailure, "call-without-called-process")
+        ? semanticFailure(SemanticCause.Invariant, "call-without-called-process")
         : committed(process);
     }
   }
@@ -96,7 +98,7 @@ export function invoke(ctx: Ctx, header: Header, payload: ActivityPayload, work:
   const inputs = copy(ctx, "call-input-unavailable", evalContext(state, ctx.program, occurrence.scope), work.inputs);
   if (!inputs.ok) return inputs;
   const start = children.map(elementStart).find((entry) => entry !== null && entry[1].subscription === null) ?? null;
-  if (start === null) return failed(FailureTag.SemanticFailure, "called-process-without-none-start");
+  if (start === null) return semanticFailure(SemanticCause.Invariant, "called-process-without-none-start");
   const [entered, root] = enterCalled(state, ctx.program, occurrence, inputs.value, process.value.definition);
   const hosted = payload.envelope.boundaries.length === 0 || payload.envelope.multiInstance !== null
     ? entered
@@ -132,8 +134,8 @@ export function raisedOutputs(ctx: Ctx, root: ScopeOccurrence, state: State): Re
   const element = root.element === null ? null : programElement(ctx.program, root.element);
   const activity = element === null ? null : elementActivity(element);
   const work = activity === null ? null : workCall(activity[1].work);
-  if (work === null) return failed(FailureTag.SemanticFailure, "called-root-without-call");
-  if (root.parent === null) return failed(FailureTag.SemanticFailure, "called-root-without-caller");
+  if (work === null) return semanticFailure(SemanticCause.Invariant, "called-root-without-call");
+  if (root.parent === null) return semanticFailure(SemanticCause.Invariant, "called-root-without-caller");
   const outputs = copy(ctx, "call-output-unavailable", evalContext(state, ctx.program, root.id), work.outputs);
   if (!outputs.ok) return outputs;
   return committed([root.parent, outputs.value] as const);

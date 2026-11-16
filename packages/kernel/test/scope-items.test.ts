@@ -100,7 +100,7 @@ test("an unset item holds an Activity a token began, even where a nearer frame b
 
 test("an unset item read by a Scope's input fails the entry as mapping-source-unavailable", () => {
   const outcome = run(nested({ inputs: [association("x", "P")] }, {}, {}), [begin]);
-  assert.deepEqual(outcome, { ok: false, failure: { tag: "semanticFailure", code: "mapping-source-unavailable" } });
+  assert.deepEqual(outcome, { ok: false, failure: { tag: "semanticFailure", code: "mapping-source-unavailable", cause: "model" } });
 });
 
 test("an interrupting Event Sub-Process of the declaring Scope reads the item its occurrence held", () => {
@@ -145,5 +145,5 @@ test("a variable command naming an item from outside its declaring Scope acts by
   assert.deepEqual(bindings(created, "P"), { root: { tag: "string", value: "outside" } });
   assert.deepEqual(open(created), [], "the root binding never stands in for `T`'s unset item, so `B` is held");
   assert.deepEqual(created.slots.held.length, 1);
-  assert.deepEqual(run(program("refused"), [begin, set]), { ok: false, failure: { tag: "semanticFailure", code: "undeclared-write" } });
+  assert.deepEqual(run(program("refused"), [begin, set]), { ok: false, failure: { tag: "semanticFailure", code: "undeclared-write", cause: "model" } });
 });

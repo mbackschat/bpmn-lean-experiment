@@ -168,9 +168,9 @@ def countOf (rule : MultiInstanceCount) (value : Value) : Except Failure Nat :=
   let counted (count : Int) : Except Failure Nat :=
     -- Dynamic-only: CIB's `intValue` would keep the low 32 bits.
     if rule == .javaInt && !withinJavaInt count then .error (.unsupported "multiInstance.countRange")
-    else if count < 0 then .error (.semanticFailure "multiInstance.negativeCount")
+    else if count < 0 then .error (.semanticFailure .model "multiInstance.negativeCount")
     else .ok count.toNat
-  let notANumber : Except Failure Nat := .error (.semanticFailure "multiInstance.notANumber")
+  let notANumber : Except Failure Nat := .error (.semanticFailure .model "multiInstance.notANumber")
   match rule, value with
   | .integer, .int count => counted count
   | .integer, _ => notANumber
@@ -200,7 +200,7 @@ def entryInput (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (expressi
   | .value value =>
     match rule value with
     | .ok read => .ok (some read)
-    | .error (.semanticFailure code) => .error (if rollback then .rolledBack code else .semanticFailure code)
+    | .error (.semanticFailure cause code) => .error (if rollback then .rolledBack code else .semanticFailure cause code)
     | .error failure => .error failure
 
 /-- What an entry reads: the collection, its items and the number of instances; a cardinality loop's collection is
@@ -214,7 +214,7 @@ def entryRead (ctx : Ctx) (loop : MultiInstance) (state : State) (scope : ScopeO
     entryInput ctx state scope (collectionOf ctx loop items) fun collection =>
       match collectionItems collection with
       | some members => .ok (collection, members, members.length)
-      | none => .error (.semanticFailure code)
+      | none => .error (.semanticFailure .model code)
   | .cardinality count =>
     entryInput ctx state scope count fun value => do .ok (.null, [], ← countOf ctx.program.options.multiInstanceCount value)
   -- Admission refuses it (`multiInstance.countAndCollection`).
@@ -275,7 +275,7 @@ def resultNames (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (wri
 def completeBody (ctx : Ctx) (_ : Header) (_ : Envelope) (loop : MultiInstance) (occurrence : Occurrence)
     (state : State) : Outcome :=
   match runOf? state occurrence.id with
-  | none => .error (.semanticFailure "body-without-multi-instance")
+  | none => .error (.semanticFailure .invariant "body-without-multi-instance")
   | some run => .ok (finish ctx loop run state)
 
 /-- Whether the final completion evaluates the completion condition: BPMN 2.0.2 §13.3.7 evaluates on every completion;
@@ -358,13 +358,13 @@ def nextItems (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (next 
 occurrence, leave it, then finish, close early or continue, updating the body's counter locals first. -/
 def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value))
     (state : State) : Outcome := do
-  let some run := runOf? state body | .error (.semanticFailure "instance-without-multi-instance")
-  let some loop := loopOf? ctx run | .error (.semanticFailure "instance-without-loop")
+  let some run := runOf? state body | .error (.semanticFailure .invariant "instance-without-multi-instance")
+  let some loop := loopOf? ctx run | .error (.semanticFailure .invariant "instance-without-loop")
   let some index := run.instances.findIdx? (fun
       | .active scope => scope == occurrence.scope
       | .waiting => false
       | .completed _ => false)
-    | .error (.semanticFailure "instance-without-slot")
+    | .error (.semanticFailure .invariant "instance-without-slot")
   let output ← submitted loop run writes
   let results := resultNames ctx loop run writes
   let shadows := results.any fun name => multiInstanceCounterNames.contains name || some name == itemName ctx loop

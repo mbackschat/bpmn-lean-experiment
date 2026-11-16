@@ -225,17 +225,17 @@ def firingStimulusFromJson (json : Json) : Except String (String × Input × Opt
 def stimulusFromJson (json : Json) : Except String (String × Input) :=
   (firingStimulusFromJson json).map fun (commandId, input, _) => (commandId, input)
 
-/-- The refusal or failure code a failure carries. -/
-def failureCode : Failure → String
+/-- The refusal or failure code a failure carries; the wire carries no cause. -/
+def failureCode {σ : Type} : FailureOf σ → String
   | .rejected code => code
   | .rolledBack code => code
-  | .semanticFailure code => code
+  | .semanticFailure _ code => code
   | .unsupported code => code
 
-def failureName : Failure → String
+def failureName {σ : Type} : FailureOf σ → String
   | .rejected _ => "rejected"
   | .rolledBack _ => "rolledBack"
-  | .semanticFailure _ => "semanticFailure"
+  | .semanticFailure _ _ => "semanticFailure"
   | .unsupported _ => "unsupported"
 
 end Kernel.Codec

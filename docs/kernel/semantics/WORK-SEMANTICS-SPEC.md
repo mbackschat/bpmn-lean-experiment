@@ -15,7 +15,7 @@ What an Activity does once its occurrence has begun. [`Kernel.Feature.Work`](../
 - A command that names another instance, element or activation, or an occurrence already consumed, is `rejected` and changes nothing (`unknown-user-task`, `unknown-effect`, `unknown-incident`; [EFFECT-REFUSE-01][effect-rules], [RECV-REFUSE-01][recv-rules], [CTASK-REFUSE-01][ctask-rules]).
 - A completing task leaves through its one completion pipeline and takes every unconditioned outgoing flow in that step.
 - An Activity that a Scope's implicit start begins, without a token, may only be a task without work, a User Task or a Service Task (`scope.implicitStart`); a Receive Task or Call begun that way is `unsupported`. A compensation handler, which its run begins as a token would, may do any admitted work ([compensation](COMPENSATION-SEMANTICS-SPEC.md)).
-- `asyncBefore` and `asyncAfter` mark transaction boundaries: a closure that rolls back or fails after it crossed one is `unsupported` (`async-boundary-failure`), never a rollback of the whole input ([`Step.deferred`](../../../Kernel/Step/Jobs.lean)).
+- `asyncBefore` and `asyncAfter` mark transaction boundaries: a closure that rolls back, or fails with a semantic failure of cause `SemanticCause.model` (`mapping-source-unavailable`, `undeclared-write`, `multiInstance.negativeCount`, `multiInstance.notANumber`, `multi-instance-collection`), after it crossed one is `unsupported` (`async-boundary-failure`), never a rollback of the whole input ([`Step.deferred`](../../../Kernel/Step/Jobs.lean), [CIB-EXT-0027](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0027--an-asynchronous-continuation-commits-the-input-at-its-boundary)). A semantic failure of cause `SemanticCause.invariant`, a kernel defect, passes the boundary unchanged.
 
 ### Tasks without work
 
@@ -177,7 +177,7 @@ The deleted implementation admitted each work kind only in exact first-profile t
 | dynamic: `effect-technical-failure` | technical failure while `technicalFailure = hostFailure` | no BPMN meaning (§13.3.3) |
 | dynamic: the host's code | an `unsupported` effect result | a value or behavior the portable domain cannot represent |
 | dynamic: `call-input-unavailable`, `call-output-unavailable` | an unavailable Data Association source at a Call | PC-DATA-09 |
-| dynamic: `async-boundary-failure` | a failure after an input crossed `asyncBefore`/`asyncAfter` | PC-AUTO-03 |
+| dynamic: `async-boundary-failure` | a rollback, or a semantic failure of cause `SemanticCause.model`, after an input crossed `asyncBefore`/`asyncAfter` | PC-AUTO-03 |
 
 Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `unknown-occurrence`, `message-channel-mismatch`, `message-correlation-mismatch`, `message-payload-required`, `message-payload-not-accepted`, `incident-process-cancellation-unavailable`, `incident-generation-stale`, `error-path-outputs-not-accepted` and the submission codes of the [data semantics](DATA-SEMANTICS-SPEC.md#restrictions).
 

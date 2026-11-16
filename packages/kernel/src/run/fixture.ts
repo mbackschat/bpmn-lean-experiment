@@ -11,7 +11,7 @@ import { assertNever, type Program } from "../il/types.js";
 import { bindingsToJson, isObject, type JsonValue } from "../il/codec.js";
 import { channelToJson, decodeBindings, decodeSignalAddress, occurrenceFromJson, signalAddressToJson } from "../il/codec/stimulus.js";
 import type { Hooks } from "../hooks.js";
-import { FailureTag, StartTriggerTag, type BroadcastIntent, type Failure, type OccurrenceRef, type SignalAddress, type State } from "../state.js";
+import { FailureTag, StartTriggerTag, type BroadcastIntent, type OccurrenceRef, type RecordedFailure, type SignalAddress, type State } from "../state.js";
 import { FanOutEntryTag, cascadeInstanceId, startedInstanceId, type FanOutEntry } from "../population/contract.js";
 import {
   FanOutNextTag, PendingTag, fanOutBegin, fanOutNext, fanOutPass, fanOutRecord, fanOutSnapshot, linearizeReceivers, reachOccurrence,
@@ -84,15 +84,15 @@ export function pendingFromJson(json: unknown): Pending {
     : { tag: PendingTag.Intent, emitter: requiredString(json, "emitter", where), intent };
 }
 
-const failures: Readonly<Record<string, (code: string) => Failure>> = {
+const failures: Readonly<Record<string, (code: string) => RecordedFailure>> = {
   rejected: (code) => ({ tag: FailureTag.Rejected, code }),
   rolledBack: (code) => ({ tag: FailureTag.RolledBack, code }),
   semanticFailure: (code) => ({ tag: FailureTag.SemanticFailure, code }),
   unsupported: (code) => ({ tag: FailureTag.Unsupported, code }),
 };
 
-/** A failure by the outcome name and code `failureFields` writes. */
-export function failureFromJson(json: unknown): Failure {
+/** A failure by the outcome name and code `failureFields` writes, which carry no cause. */
+export function failureFromJson(json: unknown): RecordedFailure {
   const code = requiredString(json, "code", where);
   const outcome = requiredString(json, "outcome", where);
   const failure = Object.hasOwn(failures, outcome) ? failures[outcome] : undefined;

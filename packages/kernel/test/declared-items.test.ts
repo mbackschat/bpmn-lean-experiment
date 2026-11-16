@@ -83,5 +83,5 @@ test("a write to a declared process item lands at the instance root", () => {
 });
 
 test("a write to an undeclared name is refused under the standards reading", () => {
-  assert.deepEqual(complete(program("Property_Outcome", ["Property_Other"])), { tag: "semanticFailure", code: "undeclared-write" });
+  assert.deepEqual(complete(program("Property_Outcome", ["Property_Other"])), { tag: "semanticFailure", code: "undeclared-write", cause: "model" });
 });

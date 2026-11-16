@@ -253,7 +253,7 @@ theorem bound_key_taken : KeyVerdict (.value (.string "o-7")) (.ok "o-7") :=
 
 /-- An unbound key read as a semantic failure, as the kernel once answered, is rejected. -/
 theorem unbound_failure_rejected :
-    ¬ KeyVerdict (.failure "unknown-variable") (.error (.semanticFailure "unknown-variable")) := by
+    ¬ KeyVerdict (.failure "unknown-variable") (.error (.semanticFailure .model "unknown-variable")) := by
   simp [KeyVerdict]
 
 /-- An unbound key read as a mismatch, a key that matches nothing, is rejected. -/

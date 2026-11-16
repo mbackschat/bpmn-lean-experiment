@@ -72,7 +72,7 @@ it at the root as CIB does. -/
 def UndeclaredWrite (declared refused : Bool) (root scope : ScopeOccurrenceId) (name : String) (value : Value)
     (before : State) (result : Except Failure State) : Prop :=
   (∀ owner, ¬ NearestOwner before root scope name owner) →
-    (declared = false → refused = true → result = .error (.semanticFailure "undeclared-write")) ∧
+    (declared = false → refused = true → result = .error (.semanticFailure .model "undeclared-write")) ∧
     (declared = true ∨ refused = false → ∃ after, result = .ok after ∧ HoldsOnly after root name value ∧
       OthersKept before after root)
 
@@ -356,7 +356,7 @@ theorem nobody_declares_z : ∀ owner, ¬ NearestOwner (frames (.int 1)) process
     rcases mem with rfl | rfl <;> simp [rootFrame, subFrame] at bound
 
 theorem undeclared_refused :
-    UndeclaredWrite false true processRoot subScope "z" (.int 5) (frames (.int 1)) (.error (.semanticFailure "undeclared-write")) :=
+    UndeclaredWrite false true processRoot subScope "z" (.int 5) (frames (.int 1)) (.error (.semanticFailure .model "undeclared-write")) :=
   fun _ => ⟨fun _ _ => rfl, fun choice => by simp at choice⟩
 
 /-- Creating an undeclared name the profile refuses is rejected. -/

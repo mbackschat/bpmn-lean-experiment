@@ -81,6 +81,8 @@ import {
   type ScopeOccurrenceId,
   type State,
   type UserTaskDetail,
+  SemanticCause,
+  semanticFailure,
 } from "../state.js";
 import {
   ScopeRole, admitValues, ctxEvaluateMappings, ctxEvaluateMappingsWith, ctxOutputReads, deliveryTriggerChannel, evalContext, hold,
@@ -212,9 +214,9 @@ export interface WorkHooks {
 }
 
 export const defaultWorkHooks: WorkHooks = {
-  runDecision: () => failed(FailureTag.Unsupported, "work-rule"),
-  criteriaHold: () => failed(FailureTag.Unsupported, "work-criteria"), // dynamic-only: a registry without the hook
-  payloadBindings: () => failed(FailureTag.Unsupported, "work-payload"), // dynamic-only: a registry without the hook
+  runDecision: () => semanticFailure(SemanticCause.Invariant, "work-rule"), // a registry without the hook
+  criteriaHold: () => semanticFailure(SemanticCause.Invariant, "work-criteria"), // a registry without the hook
+  payloadBindings: () => semanticFailure(SemanticCause.Invariant, "work-payload"), // a registry without the hook
 };
 
 /**
@@ -537,7 +539,7 @@ export type WriteOutputs = (ctx: Ctx, scope: ScopeOccurrenceId, writes: readonly
  */
 export function mappedErrorOutputs(write: WriteOutputs, ctx: Ctx, origin: Origin, installed: readonly Binding[], state: State): Outcome {
   const host = origin.host;
-  if (host === null) return failed(FailureTag.SemanticFailure, "error-exit-without-host");
+  if (host === null) return semanticFailure(SemanticCause.Invariant, "error-exit-without-host");
   const element = programElement(ctx.program, origin.element);
   const envelope = element === null ? null : elementEnvelope(element);
   const frame = localScope(state, host);
@@ -558,7 +560,7 @@ function technicalFailure(ctx: Ctx, item: OpenItem, state: State): Outcome {
       // Dynamic-only: a host failure is an input; no admission can tell whether it will arrive.
       return failed(FailureTag.Unsupported, "effect-technical-failure");
     case TechnicalFailure.Incident: {
-      if (detail === null) return failed(FailureTag.SemanticFailure, "effect-result-without-effect");
+      if (detail === null) return semanticFailure(SemanticCause.Invariant, "effect-result-without-effect");
       // Each failure is the next incident generation of the occurrence, so a command its issuer took from an earlier
       // incident is stale (CIB-EXT-0013; `fulfilment-repeated-incident` publishes generation 2 after one retry).
       const effect = { ...detail, failures: detail.failures + 1 };
@@ -619,14 +621,14 @@ export function triggerActivity(
 ): Outcome {
   switch (fired.tag) {
     case FiredTag.Timer:
-      return failed(FailureTag.SemanticFailure, "activity-timer-without-timer");
+      return semanticFailure(SemanticCause.Invariant, "activity-timer-without-timer");
     case FiredTag.Signal:
-      return failed(FailureTag.SemanticFailure, "activity-signal-without-signal");
+      return semanticFailure(SemanticCause.Invariant, "activity-signal-without-signal");
     case FiredTag.Condition:
-      return failed(FailureTag.SemanticFailure, "activity-condition-without-condition");
+      return semanticFailure(SemanticCause.Invariant, "activity-condition-without-condition");
     case FiredTag.Message: {
       const channel = openKindView(item.kind).channel;
-      if (channel === null) return failed(FailureTag.SemanticFailure, "activity-message-without-message");
+      if (channel === null) return semanticFailure(SemanticCause.Invariant, "activity-message-without-message");
       if (fired.delivery.payload !== null && !inValueDomain(fired.delivery.payload)) return failed(FailureTag.Rejected, "value-outside-domain");
       if (!optionalChannelEquals(deliveryTriggerChannel(fired.delivery.trigger), channel)) {
         return failed(FailureTag.Rejected, "message-channel-mismatch");
@@ -678,7 +680,7 @@ export function completeCall(
     case WorkTag.Send:
     case WorkTag.Script:
     case WorkTag.Rule:
-      return failed(FailureTag.SemanticFailure, "called-instance-without-call");
+      return semanticFailure(SemanticCause.Invariant, "called-instance-without-call");
   }
   return assertNever(work);
 }

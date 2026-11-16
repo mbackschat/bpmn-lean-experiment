@@ -170,7 +170,7 @@ the ones a throw inside the handler compensates. A group (I5) runs its children 
 context, which resumes the run in `scope` once they all completed (`Resume.group`). -/
 def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceId) (state : State)
     (record : Compensable) : Nat → Except Failure (State × ScopeOccurrenceId)
-  | 0 => .error (.semanticFailure "compensation-run-depth")
+  | 0 => .error (.semanticFailure .invariant "compensation-run-depth")
   | fuel + 1 =>
     match record.handler with
     | none => do
@@ -183,10 +183,10 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
       .ok (state, context)
     | some handler =>
       match ctx.program.element? handler with
-      | none => .error (.semanticFailure "compensation-handler-missing")
+      | none => .error (.semanticFailure .invariant "compensation-handler-missing")
       | some element =>
         if element.activity?.isNone && element.scope?.isNone then
-          .error (.semanticFailure "compensation-handler-not-activity")
+          .error (.semanticFailure .invariant "compensation-handler-not-activity")
         else
           let (state, context) := state.enterScope handler scope record.snapshot none
           let compensation := state.slots.compensation
@@ -199,12 +199,12 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
 succeeds; once none is pending or running, end the run: cancel the occurrence it leaves, if any, then complete its
 `resume`. Another run in the same scope neither delays nor ends it. -/
 def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (state : State) : Nat → Outcome
-  | 0 => .error (.semanticFailure "compensation-run-depth")
+  | 0 => .error (.semanticFailure .invariant "compensation-run-depth")
   | fuel + 1 => do
     let compensation := state.slots.compensation
     let run ← match compensation.runs.find? (isRun scope trigger) with
       | some run => .ok run
-      | none => .error (.semanticFailure "compensation-run-missing")
+      | none => .error (.semanticFailure .invariant "compensation-run-missing")
     let remaining := run.pending ++ run.running.map (·.2)
     let (ready, waiting) := run.pending.partition fun record => !remaining.any (precedes ctx record ·)
     if run.pending.isEmpty && run.running.isEmpty then
@@ -234,10 +234,10 @@ def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (s
 /-- The handler or group that ran in `context` is done: the context is left and the run holding it, found by that
 context and never by its scope, which a second run may share (#103), starts what that releases. -/
 def release (ctx : Ctx) (context : ScopeOccurrenceId) (state : State) : Nat → Outcome
-  | 0 => .error (.semanticFailure "compensation-run-depth")
+  | 0 => .error (.semanticFailure .invariant "compensation-run-depth")
   | fuel + 1 =>
     match state.slots.compensation.runs.find? (·.running.any (·.1 == context)) with
-    | none => .error (.semanticFailure "compensation-run-missing")
+    | none => .error (.semanticFailure .invariant "compensation-run-missing")
     | some owner =>
       let left := state.leaveScope context
       let compensation := left.slots.compensation
@@ -314,18 +314,18 @@ def failCompensation (_ : Ctx) (handler : ScopeOccurrenceId) (code : String) (me
     (origin : Origin) (state : State) : Outcome := do
   let context ← match state.scopes.find? (·.id == handler) with
     | some context => .ok context
-    | none => .error (.semanticFailure "compensation-handler-gone")
+    | none => .error (.semanticFailure .invariant "compensation-handler-gone")
   let run ← match state.slots.compensation.runs.find? (·.running.any (·.1 == handler)) with
     | some run => .ok run
-    | none => .error (.semanticFailure "compensation-handler-without-run")
+    | none => .error (.semanticFailure .invariant "compensation-handler-without-run")
   let element ← match context.element with
     | some element => .ok element
-    | none => .error (.semanticFailure "compensation-handler-without-element")
+    | none => .error (.semanticFailure .invariant "compensation-handler-without-element")
   let handlerActivation ←
     if origin.element == element then .ok origin.activation
     else match state.occurrences.find? (fun candidate => candidate.scope == handler && candidate.element == element) with
       | some occurrence => .ok occurrence.activation
-      | none => .error (.semanticFailure "compensation-handler-not-started")
+      | none => .error (.semanticFailure .invariant "compensation-handler-not-started")
   let handlerInstance := state.instanceOf handler
   let failure : InstanceFailure :=
     { code, message, occurrence := { processInstanceId := state.instanceOf origin.scope, element := origin.element, activation := origin.activation }

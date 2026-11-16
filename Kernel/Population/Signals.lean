@@ -248,7 +248,7 @@ def reachReceiver (hooks : Hooks) (registry : List Deployment) (atMs : Nat) (com
     | none => pure (instances, some (.skipped target), none)
     | some (member, index, .ok state) =>
       pure (instances.set index { member with state }, some (.delivered target), some (state, member.deployment.program))
-    | some (_, _, .error failure) => pure (instances, some (.failed (.occurrence target) failure), none)
+    | some (_, _, .error failure) => pure (instances, some (.failed (.occurrence target) failure.recorded), none)
   | .start deploymentId startEvent => do
     let (deployment, header) ← rootStart registry deploymentId startEvent
     let (started, entry) ← startInstance hooks deployment startEvent

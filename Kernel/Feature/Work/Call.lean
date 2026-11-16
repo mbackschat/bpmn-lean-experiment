@@ -38,7 +38,7 @@ def calledProcess (ctx : Ctx) (header : Header) (work : CallWork) : Except Failu
     if ctx.program.callsRoot resolution work then .error (.unsupported "work-call-root-process")
     else match ctx.program.calledProcessFor resolution (ctx.program.callerDeployment header) work with
       | [process] => .ok process
-      | _ => .error (.semanticFailure "call-without-called-process")
+      | _ => .error (.semanticFailure .invariant "call-without-called-process")
 
 /-- Start the called instance: enter its root, arm the Call's boundaries and the called process's Event Sub-Process
 starts (`Signal.armScope`, as `Scopes.enter` arms a Sub-Process), and begin its none start. -/
@@ -49,7 +49,7 @@ def invoke (ctx : Ctx) (header : Header) (payload : ActivityPayload) (work : Cal
   let inputs ← copy ctx "call-input-unavailable" (state.evalContext ctx.program occurrence.scope) work.inputs
   match children.findSome? fun child => child.start?.bind fun (start, payload) =>
       if payload.subscription.isNone then some start else none with
-  | none => .error (.semanticFailure "called-process-without-none-start")
+  | none => .error (.semanticFailure .invariant "called-process-without-none-start")
   | some start =>
     let (state, root) := state.enterCalled ctx.program occurrence inputs process.definition
     let state :=
@@ -72,8 +72,8 @@ queueing a `Signal.write`. Whether the profile selects the pass is the search's 
 def raisedOutputs (ctx : Ctx) (root : ScopeOccurrence) (state : State) :
     Except Failure (ScopeOccurrenceId × List (String × Value)) := do
   let some work := ((root.element.bind ctx.program.element?).bind (·.activity?)).bind (·.2.work.call?)
-    | .error (.semanticFailure "called-root-without-call")
-  let some caller := root.parent | .error (.semanticFailure "called-root-without-caller")
+    | .error (.semanticFailure .invariant "called-root-without-call")
+  let some caller := root.parent | .error (.semanticFailure .invariant "called-root-without-caller")
   let outputs ← copy ctx "call-output-unavailable" (state.evalContext ctx.program root.id) work.outputs
   .ok (caller, outputs)
 

@@ -67,6 +67,8 @@ import {
   type Outcome,
   type Result,
   type State,
+  SemanticCause,
+  semanticFailure,
 } from "../state.js";
 import {
   EvaluationTag, collectionItems, evalContext, hold, leaveScope, multiInstanceRunItems, ownVariables, type Ctx,
@@ -294,13 +296,13 @@ function written(ctx: Ctx, loop: MultiInstance, collection: Value, collected: re
   return assertNever(ctx.program.options.multiInstanceOutputs);
 }
 
-const notANumber: Result<number> = failed(FailureTag.SemanticFailure, "multiInstance.notANumber");
+const notANumber: Result<number> = semanticFailure(SemanticCause.Model, "multiInstance.notANumber");
 
 /** A count, given the rule's width; a refused value is a `semanticFailure` with the rule's code. */
 function counted(rule: MultiInstanceCount, count: bigint): Result<number> {
   // Dynamic-only: CIB's `intValue` would keep the low 32 bits.
   if (rule === MultiInstanceCount.JavaInt && !withinJavaInt(count)) return failed(FailureTag.Unsupported, "multiInstance.countRange");
-  return count < 0n ? failed(FailureTag.SemanticFailure, "multiInstance.negativeCount") : committed(Number(count));
+  return count < 0n ? semanticFailure(SemanticCause.Model, "multiInstance.negativeCount") : committed(Number(count));
 }
 
 /** `Integer.parseInt` over ASCII text: an optional sign and at least one digit, within `int`. */
@@ -355,7 +357,7 @@ function entryInput<T>(ctx: Ctx, state: State, scope: number, expression: Expres
     case EvaluationTag.Value: {
       const read = rule(evaluation.result);
       if (read.ok || read.failure.tag !== FailureTag.SemanticFailure) return read;
-      return failed(rollback ? FailureTag.RolledBack : FailureTag.SemanticFailure, read.failure.code);
+      return rollback ? failed(FailureTag.RolledBack, read.failure.code) : read;
     }
   }
   return assertNever(evaluation);
@@ -375,7 +377,7 @@ function entryRead(ctx: Ctx, loop: MultiInstance, state: State, scope: number): 
         ? "multiInstance.notACollection" : "multi-instance-collection";
       return entryInput(ctx, state, scope, collectionOf(ctx, loop, count.items), (collection): Result<EntryRead> => {
         const members = collectionItems(collection);
-        return members === null ? failed(FailureTag.SemanticFailure, code) : committed([collection, members, members.length]);
+        return members === null ? semanticFailure(SemanticCause.Model, code) : committed([collection, members, members.length]);
       });
     }
     case InstanceCountTag.Cardinality:
@@ -469,7 +471,7 @@ export function completeBody(
   state: State,
 ): Outcome {
   const run = runOf(state, occurrence.id);
-  return run === null ? failed(FailureTag.SemanticFailure, "body-without-multi-instance") : committed(finish(ctx, loop, run, state));
+  return run === null ? semanticFailure(SemanticCause.Invariant, "body-without-multi-instance") : committed(finish(ctx, loop, run, state));
 }
 
 /**
@@ -583,11 +585,11 @@ function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: n
 
 export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence, writes: readonly Binding[], state: State): Outcome {
   const found = runOf(state, body);
-  if (found === null) return failed(FailureTag.SemanticFailure, "instance-without-multi-instance");
+  if (found === null) return semanticFailure(SemanticCause.Invariant, "instance-without-multi-instance");
   const loop = loopOf(ctx, found);
-  if (loop === null) return failed(FailureTag.SemanticFailure, "instance-without-loop");
+  if (loop === null) return semanticFailure(SemanticCause.Invariant, "instance-without-loop");
   const index = found.instances.findIndex((slot) => activeIn(slot, occurrence.scope));
-  if (index < 0) return failed(FailureTag.SemanticFailure, "instance-without-slot");
+  if (index < 0) return semanticFailure(SemanticCause.Invariant, "instance-without-slot");
   const value = submitted(loop, found, writes);
   if (!value.ok) return value;
   const results = resultNames(ctx, loop, found, writes);

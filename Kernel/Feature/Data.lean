@@ -69,7 +69,7 @@ def write (ctx : Ctx) (rule : WriteRule) (scope : ScopeOccurrenceId) (state : St
       if ctx.program.declares definition name then .ok (state.setVariable root name value)
       else
         match ctx.program.options.undeclaredWrite with
-        | .refused => .error (.semanticFailure "undeclared-write")
+        | .refused => .error (.semanticFailure .model "undeclared-write")
         | .atInstanceRoot => .ok (state.setVariable root name value)
 
 /-- `Hooks.writeOutputs`: apply writes from a scope occurrence, under the writing feature's rule. -/

@@ -18,9 +18,9 @@ namespace Kernel.Feature.Starts
 `fires` is `Kernel.Feature.Subscriptions.fires`, `payloadBindings` `Kernel.Feature.Subscriptions.payloadBindings`. -/
 structure StartsHooks where
   fires : Ctx → StartInput → Option Subscription → Except Failure Bool :=
-    fun _ _ _ => .error (.unsupported "starts-fires") -- dynamic-only: a registry without the hook
+    fun _ _ _ => .error (.semanticFailure .invariant "starts-fires") -- a registry without the hook
   payloadBindings : Ctx → Nat → List Mapping → Value → Except Failure (List (String × Value)) :=
-    fun _ _ _ _ => .error (.unsupported "starts-payload") -- dynamic-only: a registry without the hook
+    fun _ _ _ _ => .error (.semanticFailure .invariant "starts-payload") -- a registry without the hook
 
 /-- `Hooks.startsFired`: the root starts `input`'s trigger fires, in document order. A named input considers only the
 start it names, so no other start's predicate is evaluated for it: each start is its own unit of commitment

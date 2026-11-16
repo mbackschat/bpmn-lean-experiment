@@ -222,7 +222,7 @@ def exhausted (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origin :
   | .error code message, none => unhandledError ctx code message origin state
   | .escalation _, some _ => .error (.unsupported "compensation-handler-escalation") -- dynamic-only: what a handler raises
   | .escalation _, none => .ok (throwerLeaves ctx origin state)
-  | .cancel, _ => .error (.semanticFailure "cancel-uncaught")
+  | .cancel, _ => .error (.semanticFailure .invariant "cancel-uncaught")
 
 /-- The search decided at a catcher whose event scope is `scope`: write its code and message variables from there
 outward, at once, then let a raising Activity leave (`hostLeaves`). CIB sets the variables on the execution of the
@@ -361,7 +361,7 @@ def searchScopes (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origi
   | _, none => exhausted hooks ctx raised origin none state
   | fuel + 1, some current =>
     match state.scopes.find? (·.id == current) with
-    | none => .error (.semanticFailure "raise-from-missing-scope")
+    | none => .error (.semanticFailure .invariant "raise-from-missing-scope")
     | some occurrence =>
       let role := ctx.scopeRole state occurrence.id
       if role == .compensationHandler && !propagatesFromTrigger ctx then

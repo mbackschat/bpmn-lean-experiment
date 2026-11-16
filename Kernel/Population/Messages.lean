@@ -20,7 +20,7 @@ def occurrence (program : Program) (state : State) (item : OpenItem) : Occurrenc
 
 /-- The code a refusal carries. -/
 def refusalCode : Failure → String
-  | .rejected code | .rolledBack code | .semanticFailure code | .unsupported code => code
+  | .rejected code | .rolledBack code | .semanticFailure _ code | .unsupported code => code
 
 /-- The refusal with the least code in the codes' string order, so the code a publication reports never depends on the
 order its candidates are scanned in; of two refusals with one code the first is kept, which only a scan's refusal kinds
@@ -98,7 +98,7 @@ def startInstance (hooks : Hooks) (deployment : Deployment) (publicStart : Strin
   let some version := deployment.version? deployment.key | throw "deployment-without-version"
   match Step.step hooks deployment.program none (.start input) with
   | .ok state => pure (some { deployment, state }, .started input.instanceId deployment.deploymentId version publicStart)
-  | .error failure => pure (none, .failed (.start deployment.deploymentId publicStart) failure)
+  | .error failure => pure (none, .failed (.start deployment.deploymentId publicStart) failure.recorded)
 
 /-- Start `deployment`'s instance at `startEvent` for a publication at `atMs`: the start input names the start, so the
 start step rechecks its channel, and carries the payload, variables and business key. -/
@@ -118,7 +118,7 @@ harness defect. -/
 def refusalOf : Failure → Except String Resolution
   | .rejected code => pure (.rejected code)
   | .unsupported code => pure (.unsupported code)
-  | .rolledBack _ | .semanticFailure _ => throw "publication-refusal-not-command-level"
+  | .rolledBack _ | .semanticFailure _ _ => throw "publication-refusal-not-command-level"
 
 /-- Route one publication at `atMs` (PC-MESSAGE-02, PC-MESSAGE-08): unless start-only, deliver to its sole receiver
 among the instances of its selected deployment, or of every deployment without a selector; when there is none and it
@@ -160,7 +160,7 @@ def publish (hooks : Hooks) (registry : List Deployment) (instances : List Insta
     | some member =>
       match Step.step hooks member.deployment.program (some member.state) delivery with
       | .ok state => pure (instances.set index { member with state }, .committed target [], some state.instanceId)
-      | .error failure => pure (instances, .failed target failure, none)
+      | .error failure => pure (instances, .failed target failure.recorded, none)
   | _ :: _ :: _ => pure (instances, .ambiguous, none)
   | [] =>
     if publication.mode == .executionsOnly then return (instances, .noMatch, none)

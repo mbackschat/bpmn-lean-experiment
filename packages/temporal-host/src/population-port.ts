@@ -46,6 +46,7 @@ import {
   messageStartCandidates,
   populationCommandFromJson,
   reachOccurrence,
+  recorded,
   refusesSignalVariables,
   registerSummary,
   resolutionJson,
@@ -74,6 +75,7 @@ import {
   type Program,
   type Publication,
   type Receiver,
+  type RecordedFailure,
   type Resolution,
   type SignalAddress,
   type StartInput,
@@ -108,7 +110,7 @@ function identifierBytes(program: Program): number {
 /** The stop entry of an occurrence and of a start receiver, their identifiers `x`s of the given canonical bytes. */
 function stopEntryBytes(instanceIdBytes: number, identifierBytes: number): number {
   const text = (bytes: number): string => "x".repeat(Math.max(0, bytes - canonicalBytes("")));
-  const failure: Failure = { tag: FailureTag.Unsupported, code: fanOutCapacityCode };
+  const failure: RecordedFailure = { tag: FailureTag.Unsupported, code: fanOutCapacityCode };
   const largest = Number.MAX_SAFE_INTEGER;
   const receivers: Receiver[] = [
     { tag: ReceiverTag.Occurrence, ref: { processInstanceId: text(instanceIdBytes), element: text(identifierBytes), activation: largest } },
@@ -255,7 +257,7 @@ function nextStep(machine: FanOutMachine): FanOutStep {
 }
 
 function populationStep(outcome: Outcome): PopulationStep<State> {
-  return outcome.ok ? { kind: "committed", state: outcome.value } : { kind: "failed", failure: toWire(outcome.failure) };
+  return outcome.ok ? { kind: "committed", state: outcome.value } : { kind: "failed", failure: toWire(recorded(outcome.failure)) };
 }
 
 function parts(resolution: ResolutionParts): Resolution {
@@ -264,7 +266,7 @@ function parts(resolution: ResolutionParts): Resolution {
     case "committed":
       return { tag: ResolutionTag.Committed, target: decode<OccurrenceRef>(resolution.target), cascade: entries(resolution.cascade) };
     case "failed":
-      return { tag: ResolutionTag.Failed, target: decode<OccurrenceRef>(resolution.target), failure: decode<Failure>(resolution.failure) };
+      return { tag: ResolutionTag.Failed, target: decode<OccurrenceRef>(resolution.target), failure: decode<RecordedFailure>(resolution.failure) };
     case "fanOut": return { tag: ResolutionTag.FanOut, entries: entries(resolution.entries) };
     case "noMatch": return { tag: ResolutionTag.NoMatch };
     case "ambiguous": return { tag: ResolutionTag.Ambiguous };
@@ -296,14 +298,15 @@ function startRequest(request: StartRequest): Wire {
  * unsupported, as `publish` relies on too. */
 /** A publication's command-level refusal; it only rejects or refuses as unsupported, so another failure is a defect. */
 function refusalParts(refusal: Failure): RefusalParts {
-  switch (refusal.tag) {
+  const tag = refusal.tag;
+  switch (tag) {
     case FailureTag.Rejected: return { kind: "rejected", code: refusal.code };
     case FailureTag.Unsupported: return { kind: "unsupported", code: refusal.code };
     case FailureTag.RolledBack:
     case FailureTag.SemanticFailure:
       throw new TypeError(`publication refusal ${refusal.code} is not command-level`);
   }
-  return assertNever(refusal.tag);
+  return assertNever(tag);
 }
 
 const criteriaRefusalParts = (refusal: Failure | null): ResolutionParts | null => refusal === null ? null : refusalParts(refusal);
@@ -398,7 +401,7 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
   deliveredEntry: (target) => toWire({ tag: FanOutEntryTag.Delivered, target: decode<OccurrenceRef>(target) } satisfies FanOutEntry),
   skippedEntry: (target) => toWire({ tag: FanOutEntryTag.Skipped, target: decode<OccurrenceRef>(target) } satisfies FanOutEntry),
   failedEntry: (receiver, failure) =>
-    toWire({ tag: FanOutEntryTag.Failed, target: decode<Receiver>(receiver), failure: decode<Failure>(failure) } satisfies FanOutEntry),
+    toWire({ tag: FanOutEntryTag.Failed, target: decode<Receiver>(receiver), failure: decode<RecordedFailure>(failure) } satisfies FanOutEntry),
   startedEntry: (summary, instanceId, startEvent) => {
     const registered = decode<DeploymentSummary>(summary);
     const version = registered.versions.find(([key]) => key === registered.key)?.[1];
@@ -486,16 +489,16 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
     // A Conditional start's predicate is asked over the exact input it then starts with (CIB-EXT-0044).
     if (input.trigger.tag === StartTriggerTag.Condition) {
       const verdict = conditionalStartVerdict(hooks, program, input);
-      if (!verdict.ok) return { kind: "failed", failure: toWire(verdict.failure) };
+      if (!verdict.ok) return { kind: "failed", failure: toWire(recorded(verdict.failure)) };
       if (!verdict.value) return { kind: "passed" };
     }
     return populationStep(step(hooks, program, null, { tag: InputTag.Start, payload: input }));
   },
-  hostRefusal: (code) => toWire({ tag: FailureTag.Rejected, code } satisfies Failure),
-  capacityFailure: (code) => toWire({ tag: FailureTag.Unsupported, code } satisfies Failure),
+  hostRefusal: (code) => toWire({ tag: FailureTag.Rejected, code } satisfies RecordedFailure),
+  capacityFailure: (code) => toWire({ tag: FailureTag.Unsupported, code } satisfies RecordedFailure),
   intentsOf: (program, state) => hostView(program, state).broadcasts.map(toWire),
   instanceIdOf: (state) => state.instanceId,
-  failureCode: (failure) => decode<Failure>(failure).code,
+  failureCode: (failure) => decode<RecordedFailure>(failure).code,
   signalStartReceivers: (program, deploymentId, address, variables) =>
     signalStartReceivers(hooks, deploymentId, program, decode<SignalAddress>(address), decode<readonly Binding[]>(variables)).map(toWire),
   emissionAddress: (emission) => toWire(decode<Emission>(emission).address),

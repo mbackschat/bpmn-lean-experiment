@@ -50,7 +50,7 @@ def evaluateStart (hooks : Hooks) (registry : List Deployment) (evaluation : Con
     | .ok true =>
       let (started, entry) ← startInstance hooks deployment publicStart input
       pure (instances ++ started.toList, some entry, started.map fun member => (member.state, deployment.program))
-    | .error failure => pure (instances, some (.failed (.start deploymentId publicStart) failure), none)
+    | .error failure => pure (instances, some (.failed (.start deploymentId publicStart) failure.recorded), none)
   -- An evaluation's fan-out names only Conditional starts itself, so an occurrence here is a harness defect.
   | .occurrence _ => throw "conditional-receiver-without-start"
 

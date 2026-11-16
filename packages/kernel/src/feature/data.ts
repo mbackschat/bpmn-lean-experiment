@@ -19,14 +19,14 @@ import {
 } from "../il/types.js";
 import { evaluateJuel } from "./data/juel.js";
 import {
-  FailureTag,
+  SemanticCause,
   WriteRule,
   committed,
   declaring,
-  failed,
   instanceRoot,
   owner,
   removeVariable,
+  semanticFailure,
   setVariable,
   type Binding,
   type EvalContext,
@@ -106,7 +106,7 @@ function write(ctx: Ctx, rule: WriteRule, scope: ScopeOccurrenceId, state: State
       if (programDeclares(ctx.program, definition, name)) return committed(setVariable(state, root, name, value));
       switch (ctx.program.options.undeclaredWrite) {
         case UndeclaredWrite.Refused:
-          return failed(FailureTag.SemanticFailure, "undeclared-write");
+          return semanticFailure(SemanticCause.Model, "undeclared-write");
         case UndeclaredWrite.AtInstanceRoot:
           return committed(setVariable(state, root, name, value));
       }

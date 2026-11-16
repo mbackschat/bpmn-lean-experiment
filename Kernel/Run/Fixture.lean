@@ -57,13 +57,13 @@ def pendingFromJson (json : Json) : Except String Population.Pending := do
   | .null => pure (.receiver (← nullableAt json "emission" emissionFromJson) (← receiverFromJson (← json.getObjVal? "receiver")))
   | intent => pure (.intent (← json.getObjValAs? String "emitter") (← intentFromJson intent))
 
-/-- A failure by the outcome name and code `failureFields` writes. -/
-def failureFromJson (json : Json) : Except String Failure := do
+/-- A failure by the outcome name and code `failureFields` writes, which carry no cause. -/
+def failureFromJson (json : Json) : Except String RecordedFailure := do
   let code ← json.getObjValAs? String "code"
   match ← json.getObjValAs? String "outcome" with
   | "rejected" => pure (.rejected code)
   | "rolledBack" => pure (.rolledBack code)
-  | "semanticFailure" => pure (.semanticFailure code)
+  | "semanticFailure" => pure (.semanticFailure () code)
   | "unsupported" => pure (.unsupported code)
   | other => throw s!"unknown failure outcome {other}"
 

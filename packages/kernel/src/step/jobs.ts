@@ -4,26 +4,37 @@
  * (`timerJob`) and in the continuation an effect result reaches (`effectContinuation`). `step.ts` applies them.
  */
 import { ContinuationFailure, assertNever, type Program } from "../il/types.js";
-import { EffectOutcomeTag, FailureTag, crossed, failed, type EffectInput, type Outcome, type State } from "../state.js";
+import { EffectOutcomeTag, FailureTag, SemanticCause, crossed, failed, type EffectInput, type Outcome, type State } from "../state.js";
 import type { Ctx } from "../hooks.js";
 
 /**
- * `outcome`, unless it rolls back or fails after `state` crossed a transaction boundary: CIB commits an input at the
- * boundary and runs the rest in a job, which alone fails (`ExecutionEntity#performOperation`, CIB-EXT-0027). Rolling the
- * whole input back would be wrong and the kernel does not split it, so the outcome is `unsupported`.
+ * `outcome`, unless it rolls back or fails with a `Model` cause after `state` crossed a transaction boundary: CIB commits
+ * an input at the boundary and runs the rest in a job, which alone fails (`ExecutionEntity#performOperation`,
+ * CIB-EXT-0027). Rolling the whole input back would be wrong and the kernel does not split it, so the outcome is
+ * `unsupported`. An `Invariant` failure is a kernel defect CIB has no counterpart for, never that limitation, so it passes
+ * unchanged. The kernel's one reader of a `SemanticCause`.
  */
 export function deferred(program: Program, state: State, outcome: Outcome): Outcome {
   if (outcome.ok) return outcome;
-  switch (outcome.failure.tag) {
+  // dynamic-only: whether a closure fails after it crossed a boundary depends on the run's data and order
+  const demoted: Outcome = crossed(program, state) ? failed(FailureTag.Unsupported, "async-boundary-failure") : outcome;
+  const failure = outcome.failure;
+  switch (failure.tag) {
     case FailureTag.RolledBack:
+      return demoted;
     case FailureTag.SemanticFailure:
-      // dynamic-only: whether a closure fails after it crossed a boundary depends on the run's data and order
-      return crossed(program, state) ? failed(FailureTag.Unsupported, "async-boundary-failure") : outcome;
+      switch (failure.cause) {
+        case SemanticCause.Model:
+          return demoted;
+        case SemanticCause.Invariant:
+          return outcome;
+      }
+      return assertNever(failure.cause);
     case FailureTag.Rejected:
     case FailureTag.Unsupported:
       return outcome;
   }
-  return assertNever(outcome.failure.tag);
+  return assertNever(failure);
 }
 
 /** A rolled-back timer firing stays rolled back under `ContinuationFailure.RolledBack`, `unsupported` under `Incident`. */

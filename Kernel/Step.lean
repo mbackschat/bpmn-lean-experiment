@@ -91,7 +91,7 @@ def dispatch (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (entry : Scop
     | .scope header payload => hooks.arriveScope ctx header payload occurrence entry state
     | .gateway header payload => hooks.arriveGateway ctx header payload occurrence state
     | .start header payload =>
-      if occurrence.incoming.isSome then .error (.semanticFailure "flow-into-start-event")
+      if occurrence.incoming.isSome then .error (.semanticFailure .invariant "flow-into-start-event")
       else hooks.arriveStart ctx header payload trigger occurrence state
     | .event header payload =>
       match payload.role with
@@ -100,7 +100,7 @@ def dispatch (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (entry : Scop
       | .linkCatch _ => hooks.arriveLink ctx header payload occurrence state
       | .linkThrow _ => hooks.arriveLink ctx header payload occurrence state
   match ctx.program.element? occurrence.element with
-  | none => .error (.semanticFailure "begin-without-element")
+  | none => .error (.semanticFailure .invariant "begin-without-element")
   | some element =>
     match bodyLoop? element occurrence with
     | some (envelope, loop) => hooks.arriveMultiInstance ctx element.header envelope loop occurrence state
@@ -116,7 +116,7 @@ def roleOf (program : Program) (request : BeginRequest) : ActivationRole :=
 
 /-- Begin the occurrence `request` names and hand it to its feature (`requireScope`). -/
 def begin (hooks : Hooks) (ctx : Ctx) (request : BeginRequest) (state : State) : Outcome := do
-  let some sourceType := ctx.program.sourceType? request.element | .error (.semanticFailure "begin-without-element")
+  let some sourceType := ctx.program.sourceType? request.element | .error (.semanticFailure .invariant "begin-without-element")
   requireScope state request.scope
   let (state, occurrence) := state.beginOccurrence request (roleOf ctx.program request) sourceType
   deferred ctx.program state (dispatch hooks ctx occurrence { locals := request.locals, inner := request.inner } request.trigger state)
@@ -146,7 +146,7 @@ matters only once a per-activity end state is observed. -/
 def complete (hooks : Hooks) (ctx : Ctx) (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule)
     (state : State) : Outcome := do
   let some occurrence := state.occurrence? id | .ok state
-  let some sourceType := ctx.program.sourceType? occurrence.element | .error (.semanticFailure "complete-without-element")
+  let some sourceType := ctx.program.sourceType? occurrence.element | .error (.semanticFailure .invariant "complete-without-element")
   let (state, occurrence) := state.startReserved occurrence sourceType
   let state ← hooks.leave ctx occurrence (state.closeOwnItems id)
   let leave ← hooks.select ctx occurrence leave state
@@ -232,7 +232,7 @@ def microStep (hooks : Hooks) (ctx : Ctx) (cause : Cause) (element : Option Elem
 /-- Route a token on `flow` to the element at the end of it. -/
 def arrive (hooks : Hooks) (ctx : Ctx) (flow : FlowId) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
   match ctx.program.target? flow with
-  | none => .error (.semanticFailure "flow-without-target")
+  | none => .error (.semanticFailure .invariant "flow-without-target")
   | some element => begin hooks ctx { element, scope, incoming := some flow } state
 
 /-- Move one token in its own micro-step: route a flow token to the element at the end of its flow; dispatch a deferred
@@ -254,7 +254,7 @@ def activityLocal (ctx : Ctx) (state : State) (scope : ScopeOccurrence) : Bool :
 /-- Complete an idle scope occurrence through the occurrence that owns it: a Scope's by its hook, a called instance's
 root by its Call Activity's, a Multi-Instance body by its feature. -/
 def completeIdleScope (hooks : Hooks) (ctx : Ctx) (scope : ScopeOccurrence) (state : State) : Outcome :=
-  let notScope : Outcome := .error (.semanticFailure "scope-occurrence-without-scope")
+  let notScope : Outcome := .error (.semanticFailure .invariant "scope-occurrence-without-scope")
   let toElement (element : Element) (occurrence : Occurrence) : Outcome :=
     match element with
     | .scope header payload => hooks.completeScope ctx header payload scope occurrence state
@@ -314,14 +314,14 @@ def reoffer? (hooks : Hooks) (ctx : Ctx) (state : State) : Except Failure (Optio
   state.slots.parked.foldlM (init := none) fun found waiting =>
     match found, (ctx.program.target? waiting.flow).bind ctx.program.element? with
     | some _, _ => .ok found
-    | none, none => .error (.semanticFailure "parked-without-gateway")
+    | none, none => .error (.semanticFailure .invariant "parked-without-gateway")
     | none, some element =>
       match element.gateway?, ((state.slots.parked.filter fun other => other.scope == waiting.scope &&
           ctx.program.target? other.flow == ctx.program.target? waiting.flow).getLast?).bind (state.occurrence? ·.occurrence) with
       | some (header, payload), some occurrence => do
         let offered ← hooks.arriveGateway ctx header payload occurrence state
         .ok (if offered.signals.isEmpty then none else some (header.id, waiting.scope, offered))
-      | _, _ => .error (.semanticFailure "parked-without-gateway")
+      | _, _ => .error (.semanticFailure .invariant "parked-without-gateway")
 
 /-- The journal in the order the micro-steps ran (`conclude` keeps it newest first). -/
 def orderJournal (outcome : Outcome) : Outcome :=
@@ -369,7 +369,7 @@ def occurrenceOf? (ctx : Ctx) (state : State) (ref : OccurrenceRef) : Option Occ
 def atActivity (ctx : Ctx) (item : OpenItem) (onActivity : Header → ActivityPayload → Outcome) : Outcome :=
   match (ctx.program.element? item.element).bind (·.activity?) with
   | some (header, payload) => onActivity header payload
-  | none => .error (.semanticFailure "activity-item-without-activity")
+  | none => .error (.semanticFailure .invariant "activity-item-without-activity")
 
 def command (hooks : Hooks) (ctx : Ctx) (input : CommandInput) (state : State) : Outcome :=
   let incident (resolve : OpenItem → IncidentDetail → Outcome) : Outcome :=

@@ -30,7 +30,7 @@ namespace Kernel.Feature.Subscriptions
 `Kernel.Feature.Correlation.correlationAccepts`, since features never import each other. -/
 structure SubscriptionsHooks where
   correlationAccepts : Ctx → State → ScopeOccurrenceId → Trigger → List CorrelationMatch → Except Failure Bool :=
-    fun _ _ _ _ _ => .error (.unsupported "subscriptions-correlation") -- dynamic-only: a registry without the hook
+    fun _ _ _ _ _ => .error (.semanticFailure .invariant "subscriptions-correlation") -- a registry without the hook
 
 /-- Where a subscription is armed: what a Timer value given by an expression reads (`values`), what a Message name
 given by an expression reads (`names`), and whether the subscription may fire again (`repeats`: a non-interrupting
@@ -168,7 +168,7 @@ boundaries are enabled with the starts of a scope it opened leaves their Conditi
 arming (`enabledWith`). -/
 def arm (ctx : Ctx) (host : Nat) (element : ElementId) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
   match (ctx.program.element? element).bind (·.envelope?) with
-  | none => .error (.semanticFailure "arm-without-envelope")
+  | none => .error (.semanticFailure .invariant "arm-without-envelope")
   | some envelope =>
     let evaluate := envelope.multiInstance.isSome || (enabledWith ctx state host).isNone
     subscribeAll ctx state [] envelope.boundaries fun state boundary =>
@@ -198,7 +198,7 @@ to the gateway's occurrence. A Receive Task arm would need the work feature's wa
 def armGateway (ctx : Ctx) (occurrence : Nat) (gateway : ElementId) (scope : ScopeOccurrenceId) (state : State) :
     Outcome :=
   match (ctx.program.element? gateway).bind (·.gateway?) with
-  | none => .error (.semanticFailure "arm-gateway-without-gateway")
+  | none => .error (.semanticFailure .invariant "arm-gateway-without-gateway")
   | some (_, payload) =>
     subscribeAll ctx state [] payload.outgoing fun state flow =>
       let arm := (ctx.program.target? flow).bind ctx.program.element? |>.bind fun target =>
@@ -231,7 +231,7 @@ def armScope (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome :
       match startEvent? ctx eventSubProcess, ← waitKind ctx arming subscription with
       | some start, _ => subscribe ctx arming state subscription start scope none true
       | none, none => .ok (state, none)
-      | none, some _ => .error (.semanticFailure "event-subprocess-without-start")
+      | none, some _ => .error (.semanticFailure .invariant "event-subprocess-without-start")
 
 /-! ## Root start triggers -/
 
@@ -362,9 +362,9 @@ def fireBoundary (hooks : SubscriptionsHooks) (ctx : Ctx) (boundary : Boundary) 
   let (state, values) ← admitFiring hooks ctx boundary.subscription item fired state
   if boundary.interrupting then
     match item.attachedTo with
-    | none => .error (.semanticFailure "boundary-without-host")
+    | none => .error (.semanticFailure .invariant "boundary-without-host")
     | some host =>
-      if (state.occurrence? host).isNone then .error (.semanticFailure "boundary-host-gone")
+      if (state.occurrence? host).isNone then .error (.semanticFailure .invariant "boundary-host-gone")
       else
         .ok (boundary.fire (some host) (some item.occurrence) item.scope values
           ((state.closeItem item.id).withdrawOccurrence host))
@@ -387,7 +387,7 @@ def fireEventStart (hooks : SubscriptionsHooks) (ctx : Ctx) (eventSubProcess : E
     Outcome := do
   let start := (ctx.program.element? eventSubProcess).bind (·.scope?) |>.bind fun (_, payload) => ctx.eventStart payload
   match start with
-  | none => .error (.semanticFailure "event-start-without-event-subprocess")
+  | none => .error (.semanticFailure .invariant "event-start-without-event-subprocess")
   | some (subscription, interrupting) =>
     let (state, values) ← admitFiring hooks ctx subscription item fired state
     let (state, inner) :=
@@ -406,7 +406,7 @@ def trigger (hooks : SubscriptionsHooks) (ctx : Ctx) (item : OpenItem) (fired : 
     match catchEvent, eventStart with
     | some subscription, _ => fireCatch hooks ctx subscription item fired state
     | none, some eventSubProcess => fireEventStart hooks ctx eventSubProcess item fired state
-    | none, none => .error (.semanticFailure "trigger-without-subscription")
+    | none, none => .error (.semanticFailure .invariant "trigger-without-subscription")
 
 /-- `Hooks.arriveCatch`: the catch Event's occurrence waits on its subscription. -/
 def arriveCatch (ctx : Ctx) (_ : Header) (_ : EventPayload) (subscription : Subscription) (occurrence : Occurrence)

@@ -73,6 +73,20 @@ theorem step_ok {hooks : Hooks} {program : Program} {before : Option State} {inp
   · obtain ⟨reported, ran⟩ := effectContinuation_ok ran
     exact .inr ⟨_, _, .inr (.inl ⟨reported, rfl⟩), ran⟩
 
+theorem nextToken_rest {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
+    (next : nextToken ctx state = some (token, rest)) : rest.Sublist state.tokens := by
+  rcases nextToken_shape next with ⟨_, queued⟩ | queued <;> rw [queued]
+  · exact List.sublist_cons_self token rest
+  · exact List.sublist_append_left rest [token]
+
+/-- Queued work whose scope occurrence is gone fails its closure micro-step with `queued-work-scope-gone`, after a
+transaction boundary too: the input's outcome is that invariant failure, never `unsupported` (#121, #148). -/
+theorem microStep_scope_gone {hooks : Hooks} {ctx : Ctx} {signal : Signal} {state : State}
+    (fresh : stale state (signalWork hooks ctx signal) = false) (absent : gone state (signalWork hooks ctx signal) = true) :
+    microStep hooks ctx (.signal (signalName signal)) none State.root (dispatchSignal hooks ctx signal) state =
+      .error (.semanticFailure .invariant "queued-work-scope-gone") :=
+  microStep_invariant (dispatchSignal_eq ▸ perform_gone fresh absent)
+
 /-! ### Inputs no lookup addresses
 
 An addressed input whose occurrence reference no lookup finds is rejected (`step_unknown`). The lookups run on the

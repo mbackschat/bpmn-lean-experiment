@@ -220,7 +220,7 @@ test("the body's begin crosses the envelope's asyncBefore mark, not the loop's",
   const notAList = { kind: "string", value: "a" };
   assert.deepEqual(startOutcome(program({ envelope: { asyncBefore: true } }), notAList), asyncFailure);
   assert.deepEqual(startOutcome(program({ loop: { asyncBefore: true } }), notAList),
-    { tag: "semanticFailure", code: "multi-instance-collection" });
+    { tag: "semanticFailure", code: "multi-instance-collection", cause: "model" });
 });
 
 test("an instance's completion crosses the loop's asyncAfter mark", () => {

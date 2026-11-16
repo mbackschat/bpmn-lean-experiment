@@ -20,7 +20,7 @@
  */
 import { assertNever, compareStrings, distinctCount, mergeSort, type Program } from "./il/types.js";
 import type { Hooks } from "./hooks.js";
-import { FailureTag, type Failure } from "./state.js";
+import { FailureTag, recorded, type RecordedFailure } from "./state.js";
 import { step } from "./step.js";
 import {
   CommandTag,
@@ -81,7 +81,7 @@ interface Progress {
   readonly steps: readonly StepResult[];
   readonly ledger: readonly LedgerEntry[];
   readonly occurrences: readonly TimerOccurrence[];
-  readonly inputFailures: readonly (readonly [string, Failure])[];
+  readonly inputFailures: readonly (readonly [string, RecordedFailure])[];
   readonly inputCascades: readonly (readonly [string, readonly FanOutEntry[]])[];
 }
 
@@ -165,13 +165,13 @@ function apply(hooks: Hooks, admission: (program: Program) => string | null, pro
       return { ok: true, value: { ...progress, deployments: [...progress.deployments, result] } };
     }
     case StimulusTag.Input: {
-      const failed = (failure: Failure): Progress =>
+      const failed = (failure: RecordedFailure): Progress =>
         ({ ...progress, inputFailures: [...progress.inputFailures, [stimulus.commandId, failure]] });
       const deployment = deploymentFor(progress, stimulus.instanceId, stimulus.definitionRef);
       if (deployment === null) return { ok: true, value: failed({ tag: FailureTag.Rejected, code: "definition-not-deployed" }) };
       const before = progress.instances.find((member) => member.state.instanceId === stimulus.instanceId)?.state ?? null;
       const stepped = step(hooks, deployment.program, before, stimulus.input);
-      if (!stepped.ok) return { ok: true, value: failed(stepped.failure) };
+      if (!stepped.ok) return { ok: true, value: failed(recorded(stepped.failure)) };
       const others = progress.instances.filter((member) => member.state.instanceId !== stimulus.instanceId);
       const fanned = cascadeOf(hooks, progress.registry, stimulus.commandId, stepped.value.logicalTimeMs, cascadeBound,
         [...others, { deployment, state: stepped.value }], stimulus.instanceId);

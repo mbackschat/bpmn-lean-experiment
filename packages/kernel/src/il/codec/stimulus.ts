@@ -42,6 +42,7 @@ import {
   type DeliveryTrigger,
   type EffectOutcome,
   type Failure,
+  type RecordedFailure,
   type Input,
   type MessageChannel,
   type OccurrenceRef,
@@ -446,13 +447,14 @@ export function stimulusFromJson(json: unknown): Decoded<readonly [string, Input
   return mapDecoded(firingStimulusFromJson(json), ([commandId, input]) => [commandId, input] as const);
 }
 
-/** The refusal or failure code a failure carries. */
-export function failureCode(failure: Failure): string {
+/** The refusal or failure code a failure carries; the wire carries no cause. */
+export function failureCode(failure: Failure | RecordedFailure): string {
   return failure.code;
 }
 
-export function failureName(failure: Failure): string {
-  switch (failure.tag) {
+export function failureName(failure: Failure | RecordedFailure): string {
+  const tag = failure.tag;
+  switch (tag) {
     case FailureTag.Rejected:
       return "rejected";
     case FailureTag.RolledBack:
@@ -462,5 +464,5 @@ export function failureName(failure: Failure): string {
     case FailureTag.Unsupported:
       return "unsupported";
   }
-  return assertNever(failure.tag);
+  return assertNever(tag);
 }

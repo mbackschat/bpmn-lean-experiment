@@ -108,13 +108,13 @@ inductive FanOutEntry where
   | delivered (target : OccurrenceRef)
   | started (instanceId : String) (deploymentId version : Nat) (startEvent : String)
   | skipped (target : OccurrenceRef)
-  | failed (target : Receiver) (failure : Failure)
+  | failed (target : Receiver) (failure : RecordedFailure)
 
 inductive Resolution where
   /-- Delivered to its sole receiver; `cascade` is the fan-out of the intents that step left, delivered after it. -/
   | committed (target : OccurrenceRef) (cascade : List FanOutEntry)
   /-- The sole candidate refused the delivery; nothing changed. -/
-  | failed (target : OccurrenceRef) (failure : Failure)
+  | failed (target : OccurrenceRef) (failure : RecordedFailure)
   | fanOut (entries : List FanOutEntry)
   | noMatch
   | ambiguous
@@ -171,7 +171,7 @@ structure Result where
   /-- Ordered by process instance identifier, whatever order they started in. -/
   instances : List Instance
   /-- The instance inputs that did not commit, with their failures. -/
-  inputFailures : List (String × Failure)
+  inputFailures : List (String × RecordedFailure)
   /-- The committed instance inputs whose intents reached a receiver, with the fan-out of those intents. -/
   inputCascades : List (String × List FanOutEntry)
 

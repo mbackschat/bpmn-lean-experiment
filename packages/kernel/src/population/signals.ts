@@ -15,12 +15,13 @@ import {
   StartTriggerTag,
   instanceOf,
   openKindView,
+  recorded,
   signalAddressMatches,
   type BroadcastIntent,
   type Binding,
-  type Failure,
   type Outcome,
   type OccurrenceRef,
+  type RecordedFailure,
   type SignalAddress,
   type StartInput,
   type State,
@@ -316,7 +317,7 @@ export function machineAdd(machine: FanOutMachine, entry: FanOutEntry): FanOutMa
 /** Stop at `receiver`: the cascade bound is reached, receivers already committed stay committed. */
 function machineStop(machine: FanOutMachine, receiver: Receiver): FanOutMachine {
   // dynamic-only: how far a cascade runs depends on the population and its run
-  const failure: Failure = { tag: FailureTag.Unsupported, code: "population-cascade-bound" };
+  const failure: RecordedFailure = { tag: FailureTag.Unsupported, code: "population-cascade-bound" };
   return { ...machineAdd(machine, { tag: FanOutEntryTag.Failed, target: receiver, failure }), stopped: true, pending: null };
 }
 
@@ -432,7 +433,7 @@ export function reachReceiver(
       const reached = reachOccurrence(hooks, member.deployment.program, member.state, emission.address, emission.variables, target, atMs);
       if (reached.skipped) continue;
       const outcome = reached.outcome;
-      if (!outcome.ok) return { ok: true, value: [instances, { tag: FanOutEntryTag.Failed, target: receiver, failure: outcome.failure }, null] };
+      if (!outcome.ok) return { ok: true, value: [instances, { tag: FanOutEntryTag.Failed, target: receiver, failure: recorded(outcome.failure) }, null] };
       const stepped = instances.map((other, at) => (at === index ? { ...member, state: outcome.value } : other));
       return { ok: true, value: [stepped, { tag: FanOutEntryTag.Delivered, target }, [outcome.value, member.deployment.program]] };
     }

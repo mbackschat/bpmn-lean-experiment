@@ -263,7 +263,7 @@ def scanRefusals {α : Type} (scans : List (Except Failure α)) : List Failure :
 
 /-- The code a refusal carries. -/
 def codeOf : Failure → String
-  | .rejected code | .rolledBack code | .semanticFailure code | .unsupported code => code
+  | .rejected code | .rolledBack code | .semanticFailure _ code | .unsupported code => code
 
 /-- A publication any of whose per-instance receiver scans refuses resolves to a refusal carrying the least refused code
 in the codes' string order and leaves every instance as it was: a refusal decides the resolution whatever the other

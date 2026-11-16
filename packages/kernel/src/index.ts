@@ -50,12 +50,12 @@ export type {
 } from "./il/types.js";
 export {
   DeliveryTriggerTag, EffectOutcomeTag, FailureTag, InputTag, LeaveTag, SignalAddressTag, SignalReach, StartTriggerTag,
-  leaveFlows,
+  leaveFlows, recorded,
 } from "./state.js";
 export { criteriaRefusal, startCriteriaRefusal } from "./state/criteria.js";
 export type {
   Binding, BroadcastIntent, ConditionChoice, CorrelationMatch, EffectOutcome, Failure, Input, Leave, MessageChannel, OccurrenceRef,
-  Outcome, SignalAddress, StartInput, StartTrigger, State,
+  Outcome, RecordedFailure, SignalAddress, StartInput, StartTrigger, State,
 } from "./state.js";
 export { leastRefusal, messageReceivers, messageStartCandidates } from "./population/messages.js";
 export {

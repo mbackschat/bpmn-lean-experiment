@@ -33,6 +33,7 @@ import {
   type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceRef, type OpenItem, type Outcome,
   type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartInput, type StartTrigger, type State,
   type Token, type Transition,
+  SemanticCause, semanticFailure,
 } from "./state.js";
 import {
   ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemDetailOf, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
@@ -61,7 +62,7 @@ function toElement(hooks: Hooks, ctx: Ctx, element: Element, occurrence: Occurre
     case ElementTag.Gateway:
       return hooks.arriveGateway(ctx, element.header, element.payload, occurrence, state);
     case ElementTag.Start:
-      if (occurrence.incoming !== null) return failed(FailureTag.SemanticFailure, "flow-into-start-event");
+      if (occurrence.incoming !== null) return semanticFailure(SemanticCause.Invariant, "flow-into-start-event");
       return hooks.arriveStart(ctx, element.header, element.payload, trigger, occurrence, state);
     case ElementTag.Event: {
       const { header, payload } = element;
@@ -86,7 +87,7 @@ function toElement(hooks: Hooks, ctx: Ctx, element: Element, occurrence: Occurre
  */
 function dispatch(hooks: Hooks, ctx: Ctx, occurrence: Occurrence, entry: ScopeEntry, trigger: StartTrigger, state: State): Outcome {
   const element = programElement(ctx.program, occurrence.element);
-  if (element === null) return failed(FailureTag.SemanticFailure, "begin-without-element");
+  if (element === null) return semanticFailure(SemanticCause.Invariant, "begin-without-element");
   const loop = bodyLoop(element, occurrence);
   if (loop !== null) return hooks.arriveMultiInstance(ctx, elementHeader(element), loop[0], loop[1], occurrence, state);
   return toElement(hooks, ctx, element, occurrence, entry, trigger, state);
@@ -109,7 +110,7 @@ function roleOf(program: Program, request: BeginRequest): ActivationRole {
 /** Begin the occurrence `request` names and hand it to its feature (`requireScope`). */
 function begin(hooks: Hooks, ctx: Ctx, request: BeginRequest, state: State): Outcome {
   const sourceType = programSourceType(ctx.program, request.element);
-  if (sourceType === null) return failed(FailureTag.SemanticFailure, "begin-without-element");
+  if (sourceType === null) return semanticFailure(SemanticCause.Invariant, "begin-without-element");
   const missing = requireScope(state, request.scope);
   if (missing !== null) return missing;
   const [begun, occurrence] = beginOccurrence(state, request, roleOf(ctx.program, request), sourceType);
@@ -153,7 +154,7 @@ function complete(
   const found = occurrenceOf(before, id);
   if (found === null) return committed(before);
   const sourceType = programSourceType(ctx.program, found.element);
-  if (sourceType === null) return failed(FailureTag.SemanticFailure, "complete-without-element");
+  if (sourceType === null) return semanticFailure(SemanticCause.Invariant, "complete-without-element");
   const [started, occurrence] = startReserved(before, found, sourceType);
   const left = hooks.leave(ctx, occurrence, closeOwnItems(started, id));
   if (!left.ok) return left;
@@ -296,7 +297,7 @@ function microStep(
 /** Route a token on `flow` to the element at the end of it. */
 function arrive(hooks: Hooks, ctx: Ctx, flow: FlowId, scope: ScopeOccurrenceId, state: State): Outcome {
   const element = programTarget(ctx.program, flow);
-  if (element === null) return failed(FailureTag.SemanticFailure, "flow-without-target");
+  if (element === null) return semanticFailure(SemanticCause.Invariant, "flow-without-target");
   return begin(hooks, ctx, beginRequest({ element, scope, incoming: flow }), state);
 }
 
@@ -331,7 +332,7 @@ function activityLocal(ctx: Ctx, state: State, scope: ScopeOccurrence): boolean 
  * root by its Call Activity's, a Multi-Instance body by its feature.
  */
 function completeIdleScope(hooks: Hooks, ctx: Ctx, scope: ScopeOccurrence, state: State): Outcome {
-  const notScope: Outcome = failed(FailureTag.SemanticFailure, "scope-occurrence-without-scope");
+  const notScope: Outcome = semanticFailure(SemanticCause.Invariant, "scope-occurrence-without-scope");
   const occurrence = scope.occurrence === null ? null : occurrenceOf(state, scope.occurrence);
   if (occurrence === null) return notScope;
   const element = programElement(ctx.program, occurrence.element);
@@ -405,7 +406,7 @@ function reoffer(hooks: Hooks, ctx: Ctx, state: State): Result<Reoffered | null>
     const latest = state.slots.parked
       .filter((other) => other.scope === waiting.scope && programTarget(ctx.program, other.flow) === target).at(-1);
     const occurrence = latest === undefined ? null : occurrenceOf(state, latest.occurrence);
-    if (gateway === null || occurrence === null) return failed(FailureTag.SemanticFailure, "parked-without-gateway");
+    if (gateway === null || occurrence === null) return semanticFailure(SemanticCause.Invariant, "parked-without-gateway");
     const offered = hooks.arriveGateway(ctx, gateway[0], gateway[1], occurrence, state);
     if (!offered.ok) return offered;
     if (offered.value.signals.length > 0) return committed({ gateway: gateway[0].id, scope: waiting.scope, state: offered.value });
@@ -482,7 +483,7 @@ function command(hooks: Hooks, ctx: Ctx, input: CommandInput, state: State): Out
       if (item === null) return failed(FailureTag.Rejected, "unknown-user-task");
       const element = programElement(ctx.program, item.element);
       const activity = element === null ? null : elementActivity(element);
-      if (activity === null) return failed(FailureTag.SemanticFailure, "activity-item-without-activity");
+      if (activity === null) return semanticFailure(SemanticCause.Invariant, "activity-item-without-activity");
       return hooks.completeUserTask(ctx, activity[0], activity[1], item, action.values, state);
     }
     case CommandActionTag.RetryIncident:

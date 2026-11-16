@@ -19,6 +19,7 @@ import {
 } from "../il/types.js";
 import {
   FailureTag,
+  SemanticCause,
   StartTriggerTag,
   WriteRule,
   committed,
@@ -26,6 +27,7 @@ import {
   failed,
   failedWith,
   leaveOutgoing,
+  semanticFailure,
   signal,
   type Binding,
   type Occurrence,
@@ -47,8 +49,8 @@ export interface StartsHooks {
 }
 
 export const defaultStartsHooks: StartsHooks = {
-  fires: () => failed(FailureTag.Unsupported, "starts-fires"), // dynamic-only: a registry without the hook
-  payloadBindings: () => failed(FailureTag.Unsupported, "starts-payload"), // dynamic-only: a registry without the hook
+  fires: () => semanticFailure(SemanticCause.Invariant, "starts-fires"), // a registry without the hook
+  payloadBindings: () => semanticFailure(SemanticCause.Invariant, "starts-payload"), // a registry without the hook
 };
 
 /** The starts among `starts` that `input`'s trigger fires, in order; the first failing predicate fails them all. */

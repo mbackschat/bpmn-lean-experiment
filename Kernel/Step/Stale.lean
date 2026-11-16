@@ -17,7 +17,7 @@ namespace Kernel.Step
 never a silent begin, since whatever removes a scope occurrence also drops what would begin in it (a run an
 interrupting catcher removes, `Compensation.dropWithin`; a queued signal, `stale`). -/
 def requireScope (state : State) (scope : ScopeOccurrenceId) : Except Failure Unit :=
-  if state.scopes.any (·.id == scope) then .ok () else .error (.semanticFailure "begin-into-missing-scope")
+  if state.scopes.any (·.id == scope) then .ok () else .error (.semanticFailure .invariant "begin-into-missing-scope")
 
 /-- What a queued signal does, the scope occurrences and occurrences it does it in or on (`stale`), and the scope
 occurrences it acts from (`gone`). -/
@@ -58,7 +58,7 @@ absent is an invariant failure (`gone`). -/
 def SignalWork.perform (work : SignalWork) (state : State) : Outcome :=
   -- dynamic-only: whether an interruption overtakes queued work depends on the run's data and order
   if stale state work then .error (.unsupported "interrupted-before-wait")
-  else if gone state work then .error (.semanticFailure "queued-work-scope-gone")
+  else if gone state work then .error (.semanticFailure .invariant "queued-work-scope-gone")
   else work.run state
 
 end Kernel.Step

@@ -104,6 +104,8 @@ import {
   calledRoot,
   childrenOf,
   visible,
+  SemanticCause,
+  semanticFailure,
 } from "../state.js";
 import {
   EvaluationTag, admitValues, boundaryFire, ctxRequireMappings, deliveryTriggerChannel, evalContext,
@@ -382,7 +384,7 @@ function enabledWith(ctx: Ctx, state: State, host: number): ScopeOccurrenceId | 
 export function arm(ctx: Ctx, host: number, element: ElementId, scope: ScopeOccurrenceId, state: State): Outcome {
   const found = programElement(ctx.program, element);
   const envelope = found === null ? null : elementEnvelope(found);
-  if (envelope === null) return failed(FailureTag.SemanticFailure, "arm-without-envelope");
+  if (envelope === null) return semanticFailure(SemanticCause.Invariant, "arm-without-envelope");
   const evaluate = envelope.multiInstance !== null || enabledWith(ctx, state, host) === null;
   return subscribeAll(ctx, state, [], envelope.boundaries, (current, boundary) => {
     const arming = {
@@ -420,7 +422,7 @@ function enabledBoundaries(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Re
 export function armGateway(ctx: Ctx, occurrence: number, gateway: ElementId, scope: ScopeOccurrenceId, state: State): Outcome {
   const found = programElement(ctx.program, gateway);
   const payload = found === null ? null : elementGateway(found);
-  if (payload === null) return failed(FailureTag.SemanticFailure, "arm-gateway-without-gateway");
+  if (payload === null) return semanticFailure(SemanticCause.Invariant, "arm-gateway-without-gateway");
   return subscribeAll(ctx, state, [], payload[1].outgoing, (current, flow) => {
     const target = programTarget(ctx.program, flow);
     const element = target === null ? null : programElement(ctx.program, target);
@@ -460,7 +462,7 @@ export function armScope(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outc
     if (!kind.ok) return failedWith(kind.failure);
     const startId = startEvent(ctx, declared[0].id);
     if (startId !== null) return subscribe(ctx, arming, current, subscription, startId, scope, null, true);
-    return kind.value === null ? committed([current, null]) : failed(FailureTag.SemanticFailure, "event-subprocess-without-start");
+    return kind.value === null ? committed([current, null]) : semanticFailure(SemanticCause.Invariant, "event-subprocess-without-start");
   });
 }
 
@@ -582,7 +584,7 @@ export interface SubscriptionsHooks {
 }
 
 export const defaultSubscriptionsHooks: SubscriptionsHooks = {
-  correlationAccepts: () => failed(FailureTag.Unsupported, "subscriptions-correlation"), // dynamic-only: a registry without the hook
+  correlationAccepts: () => semanticFailure(SemanticCause.Invariant, "subscriptions-correlation"), // a registry without the hook
 };
 
 /**
@@ -669,8 +671,8 @@ function fireBoundary(hooks: SubscriptionsHooks, ctx: Ctx, boundary: Boundary, i
   if (!admitted.ok) return failedWith(admitted.failure);
   const [current, values] = admitted.value;
   if (boundary.interrupting) {
-    if (item.attachedTo === null) return failed(FailureTag.SemanticFailure, "boundary-without-host");
-    if (occurrenceOf(current, item.attachedTo) === null) return failed(FailureTag.SemanticFailure, "boundary-host-gone");
+    if (item.attachedTo === null) return semanticFailure(SemanticCause.Invariant, "boundary-without-host");
+    if (occurrenceOf(current, item.attachedTo) === null) return semanticFailure(SemanticCause.Invariant, "boundary-host-gone");
     const withdrawn = withdrawOccurrence(closeItem(current, item.id), item.attachedTo);
     return committed(boundaryFire(boundary, item.attachedTo, item.occurrence, item.scope, values, withdrawn));
   }
@@ -698,7 +700,7 @@ function fireEventStart(hooks: SubscriptionsHooks, ctx: Ctx, eventSubProcess: El
   const element = programElement(ctx.program, eventSubProcess);
   const scope = element === null ? null : elementScope(element);
   const start = scope === null ? null : ctx.eventStart(scope[1]);
-  if (start === null) return failed(FailureTag.SemanticFailure, "event-start-without-event-subprocess");
+  if (start === null) return semanticFailure(SemanticCause.Invariant, "event-start-without-event-subprocess");
   const [subscription, interrupting] = start;
   const admitted = admitFiring(hooks, ctx, subscription, item, fired, state);
   if (!admitted.ok) return failedWith(admitted.failure);
@@ -723,7 +725,7 @@ export function trigger(hooks: SubscriptionsHooks, ctx: Ctx, item: OpenItem, fir
   const start = element === null ? null : elementStart(element);
   const eventSubProcess = start === null ? null : start[0].parent;
   if (eventSubProcess !== null) return fireEventStart(hooks, ctx, eventSubProcess, item, fired, state);
-  return failed(FailureTag.SemanticFailure, "trigger-without-subscription");
+  return semanticFailure(SemanticCause.Invariant, "trigger-without-subscription");
 }
 
 /** `Hooks.arriveCatch`: the catch Event's occurrence waits on its subscription. */

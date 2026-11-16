@@ -84,6 +84,8 @@ import {
   type State,
   type WaitView,
   type WriteEvent,
+  SemanticCause,
+  semanticFailure,
 } from "./state.js";
 // Lean's `Kernel.Hooks` re-exports `Kernel.State.Removal` to the features and `Kernel.Step`; so does this module, which
 // keeps the removal module's direct importers to this hub (guard 15).
@@ -487,7 +489,7 @@ export function ctxRequireMappingsWith(
   const evaluated = ctxEvaluateMappingsWith(ctx, reads, mappings);
   if (!evaluated.ok) return evaluated;
   return evaluated.value === null
-    ? failed(FailureTag.SemanticFailure, "mapping-source-unavailable")
+    ? semanticFailure(SemanticCause.Model, "mapping-source-unavailable")
     : committed(evaluated.value);
 }
 
@@ -565,9 +567,9 @@ export interface ScopeEntry {
   readonly inner: number | null;
 }
 
-/** The default of every lifecycle hook: the mechanism is not registered. */
+/** The default of every lifecycle hook: the mechanism is not registered, a wiring defect `registry.ts#hooks` excludes. */
 function refuse(code: string): Outcome {
-  return failed(FailureTag.Unsupported, code);
+  return semanticFailure(SemanticCause.Invariant, code);
 }
 
 export interface Hooks {
@@ -715,7 +717,7 @@ export const defaultHooks: Hooks = {
   compensate: () => refuse("compensate"),
   failCompensation: () => refuse("failCompensation"),
   leave: () => refuse("leave"),
-  select: () => failed(FailureTag.Unsupported, "select"), // dynamic-only: a registry without the hook
+  select: () => semanticFailure(SemanticCause.Invariant, "select"), // a registry without the hook
   writeOutputs: () => refuse("writeOutputs"),
   removeVariables: () => refuse("removeVariables"),
   completed: () => refuse("completed"),
@@ -730,6 +732,6 @@ export const defaultHooks: Hooks = {
   eventStart: () => null,
   competes: () => false,
   startsFired: () => committed([]),
-  correlates: () => failed(FailureTag.Unsupported, "correlates"), // dynamic-only: a registry without the hook
-  delivered: () => failed(FailureTag.Unsupported, "delivered"), // dynamic-only: a registry without the hook
+  correlates: () => semanticFailure(SemanticCause.Invariant, "correlates"), // a registry without the hook
+  delivered: () => semanticFailure(SemanticCause.Invariant, "delivered"), // a registry without the hook
 };

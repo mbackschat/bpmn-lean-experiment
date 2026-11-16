@@ -42,6 +42,8 @@ import {
   type Result,
   type ScopeOccurrence,
   type State,
+  SemanticCause,
+  semanticFailure,
 } from "../state.js";
 import {
   clearInside, ctxOutputReads, ctxRequireMappings, ctxRequireMappingsWith, evalContext, ownVariables, type Ctx,
@@ -109,7 +111,7 @@ function enter(ctx: Ctx, header: Header, payload: ScopePayload, occurrence: Occu
   }
   const begun = implicitStart(ctx, header.id);
   if (!begun.ok) return begun;
-  if (begun.value.length === 0) return failed(FailureTag.SemanticFailure, "scope-without-start-event");
+  if (begun.value.length === 0) return semanticFailure(SemanticCause.Invariant, "scope-without-start-event");
   return committed(begun.value.reduce(
     (current, element) => signal(current, { tag: SignalTag.Begin, request: beginRequest({ element, scope }) }), scoped));
 }
@@ -126,7 +128,7 @@ export function arriveScope(ctx: Ctx, header: Header, payload: ScopePayload, occ
     case ScopeKindTag.Transaction:
       return enter(ctx, header, payload, occurrence, entry, state);
     case ScopeKindTag.EventSubProcess: {
-      if (occurrence.incoming !== null) return failed(FailureTag.SemanticFailure, "flow-into-event-subprocess");
+      if (occurrence.incoming !== null) return semanticFailure(SemanticCause.Invariant, "flow-into-event-subprocess");
       const keep = entry.inner === null ? [occurrence.id] : [occurrence.id, entry.inner];
       const cleared = kind.interrupting ? clearInside(state, occurrence.scope, keep) : state;
       return enter(ctx, header, payload, occurrence, entry, cleared);

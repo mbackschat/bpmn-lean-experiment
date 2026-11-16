@@ -272,7 +272,7 @@ def Ctx.requireMappingsWith (ctx : Ctx) (reads : List (String × Value) → Eval
     Except Failure (List (String × Value)) := do
   match ← ctx.evaluateMappingsWith reads mappings with
   | some bindings => .ok bindings
-  | none => .error (.semanticFailure "mapping-source-unavailable")
+  | none => .error (.semanticFailure .model "mapping-source-unavailable")
 
 /-- `requireMappingsWith` where every mapping reads `context`. -/
 def Ctx.requireMappings (ctx : Ctx) (context : EvalContext) (mappings : List Mapping) :
@@ -328,8 +328,8 @@ structure ScopeEntry where
   inner : Option Nat := none
   deriving Repr
 
-/-- The default of every lifecycle hook: the mechanism is not registered. -/
-def refuse {α : Type} (code : String) : α → Outcome := fun _ => .error (.unsupported code)
+/-- The default of every lifecycle hook: the mechanism is not registered, a wiring defect `Registry.hooks` excludes. -/
+def refuse {α : Type} (code : String) : α → Outcome := fun _ => .error (.semanticFailure .invariant code)
 
 structure Hooks where
   /-- Starts: a start Event's occurrence began, fired by the trigger. -/
@@ -398,7 +398,7 @@ structure Hooks where
   /-- Flow: resolve a completion's outgoing flows when the profile evaluates its conditions before its output writes
   (`ConditionOrder.beforeOutputs`); otherwise the leave is unchanged and `outflow` resolves it. -/
   select : Ctx → Occurrence → Leave → State → Except Failure Leave :=
-    fun _ _ _ _ => .error (.unsupported "select") -- dynamic-only: a registry without the hook
+    fun _ _ _ _ => .error (.semanticFailure .invariant "select") -- a registry without the hook
   /-- Data: apply writes from a scope occurrence: a completion's, and `Signal.write`. -/
   writeOutputs : Ctx → ScopeOccurrenceId → List (String × Value) → WriteRule → State → Outcome :=
     fun _ _ _ _ => refuse "writeOutputs"
@@ -439,10 +439,10 @@ structure Hooks where
   in the current state, equal the delivered correlation; `false` for any other item. `Kernel.Population` asks it to
   find the candidates of a correlated publication. -/
   correlates : Ctx → OpenItem → MessageChannel → List CorrelationMatch → State → Except Failure Bool :=
-    fun _ _ _ _ _ => .error (.unsupported "correlates") -- dynamic-only: a registry without the hook
+    fun _ _ _ _ _ => .error (.semanticFailure .invariant "correlates") -- a registry without the hook
   /-- Subscriptions: the open item a `deliver` input fires, with its firing, or the delivery's refusal; `Kernel.Step`
   fires it. -/
   delivered : Ctx → DeliveryInput → State → Except Failure (OpenItem × Fired) :=
-    fun _ _ _ => .error (.unsupported "delivered") -- dynamic-only: a registry without the hook
+    fun _ _ _ => .error (.semanticFailure .invariant "delivered") -- a registry without the hook
 
 end Kernel

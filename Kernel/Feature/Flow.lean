@@ -38,7 +38,7 @@ def signalComplete (state : State) (id : Nat) (leave : Leave) : State :=
 condition rolls the command back, as CIB's `UelExpressionCondition` does (CIB-OP-0004); Simple Boolean never fails. -/
 def condition (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Except Failure Bool :=
   match ctx.program.flow? candidate with
-  | none => .error (.semanticFailure "gateway-candidate-without-flow")
+  | none => .error (.semanticFailure .invariant "gateway-candidate-without-flow")
   | some flow =>
     match flow.condition with
     | none => .ok true
@@ -107,7 +107,7 @@ def select (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State)
   | .beforeOutputs, .raised => .ok leave
   | .beforeOutputs, .outgoing =>
     match ctx.program.element? occurrence.element with
-    | none => .error (.semanticFailure "outflow-without-element")
+    | none => .error (.semanticFailure .invariant "outflow-without-element")
     | some element => do
       let inside := ((state.scopes.find? (·.occurrence == some occurrence.id)).map (·.id)).getD occurrence.scope
       .ok (.flows (← ownFlows ctx element (state.evalContext ctx.program inside)))
@@ -189,7 +189,7 @@ with one incoming flow passes it on. When the join fires, the offered occurrence
 with the flows and the others end with none. -/
 def join (occurrence : Occurrence) (incoming : List FlowId) (state : State) (ready : State → Bool)
     (flows : State → Except Failure (List FlowId)) : Outcome := do
-  let some flow := occurrence.incoming | .error (.semanticFailure "gateway-without-flow")
+  let some flow := occurrence.incoming | .error (.semanticFailure .invariant "gateway-without-flow")
   if incoming.length ≤ 1 then .ok (signalComplete state occurrence.id (.flows (← flows state)))
   else
     let parked := if state.slots.parked.any (·.occurrence == occurrence.id) then state
@@ -241,8 +241,8 @@ def outflow (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State
     | some element => do
       let selected ← ownFlows ctx element (state.evalContext ctx.program occurrence.scope)
       .ok (state.emit (queued ctx selected) occurrence.scope)
-    | none => .error (.semanticFailure "outflow-without-element")
-  | .raised => .error (.semanticFailure "outflow-of-raised-occurrence")
+    | none => .error (.semanticFailure .invariant "outflow-without-element")
+  | .raised => .error (.semanticFailure .invariant "outflow-of-raised-occurrence")
 
 /-- A throwing Link continues at the catching Link of the same name in the same process level or Sub-Process
 (BPMN 2.0.2 §10.5.6); a catching Link reached by a flow passes the token on. -/
@@ -252,8 +252,8 @@ def arriveLink (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrenc
   | some name =>
     match linkCatches ctx.program header name with
     | [(_, target)] => .ok (signalComplete state occurrence.id (.flows target.outgoing))
-    | [] => .error (.semanticFailure "link-without-catch")
-    | _ :: _ :: _ => .error (.semanticFailure "link-ambiguous-catch")
+    | [] => .error (.semanticFailure .invariant "link-without-catch")
+    | _ :: _ :: _ => .error (.semanticFailure .invariant "link-ambiguous-catch")
   | none => .ok (signalComplete state occurrence.id .outgoing)
 
 end Kernel.Feature.Flow

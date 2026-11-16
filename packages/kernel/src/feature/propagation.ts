@@ -110,6 +110,8 @@ import {
   SignalAddressTag,
   type State,
   childrenOf,
+  SemanticCause,
+  semanticFailure,
 } from "../state.js";
 import {
   EvaluationTag, ScopeRole, boundaryFire, clearInside, ctxOutputReads, ctxRequireMappings, ctxRequireMappingsWith, ctxRunsAsInstance,
@@ -366,7 +368,7 @@ function exhausted(hooks: PropagationHooks, ctx: Ctx, raised: Raised, origin: Or
         ? committed(throwerLeaves(ctx, origin, state))
         : failed(FailureTag.Unsupported, "compensation-handler-escalation"); // dynamic-only: what a handler raises
     case RaisedTag.Cancel:
-      return failed(FailureTag.SemanticFailure, "cancel-uncaught");
+      return semanticFailure(SemanticCause.Invariant, "cancel-uncaught");
   }
   return assertNever(raised);
 }
@@ -575,7 +577,7 @@ function searchScopes(
   for (let fuel = bound; fuel > 0 && current !== null; fuel -= 1) {
     const at = current;
     const occurrence = state.scopes.find((scope) => scope.id === at);
-    if (occurrence === undefined) return failed(FailureTag.SemanticFailure, "raise-from-missing-scope");
+    if (occurrence === undefined) return semanticFailure(SemanticCause.Invariant, "raise-from-missing-scope");
     const role = ctx.scopeRole(state, occurrence.id);
     if (role === ScopeRole.CompensationHandler && !propagatesFromTrigger(ctx)) {
       return exhausted(hooks, ctx, raised, origin, occurrence.id, state);

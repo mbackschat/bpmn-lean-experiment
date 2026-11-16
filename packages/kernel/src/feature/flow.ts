@@ -69,6 +69,8 @@ import {
   type Result,
   type ScopeOccurrenceId,
   type State,
+  SemanticCause,
+  semanticFailure,
 } from "../state.js";
 import { EvaluationTag, evalContext, type Ctx } from "../hooks.js";
 
@@ -82,7 +84,7 @@ function signalComplete(state: State, id: number, leave: Leave): State {
  */
 function condition(ctx: Ctx, context: EvalContext, candidate: FlowId): Result<boolean> {
   const flow = programFlow(ctx.program, candidate);
-  if (flow === null) return failed(FailureTag.SemanticFailure, "gateway-candidate-without-flow");
+  if (flow === null) return semanticFailure(SemanticCause.Invariant, "gateway-candidate-without-flow");
   if (flow.condition === null) return committed(true);
   const evaluation = ctx.evaluate(context, flow.condition);
   switch (evaluation.tag) {
@@ -168,14 +170,14 @@ export function outflow(ctx: Ctx, occurrence: Occurrence, leave: Leave, state: S
       return committed(emit(state, queued(ctx, leave.selected), occurrence.scope));
     case LeaveTag.Outgoing: {
       const element = programElement(ctx.program, occurrence.element);
-      if (element === null) return failed(FailureTag.SemanticFailure, "outflow-without-element");
+      if (element === null) return semanticFailure(SemanticCause.Invariant, "outflow-without-element");
       const selected = ownFlows(ctx, element, evalContext(state, ctx.program, occurrence.scope));
       return selected.ok
         ? committed(emit(state, queued(ctx, selected.value), occurrence.scope))
         : failedWith(selected.failure);
     }
     case LeaveTag.Raised:
-      return failed(FailureTag.SemanticFailure, "outflow-of-raised-occurrence");
+      return semanticFailure(SemanticCause.Invariant, "outflow-of-raised-occurrence");
   }
   return assertNever(leave);
 }
@@ -223,7 +225,7 @@ function selectBeforeOutputs(ctx: Ctx, occurrence: Occurrence, leave: Leave, sta
       return committed(leave);
     case LeaveTag.Outgoing: {
       const element = programElement(ctx.program, occurrence.element);
-      if (element === null) return failed(FailureTag.SemanticFailure, "outflow-without-element");
+      if (element === null) return semanticFailure(SemanticCause.Invariant, "outflow-without-element");
       const inside = state.scopes.find((scope) => scope.occurrence === occurrence.id)?.id ?? occurrence.scope;
       const chosen = ownFlows(ctx, element, evalContext(state, ctx.program, inside));
       return chosen.ok ? committed(leaveFlows(chosen.value)) : failedWith(chosen.failure);
@@ -347,7 +349,7 @@ function join(
   flows: (state: State) => Result<readonly FlowId[]>,
 ): Outcome {
   const flow = occurrence.incoming;
-  if (flow === null) return failed(FailureTag.SemanticFailure, "gateway-without-flow");
+  if (flow === null) return semanticFailure(SemanticCause.Invariant, "gateway-without-flow");
   if (incoming.length <= 1) {
     const selected = flows(state);
     return selected.ok ? committed(signalComplete(state, occurrence.id, leaveFlows(selected.value))) : failedWith(selected.failure);
@@ -402,7 +404,7 @@ export function arriveLink(ctx: Ctx, header: Header, payload: EventPayload, occu
   if (name === null) return committed(signalComplete(state, occurrence.id, leaveOutgoing));
   const catches = linkCatches(ctx.program, header, name);
   const [only] = catches;
-  if (only === undefined) return failed(FailureTag.SemanticFailure, "link-without-catch");
-  if (catches.length > 1) return failed(FailureTag.SemanticFailure, "link-ambiguous-catch");
+  if (only === undefined) return semanticFailure(SemanticCause.Invariant, "link-without-catch");
+  if (catches.length > 1) return semanticFailure(SemanticCause.Invariant, "link-ambiguous-catch");
   return committed(signalComplete(state, occurrence.id, leaveFlows(only[1].outgoing)));
 }

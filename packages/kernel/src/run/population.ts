@@ -27,7 +27,7 @@ import {
   failureName,
   occurrenceFromJson,
 } from "../il/codec/stimulus.js";
-import type { Binding, Failure, State } from "../state.js";
+import type { Binding, Failure, RecordedFailure, State } from "../state.js";
 import {
   CommandTag,
   DefinitionSelectorTag,
@@ -298,7 +298,7 @@ function instanceStimulus(declared: readonly Declared[], scripts: Script[], json
   return { tag: StimulusTag.Input, instanceId: script.instanceId, definitionRef: script.definitionRef, commandId, input };
 }
 
-export function failureFields(failure: Failure): Record<string, JsonValue> {
+export function failureFields(failure: Failure | RecordedFailure): Record<string, JsonValue> {
   return { outcome: failureName(failure), code: failureCode(failure) };
 }
 

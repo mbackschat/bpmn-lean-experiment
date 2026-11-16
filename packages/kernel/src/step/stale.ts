@@ -3,7 +3,7 @@
  * removed a target of before it ran (`stale`), transcribed from `Kernel/Step/Stale.lean`. `step.ts` builds each
  * signal's work in its one switch on `SignalTag`.
  */
-import { FailureTag, failed, type Outcome, type ScopeOccurrenceId, type State } from "../state.js";
+import { FailureTag, SemanticCause, failed, semanticFailure, type Outcome, type ScopeOccurrenceId, type State } from "../state.js";
 
 /**
  * An occurrence begins only in a scope occurrence that stands: a begin into one that is gone is an invariant failure,
@@ -11,7 +11,7 @@ import { FailureTag, failed, type Outcome, type ScopeOccurrenceId, type State } 
  * interrupting catcher removes, `Compensation.dropWithin`; a queued signal, `stale`). `null` when it stands.
  */
 export function requireScope(state: State, scope: ScopeOccurrenceId): Outcome | null {
-  return state.scopes.some((entry) => entry.id === scope) ? null : failed(FailureTag.SemanticFailure, "begin-into-missing-scope");
+  return state.scopes.some((entry) => entry.id === scope) ? null : semanticFailure(SemanticCause.Invariant, "begin-into-missing-scope");
 }
 
 /**
@@ -56,5 +56,5 @@ function gone(state: State, work: SignalRun): boolean {
 export function perform(work: SignalRun, state: State): Outcome {
   // dynamic-only: whether an interruption overtakes queued work depends on the run's data and order
   if (stale(state, work)) return failed(FailureTag.Unsupported, "interrupted-before-wait");
-  return gone(state, work) ? failed(FailureTag.SemanticFailure, "queued-work-scope-gone") : work.run(state);
+  return gone(state, work) ? semanticFailure(SemanticCause.Invariant, "queued-work-scope-gone") : work.run(state);
 }

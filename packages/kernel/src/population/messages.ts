@@ -14,6 +14,7 @@ import {
   messageChannelEquals,
   occurrenceOf,
   openKindView,
+  recorded,
   type CorrelationMatch,
   FailureTag,
   type Failure,
@@ -198,7 +199,7 @@ export function startInstance(
   const stepped = step(hooks, deployment.program, null, { tag: InputTag.Start, payload: input });
   if (!stepped.ok) {
     const target = { tag: ReceiverTag.Start, deploymentId: deployment.deploymentId, startEvent: publicStart } as const;
-    const failed = { tag: FanOutEntryTag.Failed, target, failure: stepped.failure } as const;
+    const failed = { tag: FanOutEntryTag.Failed, target, failure: recorded(stepped.failure) } as const;
     return { ok: true, value: [null, failed] };
   }
   const entry = {
@@ -238,7 +239,8 @@ function startFor(
  * harness defect.
  */
 function refused(instances: readonly Instance[], failure: Failure): Refusable<readonly [readonly Instance[], Resolution, string | null]> {
-  switch (failure.tag) {
+  const tag = failure.tag;
+  switch (tag) {
     case FailureTag.Rejected:
       return { ok: true, value: [instances, { tag: ResolutionTag.Rejected, code: failure.code }, null] };
     case FailureTag.Unsupported:
@@ -247,7 +249,7 @@ function refused(instances: readonly Instance[], failure: Failure): Refusable<re
     case FailureTag.SemanticFailure:
       return { ok: false, error: "publication-refusal-not-command-level" };
   }
-  return assertNever(failure.tag);
+  return assertNever(tag);
 }
 
 /**
@@ -304,7 +306,7 @@ export function publish(
     const member = instances[index];
     if (member === undefined) return { ok: false, error: "candidate-without-instance" };
     const stepped = step(hooks, member.deployment.program, member.state, delivery);
-    if (!stepped.ok) return answer({ tag: ResolutionTag.Failed, target, failure: stepped.failure });
+    if (!stepped.ok) return answer({ tag: ResolutionTag.Failed, target, failure: recorded(stepped.failure) });
     const updated = instances.map((candidate, position) => (position === index ? { ...member, state: stepped.value } : candidate));
     return { ok: true, value: [updated, { tag: ResolutionTag.Committed, target, cascade: [] }, stepped.value.instanceId] };
   }
