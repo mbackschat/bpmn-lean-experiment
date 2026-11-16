@@ -306,6 +306,9 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside (RunsFra
   armGateway _ s _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
+  raise _ s _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.carry (.equal rfl rfl rfl rfl)
   signalBegin _ s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
@@ -634,6 +637,9 @@ theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
   armGateway _ s _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
+  raise _ s _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
   signalBegin _ s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl)
@@ -687,6 +693,9 @@ theorem snapshots_frameAlongside (b : State) : StoresAlongside (Snapshots b) whe
   armGateway _ s _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.same rfl
+  raise _ s _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.same rfl
   signalBegin _ s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.same rfl
@@ -724,6 +733,8 @@ theorem since_frameAlongside (b : State) : StoresAlongside fun s => Unstarted b 
       ⟨one.park program s waiting formed waits kept.1, two.park program s waiting formed waits kept.2⟩
     arm := fun program s host element scope formed hosted kept =>
       ⟨one.arm program s host element scope formed hosted kept.1, two.arm program s host element scope formed hosted kept.2⟩
+    raise := fun program s raised origin formed cancel hosted kept =>
+      ⟨one.raise program s raised origin formed cancel hosted kept.1, two.raise program s raised origin formed cancel hosted kept.2⟩
     armGateway := fun program s occurrence header payload formed member gateway kept =>
       ⟨one.armGateway program s occurrence header payload formed member gateway kept.1,
         two.armGateway program s occurrence header payload formed member gateway kept.2⟩

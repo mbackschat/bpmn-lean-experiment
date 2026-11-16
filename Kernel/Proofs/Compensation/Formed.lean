@@ -325,6 +325,7 @@ theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) 
   park _ _ _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
   arm _ _ _ _ _ _ _ kept := kept.signal _
   armGateway _ _ _ _ _ _ _ _ kept := kept.signal _
+  raise _ _ _ _ _ cancel _ kept := kept.signal _ (by rw [Laws.Step.triggersOf_raise, cancel]; rfl)
   signalBegin _ _ _ _ _ _ kept := kept.signal _
   issue s kept := by
     rw [Laws.State.issue_eq]

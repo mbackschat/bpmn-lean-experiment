@@ -689,6 +689,7 @@ theorem callsFormed_alongside (program : Program) : Alongside (CallsFormed progr
   park _ _ _ _ _ held := held.same rfl (fun _ member => member) rfl
   arm _ _ host element scope _ _ held := held.signal (.arm host element scope)
   armGateway _ _ occurrence header _ _ _ _ held := held.signal (.armGateway occurrence.id header.id occurrence.scope)
+  raise _ _ raised origin _ _ _ held := held.signal (.raise raised origin)
   signalBegin _ _ request _ _ _ held := held.signal (.begin request)
   issue _ held := held.same (by rw [Laws.State.issue_eq]) (by rw [Laws.State.issue_eq]; exact fun _ member => member)
     (by rw [Laws.State.issue_eq])

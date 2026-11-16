@@ -227,6 +227,11 @@ structure FrameAlongside (rel : State → Prop) (srel : State → Prop := rel) :
   armGateway : ∀ program s occurrence header payload, WellFormed program s → occurrence ∈ s.occurrences →
     Laws.Flow.GatewayOf program s occurrence header payload → rel s →
     rel (s.signal (.armGateway occurrence.id header.id occurrence.scope))
+  /-- A raise other than a Cancel at the element and scope occurrence of an occurrence there, as an effect's business
+  Error is raised from the occurrence its item waits for (`Laws.Work.WorkOps.raise`). -/
+  raise : ∀ program s raised origin, WellFormed program s → raised.isCancel = false →
+    (∃ occurrence ∈ s.occurrences, occurrence.element = origin.element ∧ occurrence.scope = origin.scope) → rel s →
+    rel (s.signal (.raise raised origin))
   /-- A begin that fits, from where `Laws.Flow.BeginAnchored` says. -/
   signalBegin : ∀ program s request, WellFormed program s → BeginFits s request →
     Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ rel t) program s request → rel s →

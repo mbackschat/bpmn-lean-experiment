@@ -52,8 +52,9 @@ theorem workOps_alongside (side : FrameAlongside rel) {program : Program} (occur
     ⟨ops.completeOwner s scope occurrence leave writes rule holds.1 member owned link unnamed,
       side.signal holds.2 _ (unplacing := Laws.Step.placing_complete unnamed)⟩
   raise s item code message patch holds member effect :=
-    ⟨ops.raise s item code message patch holds.1 member effect, side.signal holds.2 _
-      ⟨rfl, rfl, by rw [Laws.Step.triggersOf_raise, Laws.State.isCancel_error]; rfl⟩⟩
+    ⟨ops.raise s item code message patch holds.1 member effect, side.raise program s _ _ holds.1
+      (Laws.State.isCancel_error _ _) ((holds.1.owned.itemOccurrences item member).imp fun _ ⟨inside, _, rest⟩ =>
+        ⟨inside, rest⟩) holds.2⟩
   cancel s holds := ⟨ops.cancel s holds.1, side.signal holds.2 _⟩
   rekind s change holds kept keep :=
     ⟨ops.rekind s change holds.1 kept keep,
@@ -569,6 +570,9 @@ theorem endsKept_alongside (b : State) (x : Option (Nat × OccurrenceKey)) {srel
     rw [Laws.State.signal_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
   armGateway _ s _ _ _ _ _ _ kept := by
+    rw [Laws.State.signal_eq]
+    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+  raise _ s _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
   signalBegin _ s _ _ _ _ kept := by

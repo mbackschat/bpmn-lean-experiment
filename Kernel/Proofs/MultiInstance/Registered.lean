@@ -321,6 +321,9 @@ theorem framedNumbered_frameAlongside (program : Program) : StoresAlongside (Fra
   arm other s host element scope formed hosted kept :=
     ⟨(runsFramed_frameAlongside program).arm other s host element scope formed hosted kept.1,
       fun apart => (kept.2 apart).signalOther Laws.Step.arm_apart⟩
+  raise other s raised origin formed cancel hosted kept :=
+    ⟨(runsFramed_frameAlongside program).raise other s raised origin formed cancel hosted kept.1,
+      fun apart => (kept.2 apart).signalOther ⟨fun _ => nofun, fun _ _ _ _ _ => nofun, fun _ _ _ _ _ => nofun⟩⟩
   armGateway other s occurrence header payload formed member gateway kept :=
     ⟨(runsFramed_frameAlongside program).armGateway other s occurrence header payload formed member gateway kept.1,
       fun apart => (kept.2 apart).signalOther Laws.Step.armGateway_apart⟩

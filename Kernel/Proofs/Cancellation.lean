@@ -318,6 +318,7 @@ theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) wh
   park _ _ _ _ _ kept := kept
   arm _ s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
   armGateway _ s _ _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
+  raise _ s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
   signalBegin _ s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept

@@ -474,6 +474,7 @@ theorem beginsKept_alongside (program : Program) : Alongside (BeginsKept program
   park _ _ _ _ _ held := held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
   arm _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   armGateway _ _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
+  raise _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   signalBegin _ _ request _ _ _ held := held.signalBegin request
   issue _ held := held.issue
   enterScope _ _ element parent locals owner _ _ held := held.enterScope element parent locals owner

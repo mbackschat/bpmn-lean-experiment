@@ -216,12 +216,12 @@ theorem occurPending_of {s t : State} (occurs : ∀ element ∈ occursOf t.signa
   · exact .inr (.inr ⟨run, runs run member, rest⟩)
 
 /-- A queued signal that places work: an arming, which reserves its element's boundaries or its gateway's arms in its
-scope occurrence, a `Signal.occur`, which reserves its element there, and a completion by named flows, whose tokens
-it queues there. An invariant over where queued work lies reads them. -/
+scope occurrence, a `Signal.occur`, which reserves its element there, a raise, whose catch reads its origin there, and
+a completion by named flows, whose tokens it queues there. An invariant over where queued work lies reads them. -/
 def placing : Signal → Bool
-  | .arm _ _ _ | .armGateway _ _ _ | .occur _ _ _ _ _ => true
+  | .arm _ _ _ | .armGateway _ _ _ | .occur _ _ _ _ _ | .raise _ _ => true
   | .complete _ (.flows selected) _ _ => !selected.isEmpty
-  | .complete _ .outgoing _ _ | .complete _ .raised _ _ | .armScope _ | .raise _ _ | .begin _ | .write _ _ _
+  | .complete _ .outgoing _ _ | .complete _ .raised _ _ | .armScope _ | .begin _ | .write _ _ _
   | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensate _ _ _ _ _ | .compensationFailed _ _ _ _ => false
 
 /-- A completion by no named flow places nothing. -/
