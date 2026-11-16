@@ -837,4 +837,33 @@ theorem childrenOf_mem {s : State} {program : Program} {scope : ScopeOccurrenceI
       exact .inl ⟨process, List.mem_of_find?_eq_some found, member⟩
   · exact .inr ⟨_, member⟩
 
+/-- The elements a scope occurrence declares (`State.childrenOf`): for a called root whose first instance entry binds a
+definition, the top level of the first process of that definition, else the children of its first entry's element. -/
+theorem childrenOf_cases {s : State} {program : Program} {scope : ScopeOccurrenceId} {child : Element}
+    (member : child ∈ s.childrenOf program scope) :
+    (∃ entry, s.scopes.find? (·.id == scope) = some entry ∧ entry.calledInstance.isSome ∧
+      ∃ bound, s.slots.instances.find? (·.root == scope) = some bound ∧ ∃ definition, bound.definition = some definition ∧
+        ∃ process, program.processes.find? (·.definition == definition) = some process ∧
+          child ∈ program.processChildren process) ∨
+      (∀ entry, s.scopes.find? (·.id == scope) = some entry → entry.calledInstance.isSome →
+        ∀ bound, s.slots.instances.find? (·.root == scope) = some bound → bound.definition = none) ∧
+      child ∈ program.children ((s.scopes.find? (·.id == scope)).bind (·.element)) := by
+  unfold State.childrenOf at member
+  dsimp only at member
+  split at member
+  · rename_i _ definition called defined
+    obtain ⟨entry, found, named⟩ := Option.bind_eq_some_iff.mp called
+    obtain ⟨bound, boundFound, binds⟩ := Option.bind_eq_some_iff.mp defined
+    cases processOf : program.processes.find? (·.definition == definition) with
+    | none => simp [processOf] at member
+    | some process =>
+      rw [processOf] at member
+      exact .inl ⟨entry, found, by simp [named], bound, boundFound, definition, binds, process, processOf, member⟩
+  · rename_i unbound
+    refine .inr ⟨fun entry found called bound boundFound => ?_, member⟩
+    obtain ⟨name, named⟩ := Option.isSome_iff_exists.mp called
+    cases defined : bound.definition with
+    | none => rfl
+    | some definition => exact (unbound name definition (by simp [found, named]) (by simp [boundFound, defined])).elim
+
 end Kernel.Laws.State

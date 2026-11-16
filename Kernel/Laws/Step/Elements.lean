@@ -28,4 +28,10 @@ theorem scope?_header {element : Element} {header : Header} {payload : ScopePayl
   cases element <;> simp_all [Laws.IL.scope?_scope, Laws.IL.header_scope, Laws.IL.scope?_activity,
     Laws.IL.scope?_event, Laws.IL.scope?_gateway, Laws.IL.scope?_start]
 
+/-- A gateway's outgoing flows are its payload's. -/
+theorem gateway?_outgoing {element : Element} {header : Header} {payload : GatewayPayload}
+    (typed : element.gateway? = some (header, payload)) : element.outgoing = payload.outgoing := by
+  cases element <;> simp_all [Laws.IL.gateway?_gateway, Laws.IL.outgoing_gateway, Laws.IL.gateway?_activity,
+    Laws.IL.gateway?_scope, Laws.IL.gateway?_event, Laws.IL.gateway?_start]
+
 end Kernel.Laws.Step

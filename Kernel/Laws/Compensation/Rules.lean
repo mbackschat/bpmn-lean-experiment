@@ -316,6 +316,23 @@ theorem recordsElements_mem {record : Compensable} {element : ElementId} :
   | _ :: _, .head _, named => by rw [recordsElements]; exact List.mem_append_left _ named
   | _ :: _, .tail _ member, named => by rw [recordsElements]; exact List.mem_append_right _ (recordsElements_mem member named)
 
+/-- A record names its subject, its handler and its children's elements. -/
+theorem recordElements_eq (record : Compensable) :
+    recordElements record = record.subject :: record.handler.toList ++ recordsElements record.children := by
+  cases record
+  simp only [recordElements]
+
+/-- An element records name is one of them names. -/
+theorem recordsElements_cases {element : ElementId} :
+    ∀ {records : List Compensable}, element ∈ recordsElements records → ∃ record ∈ records, element ∈ recordElements record
+  | [], named => by simp [recordsElements] at named
+  | record :: rest, named => by
+    rw [recordsElements] at named
+    rcases List.mem_append.mp named with here | there
+    · exact ⟨record, List.mem_cons_self .., here⟩
+    · obtain ⟨other, member, inside⟩ := recordsElements_cases there
+      exact ⟨other, List.mem_cons_of_mem _ member, inside⟩
+
 /-- A child's elements are its record's. -/
 theorem recordElements_child {record child : Compensable} {element : ElementId} (member : child ∈ record.children)
     (named : element ∈ recordElements child) : element ∈ recordElements record := by

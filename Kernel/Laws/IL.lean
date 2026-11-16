@@ -147,6 +147,23 @@ theorem gateway?_gateway (header : Header) (payload : GatewayPayload) :
     (Element.gateway header payload).gateway? = some (header, payload) := by
   simp only [Element.gateway?]
 
+theorem gateway?_activity (header : Header) (payload : ActivityPayload) :
+    (Element.activity header payload).gateway? = none := by simp only [Element.gateway?]
+
+theorem gateway?_scope (header : Header) (payload : ScopePayload) :
+    (Element.scope header payload).gateway? = none := by simp only [Element.gateway?]
+
+theorem gateway?_event (header : Header) (payload : EventPayload) :
+    (Element.event header payload).gateway? = none := by simp only [Element.gateway?]
+
+theorem gateway?_start (header : Header) (payload : StartPayload) :
+    (Element.start header payload).gateway? = none := by simp only [Element.gateway?]
+
+/-- A gateway's outgoing flows are its payload's. -/
+theorem outgoing_gateway (header : Header) (payload : GatewayPayload) :
+    (Element.gateway header payload).outgoing = payload.outgoing := by
+  simp only [Element.outgoing]
+
 /-- A Call's work record names its Call, and no other work record names one: `Kernel.Laws.Work`, which owns matching
 on `Work`, reads `Work.call?` by these. -/
 theorem call?_call (work : CallWork) : (Work.call work).call? = some work := by simp only [Work.call?]
@@ -347,5 +364,17 @@ theorem NameSet.meets_iff_listed {every : List String} {sentinel : String} (inha
     · exact fun ⟨_, _, inside⟩ => .inl (List.ne_nil_of_mem inside)
   · simp only [Bool.true_and, Bool.true_or, ite_true, true_iff]
     exact ⟨sentinel, inhabited, inhabited⟩
+
+/-- A flow's source and target, looked up by its identifier, are those of one flow the program declares. -/
+theorem source?_target? {program : Program} {flow : FlowId} {source target : ElementId}
+    (leaves : program.source? flow = some source) (ends : program.target? flow = some target) :
+    ∃ declared ∈ program.flows, declared.source = source ∧ declared.target = target := by
+  unfold Program.source? at leaves
+  unfold Program.target? at ends
+  cases found : program.flows.find? (·.id == flow) with
+  | none => simp [found] at leaves
+  | some declared =>
+    simp only [found, Option.map_some, Option.some.injEq] at leaves ends
+    exact ⟨declared, List.mem_of_find?_eq_some found, leaves, ends⟩
 
 end Kernel.Laws.IL
