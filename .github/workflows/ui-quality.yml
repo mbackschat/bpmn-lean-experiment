@@ -169,3 +169,14 @@ jobs:
 
       - name: Verify the RC catalog journeys
         run: ./scripts/pnpm.sh run test:release:product2:rc
+
+      - name: Upload RC catalog journey failure evidence
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: rc-catalog-journeys-failure
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            showcase/*/playwright-report/
+            showcase/*/test-results/
