@@ -3,9 +3,9 @@ module
 public import Kernel.Step
 public import Kernel.Laws.Hooks
 public import Kernel.Laws.Step.Ran
+public import Kernel.Laws.Step.Jobs
+public import Kernel.Laws.Step.Stale
 import all Kernel.Step
-import all Kernel.Step.Jobs
-import all Kernel.Step.Stale
 
 /-! # Laws of the step function
 
@@ -16,8 +16,9 @@ token reaches the hook of the element at the end of its flow; what a committed i
 made of, phase by phase; and which hook or state operation each committed body ran (the shapes of
 `Kernel.Laws.Step.Ran`). This is the one module that sees `Kernel.Step`'s bodies
 ([module table](../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)), and it holds only these body
-equations; it names no feature, no registry and no law of a feature, so a feature edit never rebuilds it. Nothing
-executable imports this module.
+equations; it names no feature, no registry and no law of a feature, so a feature edit never rebuilds it. The bodies of
+`Kernel.Step.Jobs` and `Kernel.Step.Stale` are their own `Laws` modules' (`Kernel.Laws.Step.Jobs`,
+`Kernel.Laws.Step.Stale`), whose facts this module composes and re-exports. Nothing executable imports this module.
 
 What the registered hooks do is `Kernel.Laws.Registry`'s and each feature's `Laws` module's; an input body is restated
 whole here (`step_eq` and its siblings) and `Kernel.Laws.Step.Inputs` derives from it what a committed or rejected input
@@ -30,14 +31,6 @@ public section
 namespace Kernel.Laws.Step
 
 open Kernel Kernel.Step
-
-/-! ## Outcomes -/
-
-/-- A transaction boundary changes only a failure: a committed outcome passes through it. -/
-private theorem deferred_ok {program : Program} {state after : State} {outcome : Outcome}
-    (ran : deferred program state outcome = .ok after) : outcome = .ok after := by
-  unfold deferred at ran
-  split at ran <;> (try split at ran) <;> simp_all
 
 /-! ## Micro-steps -/
 
@@ -218,19 +211,6 @@ theorem endInstance_eq {status : InstanceStatus} {failure : Option InstanceFailu
     endInstance status failure state = { state.clearInside State.root with status, failure } := by
   simp only [endInstance]
 
-/-- A committed timer firing committed its closure's outcome: `Step.timerJob` changes only a failure. -/
-theorem timerJob_ok {failure : ContinuationFailure} {outcome : Outcome} {after : State}
-    (ran : timerJob failure outcome = .ok after) : outcome = .ok after := by
-  unfold timerJob at ran
-  split at ran <;> simp_all
-
-/-- A committed effect result committed the continuation of the result it reports, or of the technical failure
-`Step.effectContinuation` substitutes. -/
-theorem effectContinuation_ok {ctx : Ctx} {data : EffectInput} {run : EffectInput → Outcome} {after : State}
-    (ran : effectContinuation ctx data run = .ok after) : ∃ reported, run reported = .ok after := by
-  unfold effectContinuation at ran
-  split at ran <;> first | exact ⟨_, ran⟩ | exact ⟨data, ran⟩
-
 /-- The journal put in run order. -/
 theorem orderJournal_ok {outcome : Outcome} {after : State} (ran : orderJournal outcome = .ok after) :
     ∃ settled, outcome = .ok settled ∧ after = { settled with journal := settled.journal.reverse } := by
@@ -330,12 +310,7 @@ theorem microStep_rejected {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element 
     {owner : ScopeOccurrenceId} {body : State → Outcome} {state : State} {code : String}
     (rejected : body state = .error (.rejected code)) :
     microStep hooks ctx cause element owner body state = .error (.rejected code) := by
-  simp [microStep, bind, Except.bind, rejected, deferred]
-
-/-- An invariant failure passes a transaction boundary unchanged, crossed or not: never CIB-EXT-0027's limitation (#148). -/
-theorem deferred_invariant {program : Program} {state : State} {code : String} :
-    deferred program state (.error (.semanticFailure .invariant code)) = .error (.semanticFailure .invariant code) := by
-  simp [deferred]
+  simp [microStep, bind, Except.bind, rejected, deferred_rejected]
 
 /-- A micro-step whose body fails with an invariant failure fails with it, after a transaction boundary too (#148). -/
 theorem microStep_invariant {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Option ElementId}
@@ -356,15 +331,6 @@ theorem admitChoices_error {hooks : Hooks} {ctx : Ctx} {failure : Failure}
   unfold admitChoices at ran
   dsimp only at ran
   split at ran <;> (try split at ran) <;> first | simp at ran; done | exact ⟨_, (Except.error.inj ran).symm⟩
-
-private theorem perform_ok {work : SignalWork} {state after : State} (ran : work.perform state = .ok after) :
-    stale state work = false ∧ gone state work = none ∧ work.run state = .ok after := by
-  unfold SignalWork.perform at ran
-  split at ran
-  · simp at ran
-  · split at ran
-    · simp at ran
-    · exact ⟨by simpa using ‹¬stale state work = true›, ‹_›, ran⟩
 
 /-- A committed absorb left the micro-step's state as it was, or ran the micro-step's sole completion after taking it
 off the queue. -/
@@ -453,15 +419,8 @@ What `Kernel/Step/Stale.lean` lets the closure meet: queued work naming a target
 inert. A begin, an arming and an `occur` whose target is gone fail the input (`perform_stale`, CIB-LIM-0055); a write, a
 removal, a compensation or its failure whose scope occurrence is gone (#121), and a completion or a cancellation whose
 occurrence is gone (#151), fail it as invariant failures (`perform_gone`, `complete_occurrence_gone`,
-`cancel_occurrence_gone`, `complete_absent`); a firing of an item that is gone changes nothing (`fire_absent`). -/
-
-theorem perform_stale {work : SignalWork} {state : State} (refused : stale state work = true) :
-    work.perform state = .error (.unsupported "interrupted-before-wait") := by
-  simp [SignalWork.perform, refused]
-
-theorem perform_gone {work : SignalWork} {state : State} {code : String} (fresh : stale state work = false)
-    (absent : gone state work = some code) : work.perform state = .error (.semanticFailure .invariant code) := by
-  simp [SignalWork.perform, fresh, absent]
+`cancel_occurrence_gone`, `complete_absent`); a firing of an item that is gone changes nothing (`fire_absent`). The
+facts of `SignalWork.perform` itself are `Kernel.Laws.Step.Stale`'s. -/
 
 theorem complete_absent {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writes : List (String × Value)}
     {rule : WriteRule} {state : State} (absent : state.occurrence? id = none) :
@@ -471,11 +430,13 @@ theorem complete_absent {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {
 theorem complete_occurrence_gone {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writes : List (String × Value)}
     {rule : WriteRule} {state : State} (absent : state.occurrence? id = none) : dispatchSignal hooks ctx
       (.complete id leave writes rule) state = .error (.semanticFailure .invariant "queued-work-occurrence-gone") := by
-  simp [dispatchSignal, signalWork, SignalWork.perform, stale, gone, absent]
+  rw [dispatchSignal_eq]
+  exact perform_gone (by simp [stale_eq, signalWork]) (by simp [gone_eq, signalWork, absent])
 
 theorem cancel_occurrence_gone {hooks : Hooks} {ctx : Ctx} {id : Nat} {state : State} (absent : state.occurrence? id = none) :
     dispatchSignal hooks ctx (.cancel id) state = .error (.semanticFailure .invariant "queued-work-occurrence-gone") := by
-  simp [dispatchSignal, signalWork, SignalWork.perform, stale, gone, absent]
+  rw [dispatchSignal_eq]
+  exact perform_gone (by simp [stale_eq, signalWork]) (by simp [gone_eq, signalWork, absent])
 
 theorem fire_absent {hooks : Hooks} {ctx : Ctx} {item : Nat} {fired : Fired} {state : State}
     (absent : state.openItems.find? (·.id == item) = none) : (signalWork hooks ctx (.fire item fired)).run state = .ok state := by
@@ -490,34 +451,10 @@ theorem signalWork_targets (hooks hooks' : Hooks) (ctx ctx' : Ctx) (signal : Sig
       (signalWork hooks ctx signal).acts = (signalWork hooks' ctx' signal).acts := by
   cases signal <;> simp [signalWork]
 
-/-- Work that does something in, or acts from, a scope occurrence that was issued and is gone fails the input, as
-interrupted before its wait (`perform_stale`) or as an invariant failure (`perform_gone`), whatever its hooks would do
-there: no write reaches the instance root or leaves a variable set for a removed scope occurrence (#121). -/
-theorem perform_absent {work : SignalWork} {state : State} {scope : ScopeOccurrenceId}
-    (names : scope ∈ work.scopes ∨ scope ∈ work.requires) (issued : scope.value < state.nextIssue)
-    (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
-    work.perform state = .error (.unsupported "interrupted-before-wait") ∨
-      work.perform state = .error (.semanticFailure .invariant "queued-work-scope-gone") := by
-  have none : state.scopes.any (·.id == scope) = false :=
-    List.any_eq_false.mpr fun entry member same => absent entry member (by simpa using same)
-  cases fresh : stale state work with
-  | true => exact .inl (perform_stale fresh)
-  | false =>
-    refine .inr (perform_gone fresh ?_)
-    rcases names with named | named
-    · have refused : stale state work = true := by
-        unfold stale
-        simp only [Bool.or_eq_true, List.any_eq_true]
-        exact .inl ⟨scope, named, by simp [issued, none]⟩
-      simp [refused] at fresh
-    · have scopeGone : work.requires.any (fun scope => !state.scopes.any (·.id == scope)) = true :=
-        List.any_eq_true.mpr ⟨scope, named, by simp [none]⟩
-      simp [gone, scopeGone]
+/-! ### What an addressed input's lookups read
 
-/-! ### What an addressed input's lookups and jobs read
-
-The body facts behind `Kernel.Laws.Step.Inputs.step_unknown`: what an occurrence lookup finds, and that a timer firing
-and an effect result pass a rejection through. -/
+The body fact behind `Kernel.Laws.Step.Inputs.step_unknown`: what an occurrence lookup finds; that a timer firing and an
+effect result pass a rejection through is `Kernel.Laws.Step.Jobs`'. -/
 
 /-- What `Step.occurrenceOf?` finds is an occurrence of the state with the reference's element, activation and
 instance, numbered under its element's counter, and begun or waited for by an open item. -/
@@ -531,33 +468,10 @@ theorem occurrenceOf?_some {ctx : Ctx} {state : State} {ref : OccurrenceRef} {oc
   simp only [Bool.and_eq_true, Bool.or_eq_true, beq_iff_eq, List.any_eq_true] at holds
   exact ⟨List.mem_of_find?_eq_some found, ⟨holds.1.2, holds.1.1.2, holds.2⟩, holds.1.1.1.2, holds.1.1.1.1⟩
 
-theorem rejected_timerJob {failure : ContinuationFailure} {outcome : Outcome}
-    (rejected : ∃ code, outcome = .error (.rejected code)) : ∃ code, timerJob failure outcome = .error (.rejected code) := by
-  obtain ⟨code, same⟩ := rejected
-  exact ⟨code, by subst same; cases failure <;> rfl⟩
-
-theorem rejected_effectContinuation {ctx : Ctx} {data : EffectInput} {run : EffectInput → Outcome}
-    (rejected : ∀ reported : EffectInput, reported.occurrence = data.occurrence → ∃ code, run reported = .error (.rejected code)) :
-    ∃ code, effectContinuation ctx data run = .error (.rejected code) := by
-  obtain ⟨code, same⟩ := rejected data rfl
-  refine ⟨code, ?_⟩
-  unfold effectContinuation
-  split <;> simp_all
-
-
 /-! ### What each body ran
 
 Which hook or state operation each committed body of `Kernel.Step` ran, and what `Step` had established when it ran it:
 the facts `Kernel.Laws.Step.Keeps` composes into the preservation of an invariant without opening a body. -/
-
-private theorem requireScope_stands {state : State} {scope : ScopeOccurrenceId} {done : Unit}
-    (ran : requireScope state scope = .ok done) : ScopeStands state scope := by
-  unfold requireScope at ran
-  split at ran
-  · rename_i present
-    obtain ⟨entry, member, same⟩ := List.any_eq_true.mp present
-    exact ⟨entry, member, by simpa using same⟩
-  · simp at ran
 
 /-- A committed begin began in a scope occurrence that stands (`Step.requireScope`). -/
 theorem begin_scope {hooks : Hooks} {ctx : Ctx} {request : BeginRequest} {state next : State}
@@ -721,43 +635,6 @@ theorem reoffer_ok {hooks : Hooks} {ctx : Ctx} {state : State} {gateway : Elemen
       · rw [← Option.some.inj same]
         exact ⟨_, _, _, _, ⟨last, kept.1, rfl, element, sameTarget ▸ targeted, isGateway⟩, found, offering⟩
     · simp at stepped
-
-private theorem scope_of_fresh {state : State} {work : SignalWork} {scope : ScopeOccurrenceId}
-    (fresh : stale state work = false) (named : scope ∈ work.scopes) (issued : scope.value < state.nextIssue) :
-    ScopeStands state scope := by
-  cases present : state.scopes.any (·.id == scope) with
-  | true =>
-    obtain ⟨entry, member, same⟩ := List.any_eq_true.mp present
-    exact ⟨entry, member, by simpa using same⟩
-  | false =>
-    have refused : stale state work = true := by
-      unfold stale
-      simp only [Bool.or_eq_true, List.any_eq_true]
-      exact .inl ⟨scope, named, by simp [issued, present]⟩
-    simp [refused] at fresh
-
-private theorem occurrence_of_fresh {state : State} {work : SignalWork} {id : Nat}
-    (fresh : stale state work = false) (named : id ∈ work.occurrences) (issued : id < state.nextIssue) :
-    ∃ occurrence, state.occurrence? id = some occurrence := by
-  cases found : state.occurrence? id with
-  | none =>
-    have refused : stale state work = true := by
-      unfold stale
-      simp only [Bool.or_eq_true, List.any_eq_true]
-      exact .inr ⟨id, named, by simp [issued, found]⟩
-    simp [refused] at fresh
-  | some occurrence => exact ⟨occurrence, rfl⟩
-
-private theorem scope_of_present {state : State} {work : SignalWork} {scope : ScopeOccurrenceId}
-    (present : gone state work = none) (named : scope ∈ work.requires) : ScopeStands state scope := by
-  cases standing : state.scopes.any (·.id == scope) with
-  | true =>
-    obtain ⟨entry, member, same⟩ := List.any_eq_true.mp standing
-    exact ⟨entry, member, by simpa using same⟩
-  | false =>
-    have scopeGone : work.requires.any (fun scope => !state.scopes.any (·.id == scope)) = true :=
-      List.any_eq_true.mpr ⟨scope, named, by simp [standing]⟩
-    simp [gone, scopeGone] at present
 
 /-- A committed queued signal ran its work, once what it names stood (`Performed`). -/
 theorem dispatchSignal_ok {hooks : Hooks} {ctx : Ctx} {signal : Signal} {state after : State}

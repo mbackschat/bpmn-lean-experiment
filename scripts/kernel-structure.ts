@@ -168,16 +168,40 @@ export function featureFileFindings(modules: readonly Module[]): string[] {
     .map(([family, files]) => `feature ${family}: ${files.length} files, above three (${[...files].sort().join(", ")})`);
 }
 
-/** Guard 5's module-system clause: `import all` only in `Kernel/Laws/<X>.lean`, and only of the executable module whose
- * body it states laws for, `Kernel.Feature.<X>` or `Kernel.<X>`, or one of that module's submodules: an executable
- * module's body is seen only by its own `Laws` module. */
-function importAllFindings(relative: string, source: string): string[] {
-  const own = /^Kernel\/Laws\/([^/.]+)\.lean$/u.exec(relative.split(path.sep).join("/"))?.[1];
-  return [...source.matchAll(/^(?:public )?(?:meta )?import all ([\w.]+)/gmu)].flatMap((match) => {
-    const imported = match[1] ?? "";
-    const opens = (module: string): boolean => imported === module || imported.startsWith(`${module}.`);
-    if (own !== undefined && (opens(`Kernel.Feature.${own}`) || opens(`Kernel.${own}`))) return [];
-    return [own === undefined ? `${relative}: import all outside Laws` : `${relative}: import all ${imported} outside its own Laws module`];
+/** The modules a source opens with `import all`. */
+function importsAll(source: string): string[] {
+  return [...source.matchAll(/^(?:public )?(?:meta )?import all ([\w.]+)/gmu)].map((match) => match[1] ?? "");
+}
+
+/** `Kernel/Laws/Step/Stale.lean` to `Step.Stale`, the path of the executable module it states laws for; `undefined`
+ * outside `Kernel/Laws`. */
+function lawsPath(relative: string): string | undefined {
+  return /^Kernel\/Laws\/([^.]+)\.lean$/u.exec(relative.split(path.sep).join("/"))?.[1]?.split("/").join(".");
+}
+
+/** Whether module path `inner` is `outer` or one of its submodules. */
+function within(inner: string, outer: string): boolean {
+  return inner === outer || inner.startsWith(`${outer}.`);
+}
+
+/** Guard 5's module-system clause: `import all` only in `Kernel/Laws/<X>.lean` or its namesake submodule
+ * `Kernel/Laws/<X>/<Sub>.lean`, and only of the executable module whose body it states laws for, `Kernel.Feature.<X>`
+ * or `Kernel.<X>` (`…<X>.<Sub>` for a submodule), or one of that module's submodules; a body a deeper namesake `Laws`
+ * module opens is opened by no other. An executable module's body is seen only by its own `Laws` module, so a body
+ * edit is never an interface edit for anything else. Ownership follows the opener rather than the file's existence:
+ * `Laws.State.Removal` and `Laws.Population.Timers` share an executable submodule's name yet read no body, and leave
+ * it to `Laws.State` and `Laws.Population`. */
+function importAllFindings(relative: string, source: string, openers: ReadonlyMap<string, readonly string[]>): string[] {
+  const own = lawsPath(relative);
+  return importsAll(source).flatMap((imported) => {
+    if (own === undefined) return [`${relative}: import all outside Laws`];
+    const body = imported.replace(/^Kernel\.(?:Feature\.)?/u, "");
+    if (!imported.startsWith("Kernel.") || !within(body, own)) return [`${relative}: import all ${imported} outside its own Laws module`];
+    const deeper = (openers.get(imported) ?? []).filter((other) => {
+      const otherOwn = lawsPath(other);
+      return otherOwn !== undefined && otherOwn !== own && within(otherOwn, own) && within(body, otherOwn);
+    });
+    return deeper.map((other) => `${relative}: import all ${imported}, whose body ${other} opens`);
   });
 }
 
@@ -190,16 +214,19 @@ export function shapeFindings(root = projectRoot): string[] {
     ...files(path.join(root, "packages", "kernel", "src"), ".ts"),
     ...files(path.join(root, "packages", "bpmn-source", "src"), ".ts"),
   ];
-  return scanned.flatMap((file) => {
-    const relative = path.relative(root, file);
-    const source = readFileSync(file, "utf8");
+  const sources = new Map(scanned.map((file) => [path.relative(root, file), readFileSync(file, "utf8")] as const));
+  const openers = new Map<string, string[]>();
+  for (const [relative, source] of sources) {
+    for (const imported of importsAll(source)) openers.set(imported, [...(openers.get(imported) ?? []), relative.split(path.sep).join("/")]);
+  }
+  return [...sources].flatMap(([relative, source]) => {
     const nonblank = source.split("\n").filter((line) => line.trim() !== "").length;
     const findings: string[] = [];
     if (nonblank > 1200) findings.push(`${relative}: ${nonblank} nonblank lines, above 1,200`);
     if ((relative === path.join("Kernel", "Step.lean") || relative.endsWith(path.join("kernel", "src", "step.ts"))) && nonblank > 600) {
       findings.push(`${relative}: ${nonblank} nonblank lines, above Step's 600`);
     }
-    findings.push(...importAllFindings(relative, source));
+    findings.push(...importAllFindings(relative, source, openers));
     if (/^export \* from/mu.test(source) && relative.startsWith(path.join("packages", "kernel"))) {
       findings.push(`${relative}: export *`);
     }

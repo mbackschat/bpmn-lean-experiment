@@ -150,31 +150,61 @@ test("a Proofs module is classified apart, imports Laws, Proofs and Step but no 
   ]);
 });
 
-test("import all opens only the body of a Laws module's own executable module or its submodules", () => {
+/** Writes `sources` into a fresh kernel tree, returns its shape findings and removes it. */
+function shapeFindingsOf(sources: Readonly<Record<string, string>>): string[] {
   const root = mkdtempSync(path.join(tmpdir(), "kernel-import-all-"));
   try {
-    const sources: Readonly<Record<string, string>> = {
+    const tree: Readonly<Record<string, string>> = {
       "Kernel.lean": "module\n",
       "packages/kernel/src/index.ts": "export const x = 1;\n",
       "packages/bpmn-source/src/a.ts": "export const y = 1;\n",
-      "Kernel/Laws/Step.lean": "module\npublic import Kernel.Step\nimport all Kernel.Step\nimport all Kernel.Step.Jobs\n",
-      "Kernel/Laws/Registry.lean": "module\nimport all Kernel.Registry\n",
-      "Kernel/Laws/Flow.lean": "module\nimport all Kernel.Feature.Flow\nimport all Kernel.Feature.Data\n",
-      "Kernel/Laws/State.lean": "module\nimport all Kernel.State\nimport all Kernel.Step\n",
-      "Kernel/Proofs/Step.lean": "module\nimport all Kernel.Step\n",
+      ...sources,
     };
-    for (const [file, text] of Object.entries(sources)) {
+    for (const [file, text] of Object.entries(tree)) {
       mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
       writeFileSync(path.join(root, file), text);
     }
-    assert.deepEqual(shapeFindings(root).sort(), [
-      "Kernel/Laws/Flow.lean: import all Kernel.Feature.Data outside its own Laws module",
-      "Kernel/Laws/State.lean: import all Kernel.Step outside its own Laws module",
-      "Kernel/Proofs/Step.lean: import all outside Laws",
-    ]);
+    return shapeFindings(root).sort();
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+}
+
+test("import all opens only the body of a Laws module's own executable module or its submodules", () => {
+  assert.deepEqual(shapeFindingsOf({
+    "Kernel/Laws/Step.lean": "module\npublic import Kernel.Step\nimport all Kernel.Step\nimport all Kernel.Step.Jobs\n",
+    "Kernel/Laws/Registry.lean": "module\nimport all Kernel.Registry\n",
+    "Kernel/Laws/Flow.lean": "module\nimport all Kernel.Feature.Flow\nimport all Kernel.Feature.Data\n",
+    "Kernel/Laws/State.lean": "module\nimport all Kernel.State\nimport all Kernel.Step\n",
+    "Kernel/Proofs/Step.lean": "module\nimport all Kernel.Step\n",
+  }), [
+    "Kernel/Laws/Flow.lean: import all Kernel.Feature.Data outside its own Laws module",
+    "Kernel/Laws/State.lean: import all Kernel.Step outside its own Laws module",
+    "Kernel/Proofs/Step.lean: import all outside Laws",
+  ]);
+});
+
+test("a Laws submodule opens the body of its namesake executable submodule and nothing else", () => {
+  assert.deepEqual(shapeFindingsOf({
+    "Kernel/Laws/Step/Stale.lean": "module\nimport all Kernel.Step.Stale\n",
+    "Kernel/Laws/Subscriptions/Delivery.lean": "module\nimport all Kernel.Feature.Subscriptions.Delivery\n",
+    "Kernel/Laws/Step/Ran.lean": "module\nimport all Kernel.Step\n",
+    "Kernel/Laws/Step/Jobs.lean": "module\nimport all Kernel.Step.Stale\n",
+  }), [
+    "Kernel/Laws/Step/Jobs.lean: import all Kernel.Step.Stale outside its own Laws module",
+    "Kernel/Laws/Step/Ran.lean: import all Kernel.Step outside its own Laws module",
+  ]);
+});
+
+test("a body its namesake Laws submodule opens is opened by no other Laws module", () => {
+  assert.deepEqual(shapeFindingsOf({
+    "Kernel/Laws/Step.lean": "module\nimport all Kernel.Step\nimport all Kernel.Step.Jobs\nimport all Kernel.Step.Stale\n",
+    "Kernel/Laws/Step/Stale.lean": "module\nimport all Kernel.Step.Stale\n",
+    "Kernel/Laws/State.lean": "module\nimport all Kernel.State\nimport all Kernel.State.Removal\n",
+    "Kernel/Laws/State/Removal.lean": "module\npublic import Kernel.Laws.State\n",
+  }), [
+    "Kernel/Laws/Step.lean: import all Kernel.Step.Stale, whose body Kernel/Laws/Step/Stale.lean opens",
+  ]);
 });
 
 test("the name clause rejects a helper defined twice and exempts only the two halves of one family", () => {
