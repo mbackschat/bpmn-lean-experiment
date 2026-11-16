@@ -2,6 +2,7 @@ module
 
 public import Kernel.Laws.Step
 public import Kernel.Laws.State.Fire
+public import Kernel.Laws.Compensation.Runs
 
 /-! # Proofs: the frame a property carried beside `WellFormed` passes through
 
@@ -250,13 +251,15 @@ structure FrameAlongside (rel : State → Prop) (srel : State → Prop := rel) :
   removeVariable : ∀ program s target name, WellFormed program s → rel s → rel (s.removeVariable target name)
 
 /-- `FrameAlongside` with storing compensation runs whose running contexts were held or are no active Multi-Instance
-instance (`StoresHeldOrFresh`) and that resume only by reservations pending (`ResumesPending`): what the records of
+instance (`StoresHeldOrFresh`), that resume only by reservations pending (`ResumesPending`) and whose records come
+from the state they replace (`Laws.Compensation.StoredFrom`): what the records of
 `Laws.Compensation.CompensationOps` and `Laws.Compensation.RunsOps` beside `WellFormed` follow from. A property that
 reads the runs themselves proves what the compensation hooks keep of it directly (`Proofs.Step.CompensationKeeps`). -/
 structure StoresAlongside (rel : State → Prop) : Prop extends FrameAlongside rel where
   storeRuns : ∀ program s (compensation : Compensations), WellFormed program s →
-    StoresHeldOrFresh s compensation → ResumesPending rel s compensation → rel s →
-    rel { s with slots := { s.slots with compensation } }
+    StoresHeldOrFresh s compensation → ResumesPending rel s compensation →
+    Laws.Compensation.StoredFrom program s (Laws.Compensation.ResumeQueued (fun t => WellFormed program t ∧ rel t) s)
+      compensation → rel s → rel { s with slots := { s.slots with compensation } }
 
 /-- `FrameAlongside` with the operations of the record that carries none of its premises,
 `Laws.MultiInstance.MultiInstanceOps`: queuing and deferring the begins of instances, leaving an active Multi-Instance

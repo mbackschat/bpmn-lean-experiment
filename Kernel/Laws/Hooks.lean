@@ -509,4 +509,15 @@ theorem evaluateMappings_some {ctx : Ctx} {context : EvalContext} {mappings : Li
     · exact ⟨result.1, (Option.some.inj evaluated).symm⟩
     · cases evaluated
 
+/-- An element runs as an instance only in a scope occurrence of its own: the first one of its identifier. -/
+theorem runsAsInstance_entry {ctx : Ctx} {state : State} {element : ElementId} {scope : ScopeOccurrenceId}
+    (runs : ctx.runsAsInstance state element scope = true) :
+    ∃ entry, state.scopes.find? (·.id == scope) = some entry ∧ entry.element = some element := by
+  unfold Ctx.runsAsInstance at runs
+  have found := beq_iff_eq.mp ((Bool.and_eq_true _ _).mp runs).2
+  cases entry : state.scopes.find? (·.id == scope) with
+  | none => simp [entry] at found
+  | some entry' =>
+    exact ⟨entry', rfl, by simpa [entry] using found⟩
+
 end Kernel.Laws.Hooks

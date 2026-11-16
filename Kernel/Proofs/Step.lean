@@ -449,19 +449,19 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
   bareBegin _ item _ _ formed member _ := bareBegin_wellFormed formed rfl (formed.owned.itemScopes item member)
 
 /-- The compensation hooks' operations record (`Laws.Compensation.CompensationOps`) of `WellFormed`. -/
-theorem compensationOps : Laws.Compensation.CompensationOps (Laws.State.WellFormed program) where
-  store _ _ formed runs := Laws.State.compensation_wellFormed formed runs
+theorem compensationOps : Laws.Compensation.CompensationOps program (Laws.State.WellFormed program) where
+  store _ _ formed runs _ := Laws.State.compensation_wellFormed formed runs
   issue _ formed := Laws.State.issue_wellFormed formed
   issued state := by rw [Laws.State.issue_eq]; exact ⟨rfl, rfl, rfl, rfl⟩
   fail _ _ formed := queue_wellFormed formed (by simp [Queueable])
 
 /-- The compensation runs' operations record (`Laws.Compensation.RunsOps`) of `WellFormed`. -/
-theorem runsOps : Laws.Compensation.RunsOps (Laws.State.WellFormed program) Laws.State.Settled where
+theorem runsOps : Laws.Compensation.RunsOps program (Laws.State.WellFormed program) Laws.State.Settled where
   fits _ run formed member :=
     ⟨formed.settled.resumed run member, (formed.settled.runsPlaced run member).1, (formed.settled.runsPlaced run member).2⟩
   issued _ formed := formed.issued.scopes
   slotsIssued _ formed body member scope active := (formed.settled.placed body member scope active).1
-  store _ _ formed kept _ _ := ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked, formed.settled.bodies,
+  store _ _ formed kept _ _ _ := ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked, formed.settled.bodies,
     fun run member => (kept run member).elim (formed.settled.resumed run) (·.1), formed.settled.queued,
     formed.settled.placed, fun run member => (kept run member).elim (formed.settled.runsPlaced run) (·.2),
     formed.settled.grouped, formed.settled.raised⟩, fun _ settled => settled⟩

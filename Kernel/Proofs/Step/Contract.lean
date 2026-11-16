@@ -127,8 +127,8 @@ structure FeatureOps (inv : Program → State → Prop) : Prop where
 /-- The operations records of every feature the registered hooks run, of one invariant. -/
 structure RegisteredOps (inv : Program → State → Prop) : Prop extends FeatureOps inv where
   multiInstance : ∀ program, Laws.MultiInstance.MultiInstanceOps program (inv program) Laws.State.Settled
-  compensation : ∀ program, Laws.Compensation.CompensationOps (inv program)
-  runs : ∀ program, Laws.Compensation.RunsOps (inv program) Laws.State.Settled
+  compensation : ∀ program, Laws.Compensation.CompensationOps program (inv program)
+  runs : ∀ program, Laws.Compensation.RunsOps program (inv program) Laws.State.Settled
 
 /-- What the registered Multi-Instance hooks keep of `inv`, under what `Laws.Step.HookContract` gives each: an invariant
 whose feature record is not filled, since it reads what a body's slot record is set to, proves them of the hooks
@@ -179,33 +179,74 @@ structure CompensationKeeps (inv : Program → State → Prop) : Prop where
   handlerEnded : ∀ ctx run occurrence state after, inv ctx.program state → ScopeStands state occurrence.scope →
     Feature.Compensation.handlerEnded ctx run occurrence state = .ok after → inv ctx.program after
 
-/-- `Hooks.completed` keeps `inv`, the scope occurrences, the occurrences and the open items. -/
-theorem completed_keeps {inv : State → Prop} (ops : Laws.Compensation.CompensationOps inv) {ctx : Ctx} {occurrence : Occurrence}
-    {state after : State} (holds : inv state) (ran : Feature.Compensation.completed ctx occurrence state = .ok after) :
+/-- `Hooks.completed` keeps `inv`, the scope occurrences, the occurrences and the open items: what it retains comes
+from the occurrence's owned scope occurrence and from its own record, linked to the target `placement` gives. -/
+theorem completed_keeps {inv : State → Prop} {ctx : Ctx} (ops : Laws.Compensation.CompensationOps ctx.program inv)
+    {occurrence : Occurrence} {state after : State} (holds : inv state) (member : occurrence ∈ state.occurrences)
+    (ran : Feature.Compensation.completed ctx occurrence state = .ok after) :
     inv after ∧ after.scopes = state.scopes ∧ after.occurrences = state.occurrences ∧ after.openItems = state.openItems ∧
       after.slots.instances = state.slots.instances := by
-  rcases Laws.Compensation.completed_spec ran with ⟨-, rfl⟩ | ⟨_, _, _, retained⟩
+  rcases Laws.Compensation.completed_spec ran with ⟨-, rfl⟩ | ⟨handler, target, inner, retained⟩
   · exact ⟨holds, rfl, rfl, rfl, rfl⟩
-  obtain ⟨_, -, -, retained⟩ := retained
-  rcases retained.2.2 with ⟨-, rfl⟩ | ⟨_, -, -, numbered⟩
+  obtain ⟨outer, placed, perm, retained⟩ := retained
+  obtain ⟨inside, -, retained⟩ := retained
+  have linked : Laws.Compensation.InstanceLinked ctx.program state occurrence.scope target := by
+    rcases (Laws.Compensation.placement_from placed).1 with same | ⟨entry, found, link, rest⟩
+    · exact same ▸ .refl _
+    have named : entry.id = occurrence.scope := by simpa using List.find?_some found
+    exact named ▸ .parent entry target (List.mem_of_find?_eq_some found) link (.inr (.inl ⟨_, rest.1, rest.2⟩))
+  have moved : ∀ record ∈ inner, Laws.Compensation.RecordHeld ctx.program state record target := fun record held => by
+    obtain ⟨owned, found, named⟩ := inside record held
+    obtain ⟨present, owns, scope⟩ := Laws.Compensation.ownedScope_spec owned found
+    exact ⟨record, record.scope, .inl ⟨perm.subset (List.mem_append_left _ held), rfl⟩, named ▸
+      (Laws.Compensation.InstanceLinked.owner owned occurrence present member owns (.inr (.inr ⟨occurrence, member, owns,
+        scope⟩))).trans linked, fun _ => id⟩
+  have kept : ∀ record ∈ outer, Laws.Compensation.RecordFrom ctx.program state record record.scope := fun _ held =>
+    .inl (.retained (perm.subset (List.mem_append_right _ held)))
+  have runs : ∀ run ∈ state.slots.compensation.runs, (∀ record ∈ run.pending,
+      Laws.Compensation.RecordFrom ctx.program state record run.scope) ∧ ∀ resume, run.resume = some resume →
+        (∃ held ∈ state.slots.compensation.runs, held.resume = some resume) ∨
+          (∃ outer context, resume = .group outer context) ∨ False := fun run held =>
+    ⟨fun _ pending => .inl (.pending held pending), fun _ same => .inl ⟨run, held, same⟩⟩
+  rcases retained with ⟨-, rfl⟩ | ⟨record, kept', rest⟩
   · rw [Laws.Compensation.store_eq]
-    exact ⟨ops.store _ _ holds fun _ member => member, rfl, rfl, rfl, rfl⟩
-  obtain ⟨-, -, -, rfl⟩ := numbered
+    refine ⟨ops.store _ _ holds (fun _ member => member) ⟨fun record held => ?_, runs⟩, rfl, rfl, rfl, rfl⟩
+    rcases List.mem_append.mp held with old | new
+    · exact kept record old
+    obtain ⟨original, inner', rfl⟩ := List.mem_map.mp new
+    exact .inl (.narrow (moved original inner') (fun _ listed => by
+      rw [Laws.Compensation.recordElements_scope] at listed; exact listed) (.refl _))
+  obtain ⟨subject, placedAt, -, rest⟩ := rest
+  obtain ⟨children, rfl⟩ := rest
   obtain ⟨scopes, occurrences, items, slots⟩ := ops.issued state
+  have stored : Laws.Compensation.StoredFrom ctx.program state (fun _ => False)
+      { state.slots.compensation with retained := outer ++ [record] } := by
+    refine ⟨fun other held => ?_, runs⟩
+    rcases List.mem_append.mp held with old | new
+    · exact kept other old
+    rw [List.mem_singleton.mp new, placedAt]
+    refine .inr ⟨occurrence, member, subject, linked, fun chosen named => ?_, fun child inside => moved child
+      (children ▸ inside)⟩
+    obtain ⟨element, envelope, found, rest⟩ := (Laws.Compensation.placement_from placed).2 chosen (kept'.2.2 ▸ named)
+    exact ⟨element, Laws.IL.element?_mem found, subject ▸ Laws.IL.element?_header found, envelope, rest⟩
   rw [Laws.Compensation.store_eq]
-  exact ⟨ops.store _ _ (ops.issue state holds) fun _ member => slots ▸ member, scopes, occurrences, items,
+  exact ⟨ops.store _ _ (ops.issue state holds) (fun _ member => slots ▸ member)
+      (stored.congr scopes occurrences (congrArg (·.compensation) slots)), scopes, occurrences, items,
     show state.issue.1.slots.instances = _ by rw [slots]⟩
 
 /-- Dropping the runs inside a scope occurrence an interrupting catcher decided on (`Feature.Compensation.dropWithin`)
 keeps `inv` and changes only the compensation slot. -/
-theorem dropWithin_keeps {inv : State → Prop} (ops : Laws.Compensation.CompensationOps inv) (ctx : Ctx) (scope : ScopeOccurrenceId)
+theorem dropWithin_keeps {inv : State → Prop} {program : Program} (ops : Laws.Compensation.CompensationOps program inv)
+    (ctx : Ctx) (scope : ScopeOccurrenceId)
     {state : State} (holds : inv state) : inv (Feature.Compensation.dropWithin ctx scope state) ∧
       ∃ compensation, Feature.Compensation.dropWithin ctx scope state = { state with slots := { state.slots with compensation } } :=
   by rw [Laws.Compensation.dropWithin_spec, Laws.Compensation.store_eq]
-     exact ⟨ops.store _ _ holds fun _ member => (List.mem_filter.mp member).1, _, rfl⟩
+     exact ⟨ops.store _ _ holds (fun _ member => (List.mem_filter.mp member).1) (.held (fun _ member => member)
+       fun run member => ⟨run, (List.mem_filter.mp member).1, rfl, rfl, fun _ => id⟩), _, rfl⟩
 
 /-- `Hooks.handlerCompleted` keeps `inv` for a handler whose context stands. -/
-theorem handlerCompleted_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : Laws.Compensation.RunsOps inv settled)
+theorem handlerCompleted_keeps {inv : State → Prop} {settled : State → Nat → Prop} {program : Program}
+    (ops : Laws.Compensation.RunsOps program inv settled)
     {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Occurrence} {state after : State} (holds : inv state)
     (stands : occurrence.scope ∈ state.scopes.map (·.id))
     (ran : Feature.Compensation.handlerCompleted ctx run occurrence state = .ok after) : inv after :=
@@ -214,12 +255,13 @@ theorem handlerCompleted_keeps {inv : State → Prop} {settled : State → Nat �
 
 /-- Dropping the runs inside a scope occurrence changes only the compensation slot, keeping only runs it had: the
 membership `Laws.Compensation.CompensationOps.store` is handed, read as an invariant of its own. -/
-theorem dropWithin_steady {inv : State → Prop} (ops : Laws.Compensation.CompensationOps inv) (ctx : Ctx)
+theorem dropWithin_steady {inv : State → Prop} {program : Program} (ops : Laws.Compensation.CompensationOps program inv)
+    (ctx : Ctx)
     (scope : ScopeOccurrenceId) (state : State) :
     Laws.State.Steady state (Feature.Compensation.dropWithin ctx scope state) := by
   obtain ⟨kept, _, same⟩ := dropWithin_keeps
-    (inv := fun t => ∀ run ∈ t.slots.compensation.runs, run ∈ state.slots.compensation.runs)
-    { store := fun _ _ kept within run inside => kept run (within run inside)
+    (inv := fun t => ∀ run ∈ t.slots.compensation.runs, run ∈ state.slots.compensation.runs) (program := program)
+    { store := fun _ _ kept within _ run inside => kept run (within run inside)
       issue := fun t kept => by rw [(ops.issued t).2.2.2]; exact kept
       issued := ops.issued
       fail := fun t _ kept => by rw [Laws.State.signal_eq]; exact kept } ctx scope (state := state) (fun _ => id)
@@ -228,7 +270,8 @@ theorem dropWithin_steady {inv : State → Prop} (ops : Laws.Compensation.Compen
     by simp⟩
 
 /-- `Hooks.failCompensation` keeps `inv`. -/
-theorem failCompensation_keeps {inv : State → Prop} (ops : Laws.Compensation.CompensationOps inv) {ctx : Ctx} {handler : ScopeOccurrenceId}
+theorem failCompensation_keeps {inv : State → Prop} {program : Program} (ops : Laws.Compensation.CompensationOps program inv)
+    {ctx : Ctx} {handler : ScopeOccurrenceId}
     {code : String} {message : Option String} {origin : Origin} {state after : State} (holds : inv state)
     (ran : Feature.Compensation.failCompensation ctx handler code message origin state = .ok after) : inv after := by
   obtain ⟨_, _, _, failed⟩ := Laws.Compensation.failCompensation_spec ran
@@ -237,7 +280,8 @@ theorem failCompensation_keeps {inv : State → Prop} (ops : Laws.Compensation.C
   exact ops.fail _ _ holds
 
 /-- `Hooks.handlerEnded` keeps `inv` for a handler whose context stands. -/
-theorem handlerEnded_keeps {inv : State → Prop} {settled : State → Nat → Prop} (ops : Laws.Compensation.RunsOps inv settled)
+theorem handlerEnded_keeps {inv : State → Prop} {settled : State → Nat → Prop} {program : Program}
+    (ops : Laws.Compensation.RunsOps program inv settled)
     {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Occurrence} {state after : State} (holds : inv state)
     (stands : occurrence.scope ∈ state.scopes.map (·.id))
     (ran : Feature.Compensation.handlerEnded ctx run occurrence state = .ok after) : inv after := by
@@ -246,20 +290,58 @@ theorem handlerEnded_keeps {inv : State → Prop} {settled : State → Nat → P
       ((Laws.Compensation.handlerCompleted_spec ctx run occurrence state).trans released)
   · exact holds
 
+/-- `Hooks.compensate` keeps `inv` in a scope occurrence that stands, for a run that may end as it asks: the records it
+takes lie in scope occurrences the throw sees, all of its process instance (`Laws.Compensation.visibleScopes_linked`). -/
+theorem compensate_keeps {inv : State → Prop} {settled : State → Nat → Prop} {ctx : Ctx}
+    (ops : Laws.Compensation.RunsOps ctx.program inv settled) {scope : ScopeOccurrenceId} {activity : Option ElementId}
+    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {state after : State} (holds : inv state)
+    (stands : scope ∈ state.scopes.map (·.id))
+    (resumable : ∀ next, resume = some next → (∀ occurrence leave, next = .complete occurrence leave →
+      settled state occurrence) ∧ ∀ outer context, next = .group outer context → context = scope)
+    (pending : ∀ element at_ resumed, resume = some (.occur element at_ resumed) → Laws.Step.PendingIn inv element)
+    (queued : ∀ next, resume = some next → Laws.Compensation.ResumeQueued inv state next)
+    (ran : Feature.Compensation.compensate ctx scope activity trigger leave resume state = .ok after) : inv after := by
+  obtain ⟨taken, others, takes, rest⟩ := Laws.Compensation.compensate_spec ran
+  refine ((Laws.Compensation.runs_keep ops ctx _).1 _ _ _ _ ?_ ?_ rest.2).1 <;> rw [Laws.Compensation.store_eq]
+  rotate_left
+  · exact stands
+  apply And.left
+  refine ops.store state _ holds (fun run member => ?_) (fun run member context running => ?_)
+    (Laws.Compensation.appended_resumes holds (fun _ old => old) pending) (.append (.held
+      (fun record kept => ((takes.2 record).mp kept).1) fun run member => ⟨run, member, rfl, rfl, fun _ => id⟩)
+      (fun record selected => ?_) fun next same => .inr (queued next same))
+  · rcases List.mem_append.mp member with old | new
+    · exact .inl old
+    · rw [List.mem_singleton.mp new]
+      refine .inr ⟨fun occurrence leave same => (resumable _ same).1 occurrence leave rfl,
+        fun outer context same => (resumable _ same).2 outer context rfl, fun _ running => ?_⟩
+      simp at running
+  · rcases List.mem_append.mp member with old | new
+    · exact .inl ⟨run, old, running⟩
+    · rw [List.mem_singleton.mp new] at running
+      simp at running
+  · obtain ⟨retained, covered, -⟩ := (takes.1 record).mp selected
+    exact .inl ⟨record, record.scope, .inl ⟨retained, rfl⟩, Laws.Compensation.visibleScopes_linked covered,
+      fun _ => id⟩
+
 /-- The registered compensation hooks keep an invariant their feature records are filled for. -/
-theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.CompensationOps (inv program))
-    (runs : ∀ program, Laws.Compensation.RunsOps (inv program) Laws.State.Settled) : CompensationKeeps inv where
-  completed _ _ _ _ holds _ ran := by
-    obtain ⟨kept, scopes, occurrences, rest⟩ := completed_keeps (compensation _) holds ran
+theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.CompensationOps program (inv program))
+    (runs : ∀ program, Laws.Compensation.RunsOps program (inv program) Laws.State.Settled) : CompensationKeeps inv where
+  completed _ _ _ _ holds member ran := by
+    obtain ⟨kept, scopes, occurrences, rest⟩ := completed_keeps (compensation _) holds member ran
     obtain ⟨items, instances⟩ := rest
     exact ⟨kept, retained_frame scopes occurrences items instances⟩
   dropWithin ctx scope _ holds :=
     ⟨(dropWithin_keeps (compensation _) ctx scope holds).1, dropWithin_steady (compensation ctx.program) ctx scope _⟩
   failCompensation _ _ _ _ _ _ _ holds _ ran := failCompensation_keeps (compensation _) holds ran
-  compensate _ _ _ _ _ _ _ _ holds stands resumable pending _ ran := by
+  compensate _ _ _ _ _ _ _ _ holds stands resumable pending popped ran := by
     obtain ⟨entry, inside, named⟩ := stands
-    exact Laws.Compensation.compensate_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) resumable pending
-      ran
+    refine compensate_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) resumable pending
+      (fun next same => ?_) ran
+    obtain ⟨queue, kept, signals, same'⟩ := popped
+    refine ⟨queue, kept, ?_, by rw [same'], by rw [same']⟩
+    rw [signals, same]
+    simp [Laws.Step.resumesOf]
   handlerCompleted _ _ _ _ _ holds stands ran := by
     obtain ⟨entry, inside, named⟩ := stands
     exact handlerCompleted_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran

@@ -375,8 +375,8 @@ theorem raiseRegistered_of {hooks : Hooks} {propagation : Feature.Propagation.Pr
       (fun _ host _ held => held.signal raiseFacts ⟨host, .raised, [], .outward, rfl⟩) (.refl _) ran
   dropRuns ctx scope state := by
     rw [drop]
-    obtain ⟨_, made⟩ := (Proofs.Step.dropWithin_keeps (inv := fun _ => True) (state := state)
-      ⟨fun _ _ _ _ => trivial, fun _ _ => trivial,
+    obtain ⟨_, made⟩ := (Proofs.Step.dropWithin_keeps (inv := fun _ => True) (program := ctx.program) (state := state)
+      ⟨fun _ _ _ _ _ => trivial, fun _ _ => trivial,
         (Proofs.Step.registeredOps_wellFormed.compensation ctx.program).issued, fun _ _ _ => trivial⟩
       ctx scope trivial).2
     rw [made]

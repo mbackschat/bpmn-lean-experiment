@@ -714,7 +714,7 @@ theorem callsFormed_alongside (program : Program) : Alongside (CallsFormed progr
 /-- Storing compensation runs keeps the lane invariant. -/
 theorem callsFormed_stores (program : Program) : StoresAlongside (CallsFormed program) :=
   { (callsFormed_alongside program).toFrameAlongside with
-    storeRuns := fun _ _ _ _ _ _ held => held.same rfl (fun _ member => member) rfl }
+    storeRuns := fun _ _ _ _ _ _ _ held => held.same rfl (fun _ member => member) rfl }
 
 /-- The features' reservations, queued triggers and a Call's entry of its called root keep the lane invariant. -/
 theorem callsFormed_occursAlongside (program : Program) : OccursAlongside program (CallsFormed program) where

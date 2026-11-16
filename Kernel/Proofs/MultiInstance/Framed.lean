@@ -335,7 +335,7 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside (RunsFra
     have same := Laws.State.removeVariable_same s target name
     kept.carry (.equal same.scopes same.occurrences (congrArg (·.multiInstances) same.slots)
       (congrArg (·.compensation.runs) same.slots))
-  storeRuns _ s compensation _ fresh _ kept :=
+  storeRuns _ s compensation _ fresh _ _ kept :=
     kept.carry ⟨.refl _, fun _ _ o present _ => ⟨o, present, rfl, rfl, rfl⟩, fun _ inside => .inl inside,
       fun _ _ _ inside _ => inside, fresh⟩
 
@@ -668,7 +668,7 @@ theorem unstarted_alongside (b : State) : Alongside (Unstarted b) where
 /-- Storing compensation runs keeps `Unstarted`: it moves no occurrence and no start. -/
 theorem unstarted_stores (b : State) : StoresAlongside (Unstarted b) :=
   { (unstarted_alongside b).toFrameAlongside with
-    storeRuns := fun _ _ _ _ _ _ kept => kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl) }
+    storeRuns := fun _ _ _ _ _ _ _ kept => kept.move (.same rfl rfl rfl (Nat.le_refl _) rfl) }
 
 /-- The state operations the hooks apply keep `Snapshots`: none sets a body's record, and each keeps or removes
 some. -/
@@ -707,7 +707,7 @@ theorem snapshots_frameAlongside (b : State) : StoresAlongside (Snapshots b) whe
     kept.shrink fun _ inside => (Laws.State.setVariable_same s target name value).slots ▸ inside
   removeVariable _ s target name _ kept :=
     kept.shrink fun _ inside => (Laws.State.removeVariable_same s target name).slots ▸ inside
-  storeRuns _ _ _ _ _ _ kept := kept.same rfl
+  storeRuns _ _ _ _ _ _ _ kept := kept.same rfl
 
 /-- The state operations keep `Unstarted` and `Snapshots` together. -/
 theorem since_frameAlongside (b : State) : StoresAlongside fun s => Unstarted b s ∧ Snapshots b s :=
@@ -745,11 +745,13 @@ theorem since_frameAlongside (b : State) : StoresAlongside fun s => Unstarted b 
       ⟨one.setVariable program s target name value formed kept.1, two.setVariable program s target name value formed kept.2⟩
     removeVariable := fun program s target name formed kept =>
       ⟨one.removeVariable program s target name formed kept.1, two.removeVariable program s target name formed kept.2⟩
-    storeRuns := fun program s compensation formed fresh resumes kept =>
+    storeRuns := fun program s compensation formed fresh resumes provenance kept =>
       ⟨one.storeRuns program s compensation formed fresh (fun run member element at_ leave resumed =>
-          (resumes run member element at_ leave resumed).imp_right (·.imp fun _ => And.imp_left And.left)) kept.1,
+          (resumes run member element at_ leave resumed).imp_right (·.imp fun _ => And.imp_left And.left))
+          (provenance.weaken fun _ held => ⟨held.1, held.2.1⟩) kept.1,
         two.storeRuns program s compensation formed fresh (fun run member element at_ leave resumed =>
-          (resumes run member element at_ leave resumed).imp_right (·.imp fun _ => And.imp_left And.right)) kept.2⟩ }
+          (resumes run member element at_ leave resumed).imp_right (·.imp fun _ => And.imp_left And.right))
+          (provenance.weaken fun _ held => ⟨held.1, held.2.2⟩) kept.2⟩ }
 
 /-- Subscriptions' reservations and queued occurrences keep `Unstarted` and `Snapshots`: they move the occurrences as
 `Laws.Step.EndsStep` says, keep the draft's starts and keep every body's record. -/

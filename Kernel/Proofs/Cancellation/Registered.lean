@@ -278,18 +278,19 @@ theorem propagationOps_alongside (side : FrameAlongside rel) {program : Program}
 reservations (`ResumesPending`), and an ended run's resume is pending. -/
 theorem runsOps_alongside (side : StoresAlongside rel) {program : Program}
     (occurs : OccursAlongside program rel)
-    (ops : Laws.Compensation.RunsOps (WellFormed program) Laws.State.Settled) :
-    Laws.Compensation.RunsOps (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
+    (ops : Laws.Compensation.RunsOps program (WellFormed program) Laws.State.Settled) :
+    Laws.Compensation.RunsOps program (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
   fits s run holds member := ops.fits s run holds.1 member
   issued s holds := ops.issued s holds.1
   slotsIssued s holds := ops.slotsIssued s holds.1
-  store s compensation holds kept contexts resumes :=
+  store s compensation holds kept contexts resumes provenance :=
     have stored := ops.store s compensation holds.1 kept contexts (fun run member element at_ leave resumed =>
       (resumes run member element at_ leave resumed).imp fun _ => And.imp_left And.left)
+      (provenance.weaken fun _ => And.left)
     ⟨⟨stored.1, side.storeRuns program s compensation holds.1 (fun run member context running =>
       (contexts run member context running).imp_right fun none ⟨body, inside, active⟩ => none body inside active)
       (fun run member element at_ leave resumed => .inr ((resumes run member element at_ leave resumed).imp
-        fun _ => And.imp_left And.right)) holds.2⟩, stored.2⟩
+        fun _ => And.imp_left And.right)) provenance holds.2⟩, stored.2⟩
   enter s element parent locals holds stands anchor :=
     have entered := ops.enter s element parent locals holds.1 stands anchor
     ⟨⟨entered.1, side.enterScope program s element parent locals none holds.1
@@ -460,12 +461,13 @@ theorem subscriptionsOps_alongside (side : FrameAlongside rel) {program : Progra
       side.signalBegin program _ _ holds.1 (.fresh rfl rfl) (item_begins holds.1 member (fun _ => id) linked) holds.2⟩
 
 theorem compensationOps_alongside (side : StoresAlongside rel) {program : Program}
-    (ops : Laws.Compensation.CompensationOps (WellFormed program)) :
-    Laws.Compensation.CompensationOps fun s => WellFormed program s ∧ rel s where
-  store s compensation holds runs :=
-    ⟨ops.store s compensation holds.1 runs, side.storeRuns program s compensation holds.1
+    (ops : Laws.Compensation.CompensationOps program (WellFormed program)) :
+    Laws.Compensation.CompensationOps program fun s => WellFormed program s ∧ rel s where
+  store s compensation holds runs provenance :=
+    ⟨ops.store s compensation holds.1 runs provenance, side.storeRuns program s compensation holds.1
       (fun run member _ inside => .inl ⟨run, runs run member, inside⟩)
-      (fun run member _ at_ leave resumed => .inl (.inr (.inr ⟨run, runs run member, at_, leave, resumed⟩))) holds.2⟩
+      (fun run member _ at_ leave resumed => .inl (.inr (.inr ⟨run, runs run member, at_, leave, resumed⟩)))
+      (provenance.mono fun _ => False.elim) holds.2⟩
   issue s holds := ⟨ops.issue s holds.1, side.issue s holds.2⟩
   issued := ops.issued
   fail s failure holds := ⟨ops.fail s failure holds.1, side.signal holds.2 _⟩
@@ -595,7 +597,7 @@ theorem endsKept_alongside (b : State) (x : Option (Nat × OccurrenceKey)) {srel
 /-- Storing compensation runs keeps an input's end facts from its start. -/
 theorem endsKept_stores (b : State) (x : Option (Nat × OccurrenceKey)) : StoresAlongside (Laws.Step.EndsKept b x) :=
   { (endsKept_alongside b x).toFrameAlongside with
-    storeRuns := fun _ _ _ _ _ _ kept => kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _) }
+    storeRuns := fun _ _ _ _ _ _ _ kept => kept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _) }
 
 /-- `Step`'s phases keep an input's end facts from its start: journalling the draft and ordering the journal permute
 them, and beginning and cancelling frame them (`Kernel.Laws.Step.EndsFrames`). -/

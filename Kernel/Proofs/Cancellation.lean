@@ -356,7 +356,7 @@ theorem scopesKept_alongside (before : State) : Alongside (ScopesKept before) wh
 
 /-- Storing compensation runs keeps the scope occurrences of any before-state. -/
 theorem scopesKept_stores (before : State) : StoresAlongside (ScopesKept before) :=
-  { (scopesKept_alongside before).toFrameAlongside with storeRuns := fun _ _ _ _ _ _ kept => kept.shrink (.refl _) rfl }
+  { (scopesKept_alongside before).toFrameAlongside with storeRuns := fun _ _ _ _ _ _ _ kept => kept.shrink (.refl _) rfl }
 
 /-- `Step`'s phases keep the scope occurrences of any before-state: journalling and ordering move no scope occurrence
 nor the counter, beginning issues at most one identity and enters no scope occurrence, and cancelling drops some

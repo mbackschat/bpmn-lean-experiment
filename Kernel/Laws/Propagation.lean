@@ -1,7 +1,6 @@
 module
 
 public import Kernel.Hooks
-public import Kernel.Laws.Hooks
 public import Kernel.Laws.Except
 public import Kernel.Laws.Propagation.Rules
 import Kernel.Laws.Step.Elements

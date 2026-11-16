@@ -349,10 +349,11 @@ theorem framedNumbered_frameAlongside (program : Program) : StoresAlongside (Fra
   removeVariable other s target name formed kept :=
     ⟨(runsFramed_frameAlongside program).removeVariable other s target name formed kept.1,
       fun apart => (kept.2 apart).removeVariable target name⟩
-  storeRuns other s compensation formed fresh resumes kept :=
+  storeRuns other s compensation formed fresh resumes provenance kept :=
     ⟨(runsFramed_frameAlongside program).storeRuns other s compensation formed fresh
       (fun run member element at_ leave resumed => (resumes run member element at_ leave resumed).imp_right
-        fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩) kept.1,
+        fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩) (provenance.weaken fun _ held => ⟨held.1, held.2.1⟩)
+      kept.1,
       fun apart => (kept.2 apart).storeRuns compensation fun run member element at_ leave resumed =>
         (resumes run member element at_ leave resumed).imp_right
           (PendingIn.unlooped fun _ kept => (kept.2 apart).2.occurs)⟩

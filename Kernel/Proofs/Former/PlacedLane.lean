@@ -22,22 +22,10 @@ namespace Kernel.Proofs.Former
 
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds Queued)
+open Kernel.Laws.Compensation (recordElements recordsElements)
 
 /-- A leave names no flow. -/
 def Unnamed (leave : Leave) : Prop := ∀ selected, leave = .flows selected → selected = []
-
-mutual
-
-/-- The elements a compensation record names at every depth: its subject, its handler and its children's. -/
-def recordElements : Compensable → List ElementId
-  | { subject, handler, children, .. } => subject :: handler.toList ++ recordsElements children
-
-/-- The elements `records` name at every depth. -/
-def recordsElements : List Compensable → List ElementId
-  | [] => []
-  | record :: rest => recordElements record ++ recordsElements rest
-
-end
 
 /-- A reservation of `element` still to be made in `scope`, leaving by `leave`: a queued `Signal.occur`, or the resume
 of a queued compensation or of a compensation run that reserves it there. -/

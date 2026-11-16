@@ -492,7 +492,7 @@ theorem beginsKept_alongside (program : Program) : Alongside (BeginsKept program
 /-- Storing compensation runs that resume only by pending reservations keeps `BeginsKept`. -/
 theorem beginsKept_stores (program : Program) : StoresAlongside (BeginsKept program) :=
   { (beginsKept_alongside program).toFrameAlongside with
-    storeRuns := fun _ _ compensation _ _ resumes held => held.storeRuns compensation resumes }
+    storeRuns := fun _ _ compensation _ _ resumes _ held => held.storeRuns compensation resumes }
 
 /-- The phases a closure runs keep `BeginsKept`; cancelling is `FrameAlongside.cancelOccurrence`. -/
 theorem beginsKept_closureAlongside (program : Program) : ClosureAlongside (BeginsKept program) where

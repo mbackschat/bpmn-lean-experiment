@@ -294,13 +294,109 @@ def PropagatesFromTrigger (policy : CompensationHandlerFailure) (caughtInside : 
     (searchedFrom : Option ScopeOccurrenceId) (after : State) : Prop :=
   policy = .propagatesFromTrigger → caughtInside = false → searchedFrom = some run.scope ∧ after.status ≠ .failed
 
+/-! ## Where stored records come from -/
+
+mutual
+
+/-- The elements a compensation record names at every depth: its subject, its handler and its children's. -/
+def recordElements : Compensable → List ElementId
+  | { subject, handler, children, .. } => subject :: handler.toList ++ recordsElements children
+
+/-- The elements `records` name at every depth. -/
+def recordsElements : List Compensable → List ElementId
+  | [] => []
+  | record :: rest => recordElements record ++ recordsElements rest
+
+end
+
+/-- An element of a record listed among `records` is one they name. -/
+theorem recordsElements_mem {record : Compensable} {element : ElementId} :
+    ∀ {records : List Compensable}, record ∈ records → element ∈ recordElements record →
+      element ∈ recordsElements records
+  | _ :: _, .head _, named => by rw [recordsElements]; exact List.mem_append_left _ named
+  | _ :: _, .tail _ member, named => by rw [recordsElements]; exact List.mem_append_right _ (recordsElements_mem member named)
+
+/-- A child's elements are its record's. -/
+theorem recordElements_child {record child : Compensable} {element : ElementId} (member : child ∈ record.children)
+    (named : element ∈ recordElements child) : element ∈ recordElements record := by
+  cases record
+  rw [recordElements]
+  exact List.mem_cons_of_mem _ (List.mem_append_right _ (recordsElements_mem member named))
+
+/-- A record moved to another scope occurrence names the elements it named. -/
+theorem recordElements_scope (record : Compensable) (scope : ScopeOccurrenceId) :
+    recordElements { record with scope } = recordElements record := by
+  cases record
+  simp only [recordElements]
+
+/-- A scope occurrence an `InstanceLinked` edge may leave: one that calls no instance, or one of a Scope element or
+owned by an occurrence of one, which the placement lane shows never calls one. -/
+def Uncalled (program : Program) (state : State) (entry : ScopeOccurrence) : Prop :=
+  entry.calledInstance = none ∨ (∃ element, entry.element = some element ∧
+    ((program.element? element).bind (·.scope?)).isSome) ∨
+    ∃ owner ∈ state.occurrences, entry.occurrence = some owner.id ∧ ((program.element? owner.element).bind (·.scope?)).isSome
+
+/-- Two scope occurrences of one process instance, by a path of parent links and owner links (from a scope occurrence
+an occurrence owns to the occurrence's own) each of which leaves an `Uncalled` scope occurrence: where a stored record
+may come from. -/
+inductive InstanceLinked (program : Program) (state : State) : ScopeOccurrenceId → ScopeOccurrenceId → Prop where
+  | refl (scope : ScopeOccurrenceId) : InstanceLinked program state scope scope
+  | parent (entry : ScopeOccurrence) (parent : ScopeOccurrenceId) : entry ∈ state.scopes → entry.parent = some parent →
+      Uncalled program state entry → InstanceLinked program state entry.id parent
+  | owner (entry : ScopeOccurrence) (owner : Occurrence) : entry ∈ state.scopes → owner ∈ state.occurrences →
+      entry.occurrence = some owner.id → Uncalled program state entry → InstanceLinked program state entry.id owner.scope
+  | symm {first second : ScopeOccurrenceId} : InstanceLinked program state first second →
+      InstanceLinked program state second first
+  | trans {first second third : ScopeOccurrenceId} : InstanceLinked program state first second →
+      InstanceLinked program state second third → InstanceLinked program state first third
+
+/-- Paths that read only scope occurrences and occurrences agree on states that agree on those. -/
+theorem InstanceLinked.congr {program : Program} {s t : State} (scopes : t.scopes = s.scopes)
+    (occurrences : t.occurrences = s.occurrences) {first second : ScopeOccurrenceId}
+    (linked : InstanceLinked program s first second) : InstanceLinked program t first second := by
+  have uncalled : ∀ entry, Uncalled program s entry → Uncalled program t entry := fun _ => by
+    unfold Uncalled; rw [occurrences]; exact id
+  induction linked with
+  | refl => exact .refl _
+  | parent entry parent member link free => exact .parent entry parent (scopes ▸ member) link (uncalled _ free)
+  | owner entry owner member owns link free =>
+    exact .owner entry owner (scopes ▸ member) (occurrences ▸ owns) link (uncalled _ free)
+  | symm _ back => exact back.symm
+  | trans _ _ left right => exact left.trans right
+
+/-- A record held in `state`, retained or pending in a run, at a scope occurrence linked to `scope`, naming every
+element `record` names. -/
+def RecordHeld (program : Program) (state : State) (record : Compensable) (scope : ScopeOccurrenceId) : Prop :=
+  ∃ held at_, ((held ∈ state.slots.compensation.retained ∧ held.scope = at_) ∨
+    ∃ run ∈ state.slots.compensation.runs, held ∈ run.pending ∧ run.scope = at_) ∧
+    InstanceLinked program state at_ scope ∧ ∀ element ∈ recordElements record, element ∈ recordElements held
+
+/-- Where a record stored at `scope` comes from: one `state` holds (`RecordHeld`), or the record of a completed
+occurrence of `state` whose scope occurrence is linked to `scope`, naming one of its element's compensation handlers and
+holding records `state` holds. -/
+def RecordFrom (program : Program) (state : State) (record : Compensable) (scope : ScopeOccurrenceId) : Prop :=
+  RecordHeld program state record scope ∨ ∃ occurrence ∈ state.occurrences, record.subject = occurrence.element ∧
+    InstanceLinked program state occurrence.scope scope ∧
+    (∀ handler, record.handler = some handler → ∃ element ∈ program.elements, element.header.id = record.subject ∧
+      ∃ envelope, element.envelope? = some envelope ∧ handler ∈ envelope.compensationHandlers) ∧
+    ∀ child ∈ record.children, RecordHeld program state child scope
+
+/-- Where a compensation stored in place of `state`'s comes from (the storage provenance): every record it retains and
+every record a run of it holds pending, at the scope occurrence holding it (`RecordFrom`), and every run's resume: a
+resume of a run of `state`, a group's, or one `resumed` admits. -/
+def StoredFrom (program : Program) (state : State) (resumed : Resume → Prop) (compensation : Compensations) : Prop :=
+  (∀ record ∈ compensation.retained, RecordFrom program state record record.scope) ∧
+    ∀ run ∈ compensation.runs, (∀ record ∈ run.pending, RecordFrom program state record run.scope) ∧
+      ∀ resume, run.resume = some resume → (∃ held ∈ state.slots.compensation.runs, held.resume = some resume) ∨
+        (∃ outer context, resume = .group outer context) ∨ resumed resume
+
 /-! ## What the hooks need -/
 
 /-- What the compensation hooks need of the state operations they apply, for an invariant `inv`. -/
-structure CompensationOps (inv : State → Prop) : Prop where
-  /-- The retained records replaced, and the runs by some of them. -/
+structure CompensationOps (program : Program) (inv : State → Prop) : Prop where
+  /-- The retained records replaced, from where `StoredFrom` says, and the runs by some of them. -/
   store : ∀ state compensation, inv state → (∀ run ∈ compensation.runs, run ∈ state.slots.compensation.runs) →
-    inv { state with slots := { state.slots with compensation } }
+    StoredFrom program state (fun _ => False) compensation → inv { state with slots := { state.slots with compensation } }
   issue : ∀ state, inv state → inv state.issue.1
   /-- Issuing keeps the scope occurrences, the occurrences, the open items and the slots. -/
   issued : ∀ state : State, state.issue.1.scopes = state.scopes ∧ state.issue.1.occurrences = state.occurrences ∧
