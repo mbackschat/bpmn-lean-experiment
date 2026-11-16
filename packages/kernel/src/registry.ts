@@ -78,5 +78,9 @@ export const hooks: Hooks = {
   correlates: Correlation.correlates,
   startsFired: (ctx, input) => Starts.startsFired(startsHooks, ctx, input),
   delivered: Delivery.delivered,
-  eventStart: Scopes.eventStart,
+  // Scopes reads an Event Sub-Process's start and declared flag; Subscriptions decides whether that start interrupts.
+  eventStart: (payload) => {
+    const read = Scopes.eventStart(payload);
+    return read === null ? null : [read[0], Subscriptions.startInterrupts(read[0], read[1])];
+  },
 };

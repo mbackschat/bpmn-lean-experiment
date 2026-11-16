@@ -826,3 +826,16 @@ export function catches(raised: Raised, trigger: Trigger): Catch | null {
   }
   return assertNever(trigger);
 }
+
+/** Whether a trigger's start Event takes `isInterrupting`: BPMN 2.0.2 Table 10.87 does not apply it to a Compensation one. */
+const takesInterrupting: Record<TriggerTag, boolean> = {
+  [TriggerTag.Timer]: true, [TriggerTag.Message]: true, [TriggerTag.Signal]: true, [TriggerTag.Condition]: true,
+  [TriggerTag.Error]: true, [TriggerTag.Escalation]: true, [TriggerTag.Compensation]: false, [TriggerTag.Cancel]: true,
+};
+
+/**
+ * Whether an Event Sub-Process whose start is `start` and declares `isInterrupting` as `declared` interrupts its parent: as
+ * declared, except a Compensation start, whose handler interrupts nothing whatever the IL carries. `Ctx.eventStart`
+ * reads every interruption through it; admission through `admission/subscriptions.ts#startInterrupts`.
+ */
+export const startInterrupts = (start: Subscription, declared: boolean): boolean => declared && takesInterrupting[start.trigger.tag];

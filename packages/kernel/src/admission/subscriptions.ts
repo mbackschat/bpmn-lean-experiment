@@ -531,6 +531,13 @@ export const cancels = (attached: Boundary): boolean => catchView(attached.subsc
 /** Whether a subscription catches Compensation: the start of a Compensation Event Sub-Process. */
 export const compensates = (subscription: Subscription): boolean => catchView(subscription).compensation;
 
+/**
+ * Whether an Event Sub-Process whose start is `start` and declares `isInterrupting` as `declared` interrupts its parent, as
+ * `feature/subscriptions.ts#startInterrupts` reads it at run time: as declared, except a Compensation start, to which
+ * BPMN 2.0.2 Table 10.87 does not apply the attribute.
+ */
+export const startInterrupts = (start: Subscription, declared: boolean): boolean => declared && !compensates(start);
+
 export function boundaries(options: ProfileOptions, reading: Reading, host: Host, list: readonly Boundary[]): string | null {
   const seen: Declared = { errorCodes: new Set<string>(), escalations: [], cancels: [] };
   for (const attached of list) {

@@ -100,7 +100,7 @@ const nestedHandler = (beside: boolean) => (program: Json): Json =>
 
 /** `T` becomes an embedded Sub-Process `XS -> XE` whose handler is the Compensation Event Sub-Process `K` inside it. */
 const compensationEventSubProcess = (program: Json): Json =>
-  withFlows(append(task(scope("T", "embedded", {}, { compensationHandlers: ["K"] }))(withOptions(program, { abnormalScopeEnd: "completesNormally" })),
+  withFlows(append(task(scope("T", "embedded", {}, { compensationHandlers: ["K"] }))(program),
     start("XS", null, [], "T"), end("XE", "none", "T"),
     scope("K", eventSubProcess(compensationTrigger, true), {}, {}, "T"), start("KS", compensationTrigger, [], "K")),
   flow("xx", "XS", "XE"));

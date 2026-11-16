@@ -340,7 +340,9 @@ theorem raiseRegistered_of {hooks : Hooks} {propagation : Feature.Propagation.Pr
     (arriveThrow : hooks.arriveThrow = Feature.Propagation.arriveThrow)
     (raise : hooks.raise = Feature.Propagation.raise propagation)
     (failCompensation : hooks.failCompensation = Feature.Compensation.failCompensation)
-    (eventStart : hooks.eventStart = Feature.Scopes.eventStart) (catches : hooks.catches = Feature.Subscriptions.catches)
+    (eventStart : hooks.eventStart = fun payload => (Feature.Scopes.eventStart payload).map
+      fun (start, declared) => (start, Feature.Subscriptions.startInterrupts start declared))
+    (catches : hooks.catches = Feature.Subscriptions.catches)
     (mapped : propagation.mappedErrorOutputs = Feature.Work.mappedErrorOutputs Feature.Data.writeOutputs)
     (caught : ∀ ctx scope writes,
       propagation.writeCaught ctx scope writes = Feature.Data.writeOutputs ctx scope writes .outward)
@@ -351,7 +353,11 @@ theorem raiseRegistered_of {hooks : Hooks} {propagation : Feature.Propagation.Pr
   arriveThrow := arriveThrow
   raise := raise
   failCompensation := failCompensation
-  eventStart := eventStart
+  eventStart payload start interrupting started := by
+    rw [eventStart] at started
+    obtain ⟨⟨_, declared⟩, read, same⟩ := Option.map_eq_some_iff.mp started
+    cases same
+    exact ⟨declared, Laws.Scopes.eventStart_kind read⟩
   cancelCatches _ caught := Laws.Subscriptions.catches_cancel (catches ▸ caught)
   callOutputs ctx root state _ ran := by
     rw [call] at ran

@@ -257,10 +257,24 @@ function eventRole(program: Program, header: Header, payload: EventPayload): str
 }
 
 /** The starts of the Event Sub-Processes among `elements`, in document order. */
+/**
+ * An Event Sub-Process's start and whether it interrupts its parent (`Subscriptions.startInterrupts`), `null` for any other
+ * Scope: admission's one reading of an Event Sub-Process's interruption.
+ */
+function eventSubProcessReading(payload: ScopePayload): readonly [Subscription, boolean] | null {
+  const read = Scopes.eventSubProcessOf(payload);
+  return read === null ? null : [read[0], Subscriptions.startInterrupts(read[0], read[1])];
+}
+
+/** Whether a Scope is an interrupting Event Sub-Process. */
+function interruptingEventSubProcess(payload: ScopePayload): boolean {
+  return eventSubProcessReading(payload)?.[1] === true;
+}
+
 function eventSubProcessStarts(elements: readonly Element[]): readonly (readonly [Subscription, boolean])[] {
   return elements.flatMap((entry) => {
     const scope = elementScope(entry);
-    const start = scope === null ? null : Scopes.eventSubProcessOf(scope[1]);
+    const start = scope === null ? null : eventSubProcessReading(scope[1]);
     return start === null ? [] : [start];
   });
 }
@@ -420,7 +434,10 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
           ? null
           : MultiInstance.activityLoop(program.options, Data.loopExpression, false, payload.envelope, payload.envelope.multiInstance)),
         () => outputTargets(program, header, payload.envelope.outputs),
-        () => (subProcess === null ? null : Subscriptions.eventSubProcess(subProcess[0], subProcess[1])),
+        () => {
+          const read = eventSubProcessReading(payload);
+          return read === null ? null : Subscriptions.eventSubProcess(read[0], read[1]);
+        },
         () => Subscriptions.eventSubProcessDeclarations(eventSubProcessStarts(programChildren(program, header.id))),
         () => Subscriptions.boundaries(
           program.options, subscriptionReading(program, header.parent), { transaction: Scopes.isTransaction(payload), escalation: true },
@@ -459,7 +476,7 @@ function abnormalScope(program: Program): boolean {
     const scope = elementScope(entry);
     return (throw_ !== null && (throw_[0].parent !== null || programInCalledProcess(program, throw_[0].id)) &&
       throw_[1].terminates) ||
-      (scope !== null && Scopes.interruptingStart(scope[1]) !== null);
+      (scope !== null && interruptingEventSubProcess(scope[1]));
   });
 }
 
@@ -501,7 +518,7 @@ const neutralSite: Propagation.ThrowSite = {
  * (`admission/subscriptions.ts`), whether a throw raises, with which Error code, escalates or begins compensation
  * handlers (`admission/propagation.ts` `throwReading`), a loop's own names, whether it may run no instance and whether an
  * instance's completion may begin another (`admission/multi-instance.ts`), and whether a Scope is an interrupting Event
- * Sub-Process (`admission/scopes.ts`).
+ * Sub-Process (`interruptingEventSubProcess`).
  */
 function reading(program: Program): FlowClosure.Reading {
   const thrownOf = (element: Element): Propagation.Thrown | null => {
@@ -535,7 +552,7 @@ function reading(program: Program): FlowClosure.Reading {
     },
     interrupts: (element) => {
       const scope = elementScope(element);
-      return scope !== null && Scopes.interruptingStart(scope[1]) !== null;
+      return scope !== null && interruptingEventSubProcess(scope[1]);
     },
     errorCode: (element) => thrownOf(element)?.errorCode ?? (traits(element)?.raises === true ? { code: null } : null),
     catchesError: Subscriptions.catchesError,

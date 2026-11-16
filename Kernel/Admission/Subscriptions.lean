@@ -357,6 +357,11 @@ def cancels (boundary : Boundary) : Bool := (catchView boundary.subscription).ca
 /-- Whether a subscription catches Compensation: the start of a Compensation Event Sub-Process. -/
 def compensates (subscription : Subscription) : Bool := (catchView subscription).compensation
 
+/-- Whether an Event Sub-Process whose start is `start` and declares `isInterrupting` as `declared` interrupts its parent,
+as `Kernel.Feature.Subscriptions.startInterrupts` reads it at run time: as declared, except a Compensation start, to which
+BPMN 2.0.2 Table 10.87 does not apply the attribute. -/
+def startInterrupts (start : Subscription) (declared : Bool) : Bool := declared && !compensates start
+
 def boundaries (options : ProfileOptions) (reading : Reading) (host : Host) (list : List Boundary) :
     Option String :=
   match list.foldlM (boundary options reading host) {} with

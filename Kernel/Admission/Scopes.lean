@@ -33,7 +33,8 @@ def transaction? (payload : ScopePayload) : Option TransactionScope :=
   | .embedded => none
   | .eventSubProcess _ _ => none
 
-/-- The start subscription of an Event Sub-Process and whether it interrupts, `none` for any other Scope. -/
+/-- The start subscription of an Event Sub-Process and the `isInterrupting` its start declares, `none` for any other
+Scope; whether it interrupts is `Kernel.AdmissionRegistry.eventSubProcessReading?`'s. -/
 def eventSubProcess? (payload : ScopePayload) : Option (Subscription × Bool) :=
   match payload.kind with
   | .eventSubProcess start interrupting => some (start, interrupting)
@@ -55,10 +56,6 @@ def transaction (methods : TransactionMethods) (payload : ScopePayload) : Option
 
 def isTransaction (payload : ScopePayload) : Bool :=
   (transaction? payload).isSome
-
-/-- The start subscription of an interrupting Event Sub-Process, `none` for any other Scope. -/
-def interruptingStart (payload : ScopePayload) : Option Subscription :=
-  (eventSubProcess? payload).bind fun (start, interrupting) => if interrupting then some start else none
 
 /-- An Event Sub-Process is outside normal flow (BPMN 2.0.2 §10.3.5); a boundary on it would lead its exception flow
 into the parent's normal flow, which §13.5.4 does not give. -/

@@ -79,6 +79,8 @@ def hooks : Hooks :=
     correlates := Feature.Correlation.correlates
     startsFired := Feature.Starts.startsFired startsHooks
     delivered := Feature.Subscriptions.delivered
-    eventStart := Feature.Scopes.eventStart }
+    -- Scopes reads an Event Sub-Process's start and declared flag; Subscriptions decides whether that start interrupts.
+    eventStart := fun payload => (Feature.Scopes.eventStart payload).map fun (start, declared) =>
+      (start, Feature.Subscriptions.startInterrupts start declared) }
 
 end Kernel.Registry

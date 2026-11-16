@@ -5,9 +5,12 @@
  * Sub-Process), `errorExitCompensation` and `multiInstanceCompensation` only for a program their alternative would
  * change, so their controls select the alternative for the base program.
  */
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
 import {
-  activity, append, definitionRef, duration, end, eventSubProcess, flow, loop, refusalTests, scope, start, task, terminateThrow, userWork,
-  withFlows, withOptions,
+  activity, append, base, compensationTrigger, definitionRef, duration, end, eventSubProcess, flow, loop, refusalOf, refusalTests, scope,
+  start, task, terminateThrow, userWork, withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -98,3 +101,16 @@ export const rows: readonly Row[] = [
 ];
 
 refusalTests("profile", rows);
+
+// BPMN 2.0.2 Table 10.87: `isInterrupting` "cannot be applied to … Compensation Events (where it doesn't apply)", so a
+// Compensation Event Sub-Process whose start carries the attribute's default, `true`, reaches no abnormal scope end.
+test("profile: a Compensation Event Sub-Process is no abnormal scope end, whatever its start declares", () => {
+  const compensated = (declared: boolean) => (program: Json): Json =>
+    withFlows(append(task(scope("T", "embedded", {}, { compensationHandlers: ["K"] }))(program),
+      start("XS", null, [], "T"), end("XE", "none", "T"),
+      scope("K", eventSubProcess(compensationTrigger, declared), {}, {}, "T"), start("KS", compensationTrigger, [], "K")),
+    flow("xx", "XS", "XE"));
+  const standards = withOptions(base(), { abnormalScopeEnd: "withoutOutflow" });
+  assert.equal(refusalOf(compensated(true)(standards)), null);
+  assert.equal(refusalOf(compensated(false)(standards)), null);
+});

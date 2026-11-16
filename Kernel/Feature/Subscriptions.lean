@@ -472,4 +472,21 @@ def catches (raised : Raised) (trigger : Trigger) : Option Catch :=
   | .message _ => none
   | .condition _ => none
 
+/-- Whether an Event Sub-Process whose start is `start` and declares `isInterrupting` as `declared` interrupts its parent:
+as declared, except a Compensation start, to which the attribute "cannot be applied" ([BPMN 2.0.2 Table
+10.87](../../docs/reference/bpmn-2.0.2/README.md), "where it doesn't apply"; the
+[compensation semantics](../../docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md) neither classify nor lower it):
+its handler interrupts nothing, whatever the IL carries. Every reading of an Event Sub-Process's interruption passes
+here: `Ctx.eventStart` at run time, `Kernel.Admission.Subscriptions.startInterrupts` at admission. -/
+def startInterrupts (start : Subscription) (declared : Bool) : Bool :=
+  match start.trigger with
+  | .compensation => false
+  | .error _ => declared
+  | .escalation _ => declared
+  | .cancel => declared
+  | .signal _ => declared
+  | .timer _ => declared
+  | .message _ => declared
+  | .condition _ => declared
+
 end Kernel.Feature.Subscriptions

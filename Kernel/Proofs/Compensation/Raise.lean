@@ -61,7 +61,9 @@ structure RaiseRegistered (hooks : Hooks) (propagation : Feature.Propagation.Pro
   arriveThrow : hooks.arriveThrow = Feature.Propagation.arriveThrow
   raise : hooks.raise = Feature.Propagation.raise propagation
   failCompensation : hooks.failCompensation = Feature.Compensation.failCompensation
-  eventStart : hooks.eventStart = Feature.Scopes.eventStart
+  /-- A start the hooks read off a Scope is its Event Sub-Process's start. -/
+  eventStart : ∀ payload start interrupting, hooks.eventStart payload = some (start, interrupting) →
+    ∃ declared, payload.kind = .eventSubProcess start declared
   cancelCatches : ∀ trigger, (hooks.catches .cancel trigger).isSome = true → trigger = .cancel
   /-- A Call output pass is `Steady` and writes only variables. -/
   callOutputs : ∀ ctx root state after, propagation.callOutputs ctx root state = .ok after →
@@ -114,7 +116,7 @@ theorem noCancelStart_of {hooks : Hooks} {propagation : Feature.Propagation.Prop
     (registered : RaiseRegistered hooks propagation) (queries : StepQueries hooks ctx)
     (catchers : CancelCatchers ctx.program) : Laws.Propagation.NoCancelStart ctx := by
   intro state scope child member header payload start interrupting shaped started
-  rw [queries.2.1, registered.eventStart] at started
+  rw [queries.2.1] at started
   rw [queries.1]
   cases caught : hooks.catches .cancel start.trigger with
   | none => rfl
@@ -124,7 +126,7 @@ theorem noCancelStart_of {hooks : Hooks} {propagation : Feature.Propagation.Prop
       rcases Laws.State.childrenOf_mem member with ⟨_, _, inside⟩ | ⟨_, inside⟩
       · exact Laws.IL.mem_processChildren inside
       · exact Laws.IL.mem_children inside
-    have kind := Laws.Scopes.eventStart_kind started
+    obtain ⟨_, kind⟩ := registered.eventStart _ _ _ started
     refine absurd cancel (catchers.1 child declared header payload start shaped ?_)
     rw [kind]
     exact Laws.IL.start?_eventSubProcess _ _

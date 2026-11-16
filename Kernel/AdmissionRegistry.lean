@@ -150,9 +150,19 @@ def throwSite (program : Program) (header : Header) : Admission.Propagation.Thro
 def thrown (element : Element) : Option (Header × ThrowView) :=
   element.event?.bind fun (header, payload) => payload.throw?.map fun record => (header, throwView record)
 
+/-- An Event Sub-Process's start and whether it interrupts its parent (`Admission.Subscriptions.startInterrupts`), `none`
+for any other Scope: admission's one reading of an Event Sub-Process's interruption. -/
+def eventSubProcessReading? (payload : ScopePayload) : Option (Subscription × Bool) :=
+  (Admission.Scopes.eventSubProcess? payload).map fun (start, declared) =>
+    (start, Admission.Subscriptions.startInterrupts start declared)
+
+/-- Whether a Scope is an interrupting Event Sub-Process. -/
+def interruptingEventSubProcess (payload : ScopePayload) : Bool :=
+  (eventSubProcessReading? payload).any (·.2)
+
 /-- The starts of the Event Sub-Processes among `elements`, in document order. -/
 def eventSubProcessStarts (elements : List Element) : List (Subscription × Bool) :=
-  elements.filterMap fun element => element.scope?.bind fun (_, payload) => Admission.Scopes.eventSubProcess? payload
+  elements.filterMap fun element => element.scope?.bind fun (_, payload) => eventSubProcessReading? payload
 
 /-- The Event Sub-Processes declared together at the root process level and at each called process's level; a Scope's
 are taken with the Scope (`element`). -/
@@ -263,7 +273,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       payload.envelope.multiInstance.bind
         (Admission.MultiInstance.activityLoop program.options Admission.Data.loopExpression (some false) payload.envelope) <|>
       outputTargets program header payload.envelope.outputs <|>
-      (Admission.Scopes.eventSubProcess? payload).bind (fun (start, interrupting) =>
+      (eventSubProcessReading? payload).bind (fun (start, interrupting) =>
         Admission.Subscriptions.eventSubProcess start interrupting) <|>
       Admission.Subscriptions.eventSubProcessDeclarations (eventSubProcessStarts (program.children (some header.id))) <|>
       Admission.Subscriptions.boundaries program.options (subscriptionReading program header.parent)
@@ -297,7 +307,7 @@ def abnormalScope (program : Program) : Bool :=
   program.elements.any fun element =>
     (thrown element).any (fun (header, reading) =>
       (header.parent.isSome || program.inCalledProcess header.id) && reading.terminates) ||
-    element.scope?.any fun (_, payload) => (Admission.Scopes.interruptingStart payload).isSome
+    element.scope?.any fun (_, payload) => interruptingEventSubProcess payload
 
 /-- Whether the program has a Multi-Instance loop, which `Admission.Profile.multiInstance` reads. -/
 def loops (program : Program) : Bool :=
@@ -321,7 +331,7 @@ whether a catch catches a raise, which Error codes it takes or whether it starts
 whether a throw raises, with which Error code, escalates or begins compensation handlers
 (`Admission.Propagation.throwReading`), a loop's own names, whether it may run no instance and whether an instance's
 completion may begin another (`Admission.MultiInstance`), and whether a Scope is an interrupting Event Sub-Process
-(`Admission.Scopes`). -/
+(`interruptingEventSubProcess`). -/
 def reading (program : Program) : Admission.Flow.Reading :=
   let thrownOf (element : Element) : Option Admission.Propagation.Thrown :=
     element.event?.bind fun (_, payload) => payload.throw?.map (Admission.Propagation.throwReading program.options {} .caught)
@@ -337,8 +347,7 @@ def reading (program : Program) : Admission.Flow.Reading :=
     compensationStart := Admission.Subscriptions.compensates
     mayRunNone := fun element => (loop element).any Admission.MultiInstance.mayRunNone
     nextInstance := fun element => (loop element).any (Admission.MultiInstance.beginsNext program.options)
-    interrupts := fun element =>
-      element.scope?.any fun (_, payload) => (Admission.Scopes.interruptingStart payload).isSome
+    interrupts := fun element => element.scope?.any fun (_, payload) => interruptingEventSubProcess payload
     errorCode := fun element =>
       (thrownOf element).bind (·.errorCode) <|> if (traits element).any (·.raises) then some none else none
     catchesError := Admission.Subscriptions.catchesError

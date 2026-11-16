@@ -61,7 +61,10 @@ function transactionOf(payload: ScopePayload): TransactionScope | null {
   return assertNever(kind);
 }
 
-/** The start subscription of an Event Sub-Process and whether it interrupts, `null` for any other Scope. */
+/**
+ * The start subscription of an Event Sub-Process and the `isInterrupting` its start declares, `null` for any other Scope;
+ * whether it interrupts is `admission-registry.ts#eventSubProcessReading`'s.
+ */
 export function eventSubProcessOf(payload: ScopePayload): readonly [Subscription, boolean] | null {
   const kind = payload.kind;
   switch (kind.tag) {
@@ -97,12 +100,6 @@ function transaction(methods: TransactionMethods, payload: ScopePayload): string
 
 export function isTransaction(payload: ScopePayload): boolean {
   return transactionOf(payload) !== null;
-}
-
-/** The start subscription of an interrupting Event Sub-Process, `null` for any other Scope. */
-export function interruptingStart(payload: ScopePayload): Subscription | null {
-  const subProcess = eventSubProcessOf(payload);
-  return subProcess !== null && subProcess[1] ? subProcess[0] : null;
 }
 
 

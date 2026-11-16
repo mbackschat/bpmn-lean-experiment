@@ -20,11 +20,10 @@ const handler = (work: Json | string, env: Json = {}): Json => activity("H", wor
 
 /**
  * `T` becomes an embedded Sub-Process `XS -> XE` holding the Compensation Event Sub-Process `K`, or `K` sits beside it at
- * Process level. An interrupting Event Sub-Process is an abnormal scope end, so the profile that completes normally is
- * selected.
+ * Process level.
  */
 const compensationEventSubProcess = (atProcessLevel: boolean) => (program: Json): Json =>
-  withFlows(append(task(scope("T", "embedded"))(withOptions(program, { abnormalScopeEnd: "completesNormally" })), start("XS", null, [], "T"), end("XE", "none", "T"),
+  withFlows(append(task(scope("T", "embedded"))(program), start("XS", null, [], "T"), end("XE", "none", "T"),
     scope("K", eventSubProcess(compensationTrigger, true), {}, {}, atProcessLevel ? null : "T"), start("KS", compensationTrigger, [], "K")),
   flow("xx", "XS", "XE"));
 

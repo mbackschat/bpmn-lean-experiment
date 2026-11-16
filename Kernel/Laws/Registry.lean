@@ -173,8 +173,9 @@ theorem hooks_removeVariables : Registry.hooks.removeVariables = Feature.Data.re
 theorem hooks_catches : Registry.hooks.catches = Feature.Subscriptions.catches := by
   simp only [Registry.hooks]
 
-/-- Scopes reads every Event Sub-Process's start. -/
-theorem hooks_eventStart : Registry.hooks.eventStart = Feature.Scopes.eventStart := by
+/-- Scopes reads every Event Sub-Process's start and declared flag, and Subscriptions decides whether it interrupts. -/
+theorem hooks_eventStart : Registry.hooks.eventStart = fun payload => (Feature.Scopes.eventStart payload).map
+    fun (start, declared) => (start, Feature.Subscriptions.startInterrupts start declared) := by
   simp only [Registry.hooks]
 
 end Kernel.Laws.Registry

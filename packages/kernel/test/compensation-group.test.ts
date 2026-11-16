@@ -14,9 +14,9 @@ import { chain, compensateAll, complete, drive, handlerTask, parts, throwing, us
  * `S -> O -> E`, where `E` compensates `O` and `O` runs `OS -> A -> B -> OE`, the Sub-Process `A` runs
  * `AS -> T1 -> T2 -> AE`, and `O`'s Compensation Event Sub-Process `H` compensates everything `O` retains; each
  * handler sits beside its subject. No throw shares `A`'s parent, so the standards profile does not refuse `A` without a
- * handler either; beside one it refuses `A`'s records (`compensation.implicit`). Admission refuses the program as
- * `flow.concurrentInterference`, holding the run of the interrupting `H`, read as withdrawing `O`, against the handlers
- * inside `O`, so the runs go through `step` without it.
+ * handler either; beside one it refuses `A`'s records (`compensation.implicit`). A Compensation Event Sub-Process
+ * interrupts nothing whatever its start declares (BPMN 2.0.2 Table 10.87), so `H`'s run withdraws nothing and admission
+ * holds no handler against it.
  */
 function program(implicitCompensation: string): Json {
   return chain([scope("O", "embedded", {}, { compensationHandlers: ["H"] })], compensateAll, parts({
@@ -38,7 +38,7 @@ const done = [complete("T1"), complete("T2"), complete("B")];
 
 test("a group runs its records after the handler of the subject that followed it, latest dependency first", () => {
   const grouped = program("everySubProcess");
-  assert.equal(refusalOf(grouped, true), "flow.concurrentInterference");
+  assert.equal(refusalOf(grouped, true), null);
   assert.deepEqual(waiting(drive(grouped, ...done)), ["HB"]);
   assert.deepEqual(waiting(drive(grouped, ...done, complete("HB"))), ["H2"]);
   assert.deepEqual(waiting(drive(grouped, ...done, complete("HB"), complete("H2"))), ["H1"]);
@@ -48,6 +48,6 @@ test("a group runs its records after the handler of the subject that followed it
 
 test("without implicit compensation the records join the parent's, unordered against the later sibling", () => {
   const joined = program("refused");
-  assert.equal(refusalOf(joined, true), "flow.concurrentInterference");
+  assert.equal(refusalOf(joined, true), null);
   assert.deepEqual(waiting(drive(joined, ...done)), ["H2", "HB"]);
 });

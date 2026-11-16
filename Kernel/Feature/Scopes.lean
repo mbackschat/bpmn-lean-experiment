@@ -61,8 +61,11 @@ def enter (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurrence : O
 
 /-- A Scope's occurrence began. An interrupting Event Sub-Process first clears its parent occurrence, its other Event
 Sub-Process starts included ([BPMN 2.0.2 §13.5.4](../../docs/reference/bpmn-2.0.2/README.md)), keeping its own
-occurrence and its start Event's reservation; the parent's own boundaries stay armed in the grandparent until the
-parent completes. -/
+occurrence and its start Event's reservation; the parent's own boundaries stay armed in the grandparent until the parent
+completes. Here the start's declared flag decides the clearing, not `Ctx.eventStart`'s interruption, because
+`Proofs.Cancellation.registered_interruptingStart` states the clearing for the declared flag. The two differ only for a
+Compensation start, whose handler `Compensation.beginHandler` begins in a fresh context scope occurrence that holds
+nothing but the handler's occurrence and the records retained there, which the clearing keeps. -/
 def arriveScope (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurrence : Occurrence) (entry : ScopeEntry)
     (state : State) : Outcome :=
   match payload.kind with
