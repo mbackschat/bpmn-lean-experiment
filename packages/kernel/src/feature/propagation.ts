@@ -11,8 +11,10 @@
  * it, if any; then, for each scope occurrence from the raising one outward, the Event Sub-Processes the occurrence's
  * element declares, then the boundaries on that element. At each of those candidate sets the catch trigger with the
  * lowest `Ctx.catches` precedence wins, document order breaking ties, so an exact code is preferred over a catch-all at
- * the same level (CIB `ErrorEventDefinition#getPrecedence`) but never over a nearer catcher. The search never passes
- * the scope occurrence of a compensation handler: what reaches it uncaught is the handler's outcome. A Multi-Instance
+ * the same level (CIB `ErrorEventDefinition#getPrecedence`) but never over a nearer catcher. Under
+ * `CompensationHandlerFailure.failsInstance` the search never passes the scope occurrence of a compensation handler: what
+ * reaches it uncaught is the handler's outcome; under `propagatesFromTrigger` it searches that context as an ordinary
+ * scope occurrence and goes on from its parent. A Multi-Instance
  * instance's scope occurrence offers no boundaries of its own: they belong to the body, whose scope occurrence is the
  * next one out (`BpmnParse:3291-3295`, BPMN 2.0.2 §13.5.3). A Sub-Process's Event Sub-Processes are offered once, in its
  * instance's scope occurrence, never again in a Multi-Instance instance's or body's or a compensation context that wraps
@@ -551,9 +553,11 @@ function propagatesFromTrigger(ctx: Ctx): boolean {
 
 /**
  * Search outward from `start`; the fuel bounds the walk by the number of scope occurrences. The search ends at the
- * scope occurrence of a compensation handler (COMPH-FAIL-01), except under `PropagatesFromTrigger`, where it goes on from
- * that context's parent, the scope occurrence the trigger ran in, as CIB's compensating execution is a child of the
- * throwing one (`CompensationUtil.java:62-75`, CIB-INT-0038). A Multi-Instance instance contributes no boundaries. Each called root
+ * scope occurrence of a compensation handler (COMPH-FAIL-01), except under `PropagatesFromTrigger`, where that context is
+ * searched like any scope occurrence (a group context offers the completed subject's own boundaries and Event
+ * Sub-Processes) and the search goes on from the context's parent, the scope occurrence the trigger ran in, as CIB's
+ * compensating execution is a child of the throwing one (`CompensationUtil.java:62-75`, CIB-INT-0038). A Multi-Instance
+ * instance contributes no boundaries. Each called root
  * it visits passes the Call's outputs (`passCallOutputs`) before any catcher there or further out begins,
  * caught or not (CIB registers `tree/OutputVariablesPropagator.java:34-43` as a pre-visitor of both searches).
  */
