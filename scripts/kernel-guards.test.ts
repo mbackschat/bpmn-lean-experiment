@@ -413,6 +413,18 @@ test("guard 15 puts the registry's Laws module and the proofs importing it or La
     /G15 Lean: editing Kernel\.Feature\.Flow rebuilds Kernel\.Proofs\.Later, outside its cone/u);
 });
 
+test("guard 15 puts a feature's namesake laws submodule in its cone, and no other laws submodule", () => {
+  const laws = {
+    "Kernel/Feature/Flow/Gates.lean": "module\npublic import Kernel.Hooks\n",
+    "Kernel/Feature/Flow.lean": "module\npublic import Kernel.Feature.Flow.Gates\n",
+    "Kernel/Laws/Flow/Gates.lean": "module\npublic import Kernel.Hooks\nimport all Kernel.Feature.Flow.Gates\n",
+    "Kernel/Laws/Flow.lean": "module\npublic import Kernel.Laws.Flow.Gates\nimport all Kernel.Feature.Flow\n",
+  };
+  assert.deepEqual(rebuildFindings(fixture(laws)), []);
+  seeded(rebuildFindings, { ...laws, "Kernel/Laws/Flow/Other.lean": "module\npublic import Kernel.Laws.Flow\n" },
+    /G15 Lean: editing Kernel\.Feature\.Flow rebuilds Kernel\.Laws\.Flow\.Other, outside its cone/u);
+});
+
 test("guard 15 rejects a sixth direct importer and allows the three hubs", () => {
   const importers = Object.fromEntries(["A", "B", "C", "D", "E", "F"].map((name) => [`packages/kernel/src/il/${name}.ts`, `import { x } from "./query.js";\nexport { x };\n`]));
   seeded(rebuildFindings, { ...importers, "packages/kernel/src/il/query.ts": "export const x = 1;\n" }, /il\/query has 6 direct importers, above 5/u);

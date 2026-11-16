@@ -102,6 +102,10 @@ const leanLanguage: Language = {
     // compose the feature's lemmas (proposal, module table).
     if (module === "Kernel.Registry" || module === "Kernel.Laws.Registry" || module === `Kernel.Laws.${family}`) return true;
     const imports = graph.get(module) ?? [];
+    // A namesake laws submodule (`Laws.F.Sub` opening `Feature.F.Sub`, guard 5) holds what `Laws.F`, which re-exports
+    // it, would otherwise hold, so it rebuilds nothing that folding it into `Laws.F` would not.
+    const sub = module.startsWith(`Kernel.Laws.${family}.`) ? module.slice(`Kernel.Laws.${family}.`.length) : null;
+    if (layer === "feature" && sub !== null && imports.includes(`Kernel.Feature.${family}.${sub}`)) return true;
     return module.startsWith("Kernel.Proofs.") && (imports.includes(`Kernel.Laws.${family}`) || imports.includes("Kernel.Laws.Registry"));
   },
   hubs: new Set(["Kernel.IL.Types", "Kernel.State", "Kernel.Hooks"]),
