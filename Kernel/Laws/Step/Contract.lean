@@ -408,13 +408,15 @@ def Dequeued (program : Program) (queue : State) (request : BeginRequest) (poppe
     TokenTaken program queue (.begin request) popped
 
 /-- Where a fresh begin's request comes from: the arrival of a flow token the closure took off a queue that keeps `inv`,
-which begins the element the token's flow ends at in the token's scope occurrence (`Step.arrive`), or a start input's
-begin, in the process root, of a root-process start Event (`Program.children none`, `HookContract.startsFired`). An
-invariant that places what a token or a start begins reads it. -/
+which begins the element the token's flow ends at in the token's scope occurrence, arriving by that flow
+(`Step.arrive`), or a start input's begin, in the process root and by no flow, of a root-process start Event
+(`Program.children none`, `HookContract.startsFired`). An invariant that places what a token or a start begins, and the
+flow it arrived by, reads it (`Proofs.Former.foreign_incoming_rejected`). -/
 def FreshSource (inv : Program → State → Prop) (program : Program) (state : State) (request : BeginRequest) : Prop :=
-  (∃ queue flow, inv program queue ∧ program.target? flow = some request.element ∧
+  (∃ queue flow, inv program queue ∧ (program.target? flow = some request.element ∧ request.incoming = some flow) ∧
     TokenTaken program queue (.flow flow request.scope) state) ∨
-  (request.scope = State.root ∧ ∃ element ∈ program.children none, element.header.id = request.element)
+  (request.scope = State.root ∧ request.incoming = none ∧
+    ∃ element ∈ program.children none, element.header.id = request.element)
 
 /-- Where a begin `Step` runs comes from: a fresh request that continues by its flows and names no reservation, made by
 an arrival or a start (`FreshSource`), or a queued begin the closure took off a state that keeps `inv`, which an

@@ -15,6 +15,8 @@ so that a scope occurrence of the root process places nothing of it.
   entered there (`Laws.Flow.Anchored` bounds a held state's counter; the lane's `issued` clause).
 - `unstood_reserve_rejected` and `unstood_subscription_rejected`: a reservation in a scope occurrence that no longer
   stands lies under the process root (`FrameAlongside.reserve`, `OccursAlongside.reserve` ask it to stand).
+- `foreign_incoming_rejected`: a fresh begin arriving by a flow of another process records that flow
+  (`Laws.Step.FreshSource` ties the flow a fresh begin arrives by to the token it took).
 
 Nothing executable imports this module.
 -/
@@ -288,6 +290,40 @@ theorem unstood_subscription_rejected :
     exact rootOnly_misplaced program definition
       (reserves.placed ▸ reserves.kind ▸ after.placed.occurrences _ (by rw [reserves.occurrences]; simp))
       (reserves.placed ▸ root) (by rw [reserves.slots]; simp [leftRun]) (topCalled_boundary program definition)
+
+/-- `E`, which `topCalled` does not declare, runs the root process. -/
+theorem topCalled_undeclared : definitionAt (topCalled program definition) ⟨"E"⟩ = none := by
+  have unfound : (topCalled program definition).element? ⟨"E"⟩ = none := Laws.IL.element?_none fun element member => by
+    have : element = sharedHost "T" := by simpa [topCalled] using member
+    subst this; simp [sharedHost, Laws.IL.header_scope]
+  have unbound : (topCalled program definition).boundary? ⟨"E"⟩ = none := by
+    cases found : (topCalled program definition).boundary? ⟨"E"⟩ with
+    | none => rfl
+    | some pair =>
+      obtain ⟨member, envelope, rest⟩ := Laws.IL.boundary?_declared found
+      obtain ⟨has, inside, named⟩ := rest
+      have host : pair.1 = sharedHost "T" := by simpa [topCalled] using member
+      rw [host, sharedHost, Laws.IL.envelope?_scope] at has
+      cases has
+      simp only [List.mem_singleton] at inside
+      rw [inside] at named
+      simp [sharedX] at named
+  simp [definitionAt, unfound, unbound]
+
+/-- A fresh begin of `E` in the process root arriving by a flow that ends at `T`, of the called process, breaks
+`PlacedLane.incoming`: the begun occurrence records a flow of another process than its element's. -/
+theorem foreign_incoming_rejected (g : FlowId) (ends : (topCalled program definition).target? g = some ⟨"T"⟩)
+    (s : State) (role : ActivationRole) (sourceType : String) :
+    ¬ PlacedLane (topCalled program definition)
+      (s.beginOccurrence { element := ⟨"E"⟩, scope := State.root, incoming := some g } role sourceType).1 :=
+  fun lane => by
+    have begun := Laws.State.beginOccurrence_mem s { element := ⟨"E"⟩, scope := State.root, incoming := some g } role
+      sourceType
+    have fresh := Laws.State.beginOccurrence_fresh (state := s) (role := role) (sourceType := sourceType)
+      (request := { element := ⟨"E"⟩, scope := State.root, incoming := some g }) rfl
+    have same := lane.incoming _ begun.1 g ⟨"T"⟩ (Laws.State.beginOccurrence_incoming _ _ _ _) ends
+    rw [fresh.1, topCalled_placed, topCalled_undeclared] at same
+    cases same
 
 end FrameWitnesses
 

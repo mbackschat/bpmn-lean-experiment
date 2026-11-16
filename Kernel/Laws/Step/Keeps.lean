@@ -362,7 +362,7 @@ theorem moveToken_keeps (contract : HookContract hooks inv) (phases : ClosurePha
   | flow flow scope =>
     refine microStep_keeps contract phases pipeline (fun next arrived => ?_) (moveToken_flow ran)
     obtain ⟨_, target, begun⟩ := arrive_ok arrived
-    exact begin_keeps contract phases facts holds admitted_fresh (.inl ⟨rfl, rfl, .inl ⟨queue, flow, held, target, taken⟩⟩)
+    exact begin_keeps contract phases facts holds admitted_fresh (.inl ⟨rfl, rfl, .inl ⟨queue, flow, held, ⟨target, rfl⟩, taken⟩⟩)
       begun
   | begin request =>
     exact microStep_keeps contract phases pipeline
@@ -468,7 +468,7 @@ theorem step_settles (contract : HookContract hooks inv) (phases : ClosurePhases
       have rooted := contract.startsFired _ _ _ firedRoot _ (Laws.Hooks.chooseStart_mem picked)
       have moved := microStep_keeps contract phases pipeline
         (fun _ begun => begin_keeps contract phases facts (advanceClock_keeps phases fresh clocked) admitted_fresh
-          (.inl ⟨rfl, rfl, .inr ⟨rfl, rooted⟩⟩) begun)
+          (.inl ⟨rfl, rfl, .inr ⟨rfl, rfl, rooted⟩⟩) begun)
         stepped
       have done := settle_keeps contract phases facts pipeline _ _ _ _ moved settling
       rw [inputCtx_program] at done

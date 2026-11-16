@@ -41,6 +41,15 @@ theorem beginOccurrence_fresh {state : State} {request : BeginRequest} {role : A
       (state.beginOccurrence request role sourceType).2.role = role := by
   simp [State.beginOccurrence, fresh]
 
+/-- A begin, of a reservation or fresh, arrives on the requested flow. -/
+theorem beginOccurrence_incoming (state : State) (request : BeginRequest) (role : ActivationRole) (sourceType : String) :
+    (state.beginOccurrence request role sourceType).2.incoming = request.incoming := by
+  simp only [State.beginOccurrence]
+
+/-- A reservation arrives on no flow. -/
+theorem reserve_incoming (state : State) (element : ElementId) (scope : ScopeOccurrenceId) :
+    (state.reserve element scope).2.incoming = none := by simp [State.reserve, State.activate, State.issue]
+
 /-- `beginOccurrence` keeps the scope occurrences, the variable sets and the logical time. -/
 theorem beginOccurrence_keeps (state : State) (request : BeginRequest) (role : ActivationRole) (sourceType : String) :
     (state.beginOccurrence request role sourceType).1.scopes = state.scopes ∧
