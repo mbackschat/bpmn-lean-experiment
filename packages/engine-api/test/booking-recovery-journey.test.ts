@@ -1,11 +1,11 @@
 /**
  * PC-JOURNEY-07 through the engine API: a trip booking reserves a flight, a hotel room and a rental car inside one
  * Transaction, and an agent cancels it or a called car reservation fails. The expected answers are the compensation
- * semantics' (docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md), fixed here because CIB answers none of the
- * decisive points: it cannot observe a running handler (CIB-LIM-0048), runs a Service Task handler inside the cancelling
- * command (CIB-LIM-0042) and runs a removed task's output parameter (CIB-LIM-0057). The same model and schedules run
- * against the kernel in `scenarios/open-rows/journey-booking-recovery`. Effect results and the variable command are the
- * memory host's own inputs, as a Workflow's Activity and a client deliver them; everything else goes through the API.
+ * semantics' (docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md), fixed here because CIB departs from them at the
+ * decisive points: it runs a Service Task handler inside the cancelling command (CIB-LIM-0042) and runs a removed task's
+ * output parameter (CIB-LIM-0057). The same model and schedules run against the kernel in
+ * `scenarios/open-rows/journey-booking-recovery`. Effect results and the variable command are the memory host's own
+ * inputs, as a Workflow's Activity and a client deliver them; everything else goes through the API.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";

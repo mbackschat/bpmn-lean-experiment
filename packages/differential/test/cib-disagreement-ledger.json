@@ -327,6 +327,20 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/compensation-context/late-data-after-completion.cibseven-evidence.json",
+    "firstDifference": "trace[14].openWaits.length",
+    "owners": [
+      "CIB-DEV-0011"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-context/no-late-data.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
+    "owners": [
+      "CIB-DEV-0011"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/compensation-eligibility/late-third-second-throw.cibseven-evidence.json",
     "firstDifference": "trace[8].openWaits.length",
     "owners": [
@@ -352,8 +366,7 @@
     "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0014",
-      "CIB-INT-0040",
-      "CIB-LIM-0045"
+      "CIB-INT-0040"
     ]
   },
   {
@@ -361,8 +374,7 @@
     "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0014",
-      "CIB-INT-0040",
-      "CIB-LIM-0045"
+      "CIB-INT-0040"
     ]
   },
   {
@@ -370,8 +382,7 @@
     "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0011",
-      "CIB-DEV-0014",
-      "CIB-LIM-0045"
+      "CIB-DEV-0014"
     ]
   },
   {
@@ -379,8 +390,21 @@
     "firstDifference": "trace[12].openWaits.length",
     "owners": [
       "CIB-DEV-0011",
-      "CIB-DEV-0014",
-      "CIB-LIM-0045"
+      "CIB-DEV-0014"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-event-subprocess-nesting/both-rethrow.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
+    "owners": [
+      "CIB-DEV-0011"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-event-subprocess-nesting/outer-rethrows-everything.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
+    "owners": [
+      "CIB-DEV-0011"
     ]
   },
   {
@@ -402,6 +426,13 @@
     "firstDifference": "trace[8].openWaits.length",
     "owners": [
       "CIB-LIM-0049"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-bodies/typed-data-reaches-handlers.cibseven-evidence.json",
+    "firstDifference": "trace[10].openWaits.length",
+    "owners": [
+      "CIB-DEV-0011"
     ]
   },
   {
@@ -1039,6 +1070,20 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/journey-booking-recovery/cancel-after-the-car-recovery.cibseven-evidence.json",
+    "firstDifference": "trace[14].openWaits.length",
+    "owners": [
+      "CIB-LIM-0042"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/journey-booking-recovery/cancel-compensates-completed-reservations.cibseven-evidence.json",
+    "firstDifference": "trace[12].openWaits.length",
+    "owners": [
+      "CIB-LIM-0042"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/journey-booking-recovery/cancel-leaves-unfinished-work-uncompensated.cibseven-evidence.json",
     "firstDifference": "trace[8].openWaits[0].detail.assignee",
     "owners": [
@@ -1050,6 +1095,13 @@
     "firstDifference": "trace[8].variables.length",
     "owners": [
       "CIB-LIM-0057"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/journey-booking-recovery/late-changes-reach-the-handlers.cibseven-evidence.json",
+    "firstDifference": "trace[14].openWaits.length",
+    "owners": [
+      "CIB-LIM-0042"
     ]
   },
   {
@@ -2452,6 +2504,22 @@
     "evidence": "scenarios/open-rows/transaction-cancel-mixed/refund-incident-retried.cibseven-evidence.json",
     "firstDifference": "trace[9].outcome",
     "owners": [
+      "CIB-LIM-0042"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-cancel-mixed/subjects-effect-first.cibseven-evidence.json",
+    "firstDifference": "trace[10].openWaits.length",
+    "owners": [
+      "CIB-DEV-0011",
+      "CIB-LIM-0042"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-cancel-mixed/subjects-user-first.cibseven-evidence.json",
+    "firstDifference": "trace[10].openWaits[0].detail.assignee",
+    "owners": [
+      "CIB-DEV-0011",
       "CIB-LIM-0042"
     ]
   },

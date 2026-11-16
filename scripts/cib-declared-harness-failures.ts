@@ -17,12 +17,6 @@ export type DeclaredHarnessFailure = Readonly<
   | { kind: "resource" }
 >;
 
-const activityInstanceTree = {
-  kind: "register",
-  entry: "CIB-LIM-0048",
-  failure: "java.lang.IndexOutOfBoundsException: Index -1 out of bounds for length 0",
-} as const;
-
 // CIB starts one instance per true root Conditional start and offers no request that evaluates a named one alone, so
 // the start creates two instances where the single-instance observation holds one (`CibSevenStarts.startedAt`).
 const twoConditionalStarts = {
@@ -57,26 +51,12 @@ const doubleResult = {
 } as const;
 
 export const declaredCibHarnessFailures: ReadonlyMap<string, DeclaredHarnessFailure> = new Map<string, DeclaredHarnessFailure>([
-  ["scenarios/open-rows/compensation-context-live-outer/esp-handler-reads-and-writes-outer.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/compensation-context/late-data-after-completion.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/compensation-context/no-late-data.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/compensation-event-subprocess-nesting/both-rethrow.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/compensation-event-subprocess-nesting/consume-without-rethrow.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/compensation-event-subprocess-nesting/outer-rethrows-everything.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/compensation-event-subprocess-nesting/outer-rethrows-inner-only.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/compensation-event-subprocess-throws/throws-parent-activity.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/compensation-handler-bodies/typed-data-reaches-handlers.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/compensation-handler-consumption/esp-consumes-one-of-two.scenario.json", activityInstanceTree],
   ["scenarios/open-rows/conditional-start-compositions/layout-only-conditions-start.scenario.json", twoConditionalStarts],
   ["scenarios/open-rows/conditional-start-compositions/lexeme-differing-conditions-start.scenario.json", twoConditionalStarts],
   ["scenarios/open-rows/conditional-start-compositions/operator-differing-conditions-start.scenario.json", twoConditionalStarts],
   ["scenarios/open-rows/conditional-start-compositions/routed-both.scenario.json", twoConditionalStarts],
   ["scenarios/open-rows/human-task-metadata-composition/group-list-edge-commas.scenario.json", emptyCandidateGroup],
   ["scenarios/open-rows/human-task-metadata-composition/group-list-empty-entry.scenario.json", emptyCandidateGroup],
-  ["scenarios/open-rows/journey-booking-recovery/cancel-after-the-car-recovery.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/journey-booking-recovery/cancel-compensates-completed-reservations.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/journey-booking-recovery/handlers-answered-in-another-order.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/journey-booking-recovery/late-changes-reach-the-handlers.scenario.json", activityInstanceTree],
   ["scenarios/open-rows/juel-core-table/decimal-plus-huge-exponent.scenario.json", {
     kind: "protocol",
     rule: "runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioVariableValueProjection.java#projectDecimal",
@@ -118,6 +98,4 @@ export const declaredCibHarnessFailures: ReadonlyMap<string, DeclaredHarnessFail
     entry: "CIB-LIM-0058",
     failure: "java.lang.IllegalStateException: Subscription Boundary_Deadline has no unique host instance",
   }],
-  ["scenarios/open-rows/transaction-cancel-mixed/subjects-effect-first.scenario.json", activityInstanceTree],
-  ["scenarios/open-rows/transaction-cancel-mixed/subjects-user-first.scenario.json", activityInstanceTree],
 ]);
