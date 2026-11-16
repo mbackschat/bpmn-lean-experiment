@@ -6,6 +6,8 @@ public import Kernel.Laws.Propagation.Rules
 import Kernel.Laws.Step.Elements
 public import Kernel.Feature.Propagation
 import all Kernel.Feature.Propagation
+public import Kernel.Feature.Propagation.Throws
+import all Kernel.Feature.Propagation.Throws
 
 /-! # Laws of propagation: the feature's hooks
 

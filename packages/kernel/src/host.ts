@@ -112,7 +112,7 @@ export function hostRequirements(program: Program): Requirements {
   const work = activityWork(program);
   const timers = triggers.some((trigger) => triggerTimer(trigger) !== null);
   const messages = triggers.some((trigger) => triggerMessage(trigger) !== null) || work.some((entry) => workReceive(entry) !== null);
-  // A bound Message throw opens an effect item as a Service Task does (`feature/propagation.ts#throwMessage`).
+  // A bound Message throw opens an effect item as a Service Task does (`feature/propagation/throws.ts#throwMessage`).
   const effects = work.some(workIsService) || throws(program).some((thrown) => throwEffect(thrown) !== null);
   const userTasks = work.some(workIsUser);
   const calls = work.some((entry) => workCall(entry) !== null);

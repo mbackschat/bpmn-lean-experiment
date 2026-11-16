@@ -22,6 +22,7 @@ public import Kernel.Feature.Decision
 public import Kernel.Feature.Flow
 public import Kernel.Feature.MultiInstance
 public import Kernel.Feature.Propagation
+public import Kernel.Feature.Propagation.Throws
 public import Kernel.Feature.Scopes
 public import Kernel.Feature.Starts
 public import Kernel.Feature.Subscriptions
