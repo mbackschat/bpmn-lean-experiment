@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Proofs.Former.PlacedSources
+public import Kernel.Laws.Population
 public import Kernel.Laws.State.Begin
 
 /-! # Proofs: the former lanes, the placement lane's frame
@@ -8,7 +9,8 @@ public import Kernel.Laws.State.Begin
 The frame records of `Kernel.Proofs.Frame.Alongside` for the placement lane under its model premise (`Placing`): every
 state operation the hooks apply and every phase `Step` runs keeps it, from where the frame's provenance says the work
 it adds comes (`Kernel.Proofs.Former.PlacedSources`), and a start's fresh instance holds it. `Kernel.Proofs.Step`
-composes them with the registered records of `WellFormed`. Nothing executable imports this module.
+composes them with the registered records of `WellFormed` into what a committed start and a population run keep
+(`PlacedAtStart`, `PlacedInPopulation`). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -518,5 +520,18 @@ theorem placedLane_initial (program : Program) (instanceId : String) (variables 
     fun _ _ _ _ _ same => Signal.noConfusion same, fun _ _ _ same => Signal.noConfusion same,
     fun _ _ _ same => Signal.noConfusion same, fun _ _ _ _ same => Signal.noConfusion same,
     fun _ _ same => Signal.noConfusion same⟩
+
+/-- A committed start keeps the placement lane of a program whose references stay in one process. -/
+def PlacedAtStart (hooks : Hooks) : Prop :=
+  ∀ (program : Program) (input : Input) (after : State), ReferencesPlaced program →
+    Step.step hooks program none input = .ok after → PlacedLane program after
+
+/-- Every instance a committed population run holds keeps the placement lane under its deployment's program, when that
+program's references stay in one process. -/
+def PlacedInPopulation (hooks : Hooks) : Prop :=
+  ∀ (admission : Program → Option String) (stimuli : List Population.Stimulus) (result : Population.Result),
+    Population.runStimuli hooks admission stimuli = .ok result →
+    ∀ instance_ ∈ result.instances, ReferencesPlaced instance_.deployment.program →
+      PlacedLane instance_.deployment.program instance_.state
 
 end Kernel.Proofs.Former

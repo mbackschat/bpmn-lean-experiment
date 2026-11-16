@@ -17,6 +17,7 @@ public import Kernel.Proofs.MultiInstance
 public import Kernel.Proofs.Former
 public import Kernel.Proofs.Former.Values
 public import Kernel.Proofs.Former.Calls
+public import Kernel.Proofs.Former.PlacedFrame
 
 /-! # Proofs: composition over the registered hooks
 
@@ -747,5 +748,51 @@ theorem registered_calledIdentityUnique : Former.CalledIdentityUnique Registry.h
   fun _ _ before _ _ formed calls ran =>
     have after := registered_formed (before := some before) (fun _ given => by cases given; exact ⟨formed, calls⟩) ran
     ⟨fun _ member _ called => after.2.named.owner after.1 member called, after.2⟩
+
+/-- The registered hooks keep `WellFormed` and the placement lane under its premise (`Former.PlacedForm`): the feature
+records follow from `WellFormed`'s and the lane's frames. -/
+theorem placed_contract : Laws.Step.HookContract Registry.hooks Former.PlacedForm :=
+  registered_contract_of
+    (Proofs.Cancellation.featureOps_frame registeredOps_wellFormed.toFeatureOps
+      (fun program => (Former.placedAlongside program).toFrameAlongside) Former.placedOccursAlongside)
+    (multiInstanceKeeps_of fun program => Proofs.Cancellation.multiInstanceOps_alongside
+      (Former.placedAlongside program) (registeredOps_wellFormed.multiInstance program))
+    (Proofs.Cancellation.compensationKeeps_frame registeredOps_wellFormed Former.placedStores
+      Former.placedOccursAlongside)
+    Proofs.State.stateFacts
+
+/-- A committed input or start under the registered hooks keeps `Former.PlacedForm`, from a before-state that keeps
+it. -/
+theorem registered_placedForm {program : Program} {before : Option State} {input : Input} {after : State}
+    (entry : ∀ state, before = some state → Former.PlacedForm program state)
+    (ran : Step.step Registry.hooks program before input = .ok after) : Former.PlacedForm program after :=
+  have phases := Proofs.Frame.phases_alongside phases Former.placedStepAlongside
+  Laws.Step.step_keeps placed_contract phases Proofs.State.stateFacts
+    (Laws.Step.complete_keeps placed_contract phases.toClosurePhases (Former.placed_pipelinePhases pipelinePhases)
+      Proofs.State.stateFacts)
+    (fun _ _ holds => Former.placed_reset holds)
+    (fun instanceId variables businessKey => ⟨initial_wellFormed program instanceId variables businessKey,
+      fun _ => Former.placedLane_initial program instanceId variables businessKey⟩)
+    entry ran
+
+/-- A committed input under the registered hooks keeps the placement lane of a well-formed state of a program whose
+references stay in one process. -/
+theorem registered_placed {program : Program} {before after : State} {input : Input}
+    (references : Former.ReferencesPlaced program) (formed : Laws.State.WellFormed program before)
+    (placed : Former.PlacedLane program before)
+    (ran : Step.step Registry.hooks program (some before) input = .ok after) : Former.PlacedLane program after :=
+  (registered_placedForm (fun _ given => by cases given; exact ⟨formed, fun _ => placed⟩) ran).2 references
+
+/-- A committed start keeps the placement lane under the registered hooks. -/
+theorem registered_placedAtStart : Former.PlacedAtStart Registry.hooks := fun _ _ _ references ran =>
+  (registered_placedForm (fun _ given => by cases given) ran).2 references
+
+/-- Every instance a committed population run holds keeps the placement lane under the registered hooks. -/
+theorem registered_placedInPopulation : Former.PlacedInPopulation Registry.hooks :=
+  fun _ _ _ ran member inside references =>
+    (Laws.Population.runStimuli_held (good := Former.PlacedForm)
+      ⟨fun _ _ _ _ holds stepped => registered_placedForm (fun _ given => by cases given; exact holds) stepped,
+        fun _ _ _ stepped => registered_placedForm (fun _ given => by cases given) stepped⟩
+      ran member inside).2 references
 
 end Kernel.Proofs.Step
