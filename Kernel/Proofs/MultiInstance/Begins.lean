@@ -350,8 +350,8 @@ theorem BeginsKept.recordEnd {program : Program} {s : State} (key : OccurrenceKe
 /-- A reservation or queued occurrence a subscription makes names a reservable element, a boundary's identifier or one
 pending in a state that kept the relation, none of which loops under a program whose identifiers are unique. -/
 theorem beginsKept_occursAlongside (program : Program) : OccursAlongside program (BeginsKept program) where
-  reserve s _ scope _ reservable _ held := held.reserve (fun apart => reservable_unlooped apart reservable) scope
-  occur s element scope leave writes rule named _ held := held.signal _ fun apart other inside => by
+  reserve s _ scope _ _ reservable _ held := held.reserve (fun apart => reservable_unlooped apart reservable) scope
+  occur s element scope leave writes rule _ named _ held := held.signal _ fun apart other inside => by
     rw [List.mem_singleton.mp inside]
     exact named.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept apart).occurs)
   compensate s scope activity trigger leave element at_ resumed named _ _ held := held.signal _ fun apart other inside => by
@@ -478,7 +478,7 @@ theorem beginsKept_alongside (program : Program) : Alongside program (BeginsKept
   signalBegin _ request _ _ _ held := held.signalBegin request
   issue _ held := held.issue
   enterScope _ element parent locals owner _ _ held := held.enterScope element parent locals owner
-  reserve _ _ scope _ pending _ held :=
+  reserve _ _ scope _ _ pending _ held :=
     held.reserve (fun apart => PendingIn.unlooped (fun _ kept => (kept apart).occurs) pending) scope
   leaveScope _ _ formed present _ held := held.leaveScope formed present
   clearInside _ _ keep formed present _ held := held.clearInside formed present keep

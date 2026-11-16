@@ -334,7 +334,7 @@ theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) 
   enterScope s element parent locals owner well _ kept := by
     rw [Laws.State.enterScope_eq]
     exact kept.enter well rfl rfl rfl rfl rfl rfl rfl rfl rfl
-  reserve s element scope well _ _ kept := kept.reserve well element scope
+  reserve s element scope well _ _ _ kept := kept.reserve well element scope
   leaveScope _ _ well present _ kept := kept.leaveScope well present
   clearInside _ _ keep well present housed kept := kept.clearInside well present keep housed
   disarm s host _ kept := by
@@ -728,8 +728,8 @@ where a throw queues its compensation or raises: its trigger is fresh (`thrower_
 the thrower's, was issued. -/
 theorem formed_occursAlongside (program : Program) (precedes : Compensable → Compensable → Prop) :
     OccursAlongside program (Formed precedes) where
-  reserve s element scope well _ _ kept := kept.reserve well element scope
-  occur _ _ _ _ _ _ _ _ kept := kept.signal _
+  reserve s element scope well _ _ _ kept := kept.reserve well element scope
+  occur _ _ _ _ _ _ _ _ _ kept := kept.signal _
   compensate s scope activity trigger leave element at_ resumed _ source _ kept :=
     formed_compensate program precedes s scope activity trigger leave element at_ resumed source kept
   throwCompensate s occurrence scope activity trigger leave well begun named _ kept := by

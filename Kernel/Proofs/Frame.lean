@@ -66,7 +66,7 @@ theorem closurePhases_alongside {rel : Program → State → Prop} (phases : Law
   reserve _ s element scope holds stands pending popped :=
     have reserved := phases.reserve _ _ element scope holds.1 stands (pending.imp fun _ => And.imp_left And.left)
       (popped.imp fun _ => Exists.imp fun _ => Exists.imp fun _ queued => queued.imp fun _ held => held.1)
-    ⟨⟨reserved.1, (side _).reserve s element scope holds.1 (pending.imp fun _ => And.imp_left And.right) popped
+    ⟨⟨reserved.1, (side _).reserve s element scope holds.1 stands (pending.imp fun _ => And.imp_left And.right) popped
       holds.2⟩, reserved.2⟩
   cancel _ s id holds := ⟨phases.cancel _ _ id holds.1, (side _).cancel s id holds.1 holds.2⟩
 

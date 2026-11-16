@@ -694,7 +694,7 @@ theorem callsFormed_alongside (program : Program) : Alongside program (CallsForm
   issue _ held := held.same (by rw [Laws.State.issue_eq]) (by rw [Laws.State.issue_eq]; exact fun _ member => member)
     (by rw [Laws.State.issue_eq])
   enterScope _ element parent locals owner formed _ held := held.entered formed element parent locals owner
-  reserve _ element scope formed _ _ held := held.reserved formed element scope
+  reserve _ element scope formed _ _ _ held := held.reserved formed element scope
   leaveScope _ _ formed present _ held := held.left formed (Laws.State.leaveScope_left formed present)
   clearInside _ _ keep formed present kept held :=
     held.cleared formed (Laws.State.clearInside_cleared formed present keep) kept
@@ -719,8 +719,8 @@ theorem callsFormed_stores (program : Program) : StoresAlongside program (CallsF
 
 /-- The features' reservations, queued triggers and a Call's entry of its called root keep the lane invariant. -/
 theorem callsFormed_occursAlongside (program : Program) : OccursAlongside program (CallsFormed program) where
-  reserve _ element scope formed _ _ held := held.reserved formed element scope
-  occur _ element scope leave writes rule _ _ held := held.signal (.occur element scope leave writes rule)
+  reserve _ element scope formed _ _ _ held := held.reserved formed element scope
+  occur _ element scope leave writes rule _ _ _ held := held.signal (.occur element scope leave writes rule)
   compensate _ _ _ _ _ _ _ _ _ _ _ held := held.signal _
   throwCompensate _ _ _ _ _ _ _ _ _ _ held := held.signal _
   raise _ _ _ _ _ held := held.signal _

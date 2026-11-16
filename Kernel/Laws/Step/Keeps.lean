@@ -233,8 +233,8 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : ClosurePhases
       request (Laws.State.Queued.shrink (before := queue) (after := { queue with signals := rest })
         (by rw [heads]; exact List.sublist_cons_self _ _) (.refl _) queued))
       (fun occurrence member named => ⟨queue, holds, fun _ kept => kept, fun _ kept => kept,
-        .inl ⟨occurrence, member, rfl, rfl, rfl⟩, fun selected same flow inside => .inr ⟨selected, _, _, inside,
-          .inl (by rw [named, ← same]; exact head)⟩⟩) ran
+        .inl ⟨⟨occurrence, member, rfl, rfl, rfl⟩, fun selected same flow inside => .inr ⟨selected, _, _, inside,
+          by rw [named, ← same]; exact head⟩⟩⟩) ran
   | onWrite stands ran => exact (contract.writeOutputs _ _ _ _ _ _ popped stands ran).1
   | onRemove stands ran => exact contract.removeVariables _ _ _ _ _ popped stands ran
   | onOccur stands ran =>
@@ -250,8 +250,8 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : ClosurePhases
       exact absurd this (Nat.lt_irrefl _)
     rw [List.mem_singleton.mp new]
     exact ⟨queue, holds, fun entry kept => instances ▸ kept, fun entry kept => scopes ▸ kept,
-      .inr ⟨_, _, _, by rw [element, scope]; exact head⟩, fun selected same flow inside =>
-        .inr ⟨selected, _, _, inside, .inr (by rw [element, scope, ← same]; exact head)⟩⟩
+      .inr ⟨_, _, _, by rw [element, scope]; exact head, fun selected same flow inside =>
+        .inr ⟨selected, same, inside⟩⟩⟩
   | onCancel => exact phases.cancel _ _ _ popped
   | onFire fired =>
     rcases fired with ⟨item, open_, ran⟩ | same
@@ -341,8 +341,8 @@ theorem absorb_keeps (phases : ClosurePhases inv) (pipeline : PipelineKeeps hook
         (Laws.State.Queued.shrink (before := state) (after := { state with signals := state.signals.take before })
           (List.take_sublist _ _) (.refl _) inQueue))
       (fun occurrence member named => ⟨state, holds, fun _ kept => kept, fun _ kept => kept,
-        .inl ⟨occurrence, member, rfl, rfl, rfl⟩, fun selected same flow inside => .inr ⟨selected, _, _, inside,
-          .inl (by rw [named, ← same]; exact queued)⟩⟩) completed
+        .inl ⟨⟨occurrence, member, rfl, rfl, rfl⟩, fun selected same flow inside => .inr ⟨selected, _, _, inside,
+          by rw [named, ← same]; exact queued⟩⟩⟩) completed
 
 /-- A micro-step whose body keeps `inv` keeps it. -/
 theorem microStep_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) (pipeline : PipelineKeeps hooks inv)

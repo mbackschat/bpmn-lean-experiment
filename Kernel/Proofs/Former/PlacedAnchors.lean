@@ -232,7 +232,7 @@ theorem anchoredBy_placed {program : Program} {s : State} (refs : ReferencesPlac
     (formed : WellFormed program s) (lane : PlacedLane program s) {anchor : ElementId} {scope : ScopeOccurrenceId}
     (anchored : Laws.Flow.AnchoredBy program s anchor scope) (stands : scope ∈ scopeIds s) :
     PlacedIn program s anchor scope := by
-  rcases anchored with ⟨occurrence, member, rfl, rfl⟩ | ⟨entry, member, named, link⟩ | ⟨child, inside, rfl⟩ | called |
+  rcases anchored with ⟨occurrence, member, rfl, rfl⟩ | ⟨entry, member, named, link⟩ | ⟨-, child, inside, rfl⟩ | called |
       ⟨run, member, rfl, rfl⟩ | ⟨run, member, rfl, rest⟩
   · exact lane.placed.occurrences occurrence member
   · rcases link with link | ⟨rfl, free⟩
@@ -260,7 +260,7 @@ theorem anchored_placed {program : Program} {s : State} (refs : ReferencesPlaced
   refine PlacedIn.alike ?_ (linked_same refs linked)
   rcases source with here | ⟨held, holds, rest⟩
   · exact anchoredBy_placed refs formed lane here stands
-  obtain ⟨scopes, instances, there⟩ := rest
+  obtain ⟨-, scopes, instances, there⟩ := rest
   have present : scope ∈ scopeIds held := by
     obtain ⟨entry, member, named⟩ := List.mem_map.mp stands
     exact List.mem_map.mpr ⟨entry, scopes entry member, named⟩

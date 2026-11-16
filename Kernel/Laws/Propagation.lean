@@ -404,9 +404,9 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
           have chain := (steady.trans dropped.2.1).trans decidedSteady
           have instances := (decidedInstances.trans dropped.2.2).trans passedInstances
           have begun := ops.begin _ element occurrence.id decidedKept ⟨occurrence, chain.scopes ▸ present, rfl⟩
-            (Laws.Flow.Anchored.held holds (fun _ inside => chain.scopes ▸ inside) (fun _ inside => instances ▸ inside)
-              (.inl rfl) (.inl (.inr (.inr (.inl
-                (handlerCandidates_children candidates _ (best?_mem handled)))))))
+            (Laws.Flow.Anchored.held holds chain.issued (fun _ inside => chain.scopes ▸ inside)
+              (fun _ inside => instances ▸ inside) (.inl rfl) (.inl (.inr (.inr (.inl
+                ⟨⟨occurrence, present, rfl⟩, handlerCandidates_children candidates _ (best?_mem handled)⟩)))))
           split
           · exact begun
           · exact throwerLeaves_keeps ops begun (thrown.steady ((ops.signalOccurrences _ _).trans chain.occurrences))

@@ -61,19 +61,23 @@ def GatewayOf (program : Program) (state : State) (occurrence : Occurrence) (hea
       (program.target? waiting.flow).bind program.element? = some element)
 
 /-- Where the continuation of `occurrence` by `leave` in `state` comes from: a state `held` that kept `inv`, whose
-instance entries and scope occurrences include `state`'s, held the occurrence or queued the `Signal.occur` that
-reserves it, and listed or queued every named flow the continuation leaves by. `Step.complete` continues after it
-removed the occurrence, so its source is read off the state the completion was taken from. -/
+instance entries and scope occurrences include `state`'s, and that held the occurrence, every named flow listed or
+queued by a completion of it, or queued the `Signal.occur` that reserves it, every named flow listed or named by that
+signal. Each named flow is read off the record that justifies the occurrence: a completion of the same number whose
+occurrence was removed names flows of another scope occurrence (`Proofs.Former.unpaired_emit_rejected`).
+`Step.complete` continues after it removed the occurrence, so its source is read off the state the completion was
+taken from. -/
 def LeavesFrom (inv : State → Prop) (program : Program) (state : State) (occurrence : Occurrence) (leave : Leave) :
     Prop :=
   ∃ held, inv held ∧ (∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) ∧
     (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
-    ((∃ kept ∈ held.occurrences, kept.id = occurrence.id ∧ kept.element = occurrence.element ∧
-        kept.scope = occurrence.scope) ∨
-      ∃ named writes rule, Signal.occur occurrence.element occurrence.scope named writes rule ∈ held.signals) ∧
-    ∀ selected, leave = .flows selected → ∀ flow ∈ selected, Lists program occurrence.element flow ∨
-      ∃ named writes rule, flow ∈ named ∧ (Signal.complete occurrence.id (.flows named) writes rule ∈ held.signals ∨
-        Signal.occur occurrence.element occurrence.scope (.flows named) writes rule ∈ held.signals)
+    (((∃ kept ∈ held.occurrences, kept.id = occurrence.id ∧ kept.element = occurrence.element ∧
+        kept.scope = occurrence.scope) ∧
+      ∀ selected, leave = .flows selected → ∀ flow ∈ selected, Lists program occurrence.element flow ∨
+        ∃ named writes rule, flow ∈ named ∧ Signal.complete occurrence.id (.flows named) writes rule ∈ held.signals) ∨
+      ∃ named writes rule, Signal.occur occurrence.element occurrence.scope named writes rule ∈ held.signals ∧
+        ∀ selected, leave = .flows selected → ∀ flow ∈ selected, Lists program occurrence.element flow ∨
+          ∃ flows, named = .flows flows ∧ flow ∈ flows)
 
 /-- One IL reference that keeps `element` in the process `anchor` belongs to (what `Proofs.Former.ReferencesPlaced`
 states of admitted programs): `element` is `anchor`, a child or the parent of it, a boundary its envelope declares, the
@@ -106,23 +110,27 @@ def RecordAnchor (state : State) (anchor : ElementId) (scope : ScopeOccurrenceId
     ∃ record ∈ run.pending, record.subject = anchor ∨ record.handler = some anchor
 
 /-- What `state` holds that places `anchor` where the scope occurrence `scope` lies: an occurrence of it there, a scope
-occurrence of it entered there or, calling no instance, `scope` itself, an element the scope occurrence declares
-(`State.childrenOf`), a top-level element of the process the called root `scope` runs (`CalledAnchor`), a
+occurrence of it entered there or, calling no instance, `scope` itself, an element the scope occurrence, standing,
+declares (`State.childrenOf`, which reads the root process's top level for a scope occurrence that does not stand), a
+top-level element of the process the called root `scope` runs (`CalledAnchor`), a
 Multi-Instance run's element (`RunAnchor`) or a pending compensation record's subject or handler (`RecordAnchor`). -/
 def AnchoredBy (program : Program) (state : State) (anchor : ElementId) (scope : ScopeOccurrenceId) : Prop :=
   (∃ occurrence ∈ state.occurrences, occurrence.scope = scope ∧ occurrence.element = anchor) ∨
     (∃ entry ∈ state.scopes, entry.element = some anchor ∧
       (entry.parent = some scope ∨ entry.id = scope ∧ entry.calledInstance = none)) ∨
-    (∃ child ∈ state.childrenOf program scope, child.header.id = anchor) ∨ CalledAnchor program state anchor scope ∨
+    ((∃ entry ∈ state.scopes, entry.id = scope) ∧ ∃ child ∈ state.childrenOf program scope, child.header.id = anchor) ∨
+    CalledAnchor program state anchor scope ∨
     RunAnchor state anchor scope ∨ RecordAnchor state anchor scope
 
 /-- Where work queued for `element` in the scope occurrence `scope` of `state` comes from: one reference (`Linked`) from
-an anchor that `state` places there (`AnchoredBy`), or that a state `held` that kept `inv`, and whose scope occurrences
-and instance entries include `state`'s, placed there, queued an arming for there, or queued a raise from there. -/
+an anchor that `state` places there (`AnchoredBy`), or that a state `held` that kept `inv`, issued no more than `state`
+and whose scope occurrences and instance entries include `state`'s, placed there, queued an arming for there, or queued
+a raise from there. A held state issued no more, so what it bounds `state` bounds, and a scope occurrence `state` enters
+later is none it named (`Proofs.Former.unissued_enter_rejected`). -/
 def Anchored (inv : State → Prop) (program : Program) (state : State) (element : ElementId)
     (scope : ScopeOccurrenceId) : Prop :=
   ∃ anchor, Linked program anchor element ∧ (AnchoredBy program state anchor scope ∨
-    ∃ held, inv held ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
+    ∃ held, inv held ∧ held.nextIssue ≤ state.nextIssue ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
       (∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) ∧ (AnchoredBy program held anchor scope ∨
         (∃ host, Signal.arm host anchor scope ∈ held.signals) ∨
         (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ held.signals) ∨
@@ -140,30 +148,31 @@ theorem Anchored.occurrence {inv : State → Prop} {program : Program} {state : 
     (member : occurrence ∈ state.occurrences) : Anchored inv program state occurrence.element occurrence.scope :=
   ⟨occurrence.element, .inl rfl, .inl (.inl ⟨occurrence, member, rfl, rfl⟩)⟩
 
-/-- Work linked to an anchor that a state `held` that kept `inv`, with `state`'s scope occurrences and instance entries,
-places or queued an arming for, is anchored in `state`. -/
+/-- Work linked to an anchor that a state `held` that kept `inv`, issued no more and with `state`'s scope occurrences
+and instance entries, places or queued an arming for, is anchored in `state`. -/
 theorem Anchored.held {inv : State → Prop} {program : Program} {held state : State} {anchor element : ElementId}
-    {scope : ScopeOccurrenceId} (holds : inv held) (scopes : ∀ entry ∈ state.scopes, entry ∈ held.scopes)
+    {scope : ScopeOccurrenceId} (holds : inv held) (issued : held.nextIssue ≤ state.nextIssue) (scopes : ∀ entry ∈ state.scopes, entry ∈ held.scopes)
     (instances : ∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) (linked : Linked program anchor element)
     (source : AnchoredBy program held anchor scope ∨ (∃ host, Signal.arm host anchor scope ∈ held.signals) ∨
       (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ held.signals) ∨
       ∃ raised origin, Signal.raise raised origin ∈ held.signals ∧ origin.element = anchor ∧ origin.scope = scope) :
     Anchored inv program state element scope :=
-  ⟨anchor, linked, .inr ⟨held, holds, scopes, instances, source⟩⟩
+  ⟨anchor, linked, .inr ⟨held, holds, issued, scopes, instances, source⟩⟩
 
-/-- Work anchored in a state that kept `inv` stays anchored in one whose scope occurrences and instance entries it
-includes, read off that state. -/
+/-- Work anchored in a state that kept `inv` stays anchored in one that issued no less and whose scope occurrences
+and instance entries it includes, read off that state. -/
 theorem Anchored.weaken {inv : State → Prop} {program : Program} {state after : State} {element : ElementId}
     {scope : ScopeOccurrenceId} (holds : inv state) (anchored : Anchored inv program state element scope)
+    (issued : state.nextIssue ≤ after.nextIssue)
     (scopes : ∀ entry ∈ after.scopes, entry ∈ state.scopes)
     (instances : ∀ entry ∈ after.slots.instances, entry ∈ state.slots.instances) :
     Anchored inv program after element scope := by
   obtain ⟨anchor, linked, source⟩ := anchored
   refine ⟨anchor, linked, .inr ?_⟩
   rcases source with here | ⟨held, kept, rest⟩
-  · exact ⟨state, holds, scopes, instances, .inl here⟩
-  · obtain ⟨heldScopes, heldInstances, there⟩ := rest
-    exact ⟨held, kept, fun _ inside => heldScopes _ (scopes _ inside),
+  · exact ⟨state, holds, issued, scopes, instances, .inl here⟩
+  · obtain ⟨heldIssued, heldScopes, heldInstances, there⟩ := rest
+    exact ⟨held, kept, Nat.le_trans heldIssued issued, fun _ inside => heldScopes _ (scopes _ inside),
       fun _ inside => heldInstances _ (instances _ inside), there⟩
 
 /-- Where a begin queued in `state` comes from: its element anchored in the scope occurrence it begins in
@@ -176,12 +185,12 @@ structure BeginAnchored (inv : State → Prop) (program : Program) (state : Stat
       ∃ entry ∈ state.scopes, entry.id = request.scope ∧ entry.parent = some occurrence.scope ∧ entry.calledInstance = none
   incoming : ∀ flow, request.incoming = some flow → program.target? flow = some request.element
 
-/-- A compensation run of a state `held` that kept `inv`, whose scope occurrences and instance entries include
-`state`'s, resumes by reserving `element` in `scope` and leaving by `leave`: where the reservation a run's end queues
+/-- A compensation run of a state `held` that kept `inv`, issued no more than `state` and whose scope occurrences and
+instance entries include `state`'s, resumes by reserving `element` in `scope` and leaving by `leave`: where the reservation a run's end queues
 comes from. -/
 def ResumedBy (inv : State → Prop) (state : State) (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave) :
     Prop :=
-  ∃ held, inv held ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
+  ∃ held, inv held ∧ held.nextIssue ≤ state.nextIssue ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
     (∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) ∧
     ∃ run ∈ held.slots.compensation.runs, run.resume = some (.occur element scope leave)
 
@@ -211,10 +220,15 @@ theorem LeavesFrom.flows {inv : State → Prop} {program : Program} {state : Sta
     {selected flows : List FlowId} (continues : LeavesFrom inv program state occurrence (.flows selected))
     (among : ∀ flow ∈ flows, flow ∈ selected) : LeavesFrom inv program state occurrence (.flows flows) := by
   obtain ⟨held, holds, kept⟩ := continues
-  obtain ⟨instances, scopes, source, named⟩ := kept
-  exact ⟨held, holds, instances, scopes, source, fun _ same flow member => by
+  obtain ⟨instances, scopes, source⟩ := kept
+  refine ⟨held, holds, instances, scopes, source.imp (fun ⟨occurs, named⟩ => ⟨occurs, ?_⟩) fun ⟨signalled, rest⟩ => ?_⟩
+  · intro _ same flow member
     cases same
-    exact named selected rfl flow (among flow member)⟩
+    exact named selected rfl flow (among flow member)
+  · obtain ⟨writes, rule, queued, named⟩ := rest
+    exact ⟨signalled, writes, rule, queued, fun _ same flow member => by
+      cases same
+      exact named selected rfl flow (among flow member)⟩
 
 /-- A continuation whose flows its element lists comes from where its occurrence did. -/
 theorem LeavesFrom.listed {inv : State → Prop} {program : Program} {state : State} {occurrence : Occurrence}
@@ -222,10 +236,15 @@ theorem LeavesFrom.listed {inv : State → Prop} {program : Program} {state : St
     (listed : ∀ flow ∈ flows, Lists program occurrence.element flow) :
     LeavesFrom inv program state occurrence (.flows flows) := by
   obtain ⟨held, holds, kept⟩ := continues
-  obtain ⟨instances, scopes, source, _⟩ := kept
-  exact ⟨held, holds, instances, scopes, source, fun _ same flow member => by
+  obtain ⟨instances, scopes, source⟩ := kept
+  have each : ∀ selected, Leave.flows flows = .flows selected → ∀ flow ∈ selected,
+      Lists program occurrence.element flow := fun _ same flow member => by
     cases same
-    exact .inl (listed flow member)⟩
+    exact listed flow member
+  refine ⟨held, holds, instances, scopes, source.imp (fun ⟨occurs, _⟩ => ⟨occurs, ?_⟩) fun ⟨signalled, rest⟩ => ?_⟩
+  · exact fun selected same flow member => .inl (each selected same flow member)
+  · obtain ⟨writes, rule, queued, _⟩ := rest
+    exact ⟨signalled, writes, rule, queued, fun selected same flow member => .inl (each selected same flow member)⟩
 
 /-- A source covers a later state whose instance entries and scope occurrences are among the state's, and an
 occurrence with the same number, element and scope occurrence. -/
@@ -236,11 +255,11 @@ theorem LeavesFrom.shrink {inv : State → Prop} {program : Program} {state : St
     (element : moved.element = occurrence.element) (scope : moved.scope = occurrence.scope) :
     LeavesFrom inv program later moved leave := by
   obtain ⟨held, holds, kept⟩ := continues
-  obtain ⟨heldInstances, heldScopes, source, named⟩ := kept
+  obtain ⟨heldInstances, heldScopes, source⟩ := kept
   unfold LeavesFrom
   rw [id, element, scope]
   exact ⟨held, holds, fun entry member => heldInstances entry (instances entry member),
-    fun entry member => heldScopes entry (scopes entry member), source, named⟩
+    fun entry member => heldScopes entry (scopes entry member), source⟩
 
 /-- A source read under `inv` is one read under anything `inv` implies. -/
 theorem LeavesFrom.mono {inv weaker : State → Prop} {program : Program} {state : State} {occurrence : Occurrence}

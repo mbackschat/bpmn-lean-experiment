@@ -454,7 +454,7 @@ theorem unresumed_resumedBy_rejected (state : State) (element : ElementId) (scop
     ¬ Laws.Flow.ResumedBy (fun held => held.slots.compensation.runs = []) state element scope leave := by
   intro resumed
   obtain ⟨held, empty, rest⟩ := resumed
-  obtain ⟨_, _, found⟩ := rest
+  obtain ⟨_, _, _, found⟩ := rest
   obtain ⟨run, member, _⟩ := found
   simp [empty] at member
 

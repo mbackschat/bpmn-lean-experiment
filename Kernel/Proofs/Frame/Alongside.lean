@@ -39,10 +39,11 @@ kept `WellFormed` and `rel` (`Laws.State.BegunFrom`, `Laws.State.RaisesFrom`); a
 `program`, which names the root by the Call's authored identifier, for a present begun Call of the element role, of an
 Activity the program declares, that owns no called root yet (`Laws.Work.WorkOps.enterCalled`). -/
 structure OccursAlongside (program : Program) (rel : State → Prop) : Prop where
-  reserve : ∀ s element scope, WellFormed program s → Reservable program element →
+  reserve : ∀ s element scope, WellFormed program s → Laws.Step.ScopeStands s scope → Reservable program element →
     Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s element scope → rel s →
     rel (s.reserve element scope).1
-  occur : ∀ s element scope leave writes rule, (BoundaryOf program element ∨ PendingIn rel element) →
+  occur : ∀ s element scope leave writes rule, WellFormed program s →
+    (BoundaryOf program element ∨ PendingIn rel element) →
     Laws.Flow.OccurAnchored (fun t => WellFormed program t ∧ rel t) program s element scope leave → rel s →
     rel (s.signal (.occur element scope leave writes rule))
   compensate : ∀ s scope activity trigger leave element at_ resumed,
@@ -244,7 +245,7 @@ structure FrameAlongside (program : Program) (rel : State → Prop) (srel : Stat
     Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s element parent → rel s →
     rel (s.enterScope element parent locals owner).1
   /-- The reservation a `Signal.occur` taken off a queue that kept `rel` asks for (`Laws.State.Popped`). -/
-  reserve : ∀ s element scope, WellFormed program s → Laws.Step.PendingIn rel element →
+  reserve : ∀ s element scope, WellFormed program s → Laws.Step.ScopeStands s scope → Laws.Step.PendingIn rel element →
     (∃ leave writes rule, Laws.State.Popped (fun t => WellFormed program t ∧ rel t)
       (.occur element scope leave writes rule) s) → rel s →
     rel (s.reserve element scope).1
@@ -455,11 +456,11 @@ theorem FrameAlongside.openItem {program : Program} (side : FrameAlongside progr
 theorem FrameAlongside.openSubscription {program : Program} (side : FrameAlongside program rel)
     (occurs : OccursAlongside program rel) {s : State} (formed : WellFormed program s) (kept : rel s)
     (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool)
-    (reservable : Laws.IL.Reservable program element)
+    (stands : Laws.Step.ScopeStands s scope) (reservable : Laws.IL.Reservable program element)
     (anchored : Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s element scope) :
     rel (s.openSubscription kind element scope host passive).1 := by
   refine side.frame (s.reserve element scope).1.issue.1 _ ?_
-    (side.issue _ (occurs.reserve s element scope formed reservable anchored kept))
+    (side.issue _ (occurs.reserve s element scope formed stands reservable anchored kept))
   rw [Laws.State.openSubscription_eq, Laws.State.issue_eq]
   exact .same
 

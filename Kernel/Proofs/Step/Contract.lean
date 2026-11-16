@@ -339,7 +339,7 @@ theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.Comp
     refine compensate_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) resumable pending
       (fun next same => ?_) ran
     obtain ⟨queue, kept, signals, same'⟩ := popped
-    refine ⟨queue, kept, ?_, by rw [same'], by rw [same']⟩
+    refine ⟨queue, kept, Nat.le_of_eq (by rw [same']), ?_, by rw [same'], by rw [same']⟩
     rw [signals, same]
     simp [Laws.Step.resumesOf]
   handlerCompleted _ _ _ _ _ holds stands ran := by
@@ -426,7 +426,8 @@ theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagat
     have entries : state.slots.instances = queue.slots.instances := by rw [shape]
     obtain ⟨linked, listed⟩ := Laws.Propagation.boundariesOf_sourced inside
     exact (Laws.Propagation.boundaryFire_keeps ops _ _ _ _ kept (Laws.Propagation.boundariesOf_boundaryOf inside)
-      (Laws.Flow.Anchored.held queued (fun _ member => by rw [steady.scopes, scopes] at member; exact member)
+      (Laws.Flow.Anchored.held queued (Nat.le_trans (Nat.le_of_eq (by rw [shape])) steady.issued)
+        (fun _ member => by rw [steady.scopes, scopes] at member; exact member)
         (fun _ member => by rw [instances, entries] at member; exact member) linked
         (.inr (.inr (.inr ⟨raised, origin, by rw [heads]; exact List.mem_cons_self .., rfl, rfl⟩)))) listed).1
   · exact Laws.Propagation.searchScopes_keeps ops search popped _ _ _ _ holds settled thrown (.refl _) (.inl rfl)

@@ -320,7 +320,7 @@ theorem boundaryFire_keeps {program : Program} {inv : State → Prop} (ops : Pro
       | none => exact ⟨holds, rfl, anchored⟩
       | some owner =>
         exact ⟨ops.cancel _ _ holds, ops.signalOccurrences _ _, anchored.weaken holds
-          (fun _ inside => by rwa [Option.elim_some, (ops.signalFrame _ _).1] at inside)
+          (Nat.le_of_eq (Laws.State.signal_nextIssue _ _).symm) (fun _ inside => by rwa [Option.elim_some, (ops.signalFrame _ _).1] at inside)
           (fun _ inside => by rwa [Option.elim_some, (ops.signalFrame _ _).2] at inside)⟩
     · exact ⟨holds, rfl, anchored⟩
   exact ⟨ops.occur _ _ _ _ _ _ interrupted.1 bounded

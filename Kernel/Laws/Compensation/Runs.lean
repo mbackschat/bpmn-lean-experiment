@@ -35,11 +35,11 @@ def Fits (settled : State → Nat → Prop) (state : State) (run : CompensationR
     ∀ context ∈ run.running.map (·.1), context.value < state.nextIssue ∧
       ∀ entry ∈ state.scopes, entry.id = context → entry.parent = some run.scope
 
-/-- `resume` is the resume of a compensation queued in a state that kept `inv`, with `state`'s scope occurrences and
-instance entries: where a run a compensation starts resumes from (`StoredFrom`). -/
+/-- `resume` is the resume of a compensation queued in a state that kept `inv`, issued no more than `state`, with
+`state`'s scope occurrences and instance entries: where a run a compensation starts resumes from (`StoredFrom`). -/
 def ResumeQueued (inv : State → Prop) (state : State) (resume : Resume) : Prop :=
-  ∃ queue, inv queue ∧ some resume ∈ Laws.Step.resumesOf queue.signals ∧ queue.scopes = state.scopes ∧
-    queue.slots.instances = state.slots.instances
+  ∃ queue, inv queue ∧ queue.nextIssue ≤ state.nextIssue ∧ some resume ∈ Laws.Step.resumesOf queue.signals ∧
+    queue.scopes = state.scopes ∧ queue.slots.instances = state.slots.instances
 
 /-- What compensation runs need of the state operations they apply, for an invariant `inv` of instances of `program`
 and what it calls settled; each operation also keeps what has settled. -/

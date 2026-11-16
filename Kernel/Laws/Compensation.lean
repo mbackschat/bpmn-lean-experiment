@@ -555,12 +555,13 @@ theorem runs_keep {inv : State → Prop} {settled : State → Nat → Prop} {pro
           · cases ran
             exact endedStore.queue ops
               (ops.occur _ _ _ _ _ _ endedStore.1 (held_pending holds member resumed)
-                ⟨state, holds, fun _ inside => inside, fun _ inside => inside, run, member,
+                ⟨state, holds, Nat.le_refl _, fun _ inside => inside, fun _ inside => inside, run, member,
                   resumed⟩)
           · cases ran
             exact (endedCancel _).queue ops
               (ops.occur _ _ _ _ _ _ (endedCancel _).1 (held_pending holds member resumed)
-                ⟨state, holds, fun _ inside => by rw [(ops.signalled _ _).1] at inside; exact inside,
+                ⟨state, holds, by rw [(ops.signalled _ _).2.1]; exact Nat.le_refl _,
+                  fun _ inside => by rw [(ops.signalled _ _).1] at inside; exact inside,
                   fun _ inside => by rw [(ops.signalled _ _).2.2] at inside; exact inside, run, member,
                   resumed⟩)
           · obtain rfl := (fits.2.1 _ _ resumed).trans own

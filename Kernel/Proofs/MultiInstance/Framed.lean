@@ -323,7 +323,7 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside program 
     · exact .inl old
     · rw [List.mem_singleton.mp new]
       exact .inr (counter_fresh formed)
-  reserve s element scope _ _ _ kept := reserve_runsFramed s element scope kept
+  reserve s element scope _ _ _ _ kept := reserve_runsFramed s element scope kept
   leaveScope _ _ formed present leaves kept := leaveScope_runsFramed formed present leaves kept
   clearInside _ _ keep formed present _ kept := kept.carry (clearInside_carries formed present keep kept)
   disarm s host formed kept := by
@@ -344,8 +344,8 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside program 
 
 /-- Subscriptions' reservations and queued occurrences keep the lane's slot invariant but its numbering. -/
 theorem runsFramed_occursAlongside (program : Program) : OccursAlongside program (RunsFramed program) where
-  reserve s element scope _ _ _ kept := reserve_runsFramed s element scope kept
-  occur s _ _ _ _ _ _ _ kept := by
+  reserve s element scope _ _ _ _ kept := reserve_runsFramed s element scope kept
+  occur s _ _ _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
   compensate s _ _ _ _ _ _ _ _ _ _ kept := by
@@ -648,7 +648,7 @@ theorem unstarted_alongside (b : State) (program : Program) : Alongside program 
     exact kept.move (.same rfl rfl rfl (Nat.le_succ _) rfl)
   enterScope s element parent locals owner formed _ kept :=
     kept.move (.ofEnds (Laws.Step.enterScope_frame formed element parent locals owner) (by rw [Laws.State.enterScope_eq]))
-  reserve s element scope formed _ _ kept := kept.reserve formed
+  reserve s element scope formed _ _ _ kept := kept.reserve formed
   leaveScope _ _ formed present _ kept :=
     kept.move (.ofEnds (Laws.Step.leaveScope_frame formed present) (Laws.State.leaveScope_left formed present).started)
   clearInside _ _ keep formed present inside kept :=
@@ -705,7 +705,7 @@ theorem snapshots_frameAlongside (b : State) (program : Program) : StoresAlongsi
   enterScope s element parent locals owner _ _ kept := by
     rw [Laws.State.enterScope_eq]
     exact kept.same rfl
-  reserve s element scope _ _ _ kept := kept.reserve element scope
+  reserve s element scope _ _ _ _ kept := kept.reserve element scope
   leaveScope _ _ formed present _ kept := kept.shrink (Laws.State.leaveScope_left formed present).slots.bodies
   clearInside _ _ keep formed present _ kept :=
     kept.shrink (Laws.State.clearInside_cleared formed present keep).slots.bodies
@@ -746,7 +746,7 @@ theorem since_frameAlongside (b : State) (program : Program) :
     enterScope := fun s element parent locals owner formed anchored kept =>
       ⟨one.enterScope s element parent locals owner formed (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
         two.enterScope s element parent locals owner formed (anchored.mono fun _ held => ⟨held.1, held.2.2⟩) kept.2⟩
-    reserve := fun _ element scope formed _ _ kept => ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
+    reserve := fun _ element scope formed _ _ _ kept => ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
     leaveScope := fun s scope formed present leaves kept =>
       ⟨one.leaveScope s scope formed present leaves kept.1, two.leaveScope s scope formed present leaves kept.2⟩
     clearInside := fun s scope keep formed present inside kept =>
@@ -769,8 +769,8 @@ theorem since_frameAlongside (b : State) (program : Program) :
 `Laws.Step.EndsStep` says, keep the draft's starts and keep every body's record. -/
 theorem since_occursAlongside (b : State) (program : Program) :
     OccursAlongside program fun s => Unstarted b s ∧ Snapshots b s where
-  reserve _ element scope formed _ _ kept := ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
-  occur s _ _ _ _ _ _ _ kept := by
+  reserve _ element scope formed _ _ _ kept := ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
+  occur s _ _ _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact ⟨kept.1.move (.same rfl rfl rfl (Nat.le_refl _) rfl), kept.2.same rfl⟩
   compensate s _ _ _ _ _ _ _ _ _ _ kept := by

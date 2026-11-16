@@ -2,7 +2,7 @@ module
 
 public import Kernel.Laws.Step.Inputs
 public import Kernel.Laws.Data.Values
-import Kernel.Laws.State
+import Kernel.Laws.State.Chain
 
 /-! # Proofs: the former lanes, values and mapping sources (P7)
 

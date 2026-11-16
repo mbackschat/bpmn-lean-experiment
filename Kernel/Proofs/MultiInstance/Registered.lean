@@ -336,7 +336,7 @@ theorem framedNumbered_frameAlongside (program : Program) :
     ⟨(runsFramed_frameAlongside program).enterScope s element parent locals owner formed
       (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
       fun apart => (kept.2 apart).enterScope formed kept.1.owns element parent locals owner⟩
-  reserve s element scope formed pending _ kept :=
+  reserve s element scope formed _ pending _ kept :=
     ⟨reserve_runsFramed s element scope kept.1, fun apart =>
       (kept.2 apart).reserve formed (PendingIn.unlooped (fun _ kept => (kept.2 apart).2.occurs) pending)⟩
   leaveScope s scope formed present leaves kept :=
@@ -365,12 +365,12 @@ theorem framedNumbered_frameAlongside (program : Program) :
 /-- Subscriptions' reservations and queued occurrences keep the numbering beside the slot invariant: each names a
 reservable element, a boundary or one pending in a state that kept it, none looping. -/
 theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside program (FramedNumbered program) where
-  reserve s element scope formed reservable anchored kept :=
-    ⟨(runsFramed_occursAlongside program).reserve s element scope formed reservable (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
+  reserve s element scope formed stands reservable anchored kept :=
+    ⟨(runsFramed_occursAlongside program).reserve s element scope formed stands reservable (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
       fun apart =>
       (kept.2 apart).reserve formed (reservable_unlooped apart reservable)⟩
-  occur s element scope leave writes rule source anchored kept :=
-    ⟨(runsFramed_occursAlongside program).occur s element scope leave writes rule
+  occur s element scope leave writes rule formed source anchored kept :=
+    ⟨(runsFramed_occursAlongside program).occur s element scope leave writes rule formed
       (source.imp_right fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩) (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1, fun apart =>
       (kept.2 apart).signalPending rfl fun named inside => by
         rw [List.mem_singleton.mp inside]
@@ -495,7 +495,7 @@ theorem composed_phases : Laws.Step.Phases Composed :=
     reserve := fun _ s element scope holds stands pending popped =>
       have reserved := phases.reserve _ _ element scope holds.1 stands (pending.imp fun _ => And.imp_left And.left)
         (popped.imp fun _ => Exists.imp fun _ => Exists.imp fun _ queued => queued.imp fun _ held => held.1)
-      ⟨⟨reserved.1, (framedNumbered_frameAlongside _).reserve s element scope holds.1
+      ⟨⟨reserved.1, (framedNumbered_frameAlongside _).reserve s element scope holds.1 stands
         (pending.imp fun _ => And.imp_left And.right) popped holds.2⟩, reserved.2⟩
     cancel := fun _ s id holds => ⟨phases.cancel _ _ id holds.1, (framedNumbered_frameAlongside _).cancelOccurrence
       framedNumbered_withoutRecord (fun _ _ _ kept => unmoved kept rfl rfl rfl rfl rfl) holds.1 holds.2⟩ }
