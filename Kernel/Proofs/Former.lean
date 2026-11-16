@@ -18,24 +18,41 @@ occurrence reads and writes (`Laws.Data`); `Kernel.Proofs.Former.Values` the val
 (`Laws.Data.Values`); `Kernel.Proofs.Former.Calls` a Call's own hooks and the identities of the instances it calls.
 P6's corollary is `Kernel.Proofs.Concurrency.endBesideEntry`.
 
-| Row | Former theorem | Here |
-|---|---|---|
-| PC-DATA-01 | encoding then decoding an admitted canonical value preserves it | not applicable: wire admission and the codecs have no counterpart in `Step`; guard 11's codec round trips cover them |
-| PC-DATA-01 | cloning preserves value equality without aliasing | not applicable: Lean values are immutable, so no `Step` state aliases another |
-| PC-DATA-01 | a rejected command preserves the committed state | not applicable: a rejected `Step.step` returns no state, so the host keeps the before-state by the outcome's type |
-| PC-DATA-01 | bound checks reject before partial writes | restated: `ValuesRejectedWhole` (`Kernel.Proofs.Former.Values`) |
-| PC-HUM-04 | pass-through lowering and its admission checks | not applicable: there is no lowering; a pass-through Task runs as an Activity through `Step`'s one pipeline |
-| PC-HUM-04 | the closure burst bound (never proved) | not applicable: `Step.closureBound` and `Step.closureWorkBound` make an overlong closure `unsupported`, dynamic-only |
-| PC-HUM-04 | `prepared_end_declared_entry_pair` (`DTB-COMMUTE-01`) | proved as a corollary of P6's `Proofs.Concurrency.SchedulesAgree` under `Laws.Flow.Apart`: `Proofs.Concurrency.endBesideEntry` |
-| PC-SCOPE-04 | `invokeState?_installs_snapshot`, `copyValues?_absent_is_null` (`CVM-IN-01`) | restated: `CallInstallsSnapshot` (`Kernel.Proofs.Former.Calls`) and `FailedSourcesRead` (`Kernel.Proofs.Former.Values`) |
-| PC-SCOPE-04 | the read, write and owner isolation lemmas (`CVM-ISOLATE-01`) | restated: `CalledReadsIsolated`, `CalledWritesIsolated` |
-| PC-SCOPE-04 | `returnState?_writes_outputs_from_caller` (`CVM-OUT-01`) | restated: `OutputsAtNearestOwner` and, for a Scope's item, `OutputsAtDeclaringOccurrence` |
-| PC-SCOPE-04 | `returnState?_retires_called_frames` (`CVM-RETIRE-01`) | restated as P3's `Proofs.Cancellation.SubtreeRemoved` of the called root |
-| PC-SCOPE-05 | invocation keeps call associations valid and creates exactly the derived identity | restated: `CalledIdentityUnique` (`Kernel.Proofs.Former.Calls`) |
-| PC-SCOPE-05 | return continues exactly its caller and keeps every other record, root, wait and token (`CALLN-RETURN-01`, `CALLN-OUTSIDE-01`) | restated: `ReturnContinuesCaller` (`Kernel.Proofs.Former.Calls`) |
-| PC-SCOPE-05 | a called root with a live nested record is not quiescent (`CALLN-NEST-01`) | restated: `NestedCallKeepsRootBusy` |
-| PC-SCOPE-05 | removing a returned called tree keeps everything outside it | restated as P3's `Proofs.Cancellation.SubtreeRemoved` of the called root; removing the Call's occurrence leaves the called root by `State.leaveScope`, which keeps what lies outside it (`Laws.State.leaveScope_left`) |
-| PC-SCOPE-05 | the Stage B lift of the parentless-caller premise | not applicable: the kernel derives called identities from the caller's identity (`State.calledInstanceId`) and has no parentless-root premise |
+Each former theorem by row, and what it is here:
+
+- PC-DATA-01: encoding then decoding an admitted canonical value preserves it. Not applicable: wire admission and the
+  codecs have no counterpart in `Step`; guard 11's codec round trips cover them.
+- PC-DATA-01: cloning preserves value equality without aliasing. Not applicable: Lean values are immutable, so no `Step`
+  state aliases another.
+- PC-DATA-01: a rejected command preserves the committed state. Not applicable: a rejected `Step.step` returns no state,
+  so the host keeps the before-state by the outcome's type.
+- PC-DATA-01: bound checks reject before partial writes. Restated: `ValuesRejectedWhole`
+  (`Kernel.Proofs.Former.Values`).
+- PC-HUM-04: pass-through lowering and its admission checks. Not applicable: there is no lowering; a pass-through Task
+  runs as an Activity through `Step`'s one pipeline.
+- PC-HUM-04: the closure burst bound (never proved). Not applicable: `Step.closureBound` and `Step.closureWorkBound`
+  make an overlong closure `unsupported`, dynamic-only.
+- PC-HUM-04: `prepared_end_declared_entry_pair` (`DTB-COMMUTE-01`). Proved as a corollary of P6's
+  `Proofs.Concurrency.SchedulesAgree` under `Laws.Flow.Apart`: `Proofs.Concurrency.endBesideEntry`.
+- PC-SCOPE-04: `invokeState?_installs_snapshot`, `copyValues?_absent_is_null` (`CVM-IN-01`). Restated:
+  `CallInstallsSnapshot` (`Kernel.Proofs.Former.Calls`) and `FailedSourcesRead` (`Kernel.Proofs.Former.Values`).
+- PC-SCOPE-04: the read, write and owner isolation lemmas (`CVM-ISOLATE-01`). Restated: `CalledReadsIsolated`,
+  `CalledWritesIsolated`.
+- PC-SCOPE-04: `returnState?_writes_outputs_from_caller` (`CVM-OUT-01`). Restated: `OutputsAtNearestOwner` and, for a
+  Scope's item, `OutputsAtDeclaringOccurrence`.
+- PC-SCOPE-04: `returnState?_retires_called_frames` (`CVM-RETIRE-01`). Restated as P3's
+  `Proofs.Cancellation.SubtreeRemoved` of the called root.
+- PC-SCOPE-05: invocation keeps call associations valid and creates exactly the derived identity. Restated:
+  `CalledIdentityUnique` (`Kernel.Proofs.Former.Calls`).
+- PC-SCOPE-05: return continues exactly its caller and keeps every other record, root, wait and token
+  (`CALLN-RETURN-01`, `CALLN-OUTSIDE-01`). Restated: `ReturnContinuesCaller` (`Kernel.Proofs.Former.Calls`).
+- PC-SCOPE-05: a called root with a live nested record is not quiescent (`CALLN-NEST-01`). Restated:
+  `NestedCallKeepsRootBusy`.
+- PC-SCOPE-05: removing a returned called tree keeps everything outside it. Restated as P3's
+  `Proofs.Cancellation.SubtreeRemoved` of the called root; removing the Call's occurrence leaves the called root by
+  `State.leaveScope`, which keeps what lies outside it (`Laws.State.leaveScope_left`).
+- PC-SCOPE-05: the Stage B lift of the parentless-caller premise. Not applicable: the kernel derives called identities
+  from the caller's identity (`State.calledInstanceId`) and has no parentless-root premise.
 
 Model premises cite their refusal codes where admission enforces one; that admission enforces them stays scenario
 evidence. Nothing executable imports this module.

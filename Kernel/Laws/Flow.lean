@@ -431,8 +431,9 @@ theorem held_link_rejected : ¬ LinkPassesThrough (· == ⟨"C"⟩) waitingAtC :
 /-! ## The state invariant under Flow's hooks
 
 Flow's share of the proof wave's state-invariant lane (P2), stated over `FlowOps`, generic in `inv`, so the proof reads
-of `Laws.State` only that queuing a signal moves nothing but the queue; `Kernel.Proofs.Step` fills `FlowOps` for `Laws.State.WellFormed`. `Hooks.outflow` queues flow
-tokens in the completing occurrence's scope occurrence, and a Link queues its own begun occurrence's completion. -/
+of `Laws.State` only that queuing a signal moves nothing but the queue; `Kernel.Proofs.Step` fills `FlowOps` for
+`Laws.State.WellFormed`. `Hooks.outflow` queues flow tokens in the completing occurrence's scope occurrence, and a Link
+queues its own begun occurrence's completion. -/
 
 /-- What Flow's hooks need of the state operations they apply, for an invariant `inv` over `program`, with the flows
 an outflow queues read off states that kept `src`, which the completion the outflow continues ran on kept (`inv` by
@@ -801,7 +802,8 @@ theorem arriveGateway_keeps {inv : State → Prop} {settled : State → Nat → 
         refine ops.complete _ _ _ _ _ holds (ops.begun _ _ holds member begun) fun _ same taken inside => ?_
         cases same
         rw [List.mem_singleton.mp inside]
-        exact ⟨state, holds, fun _ h _ => h, fun _ h => h, fun _ h => h, .inl ⟨occurrence, member, rfl, gateway_offered gateway member (fun _ waiting => waiting)
+        exact ⟨state, holds, fun _ h _ => h, fun _ h => h, fun _ h => h, .inl ⟨occurrence, member, rfl,
+          gateway_offered gateway member (fun _ waiting => waiting)
           (listing _ (.inr ⟨candidates, default, .inl kind, takes flow picked⟩))⟩⟩
       · cases ran
   · exact join_keeps ops holds member begun gateway (fun _ _ taken flow inside => by

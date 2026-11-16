@@ -18,9 +18,10 @@ called instance. Each statement is over a hooks parameter and closes when `Kerne
 `Registry.hooks`.
 
 The model premises are that a process's authored identifiers are distinct (`PublicIdsApart`), which the codec does not
-check, and, for identities apart, that the program's references stay in one process (`ReferencesPlaced`). The names of called roots are a lane invariant beside `Laws.State.WellFormed`, as P4's `RunsFormed` is
-(`CallsFormed`): held at a start, in every instance of a population run and across a committed input, by every state
-operation the hooks and `Step` apply. Nothing executable imports this module.
+check, and, for identities apart, that the program's references stay in one process (`ReferencesPlaced`). The names of
+called roots are a lane invariant beside `Laws.State.WellFormed`, as P4's `RunsFormed` is (`CallsFormed`): held at a
+start, in every instance of a population run and across a committed input, by every state operation the hooks and `Step`
+apply. Nothing executable imports this module.
 -/
 
 @[expose] public section

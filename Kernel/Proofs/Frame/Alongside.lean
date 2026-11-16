@@ -195,18 +195,18 @@ theorem CompletesFrom.unnamed {rel : State → Prop} {program : Program} {s : St
     (unnamed : ∀ selected, leave = .flows selected → selected = []) : CompletesFrom rel program s id leave :=
   .inl fun selected same _ inside => by cases unnamed selected same; cases inside
 
-/-- What the state operations the hooks apply keep of a property `rel` carried beside `WellFormed`: an update of
-nothing `rel` may read (`Unmoved`), queuing a begin that `BeginFits`, issuing an identity, entering a scope occurrence
-(a Call's called root, which reads the program, is `OccursAlongside`'s), reserving an occurrence a `Signal.occur` queued
-in a state that kept `rel` (`Laws.Step.PendingIn`; a subscription's reservation is `OccursAlongside`'s), leaving a scope occurrence that stands and is owned or a running
-compensation context (`LeavesOwned`), clearing one that stands, keeping only occurrences that lie in no scope occurrence
-strictly within it, disarming a host, and a variable write or removal. Every feature's operations record of `WellFormed`
-and `rel` but `Laws.MultiInstance.MultiInstanceOps` and the compensation records follows from its record of `WellFormed`
-and this one, with `OccursAlongside` where it reserves, queues a trigger or enters a called root; those two compensation
-records also store runs (`StoresAlongside`). The flows an outflow queues are read off states that kept `srel`
-beside `WellFormed` (`Laws.Flow.FlowOps`); a property that reads no flow token takes any. The record is stated at the
-one `program` a run executes, as the builders read it (`Proofs.Cancellation.featureOps_frame`), so a property that reads
-the program may hold of that program only. -/
+/-- What the state operations the hooks apply keep of a property `rel` carried beside `WellFormed`: an update of nothing
+`rel` may read (`Unmoved`), queuing a begin that `BeginFits`, issuing an identity, entering a scope occurrence (a Call's
+called root, which reads the program, is `OccursAlongside`'s), reserving an occurrence a `Signal.occur` queued in a
+state that kept `rel` (`Laws.Step.PendingIn`; a subscription's reservation is `OccursAlongside`'s), leaving a scope
+occurrence that stands and is owned or a running compensation context (`LeavesOwned`), clearing one that stands, keeping
+only occurrences that lie in no scope occurrence strictly within it, disarming a host, and a variable write or removal.
+Every feature's operations record of `WellFormed` and `rel` but `Laws.MultiInstance.MultiInstanceOps` and the
+compensation records follows from its record of `WellFormed` and this one, with `OccursAlongside` where it reserves,
+queues a trigger or enters a called root; those two compensation records also store runs (`StoresAlongside`). The flows
+an outflow queues are read off states that kept `srel` beside `WellFormed` (`Laws.Flow.FlowOps`); a property that reads
+no flow token takes any. The record is stated at the one `program` a run executes, as the builders read it
+(`Proofs.Cancellation.featureOps_frame`), so a property that reads the program may hold of that program only. -/
 structure FrameAlongside (program : Program) (rel : State → Prop) (srel : State → Prop := rel) : Prop where
   frame : ∀ s t, Unmoved s t → rel s → rel t
   /-- Flow tokens queued in the scope occurrence of an occurrence they continue from (`Laws.Flow.LeavesFrom`). -/

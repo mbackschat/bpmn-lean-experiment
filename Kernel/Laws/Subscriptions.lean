@@ -90,12 +90,16 @@ structure SubscriptionsOps (program : Program) (inv : State → Prop) : Prop whe
   disarms and completes its Gateway first, an interrupting boundary withdraws and cancels its host first, a cycle Timer
   reopens first. -/
   closeComplete : ∀ state item leave writes, inv state → item ∈ state.openItems →
-    (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) → inv ((state.closeItem item.id).signal (.complete item.occurrence leave writes .outward))
+    (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
+    inv ((state.closeItem item.id).signal (.complete item.occurrence leave writes .outward))
   gatewayComplete : ∀ state item gateway leave writes, inv state → item ∈ state.openItems →
-    item.attachedTo = some gateway → (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) → inv ((((state.closeItem item.id).disarm gateway).signal
+    item.attachedTo = some gateway →
+    (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
+    inv ((((state.closeItem item.id).disarm gateway).signal
       (.complete gateway (.flows []) [] .outward)).signal (.complete item.occurrence leave writes .outward))
   interruptComplete : ∀ state item host leave writes, inv state → item ∈ state.openItems →
-    (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) → inv ((((state.closeItem item.id).withdrawOccurrence host).signal (.cancel host)).signal
+    (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
+    inv ((((state.closeItem item.id).withdrawOccurrence host).signal (.cancel host)).signal
       (.complete item.occurrence leave writes .outward))
   reopenComplete : ∀ state item detail leave writes, inv state → item ∈ state.openItems →
     Laws.IL.Reservable program item.element → (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →

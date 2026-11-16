@@ -735,7 +735,8 @@ theorem runs_keep {inv : State → Prop} {settled : State → Nat → Prop} {pro
           rw [named] at nested children ⊢
           generalize (state.enterScope record.subject scope record.snapshot none).1 = entered
             at nested issuedNext scopesEq slotsEq enter entering children
-          have stored : ∀ pending, (∀ record ∈ pending, RecordFrom program entered record ⟨state.nextIssue⟩) → inv (Feature.Compensation.store entered (.mk entered.slots.compensation.retained
+          have stored : ∀ pending, (∀ record ∈ pending, RecordFrom program entered record ⟨state.nextIssue⟩) →
+              inv (Feature.Compensation.store entered (.mk entered.slots.compensation.retained
               (entered.slots.compensation.runs ++
                 [.mk trigger ⟨state.nextIssue⟩ pending [] none (some (.group scope ⟨state.nextIssue⟩))]))) ∧
               ∀ id, settled entered id → settled (Feature.Compensation.store entered (.mk entered.slots.compensation.retained

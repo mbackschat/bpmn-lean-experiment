@@ -257,7 +257,8 @@ theorem anchoredBy_placed {program : Program} {s : State} (refs : ReferencesPlac
     rcases parentOf : entry.parent with _ | parent
     · rw [(lane.rootBare entry member).mpr parentOf] at named
       cases named
-    exact (lane.scopes entry member anchor parent named parentOf (parent_present formed member parentOf)).rooted (instanceRoot_child formed member free parentOf)
+    exact (lane.scopes entry member anchor parent named parentOf (parent_present formed member parentOf)).rooted
+      (instanceRoot_child formed member free parentOf)
   · exact childrenOf_placed refs formed lane inside stands
   · exact calledAnchor_placed refs formed lane called
   · exact lane.runs run member stands
