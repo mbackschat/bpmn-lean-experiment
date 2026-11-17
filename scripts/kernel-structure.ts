@@ -54,6 +54,10 @@ const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
 /** Only these layers may import outside the kernel: Lean's JSON in the codec and the runner's IO. */
 const foreignImports: ReadonlySet<Layer> = new Set([Layer.Codec, Layer.Run]);
 
+/** The one container import outside the kernel: the state's ordered map, admitted only in the alias module that names
+ * it for the rest of the kernel (KD1, owner decision 2026-11-17). */
+const admittedForeignImport = { file: "Kernel/State/Map.lean", imported: "Std.Data.ExtTreeMap" } as const;
+
 /** `[layer, family]` of a path segment list under `Kernel/` or `packages/kernel/src/`, normalized to kebab-free
  * lower case so that `Feature/Work.lean` and `feature/work.ts` classify alike. */
 export function classify(segments: readonly string[]): readonly [Layer, string] {
@@ -126,7 +130,8 @@ export function layeringFindings(modules: readonly Module[], isKernel: (name: st
     const target = byName.get(imported);
     if (target === undefined) {
       if (isKernel(imported)) return [`${module.file}: imports unknown kernel module ${imported}`];
-      return foreignImports.has(module.layer) || module.layer === Layer.Root ? [] : [`${module.file}: imports ${imported} outside the kernel`];
+      const admitted = module.file === admittedForeignImport.file && imported === admittedForeignImport.imported;
+      return admitted || foreignImports.has(module.layer) || module.layer === Layer.Root ? [] : [`${module.file}: imports ${imported} outside the kernel`];
     }
     const sameFamily = target.layer === module.layer && target.family === module.family &&
       (module.layer === Layer.Feature || module.layer === Layer.Admission || module.layer === Layer.Dispatch);

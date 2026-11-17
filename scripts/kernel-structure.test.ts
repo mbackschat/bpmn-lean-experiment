@@ -59,7 +59,7 @@ test("no profile identifier appears in the kernel", () => {
 });
 
 // The scans must reject what they exist to reject, so each is checked against a minimal violating module set.
-test("layering rejects a feature importing another feature, an admission importing state, a foreign import, and a dispatch module other than population importing step, and admits a dispatch module importing its own family", () => {
+test("layering rejects a feature importing another feature, an admission importing state, a foreign import other than the map alias's one, and a dispatch module other than population importing step, and admits a dispatch module importing its own family", () => {
   const module = (name: string, layer: Layer, family: string, imports: string[]): Module =>
     ({ name, layer, family, file: name, imports });
   const modules = [
@@ -73,12 +73,16 @@ test("layering rejects a feature importing another feature, an admission importi
     module("Kernel.Population", Layer.Dispatch, "population", ["Kernel.Step", "Kernel.Population.Deploy"]),
     module("Kernel.Population.Deploy", Layer.Dispatch, "population", ["Kernel.Hooks"]),
     module("Kernel.Publish", Layer.Dispatch, "publish", ["Kernel.Step"]),
+    { ...module("Kernel.State.Map", Layer.State, "", ["Std.Data.ExtTreeMap", "Std.Data.HashMap"]), file: "Kernel/State/Map.lean" },
+    module("Kernel.State.Items", Layer.State, "", ["Std.Data.ExtTreeMap"]),
   ];
   assert.deepEqual(layeringFindings(modules, (name) => name.startsWith("Kernel.")), [
     "Kernel.Feature.Work: feature module imports feature module Kernel.Feature.Data",
     "Kernel.Admission.Flow: admission module imports state module Kernel.State",
     "Kernel.Admission.Flow: imports Lean.Data.Json outside the kernel",
     "Kernel.Publish: dispatch module imports dispatch module Kernel.Step",
+    "Kernel/State/Map.lean: imports Std.Data.HashMap outside the kernel",
+    "Kernel.State.Items: imports Std.Data.ExtTreeMap outside the kernel",
   ]);
 });
 

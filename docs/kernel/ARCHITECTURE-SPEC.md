@@ -103,6 +103,7 @@ The host sees the kernel only through `hostRequirements(program)` (timers, concu
 |---|---|---|
 | `Kernel.IL.Types` | flat element table, records, the instances a codec or theorem needs | nothing in the kernel |
 | `Kernel.State` | state records with fixed feature slots, generic subtree removal | `IL.Types` |
+| `Kernel.State.Map` | transparent aliases of the ordered map the state's maps are (KD1), nothing else | `Std.Data.ExtTreeMap`, the kernel's one import from outside it besides the codec's JSON and the runner's IO |
 | `Kernel.Hooks` | the hooks record with defaults | `IL.Types`, `State` |
 | `Kernel.Feature.<F>` | one feature's rules, at most three files; a sub-feature such as `Feature.Decision`, which `Feature.Work` reaches through its own hooks record, is a feature of its own | `IL.Types`, `State`, `Hooks` |
 | `Kernel.Admission.<F>` | one feature's admission rules with refusal codes | `IL.Types` |
