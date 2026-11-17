@@ -6,7 +6,7 @@ The project is a modular kernel, rewritten by owner direction (2026-11-08). The 
 
 ## Start every session
 
-1. Read the [owner intents](docs/OWNER-INTENTS.md) and [PLAN's exact resume point](docs/PLAN.md#exact-resume-point).
+1. Read the [owner intents](docs/OWNER-INTENTS-REGISTER.md) and [PLAN's exact resume point](docs/PLAN.md#exact-resume-point).
 2. Read the [kernel architecture](docs/kernel/ARCHITECTURE-SPEC.md) sections the task touches; for a coverage row, its row in the [coverage target](docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) by stable ID.
 3. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated changes.
 

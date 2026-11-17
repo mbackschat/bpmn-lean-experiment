@@ -22,7 +22,7 @@ The sole documentation registry. Every maintained document under `docs/` is list
 
 | Document | Audience and ownership |
 |---|---|
-| [OWNER-INTENTS.md](OWNER-INTENTS.md) | Every agent and the owner; the owner's goal, priorities, concerns and working mode, by which agents are assessed |
+| [OWNER-INTENTS-REGISTER.md](OWNER-INTENTS-REGISTER.md) | Every agent and the owner; the owner's goal, priorities, concerns and working mode, by which agents are assessed |
 | [PLAN.md](PLAN.md) | Resuming agents and the owner; delivery order, budgets, mechanism tracks and the exact resume point |
 | [PRACTICAL-CIB7-COVERAGE-TARGET.md](PRACTICAL-CIB7-COVERAGE-TARGET.md) | Owner and contributors; the accepted milestone toward Product 2: per row its outcome with decisive acceptance, prerequisites and state |
 | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) | Contributors and stakeholders; mission, layering, authority and assurance roles, scope and milestones |
