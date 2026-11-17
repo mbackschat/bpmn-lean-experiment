@@ -320,25 +320,44 @@ function parsedCount(rule: MultiInstanceCount, text: string): Result<number> {
  * integral Decimal, at Java's `int` width (CIB-EXT-0033, `MultiInstanceActivityBehavior:145-155`).
  */
 function countOf(rule: MultiInstanceCount, value: Value): Result<number> {
-  if (value.tag === ValueTag.Int) return counted(rule, BigInt(value.value));
-  if (rule === MultiInstanceCount.Integer) return notANumber;
-  switch (value.tag) {
-    case ValueTag.Decimal: {
-      const unit = 10n ** BigInt(value.scale);
-      // Dynamic-only: CIB's `BigDecimal.intValue` truncates a fraction.
-      if (value.coefficient % unit !== 0n) return failed(FailureTag.Unsupported, "multiInstance.fractionalCount");
-      return counted(rule, value.coefficient / unit);
-    }
-    case ValueTag.String:
-      return parsedCount(rule, value.value);
-    case ValueTag.Null:
-    case ValueTag.Bool:
-    case ValueTag.StringList:
-    case ValueTag.List:
-    case ValueTag.Map:
-      return notANumber;
+  // Every value kind is named under each rule, so a new kind decides how it counts (KD7, `docs/REWRITE-2-PROPOSAL.md`).
+  switch (rule) {
+    case MultiInstanceCount.Integer:
+      switch (value.tag) {
+        case ValueTag.Int:
+          return counted(rule, BigInt(value.value));
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return notANumber;
+      }
+      return assertNever(value);
+    case MultiInstanceCount.JavaInt:
+      switch (value.tag) {
+        case ValueTag.Int:
+          return counted(rule, BigInt(value.value));
+        case ValueTag.Decimal: {
+          const unit = 10n ** BigInt(value.scale);
+          // Dynamic-only: CIB's `BigDecimal.intValue` truncates a fraction.
+          if (value.coefficient % unit !== 0n) return failed(FailureTag.Unsupported, "multiInstance.fractionalCount");
+          return counted(rule, value.coefficient / unit);
+        }
+        case ValueTag.String:
+          return parsedCount(rule, value.value);
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return notANumber;
+      }
+      return assertNever(value);
   }
-  return assertNever(value);
+  return assertNever(rule);
 }
 
 /**

@@ -171,21 +171,26 @@ def countOf (rule : MultiInstanceCount) (value : Value) : Except Failure Nat :=
     else if count < 0 then .error (.semanticFailure .model "multiInstance.negativeCount")
     else .ok count.toNat
   let notANumber : Except Failure Nat := .error (.semanticFailure .model "multiInstance.notANumber")
-  match rule, value with
-  | .integer, .int count => counted count
-  | .integer, _ => notANumber
-  | .javaInt, .int count => counted count
-  | .javaInt, .decimal coefficient scale =>
-    -- Dynamic-only: CIB's `BigDecimal.intValue` truncates a fraction.
-    if coefficient % 10 ^ scale != 0 then .error (.unsupported "multiInstance.fractionalCount")
-    else counted (coefficient / 10 ^ scale)
-  | .javaInt, .string text =>
-    -- Dynamic-only: `Integer.parseInt` reads Unicode digits the kernel does not model.
-    if !isAscii text then .error (.unsupported "juel.nonAsciiText")
-    else match parseJavaInt? text with
-      | some parsed => counted parsed
-      | none => notANumber
-  | .javaInt, _ => notANumber
+  -- Every value kind is named under each rule, so a new kind decides how it counts (KD7, `docs/REWRITE-2-PROPOSAL.md`).
+  match rule with
+  | .integer =>
+    match value with
+    | .int count => counted count
+    | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => notANumber
+  | .javaInt =>
+    match value with
+    | .int count => counted count
+    | .decimal coefficient scale =>
+      -- Dynamic-only: CIB's `BigDecimal.intValue` truncates a fraction.
+      if coefficient % 10 ^ scale != 0 then .error (.unsupported "multiInstance.fractionalCount")
+      else counted (coefficient / 10 ^ scale)
+    | .string text =>
+      -- Dynamic-only: `Integer.parseInt` reads Unicode digits the kernel does not model.
+      if !isAscii text then .error (.unsupported "juel.nonAsciiText")
+      else match parseJavaInt? text with
+        | some parsed => counted parsed
+        | none => notANumber
+    | .null | .bool _ | .stringList _ | .list _ | .map _ => notANumber
 
 /-- One entry input, read before the domain predicate, under the profile's `MultiInstanceInputFailure`
 (CIB-INT-0019): `none` when an unavailable input holds the occurrence, as an unavailable InputSet does
