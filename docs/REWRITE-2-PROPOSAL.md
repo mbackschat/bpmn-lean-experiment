@@ -59,7 +59,7 @@ The "Owner" column marks only the items on the owner's ask list: dependencies, l
 | T8 | Eight law families proved only on witness states [K10] | no (assurance) | 8–24 | 8–24 | — |
 | T9 | Admitted models can stop mid-run with one of 66 `unsupported` codes [K12] | partly | 1–2, plus 0.5–3 per code | same | — |
 | T10 | Module-shape pressure and dual transcription [K13, K14] | no | 1–3 per growth episode | 0.5–1 | — |
-| T11 | Effect contract an adopter can implement, plus Script isolation (TD-005) [P2, E7] | yes | 2–12 | 1.5–8 | — |
+| T11 | Effect contract an adopter can implement: a public handler package, a separate effect queue, idempotency, and mapping retries to incidents. Script isolation is excluded, because the [compatibility scope](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) defers untrusted scripts; authorized deploy (T12) is what keeps Scripts trusted model content [P2, E7] | yes | 2–6 | 1.5–4 | — |
 | T12 | Per-request identity, authorization of deploy, start and search, and a security minimum [P3, P4] | yes | 1.5–5 | 1.5–5 | — |
 | T13 | Public publication contract without internal ids [P5] | no, but it multiplies every kernel change | 1.5–3 | 0.5 + 1–1.5 | — |
 | T14 | Profile bound in definition storage by digest; Product 2 features keyed to profile capabilities, never to a profile identifier (forms today) [P6, K6] | yes | 1.5–3 | 1–2 | — |
@@ -75,9 +75,14 @@ The "Owner" column marks only the items on the owner's ask list: dependencies, l
 | T24 | Workflow versioning and upgrades [P7, E6] | decided out | — | — | decided |
 | T25 | Deferred families: listeners, Java delegates, external tasks, connectors [E2] | decided out | — | — | settled |
 
-**T24 was decided by the root (premise checked against the [platform proposal](BPM-PLATFORM-PROPOSAL.md#explicit-exclusions)).** The goal is an evaluation-grade, single-organization deployment from published images.
-- **In scope:** per-request identity (T12) and a security minimum.
-- **Excluded by the proposal:** production packaging, high availability and upgrade compatibility. Wipe-on-upgrade is documented until a durable baseline exists.
+**T24 follows the settled documents.**
+- The [platform proposal](BPM-PLATFORM-PROPOSAL.md#explicit-exclusions) is "a product, not a demonstration". It excludes the following:
+  - authentication providers;
+  - multi-tenancy, clustering and high availability;
+  - production release packaging;
+  - migration of running instances between definition versions.
+- [PROJECT-DESIGN](PROJECT-DESIGN.md#pre-release-evolution-policy) allows no migration reader or compatibility switch before a durable release baseline. Until then, an upgrade replaces stored state, and the adopter documentation (T21) says so.
+- **In scope:** the identity boundary and authorization (T12).
 
 **T25 follows the settled documents.**
 - The [practical target](PRACTICAL-CIB7-COVERAGE-TARGET.md#optional-integrations-and-exclusions) and the [compatibility scope proposal](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) keep these families optional and deferred.
