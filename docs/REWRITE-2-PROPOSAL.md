@@ -604,7 +604,7 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | T4c | T4: KD2′ footprint laws, U1 and the E-units on the real kernel; production factor | queued, next free slot | | | | |
 | T4d | T42 (KD8): nested pairing, the failure diamond, the work measure | queued after T4c | | | | |
 | T2 | T2, T26 (AD4) | paused, queued after T4c | | | | |
-| T43 (MEDIUM) | T43, T45 (AD6, AD7) | queued after T2: the classification table and its completeness guard on a slice of metamodel types, and the refusal rules of T45 in both kernels | | | | |
+| T43 (MEDIUM) | T43 (AD6) | queued after T2: the reader's classification table and its completeness and corpus guards on a slice of metamodel types, in `bpmn-source` only. T45's refusal rules are Lean admission work and are priced at T1b's measured breadth rate, not spiked | | | | |
 | T17, T11, T7T8, T9b, T12, T15, T40 | round 3 | queued | | | | |
 
 **Process calibration from the proof wave (root, from git, 2026-11-17).**
