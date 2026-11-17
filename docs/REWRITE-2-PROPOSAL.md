@@ -159,6 +159,17 @@ The design removes P6's causes C1–C6 by construction instead of proving around
   - At commit, every occurrence begun in the closure is re-keyed to (scope key, element, per-(scope, element) ordinal), with ordinals assigned in canonical key order above the existing maximum. Compaction is a function of the end state, so equal end states stay equal. It costs one generic re-key lemma over the roughly 60 identity positions.
   - **Why compaction:** uncompacted provenance keys grow with the whole causal chain since the scope's entry, not only with loop depth. A 4-element loop iterated 1,000 times gives a key of about 4,000 segments, about 80 KB of JSON (T4a F2).
   - **Consequence:** anything persisted outside the state that names an occurrence uses the public reference, never an internal key. That covers host references, timers, effect identities and the publication's `owner` and `idle.scope`, which T13 already removes.
+- **Public numbering is assigned at commit, and no hook reads it** (root check, 2026-11-17).
+  - "Read only by publication" is the target, not today's code. Today hooks read activations in four places:
+    - to identify a thrower (`Feature/Propagation.lean:46,242`);
+    - to build a handler's reference (`Feature/Compensation.lean:331-337`);
+    - in the public references stored with open items and failures (`Feature/Work.lean:315`, `Feature/Propagation/Throws.lean:102`);
+    - in a called instance's identity, fixed when the Call is entered (`State.lean:455,469`).
+  - In the new core, these hooks compare structural keys.
+  - Each closure records its begins in order. At commit, that log assigns the activations, the public references and the called instances' public identifiers. Internally a called instance is keyed structurally.
+  - Begin order is today's order, so the numbers stay the same, and so does retained CIB evidence. Between schedules they differ only within the activation bijection KD5 keeps.
+  - Inputs that address an item or instance by public reference resolve it through a table written at commit.
+  - **Cost: unmeasured.** Spike T4c measures it.
   - **Rejected:**
     - (i) a per-scope ordinal read from state. A begin's footprint then has to cover all siblings, a fourth region kind at every begin site (T4a F8), and all 53 units need an equivariance proof (P6R's O2, 32–64 h).
     - Interning keys in state, because first-appearance order brings C1's schedule dependence back.
@@ -196,7 +207,7 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 - **The Inclusive join** is confluent once its readiness is stated over counts, not identities, provided every position-creating mechanism stays inside `Reach` (T4a F6, proved in a count model, with `spawn_breaks` as the counterexample). Under `inclusiveJoinReach = outgoingOnly` it is not confluent, because a boundary token outside the reach fires the join a second time. Only the CIB profiles select `outgoingOnly`, and they schedule by `declarationDepthFirst`. The standards profile reads `withBoundaries` ([FLOW-SEMANTICS-SPEC](kernel/semantics/FLOW-SEMANTICS-SPEC.md)). So P6 takes `orderInvariant ⇒ withBoundaries` as a premise, and a catalog guard checks it for every profile.
 - **Joins: two choices are order-dependent today** (`Kernel/Feature/Flow.lean:180-206`).
   - **Which arrivals a join consumes.** The first parked on each flow is consumed. This becomes the least key.
-  - **The internal key of the continuation.** It is derived from the arriving occurrence, which fires. It becomes a function of the join element and the set of consumed keys.
+  - **The internal key of the continuation.** It is derived from the arriving occurrence, which fires. It becomes (scope key, join element, the join's firing ordinal in that scope occurrence). The number of firings depends only on the multiset of arrivals, so the key is the same in every schedule. A key derived from the consumed set would not be: with excess arrivals, the consumed set itself differs between schedules (T4a F3), and every downstream key would inherit the difference. Then the only difference left is which excess arrival stays parked. Only the join reads it, so the renaming stays inside the join's own confluence lemma.
   - **Unchanged: the public choice.** The arriving occurrence still completes with the flows and the others with none, as CIB continues the arriving execution. Between schedules this differs only within the activation bijection KD5 allows.
   - Spike T4c checks that this suffices without equivariance proofs downstream. If it does not, the public choice changes only with a register entry, and the change per profile is disclosed here.
 - **Premise:** C4 was measured by P6R, and #120 and #75 are open closure-order findings (K8).
@@ -206,13 +217,21 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 - The existing `Laws.Flow.Reaches` (`Kernel/Laws/Flow/Walk.lean`) becomes the only account of what a closure can reach. It is already an inductive relation over the IL covering all 9 queuing mechanisms (T4b D1). What was missing was a proof that admission establishes it, and runtime provenance.
 - **Admission's concurrency check is an untrusted search whose answer a proved checker accepts** (T4b D2). Admission's existing `closureWalk` stays as the search, unproved. The checker is proved sound by induction on `Reaches` against a membership and closure check, with no fuel or termination argument: fuel exhaustion yields a set that fails the check, so admission refuses. That also neutralizes the fail-open fuel functions in `Admission/Flow/Closure.lean` (`ancestors`, `reaches`, `catchers`, `declaredIn`, `closureWalk.go`) and `Admission/Flow/Concurrency.lean` (`removesElement`), which T4b listed. T4b proved this shape for Parallel, Exclusive and Inclusive splits, Scope entry against a Conditional Event Sub-Process with the removal part of `Interferes`, the `Follows` exclusion, and the #162 widening on the admission side.
 - **The search and the law must state the same relation.** When they drift apart, the result is silent over-refusal, never unsoundness. A corpus guard checks that the checker never rejects the search's answer on an admitted model (T4b R4).
-- **Facts admission reads from other features** (14 `Reading` fields) are exported by each dispatch owner as a Prop-level fact next to its Bool reader. A Bool twin outside the owner would need a catch-all over a guarded type, which the guardrails forbid (T4b U3).
+- **Where the checker's soundness lives (T4b U3, U6; root check against the [module table](kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape) and guards 1, 5 and 6).**
+  - The proof has to see admission's bodies and case on the kinds admission reads: gateway, trigger and scope kind.
+  - **No module may do both under today's rules:**
+    - an `Admission.<F>` module may match but holds no theorems (guard 6) and imports only `IL.Types`;
+    - a `Laws.<F>` module may `import all` only its own `Feature.<F>`;
+    - `Proofs` may neither `import all` nor match.
+  - The earlier text, "soundness lives in `Proofs.Admission`", broke those rules and is withdrawn. So is a first fix, Bool twins exported by each feature, because admission cannot import features.
+  - **Design:** add a `Laws.Admission.<F>` layer. It may `import all` its own `Admission.<F>` and match the types that `Admission.<F>` may already match. This gives admission's bodies their own `Laws` module, as every other executable body has.
+  - **Why it is flagged:** it adds a row to the module table and to the dispatch-owner table. That is an extension in the rules' own pattern, not an exemption, but it changes the architecture text. The cold review judges whether that restates a promise. If it does, it waits for the owner, together with KD4's proof work, which it blocks.
 - **Call recursion** (`Catcher.outward`, `Removes.called`, `RaisesError.call`) needs its own account in the checker. The spike refused called processes under a removal, which is sound but not shippable (T4b U4).
 - The runtime side is a provenance invariant: every enabled unit is `Reaches`-reachable from its closure's origin. T4b proved the one-step half, that each Parallel and Inclusive hook emits only `Reaches` successors (`parallel_emits_walk_successors`, `arriveInclusive_queues`), and the `Step.complete` glue. The invariant across `Step.settle` needs an origin per queued unit, ghost or real, and is the dominant unmeasured part of T4 (spike T4c).
 - This merges the two separate readings that produced #162, #187, #188 and the raw-flag class.
 - **Law correction:** `Laws.Flow.Interrupts` (`Kernel/Laws/Flow/Walk.lean:129-130`) binds the declared interrupting flag directly, while admission and runtime read it through `startInterrupts` (`Admission/Subscriptions.lean:363`, `Registry.lean:85`), which exempts a Compensation start (BPMN 2.0.2 Table 10.87). The law therefore removes a parent's interior for a Compensation Event Sub-Process declared interrupting, and admission does not, so the soundness proof would fail there (T4b D3; read in code, no witness model built). `Interrupts` is restated through the same accessor, in the lane review, as P5's statement corrections were.
 - **#162 widened:** a synchronizing Parallel join ends a branch walk. The admission side was proved in under a minute (T4b O5). The runtime side needs `Concurrent` to pair the join's continuation with an enclosing split, and tokens after the join to trace back to it; that is part of T4c's invariant.
-- The [module table](kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape) changes: `Laws.Flow` may state `Walk` over IL queries. It still never names the admission evaluator. The decision procedure's soundness lives in `Proofs.Admission`.
+- The [module table](kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape) changes: `Laws.Flow` may state `Reaches` over IL queries, and it still never names the admission evaluator. The checker's soundness lives in the `Laws.Admission.<F>` layer, as set out below.
 - **Premise:** `PLAN.md:97` excludes admission ⇒ premises, and `Concurrent` has 10 constructors over 9 mechanisms.
 - **Rejected:** keeping two walks and proving their agreement after the fact. That is P6R's O4, estimated at 80–120 h.
 
@@ -222,7 +241,10 @@ The design removes P6's causes C1–C6 by construction instead of proving around
   - **Activations of one element begun in one closure.** They swap with begin order (T4a F4), as public numbering keeps CIB's begin order.
   - **Excess arrivals parked on one flow.** Three arrivals at a two-way join, two on one flow, leave a different one parked depending on the schedule, and no canonical choice repairs that, because at the firing only one of the two has arrived (T4a F3, `excess_leftover_differs`). Excess arrivals are admitted (`Laws/Flow.lean:89`).
 - **Rejected:** numbering activations in canonical key order at commit under `orderInvariant` (T4a F4's proposal). That would make every equality exact, but it is a new public-identity rule for the standards profile, a choice of observation boundary, and the statement does not need it.
-- **Premises:** both schedules settle, since two failing units report a schedule-dependent failure (T4a F9); `orderInvariant ⇒ withBoundaries` (KD3); `Apart`, as today.
+- **Premises:**
+  - both schedules settle, since two failing units report a schedule-dependent failure (T4a F9);
+  - `orderInvariant ⇒ withBoundaries` (KD3), stated in the theorem, because `options` is free IL data. Today every catalog profile meets it: `bpmn-2.0.2` selects neither CIB-INT-0020 nor CIB-OP-0016, and both CIB profiles select both (`profiles/*/profile.json`, `kernel-reader/wire.ts:150-151`);
+  - `Apart`, as today.
 
 **KD6. Proofs re-established on the new core (T5, T8).**
 - The lane statements of P2–P5 and P7 carry over.
