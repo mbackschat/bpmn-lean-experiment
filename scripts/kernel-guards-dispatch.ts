@@ -59,7 +59,11 @@ export const tsSiteBudget: Readonly<Record<string, number>> = {
 
 export type GuardedType = Readonly<{ lean: string; enumName: string | null; owners: readonly string[]; leanOwners: readonly string[] }>;
 
-/** `Kernel.Element` and the owners the Lean guard lists, read from that guard's own table. */
+/**
+ * `Kernel.Element` and the owners the Lean guard lists, read from that guard's own table. A type nested in a namespace
+ * (`Kernel.Feature.Data.Juel.JVal`) is read by its last component, the name its inductive and enum carry; an entry the
+ * pattern cannot read is a finding, never dropped.
+ */
 export function guardedTypes(tree: KernelTree): { types: GuardedType[]; findings: string[] } {
   let text = "";
   try {
@@ -67,17 +71,20 @@ export function guardedTypes(tree: KernelTree): { types: GuardedType[]; findings
   } catch {
     return { types: [], findings: [emptyInputFinding(1, "guarded types (scripts/kernel-dispatch.lean)")] };
   }
-  const entries = [...text.matchAll(/\(`Kernel\.(\w+),\s*\[([^\]]*)\]\)/gu)];
+  const table = /^def owners\b[\s\S]*?\]\)\]$/mu.exec(text)?.[0] ?? "";
+  const entries = [...table.matchAll(/\(`Kernel\.([\w.]+),\s*\[([^\]]*)\]\)/gu)];
   if (entries.length === 0) return { types: [], findings: [emptyInputFinding(1, "guarded types in kernel-dispatch.lean's owners table")] };
+  const opened = [...table.matchAll(/\(`Kernel\./gu)].length;
+  const unread = opened === entries.length ? [] : [`G1: ${opened - entries.length} owners-table entries in kernel-dispatch.lean are unreadable`];
   const enums = typeScriptEnums(tree.typeScript);
   const types = entries.map((entry) => {
-    const lean = entry[1] ?? "";
+    const lean = (entry[1] ?? "").split(".").at(-1) ?? "";
     const leanOwners = [...(entry[2] ?? "").matchAll(/`([\w.]+)/gu)].map((owner) => owner[1] ?? "");
     const owners = leanOwners.map(leanModuleToTypeScriptPath);
     const enumName = enums.has(`${lean}Tag`) ? `${lean}Tag` : enums.has(lean) ? lean : null;
     return { lean, enumName, owners, leanOwners };
   });
-  return { types, findings: [] };
+  return { types, findings: unread };
 }
 
 function moduleKey(source: Source): string {

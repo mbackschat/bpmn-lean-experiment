@@ -18,6 +18,7 @@ import {
   closedDispatchFindings,
   commitScopeFindings,
   fanOutFindings,
+  guardedTypes,
   mirrorEnumerationFindings,
   noCatchAllFindings,
   tsMatchSiteCounts,
@@ -238,6 +239,21 @@ def Kernel.Feature.Mirror.isGate (x : Element) : Bool := true
 def allow : List Element := [.task, .gateway]
 `,
 }, /allowlist of 2 ElementTag members[\s\S]*classifier isTask[\s\S]*inductive MyWork mirrors guarded Work[\s\S]*classifier Kernel\.Feature\.Mirror\.isGate|allowlist of 2 ElementTag members/u);
+
+test("guard 1 reads a guarded type nested in a namespace by its own name and reports an entry it cannot read", () => {
+  const nested = `def owners : List (Name × List Name) := [
+  (\`Kernel.Element, [\`Kernel.Step]),
+  (\`Kernel.Feature.Data.Juel.JVal, [\`Kernel.Feature.Data, \`Kernel.Laws.Data])]
+`;
+  const read = guardedTypes(fixture({ "scripts/kernel-dispatch.lean": nested }));
+  assert.deepEqual(read.findings, []);
+  assert.deepEqual(read.types.map((type) => [type.lean, type.leanOwners]), [
+    ["Element", ["Kernel.Step"]],
+    ["JVal", ["Kernel.Feature.Data", "Kernel.Laws.Data"]],
+  ]);
+  const broken = guardedTypes(fixture({ "scripts/kernel-dispatch.lean": nested.replace("JVal, [", "JVal [") }));
+  assert.deepEqual(broken.findings, ["G1: 1 owners-table entries in kernel-dispatch.lean are unreadable"]);
+});
 
 test("guard 3 reports each of its second-enumeration shapes", () => {
   const findings = mirrorEnumerationFindings(fixture({
