@@ -154,9 +154,15 @@ The design removes P6's causes C1–C6 by construction instead of proving around
   - **open-item key:** the occurrence key, the item role and a per-occurrence ordinal.
 - `State.nextIssue` and its 6 issue sites go.
 - The public `OccurrenceRef` keeps CIB's numbering, `(instance, element, activation)` with activations per element in begin order. A per-element begin count, read only by publication, computes it.
-- Two candidate arrival discriminators. Spike T4a decides between them:
-  - **(i)** A per-scope ordinal. Two schedules then differ only by a permutation of sibling activations of one element, and the proof carries that local renaming.
-  - **(ii)** Provenance: the incoming flow and the emitting occurrence's key. This needs no renaming, but keys grow with loop depth, as #126 does, and need a bounded encoding.
+- **Arrival discriminator, decided by spike T4a: (ii) provenance keys inside a closure, compacted at commit.**
+  - Inside a closure, a key is the incoming flow and the emitting occurrence's key. Footprints are then computable from a hook's arguments, and no hook needs an equivariance proof.
+  - At commit, every occurrence begun in the closure is re-keyed to (scope key, element, per-(scope, element) ordinal), with ordinals assigned in canonical key order above the existing maximum. Compaction is a function of the end state, so equal end states stay equal. It costs one generic re-key lemma over the roughly 60 identity positions.
+  - **Why compaction:** uncompacted provenance keys grow with the whole causal chain since the scope's entry, not only with loop depth. A 4-element loop iterated 1,000 times gives a key of about 4,000 segments, about 80 KB of JSON (T4a F2).
+  - **Consequence:** anything persisted outside the state that names an occurrence uses the public reference, never an internal key. That covers host references, timers, effect identities and the publication's `owner` and `idle.scope`, which T13 already removes.
+  - **Rejected:**
+    - (i) a per-scope ordinal read from state. A begin's footprint then has to cover all siblings, a fourth region kind at every begin site (T4a F8), and all 53 units need an equivariance proof (P6R's O2, 32–64 h).
+    - Interning keys in state, because first-appearance order brings C1's schedule dependence back.
+    - Hashing keys, because collisions make injectivity an unprovable assumption.
 - **Premise:**
   - Canonical waits are keyed by the public reference (`Kernel/Run.lean:256`), so retained CIB evidence is unaffected.
   - Internal identities do leak into the publication JSON (`owner` and `idle.scope`, `Kernel/Run.lean:236-250`). That is fixed with T13 in the same shape commit.
@@ -166,10 +172,16 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 - **Rejected:** keeping the counter and proving equivalence up to a bijection over about 60 positions. That is option B on the current kernel, estimated at 25–44 agent-days.
 
 **KD2. Hooks see a footprint, not the whole state (C3, C5; T4, T10).**
-- Today all 50 `Hooks` fields take and return the whole `State` (`Kernel/Hooks.lean:333-444`).
-- In the new design, a hook receives a view of the regions its arguments name and returns a delta over the same regions. The regions are an occurrence subtree, the variable scopes on its scope chain, and that occurrence's feature-slot entries. `Step` applies the delta.
-- Footprint soundness then holds by typing, with no lemma per hook. The architecture's promise, "Commutation is proved once over the footprints each feature declares" (`kernel/ARCHITECTURE-SPEC.md`, module rules), becomes true.
-- Order-reading hooks (C3: `ownReceivers`, `offerWrites`, the stale check) read structural keys. Under KD1 (ii) those keys are schedule-independent; under (i) they are independent up to the sibling renaming.
+- Today 36 of the 41 `Hooks` fields take the whole `State` (`Kernel/Hooks.lean:333-444`): 28 closure hooks, 6 input hooks and 2 queries. About 9 callback sub-record fields wired in `Kernel/Registry.lean` and `Ctx.scopeRole` (`Hooks.lean:209`) do too, and with `Step`'s 10 closure operations and the 6 removal primitives that makes 53 units to restate (T4a, method in its report).
+- In the new design, a hook receives a view of the regions its arguments name and returns a delta over the same regions. `Step` applies the delta.
+- **Region kinds (T4a):**
+  - an occurrence subtree, where "subtree" means ownership through a nesting segment of the key, not a key prefix;
+  - variables **per name** on the scope chain. Whole-frame regions would always overlap, because two branches in one scope both touch the root frame, so the diamond would never apply (T4a F1). `Apart` already certifies disjointness per name;
+  - that occurrence's feature-slot entries;
+  - name-indexed instance regions, computable from the IL: a Signal name, a Conditional's variable name, an error code. These serve the E3 units below;
+  - an enumerating view, for JUEL and Script evaluation, which counts as reading every name (`IL/Footprint.lean:42`, 26 `evalContext` and `visible` users), and for the Inclusive join's reads of a whole occurrence. State maps are `Std.ExtTreeMap` keyed by `List Nat`, which gives map equality and enumeration (T4a F7).
+- Footprint soundness then holds by typing, with no lemma per hook (T4a, proved: `view_frame`, `apply_comm`, `diamond`). The architecture's promise, "Commutation is proved once over the footprints each feature declares" (`kernel/ARCHITECTURE-SPEC.md`, module rules), becomes true.
+- Order-reading hooks (C3: `ownReceivers`, `offerWrites`, the stale check) read structural keys, which KD1 makes schedule-independent.
 - **Premise:** `Hooks.lean`, `Registry.lean` and `Laws/Hooks.lean` contain no footprint (root grep, 0 occurrences).
 - **Rejected:** declaring footprints as laws beside unchanged full-state hooks. That needs a soundness lemma per hook, about 30 closure hooks, which is P6R's O3 at 40–80 h.
 
@@ -177,20 +189,36 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 - `settle`'s fixed phase loop (`Kernel/Step.lean:352`) becomes a choice among enabled units: token arrivals, raised signals, idle-scope checks, re-offers and finishes.
 - Only an order that BPMN or a register entry fixes stays a priority. #120, signals before tokens, is classified in the register before KD3 is coded.
 - The schedule input picks among units of equal priority. `orderInvariant` admits any pick; `declarationDepthFirst` fixes it.
-- One generic diamond lemma covers units with disjoint footprints. Overlapping footprints are either refused by admission (`Apart`) or are joins, whose confluence is proved once per join kind (Parallel, Inclusive).
+- One generic diamond lemma covers units with disjoint footprints (proved in T4a). Overlapping footprints are refused by admission (`Apart`), or belong to one of the 12 units T4a listed, each with its own confluence argument:
+  - **E1, a slot shared by siblings:** the Parallel and Inclusive joins (`arriveGateway`), Multi-Instance completion (`instanceCompleted`), and the compensation run (`compensate`, `handlerCompleted`, `handlerEnded`, `failCompensation`). Each gets one confluence lemma per mechanism.
+  - **E2, reads of a whole scope occurrence:** the Inclusive join's `positions`, `completeIdleScope`, `reoffer?`. These read through the enumerating view.
+  - **E3, instance-wide indexes:** Signal receivers (`arriveThrow`), Conditional items (`written`), catchers on the ancestor chain (`raise`), `endInstance`. These use name-indexed regions, so `Apart` plus the diamond apply.
+- **The Inclusive join** is confluent once its readiness is stated over counts, not identities, provided every position-creating mechanism stays inside `Reach` (T4a F6, proved in a count model, with `spawn_breaks` as the counterexample). Under `inclusiveJoinReach = outgoingOnly` it is not confluent, because a boundary token outside the reach fires the join a second time. Only the CIB profiles select `outgoingOnly`, and they schedule by `declarationDepthFirst`. The standards profile reads `withBoundaries` ([FLOW-SEMANTICS-SPEC](kernel/semantics/FLOW-SEMANTICS-SPEC.md)). So P6 takes `orderInvariant ⇒ withBoundaries` as a premise, and a catalog guard checks it for every profile.
+- `Flow.join`'s choice of the firing arrival becomes canonical (the least key) instead of first-parked.
 - **Premise:** C4 was measured by P6R, and #120 and #75 are open closure-order findings (K8).
 - **Scope check:** `CLAUDE.md` requires that scheduler choices stay explicit inputs, and the conformance target fixes no token order. Rejected option E, a canonical schedule for the standards profile, stays rejected.
 
 **KD4. One declarative walk for admission and runtime (C6, K2; T4).**
-- `Laws.Flow.Walk` becomes the only account of what a closure can reach: an inductive relation over the IL.
-- Admission's concurrency check is a decision procedure, proved sound against `Walk`.
-- The runtime side is a provenance invariant: every enabled unit is `Walk`-reachable from its closure's origin. It is proved per feature as "each hook emits only `Walk` successors", which KD2's delta types make local.
+- The existing `Laws.Flow.Reaches` (`Kernel/Laws/Flow/Walk.lean`) becomes the only account of what a closure can reach. It is already an inductive relation over the IL covering all 9 queuing mechanisms (T4b D1). What was missing was a proof that admission establishes it, and runtime provenance.
+- **Admission's concurrency check is an untrusted search whose answer a proved checker accepts** (T4b D2). Admission's existing `closureWalk` stays as the search, unproved. The checker is proved sound by induction on `Reaches` against a membership and closure check, with no fuel or termination argument: fuel exhaustion yields a set that fails the check, so admission refuses. That also neutralizes the fail-open fuel functions in `Admission/Flow/Closure.lean` (`ancestors`, `reaches`, `catchers`, `declaredIn`, `closureWalk.go`) and `Admission/Flow/Concurrency.lean` (`removesElement`), which T4b listed. T4b proved this shape for Parallel, Exclusive and Inclusive splits, Scope entry against a Conditional Event Sub-Process with the removal part of `Interferes`, the `Follows` exclusion, and the #162 widening on the admission side.
+- **The search and the law must state the same relation.** When they drift apart, the result is silent over-refusal, never unsoundness. A corpus guard checks that the checker never rejects the search's answer on an admitted model (T4b R4).
+- **Facts admission reads from other features** (14 `Reading` fields) are exported by each dispatch owner as a Prop-level fact next to its Bool reader. A Bool twin outside the owner would need a catch-all over a guarded type, which the guardrails forbid (T4b U3).
+- **Call recursion** (`Catcher.outward`, `Removes.called`, `RaisesError.call`) needs its own account in the checker. The spike refused called processes under a removal, which is sound but not shippable (T4b U4).
+- The runtime side is a provenance invariant: every enabled unit is `Reaches`-reachable from its closure's origin. T4b proved the one-step half, that each Parallel and Inclusive hook emits only `Reaches` successors (`parallel_emits_walk_successors`, `arriveInclusive_queues`), and the `Step.complete` glue. The invariant across `Step.settle` needs an origin per queued unit, ghost or real, and is the dominant unmeasured part of T4 (spike T4c).
 - This merges the two separate readings that produced #162, #187, #188 and the raw-flag class.
+- **Law correction:** `Laws.Flow.Interrupts` (`Kernel/Laws/Flow/Walk.lean:129-130`) binds the declared interrupting flag directly, while admission and runtime read it through `startInterrupts` (`Admission/Subscriptions.lean:363`, `Registry.lean:85`), which exempts a Compensation start (BPMN 2.0.2 Table 10.87). The law therefore removes a parent's interior for a Compensation Event Sub-Process declared interrupting, and admission does not, so the soundness proof would fail there (T4b D3; read in code, no witness model built). `Interrupts` is restated through the same accessor, in the lane review, as P5's statement corrections were.
+- **#162 widened:** a synchronizing Parallel join ends a branch walk. The admission side was proved in under a minute (T4b O5). The runtime side needs `Concurrent` to pair the join's continuation with an enclosing split, and tokens after the join to trace back to it; that is part of T4c's invariant.
 - The [module table](kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape) changes: `Laws.Flow` may state `Walk` over IL queries. It still never names the admission evaluator. The decision procedure's soundness lives in `Proofs.Admission`.
 - **Premise:** `PLAN.md:97` excludes admission ⇒ premises, and `Concurrent` has 10 constructors over 9 mechanisms.
 - **Rejected:** keeping two walks and proving their agreement after the fact. That is P6R's O4, estimated at 80–120 h.
 
-**KD5. Statement (K11; T4).** `SchedulesAgree` concludes equal committed publication and equal state up to KD1's renaming (none under (ii)). Parked joins and scope order are included. This closes the gap that the strong `Sim` closes in K11.
+**KD5. Statement (K11; T4).**
+- `SchedulesAgree` keeps its current form (`Kernel/Proofs/Concurrency.lean:146`): two schedules that both settle commit results alike up to a bijection of the identities and activations issued from that state on. Parked joins and scope order are included. This closes the gap that the strong `Sim` closes in K11.
+- Under KD1, the bijection is the identity except in two places, both found by T4a:
+  - **Activations of one element begun in one closure.** They swap with begin order (T4a F4), as public numbering keeps CIB's begin order.
+  - **Excess arrivals parked on one flow.** Three arrivals at a two-way join, two on one flow, leave a different one parked depending on the schedule, and no canonical choice repairs that, because at the firing only one of the two has arrived (T4a F3, `excess_leftover_differs`). Excess arrivals are admitted (`Laws/Flow.lean:89`).
+- **Rejected:** numbering activations in canonical key order at commit under `orderInvariant` (T4a F4's proposal). That would make every equality exact, but it is a new public-identity rule for the standards profile, a choice of observation boundary, and the statement does not need it.
+- **Premises:** both schedules settle, since two failing units report a schedule-dependent failure (T4a F9); `orderInvariant ⇒ withBoundaries` (KD3); `Apart`, as today.
 
 **KD6. Proofs re-established on the new core (T5, T8).**
 - The lane statements of P2–P5 and P7 carry over.
@@ -199,8 +227,10 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 
 **KD7. Guards for the promises the first rewrite broke (T4, T10).**
 - **Nested inductives:** an environment scan fails on any nested or mutual inductive in IL or state types. `State/Slots.lean:71` is rewritten flat.
-- **Footprints:** a type-level scan fails on a `Hooks` field whose type mentions `State`.
-- **Raw flags:** only `eventStart` and `eventSubProcess?` may bind the IL's interrupting flag.
+- **Footprints:** a type-level scan fails on a `Hooks` field, a callback sub-record field or a `Ctx` field whose type mentions `State`. `Ctx.scopeRole` (`Hooks.lean:209`) is in scope, which a scan of `Hooks` alone would miss (T4a F10).
+- **Raw flags:** only `eventStart` and `eventSubProcess?` may bind the IL's interrupting flag, in `Laws` as well as in admission and runtime (T4b D3).
+- **Profile premise:** every catalog profile with `orderInvariant` selects `inclusiveJoinReach = withBoundaries` (KD3).
+- **Search and checker:** the corpus guard of KD4.
 - **Queuing sites:** the queuing mechanisms are one data list (P1 census, 22 sites), and a scan fails on a queuing site outside it.
 - **Hook defaults:** the architecture's "no-op default" promise is restated as "refuse default". Refusing is the safer contract, and the code already does it (`Hooks.lean:412-416`). Recommended as OD2 (1), awaiting the owner.
 
@@ -426,6 +456,32 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | The engine gate passes with the platform tree absent | milestone ladder, M1 | — | **missing** | PD4 |
 | The platform consumes only the engine's published contract and never constructs an occurrence identity | PROJECT-DESIGN; platform proposal | `scripts/platform-product-boundary.test.ts` (10 tests) | enforced; stale `BpmnSemantics` root at `platform-product-boundary.ts:8` | kept; stale root removed |
 | Review, definition of done and register-in-commit rules | architecture, review | review receipts | process | **OD2 (3)**, awaiting the owner: move to the engineering policy |
+
+## Calibration (checkpoint 3)
+
+**Ground rules.**
+- Each spike ran on a local clone for at most 3 working hours. Heavy jobs went one at a time through a shared lock.
+- Working time excludes lock waits and pauses. Every figure comes from the spike's timestamped log, and its report states the method of every count.
+- The root re-checked each cited file and line before folding a result in here. Logs and reports are in the session scratchpad under `q/r2/spikes/`.
+- **Rates are lower bounds.** They come from one agent on a focused slice. Production work adds the TypeScript pair, scenarios, review and integration, and the factor for that is measured separately (spike T4c, item 2), never assumed.
+
+| Spike | Topic | Built and proved | Working time | Measured rate | Projection (rate × count) | Not represented, unmeasured |
+|---|---|---|---|---|---|---|
+| T1a (root) | T1 | the barrier distribution of 109 third-party models (54 public Camunda examples, 55 CIB Seven models) by peeling barriers one at a time | about 5 min of tool time | — | coverage 2 → 23 (inert tier) → 53 (plus binding registry) → 69 (plus 16 breadth rows) of 109; 38 stay refused at a terminal barrier, with a mean of 3.1 barriers per model; about 20 substantive breadth items, not 30 | the barriers hidden behind each of the 38 terminal ones |
+| T9 (root) | T9 | a census of the 60 `dynamic-only` runtime marks | about 5 min | — | 14 semantic gaps, 17 Java-host fidelity, 3 capacity, 20 caller data, 6 value domain | the cost per semantic gap (spike T9b) |
+| T4a | T4, T6 (KD1–KD3, KD5) | the generic diamond (`diamond`, `view_frame`, `apply_comm`); exact commutation under provenance keys for split and implicit merge; the counterexamples `excess_leftover_differs` and `spawn_breaks`; the diamond over `Std.ExtTreeMap`. 972 lines, no `sorry`, axioms only `propext`, `Quot.sound`, `Classical.choice` | 32 min, with 2.5 min of lock wait on top | about 2 min and 35 lines per hook, 27 proved lines per min | 53 units in view/delta form plus the core: about 4.5 h raw | the 12 E-units (T4c, item 2), the lifting through the closure, the key-freshness invariant, the TypeScript pair |
+| T4b | T4 (KD4) | the declarative walk over the real IL; checked decision procedures with soundness proofs (`splitApart_sound`, `armApart_sound`, `follows_sound`, the #162 widening); the one-step runtime half for Parallel and Inclusive; `Step.complete` glue with its frame lemmas. 1,381 lines, 54 theorems, no `sorry` | 25 min, with 2 min of lock wait on top | 0.37 min and 25 lines per law constructor or definition; 0.5 min per runtime queuing site; 1.8 min per `Step` operation | 161 law units, 61 runtime sites, 10 `Step` operations: about 2.3 h raw, about 8,000 lines | U1, the origin invariant across `Step.settle` (proxy: the placement lane, 4,226 lines) (T4c, item 1); Call recursion in the checker; the 14 `Reading` bridges |
+| T5 | T5 (KD6) | running | | | | |
+| T1b | T1 (AD1–AD3) | running | | | | |
+| T27 | T27, T31, T30 (PD6, PD7) | running | | | | |
+| T4c | T4: U1 and the E-units on the real kernel; production factor | queued, next free slot | | | | |
+| T2 | T2, T26 (AD4) | paused, queued after T4c | | | | |
+| T17, T11, T7T8, T9b, T12, T15, T40 | round 3 | queued | | | | |
+
+**What T4a and T4b already settle.**
+- P6R's O4, "soundness of two walks", was priced at 80–120 h. Its measured part comes to about 1 h raw. The remaining cost of T4 sits in two places, U1 and the E-units, and T4c measures both on the real kernel before any budget is set.
+- The design changed in five places on spike evidence: KD1 chose provenance keys compacted at commit; KD2 made variable regions per name and added name-indexed and enumerating regions; KD3 listed the 12 units outside the generic diamond; KD4 adopted search plus checker and found a law defect; KD5 kept the current statement form.
+- T4a's own projection for KD1–KD3 and KD5 is 11–22 agent-days. Most of that rests on an unmeasured production factor of 5–10, which T4c replaces with a measured one.
 
 ## Recommendations awaiting the owner
 
