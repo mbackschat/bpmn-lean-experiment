@@ -200,7 +200,7 @@ test("the hosted replay runs one bounded job per shard and verifies the runtime 
   assert.ok(stage?.index !== undefined && stage.index > replace, "a shard stages what it produced after the replay, even when the replay failed");
   assert.match(
     replay,
-    new RegExp(String.raw`if: always\(\)\n {8}uses: actions/upload-artifact@\S+ # v4\n {8}with:\n {10}name: replaced-cib-evidence-\$\{\{ matrix\.shard \}\}-of-\$\{\{ strategy\.job-total \}\}\n {10}if-no-files-found: error\n {10}retention-days: 14\n {10}path: \$\{\{ runner\.temp \}\}/${stage?.[1] ?? "missing"}\n`, "u"),
+    new RegExp(String.raw`if: always\(\)\n {8}uses: actions/upload-artifact@\S+ # v7.0.1\n {8}with:\n {10}name: replaced-cib-evidence-\$\{\{ matrix\.shard \}\}-of-\$\{\{ strategy\.job-total \}\}\n {10}if-no-files-found: error\n {10}retention-days: 14\n {10}path: \$\{\{ runner\.temp \}\}/${stage?.[1] ?? "missing"}\n`, "u"),
     "every shard uploads its own staged evidence under its own artifact name",
   );
 
