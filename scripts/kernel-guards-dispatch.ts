@@ -55,6 +55,9 @@ export const tsSiteBudget: Readonly<Record<string, number>> = {
   JuelUnary: 1, // evaluator `unary`
   JuelCallTag: 2, // admission, evaluator
   JuelMethod: 4, // the String, List and Map methods, and the argument-count table
+  // owner decision 2026-11-17: the sites measured once its catch-alls were gone; one above Lean's 22, because the
+  // method-argument readers switch over a `JVal` where Lean matches an `Option JVal`.
+  JValTag: 23,
 };
 
 export type GuardedType = Readonly<{ lean: string; enumName: string | null; owners: readonly string[]; leanOwners: readonly string[] }>;

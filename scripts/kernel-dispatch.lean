@@ -45,7 +45,8 @@ def owners : List (Name × List Name) := [
   (`Kernel.JuelBinary, [`Kernel.Feature.Data, `Kernel.Admission.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step]),
   (`Kernel.JuelUnary, [`Kernel.Feature.Data, `Kernel.Admission.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step]),
   (`Kernel.JuelCall, [`Kernel.Feature.Data, `Kernel.Admission.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step]),
-  (`Kernel.JuelMethod, [`Kernel.Feature.Data, `Kernel.Admission.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step])]
+  (`Kernel.JuelMethod, [`Kernel.Feature.Data, `Kernel.Admission.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step]),
+  (`Kernel.Feature.Data.Juel.JVal, [`Kernel.Feature.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step])]
 
 def guarded (type : Name) : Bool := owners.any (·.1 == type)
 

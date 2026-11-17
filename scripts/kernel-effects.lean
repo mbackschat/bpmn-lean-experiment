@@ -77,7 +77,8 @@ def budgets : List (Name × Nat) := [
   (`Kernel.JuelBinary, 3), -- Admission.Data.juelOperator, Feature.Data.Juel.operate, Repr (2026-11-10: guard 2's owner clause)
   (`Kernel.JuelUnary, 2), -- Feature.Data.Juel.unary, Repr
   (`Kernel.JuelCall, 3), -- Admission.Data.juelCall, Feature.Data.Juel.methodCall, Repr
-  (`Kernel.JuelMethod, 5)] -- the String, List and Map methods, JuelMethod.admits, Repr
+  (`Kernel.JuelMethod, 5), -- the String, List and Map methods, JuelMethod.admits, Repr
+  (`Kernel.Feature.Data.Juel.JVal, 22)] -- owner decision 2026-11-17: the sites measured once its catch-alls were gone
 
 structure Uses where
   constants : NameSet := {}
