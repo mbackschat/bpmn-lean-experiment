@@ -781,17 +781,35 @@ theorem registered_terminateClears {ctx : Ctx} {header : Header} {payload : Even
     (Laws.Scopes.clearInside_clears formed (formed.owned.occurrenceScopes occurrence member) _) _
 
 /-- `Laws.Scopes.InterruptingStart` of the registered hooks: an Event Sub-Process arriving as an occurrence of a
-well-formed state enters its Scope on the clearing of its parent scope occurrence that keeps only its own occurrence and
-its start Event's reservation when its start interrupts, and on the arrival's state otherwise (§13.5.4, IMESP). -/
+well-formed state, in a context reading its start as the registered hooks do (every Step context,
+`Laws.Step.inputCtx_queries`), enters its Scope on the clearing of its parent scope occurrence that keeps only its own
+occurrence and its start Event's reservation when its start interrupts (`Feature.Subscriptions.startInterrupts`), and on
+the arrival's state otherwise (§13.5.4, IMESP). -/
 theorem registered_interruptingStart {ctx : Ctx} {header : Header} {payload : ScopePayload} {occurrence : Occurrence}
-    {entry : ScopeEntry} {state after : State} {start : Subscription} {interrupting : Bool}
+    {entry : ScopeEntry} {state after : State} {start : Subscription} {declared : Bool}
     (formed : WellFormed ctx.program state) (member : occurrence ∈ state.occurrences)
-    (kind : payload.kind = .eventSubProcess start interrupting)
+    (reads : ctx.eventStart = Registry.hooks.eventStart) (kind : payload.kind = .eventSubProcess start declared)
     (ran : Registry.hooks.arriveScope ctx header payload occurrence entry state = .ok after) :
-    ∃ cleared, Laws.Scopes.InterruptingStart interrupting occurrence.scope (occurrence.id :: entry.inner.toList) state
-      cleared ∧ (interrupting = false → cleared = state) ∧
+    ∃ cleared, Laws.Scopes.InterruptingStart (Feature.Subscriptions.startInterrupts start declared) occurrence.scope
+      (occurrence.id :: entry.inner.toList) state cleared ∧
+      (Feature.Subscriptions.startInterrupts start declared = false → cleared = state) ∧
       Feature.Scopes.enter ctx header payload occurrence entry cleared = .ok after := by
   rw [Laws.Registry.hooks_arriveScope] at ran
-  exact Laws.Scopes.arriveScope_interrupts formed member kind ran
+  refine Laws.Scopes.arriveScope_interrupts (read := start) formed member kind ?_ ran
+  simp only [reads, Laws.Registry.hooks_eventStart, Laws.Scopes.eventStart_of_kind kind, Option.map_some]
+
+/-- A Compensation Event Sub-Process arriving through the registered hooks, in a context reading its start as they do,
+enters its Scope on the arrival's state whatever `isInterrupting` the IL carries: its start interrupts nothing (BPMN
+2.0.2 Table 10.87), so its arrival leaves its parent scope occurrence's contents as they were. -/
+theorem registered_compensationStart {ctx : Ctx} {header : Header} {payload : ScopePayload} {occurrence : Occurrence}
+    {entry : ScopeEntry} {state after : State} {start : Subscription} {declared : Bool}
+    (reads : ctx.eventStart = Registry.hooks.eventStart) (kind : payload.kind = .eventSubProcess start declared)
+    (compensates : start.trigger = .compensation)
+    (ran : Registry.hooks.arriveScope ctx header payload occurrence entry state = .ok after) :
+    Feature.Scopes.enter ctx header payload occurrence entry state = .ok after := by
+  rw [Laws.Registry.hooks_arriveScope] at ran
+  refine Laws.Scopes.arriveScope_uninterrupted (read := start) kind ?_ ran
+  simp only [reads, Laws.Registry.hooks_eventStart, Laws.Scopes.eventStart_of_kind kind, Option.map_some,
+    Laws.Subscriptions.startInterrupts_compensation compensates]
 
 end Kernel.Proofs.Cancellation

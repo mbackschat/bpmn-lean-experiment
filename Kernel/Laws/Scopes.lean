@@ -352,17 +352,19 @@ theorem arriveScope_keeps {inv : State → Prop} {ctx : Ctx} (ops : ScopesOps ct
   split at ran
   · exact enter_keeps ops holds member begun named claimable lies ran
   · exact enter_keeps ops holds member begun named claimable lies ran
-  · rename_i interrupting _
-    split at ran
+  · split at ran
     · cases ran
-    · dsimp only at ran
-      cases interrupting
-      · exact enter_keeps ops holds member begun named claimable lies ran
-      · obtain ⟨cleared, stays, clearedReady⟩ := ops.clear state occurrence entry.inner holds member begun ready
-        refine enter_keeps ops cleared stays begun named clearedReady (fun found inside reserved => ?_) ran
-        obtain ⟨_, shape⟩ := Laws.State.clearInside_eq state occurrence.scope (occurrence.id :: entry.inner.toList)
-        rw [shape] at inside
-        exact lies found (List.mem_filter.mp inside).1 reserved
+    · split at ran
+      · cases ran
+      · rename_i interrupting _
+        dsimp only at ran
+        cases interrupting
+        · exact enter_keeps ops holds member begun named claimable lies ran
+        · obtain ⟨cleared, stays, clearedReady⟩ := ops.clear state occurrence entry.inner holds member begun ready
+          refine enter_keeps ops cleared stays begun named clearedReady (fun found inside reserved => ?_) ran
+          obtain ⟨_, shape⟩ := Laws.State.clearInside_eq state occurrence.scope (occurrence.id :: entry.inner.toList)
+          rw [shape] at inside
+          exact lies found (List.mem_filter.mp inside).1 reserved
 
 /-! ## Cancellation
 
@@ -412,12 +414,14 @@ theorem clearsInside_signal {before after : State} {scope : ScopeOccurrenceId} {
   constructor <;> assumption
 
 /-- An Event Sub-Process's arrival at its occurrence, which stands in a well-formed state, enters its Scope on a state
-that its start's interruption made from the arrival's: interrupting, the clearing of the parent scope occurrence keeping
-the handler's occurrence and its start Event's reservation (`InterruptingStart`); otherwise the arrival's state. -/
+that its start's interruption, as `Ctx.eventStart` reads it (`interrupting`), made from the arrival's: interrupting, the
+clearing of the parent scope occurrence keeping the handler's occurrence and its start Event's reservation
+(`InterruptingStart`); otherwise the arrival's state. -/
 theorem arriveScope_interrupts {ctx : Ctx} {header : Header} {payload : ScopePayload} {occurrence : Occurrence}
-    {entry : ScopeEntry} {state after : State} {start : Subscription} {interrupting : Bool}
+    {entry : ScopeEntry} {state after : State} {start read : Subscription} {declared interrupting : Bool}
     (formed : Laws.State.WellFormed ctx.program state) (member : occurrence ∈ state.occurrences)
-    (kind : payload.kind = .eventSubProcess start interrupting)
+    (kind : payload.kind = .eventSubProcess start declared)
+    (started : ctx.eventStart payload = some (read, interrupting))
     (ran : Feature.Scopes.arriveScope ctx header payload occurrence entry state = .ok after) :
     ∃ cleared, InterruptingStart interrupting occurrence.scope (occurrence.id :: entry.inner.toList) state cleared ∧
       (interrupting = false → cleared = state) ∧
@@ -427,10 +431,28 @@ theorem arriveScope_interrupts {ctx : Ctx} {header : Header} {payload : ScopePay
   dsimp only at ran
   split at ran
   · cases ran
-  · cases interrupting
+  · rw [started] at ran
+    dsimp only at ran
+    cases interrupting
     · exact ⟨state, (nomatch ·), fun _ => rfl, ran⟩
     · exact ⟨_, fun _ => clearInside_clears formed (formed.owned.occurrenceScopes occurrence member) _,
         (nomatch ·), ran⟩
+
+/-- An Event Sub-Process whose start interrupts nothing as `Ctx.eventStart` reads it, a Compensation start whatever
+its declared `isInterrupting` (`Feature.Subscriptions.startInterrupts`), enters its Scope on the arrival's state: its
+arrival leaves everything in its parent scope occurrence as it was. -/
+theorem arriveScope_uninterrupted {ctx : Ctx} {header : Header} {payload : ScopePayload} {occurrence : Occurrence}
+    {entry : ScopeEntry} {state after : State} {start read : Subscription} {declared : Bool}
+    (kind : payload.kind = .eventSubProcess start declared) (started : ctx.eventStart payload = some (read, false))
+    (ran : Feature.Scopes.arriveScope ctx header payload occurrence entry state = .ok after) :
+    Feature.Scopes.enter ctx header payload occurrence entry state = .ok after := by
+  unfold Feature.Scopes.arriveScope at ran
+  rw [kind] at ran
+  dsimp only at ran
+  split at ran
+  · cases ran
+  · rw [started] at ran
+    exact ran
 
 /-! ## Non-vacuity
 
@@ -549,5 +571,12 @@ theorem eventStart_kind {payload : ScopePayload} {start : Subscription} {interru
     cases started
     exact chosen
   all_goals cases started
+
+/-- Scopes reads an Event Sub-Process's start and declared flag off its kind. -/
+theorem eventStart_of_kind {payload : ScopePayload} {start : Subscription} {declared : Bool}
+    (kind : payload.kind = .eventSubProcess start declared) :
+    Feature.Scopes.eventStart payload = some (start, declared) := by
+  unfold Feature.Scopes.eventStart
+  rw [kind]
 
 end Kernel.Laws.Scopes

@@ -637,4 +637,11 @@ theorem catches_cancel {trigger : Trigger} (caught : (Feature.Subscriptions.catc
   unfold Feature.Subscriptions.catches at caught
   split at caught <;> simp_all [Feature.Subscriptions.errorFacts?, Feature.Subscriptions.escalationCode?]
 
+/-- A Compensation start interrupts nothing, whatever `isInterrupting` it declares (BPMN 2.0.2 Table 10.87,
+`Feature.Subscriptions.startInterrupts`). -/
+theorem startInterrupts_compensation {start : Subscription} {declared : Bool}
+    (compensates : start.trigger = .compensation) : Feature.Subscriptions.startInterrupts start declared = false := by
+  unfold Feature.Subscriptions.startInterrupts
+  rw [compensates]
+
 end Kernel.Laws.Subscriptions

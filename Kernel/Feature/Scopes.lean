@@ -62,20 +62,22 @@ def enter (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurrence : O
 /-- A Scope's occurrence began. An interrupting Event Sub-Process first clears its parent occurrence, its other Event
 Sub-Process starts included ([BPMN 2.0.2 §13.5.4](../../docs/reference/bpmn-2.0.2/README.md)), keeping its own
 occurrence and its start Event's reservation; the parent's own boundaries stay armed in the grandparent until the parent
-completes. Here the start's declared flag decides the clearing, not `Ctx.eventStart`'s interruption, because
-`Proofs.Cancellation.registered_interruptingStart` states the clearing for the declared flag. The two differ only for a
-Compensation start, whose handler `Compensation.beginHandler` begins in a fresh context scope occurrence that holds
-nothing but the handler's occurrence and the records retained there, which the clearing keeps. -/
+completes. Whether it interrupts is `Ctx.eventStart`'s reading, never the IL's declared flag, which a Compensation start
+does not apply (`Feature.Subscriptions.startInterrupts`). -/
 def arriveScope (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurrence : Occurrence) (entry : ScopeEntry)
     (state : State) : Outcome :=
   match payload.kind with
   | .embedded => enter ctx header payload occurrence entry state
   | .transaction _ => enter ctx header payload occurrence entry state
-  | .eventSubProcess _ interrupting =>
+  | .eventSubProcess _ _ =>
     if occurrence.incoming.isSome then .error (.semanticFailure .invariant "flow-into-event-subprocess")
     else
-      let cleared := if interrupting then state.clearInside occurrence.scope (occurrence.id :: entry.inner.toList) else state
-      enter ctx header payload occurrence entry cleared
+      match ctx.eventStart payload with
+      | none => .error (.semanticFailure .invariant "event-subprocess-without-start-reading")
+      | some (_, interrupting) =>
+        let cleared :=
+          if interrupting then state.clearInside occurrence.scope (occurrence.id :: entry.inner.toList) else state
+        enter ctx header payload occurrence entry cleared
 
 /-- An idle Scope's outputs read its own variables, then the parent's chain they are written into
 (`Ctx.outputReads`). -/

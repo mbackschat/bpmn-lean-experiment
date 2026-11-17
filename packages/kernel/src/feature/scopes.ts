@@ -119,11 +119,9 @@ function enter(ctx: Ctx, header: Header, payload: ScopePayload, occurrence: Occu
 /**
  * A Scope's occurrence began. An interrupting Event Sub-Process first clears its parent occurrence, its other Event
  * Sub-Process starts included (BPMN 2.0.2 §13.5.4), keeping its own occurrence and its start Event's reservation; the
- * parent's own boundaries stay armed in the grandparent until the parent completes. Here the start's declared flag
- * decides the clearing, not `Ctx.eventStart`'s interruption, because `Proofs.Cancellation.registered_interruptingStart`
- * states the clearing for the declared flag. The two differ only for a Compensation start, whose handler
- * `Compensation.beginHandler` begins in a fresh context scope occurrence that holds nothing but the handler's
- * occurrence and the records retained there, which the clearing keeps.
+ * parent's own boundaries stay armed in the grandparent until the parent completes. Whether it interrupts is
+ * `Ctx.eventStart`'s reading, never the IL's declared flag, which a Compensation start does not apply
+ * (`feature/subscriptions.ts#startInterrupts`).
  */
 export function arriveScope(ctx: Ctx, header: Header, payload: ScopePayload, occurrence: Occurrence, entry: ScopeEntry, state: State): Outcome {
   const kind = payload.kind;
@@ -133,8 +131,10 @@ export function arriveScope(ctx: Ctx, header: Header, payload: ScopePayload, occ
       return enter(ctx, header, payload, occurrence, entry, state);
     case ScopeKindTag.EventSubProcess: {
       if (occurrence.incoming !== null) return semanticFailure(SemanticCause.Invariant, "flow-into-event-subprocess");
+      const read = ctx.eventStart(payload);
+      if (read === null) return semanticFailure(SemanticCause.Invariant, "event-subprocess-without-start-reading");
       const keep = entry.inner === null ? [occurrence.id] : [occurrence.id, entry.inner];
-      const cleared = kind.interrupting ? clearInside(state, occurrence.scope, keep) : state;
+      const cleared = read[1] ? clearInside(state, occurrence.scope, keep) : state;
       return enter(ctx, header, payload, occurrence, entry, cleared);
     }
   }
