@@ -443,7 +443,12 @@ The design removes P6's causes C1–C6 by construction instead of proving around
   - all-or-nothing snapshots behind 100-instance caps (verified, T27);
   - per-Run batch retention (`publication.ts:7-10`);
   - the `unknown` row that blocks every snapshot (`work-service.ts:135-141`).
-- **Scope check:** the owner-approved [shared-persistence proposal](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) names "change-driven Product 1 publication that reduces polling without changing semantic authority" as its preferred reopen path, and its reopen condition is met. Feed and acknowledgement fall under "observe committed canonical state", so no consumption operation is added ([platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary)). [HUMAN-WORK-SPEC](BPM-PLATFORM-HUMAN-WORK-SPEC.md)'s "instances started outside Product 2 remain absent" is revised.
+- **Scope check (re-checked 2026-11-17):**
+  - The owner-approved [shared-persistence proposal](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) says: "Reopen the ingestion design if measured polling load or lag prevents the declared freshness bound; prefer a revisioned, idempotent change-driven publication" (line 218).
+  - What is measured is not load or lag but a failure: past 100 instances the snapshot is unavailable (T27's red test), which also prevents the freshness bound. The condition is met by that failure.
+  - The feed's cursor is an engine-side cursor the recovery worker reads. Product 2's API exposes no private lease or cursor, which line 220 would otherwise reopen.
+  - Feed and acknowledgement fall under "observe committed canonical state", so no consumption operation is added ([platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary)).
+  - [HUMAN-WORK-SPEC](BPM-PLATFORM-HUMAN-WORK-SPEC.md) line 27, "Instances started outside Product 2 remain absent", limits the M3 producer set. The settled [platform proposal](BPM-PLATFORM-PROPOSAL.md) promises "Task rows across all instances" (line 80). Revising the spec line therefore follows settled scope; it is not a scope change.
 - **Rejected:**
   - raising the caps, which keeps N Queries per window;
   - a database shared with the engine, which breaks the dependency direction.
