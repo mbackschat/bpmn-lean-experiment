@@ -117,6 +117,7 @@ The "Owner" column marks only the items on the owner's ask list: dependencies, l
 | T38 (F13) | **Nothing designs failure handling under the standards profile.** Incidents exist only under the CIB profiles, and a technical failure halts (T28) | verified through T28 | — |
 | T39 (F14) | Cron runs in UTC only, as the owner decided on 2026-11-08 | verified (architecture owner decisions) | disclosure; changing it reverses an owner decision |
 | T40 (F16) | **No mechanism finds Lean/TypeScript divergence beyond the corpus**, while production runs only the TypeScript kernel | hypothesis (no generator found) | — |
+| T42 | **Commutation complications P6 had not priced** (found on the owner's hint, 2026-11-17): the closure work bound depends on the schedule (`Step.lean:355`); `SchedulesAgree` assumes both schedules settle, which is weaker than the order-invariance promise (`ENGINEERING-POLICY.md:36`); provenance pairing is per mechanism and nests (`Concurrent.lean:411-415`). Designed in KD8 | verified (root read of each cited line) | — |
 | T41 (F17, F18) | Audit suspicions dropped from this list: the proof cost per breadth item, replay CPU, and models admitted that then fail at start (#77-style). Also the fidelity of Java's `Double.toString` for AD4 | carried | — |
 
 ## Remaining-to-goal ledger, not costly
@@ -258,7 +259,28 @@ The design removes P6's causes C1–C6 by construction instead of proving around
   - `orderInvariant ⇒ withBoundaries` (KD3), stated in the theorem, because `options` is free IL data. Today every catalog profile meets it: `bpmn-2.0.2` selects neither CIB-INT-0020 nor CIB-OP-0016, and both CIB profiles select both (`profiles/*/profile.json`, `kernel-reader/wire.ts:150-151`);
   - `Apart`, as today.
 
-**KD6. Proofs re-established on the new core (T5, T8).**
+**KD8. Commutation without a pairwise proof estate (T42; found 2026-11-17 by a commutation hunt on the owner's hint).**
+- **The history this guards against.** The architecture's cause 2 of the slowdown was "proof estate shaped per variant and per pair; … commutation stacks copied per wait kind; … September's output went into pairwise proofs" (`kernel/ARCHITECTURE-SPEC.md:16`): about 78,000 lines, and 100 commutation commits between August and November (`git log --grep=commut`).
+- **Finding 1: the closure-bound outcome depends on the schedule.**
+  - `Step.settle` charges each micro-step the size of the whole state (`work < state.entryCount`, `Kernel/Step.lean:355`). `entryCount` is the sum of tokens, occurrences, open items, scopes and signals (`Kernel/State.lean:351`).
+  - Intermediate sizes depend on the order. So under `orderInvariant`, one schedule can answer `unsupported "closure-bound"` while another commits.
+  - That breaks the promise that "every state with several enabled internal steps is order-invariant, … or refused alike" (`kernel/ENGINEERING-POLICY.md:36`). Every unit reading this global counter would also overlap every other unit's footprint.
+  - **Design:** charge each micro-step the entries it creates, not the size of the whole state. The quantity the bound exists to cap, a burst that grows its state with every step (CIB-LIM-0016), is still capped. Under the diamond, each unit's created entries depend only on its own reads, so the total and the micro-step count are the same in every schedule. One measure serves every profile, with no profile switch.
+  - **Consequence:** CIB-LIM-0016's twin witnesses `automatic-loop-waiting-branch-at-work-bound` and `…-beyond-work-bound` are placed again for the new measure. Their kernel answers are regenerated; CIB's retained answers are unchanged.
+  - **Rejected:** keeping the measure and excluding `closure-bound` from the order-invariance claim. That restates a promise, which is the owner's decision, and it weakens the claim where a schedule-independent measure exists.
+- **Finding 2: P6's statement is weaker than the promise.**
+  - `SchedulesAgree` assumes that both schedules settle (`Kernel/Proofs/Concurrency.lean:146`). So "one order commits, another fails or hits the bound" is outside it, while the engineering policy and the coverage target ("that the admitted standards surface is order-invariant") claim more.
+  - **Design:** the statement adds settle-agreement: if one schedule settles within the bounds, every schedule does, and they agree.
+  - The added proof is generic: the diamond extended to failing units (a unit that fails on a state fails alike after an independent unit, since its reads are unchanged), and the invariance of micro-step count and created entries from finding 1. This strengthens a lane statement to match its promise, so it needs no owner decision.
+- **Finding 3: pairing is per mechanism, and pairs nest.**
+  - P6 needs a provenance-pairing lemma: two items queued together at a reachable closure state lie in distinct units of one `Concurrent` case (`Kernel/Laws/Flow/Concurrent.lean:411-415`). There are 10 cases over 9 mechanisms, and real pairs compose them, as a split inside a parallel Multi-Instance instance inside an entered scope does.
+  - **Design:** the pairing comes from KD1's provenance keys, and the key segment that created an item names its mechanism.
+    - **Mechanisms that fan out from one unit** (split, entered, instances, rejoined): the two items' longest common key prefix names their nearest common fan-out.
+    - **Mechanisms that resume waiting items** (signalled, escalated, writes, armed, compensating): the waits come from earlier closures and carry compacted keys. Their common prefix names an old ancestor, not the cause, so the resuming unit is read from each item's last segment.
+    - The proof then has one lemma per mechanism, "this mechanism's items are a `Concurrent` pair", plus one generic lemma that locates the deciding segment. There is no lemma per pair of mechanisms.
+  - The bridge from `Apart` to the diamond is one lemma per `Account` field (footprint, begins, completes, withdraws, resumes, compensates, exposed), never per mechanism or pair.
+  - **Guard (KD7):** a Lean environment scan fails on a theorem whose statement names two distinct `QueuingMechanism` constructors or two distinct wait kinds. This catches a pairwise estate structurally, before it grows.
+- **Unmeasured.** Spike T4d measures findings 1 to 3: the nested pairing for one composition, the failure diamond, and the created-entries measure.
 - The lane statements of P2–P5 and P7 carry over.
 - Their body lemmas about `State`, `Step` and `Hooks`, about 27,000 lines, are re-proved against the view and delta operations. Spike T5 measures the rate.
 - The eight witness-only law families (K10) are proved in the same pass against the registered hooks. Spike T8 measures one family.
@@ -272,6 +294,7 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 - **Raw flags:** only `eventStart` and `eventSubProcess?` may bind the IL's interrupting flag, in `Laws` as well as in admission and runtime (T4b D3).
 - **Profile premise:** every catalog profile with `orderInvariant` selects `inclusiveJoinReach = withBoundaries` (KD3).
 - **Search and checker:** the corpus guard of KD4.
+- **No pairwise proof estate:** a theorem whose statement names two distinct `QueuingMechanism` constructors or two distinct wait kinds fails the environment scan (KD8).
 - **Queuing sites:** the queuing mechanisms are one data list (P1 census, 22 sites), and a scan fails on a queuing site outside it.
 - **Hook defaults (re-checked 2026-11-17).**
   - **The code today** (`Kernel/Hooks.lean:333-445`, `Kernel/Registry.lean:36-85`):
