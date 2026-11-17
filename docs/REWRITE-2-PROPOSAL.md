@@ -213,13 +213,13 @@ The design removes P6's causes C1–C6 by construction instead of proving around
   - **E3, instance-wide indexes:** Signal receivers (`arriveThrow`), Conditional items (`written`), catchers on the ancestor chain (`raise`), `endInstance`. These use name-indexed regions, so `Apart` plus the diamond apply.
 - **The Inclusive join** is confluent once its readiness is stated over counts, not identities, provided every position-creating mechanism stays inside `Reach` (T4a F6, proved in a count model, with `spawn_breaks` as the counterexample). Under `inclusiveJoinReach = outgoingOnly` it is not confluent, because a boundary token outside the reach fires the join a second time. Only the CIB profiles select `outgoingOnly`, and they schedule by `declarationDepthFirst`. The standards profile reads `withBoundaries` ([FLOW-SEMANTICS-SPEC](kernel/semantics/FLOW-SEMANTICS-SPEC.md)). So P6 takes `orderInvariant ⇒ withBoundaries` as a premise, and a catalog guard checks it for every profile.
 - **Joins: two choices are order-dependent today** (`Kernel/Feature/Flow.lean:180-206`).
-  - **Which arrivals a join consumes.** The first parked on each flow is consumed. This becomes the least key.
+  - **Which arrivals a join consumes.** The first parked on each flow is consumed. This stays as it is, in every profile. Re-checked 2026-11-17: changing it to the least key would change, under the CIB profiles too, which excess arrival publicly ends, and so break retained evidence. It would also gain nothing, because the residue differs between schedules either way (T4a F3).
   - **The internal key of the continuation.** It is derived from the arriving occurrence, which fires. It becomes (scope key, join element, the join's firing ordinal in that scope occurrence). The number of firings depends only on the multiset of arrivals, so the key is the same in every schedule. A key derived from the consumed set would not be: with excess arrivals, the consumed set itself differs between schedules (T4a F3), and every downstream key would inherit the difference. Then the only difference left is which excess arrival stays parked.
   - **Readers of a parked arrival's identity (root grep of `slots.parked`, 2026-11-17):**
     - the join itself (`Feature/Flow.lean:180-206`);
     - `Step.reoffer?`, which walks parked arrivals in parking order and offers each join its most recently parked occurrence (`Step.lean:328-344`). That choice is order-dependent too.
     - The other readers see only flow and scope: `positions` and `filled` (`Flow.lean:169,178`) and scope removal (`State/Slots.lean:128-133`).
-  - So `reoffer?` also offers the least key, iterating the key-ordered map. The renaming then stays inside the join's confluence lemma and `reoffer?`'s own unit.
+  - `reoffer?` also stays as it is. The state keeps each parked arrival's parking order, a schedule-dependent datum that only the join and `reoffer?` read. The difference between two schedules is then a permutation of the parked entries in one join slot. That permutation is absorbed by the join's confluence lemma and by `reoffer?`'s own unit, with no behavior change in any profile.
   - **Unchanged: the public choice.** The arriving occurrence still completes with the flows and the others with none, as CIB continues the arriving execution. Between schedules this differs only within the activation bijection KD5 allows.
   - Spike T4c checks that this suffices without equivariance proofs downstream. If it does not, the public choice changes only with a register entry, and the change per profile is disclosed here.
 - **Premise:** C4 was measured by P6R, and #120 and #75 are open closure-order findings (K8).
@@ -290,7 +290,9 @@ The design removes P6's causes C1–C6 by construction instead of proving around
   - **consumed:** read into the IL;
   - **inert:** retained in exact source evidence and published nowhere, or published as passive metadata;
   - **refused:** with a code.
-- The inert list is profile data, with one register entry per item. Each entry states why the item has no effect at the observation boundary; for example, `historyTimeToLive` drives only CIB's history cleanup.
+- The inert list is profile data, with one register entry per item. Each entry states why the item has no effect at the observation boundary.
+- **An inert item can still have a value check.** CIB fails a deployment whose `historyTimeToLive` is neither `P<n>D` nor a non-negative integer (`ParseUtil.java:37` in the pinned source, found by T1b and re-checked by the root). So its entry carries the exact spelling, the value check with a refusal code, and the consequence: it drives only CIB's history cleanup.
+- That is exactly what [INTERCHANGE-ADMISSION-SPEC](INTERCHANGE-ADMISSION-SPEC.md) line 93 requires before it lifts its explicit refusal: "a separate classified requirement selects its exact source spelling, value, and consequence". The spec's line is amended in the same commit.
 - **Premise:** the reader refuses every unconsumed extension (`bpmn-source/src/kernel-reader/model.ts:352,361`, `requireCarried`), and 50 of the 55 CIB examples carry `historyTimeToLive`.
 - **Scope check:** "Camunda/CIB extension syntax is admitted only through exact profile-selected BPMN contexts" (`PROJECT-DESIGN.md`, CIB compatibility).
 - **Rejected:** ignoring the whole `camunda:` namespace. That would silently drop meaning such as `asyncBefore` or `failedJobRetryTimeCycle`.
@@ -298,6 +300,8 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 **AD2. Admission reports every refusal (T1).**
 - Admission returns every refusal, each with its element identity, instead of the first one.
 - The checks that today carry `element: null` (`kernel/src/admission-registry.ts:643-659`) name their element, or name the definition when the check is model-wide.
+- The checks run in dependency order, references and membership first. A check whose prerequisite refused is skipped and reported as not run. It never runs on a program that lacks the guarantee it relies on.
+- The public result `diagnostics: readonly [EngineDiagnostic]` (`engine-api/src/definition.ts:63`) becomes a non-empty list. It is replaced atomically with every producer and consumer, under the pre-release rule.
 - **Premise:** one diagnostic per compile (`engine-api/src/definition.ts:63-67`).
 - **Scope check:** "report acceptance or rejection with the offending element identity and reason" ([platform proposal](BPM-PLATFORM-PROPOSAL.md#deployment-and-definitions)), and M1's exit gate.
 - **Rejected:** an engine-API loop that strips each refusal and recompiles. It masks dependent refusals and multiplies compile time.
@@ -316,7 +320,7 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 **AD4. The value domain widens inside the ceiling (T2).**
 - `Value` gains Double, negative Integer and Date.
   - **Double** is IEEE binary64, carried as its bit pattern so that equality stays lawful, and computed through the platform double in both kernels.
-  - **Negative Integer** stays within the wire's magnitude bound.
+  - **Negative Integer** is a domain widening, not a new arm. `Value.int` is already `Int` (`Expression.lean:19`), but the domain is `0..9007199254740991` and the wire grammar is unsigned, `0|[1-9][0-9]*` ([DATA-SEMANTICS-SPEC](kernel/semantics/DATA-SEMANTICS-SPEC.md) lines 14 and 16). Both widen to the symmetric range, and the codecs follow. `Decimal` already carries a signed coefficient.
   - **Date** is an instant in epoch milliseconds, as CIB's `java.util.Date` holds it.
 - EL coercion follows the EL specification, and the pinned `cibseven-juel` stays the oracle.
 - The size bounds (1,024 B strings, 32 members per container, 256 nodes, 16 KiB) stay until the owner decides OD3, the recommendation to raise them within Temporal's payload limits to the values spike T26 measures.
@@ -363,8 +367,8 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 - **The program** is read from the deployment Workflow by digest, not carried in the chain's continuation.
 - **State growth (#169)** is removed by KD1's bounded keys.
 - **Premise:** the owner-ratified bounds are at `TEMPORAL-PROCESS-LIFECYCLE-SPEC.md:83-104` and `capacity.ts:24`. The median IL is 1,082 B per element (E5's measurement).
-- **Scope check:** the bounds themselves stay as ratified. Only their effect changes, from refusal to waiting.
-- Spike T16 measures it.
+- **Scope check, corrected 2026-11-17:** the bound values stay as ratified, but the consequence column is part of the table the owner approved and ratified on 2026-11-13 ([lifecycle spec](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), lines 104-114). Changing "candidate refused" to "waits" for pending Activities, and segmenting the publication batch, changes that approved contract. Both wait for the owner as OD11. Two parts do not touch the table and need no owner decision: reading the program by digest instead of carrying it, and KD1's bounded keys.
+- Spike T17 (item 2) measures the queuing.
 
 **HD4. The engine API closes its gaps through existing kernel mechanisms (T17, T19).**
 - **General cancellation** is a kernel command over the existing generic subtree removal.
@@ -547,6 +551,7 @@ These items are on the owner's ask list. Each waits for the owner, and implement
 | OD7 | **T24: take the five persisted-history approvals at the plan's last gate, before the first release or the first third-party production use, whichever comes first.** Until then, Worker versioning by build identity and the replay-fixture lane are designed, not built. Until then the adopter documentation states that an upgrade replaces state | `PROJECT-DESIGN.md:253-259` requires the approvals "before the first immutable release or persisted production history"; `CLAUDE.md` (pre-release evolution) forbids retained Event History fixtures and deployment fallbacks before an approved baseline. Re-checked 2026-11-17: the earlier text said these mechanisms would be built before the approvals, which contradicted that rule | the approvals bind a release, which the plan reaches at its end | approving baselines before the rewrite exists; building replay fixtures before the approvals |
 | OD8 | **Add no new store dependency** for T15 or T26 | **not yet established** (re-checked 2026-11-17): HD2 needs none by design, but spike T15 has not measured it. Whether data within Temporal's payload limits is enough for third-party processes is what spike T2 measures; if it is not, a claim-check store becomes the alternative this recommendation rejects, and the recommendation is revised | — | a database-backed registry or a claim-check store |
 | OD10 | **Only if spike T4c prices KD2′ above twice typed KD2:** restate two architecture promises, "footprints each feature declares through its `Hooks` laws" and "no proof-motivated TypeScript (footprints, commutation helpers)", so that hooks take typed views and return deltas in Lean and TypeScript alike. Otherwise nothing is asked | `kernel/ARCHITECTURE-SPEC.md:119,121`; KD2 and KD2′ in this proposal | it restates promises, so the owner decides | restating them without measured need |
+| OD11 | **HD3: change two consequences in the ratified capacity table.** A pending service Activity beyond 32 waits in the host's queue instead of being refused, and a publication beyond 64 KiB is segmented instead of refused. Both values stay | the consequences are rows of the table the owner ratified on 2026-11-13 ([lifecycle spec](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) lines 83-114). Effect completion order is already an explicit kernel input, so waiting changes no meaning | a ratified table changes, so the owner decides | keeping the refusals: a parallel Multi-Instance of more than 32 Service Tasks, ordinary in third-party models, is refused |
 | OD9 | **No SDK work** (#123 waits upstream). **Cron stays UTC** (owner decision of 2026-11-08; disclosed to adopters) | `CLAUDE.md` SDK rule; architecture owner decisions | — | — |
 
 ## Reuse and document verdicts
