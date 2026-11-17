@@ -546,6 +546,16 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 - SDK work stays prohibited, and TD-005 stays an upstream Node defect.
 - No cost is planned for either; the owner decides on SDK work.
 
+**HD7. Bounds are data with one owner, pinned per instance (owner intent, 2026-11-17).**
+- **Premise:** the host capacities have one owner (`temporal-host/src/capacity.ts`), but the kernel's value bounds are named constants in TypeScript (`kernel/src/hooks.ts:252-257`), inline literals in Lean (`Kernel/Hooks.lean:159`) and copies in the JSON schemas (`maxLength: 1024`), the platform decoders, fixtures and the CIB runner, so changing one means about ten edits in three languages.
+- **Design:**
+  - The kernel's value bounds form one `Bounds` record carried with the profile options the kernel already receives; the laws are stated for any bounds; Lean and TypeScript pair it; the schemas and platform decoders are generated from it; a guard fails on a stray bound literal. Its shape enters K0's shape batch, so the proofs are written against it.
+  - The host capacities form a deployment configuration, validated against Temporal's limits when the Worker starts.
+  - Every instance pins the bounds it started with and carries them across Continue-As-New, so a later change applies to new instances and never changes a replayed decision.
+  - The defaults are the ratified rows; changing a ratified default stays an owner decision. A bound shared across instances (OD14's identity bound) may be lowered only when Worker start finds nothing above it.
+- **Rejected:** a live global setting, which would make replay nondeterministic; constants alone, which keep every change a code edit.
+- **Cost:** unmeasured, about 3–6 h raw estimated (kernel record in K0, host configuration in H3).
+
 ### Product 2: T12, T13, T14, T18, T21
 
 **PD1. Identity per request through the pluggable boundary (T12).**
@@ -751,9 +761,32 @@ The root checked, on 2026-11-17 at `87d27def2`:
 - The design changed in five places on spike evidence: KD1 chose provenance keys compacted at commit; KD2 made variable regions per name and added name-indexed and enumerating regions; KD3 listed the 12 units outside the generic diamond; KD4 adopted search plus checker and found a law defect; KD5 kept the current statement form.
 - T4a's own projection for KD1–KD3 and KD5 is 11–22 agent-days. Most of that rests on an unmeasured production factor of 5–10. T4c measured ×3.0 between two models, neither of them `Kernel.State`, so the step from model to kernel stays unmeasured.
 
-## Recommendations awaiting the owner
+## Owner decisions (2026-11-17)
 
-These items are on the owner's ask list. Each waits for the owner, and implementation covers only work that none of them blocks. For each one, the root checked the premise in code or documents, the framing against the settled scope and `CLAUDE.md`, and the recommendation against the rejected alternative. OD4 and OD9 are not owner items: they only apply `CLAUDE.md`.
+The owner decided every item below on 2026-11-17, after the root re-checked each premise and recommendation; the table after it keeps the recommendations as they were put. Each decision lands with the work it governs, which amends the named documents in the same commit.
+
+| Item | Decision | Design notes from the consistency check |
+|---|---|---|
+| OD1 | All four Service Task binding families (`class`, `delegateExpression`, `expression`, `topic`) become opaque handler keys that the adopter maps to TypeScript handlers through the public effect contract (HD1); projects on Product 2 extend the handler set. A `topic` routes by default to its own Temporal task queue named after the topic, so workers in any Temporal SDK language poll it, with a TypeScript example worker. No Java runs; a `camunda:field` is refused with a stable code until carried as handler input; the missing fetch-and-lock REST API and field injection are classified in the register. Lean models the effect and its outcomes, never a handler | the compatibility scope's rows (lines 61, 62, 73) are reopened in the implementation commit |
+| OD2 | All four restatements approved: hook defaults per field class; "no proof-motivated TypeScript" on the track-review checklist; review and definition-of-done rules into the engineering policy; `Value` the one nested-inductive exception | K0's hook-default guard and nested-inductive scan land in their final form |
+| OD3 | The 128-Run cap is removed; the value and state bounds rise to T2's figures, each ratified only after hosted capacity witnesses pass at that size and lowered if one fails | with HD7 |
+| OD5 | Model-declared Timer-start cycles are activated at deployment (PD9) | a deployment with an active schedule is referenced (OD13) |
+| OD6 | No forms dependency; `camunda:formData` and a generic variable-entry form; a task with an embedded or Camunda form completes through the generic form, its key shown and the limit disclosed | `formData` date fields need A3's Date arm, so P1's forms follow A3 |
+| OD7 | The five persisted-history approvals are taken at the last gate, before the first release or first third-party production use | pinned per-instance bounds (HD7) are part of that baseline |
+| OD8 | No new store dependency; it returns to the owner with a costed option only if hosted throughput fails | — |
+| OD10 | KD2′ stays | — |
+| OD11 | A pending service Activity beyond 32 waits in the host's queue; a publication beyond 64 KiB is segmented | needed anyway once OD3 raises the state bound |
+| OD12 | A due rollover is held until Product 2's intake acknowledges | OD3 raises the continuation argument to 1.5 MiB, so carrying batches is no longer impossible, but it only postpones the problem: a long intake outage outgrows any bound, so the hold stays |
+| OD13 | Both operator capabilities are added: deleting an unreferenced deployment, and read-only Call navigation | "referenced" includes an active Timer-start schedule (OD5) and a pending Timer-start occurrence, which must still find its deployment in the registry (HD2); deleting removes the deployment's schedules |
+| OD14 | A static instance-identity bound of 1,024 B with its refusal code, and the registry-shard rows | the identity bound sizes a reserve shared across instances, so a later change may raise it, and may lower it only when Worker start finds no registered identity longer (HD7) |
+| Goal acceptance | Approved as PLAN states it; the owner may add their own models at any time, the plan does not wait for them, and the root asks for them when the A stages start | — |
+| `Value` and `JVal` | `JVal` fully guarded under `Kernel.Feature.Data`, its site budgets the measured counts (owner); `Value` gets no catch-all at any site that decides a meaning, with no single owner or budget (decided by the root under the owner's delegation): a single owner would move per-feature semantics into the IL layer or hide each site's decision behind accessors | KD7 and guard 2 amended with the guard |
+| `Std` import | `Std.Data.ExtTreeMap` is admitted through one alias module, `Kernel/State/Map.lean`, its only importer; guard 4 admits that one import there, and a seeded test fails any other | — |
+| Bounds | Every bound must stay changeable later (owner intent): HD7 | — |
+
+## Recommendations as put to the owner
+
+These items were on the owner's ask list; the owner decided them on 2026-11-17 (above). For each one, the root checked the premise in code or documents, the framing against the settled scope and `CLAUDE.md`, and the recommendation against the rejected alternative. OD4 and OD9 are not owner items: they only apply `CLAUDE.md`.
 
 | # | Recommendation | Premise checked | Framing checked | Rejected |
 |---|---|---|---|---|

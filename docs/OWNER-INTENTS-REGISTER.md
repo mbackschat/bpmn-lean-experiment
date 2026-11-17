@@ -14,6 +14,8 @@ The owner's standing intents, priorities, concerns and working mode, in the owne
 - **Preparation first.** Before a second rewrite is approved: a full disclosure of all costly topics; a full design based on the current one with the discovered fixes built in; proof that every costly topic is well prepared, properly designed and its cost real (measured calibration, not estimate alone); one cold review; then a plan the owner approves. Being well prepared for all costly topics is the first priority; reuse of the current code is welcome where the disclosure shows no costly topic forces a change.
 - **Cost proportion.** The first rewrite took about 7 agent-days; spending about three times that on one proof (P6) is unacceptable, and so is discovering the next costly issue only after committing.
 - **Milestones serve the goal.** Design for the goal and build toward the milestone; every milestone acceptance presents a priced ledger of what remains to the goal; a disclosed limit is debt, not an end state.
+- **Bounds change later (2026-11-17).** Every value, state and capacity bound is expected to change later; the architecture keeps each in one owner and changeable without rework.
+- **Own models (2026-11-17).** The owner may add their own models to the goal's census at any time; the plan does not wait for them, and the root asks for them at a later stage.
 - **Docs are part of the product.** `docs/` and `docs/kernel/` are reworked with the design; every document gets a keep, revise, replace or retire verdict.
 
 ## Working mode (2026-11-17)
