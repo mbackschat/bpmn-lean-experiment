@@ -636,6 +636,7 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | Schemas are the wire authority | architecture, contracts | guard 11 | enforced | kept |
 | Lean, TypeScript and retained CIB evidence agree on every scenario | architecture, lane | guard 16 | enforced | kept |
 | Hosted mechanisms are witnessed: chain handoff, capacity, replay, the population witnesses | architecture, hosting | hosted test suites | enforced | HD2 replaces the ingress witnesses |
+| Population capacities as stated: 4,096 registry entries, 4,096 consumed Timer occurrences, 8,192 registrations, each refused with its own code beyond the count | architecture, hosting | — | **broken** (T48): the continuation byte bound fires first, about 500 deployments and the 3,829th firing, with `host.capacity.continuation` | HD2's watermark and compact registry; a host test that reaches each stated count and checks its code |
 | The TypeScript and Temporal solution never depends on a JVM | CLAUDE.md; PROJECT-DESIGN | dependency approval only | policy-enforced | new manifest guard over the engine and platform packages |
 | For every registered scenario, the platform's task set equals the engine's open User Tasks | PROJECT-DESIGN (one repository) | — | **missing** | PD4 |
 | The engine gate passes with the platform tree absent | milestone ladder, M1 | — | **missing** | PD4 |
