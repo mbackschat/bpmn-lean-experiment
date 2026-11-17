@@ -28,7 +28,7 @@ inductive Comparison where
   deriving Repr
 
 /-- A FEEL literal of the unary-test subset. A number is `coefficient × 10^-scale`, exactly as written. -/
-inductive FeelLiteral where
+inductive FeelLiteral where -- guard-exception(3): FEEL unary-test literals (decision semantics item 4), a separate expression language from JUEL's values.
   | null
   | bool (value : Bool)
   | number (coefficient : Int) (scale : Nat)

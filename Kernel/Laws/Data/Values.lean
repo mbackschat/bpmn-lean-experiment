@@ -35,7 +35,7 @@ def CanonicalDecimal (coefficient : Int) (scale : Nat) : Prop :=
 canonical Decimal, a String of at most 1,024 UTF-8 bytes, a null or Boolean, or a List or Map at most four containers
 deep with at most 32 members, each a portable value; Map keys are at most 1,024 UTF-8 bytes and strictly increasing
 in Unicode-scalar order. A String List is no portable value at any depth. -/
-inductive Portable : Nat → Value → Prop where
+inductive Portable : Nat → Value → Prop where -- guard-exception(3): the portable domain over `Value`'s kinds, a law about values, not a copy of `JVal`.
   | null (depth : Nat) : Portable depth .null
   | bool (depth : Nat) (value : Bool) : Portable depth (.bool value)
   | int (depth : Nat) (value : Int) : 0 ≤ value → value ≤ 9007199254740991 → Portable depth (.int value)

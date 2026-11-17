@@ -29,6 +29,7 @@ export enum Comparison {
   Ge = "ge",
 }
 
+// guard-exception(3): FEEL unary-test literals (decision semantics item 4), a separate expression language from JUEL's values.
 export enum FeelLiteralTag {
   Null = "null",
   Bool = "bool",

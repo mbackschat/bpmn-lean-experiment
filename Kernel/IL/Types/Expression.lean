@@ -14,7 +14,7 @@ public section
 namespace Kernel
 
 /-- A typed data value, as the scenario contract's `variableValue` carries it. -/
-inductive Value where
+inductive Value where -- guard-exception(3): the portable value vocabulary JUEL's `JVal` is built on (its List and Map carry these values), not a copy of it.
   | null
   | bool (value : Bool)
   | int (value : Int)
