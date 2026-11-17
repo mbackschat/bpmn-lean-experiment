@@ -44,16 +44,67 @@ import { criteriaRefusal } from "../state/criteria.js";
 
 /**
  * Exact equality of kind and value of a queryable criterion value: `41` never equals `"41"`, and a held value of another
- * kind matches nothing.
+ * kind matches nothing. Every kind is named on both sides, so a new kind decides whether it matches (KD7,
+ * `docs/REWRITE-2-PROPOSAL.md`).
  */
 function sameKindAndValue(left: Value, right: Value): boolean {
   switch (left.tag) {
     case ValueTag.Null:
-      return right.tag === ValueTag.Null;
+      switch (right.tag) {
+        case ValueTag.Null:
+          return true;
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(right);
     case ValueTag.Bool:
+      switch (right.tag) {
+        case ValueTag.Bool:
+          return left.value === right.value;
+        case ValueTag.Null:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(right);
     case ValueTag.Int:
+      switch (right.tag) {
+        case ValueTag.Int:
+          return left.value === right.value;
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(right);
     case ValueTag.String:
-      return right.tag === left.tag && right.value === left.value;
+      switch (right.tag) {
+        case ValueTag.String:
+          return left.value === right.value;
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(right);
     case ValueTag.Decimal:
     case ValueTag.StringList:
     case ValueTag.List:

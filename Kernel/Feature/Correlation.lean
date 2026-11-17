@@ -25,13 +25,27 @@ public section
 namespace Kernel.Feature.Correlation
 
 /-- Exact equality of kind and value of a queryable criterion value: `41` never equals `"41"`, and a held value of
-another kind matches nothing. -/
-def sameKindAndValue : Value → Value → Bool
-  | .null, .null => true
-  | .bool left, .bool right => left == right
-  | .int left, .int right => left == right
-  | .string left, .string right => left == right
-  | _, _ => false
+another kind matches nothing. Every kind is named on both sides, so a new kind decides whether it matches (KD7,
+`docs/REWRITE-2-PROPOSAL.md`). -/
+def sameKindAndValue (left right : Value) : Bool :=
+  match left with
+  | .null =>
+    match right with
+    | .null => true
+    | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+  | .bool held =>
+    match right with
+    | .bool expected => held == expected
+    | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+  | .int held =>
+    match right with
+    | .int expected => held == expected
+    | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+  | .string held =>
+    match right with
+    | .string expected => held == expected
+    | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => false
+  | .decimal _ _ | .stringList _ | .list _ | .map _ => false
 
 /-- Whether `criterion` holds for an item waiting in `scope`: `processVariable` names a variable the instance root holds
 and `localVariable` one `scope` holds itself, never one of an enclosing scope, each with an equal value
