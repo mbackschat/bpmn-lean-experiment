@@ -175,17 +175,28 @@ test("the Temporal host gate typechecks its tests before running them", async ()
   );
 });
 
-function synchronousPackageElaboration(lakefile: string): boolean {
+/** Whether the package-scope `leanOptions` table, which every library and executable inherits, sets `option` to
+ * `value`; a table under a `[[lean_lib]]` or `[[lean_exe]]` heading reaches only that target. */
+function packageLeanOption(lakefile: string, option: string, value: string): boolean {
   const packageFields = lakefile.split(/^\s*\[/mu, 1)[0] ?? "";
-  return /^leanOptions = \{ (?:[^}]*, )?Elab\.async = false(?:, [^}]*)? \}$/mu.test(packageFields);
+  const table = /^leanOptions = \{ ([^}]*) \}$/mu.exec(packageFields)?.[1] ?? "";
+  return table.split(", ").includes(`${option} = ${value}`);
 }
 
-test("the Lake package defaults every module target to synchronous theorem elaboration", async () => {
+/** The options the kernel architecture pins (docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape): synchronous elaboration, and
+ * sparse case splits off, which keeps a body edit from rebuilding its module's public cone (`lakefile.toml`). */
+const pinnedLeanOptions = [["Elab.async", "false"], ["backward.match.sparseCases", "false"]] as const;
+
+function pinnedPackageOptions(lakefile: string): boolean {
+  return pinnedLeanOptions.every(([option, value]) => packageLeanOption(lakefile, option, value));
+}
+
+test("the Lake package pins synchronous elaboration and no sparse case splits for every module target", async () => {
   const lakefile = await readFile(
     fileURLToPath(new URL("../lakefile.toml", import.meta.url)), "utf8",
   );
-  assert.equal(synchronousPackageElaboration(lakefile), true,
-    "set synchronous elaboration at package scope so all libraries and executables inherit it");
+  assert.equal(pinnedPackageOptions(lakefile), true,
+    "set every pinned Lean option at package scope so all libraries and executables inherit it");
 });
 
 test("the Lake package bounds every Lean process at 2 GiB on Lean's command line", async () => {
@@ -199,12 +210,17 @@ test("the Lake package bounds every Lean process at 2 GiB on Lean's command line
   assert.doesNotMatch(lakefile.replace(/^#.*$/gmu, ""), /max_memory/u);
 });
 
-test("the elaboration guard rejects an absent, enabled, or library-only setting", () => {
-  const option = "leanOptions = { Elab.async = false }";
-  assert.equal(synchronousPackageElaboration(`${option}\n[[lean_lib]]\nname = \"Example\"`), true);
-  assert.equal(synchronousPackageElaboration("[[lean_lib]]\nname = \"Example\""), false);
-  assert.equal(synchronousPackageElaboration(option.replace("false", "true")), false);
-  assert.equal(synchronousPackageElaboration(`[[lean_lib]]\nname = \"Example\"\n${option}`), false);
+test("the Lean option guard rejects an absent, enabled, or library-only setting of each pinned option", () => {
+  const option = "leanOptions = { Elab.async = false, backward.match.sparseCases = false }";
+  const library = "[[lean_lib]]\nname = \"Example\"";
+  assert.equal(pinnedPackageOptions(`${option}\n${library}`), true);
+  assert.equal(pinnedPackageOptions(library), false);
+  assert.equal(pinnedPackageOptions(`${library}\n${option}`), false);
+  for (const [name] of pinnedLeanOptions) {
+    assert.equal(pinnedPackageOptions(`${option.replace(`${name} = false`, `${name} = true`)}\n${library}`), false, `${name} enabled`);
+    const without = option.replace(`, ${name} = false`, "").replace(`${name} = false, `, "");
+    assert.equal(pinnedPackageOptions(`${without}\n${library}`), false, `${name} absent`);
+  }
 });
 
 test("hosted cold Lean builds have recovery headroom instead of a 30-minute cutoff", async () => {
