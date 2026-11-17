@@ -86,6 +86,7 @@ import {
   type WriteEvent,
   SemanticCause,
   semanticFailure,
+  itemsByPosition,
 } from "./state.js";
 // Lean's `Kernel.Hooks` re-exports `Kernel.State.Removal` to the features and `Kernel.Step`; so does this module, which
 // keeps the removal module's direct importers to this hub (guard 15).
@@ -502,9 +503,9 @@ export function ctxRequireMappings(ctx: Ctx, context: EvalContext, mappings: rea
 export function itemDetailOf<T>(
   ctx: Ctx, state: State, occurrence: OccurrenceRef, detail: (view: WaitView) => T | null,
 ): readonly [OpenItem, T] | null {
-  for (const item of state.openItems) {
+  for (const item of itemsByPosition(state)) {
     if (programPublicId(ctx.program, item.element) !== occurrence.element ||
-      occurrenceOf(state, item.occurrence)?.activation !== occurrence.activation ||
+      occurrenceOf(state, item.id.occurrence)?.activation !== occurrence.activation ||
       instanceOf(state, item.scope) !== occurrence.processInstanceId) continue;
     const found = detail(openKindView(item.kind));
     if (found !== null) return [item, found];

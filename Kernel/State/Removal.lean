@@ -32,7 +32,8 @@ def clearInside (state : State) (scope : ScopeOccurrenceId) (keep : List Nat := 
   let journalled := recordCancelled state removed
   { journalled with
       tokens := journalled.tokens.filter (!inside.contains ·.busyScope)
-      openItems := journalled.openItems.filter fun item => !inside.contains item.scope || keep.contains item.occurrence
+      openItems := journalled.openItems.filter fun _ item => !inside.contains item.scope || keep.contains item.id.occurrence
+      itemOrdinals := journalled.itemOrdinals.filter fun id _ => !removed.any (·.id == id)
       occurrences := journalled.occurrences.filter fun occurrence => !inside.contains occurrence.scope || keep.contains occurrence.id
       scopes := journalled.scopes.filter (!nested.contains ·.id)
       variables := journalled.variables.filter (!nested.contains ·.scope)
@@ -52,14 +53,15 @@ def leaveScope (state : State) (scope : ScopeOccurrenceId) : State :=
 /-- Remove the occurrence record `id` and the scope occurrences it owns, if any. The record goes first, so that
 leaving a scope does not cancel the occurrence that owns it. -/
 def removeOccurrence (state : State) (id : Nat) : State :=
-  let removed := { state with occurrences := state.occurrences.filter (·.id != id) }
+  let removed := { state with
+    occurrences := state.occurrences.filter (·.id != id), itemOrdinals := state.itemOrdinals.erase id }
   (removed.scopes.filter (·.occurrence == some id)).foldl (fun state scope => state.leaveScope scope.id) removed
 
 /-- Close the open items inside `scope`, its own included; the occurrences they reserved go when the scope is
 cleared. -/
 def withdrawInside (state : State) (scope : ScopeOccurrenceId) : State :=
   let inside := state.subtree scope
-  { state with openItems := state.openItems.filter (!inside.contains ·.scope) }
+  { state with openItems := state.openItems.filter fun _ item => !inside.contains item.scope }
 
 /-- Close the open items `cancelOccurrence` removes with the occurrence `id`: its own, those attached to it with
 their reservations, and those inside the scope occurrences it owns. A firing that interrupts withdraws them at once,

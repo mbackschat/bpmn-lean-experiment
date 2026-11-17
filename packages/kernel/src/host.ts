@@ -56,6 +56,7 @@ import {
   type State,
   type Transition,
   type WaitView,
+  itemsByPosition,
 } from "./state.js";
 import { messageTriggerChannel, ownVariables } from "./hooks.js";
 
@@ -293,7 +294,7 @@ function publicFailure(program: Program, failure: InstanceFailure): InstanceFail
  */
 function currentInputs(state: State, item: OpenItem, view: WaitView): WaitView {
   if (view.userTask === null) return view;
-  const own = ownVariables(state, ownScope(state, item.occurrence, item.scope));
+  const own = ownVariables(state, ownScope(state, item.id.occurrence, item.scope));
   const inputs = view.userTask.inputs.flatMap(([name]) => own.filter(([key]) => key === name));
   return { ...view, userTask: { ...view.userTask, inputs } };
 }
@@ -304,7 +305,7 @@ function openWait(program: Program, state: State, item: OpenItem): OpenWait {
     id: publicRef(program, {
       processInstanceId: instanceOf(state, item.scope),
       element: item.element,
-      activation: occurrenceOf(state, item.occurrence)?.activation ?? 0,
+      activation: occurrenceOf(state, item.id.occurrence)?.activation ?? 0,
     }),
     definition: state.slots.instances.find((instance) => instance.root === root)?.definition ?? null,
     view: currentInputs(state, item, openKindView(item.kind)),
@@ -326,7 +327,7 @@ function publicJournal(program: Program, journal: readonly Transition[]): Transi
 }
 
 export function hostView(program: Program, state: State): View {
-  const openWaits = state.openItems.map((item) => openWait(program, state, item));
+  const openWaits = itemsByPosition(state).map((item) => openWait(program, state, item));
   return {
     status: state.status,
     failure: state.failure === null ? null : publicFailure(program, state.failure),

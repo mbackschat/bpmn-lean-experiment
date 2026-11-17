@@ -34,7 +34,7 @@ structure Enters (before after : State) (entry : ScopeOccurrence) (locals : List
   scopes : after.scopes = before.scopes ++ [entry]
   variables : after.variables = before.variables ++ [{ scope := entry.id, entries := keyed locals }]
   occurrences : after.occurrences = before.occurrences
-  openItems : after.openItems = before.openItems
+  itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
   tokens : after.tokens = before.tokens
   signals : after.signals = before.signals
   activations : after.activations = before.activations
@@ -44,6 +44,11 @@ structure Enters (before after : State) (entry : ScopeOccurrence) (locals : List
   failure : after.failure = before.failure
   instanceId : after.instanceId = before.instanceId
   slots : SlotsWithin before after
+
+/-- The item list stays: the item map does (`itemMap`). -/
+theorem Enters.items {before after : State} {entry : ScopeOccurrence} {locals : List (String × Value)}
+    (frame : Enters before after entry locals) : after.items = before.items :=
+  items_congr frame.itemMap.1
 
 /-- Entering a scope occurrence below one that stands, owned, if at all, by a begun occurrence running there, keeps a
 state well-formed. -/
@@ -87,7 +92,7 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
     exact List.mem_append_left _ member
   have hNext := enters.nextIssue
   have hOcc := enters.occurrences
-  have hItems := enters.openItems
+  have hItems := enters.items
   have hTokens := enters.tokens
   have hSignals := enters.signals
   have hVars := enters.variables
@@ -109,10 +114,10 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       rw [hNext]
       rw [hOcc] at member
       exact Nat.lt_succ_of_lt (formed.issued.occurrences occurrence member),
-    fun item member => by
-      rw [hNext]
+    fun item member present => by
       rw [hItems] at member
-      exact Nat.lt_succ_of_lt (formed.issued.items item member),
+      rw [enters.itemMap.2]
+      exact formed.itemBelow member,
     fun found member => by
       rw [hNext]
       rcases members found member with old | rfl
@@ -120,7 +125,7 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       · rw [entryId]
         exact Nat.lt_succ_self _⟩
   have distinct : Distinct after := ⟨by simpa [occurrenceIds, hOcc] using formed.distinct.occurrences,
-    by simpa [hItems] using formed.distinct.items, nodup, by
+    enters.itemMap.1 ▸ formed.distinct.items, nodup, by
       rw [hOcc, List.map_congr_left keys]
       exact formed.distinct.keys⟩
   have owned : Owned after := ⟨fun occurrence member => by
@@ -264,10 +269,10 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       fun found member => (members found member).imp (fun old => old) fun same => by
         rw [same, entryId]
         exact Nat.le_refl _,
-    formed.attachedReserved.shrink (fun _ member => enters.openItems ▸ member) fun _ member _ => hOcc ▸ member,
-    formed.typed.shrink (fun _ member => enters.openItems ▸ member) (fun _ member _ => hOcc ▸ member)
+    formed.attachedReserved.shrink (fun _ member => enters.items ▸ member) fun _ member _ => hOcc ▸ member,
+    formed.typed.shrink (fun _ member => enters.items ▸ member) (fun _ member _ => hOcc ▸ member)
       fun _ member => hSignals ▸ member,
-    formed.worked.shrink (fun _ member => enters.openItems ▸ member) (fun _ member _ => hOcc ▸ member),
+    formed.worked.shrink (fun _ member => enters.items ▸ member) (fun _ member _ => hOcc ▸ member),
     formed.roles.shrink fun _ member => hOcc ▸ member,
     formed.raises.transport (fun _ _ queued => hSignals ▸ queued) (by rw [hNext]; omega)
       (fun x present low => by
@@ -278,7 +283,7 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
           exact absurd low (Nat.lt_irrefl _))
       (fun _ counted => (countedEq _).mpr counted) fun _ member _ => hOcc ▸ member,
     formed.bodyRoles.shrink fun _ member => hOcc ▸ member,
-    formed.itemRoles.shrink (fun _ member => enters.openItems ▸ member) fun _ member => hOcc ▸ member⟩
+    formed.itemRoles.shrink (fun _ member => enters.items ▸ member) fun _ member => hOcc ▸ member⟩
 
 /-- Entering a scope occurrence below one that stands, owned, if at all, by a begun occurrence running there, keeps a
 state well-formed. -/
@@ -288,7 +293,10 @@ theorem enterScope_wellFormed {s : State} (formed : WellFormed program s) (eleme
       occurrence.scope = parent) :
     WellFormed program (s.enterScope element parent locals owner).1 := by
   rw [enterScope_eq]
-  exact Enters.wellFormed formed ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, .same rfl⟩
+  exact Enters.wellFormed formed {
+      id := rfl, nextIssue := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
+      tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
+      instanceId := rfl, slots := .same rfl }
     stands rfl ownerBegun
 
 /-- No scope occurrence holds the counter's identity. -/
@@ -304,8 +312,10 @@ theorem enterCalled_wellFormed {s : State} (formed : WellFormed program s) (call
     (member : call ∈ s.occurrences) (begun : call.begun = true) (variables : List (String × Value))
     (definition : DefinitionRef) : WellFormed program (s.enterCalled called call variables definition).1 := by
   rw [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)]
-  exact Enters.wellFormed formed ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl,
-    ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩⟩ (formed.owned.occurrenceScopes call member)
+  exact Enters.wellFormed formed {
+      id := rfl, nextIssue := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
+      tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
+      instanceId := rfl, slots := ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩ } (formed.owned.occurrenceScopes call member)
     rfl fun id named => ⟨call, member, Option.some.inj named, begun, rfl⟩
 
 /-! ## Bare begins -/
@@ -393,13 +403,14 @@ theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : Well
       Queued s other := fun other queuedOther id inside => (queued other queuedOther).resolve_right fun same => by
     rw [same, bare] at inside
     simp at inside
-  refine ⟨formed.claimed.attached, fun other queuedOther => ?_, fun first second pair id inside => ?_,
+  refine ⟨(fun item member attached reserved other inside same => formed.claimed.attached item
+      (items_same member rfl) attached reserved other (items_same inside rfl) same), fun other queuedOther => ?_, fun first second pair id inside => ?_,
     formed.claimed.tokensApart, fun first second signal token id inside => ?_,
     fun other id leave writes rule queuedOther inside completed => ?_, fun other queuedOther => ?_,
     fun other queuedOther id inside => ?_⟩
   · rcases queued other queuedOther with old | rfl
     · exact (formed.claimed.named other old).imp id fun beginnable id inside =>
-        (beginnable id inside).congr rfl rfl rfl rfl fun _ => by apply instanceOf_congr <;> rfl
+        (beginnable id inside).congr rfl rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl
     · rw [bare]
       exact ⟨List.nodup_nil, fun _ inside => by simp at inside⟩
   · by_cases same : second = request
@@ -470,11 +481,12 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
     simp at named
   have keys : key { s with tokens := s.tokens ++ added } = key s :=
     funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
-  have claimed : ReservationsClaimed { s with tokens := s.tokens ++ added } := ⟨formed.claimed.attached,
+  have claimed : ReservationsClaimed { s with tokens := s.tokens ++ added } := ⟨(fun item member attached reserved other inside same => formed.claimed.attached item
+      (items_same member rfl) attached reserved other (items_same inside rfl) same),
     fun request named => by
       rcases queued request named with old | new
       · exact (formed.claimed.named request old).imp id fun beginnable id inside =>
-          (beginnable id inside).congr rfl rfl rfl rfl fun _ => by apply instanceOf_congr <;> rfl
+          (beginnable id inside).congr rfl rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl
       · rw [(bare request new).1]
         exact ⟨List.nodup_nil, fun _ inside => by simp at inside⟩,
     formed.claimed.signalsApart,
@@ -502,13 +514,13 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
       · exact formed.claimed.innerPlaced request old id inside
       · exact absurd (List.mem_append_right _ inside) (nameless request new id)⟩
   exact {
-  issued := ⟨formed.issued.occurrences, formed.issued.items, formed.issued.scopes⟩
+  issued := ⟨formed.issued.occurrences, (fun item member => formed.issued.items item (items_same member rfl)), formed.issued.scopes⟩
   distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
   activations := ⟨formed.activations.keys, formed.activations.positive⟩
   reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations
-  owned := ⟨formed.owned.occurrenceScopes, formed.owned.itemScopes, formed.owned.itemOccurrences,
-    formed.owned.attachments, formed.owned.scopeOwners, formed.owned.variableScopes, fun token member =>
+  owned := ⟨formed.owned.occurrenceScopes, (fun item member => formed.owned.itemScopes item (items_same member rfl)), (fun item member => formed.owned.itemOccurrences item (items_same member rfl)),
+    (fun item member => formed.owned.attachments item (items_same member rfl)), formed.owned.scopeOwners, formed.owned.variableScopes, fun token member =>
       (List.mem_append.mp member).elim (formed.owned.tokenScopes token) (housed token)⟩
   rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
     Within.congr (s := s) (t := { s with tokens := s.tokens ++ added }) rfl (formed.rooted.2.2 scope member)⟩
@@ -522,10 +534,11 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
   settled := formed.settled.bare rfl rfl (Nat.le_refl _) rfl (fun request named =>
     (queued request named).imp id fun new => (bare request new).1) (fun _ _ _ _ _ member => member)
     fun _ _ member => member
-  attachedReserved := formed.attachedReserved
-  typed := formed.typed
-  worked := formed.worked
+  attachedReserved := (fun item member => formed.attachedReserved item (items_same member rfl))
+  typed := (fun item member started => (formed.typed item (items_same member rfl) started).imp id fun rest =>
+      ⟨fun other inside => rest.1 other (items_same inside rfl), rest.2⟩)
+  worked := (fun item member => formed.worked item (items_same member rfl))
   roles := formed.roles
   bodyRoles := formed.bodyRoles
-  itemRoles := formed.itemRoles
+  itemRoles := (fun item member => formed.itemRoles item (items_same member rfl))
   raises := formed.raises.same rfl rfl rfl (instanceOf_congr rfl rfl) rfl rfl }

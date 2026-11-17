@@ -91,15 +91,15 @@ def thrownAddress (ctx : Ctx) (context : EvalContext) (record : SignalThrow) : E
 /-- The open items of `address` in the thrower's own State, by process instance, then in arming order, the order the
 linearization of the population fixes for CIB's unordered `HashSet` (`EventSubscriptionManager.java:111-126`). -/
 def ownReceivers (state : State) (address : SignalAddress) : List OpenItem :=
-  (state.openItems.filter fun item => item.kind.view.signal.any (address.matches ·.address)).mergeSort fun left right =>
+  (state.items.filter fun item => item.kind.view.signal.any (address.matches ·.address)).mergeSort fun left right =>
     let (l, r) := (state.instanceOf left.scope, state.instanceOf right.scope)
-    decide (l < r) || (l == r && left.id ≤ right.id)
+    decide (l < r) || (l == r && left.position ≤ right.position)
 
 /-- The delivery that fires `item` from a throw. -/
 def thrownDelivery (ctx : Ctx) (state : State) (address : SignalAddress) (variables : List (String × Value))
     (item : OpenItem) : DeliveryInput :=
   { occurrence := { processInstanceId := state.instanceOf item.scope, element := ctx.program.publicId item.element
-                    activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
+                    activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 }
     trigger := .signal address .broadcast, variables }
 
 def throwSignal (ctx : Ctx) (payload : EventPayload) (record : SignalThrow) (origin : Origin) (occurrence : Occurrence)

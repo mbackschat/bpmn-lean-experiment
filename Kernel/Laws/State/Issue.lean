@@ -109,7 +109,7 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   scopes : after.scopes = before.scopes
   instances : ∀ x, after.instanceOf x = before.instanceOf x
   instanceId : after.instanceId = before.instanceId
-  openItems : after.openItems = before.openItems
+  itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
   tokens : after.tokens = before.tokens
   signals : after.signals = before.signals
   variables : after.variables = before.variables
@@ -119,6 +119,11 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   failure : after.failure = before.failure
   slots : after.slots = before.slots
   continued : begun.continuation = request.continuation
+
+/-- The item list stays: the item map does (`itemMap`). -/
+theorem Begins.items {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
+    {begun : Occurrence} (frame : Begins before after request role sourceType begun) : after.items = before.items :=
+  items_congr frame.itemMap.1
 
 /-- The begun occurrence takes a key no other occurrence and no start fact of `before` has: a reservation's own, or a
 fresh activation. -/
@@ -154,7 +159,7 @@ private theorem Begins.idNew {before after : State} {request : BeginRequest} {ro
     {sourceType : String} {begun : Occurrence} (formed : WellFormed program before)
     (begins : Begins before after request role sourceType begun)
     (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id) :
-    (∀ item ∈ before.openItems, item.occurrence ≠ begun.id ∧ item.attachedTo ≠ some begun.id) ∧
+    (∀ item ∈ before.items, item.id.occurrence ≠ begun.id ∧ item.attachedTo ≠ some begun.id) ∧
       (∀ occurrence ∈ before.occurrences, occurrence.id = begun.id → occurrence.begun = false) ∧
       (∀ other, Queued before other → begun.id ∉ names other) ∧ before.nextIssue ≤ after.nextIssue := by
   rcases begins.source with ⟨reserved, reservation⟩ | issuedFresh
@@ -250,10 +255,10 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
         · exact begunBelow
         · have := formed.issued.occurrences occurrence old
           omega,
-      fun item member => Nat.lt_of_lt_of_le (formed.issued.items item (begins.openItems ▸ member)) issued,
+      fun item member _ => begins.itemMap.2 ▸ formed.itemBelow (begins.items ▸ member),
       fun entry member => Nat.lt_of_lt_of_le (formed.issued.scopes entry (begins.scopes ▸ member)) issued⟩
   case distinct =>
-    refine ⟨?_, begins.openItems ▸ formed.distinct.items, by simpa [scopeIds, begins.scopes] using formed.distinct.scopes,
+    refine ⟨?_, begins.itemMap.1 ▸ formed.distinct.items, by simpa [scopeIds, begins.scopes] using formed.distinct.scopes,
       ?_⟩
     · rw [occurrenceIds, begins.occurrences, List.map_append, List.nodup_append]
       refine ⟨formed.distinct.occurrences.sublist (List.filter_sublist.map _), by simp, ?_⟩
@@ -301,13 +306,13 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     exact {
       occurrenceScopes := housed
       itemScopes := fun item member => by
-        simpa [scopeIds, begins.scopes] using formed.owned.itemScopes item (begins.openItems ▸ member)
+        simpa [scopeIds, begins.scopes] using formed.owned.itemScopes item (begins.items ▸ member)
       itemOccurrences := fun item member => by
-        rw [begins.openItems] at member
+        rw [begins.items] at member
         obtain ⟨occurrence, inside, named, rest⟩ := formed.owned.itemOccurrences item member
         exact ⟨occurrence, stays occurrence inside (named ▸ (itemsFree item member).1), named, rest⟩
       attachments := fun item member host attached => by
-        rw [begins.openItems] at member
+        rw [begins.items] at member
         obtain ⟨occurrence, inside, named, rest⟩ := formed.owned.attachments item member host attached
         refine ⟨occurrence, stays occurrence inside fun same => (itemsFree item member).2 ?_, named, rest⟩
         rw [attached, ← named, same]
@@ -372,8 +377,8 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
         obtain ⟨found, held, named, unbegun⟩ := reserved
         rcases members found held with rfl | ⟨old, _⟩
         · simp [begins.isBegun] at unbegun
-        · exact formed.claimed.attached item (begins.openItems ▸ member) attached ⟨found, old, named, unbegun⟩ other
-            (begins.openItems ▸ inside) same
+        · exact formed.claimed.attached item (begins.items ▸ member) attached ⟨found, old, named, unbegun⟩ other
+            (begins.items ▸ inside) same
       named := fun other queued => by
         have queuedBefore : Queued before other := by simpa [Queued, begins.signals, begins.tokens] using queued
         obtain ⟨nodup, beginnable⟩ := formed.claimed.named other queuedBefore
@@ -383,7 +388,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
         rcases members occurrence member with rfl | ⟨old, _⟩
         · exact absurd (same ▸ named) (unclaimed other queuedBefore)
         · obtain ⟨unbegun, free, instance_⟩ := facts occurrence old same
-          refine ⟨unbegun, by simpa [begins.openItems] using free, fun present => ?_⟩
+          refine ⟨unbegun, by simpa [begins.items] using free, fun present => ?_⟩
           rw [begins.instances, begins.instances]
           exact instance_ (by simpa [scopeIds, begins.scopes] using present)
       signalsApart := by simpa [begins.signals] using formed.claimed.signalsApart
@@ -417,16 +422,16 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       (fun _ member => begins.signals ▸ member) (fun _ member => .inl (begins.scopes ▸ member))
   -- No open item waits on the begun occurrence: a reservation's item went before it began, a fresh one has none.
   case attachedReserved | typed =>
-    have waited : ∀ item ∈ after.openItems, ∀ occurrence ∈ after.occurrences, occurrence.id = item.occurrence →
+    have waited : ∀ item ∈ after.items, ∀ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence →
         occurrence.begun = true → occurrence ∈ before.occurrences := fun item member occurrence inside named _ => by
       rcases members occurrence inside with rfl | ⟨old, _⟩
-      · exact absurd named.symm (itemsFree item (begins.openItems ▸ member)).1
+      · exact absurd named.symm (itemsFree item (begins.items ▸ member)).1
       · exact old
     first
-      | exact formed.attachedReserved.transport (fun _ member => begins.openItems ▸ member) waited
-      | exact formed.typed.transport (fun _ member => begins.openItems ▸ member) waited fun _ member => begins.signals ▸ member
+      | exact formed.attachedReserved.transport (fun _ member => begins.items ▸ member) waited
+      | exact formed.typed.transport (fun _ member => begins.items ▸ member) waited fun _ member => begins.signals ▸ member
   case worked =>
-    exact formed.worked.shrink (fun _ member => begins.openItems ▸ member) fun found inside unbegun => by
+    exact formed.worked.shrink (fun _ member => begins.items ▸ member) fun found inside unbegun => by
       rcases members found inside with rfl | ⟨old, _⟩
       · simp [begins.isBegun] at unbegun
       · exact old
@@ -449,8 +454,8 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
   case itemRoles =>
     intro item member found inside named
     rcases members found inside with rfl | ⟨old, _⟩
-    · exact absurd named.symm (itemsFree item (begins.openItems ▸ member)).1
-    · exact formed.itemRoles item (begins.openItems ▸ member) found old named
+    · exact absurd named.symm (itemsFree item (begins.items ▸ member)).1
+    · exact formed.itemRoles item (begins.items ▸ member) found old named
   case raises =>
     refine formed.raises.transport (fun _ _ queued => begins.signals ▸ queued) issued
       (fun x present _ => ⟨by simpa [scopeIds, begins.scopes] using present, begins.instances x⟩) counters

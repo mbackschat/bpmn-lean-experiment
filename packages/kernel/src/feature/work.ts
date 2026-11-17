@@ -83,6 +83,7 @@ import {
   type UserTaskDetail,
   SemanticCause,
   semanticFailure,
+  sameItemKey, type ItemKey,
 } from "../state.js";
 import {
   ScopeRole, admitValues, ctxEvaluateMappings, ctxEvaluateMappingsWith, ctxOutputReads, deliveryTriggerChannel, evalContext, hold,
@@ -358,7 +359,7 @@ export function completeUserTask(
   if (!admitted.ok) return failedWith(admitted.failure);
   const limit = ctx.program.options.scopeChainSubmissionBytes;
   if (limit !== null) {
-    const checked = Submission.check(ctx, state, ownScope(state, item.occurrence, item.scope), limit, values);
+    const checked = Submission.check(ctx, state, ownScope(state, item.id.occurrence, item.scope), limit, values);
     if (!checked.ok) return failedWith(checked.failure);
   }
   const loop = submittedItem(ctx.program.options.submission, payload.envelope);
@@ -370,7 +371,7 @@ export function completeUserTask(
     const installed = ctx.program.options.submission === SubmissionRule.InstallsVariables
       ? signal(state, { tag: SignalTag.Write, scope: item.scope, writes: values, rule: WriteRule.Outward })
       : state;
-    return committed(signal(installed, completeSignal(item.occurrence, leaveOutgoing, values, WriteRule.Own)));
+    return committed(signal(installed, completeSignal(item.id.occurrence, leaveOutgoing, values, WriteRule.Own)));
   }
   const submission = ctx.program.options.submission;
   switch (submission) {
@@ -379,13 +380,13 @@ export function completeUserTask(
       if (shadowsCounter(ctx, payload.envelope, values)) return failed(FailureTag.Unsupported, "multiInstance.resultShadowsInstance");
       const written = completionOutputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, outputScope(ctx, state, item), values, []);
       if (!written.ok) return failedWith(written.failure);
-      const installed = signal(state, { tag: SignalTag.Write, scope: ownScope(state, item.occurrence, item.scope), writes: values, rule: WriteRule.Outward });
-      return committed(signal(installed, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
+      const installed = signal(state, { tag: SignalTag.Write, scope: ownScope(state, item.id.occurrence, item.scope), writes: values, rule: WriteRule.Outward });
+      return committed(signal(installed, completeSignal(item.id.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
     case SubmissionRule.OutputSet: {
       const written = completionOutputs(ctx, state.logicalTimeMs, ResultValues.OutputSet, payload.envelope.outputs, outputScope(ctx, state, item), [], values);
       if (!written.ok) return failedWith(written.failure);
-      return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
+      return committed(signal(state, completeSignal(item.id.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
   }
   return assertNever(submission);
@@ -396,7 +397,7 @@ export function completeUserTask(
  * execution (`OutputParameter.java:47`).
  */
 function outputScope(ctx: Ctx, state: State, item: OpenItem): readonly [readonly Binding[], readonly Binding[]] {
-  return activityScope(ctx, state, item.occurrence, item.scope);
+  return activityScope(ctx, state, item.id.occurrence, item.scope);
 }
 
 /**
@@ -417,8 +418,8 @@ function activityScope(ctx: Ctx, state: State, occurrence: number, scope: ScopeO
 }
 
 /** Replace the kind of the open item `id`, keeping its identity and attachments. */
-function reopen(state: State, id: number, kind: OpenKind): State {
-  return { ...state, openItems: state.openItems.map((item) => (item.id === id ? { ...item, kind } : item)) };
+function reopen(state: State, id: ItemKey, kind: OpenKind): State {
+  return { ...state, openItems: state.openItems.map((item) => (sameItemKey(item.id, id) ? { ...item, kind } : item)) };
 }
 
 /**
@@ -473,19 +474,19 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
       const written = completionOutputs(ctx, state.logicalTimeMs, unconsumed(ctx, envelope), mappings, outputScope(ctx, state, item), own, rest);
       if (!written.ok) return failedWith(written.failure);
       const installed = own.length === 0 ? state
-        : signal(state, { tag: SignalTag.Write, scope: ownScope(state, item.occurrence, item.scope), writes: own, rule: WriteRule.Outward });
-      return committed(signal(installed, effectCompletion(envelope, unconsumed(ctx, envelope), item.occurrence, written.value, rest)));
+        : signal(state, { tag: SignalTag.Write, scope: ownScope(state, item.id.occurrence, item.scope), writes: own, rule: WriteRule.Outward });
+      return committed(signal(installed, effectCompletion(envelope, unconsumed(ctx, envelope), item.id.occurrence, written.value, rest)));
     }
     case EffectOutcomeTag.BusinessFailure: {
       const admitted = admitValues(outcome.outputs.map(([, value]) => value));
       if (!admitted.ok) return failedWith(admitted.failure);
       const accepted = errorPatchAccepted(ctx, outcome.outputs);
       if (!accepted.ok) return failedWith(accepted.failure);
-      const activation = occurrenceOf(state, item.occurrence)?.activation ?? 0;
+      const activation = occurrenceOf(state, item.id.occurrence)?.activation ?? 0;
       return committed(signal(state, {
         tag: SignalTag.Raise,
         event: { tag: RaisedTag.Error, code: outcome.code, message: outcome.message },
-        origin: { element: item.element, scope: item.scope, activation, host: item.occurrence, patch: outcome.outputs },
+        origin: { element: item.element, scope: item.scope, activation, host: item.id.occurrence, patch: outcome.outputs },
       }));
     }
     case EffectOutcomeTag.TechnicalFailure:
@@ -638,7 +639,7 @@ export function triggerActivity(
         ? (delivery.correlation.length === 0
           ? committed(true)
           : failed<boolean>(FailureTag.Unsupported, "profile-message-correlation-api-criteria")) // dynamic-only: a delivery's criteria are its caller's
-        : hooks.criteriaHold(state, ownScope(state, item.occurrence, item.scope), delivery.correlation);
+        : hooks.criteriaHold(state, ownScope(state, item.id.occurrence, item.scope), delivery.correlation);
       if (!accepted.ok) return failedWith(accepted.failure);
       if (!accepted.value) return failed(FailureTag.Rejected, "message-correlation-mismatch");
       let mapped: readonly Binding[] = [];
@@ -653,7 +654,7 @@ export function triggerActivity(
       }
       const installed = admitValues(delivery.variables.map(([, value]) => value));
       if (!installed.ok) return failedWith(installed.failure);
-      return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, [...mapped, ...delivery.variables], WriteRule.Outward)));
+      return committed(signal(state, completeSignal(item.id.occurrence, leaveOutgoing, [...mapped, ...delivery.variables], WriteRule.Outward)));
     }
   }
   return assertNever(fired);

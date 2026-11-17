@@ -106,6 +106,7 @@ import {
   visible,
   SemanticCause,
   semanticFailure,
+  itemsByPosition,
 } from "../state.js";
 import {
   EvaluationTag, admitValues, boundaryFire, ctxRequireMappings, deliveryTriggerChannel, evalContext,
@@ -403,7 +404,7 @@ function enabledBoundaries(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Re
   if (host === null || enabledWith(ctx, state, host) !== scope) return committed([state, []]);
   let current = state;
   const fired: OpenItem[] = [];
-  for (const item of state.openItems.filter((open) => open.attachedTo === host && programBoundary(ctx.program, open.element) !== null)) {
+  for (const item of itemsByPosition(state).filter((open) => open.attachedTo === host && programBoundary(ctx.program, open.element) !== null)) {
     const condition = conditionOf(ctx, item);
     if (condition === null) continue;
     const next = evaluateItem(ctx, item, condition, current);
@@ -652,14 +653,14 @@ function afterFiring(state: State, item: OpenItem): readonly [State, number | nu
   if (view.deadlineMs === null) return [state, null];
   const closed = closeItem(state, item.id);
   const recurrence = view.recurrence;
-  if (recurrence === null) return [closed, item.occurrence];
+  if (recurrence === null) return [closed, item.id.occurrence];
   const followed = successor(view.deadlineMs, recurrence);
-  if (followed === null) return [closed, item.occurrence];
+  if (followed === null) return [closed, item.id.occurrence];
   const next: OpenKind = {
     tag: OpenKindTag.Timer,
     detail: { deadlineMs: followed[0], recurrence: { ...recurrence, remaining: followed[1].remaining } },
   };
-  return [openSubscription(closed, next, item.element, item.scope, item.attachedTo, item.passive)[0], item.occurrence];
+  return [openSubscription(closed, next, item.element, item.scope, item.attachedTo, item.passive)[0], item.id.occurrence];
 }
 
 /**
@@ -674,7 +675,7 @@ function fireBoundary(hooks: SubscriptionsHooks, ctx: Ctx, boundary: Boundary, i
     if (item.attachedTo === null) return semanticFailure(SemanticCause.Invariant, "boundary-without-host");
     if (occurrenceOf(current, item.attachedTo) === null) return semanticFailure(SemanticCause.Invariant, "boundary-host-gone");
     const withdrawn = withdrawOccurrence(closeItem(current, item.id), item.attachedTo);
-    return committed(boundaryFire(boundary, item.attachedTo, item.occurrence, item.scope, values, withdrawn));
+    return committed(boundaryFire(boundary, item.attachedTo, item.id.occurrence, item.scope, values, withdrawn));
   }
   const [after, reserved] = afterFiring(current, item);
   return committed(boundaryFire(boundary, null, reserved, item.scope, values, after));
@@ -689,7 +690,7 @@ function fireCatch(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscripti
   const gateway = item.attachedTo === null
     ? closed
     : signal(disarm(closed, item.attachedTo), completeSignal(item.attachedTo, leaveFlows([]), [], WriteRule.Outward));
-  return committed(signal(gateway, completeSignal(item.occurrence, leaveOutgoing, values, WriteRule.Outward)));
+  return committed(signal(gateway, completeSignal(item.id.occurrence, leaveOutgoing, values, WriteRule.Outward)));
 }
 
 /**
@@ -708,7 +709,7 @@ function fireEventStart(hooks: SubscriptionsHooks, ctx: Ctx, eventSubProcess: El
   if (!admitted.ok) return failedWith(admitted.failure);
   const [current, values] = admitted.value;
   const [after, inner] = interrupting
-    ? [withdrawInside(closeItem(current, item.id), item.scope), item.occurrence] as const
+    ? [withdrawInside(closeItem(current, item.id), item.scope), item.id.occurrence] as const
     : afterFiring(current, item);
   return committed(signal(after, {
     tag: SignalTag.Begin,
@@ -739,7 +740,7 @@ export function arriveCatch(ctx: Ctx, _header: Header, _payload: EventPayload, s
   // the code names the first.
   if (kind.value === null) return failed(FailureTag.Unsupported, "event-catch-error");
   const opened = openItem(state, kind.value, occurrence);
-  const item = opened.openItems[opened.openItems.length - 1];
+  const item = itemsByPosition(opened).at(-1);
   if (item === undefined) return committed(opened);
   const evaluated = armed(ctx, subscription, item, opened);
   if (!evaluated.ok) return failedWith(evaluated.failure);

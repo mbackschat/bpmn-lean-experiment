@@ -86,15 +86,16 @@ theorem signal_claimed_named {s : State} {request : BeginRequest} (formed : Well
   -- No reservation the new begin names is named by anything queued before it.
   have apart : ∀ other, Queued s other → ∀ id ∈ names other, id ∉ names request := fun other old id inside named =>
     (admitted id named).2.1 other old inside
-  refine ⟨formed.claimed.attached, fun other queuedOther => ?_, fun first second pair id inside => ?_,
+  refine ⟨(fun item member attached reserved other inside same => formed.claimed.attached item
+      (items_same member rfl) attached reserved other (items_same inside rfl) same), fun other queuedOther => ?_, fun first second pair id inside => ?_,
     formed.claimed.tokensApart, fun first second signal token id inside => ?_,
     fun other id leave writes rule queuedOther inside completed => ?_, fun other queuedOther => ?_,
     fun other queuedOther id inside => ?_⟩
   · rcases queued other queuedOther with old | rfl
     · exact (formed.claimed.named other old).imp id fun beginnable id inside =>
-        (beginnable id inside).congr rfl rfl rfl rfl fun _ => by apply instanceOf_congr <;> rfl
+        (beginnable id inside).congr rfl rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl
     · exact ⟨nodup, fun id inside =>
-        (admitted id inside).1.congr rfl rfl rfl rfl fun _ => by apply instanceOf_congr <;> rfl⟩
+        (admitted id inside).1.congr rfl rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl⟩
   · by_cases same : second = request
     · subst same
       exact apart first (.inl (head_of_append pair)) id inside
@@ -188,7 +189,7 @@ theorem Claimable.signal {s : State} {scope : ScopeOccurrenceId} {inner : Option
   rw [signal_eq]
   intro id inside
   obtain ⟨beginnable, unnamed, uncompleted, unslotted⟩ := claimable id inside
-  refine ⟨beginnable.congr rfl rfl rfl rfl fun _ => by apply instanceOf_congr <;> rfl, fun request queued => ?_,
+  refine ⟨beginnable.congr rfl rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl, fun request queued => ?_,
     fun leave writes rule completed => ?_, fun completes => unslotted ?_⟩
   · rcases queued with signal_ | token
     · rcases List.mem_append.mp signal_ with old | new
@@ -233,8 +234,8 @@ theorem clearInside_inner {s : State} (formed : WellFormed program s) {occurrenc
       exact notStrict
     · rw [(ready found.id innerId).2.2 found inside rfl]
       exact notStrict
-  have attached : ∀ item ∈ s.openItems,
-      (¬ Within s item.scope occurrence.scope ∨ item.occurrence ∈ occurrence.id :: inner.toList) → ∀ host,
+  have attached : ∀ item ∈ s.items,
+      (¬ Within s item.scope occurrence.scope ∨ item.id.occurrence ∈ occurrence.id :: inner.toList) → ∀ host,
         item.attachedTo = some host → ∀ found ∈ s.occurrences, found.id = host →
           ¬ Within s found.scope occurrence.scope ∨ host ∈ occurrence.id :: inner.toList := by
     intro item inside placement host hangs found standing named
@@ -257,7 +258,7 @@ theorem clearInside_inner {s : State} (formed : WellFormed program s) {occurrenc
   refine ⟨⟨cleared.nextIssue ▸ below, fun found inside same => ?_⟩, fun request queued => ?_,
     fun leave writes rule completed => ?_, fun completes => unslotted ?_⟩
   · obtain ⟨unbegun, free, instance_⟩ := facts found ((cleared.occurrences found).mp inside).1 same
-    refine ⟨unbegun, fun item held => free item ((cleared.openItems item).mp held).1, fun stands => ?_⟩
+    refine ⟨unbegun, fun item held => free item ((cleared.items item).mp held).1, fun stands => ?_⟩
     rw [cleared.instances _ stands, cleared.instances _ (formedAfter.owned.occurrenceScopes found inside)]
     exact instance_ present
   · exact unnamed request (queued.shrink (by rw [cleared.signals]; exact .refl _) cleared.tokensSublist)
@@ -299,7 +300,7 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
   have child := instanceOf_child formedAfter entryMember (by rw [← entryIs]) (by rw [← entryIs]) presentAfter
   have entryId : entry.id = ⟨s.nextIssue⟩ := by rw [← entryIs]
   have occurrences : t.occurrences = s.occurrences := by rw [← afterIs]
-  have items : t.openItems = s.openItems := by rw [← afterIs]
+  have items : t.items = s.items := by rw [← afterIs]; exact items_congr rfl
   have issued : t.nextIssue = s.nextIssue + 1 := by rw [← afterIs]
   refine ⟨formedAfter, rfl, List.mem_map.mpr ⟨_, entryMember, entryId⟩, fun id innerId => ?_⟩
   obtain ⟨⟨below, facts⟩, unnamed, uncompleted, unslotted⟩ := claimable id innerId

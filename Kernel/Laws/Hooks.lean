@@ -2,6 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Laws.Data.Values
+public import Kernel.Laws.State.Items
 import all Kernel.Hooks
 
 /-! # Laws of the hooks module
@@ -31,8 +32,8 @@ theorem hold_eq (state : State) (held : Held) :
 its instance are the ones the input's reference names. -/
 theorem itemDetail?_some {α : Type} {ctx : Ctx} {state : State} {ref : OccurrenceRef} {detail : WaitView → Option α}
     {item : OpenItem} {value : α} (found : itemDetail? ctx state ref detail = some (item, value)) :
-    item ∈ state.openItems ∧ ctx.program.publicId item.element = ref.element ∧
-      (state.occurrence? item.occurrence).map (·.activation) = some ref.activation ∧
+    item ∈ state.items ∧ ctx.program.publicId item.element = ref.element ∧
+      (state.occurrence? item.id.occurrence).map (·.activation) = some ref.activation ∧
       state.instanceOf item.scope = ref.processInstanceId := by
   unfold itemDetail? at found
   obtain ⟨candidate, member, made⟩ := List.exists_of_findSome?_eq_some found
@@ -41,16 +42,16 @@ theorem itemDetail?_some {α : Type} {ctx : Ctx} {state : State} {ref : Occurren
     obtain ⟨_, _, same⟩ := Option.map_eq_some_iff.mp made
     obtain ⟨rfl, _⟩ := Prod.mk.inj same
     simp only [Bool.and_eq_true, beq_iff_eq] at matches_
-    exact ⟨member, matches_.1.1, matches_.1.2, matches_.2⟩
+    exact ⟨Laws.State.mem_itemsByPosition.mp member, matches_.1.1, matches_.1.2, matches_.2⟩
   · simp at made
 
 theorem itemDetail?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef}
     {detail : WaitView → Option α} {item : OpenItem} {value : α}
-    (found : itemDetail? ctx state occurrence detail = some (item, value)) : item ∈ state.openItems :=
+    (found : itemDetail? ctx state occurrence detail = some (item, value)) : item ∈ state.items :=
   (itemDetail?_some found).1
 
 theorem item?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef} {detail : WaitView → Option α}
-    {item : OpenItem} (found : item? ctx state occurrence detail = some item) : item ∈ state.openItems := by
+    {item : OpenItem} (found : item? ctx state occurrence detail = some item) : item ∈ state.items := by
   unfold item? at found
   obtain ⟨⟨_, value⟩, made, same⟩ := Option.map_eq_some_iff.mp found
   cases same

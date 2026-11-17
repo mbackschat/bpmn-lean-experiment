@@ -16,7 +16,7 @@ namespace Kernel.Population
 
 def occurrence (program : Program) (state : State) (item : OpenItem) : OccurrenceRef :=
   { processInstanceId := state.instanceOf item.scope, element := program.publicId item.element
-    activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
+    activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 }
 
 /-- The code a refusal carries. -/
 def refusalCode : Failure → String
@@ -40,7 +40,7 @@ Criteria `criteriaRefusal` refuses are the command's refusal too, which the call
 def messageReceivers (hooks : Hooks) (program : Program) (state : State) (publication : Publication) :
     Except Failure (List (OccurrenceRef × MessageChannel)) :=
   let ctx := Step.context hooks program
-  let verdicts := state.openItems.filterMap fun item =>
+  let verdicts := state.itemsByPosition.filterMap fun item =>
     let view := item.kind.view
     let channel? := match publication.message with
       | .channel channel => some channel

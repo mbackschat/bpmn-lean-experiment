@@ -59,7 +59,7 @@ occurrence and no parked join or held wait (`SUBPROC-QUIESCE-01`); a passive ite
 keeps nothing alive. -/
 def Idle (s : State) (scope : ScopeOccurrenceId) : Prop :=
   (∀ token ∈ s.tokens, token.busyScope ≠ scope) ∧
-  (∀ item ∈ s.openItems, item.passive = false → item.scope ≠ scope) ∧
+  (∀ item ∈ s.items, item.passive = false → item.scope ≠ scope) ∧
   (∀ occurrence ∈ s.occurrences, occurrence.begun = true → occurrence.scope ≠ scope) ∧
   (∀ child ∈ s.scopes, child.parent ≠ some scope) ∧
   (∀ join ∈ s.slots.parked, join.scope ≠ scope) ∧ ∀ wait ∈ s.slots.held, wait.scope ≠ scope
@@ -97,7 +97,7 @@ def InterruptingStart (interrupting : Bool) (parent : ScopeOccurrenceId) (kept :
 /-- A non-interrupting one leaves every occurrence and open item of its parent running. -/
 def NonInterruptingStart (interrupting : Bool) (before after : State) : Prop :=
   interrupting = false →
-    (∀ occurrence ∈ before.occurrences, occurrence ∈ after.occurrences) ∧ ∀ item ∈ before.openItems, item ∈ after.openItems
+    (∀ occurrence ∈ before.occurrences, occurrence ∈ after.occurrences) ∧ ∀ item ∈ before.items, item ∈ after.items
 
 /-! ## The state invariant under Scopes' hooks
 
@@ -381,7 +381,7 @@ theorem cleared_clears {before after : State} {scope : ScopeOccurrenceId} {keep 
   scopeStays entry member same := (cleared.scopes entry).mpr ⟨member, fun strictly => strictly.2 same⟩
   scopesOutside entry member outside := (cleared.scopes entry).mpr ⟨member, outside⟩
   occurrencesOutside occurrence member outside := (cleared.occurrences occurrence).mpr ⟨member, .inl outside⟩
-  itemsOutside item member outside := (cleared.openItems item).mpr ⟨member, .inl outside⟩
+  itemsOutside item member outside := (cleared.items item).mpr ⟨member, .inl outside⟩
   variablesOutside variables member outside :=
     (cleared.variables variables).mpr ⟨member, fun strictly => outside strictly.1⟩
   variablesOwn variables member same := (cleared.variables variables).mpr ⟨member, fun strictly => strictly.2 same⟩
@@ -389,12 +389,12 @@ theorem cleared_clears {before after : State} {scope : ScopeOccurrenceId} {keep 
   scopesInside entry member strictly := absurd strictly ((cleared.scopes entry).mp member).2
   occurrencesInside occurrence member within :=
     ((cleared.occurrences occurrence).mp member).2.resolve_left (· within)
-  itemsInside item member within := ((cleared.openItems item).mp member).2.resolve_left (· within)
+  itemsInside item member within := ((cleared.items item).mp member).2.resolve_left (· within)
   variablesInside variables member strictly := absurd strictly ((cleared.variables variables).mp member).2
   tokensInside token member := ((cleared.tokens token).mp member).2
   noNewScopes _ member := cleared.scopesSublist.subset member
   noNewOccurrences _ member := cleared.occurrencesSublist.subset member
-  noNewItems _ member := cleared.openItemsSublist.subset member
+  noNewItems _ member := cleared.openItemsSub.items member
   noNewVariables _ member := cleared.variablesSublist.subset member
   noIssue := cleared.nextIssue
   instanceKept := named
@@ -410,8 +410,10 @@ theorem clearsInside_signal {before after : State} {scope : ScopeOccurrenceId} {
     (clears : ClearsInside before after scope keep) (signal : Signal) :
     ClearsInside before (after.signal signal) scope keep := by
   rw [Laws.State.signal_eq]
+  have same : ({ after with signals := after.signals ++ [signal] } : State).items = after.items :=
+    Laws.State.items_congr rfl
   cases clears
-  constructor <;> assumption
+  constructor <;> (try rw [same]) <;> assumption
 
 /-- An Event Sub-Process's arrival at its occurrence, which stands in a well-formed state, enters its Scope on a state
 that its start's interruption, as `Ctx.eventStart` reads it (`interrupting`), made from the arrival's: interrupting, the
@@ -502,11 +504,12 @@ theorem reused_activation_rejected : ¬ NextActivation "p" ⟨"Sub"⟩ counts 1 
 theorem first_traversal : NextActivation "p" ⟨"Sub"⟩ [] 1 := ⟨by simp, fun _ => rfl⟩
 
 theorem cleared_idle (kind : OpenKind) : Idle (cleared kind) subScope := by
-  simp [Idle, cleared, sample, outerTask, subProcess, outerItem, rootScope, childScope, processRoot, subScope]
+  simp [Idle, cleared, sample, outerTask, subProcess, outerItem, rootScope, childScope, processRoot, subScope,
+    Laws.State.items_eq]
 
 /-- Completing a scope occurrence whose task still waits is rejected. -/
 theorem busy_completes_rejected (kind : OpenKind) : ¬ CompletesWhenIdle (sample kind) subScope true := fun law =>
-  ((law.1 rfl).2.1 (innerItem kind) (by simp [sample]) rfl) rfl
+  ((law.1 rfl).2.1 (innerItem kind) (Laws.State.mem_sample_items.mpr (.inl rfl)) rfl) rfl
 
 theorem idle_completes (kind : OpenKind) : CompletesWhenIdle (cleared kind) subScope true :=
   ⟨fun _ => cleared_idle kind, fun _ => rfl⟩

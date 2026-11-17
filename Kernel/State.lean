@@ -1,6 +1,7 @@
 module
 
 public import Kernel.State.Journal
+public import Std.Data.ExtTreeMap
 
 /-! # Kernel runtime state
 
@@ -68,19 +69,69 @@ structure ScopeVariables where
   entries : List (String × Value)
   deriving Repr
 
-/-- One open interaction. `occurrence` is the occurrence it waits for, or a subscription's reservation; the public
+/-- The role an open item plays for its occurrence (KD1's item role). -/
+inductive ItemRole where
+  /-- What a begun occurrence waits on (`State.openItem`). -/
+  | wait
+  /-- A subscription holding its occurrence's reservation (`State.openSubscription`). -/
+  | subscription
+  deriving DecidableEq, Repr
+
+/-- The role's place in `ItemKey`'s order. -/
+def ItemRole.index : ItemRole → Nat
+  | .wait => 0
+  | .subscription => 1
+
+/-- An open item's structural key (KD1): the occurrence it waits for or reserves, its role and a per-occurrence
+ordinal, issued by `State.itemOrdinals`. -/
+structure ItemKey where
+  occurrence : Nat
+  role : ItemRole
+  ordinal : Nat
+  deriving DecidableEq, Repr
+
+instance : Ord ItemKey where
+  compare := compareLex (compareOn (·.occurrence)) <| compareLex (compareOn (·.role.index)) (compareOn (·.ordinal))
+
+/-- `OpenItems` needs a transitive order; the map's lemmas also need a lawful one. Both stay beside the order they
+are about, proved inline, since an executable module holds no theorem (guard 6). -/
+instance : Std.TransOrd ItemKey := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd ItemKey where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn fun key : ItemKey => key.occurrence)
+        (compareLex (compareOn fun key : ItemKey => key.role.index) (compareOn fun key : ItemKey => key.ordinal)) a b =
+        .eq := h
+    rw [compareLex_eq_eq, compareLex_eq_eq] at h
+    obtain ⟨occurrence, role, ordinal⟩ := a
+    obtain ⟨occurrence', role', ordinal'⟩ := b
+    have roles : role.index = role'.index := Std.LawfulEqOrd.eq_of_compare h.2.1
+    simp only [ItemKey.mk.injEq]
+    refine ⟨Std.LawfulEqOrd.eq_of_compare h.1, ?_, Std.LawfulEqOrd.eq_of_compare h.2.2⟩
+    cases role <;> cases role' <;> simp_all [ItemRole.index]
+
+/-- One open interaction. `id.occurrence` is the occurrence it waits for, or a subscription's reservation; the public
 identity is the occurrence's activation of `element`. `attachedTo` is the occurrence the subscription hangs on (the
 boundary's host, the Event-Based Gateway of an arm). A `passive` item, such as an Event Sub-Process start
 subscription, keeps no scope occurrence alive and is removed when its scope completes. -/
 structure OpenItem where
-  id : Nat
+  id : ItemKey
+  /-- The issue number the item took when it opened (`State.issue`): the order of opening, which every site that reads
+  the items in order reads (`State.itemsByPosition`), never the map's key order (KD1). -/
+  position : Nat
   kind : OpenKind
   element : ElementId
   scope : ScopeOccurrenceId
-  occurrence : Nat
   attachedTo : Option Nat := none
   passive : Bool := false
   deriving Repr
+
+/-- The open items, keyed by their structural key; a value's `id` is its key (`State.openItem`,
+`State.openSubscription`). -/
+abbrev OpenItems := Std.ExtTreeMap ItemKey OpenItem compare
+
+/-- The open items of `items` in key order. -/
+def itemList (items : OpenItems) : List OpenItem := items.toList.map (·.2)
 
 inductive InstanceStatus where
   | running
@@ -174,7 +225,7 @@ inductive Signal where
   | cancel (occurrence : Nat)
   /-- Fire the open item, before anything queued behind this signal: a Signal's receivers run before its thrower leaves
   (`ThrowSignalEventActivityBehavior#execute`). -/
-  | fire (item : Nat) (fired : Fired)
+  | fire (item : ItemKey) (fired : Fired)
   /-- End the process instance with `status`, recording `failure`. -/
   | endInstance (status : InstanceStatus) (failure : Option InstanceFailure)
   /-- Run the compensation handlers retained in `scope` for `trigger`, those of `activity` when one is named; once all
@@ -219,7 +270,9 @@ structure State where
   /-- The closure's work stack (`Step.nextToken`), empty once a closure settles. -/
   tokens : List Token := []
   variables : List ScopeVariables := []
-  openItems : List OpenItem := []
+  openItems : OpenItems := ∅
+  /-- The next item ordinal of each occurrence that opened an item, pruned with the occurrence (KD1). -/
+  itemOrdinals : Std.ExtTreeMap Nat Nat compare := ∅
   activations : List ActivationCount := []
   nextIssue : Nat := 1
   logicalTimeMs : Nat := 0
@@ -335,10 +388,16 @@ def instanceRoot (state : State) (scope : ScopeOccurrenceId) : ScopeOccurrenceId
         | none => root
   go state.scopes.length scope
 
+/-- The open items, in key order: for reading them as a set. -/
+def items (state : State) : List OpenItem := itemList state.openItems
+
+/-- The open items in the order they opened, by `OpenItem.position`: for every reading that depends on order. -/
+def itemsByPosition (state : State) : List OpenItem := state.items.mergeSort fun a b => a.position ≤ b.position
+
 /-- The scope occurrences in which something remains: a token, an open item that keeps it alive, a begun occurrence, a
 child scope occurrence or a feature slot entry, in one pass over the state. -/
 def busyScopes (state : State) : List ScopeOccurrenceId :=
-  state.tokens.map (·.busyScope) ++ (state.openItems.filter fun item => !item.passive).map (·.scope) ++
+  state.tokens.map (·.busyScope) ++ (state.items.filter fun item => !item.passive).map (·.scope) ++
     (state.occurrences.filter (·.begun)).map (·.scope) ++ state.scopes.filterMap (·.parent) ++ state.slots.keptAlive
 
 /-- Whether nothing remains in `scope`: no token, no open item that keeps it alive, no begun occurrence, no child
@@ -349,7 +408,7 @@ def idle (state : State) (scope : ScopeOccurrenceId) : Bool :=
 /-- The entries a micro-step's scans run over: tokens, occurrences, open items, scope occurrences and queued signals.
 `Step.closureWorkBound` sums it over a closure's micro-steps. -/
 def entryCount (state : State) : Nat :=
-  state.tokens.length + state.occurrences.length + state.openItems.length + state.scopes.length + state.signals.length
+  state.tokens.length + state.occurrences.length + state.openItems.size + state.scopes.length + state.signals.length
 
 /-- The process instance identifier of `scope`. -/
 def instanceOf (state : State) (scope : ScopeOccurrenceId) : String :=
@@ -411,34 +470,53 @@ def startReserved (state : State) (occurrence : Occurrence) (sourceType : String
     (recordStart { state with occurrences := state.occurrences.map fun other =>
       if other.id == begun.id then begun else other } begun sourceType, begun)
 
+/-- The open item keyed `key`. -/
+def itemAt (state : State) (key : ItemKey) : Option OpenItem :=
+  state.openItems[key]?
+
+/-- A fresh key for an item of `occurrence` in `role`: the occurrence's next ordinal, counted up. -/
+def issueItem (state : State) (occurrence : Nat) (role : ItemRole) : State × ItemKey :=
+  let ordinal := state.itemOrdinals.getD occurrence 0
+  ({ state with itemOrdinals := state.itemOrdinals.insert occurrence (ordinal + 1) }, { occurrence, role, ordinal })
+
+/-- Add `item` under its own key. -/
+def putItem (state : State) (item : OpenItem) : State :=
+  { state with openItems := state.openItems.insert item.id item }
+
 /-- An item waiting for the begun `occurrence`. -/
 def openItem (state : State) (kind : OpenKind) (occurrence : Occurrence) : State :=
-  let (state, id) := state.issue
-  { state with openItems := state.openItems ++
-      [{ id, kind, element := occurrence.element, scope := occurrence.scope, occurrence := occurrence.id }] }
+  let (state, position) := state.issue
+  let (state, id) := state.issueItem occurrence.id .wait
+  state.putItem { id, position, kind, element := occurrence.element, scope := occurrence.scope }
 
 /-- A subscription item for `element`, with a fresh reservation; `host` is the occurrence it hangs on. -/
 def openSubscription (state : State) (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId)
     (host : Option Nat) (passive : Bool) : State × OpenItem :=
   let (state, occurrence) := state.reserve element scope
-  let (state, id) := state.issue
-  let item : OpenItem := { id, kind, element, scope, occurrence := occurrence.id, attachedTo := host, passive }
-  ({ state with openItems := state.openItems ++ [item] }, item)
+  let (state, position) := state.issue
+  let (state, id) := state.issueItem occurrence.id .subscription
+  let item : OpenItem := { id, position, kind, element, scope, attachedTo := host, passive }
+  (state.putItem item, item)
 
-def closeItem (state : State) (id : Nat) : State :=
-  { state with openItems := state.openItems.filter (·.id != id) }
+def closeItem (state : State) (id : ItemKey) : State :=
+  { state with openItems := state.openItems.erase id }
 
 /-- Remove the items waiting for the occurrence `id`. -/
 def closeOwnItems (state : State) (id : Nat) : State :=
-  { state with openItems := state.openItems.filter (·.occurrence != id) }
+  { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != id }
 
-/-- Remove the items attached to the occurrence `host`, with the reservations they hold. -/
+/-- Remove the items attached to the occurrence `host`, with the reservations they hold. The dropped reservations are
+listed once, since a scan of the occurrences for every ordinal counter, run at every completion, made a closure that
+leaves a wait at every pass take 49 s (`closure-work-bound.test.ts` through `kernelRun --batch`, measured 2026-11-17). -/
 def disarm (state : State) (host : Nat) : State :=
-  let attached := state.openItems.filter (·.attachedTo == some host)
+  let attached := state.items.filter (·.attachedTo == some host)
+  let dropped := (state.occurrences.filter fun occurrence =>
+    !occurrence.begun && attached.any (·.id.occurrence == occurrence.id)).map (·.id)
   { state with
-      openItems := state.openItems.filter (·.attachedTo != some host)
+      openItems := state.openItems.filter fun _ item => item.attachedTo != some host
       occurrences := state.occurrences.filter fun occurrence =>
-        occurrence.begun || !attached.any (·.occurrence == occurrence.id) }
+        occurrence.begun || !attached.any (·.id.occurrence == occurrence.id)
+      itemOrdinals := state.itemOrdinals.filter fun id _ => !dropped.contains id }
 
 /-- Enter a new scope occurrence of `element` inside `parent`, with the given local variables, `keyed`. The scope
 belongs to `occurrence`, when it has one. -/

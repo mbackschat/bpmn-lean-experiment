@@ -199,7 +199,7 @@ function ownReceivers(state: State, address: SignalAddress): readonly OpenItem[]
   });
   return mergeSort(reached, (left, right) => {
     const order = compareStrings(instanceOf(state, left.scope), instanceOf(state, right.scope));
-    return order < 0 || (order === 0 && left.id <= right.id);
+    return order < 0 || (order === 0 && left.position <= right.position);
   });
 }
 
@@ -209,7 +209,7 @@ function thrownDelivery(ctx: Ctx, state: State, address: SignalAddress, variable
     occurrence: {
       processInstanceId: instanceOf(state, item.scope),
       element: programPublicId(ctx.program, item.element),
-      activation: occurrenceOf(state, item.occurrence)?.activation ?? 0,
+      activation: occurrenceOf(state, item.id.occurrence)?.activation ?? 0,
     },
     trigger: { tag: DeliveryTriggerTag.Signal, address, reach: SignalReach.Broadcast },
     correlation: [],

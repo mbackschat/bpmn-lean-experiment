@@ -279,7 +279,7 @@ def DropBeginsNothing (interrupts : Bool) (inside : ScopeOccurrenceId → Prop) 
 /-- The instance has failed with a published failure, and nothing is left to continue: no token, open item or
 occurrence. -/
 def Failed (state : State) : Prop :=
-  state.status = .failed ∧ state.failure.isSome = true ∧ state.tokens = [] ∧ state.openItems = [] ∧ state.occurrences = []
+  state.status = .failed ∧ state.failure.isSome = true ∧ state.tokens = [] ∧ state.openItems = ∅ ∧ state.occurrences = []
 
 /-- Under `compensationHandlerFailure = failsInstance` (COMPH-FAIL-01), an Error that no catcher inside the handler's
 context takes (`caughtInside = false`) is searched no further (`searchedFrom = none`) and fails the instance. -/

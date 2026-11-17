@@ -206,7 +206,7 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
     complete hooks ctx occurrence.id leave writes rule state }
   | .cancel occurrence => { acts := [occurrence], run := fun state => .ok (state.cancelOccurrence occurrence) }
   | .fire item fired => { run := fun state =>
-    match state.openItems.find? (·.id == item) with
+    match (state.itemAt item) with
     | some open_ => fireItem hooks ctx open_ fired state
     | none => .ok state }
   | .endInstance status failure => { run := fun state => .ok (endInstance status failure state) }
@@ -382,7 +382,7 @@ one, or a reservation an open item holds, as a Conditional arm of an Event-Based
 (`conditional-catch/condition-wins`). -/
 def occurrenceOf? (ctx : Ctx) (state : State) (ref : OccurrenceRef) : Option Occurrence :=
   state.occurrences.find? fun occurrence =>
-    (occurrence.begun || state.openItems.any (·.occurrence == occurrence.id)) && occurrence.role == .element && occurrence.activation == ref.activation &&
+    (occurrence.begun || state.items.any (·.id.occurrence == occurrence.id)) && occurrence.role == .element && occurrence.activation == ref.activation &&
       ctx.program.publicId occurrence.element == ref.element && state.instanceOf occurrence.scope == ref.processInstanceId
 
 /-- Run `onActivity` on the Activity an open item belongs to. -/
@@ -438,17 +438,13 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
 
 /-- `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. -/
 def scopeRole (state : State) (scope : ScopeOccurrenceId) : ScopeRole :=
-  let holds : Iteration → Bool
-    | .active held => held == scope
-    | .waiting => false
-    | .completed _ => false
   let ownedByInstance := (((state.scopes.find? (·.id == scope)).bind (·.occurrence)).bind state.occurrence?).any fun owner =>
     match owner.continuation with
     | .multiInstance _ => true
     | .flow => false
     | .compensation _ => false
   if state.slots.compensation.runs.any (·.running.any (·.1 == scope)) then .compensationHandler
-  else if ownedByInstance || state.slots.multiInstances.any (·.instances.any holds) then .multiInstanceInstance
+  else if ownedByInstance || state.slots.multiInstances.any (·.instances.any (·.holds scope)) then .multiInstanceInstance
   else .ordinary
 
 /-- The context every hook of `program` reads, its queries filled from `hooks`. -/

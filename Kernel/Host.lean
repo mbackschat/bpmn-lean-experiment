@@ -186,12 +186,12 @@ def currentInputs (state : State) (item : OpenItem) (view : WaitView) : WaitView
   match view.userTask with
   | none => view
   | some task =>
-    let own := state.ownVariables (state.ownScope item.occurrence item.scope)
+    let own := state.ownVariables (state.ownScope item.id.occurrence item.scope)
     { view with userTask := some { task with inputs := task.inputs.flatMap fun (name, _) => own.filter (·.1 == name) } }
 
 def openWait (program : Program) (state : State) (item : OpenItem) : OpenWait :=
   { id := publicRef program { processInstanceId := state.instanceOf item.scope, element := item.element
-                              activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
+                              activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 }
     definition := (state.slots.instances.find? (·.root == state.instanceRoot item.scope)).bind (·.definition)
     view := currentInputs state item item.kind.view }
 
@@ -206,7 +206,7 @@ def publicJournal (program : Program) (journal : List Transition) : List Transit
     else none
 
 def hostView (program : Program) (state : State) : View :=
-  let openWaits := state.openItems.map (openWait program state)
+  let openWaits := state.itemsByPosition.map (openWait program state)
   { status := state.status, failure := state.failure.map (publicFailure program), openWaits
     addresses := addressesOf openWaits
     journal := publicJournal program state.journal

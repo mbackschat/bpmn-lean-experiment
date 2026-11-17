@@ -86,8 +86,8 @@ theorem complete_keeps (contract : HookContract hooks inv) (phases : ClosurePhas
     exact inside
   obtain ⟨writtenHolds, writtenFrame⟩ := contract.writeOutputs _ _ _ _ _ _ leftHolds stands writing
   have identity : (state.startReserved occurrence sourceType).2.id = id := begunId.trans named
-  have free : ∀ (frame : State), (∀ item ∈ frame.openItems, item ∈ left.openItems) →
-      ∀ item ∈ frame.openItems, item.occurrence ≠ (state.startReserved occurrence sourceType).2.id ∧
+  have free : ∀ (frame : State), (∀ item ∈ frame.items, item ∈ left.items) →
+      ∀ item ∈ frame.items, item.id.occurrence ≠ (state.startReserved occurrence sourceType).2.id ∧
         item.attachedTo ≠ some (state.startReserved occurrence sourceType).2.id := fun frame within item member => by
     rw [identity]
     have inLeft := within item member
@@ -131,7 +131,7 @@ theorem complete_keeps (contract : HookContract hooks inv) (phases : ClosurePhas
         (fun entry member => retainedFrame.scopes ▸ removedScopes entry member)) continuing)
 
 theorem fireItem_keeps (contract : HookContract hooks inv) {ctx : Ctx} {item : OpenItem} {fired : Fired}
-    {state after : State} (holds : inv ctx.program state) (open_ : item ∈ state.openItems)
+    {state after : State} (holds : inv ctx.program state) (open_ : item ∈ state.items)
     (ran : fireItem hooks ctx item fired state = .ok after) : inv ctx.program after := by
   rcases fireItem_ok ran with ⟨_, _, activity, ran⟩ | ran
   · exact contract.triggerActivity _ _ _ _ _ _ _ holds open_ activity ran

@@ -31,7 +31,7 @@ def Queueable (program : Program) (s : State) : Signal → Prop
     ∀ found ∈ s.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
   | .begin request => Laws.State.names request = [] ∧ request.scope ∈ Laws.State.scopeIds s
   | .complete id _ _ _ => (∀ request, Laws.State.Queued s request → id ∉ Laws.State.names request) ∧ id < s.nextIssue ∧
-    ∀ item ∈ s.openItems, ((program.element? item.element).bind (·.start?)).isSome = true → item.occurrence ≠ id
+    ∀ item ∈ s.items, ((program.element? item.element).bind (·.start?)).isSome = true → item.id.occurrence ≠ id
   | .endInstance status failure => failure.isSome = true ↔ status = .failed
   | .compensate scope _ _ _ resume => ∀ next, resume = some next → Laws.State.Resumable s scope next
   | .raise _ origin => Laws.State.Raisable program s origin ∧ ∀ host, origin.host = some host → Laws.State.Settled s host
@@ -78,8 +78,8 @@ theorem queueRemove_wellFormed {state : State} (formed : Laws.State.WellFormed p
 
 /-- No start Event's item waits on a settled occurrence: each holds an unbegun reservation, which stands. -/
 theorem settled_unstarted {state : State} (formed : Laws.State.WellFormed program state) {id : Nat}
-    (settled : Laws.State.Settled state id) : ∀ item ∈ state.openItems,
-      ((program.element? item.element).bind (·.start?)).isSome = true → item.occurrence ≠ id := fun item inside start same => by
+    (settled : Laws.State.Settled state id) : ∀ item ∈ state.items,
+      ((program.element? item.element).bind (·.start?)).isSome = true → item.id.occurrence ≠ id := fun item inside start same => by
   obtain ⟨occurrence, present, named, _⟩ := formed.owned.itemOccurrences item inside
   have unbegun := (formed.typed item inside start).1 occurrence present named
   rw [settled.2.1 occurrence present (named.trans same)] at unbegun
@@ -101,9 +101,9 @@ theorem complete_wellFormed {state : State} (formed : Laws.State.WellFormed prog
 /-- The completion of what an item of no start Event waits on, queued, keeps `WellFormed`: a start Event's item waits
 alone. -/
 theorem waited_wellFormed {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
-    (member : item ∈ state.openItems) (unstarted : (program.element? item.element).bind (·.start?) = none)
+    (member : item ∈ state.items) (unstarted : (program.element? item.element).bind (·.start?) = none)
     (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :
-    Laws.State.WellFormed program (state.signal (.complete item.occurrence leave writes rule)) :=
+    Laws.State.WellFormed program (state.signal (.complete item.id.occurrence leave writes rule)) :=
   have ⟨occurrence, present, named, _⟩ := formed.owned.itemOccurrences item member
   queue_wellFormed formed ⟨Laws.State.waited_unnamed formed member, named ▸ formed.issued.occurrences occurrence present,
     fun other inside start same => by
@@ -160,14 +160,14 @@ theorem raiseFrom_wellFormed {state : State} (formed : Laws.State.WellFormed pro
 /-- A business Error raised from an effect item's occurrence, queued, keeps `WellFormed`: the item waits for work, so its
 occurrence has begun (`Laws.State.Worked`), and the item lies in its occurrence's scope occurrence. -/
 theorem effectRaise_wellFormed {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
-    (member : item ∈ state.openItems) (effect : item.kind.view.effect.isSome = true) (event : Raised)
+    (member : item ∈ state.items) (effect : item.kind.view.effect.isSome = true) (event : Raised)
     (patch : List (String × Value)) : Laws.State.WellFormed program (state.signal (.raise event
-      { element := item.element, scope := item.scope, host := some item.occurrence, patch := patch,
-        activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 })) := by
+      { element := item.element, scope := item.scope, host := some item.id.occurrence, patch := patch,
+        activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 })) := by
   obtain ⟨occurrence, present, named, placed⟩ := formed.owned.itemOccurrences item member
   have begun := formed.worked item member (fun waits => by rw [waits.1] at effect; cases effect) occurrence present named
-  have activation : ((state.occurrence? item.occurrence).map (·.activation)).getD 0 = occurrence.activation := by
-    cases found : state.occurrence? item.occurrence with
+  have activation : ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 = occurrence.activation := by
+    cases found : state.occurrence? item.id.occurrence with
     | none => exact absurd named (Laws.State.occurrence?_none found occurrence present)
     | some other =>
       obtain ⟨inside, same⟩ := Laws.State.occurrence?_some found
@@ -208,7 +208,7 @@ theorem begun_settled {state : State} (formed : Laws.State.WellFormed program st
 /-- What a fired item waited on, completed, keeps `WellFormed` (`Laws.State.Fired`). -/
 theorem fired_complete {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
     (fired : Laws.State.Fired program state item) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :
-    Laws.State.WellFormed program (state.signal (.complete item.occurrence leave writes rule)) :=
+    Laws.State.WellFormed program (state.signal (.complete item.id.occurrence leave writes rule)) :=
   queue_wellFormed formed ⟨fired.2.2.1, fired.2.1, fired.2.2.2.1⟩
 
 /-- A fired start Event's Event Sub-Process, begun with its reservation in the item's scope occurrence, keeps
@@ -216,7 +216,7 @@ theorem fired_complete {state : State} (formed : Laws.State.WellFormed program s
 theorem fired_begin {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
     (fired : Laws.State.Fired program state item) (start : ((program.element? item.element).bind (·.start?)).isSome = true)
     (element : ElementId) (writes : List (String × Value)) : Laws.State.WellFormed program
-      (state.signal (.begin { element, scope := item.scope, writes, inner := some item.occurrence })) :=
+      (state.signal (.begin { element, scope := item.scope, writes, inner := some item.id.occurrence })) :=
   have ⟨beginnable, unclaimed, placed⟩ := fired.2.2.2.2 start
   Laws.State.signal_named_wellFormed formed fired.1 (by simp [Laws.State.names])
     (fun id named => by

@@ -199,14 +199,19 @@ theorem enters_frame (formed : WellFormed program s) {entry : ScopeOccurrence} {
 theorem enterScope_frame (formed : WellFormed program s) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (owner : Option Nat) : EndsStep s (s.enterScope element parent locals owner).1 none := by
   rw [Laws.State.enterScope_eq]
-  exact enters_frame formed ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, .same rfl⟩ (by simp)
+  exact enters_frame formed {
+      id := rfl, nextIssue := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
+      tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
+      instanceId := rfl, slots := .same rfl } (by simp)
 
 theorem enterCalled_frame (formed : WellFormed program s) (called : Program) (call : Occurrence)
     (variables : List (String × Value)) (definition : DefinitionRef) :
     EndsStep s (s.enterCalled called call variables definition).1 none := by
   rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
-  exact enters_frame formed ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl,
-    ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩⟩ (by simp)
+  exact enters_frame formed {
+      id := rfl, nextIssue := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
+      tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
+      instanceId := rfl, slots := ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩ } (by simp)
 
 /-- A reservation is a fresh occurrence whose key the counters had not issued. -/
 theorem reserve_frame (formed : WellFormed program s) (element : ElementId)
@@ -506,14 +511,14 @@ theorem EndsStep.close {r : State} {occurrence : Occurrence}
     · exact List.mem_append_left _ (complete o member flag absent fun named => same (Option.some.inj named).symm)
 
 /-- Withdrawing the items inside scope occurrences changes only the open items, which it narrows. -/
-private theorem withdrawn_shape : ∀ (scopes : List ScopeOccurrence) (t : State), ∃ items : List OpenItem,
-    items.Sublist t.openItems ∧ scopes.foldl (fun state entry => state.withdrawInside entry.id) t = { t with openItems := items }
-  | [], t => ⟨t.openItems, .refl _, rfl⟩
+private theorem withdrawn_shape : ∀ (scopes : List ScopeOccurrence) (t : State), ∃ items : OpenItems,
+    Laws.State.ItemsSub items t.openItems ∧ scopes.foldl (fun state entry => state.withdrawInside entry.id) t = { t with openItems := items }
+  | [], t => ⟨t.openItems, Laws.State.ItemsSub.refl _, rfl⟩
   | entry :: rest, t => by
     obtain ⟨items, fewer, same⟩ := withdrawn_shape rest (t.withdrawInside entry.id)
-    refine ⟨items, fewer.trans ?_, ?_⟩
+    refine ⟨items, Laws.State.ItemsSub.trans ?_ fewer, ?_⟩
     · rw [Laws.State.withdrawInside_eq]
-      exact List.filter_sublist
+      exact Laws.State.ItemsSub.filter _ _
     · simp only [List.foldl_cons]
       rw [same, Laws.State.withdrawInside_eq]
 
@@ -535,8 +540,10 @@ theorem cancelOccurrence_frame (formed : WellFormed program s) (id : Nat) :
     rw [← Laws.State.withdrawOccurrence_eq] at withdrawn
     have uFormed : WellFormed program (s.withdrawOccurrence occurrence.id) := by
       rw [withdrawn]
-      exact disarmed.narrow ⟨rfl, rfl, rfl, rfl, Laws.State.instanceOf_congr rfl rfl, id, fewer, .refl _, .refl _,
-        fun _ => id, .same rfl⟩ rfl disarmed.startedOnce
+      exact disarmed.narrow {
+          scopes := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
+          instances := Laws.State.instanceOf_congr rfl rfl, recorded := id, items := ⟨fewer, fun _ => Nat.le_refl _⟩,
+          tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl disarmed.startedOnce
     have within : ∀ o ∈ (s.withdrawOccurrence occurrence.id).occurrences, o ∈ s.occurrences := fun o inside => by
       rw [withdrawn, Laws.State.disarm_eq, Laws.State.closeOwnItems_eq] at inside
       exact (List.mem_filter.mp inside).1

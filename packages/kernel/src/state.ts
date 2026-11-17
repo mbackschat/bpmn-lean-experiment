@@ -42,7 +42,7 @@ export {
 };
 import {
   type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
-  featureSlotsKeptAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
+  featureSlotsKeptAlive, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave, leaveFlows, leaveOutgoing,
   leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Held, type Resume, ResumeTag,
   type ScopeOccurrenceId,
 } from "./state/slots.js";
@@ -60,7 +60,7 @@ export {
 };
 export {
   type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
-  featureSlotsKeptAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
+  featureSlotsKeptAlive, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave, leaveFlows, leaveOutgoing,
   leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Held, type Resume, ResumeTag,
   type ScopeOccurrenceId,
 };
@@ -120,18 +120,51 @@ export interface ScopeOccurrence {
 
 export interface ScopeVariables { readonly scope: ScopeOccurrenceId; readonly entries: readonly Binding[]; }
 
+/** The role an open item plays for its occurrence (KD1's item role). */
+export enum ItemRole {
+  /** What a begun occurrence waits on (`openItem`). */
+  Wait = "wait",
+  /** A subscription holding its occurrence's reservation (`openSubscription`). */
+  Subscription = "subscription",
+}
+
+const itemRoleIndex: Readonly<Record<ItemRole, number>> = { [ItemRole.Wait]: 0, [ItemRole.Subscription]: 1 };
+
+/** An open item's structural key (KD1): its occurrence, its role and a per-occurrence ordinal (`itemOrdinals`). */
+export interface ItemKey { readonly occurrence: number; readonly role: ItemRole; readonly ordinal: number; }
+
+/** The lexicographic key order of `Kernel.ItemKey`'s `Ord`. */
+export function compareItemKey(left: ItemKey, right: ItemKey): number {
+  return left.occurrence - right.occurrence || itemRoleIndex[left.role] - itemRoleIndex[right.role] ||
+    left.ordinal - right.ordinal;
+}
+
+/** A key as text, for sets and maps keyed by value. */
+export function itemKeyText(key: ItemKey): string {
+  return `${key.occurrence}/${key.role}/${key.ordinal}`;
+}
+
+/** Two keys are one when their text forms are: keys never compare by object reference. */
+export function sameItemKey(left: ItemKey, right: ItemKey): boolean {
+  return itemKeyText(left) === itemKeyText(right);
+}
+
 /**
- * One open interaction. `occurrence` is the occurrence it waits for, or a subscription's reservation; the public
+ * One open interaction. `id.occurrence` is the occurrence it waits for, or a subscription's reservation; the public
  * identity is the occurrence's activation of `element`. `attachedTo` is the occurrence the subscription hangs on (the
  * boundary's host, the Event-Based Gateway of an arm). A `passive` item, such as an Event Sub-Process start
  * subscription, keeps no scope occurrence alive and is removed when its scope completes.
  */
 export interface OpenItem {
-  readonly id: number;
+  readonly id: ItemKey;
+  /**
+   * The issue number the item took when it opened (`issue`): the order of opening, which every site that reads the items
+   * in order reads (`itemsByPosition`), never the key order of `openItems` (KD1).
+   */
+  readonly position: number;
   readonly kind: OpenKind;
   readonly element: ElementId;
   readonly scope: ScopeOccurrenceId;
-  readonly occurrence: number;
   readonly attachedTo: number | null;
   readonly passive: boolean;
 }
@@ -273,7 +306,7 @@ export type Signal =
       readonly rule: WriteRule;
     }
   | { readonly tag: SignalTag.Cancel; readonly occurrence: number }
-  | { readonly tag: SignalTag.Fire; readonly item: number; readonly fired: Fired }
+  | { readonly tag: SignalTag.Fire; readonly item: ItemKey; readonly fired: Fired }
   | { readonly tag: SignalTag.EndInstance; readonly status: InstanceStatus; readonly failure: InstanceFailure | null }
   | {
       readonly tag: SignalTag.Compensate;
@@ -334,7 +367,10 @@ export interface State {
   /** The closure's work stack (`nextToken` in `step.ts`), empty once a closure settles. */
   readonly tokens: readonly Token[];
   readonly variables: readonly ScopeVariables[];
+  /** The open items in key order, one per key: the transcription of `Kernel.OpenItems`. */
   readonly openItems: readonly OpenItem[];
+  /** The next item ordinal of each occurrence that opened an item, in occurrence order, pruned with the occurrence. */
+  readonly itemOrdinals: readonly (readonly [number, number])[];
   readonly activations: readonly ActivationCount[];
   readonly nextIssue: number;
   readonly logicalTimeMs: number;
@@ -446,6 +482,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     tokens: [],
     variables: [{ scope: root, entries: keyed(variables) }],
     openItems: [],
+    itemOrdinals: [],
     activations: [],
     nextIssue: 1,
     logicalTimeMs: 0,
@@ -659,19 +696,49 @@ export function startReserved(state: State, occurrence: Occurrence, sourceType: 
   return [recordStart({ ...state, occurrences }, begun, sourceType), begun];
 }
 
+/** The open items in the order they opened, by `OpenItem.position`: for every reading that depends on order. */
+export function itemsByPosition(state: State): readonly OpenItem[] {
+  return [...state.openItems].sort((left, right) => left.position - right.position);
+}
+
+/** The open item keyed `key`. */
+export function itemAt(state: State, key: ItemKey): OpenItem | undefined {
+  return state.openItems.find((item) => sameItemKey(item.id, key));
+}
+
+/** A fresh key for an item of `occurrence` in `role`: the occurrence's next ordinal, counted up. */
+export function issueItem(state: State, occurrence: number, role: ItemRole): readonly [State, ItemKey] {
+  const ordinal = state.itemOrdinals.find(([id]) => id === occurrence)?.[1] ?? 0;
+  const itemOrdinals = [...state.itemOrdinals.filter(([id]) => id !== occurrence), [occurrence, ordinal + 1] as const]
+    .sort((left, right) => left[0] - right[0]);
+  return [{ ...state, itemOrdinals }, { occurrence, role, ordinal }];
+}
+
+/**
+ * Add `item` under its own key, replacing an item with that key: `Std.ExtTreeMap.insert`. It places the item by binary
+ * search in the key-ordered `openItems`, since a filter and full sort at every insert dominated a closure that opens
+ * an item at every pass (`closure-work-bound.test.ts`, measured 2026-11-17).
+ */
+export function putItem(state: State, item: OpenItem): State {
+  const items = state.openItems;
+  let low = 0;
+  let high = items.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (compareItemKey(items[middle]!.id, item.id) < 0) low = middle + 1;
+    else high = middle;
+  }
+  const replaces = low < items.length && sameItemKey(items[low]!.id, item.id);
+  return { ...state, openItems: [...items.slice(0, low), item, ...items.slice(replaces ? low + 1 : low)] };
+}
+
 /** An item waiting for the begun `occurrence`. */
 export function openItem(state: State, kind: OpenKind, occurrence: Occurrence): State {
-  const [issued, id] = issue(state);
-  const item: OpenItem = {
-    id,
-    kind,
-    element: occurrence.element,
-    scope: occurrence.scope,
-    occurrence: occurrence.id,
-    attachedTo: null,
-    passive: false,
-  };
-  return { ...issued, openItems: [...issued.openItems, item] };
+  const [positioned, position] = issue(state);
+  const [issued, id] = issueItem(positioned, occurrence.id, ItemRole.Wait);
+  return putItem(issued, {
+    id, position, kind, element: occurrence.element, scope: occurrence.scope, attachedTo: null, passive: false,
+  });
 }
 
 /** A subscription item for `element`, with a fresh reservation; `host` is the occurrence it hangs on. */
@@ -684,28 +751,31 @@ export function openSubscription(
   passive: boolean,
 ): readonly [State, OpenItem] {
   const [reserved, occurrence] = reserve(state, element, scope);
-  const [issued, id] = issue(reserved);
-  const item: OpenItem = { id, kind, element, scope, occurrence: occurrence.id, attachedTo: host, passive };
-  return [{ ...issued, openItems: [...issued.openItems, item] }, item];
+  const [positioned, position] = issue(reserved);
+  const [issued, id] = issueItem(positioned, occurrence.id, ItemRole.Subscription);
+  const item: OpenItem = { id, position, kind, element, scope, attachedTo: host, passive };
+  return [putItem(issued, item), item];
 }
 
-export function closeItem(state: State, id: number): State {
-  return { ...state, openItems: state.openItems.filter((item) => item.id !== id) };
+export function closeItem(state: State, id: ItemKey): State {
+  return { ...state, openItems: state.openItems.filter((item) => !sameItemKey(item.id, id)) };
 }
 
 /** Remove the items waiting for the occurrence `id`. */
 export function closeOwnItems(state: State, id: number): State {
-  return { ...state, openItems: state.openItems.filter((item) => item.occurrence !== id) };
+  return { ...state, openItems: state.openItems.filter((item) => item.id.occurrence !== id) };
 }
 
-/** Remove the items attached to the occurrence `host`, with the reservations they hold. */
+/** Remove the items attached to the occurrence `host`, with the reservations they hold, listed once (`State.disarm`). */
 export function disarm(state: State, host: number): State {
-  const attached = state.openItems.filter((item) => item.attachedTo === host);
+  const attached = new Set(state.openItems.flatMap((item) => item.attachedTo === host ? [item.id.occurrence] : []));
+  const dropped = new Set(state.occurrences.flatMap((occurrence) =>
+    !occurrence.begun && attached.has(occurrence.id) ? [occurrence.id] : []));
   return {
     ...state,
     openItems: state.openItems.filter((item) => item.attachedTo !== host),
-    occurrences: state.occurrences.filter((occurrence) =>
-      occurrence.begun || !attached.some((item) => item.occurrence === occurrence.id)),
+    occurrences: state.occurrences.filter((occurrence) => occurrence.begun || !attached.has(occurrence.id)),
+    itemOrdinals: state.itemOrdinals.filter(([id]) => !dropped.has(id)),
   };
 }
 

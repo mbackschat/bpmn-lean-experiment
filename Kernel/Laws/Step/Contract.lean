@@ -440,7 +440,7 @@ so the record goes with nothing left waiting for it or hanging on it. -/
 structure PipelineFrame (before after : State) : Prop where
   scopes : after.scopes = before.scopes
   begun : ∀ occurrence ∈ before.occurrences, occurrence.begun = true → occurrence ∈ after.occurrences
-  items : ∀ item ∈ after.openItems, item ∈ before.openItems
+  items : ∀ item ∈ after.items, item ∈ before.items
   instances : ∀ entry ∈ after.slots.instances, entry ∈ before.slots.instances
 
 /-- What each hook must keep of `inv`, given what `Step` establishes before it calls the hook: the occurrence it hands
@@ -518,17 +518,17 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
     hooks.completeBody ctx header envelope loop occurrence state = .ok after → inv ctx.program after
   /-- A task command, effect result, incident retry or Activity delivery addresses an item of an Activity, or one that
   waits for an effect or an incident, as `Step` finds it. -/
-  completeUserTask : ∀ ctx header payload item values state after, inv ctx.program state → item ∈ state.openItems →
+  completeUserTask : ∀ ctx header payload item values state after, inv ctx.program state → item ∈ state.items →
     (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) → hooks.completeUserTask ctx header payload item values state = .ok after → inv ctx.program after
-  effectResult : ∀ ctx item outcome state after, inv ctx.program state → item ∈ state.openItems →
+  effectResult : ∀ ctx item outcome state after, inv ctx.program state → item ∈ state.items →
     item.kind.view.effect.isSome = true → hooks.effectResult ctx item outcome state = .ok after → inv ctx.program after
-  retryIncident : ∀ ctx item detail generation state after, inv ctx.program state → item ∈ state.openItems →
+  retryIncident : ∀ ctx item detail generation state after, inv ctx.program state → item ∈ state.items →
     item.kind.view.incident = some detail → hooks.retryIncident ctx item detail generation state = .ok after → inv ctx.program after
   cancelIncidentProcess : ∀ ctx detail generation state after, inv ctx.program state →
     hooks.cancelIncidentProcess ctx detail generation state = .ok after → inv ctx.program after
-  triggerActivity : ∀ ctx header payload item fired state after, inv ctx.program state → item ∈ state.openItems →
+  triggerActivity : ∀ ctx header payload item fired state after, inv ctx.program state → item ∈ state.items →
     (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) → hooks.triggerActivity ctx header payload item fired state = .ok after → inv ctx.program after
-  trigger : ∀ ctx item fired state after, inv ctx.program state → item ∈ state.openItems →
+  trigger : ∀ ctx item fired state after, inv ctx.program state → item ∈ state.items →
     hooks.trigger ctx item fired state = .ok after → inv ctx.program after
   /-- An arming is taken off a queue that kept `inv`. -/
   arm : ∀ ctx host element scope state after, inv ctx.program state → OccurrenceStands state host →
@@ -560,7 +560,7 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
     hooks.failCompensation ctx handler code message origin state = .ok after → inv ctx.program after
   leave : ∀ ctx occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     hooks.leave ctx occurrence state = .ok after →
-    inv ctx.program after ∧ PipelineFrame state after ∧ ∀ item ∈ after.openItems, item.attachedTo ≠ some occurrence.id
+    inv ctx.program after ∧ PipelineFrame state after ∧ ∀ item ∈ after.items, item.attachedTo ≠ some occurrence.id
   writeOutputs : ∀ ctx scope writes rule state after, inv ctx.program state → ScopeStands state scope →
     hooks.writeOutputs ctx scope writes rule state = .ok after → inv ctx.program after ∧ PipelineFrame state after
   removeVariables : ∀ ctx scope names state after, inv ctx.program state → ScopeStands state scope →
@@ -581,7 +581,7 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
     hooks.cancelled ctx occurrence state = .ok after → inv ctx.program after
   written : ∀ ctx writes state after, inv ctx.program state → hooks.written ctx writes state = .ok after →
     inv ctx.program after
-  delivered : ∀ ctx data state item fired, hooks.delivered ctx data state = .ok (item, fired) → item ∈ state.openItems
+  delivered : ∀ ctx data state item fired, hooks.delivered ctx data state = .ok (item, fired) → item ∈ state.items
   /-- `Hooks.select`, a query, keeps a completion's leave or picks flows the occurrence's element lists. -/
   select : ∀ ctx occurrence leave state chosen, hooks.select ctx occurrence leave state = .ok chosen →
     chosen = leave ∨ ∃ flows, chosen = .flows flows ∧ ∀ flow ∈ flows, Laws.Flow.Lists ctx.program occurrence.element flow
@@ -718,7 +718,7 @@ structure PipelinePhases (inv : Program → State → Prop) : Prop where
     inv program ((state.startReserved occurrence sourceType).1.closeOwnItems occurrence.id)
   /-- `State.removeOccurrence` of an occurrence on which nothing waits or hangs; its scope occurrence stays. -/
   removeOccurrence : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
-    (∀ item ∈ state.openItems, item.occurrence ≠ occurrence.id ∧ item.attachedTo ≠ some occurrence.id) →
+    (∀ item ∈ state.items, item.id.occurrence ≠ occurrence.id ∧ item.attachedTo ≠ some occurrence.id) →
     inv program (state.removeOccurrence occurrence.id) ∧ ScopeStands (state.removeOccurrence occurrence.id) occurrence.scope
   recordEnd : ∀ program state key terminal, inv program state → inv program (state.recordEnd key terminal)
 
@@ -749,7 +749,7 @@ structure StateFacts : Prop where
     (state.startReserved occurrence sourceType).2.element = occurrence.element ∧
     (state.startReserved occurrence sourceType).1.slots.instances = state.slots.instances
   closeOwnItems : ∀ (state : State) id,
-    PipelineFrame state (state.closeOwnItems id) ∧ ∀ item ∈ (state.closeOwnItems id).openItems, item.occurrence ≠ id
+    PipelineFrame state (state.closeOwnItems id) ∧ ∀ item ∈ (state.closeOwnItems id).items, item.id.occurrence ≠ id
   recordEnd : ∀ (state : State) key terminal, (state.recordEnd key terminal).scopes = state.scopes ∧
     (state.recordEnd key terminal).slots.instances = state.slots.instances
   /-- A reservation adds one occurrence, of its element in its scope occurrence and numbered by the next issue. -/

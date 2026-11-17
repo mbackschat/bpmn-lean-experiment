@@ -50,7 +50,7 @@ export type {
 } from "./il/types.js";
 export {
   DeliveryTriggerTag, EffectOutcomeTag, FailureTag, InputTag, LeaveTag, SignalAddressTag, SignalReach, StartTriggerTag,
-  leaveFlows, recorded,
+  itemKeyText, leaveFlows, recorded,
 } from "./state.js";
 export { criteriaRefusal, startCriteriaRefusal } from "./state/criteria.js";
 export type {

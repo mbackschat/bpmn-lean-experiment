@@ -26,14 +26,15 @@ import {
 } from "./il/types.js";
 import {
   ActivationRole, CauseTag, CommandActionTag, ContinuationTag, FailureTag, FiredTag, InputTag,
-  InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence, beginRequest,
+  InstanceStatus, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence, beginRequest,
   busyScopes, closeOwnItems, committed, emptyDraft, entryCount, failed, failedWith, idle, initial, instanceOf,
   keyOf, localScope, occurrenceOf, ownScope, recordEnd, reserve, root, signal as enqueue, startReserved, type BeginRequest,
   type Binding, type Cause, type CommandInput, type EffectInput, type Fired, type IncidentDetail, type Input,
-  type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceRef, type OpenItem, type Outcome,
+  type InstanceFailure, type Leave, type Occurrence, type OccurrenceRef, type OpenItem, type Outcome,
   type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartInput, type StartTrigger, type State,
   type Token, type Transition,
   SemanticCause, semanticFailure,
+  itemAt, iterationHolds,
 } from "./state.js";
 import {
   ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemDetailOf, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
@@ -243,7 +244,7 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
       return other((state) => committed(cancelOccurrence(state, next.occurrence)), [], [], [], [next.occurrence]);
     case SignalTag.Fire:
       return other((state) => {
-        const open = state.openItems.find((item) => item.id === next.item);
+        const open = itemAt(state, next.item);
         return open === undefined ? committed(state) : fireItem(hooks, ctx, open, next.fired, state);
       });
     case SignalTag.EndInstance:
@@ -467,7 +468,7 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State): Outcome {
 /** The begun occurrence with the public identity `ref`, the instance rather than the body of a Multi-Instance element. */
 function occurrenceOfRef(ctx: Ctx, state: State, ref: OccurrenceRef): Occurrence | null {
   return state.occurrences.find((occurrence) =>
-    (occurrence.begun || state.openItems.some((item) => item.occurrence === occurrence.id)) && occurrence.role === ActivationRole.Element && occurrence.activation === ref.activation &&
+    (occurrence.begun || state.openItems.some((item) => item.id.occurrence === occurrence.id)) && occurrence.role === ActivationRole.Element && occurrence.activation === ref.activation &&
     programPublicId(ctx.program, occurrence.element) === ref.element &&
     instanceOf(state, occurrence.scope) === ref.processInstanceId) ?? null;
 }
@@ -546,24 +547,13 @@ function onRunning(
   return started.ok ? settle(hooks, ctx, closureBound, started.value) : started;
 }
 
-function holds(iteration: Iteration, scope: ScopeOccurrenceId): boolean {
-  switch (iteration.tag) {
-    case IterationTag.Active:
-      return iteration.scope === scope;
-    case IterationTag.Waiting:
-    case IterationTag.Completed:
-      return false;
-  }
-  return assertNever(iteration);
-}
-
 /** `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. */
 function scopeRole(state: State, scope: ScopeOccurrenceId): ScopeRole {
   const owned = state.scopes.find((candidate) => candidate.id === scope)?.occurrence ?? null;
   const owner = owned === null ? null : occurrenceOf(state, owned);
   const ownedByInstance = owner !== null && ownedByMultiInstance(owner);
   if (state.slots.compensation.runs.some((run) => run.running.some(([held]) => held === scope))) return ScopeRole.CompensationHandler;
-  if (ownedByInstance || state.slots.multiInstances.some((run) => run.instances.some((iteration) => holds(iteration, scope)))) {
+  if (ownedByInstance || state.slots.multiInstances.some((run) => run.instances.some((iteration) => iterationHolds(iteration, scope)))) {
     return ScopeRole.MultiInstanceInstance;
   }
   return ScopeRole.Ordinary;

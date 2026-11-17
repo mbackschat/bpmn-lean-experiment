@@ -42,6 +42,13 @@ inductive Iteration where
   | completed (output : Option Value)
   deriving Repr
 
+/-- Whether this instance runs in the scope occurrence `scope`. -/
+def Iteration.holds (iteration : Iteration) (scope : ScopeOccurrenceId) : Bool :=
+  match iteration with
+  | .active held => held == scope
+  | .waiting => false
+  | .completed _ => false
+
 /-- A running Multi-Instance Activity (`Kernel.Feature.MultiInstance`): the scope occurrence it holds its instances
 in, its element and body occurrence, the input collection as evaluated once on entry, and one instance per item in
 collection order. -/

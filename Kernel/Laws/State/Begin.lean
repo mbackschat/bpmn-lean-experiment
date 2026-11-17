@@ -76,7 +76,7 @@ theorem Begins.entry {before after : State} {request : BeginRequest} {role : Act
   · rw [begins.occurrences] at member
     rcases List.mem_append.mp member with old | new
     · obtain ⟨unbegun, free, instance_⟩ := facts occurrence (List.mem_filter.mp old).1 same
-      refine ⟨unbegun, by simpa [begins.openItems] using free, fun present => ?_⟩
+      refine ⟨unbegun, by simpa [begins.items] using free, fun present => ?_⟩
       rw [begins.instances, begins.instances, begins.scope]
       exact instance_ (by simpa [scopeIds, begins.scopes, begins.scope] using present)
     · exact absurd ((List.mem_singleton.mp new) ▸ same) other
@@ -113,7 +113,7 @@ theorem reserve_wellFormed {state : State} (formed : WellFormed program state) (
 theorem startReserved_wellFormed {state : State} (formed : WellFormed program state) {occurrence : Occurrence}
     (sourceType : String) (member : occurrence ∈ state.occurrences)
     (unnamed : ∀ request, Queued state request → occurrence.id ∉ names request)
-    (waitless : ∀ item ∈ state.openItems, item.occurrence ≠ occurrence.id) :
+    (waitless : ∀ item ∈ state.items, item.id.occurrence ≠ occurrence.id) :
     WellFormed program (state.startReserved occurrence sourceType).1 := by
   cases begun : occurrence.begun
   · exact (startReserved_starts state sourceType begun).wellFormed formed member begun unnamed waitless
@@ -132,20 +132,22 @@ theorem startReserved_closeOwnItems_wellFormed {state : State} (formed : WellFor
   · have starts_ := startReserved_starts state sourceType begun
     generalize (state.startReserved occurrence sourceType).1 = started at starts_ ⊢
     have instances : ∀ x, State.instanceOf { started with
-        openItems := started.openItems.filter (·.occurrence != occurrence.id) } x =
-        State.instanceOf { state with openItems := state.openItems.filter (·.occurrence != occurrence.id) } x := by
+        openItems := started.openItems.filter fun _ item => item.id.occurrence != occurrence.id } x =
+        State.instanceOf { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != occurrence.id } x := by
       intro x
-      have after : State.instanceOf { started with openItems := started.openItems.filter (·.occurrence != occurrence.id) } x =
+      have after : State.instanceOf { started with openItems := started.openItems.filter fun _ item => item.id.occurrence != occurrence.id } x =
           started.instanceOf x := by apply instanceOf_congr <;> rfl
-      have before : State.instanceOf { state with openItems := state.openItems.filter (·.occurrence != occurrence.id) } x =
+      have before : State.instanceOf { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != occurrence.id } x =
           state.instanceOf x := by apply instanceOf_congr <;> rfl
       rw [after, before, starts_.instances x]
-    refine StartsReserved.wellFormed (sourceType := sourceType) closed ⟨starts_.occurrences, ?_, starts_.scopes, instances,
-      starts_.instanceId, starts_.activations, starts_.nextIssue, by simp [starts_.openItems], starts_.tokens,
-      starts_.signals, starts_.variables, starts_.journal, starts_.ended, starts_.status, starts_.failure,
-      starts_.slots⟩ member begun (fun request queued => unnamed request queued)
-      fun item inside => by simpa using (List.mem_filter.mp inside).2
-    have filtered : State.instanceOf { state with openItems := state.openItems.filter (·.occurrence != occurrence.id) }
+    refine StartsReserved.wellFormed (sourceType := sourceType) closed {
+        occurrences := starts_.occurrences, started := ?_, scopes := starts_.scopes, instances := instances,
+        instanceId := starts_.instanceId, activations := starts_.activations, nextIssue := starts_.nextIssue,
+        itemMap := ⟨by simp [starts_.itemMap.1], starts_.itemMap.2⟩, tokens := starts_.tokens,
+        signals := starts_.signals, variables := starts_.variables, journal := starts_.journal, ended := starts_.ended,
+        status := starts_.status, failure := starts_.failure, slots := starts_.slots } member begun (fun request queued => unnamed request queued)
+      fun item inside => by simpa using (mem_itemList_filter_val.mp (mem_items.mp inside)).2
+    have filtered : State.instanceOf { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != occurrence.id }
         occurrence.scope = state.instanceOf occurrence.scope := by apply instanceOf_congr <;> rfl
     rw [starts_.started]
     simp only [key, instances, filtered, starts_.instances]
@@ -161,7 +163,7 @@ theorem admitted_signal {state : State} (formed : WellFormed program state) {req
       InnerPlaced { state with signals := rest } request := by
   have queued : Queued state request := .inl (head ▸ List.mem_cons_self ..)
   obtain ⟨nodup, beginnable⟩ := formed.claimed.named request queued
-  refine ⟨nodup, fun id named => ⟨(beginnable id named).congr rfl rfl rfl rfl (instanceOf_congr rfl rfl), ?_, ?_,
+  refine ⟨nodup, fun id named => ⟨(beginnable id named).congr rfl rfl (Laws.State.items_congr rfl) rfl (instanceOf_congr rfl rfl), ?_, ?_,
     fun completes => formed.settled.free queued named (SlotCompletes.shrink (before := state)
       (after := { state with signals := rest }) rfl
       (fun _ member => by rw [head]; exact List.mem_cons_of_mem _ member) completes)⟩,
@@ -186,7 +188,7 @@ theorem admitted_token {state : State} (formed : WellFormed program state) {requ
     · exact bottom ▸ List.mem_append_right _ (List.mem_singleton_self _)
   have queued : Queued state request := .inr member
   obtain ⟨nodup, beginnable⟩ := formed.claimed.named request queued
-  refine ⟨nodup, fun id named => ⟨(beginnable id named).congr rfl rfl rfl rfl (instanceOf_congr rfl rfl), ?_, ?_,
+  refine ⟨nodup, fun id named => ⟨(beginnable id named).congr rfl rfl (Laws.State.items_congr rfl) rfl (instanceOf_congr rfl rfl), ?_, ?_,
     fun completes => formed.settled.free queued named
       (SlotCompletes.shrink (before := state) (after := { state with tokens := rest }) rfl (fun _ member => member)
         completes)⟩,
@@ -247,7 +249,7 @@ keeps and what it leaves hanging. -/
 theorem clearInside_wellFormed {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} {keep : List Nat}
     (present : scope ∈ scopeIds s)
     (kept : ∀ occurrence ∈ s.occurrences, occurrence.id ∈ keep → ¬ StrictlyWithin s occurrence.scope scope)
-    (attached : ∀ item ∈ s.openItems, (¬ Within s item.scope scope ∨ item.occurrence ∈ keep) → ∀ host,
+    (attached : ∀ item ∈ s.items, (¬ Within s item.scope scope ∨ item.id.occurrence ∈ keep) → ∀ host,
       item.attachedTo = some host → ∀ occurrence ∈ s.occurrences, occurrence.id = host →
         ¬ Within s occurrence.scope scope ∨ host ∈ keep) :
     WellFormed program (s.clearInside scope keep) :=

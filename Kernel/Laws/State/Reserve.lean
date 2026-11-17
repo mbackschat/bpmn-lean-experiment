@@ -32,7 +32,7 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   scopes : after.scopes = before.scopes
   instances : ∀ x, after.instanceOf x = before.instanceOf x
   instanceId : after.instanceId = before.instanceId
-  openItems : after.openItems = before.openItems
+  itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
   tokens : after.tokens = before.tokens
   signals : after.signals = before.signals
   variables : after.variables = before.variables
@@ -42,6 +42,11 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   failure : after.failure = before.failure
   slots : after.slots = before.slots
   continued : reserved.continuation = .flow
+
+/-- The item list stays: the item map does (`itemMap`). -/
+theorem Reserves.items {before after : State} {element : ElementId} {scope : ScopeOccurrenceId} {reserved : Occurrence}
+    (frame : Reserves before after element scope reserved) : after.items = before.items :=
+  items_congr frame.itemMap.1
 
 /-- A reservation in a scope occurrence that stands keeps a state well-formed, and nothing queued names it: it is
 issued above every identity a queued begin names. -/
@@ -84,14 +89,12 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
         · omega
         · have := formed.issued.occurrences occurrence old
           omega,
-      fun item member => by
-        have := formed.issued.items item (reserves.openItems ▸ member)
-        omega,
+      fun item member _ => reserves.itemMap.2 ▸ formed.itemBelow (reserves.items ▸ member),
       fun entry member => by
         have := formed.issued.scopes entry (reserves.scopes ▸ member)
         omega⟩
   case distinct =>
-    refine ⟨?_, reserves.openItems ▸ formed.distinct.items,
+    refine ⟨?_, reserves.itemMap.1 ▸ formed.distinct.items,
       by simpa [scopeIds, reserves.scopes] using formed.distinct.scopes, ?_⟩
     · rw [occurrenceIds, reserves.occurrences, List.map_append, List.nodup_append]
       refine ⟨formed.distinct.occurrences, by simp, ?_⟩
@@ -124,12 +127,12 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
         · exact reserves.placed ▸ stands
         · exact formed.owned.occurrenceScopes occurrence old
       itemScopes := fun item member => by
-        simpa [scopeIds, reserves.scopes] using formed.owned.itemScopes item (reserves.openItems ▸ member)
+        simpa [scopeIds, reserves.scopes] using formed.owned.itemScopes item (reserves.items ▸ member)
       itemOccurrences := fun item member => by
-        obtain ⟨occurrence, inside, rest⟩ := formed.owned.itemOccurrences item (reserves.openItems ▸ member)
+        obtain ⟨occurrence, inside, rest⟩ := formed.owned.itemOccurrences item (reserves.items ▸ member)
         exact ⟨occurrence, reserves.occurrences ▸ List.mem_append_left _ inside, rest⟩
       attachments := fun item member host attached => by
-        obtain ⟨occurrence, inside, rest⟩ := formed.owned.attachments item (reserves.openItems ▸ member) host attached
+        obtain ⟨occurrence, inside, rest⟩ := formed.owned.attachments item (reserves.items ▸ member) host attached
         exact ⟨occurrence, reserves.occurrences ▸ List.mem_append_left _ inside, rest⟩
       scopeOwners := fun entry member owner owned => by
         obtain ⟨occurrence, inside, rest⟩ := formed.owned.scopeOwners entry (reserves.scopes ▸ member) owner owned
@@ -183,11 +186,11 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       attached := fun item member attached reserved other inside same => by
         obtain ⟨found, held, named, unbegun⟩ := reserved
         rcases members found held with rfl | old
-        · obtain ⟨waited, waitedIn, same, _⟩ := formed.owned.itemOccurrences item (reserves.openItems ▸ member)
+        · obtain ⟨waited, waitedIn, same, _⟩ := formed.owned.itemOccurrences item (reserves.items ▸ member)
           have := formed.issued.occurrences waited waitedIn
           omega
-        · exact formed.claimed.attached item (reserves.openItems ▸ member) attached ⟨found, old, named, unbegun⟩ other
-            (reserves.openItems ▸ inside) same
+        · exact formed.claimed.attached item (reserves.items ▸ member) attached ⟨found, old, named, unbegun⟩ other
+            (reserves.items ▸ inside) same
       named := fun request queued => by
         obtain ⟨nodup, beginnable⟩ := formed.claimed.named request (queuedBefore request queued)
         refine ⟨nodup, fun id named => ?_⟩
@@ -196,7 +199,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
         rcases members occurrence member with rfl | old
         · omega
         · obtain ⟨unbegun, free, instance_⟩ := facts occurrence old same
-          refine ⟨unbegun, by simpa [reserves.openItems] using free, fun present => ?_⟩
+          refine ⟨unbegun, by simpa [reserves.items] using free, fun present => ?_⟩
           rw [reserves.instances, reserves.instances]
           exact instance_ (by simpa [scopeIds, reserves.scopes] using present)
       signalsApart := by simpa [reserves.signals] using formed.claimed.signalsApart
@@ -224,10 +227,10 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     have begun : ∀ occurrence ∈ after.occurrences, occurrence.begun = true → occurrence ∈ before.occurrences :=
       fun occurrence member flag => (members occurrence member).elim (fun same => by simp [same, reserves.unbegun] at flag) fun old => old
     first
-      | exact formed.attachedReserved.shrink (fun _ member => reserves.openItems ▸ member) begun
-      | exact formed.typed.shrink (fun _ member => reserves.openItems ▸ member) begun fun _ member => reserves.signals ▸ member
+      | exact formed.attachedReserved.shrink (fun _ member => reserves.items ▸ member) begun
+      | exact formed.typed.shrink (fun _ member => reserves.items ▸ member) begun fun _ member => reserves.signals ▸ member
   case worked =>
-    exact formed.worked.transport (fun _ member => reserves.openItems ▸ member) formed.waited fun found inside _ => by
+    exact formed.worked.transport (fun _ member => reserves.items ▸ member) formed.waited fun found inside _ => by
       rcases members found inside with rfl | old
       · exact .inr (by omega)
       · exact .inl old
@@ -245,7 +248,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     intro item member found inside named
     rcases members found inside with rfl | old
     · exact reserves.role
-    · exact formed.itemRoles item (reserves.openItems ▸ member) found old named
+    · exact formed.itemRoles item (reserves.items ▸ member) found old named
   -- A reservation numbered now takes an activation above every one its counter counted, a queued raise's origin's too.
   case raises =>
     intro raised origin queued event
@@ -271,7 +274,7 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
   instanceId : after.instanceId = before.instanceId
   activations : after.activations = before.activations
   nextIssue : after.nextIssue = before.nextIssue
-  openItems : after.openItems = before.openItems
+  itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
   tokens : after.tokens = before.tokens
   signals : after.signals = before.signals
   variables : after.variables = before.variables
@@ -281,12 +284,17 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
   failure : after.failure = before.failure
   slots : after.slots = before.slots
 
+/-- The item list stays: the item map does (`itemMap`). -/
+theorem StartsReserved.items {before after : State} {occurrence : Occurrence} {sourceType : String}
+    (frame : StartsReserved before after occurrence sourceType) : after.items = before.items :=
+  items_congr frame.itemMap.1
+
 /-- Starting an unbegun reservation that no queued begin names and no open item waits on keeps a state well-formed. -/
 theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrence} {sourceType : String}
     (formed : WellFormed program before) (starts_ : StartsReserved before after occurrence sourceType)
     (member : occurrence ∈ before.occurrences) (unbegun : occurrence.begun = false)
     (unnamed : ∀ request, Queued before request → occurrence.id ∉ names request)
-    (waitless : ∀ item ∈ before.openItems, item.occurrence ≠ occurrence.id) : WellFormed program after := by
+    (waitless : ∀ item ∈ before.items, item.id.occurrence ≠ occurrence.id) : WellFormed program after := by
   have keys : ∀ other, key after other = key before other := fun _ => key_congr (starts_.instances _)
   have issued := starts_.nextIssue
   have queuedBefore : ∀ request, Queued after request → Queued before request := fun request queued => by
@@ -323,10 +331,10 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         rcases members found inside with rfl | ⟨old, _⟩
         · exact formed.issued.occurrences occurrence member
         · exact formed.issued.occurrences found old,
-      fun item inside => issued ▸ formed.issued.items item (starts_.openItems ▸ inside),
+      fun item inside _ => starts_.itemMap.2 ▸ formed.itemBelow (starts_.items ▸ inside),
       fun entry inside => issued ▸ formed.issued.scopes entry (starts_.scopes ▸ inside)⟩
   case distinct =>
-    refine ⟨?_, starts_.openItems ▸ formed.distinct.items,
+    refine ⟨?_, starts_.itemMap.1 ▸ formed.distinct.items,
       by simpa [scopeIds, starts_.scopes] using formed.distinct.scopes, ?_⟩
     · rw [occurrenceIds, starts_.occurrences, List.map_map]
       refine (List.map_congr_left fun old _ => ?_) ▸ formed.distinct.occurrences
@@ -365,15 +373,15 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         · exact formed.owned.occurrenceScopes occurrence member
         · exact formed.owned.occurrenceScopes found old
       itemScopes := fun item inside => by
-        simpa [scopeIds, starts_.scopes] using formed.owned.itemScopes item (starts_.openItems ▸ inside)
+        simpa [scopeIds, starts_.scopes] using formed.owned.itemScopes item (starts_.items ▸ inside)
       itemOccurrences := fun item inside => by
-        obtain ⟨old, held, rest⟩ := formed.owned.itemOccurrences item (starts_.openItems ▸ inside)
+        obtain ⟨old, held, rest⟩ := formed.owned.itemOccurrences item (starts_.items ▸ inside)
         by_cases same : old.id = occurrence.id
         · rw [only old held same] at rest
           exact ⟨_, startedIn, rest⟩
         · exact ⟨old, stays old held same, rest⟩
       attachments := fun item inside host attached => by
-        obtain ⟨old, held, named, rest⟩ := formed.owned.attachments item (starts_.openItems ▸ inside) host attached
+        obtain ⟨old, held, named, rest⟩ := formed.owned.attachments item (starts_.items ▸ inside) host attached
         obtain ⟨begunFlag, scope⟩ := rest
         by_cases same : old.id = occurrence.id
         · rw [only old held same] at named scope
@@ -439,8 +447,8 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         obtain ⟨found, present, named, unbegun⟩ := reserved
         rcases members found present with rfl | ⟨old, _⟩
         · simp at unbegun
-        · exact formed.claimed.attached item (starts_.openItems ▸ inside) attached ⟨found, old, named, unbegun⟩ other
-            (starts_.openItems ▸ held) same
+        · exact formed.claimed.attached item (starts_.items ▸ inside) attached ⟨found, old, named, unbegun⟩ other
+            (starts_.items ▸ held) same
       named := fun request queued => by
         obtain ⟨nodup, beginnable⟩ := formed.claimed.named request (queuedBefore request queued)
         refine ⟨nodup, fun id named => ?_⟩
@@ -449,7 +457,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         rcases members found inside with rfl | ⟨old, _⟩
         · exact absurd (same ▸ named) (unnamed request (queuedBefore request queued))
         · obtain ⟨oldUnbegun, free, instance_⟩ := facts found old same
-          refine ⟨oldUnbegun, by simpa [starts_.openItems] using free, fun present => ?_⟩
+          refine ⟨oldUnbegun, by simpa [starts_.items] using free, fun present => ?_⟩
           rw [starts_.instances, starts_.instances]
           exact instance_ (by simpa [scopeIds, starts_.scopes] using present)
       signalsApart := by simpa [starts_.signals] using formed.claimed.signalsApart
@@ -470,16 +478,16 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         · exact .inl old)
       queuedBefore (fun _ member => starts_.signals ▸ member) (fun _ member => .inl (starts_.scopes ▸ member))
   case attachedReserved | typed =>
-    have waited : ∀ item ∈ after.openItems, ∀ found ∈ after.occurrences, found.id = item.occurrence →
+    have waited : ∀ item ∈ after.items, ∀ found ∈ after.occurrences, found.id = item.id.occurrence →
         found.begun = true → found ∈ before.occurrences := fun item inside found present named _ => by
       rcases members found present with rfl | ⟨old, _⟩
-      · exact absurd named.symm (waitless item (starts_.openItems ▸ inside))
+      · exact absurd named.symm (waitless item (starts_.items ▸ inside))
       · exact old
     first
-      | exact formed.attachedReserved.transport (fun _ member => starts_.openItems ▸ member) waited
-      | exact formed.typed.transport (fun _ member => starts_.openItems ▸ member) waited fun _ member => starts_.signals ▸ member
+      | exact formed.attachedReserved.transport (fun _ member => starts_.items ▸ member) waited
+      | exact formed.typed.transport (fun _ member => starts_.items ▸ member) waited fun _ member => starts_.signals ▸ member
   case worked =>
-    exact formed.worked.shrink (fun _ member => starts_.openItems ▸ member) fun found inside unbegun => by
+    exact formed.worked.shrink (fun _ member => starts_.items ▸ member) fun found inside unbegun => by
       rcases members found inside with rfl | ⟨old, _⟩
       · simp at unbegun
       · exact old
@@ -496,8 +504,8 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
   case itemRoles =>
     intro item held found inside named
     rcases members found inside with rfl | ⟨old, _⟩
-    · exact absurd named.symm (waitless item (starts_.openItems ▸ held))
-    · exact formed.itemRoles item (starts_.openItems ▸ held) found old named
+    · exact absurd named.symm (waitless item (starts_.items ▸ held))
+    · exact formed.itemRoles item (starts_.items ▸ held) found old named
   case raises =>
     exact formed.raises.transport (fun _ _ queued => starts_.signals ▸ queued) (Nat.le_of_eq issued.symm)
       (fun x present _ => ⟨by simpa [scopeIds, starts_.scopes] using present, starts_.instances x⟩)

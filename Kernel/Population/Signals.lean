@@ -63,8 +63,8 @@ host asks it of each instance a delivery may reach. -/
 def signalReceiversOf (program : Program) (state : State) (address : SignalAddress)
     (emitter : Option String) : List OccurrenceRef :=
   if state.status != .running || emitter == some state.instanceId then [] else
-    let waiting := (state.openItems.filter fun item => item.kind.view.signal.any (address.matches ·.address)).map
-      fun item => (state.instanceOf item.scope, item.id, occurrence program state item)
+    let waiting := (state.items.filter fun item => item.kind.view.signal.any (address.matches ·.address)).map
+      fun item => (state.instanceOf item.scope, item.position, occurrence program state item)
     let ordered := waiting.mergeSort fun (leftInstance, leftItem, _) (rightInstance, rightItem, _) =>
       decide (leftInstance < rightInstance) || (leftInstance == rightInstance && decide (leftItem ≤ rightItem))
     ordered.map (·.2.2)

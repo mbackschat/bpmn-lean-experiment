@@ -195,7 +195,7 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
       | gateway header payload => exact Laws.IL.start?_gateway header payload
       | start header payload => simp [Laws.IL.activity?_start] at typed
   distinct _ formed item member other inside same :=
-    Laws.State.nodup_map_eq formed.distinct.items member inside same
+    formed.distinct.items.eq_of_id (Laws.State.mem_items.mp member) (Laws.State.mem_items.mp inside) same
   queued state signal := by rw [Laws.State.signal_eq]
   kept _ _ := ⟨by rw [Laws.State.signal_eq], by rw [Laws.State.signal_eq]⟩
   completeBegun _ _ leave writes rule formed member begun _ := complete_wellFormed formed member begun leave writes rule
@@ -356,8 +356,10 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
   complete _ _ leave writes rule formed member begun _ := complete_wellFormed formed member begun leave writes rule
   raise _ event _ formed member begun _ := raiseFrom_wellFormed formed member begun event (fun _ same => by cases same) []
   fire _ _ _ formed := queue_wellFormed formed trivial
-  outbox _ _ formed := formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply Laws.State.instanceOf_congr <;> rfl, id,
-    .refl _, .refl _, .refl _, fun _ => id, .same rfl⟩ rfl formed.startedOnce
+  outbox _ _ formed := formed.narrow {
+      scopes := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
+      instances := fun _ => by apply Laws.State.instanceOf_congr <;> rfl, recorded := id, items := .refl _,
+      tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl formed.startedOnce
   compensate _ _ _ _ _ _ formed member begun _ _ _ := queue_wellFormed formed fun _ same => by
     cases same
     exact ⟨fun _ _ same => by cases same; exact begun_settled formed member begun, fun _ _ same => by simp at same⟩
@@ -384,7 +386,7 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
 
 /-- A fired item's scope occurrence stands, and so does its host, if any, begun there. -/
 theorem fired_hangs {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
-    (member : item ∈ state.openItems) : ∀ id, item.attachedTo = some id → ∃ occurrence ∈ (state.closeItem item.id).occurrences,
+    (member : item ∈ state.items) : ∀ id, item.attachedTo = some id → ∃ occurrence ∈ (state.closeItem item.id).occurrences,
       occurrence.id = id ∧ occurrence.begun = true ∧ occurrence.scope = item.scope := by
   rw [Laws.State.closeItem_eq]
   exact formed.owned.attachments item member

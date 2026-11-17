@@ -41,7 +41,7 @@ def evaluateItem (ctx : Ctx) (item : OpenItem) (trigger : ConditionTrigger) (sta
   match ctx.program.options.conditionalRetrigger with
   | .eachWrite => .ok (state, value)
   | .edge =>
-    let recorded := { state with openItems := state.openItems.map fun open_ =>
+    let recorded := { state with openItems := state.openItems.map fun _ open_ =>
       if open_.id == item.id then { open_ with kind := .conditional { detail with lastValue := some value } } else open_ }
     .ok (recorded, value && detail.lastValue != some true)
 
@@ -100,12 +100,12 @@ def withdrawal (ctx : Ctx) (item : OpenItem) : Option Withdrawal :=
     if item.passive && interrupting == some true then some (.inside item.scope) else none
 
 /-- The open items other than `item` that firing `item` would withdraw from `state`, by identity. -/
-def withdrawnBy (ctx : Ctx) (state : State) (item : OpenItem) : List Nat :=
+def withdrawnBy (ctx : Ctx) (state : State) (item : OpenItem) : List ItemKey :=
   match withdrawal ctx item with
   | none => []
   | some withdraw =>
-    let kept := (withdraw.withdrawFrom state).openItems.map (·.id)
-    (state.openItems.filter fun open_ => open_.id != item.id && !kept.contains open_.id).map (·.id)
+    let kept := (withdraw.withdrawFrom state).openItems
+    (state.itemsByPosition.filter fun open_ => open_.id != item.id && !kept.contains open_.id).map (·.id)
 
 /-- The refusal of a contest the ranking leaves undecided: the Event-Based Gateway code when it holds an arm. -/
 def contestCode (ctx : Ctx) (contest : List OpenItem) : String :=
@@ -166,7 +166,7 @@ def resolveContests (ctx : Ctx) (state : State) (earlier fired : List OpenItem) 
       match contestOf (fun a b => withdraws a b || withdraws b a) fired fired.length [item] with
       | [only] => pure (firings ++ [only], handled ++ [only.id])
       | contest => pure (firings ++ (← walk ctx withdraws pending contest), handled ++ contest.map (·.id)))
-    (([] : List OpenItem), ([] : List Nat))
+    (([] : List OpenItem), ([] : List ItemKey))
   -- dynamic-only: which Conditions hold at one evaluation is the run's data
   if overtakes ctx state (earlier ++ firings) then throw (.unsupported "interrupted-before-wait")
   pure firings
@@ -221,11 +221,11 @@ before they are offered, so a later write can find true again an item whose inte
 enqueued: that firing runs first and decides the later write's contest, as the explicit write order makes it do. -/
 def offerWrites (ctx : Ctx) (writes : List WriteEvent) (state : State) : Outcome := do
   let (state, _) ← writes.foldlM (fun (state, earlier) write => do
-    let offered := state.openItems.filterMap fun item =>
+    let offered := state.items.filterMap fun item =>
       (itemCondition? ctx item).bind fun trigger =>
         if passes trigger write && inSubtree state write.scope (homeScope state item) then some (item, trigger) else none
     let ordered := offered.mergeSort fun (left, _) (right, _) =>
-      depth state left < depth state right || (depth state left == depth state right && left.id ≤ right.id)
+      depth state left < depth state right || (depth state left == depth state right && left.position ≤ right.position)
     let (state, fired) ← ordered.foldlM (fun (state, fired) (item, trigger) => do
       let (state, fires) ← evaluateItem ctx item trigger state
       pure (state, if fires then fired ++ [item] else fired)) (state, [])

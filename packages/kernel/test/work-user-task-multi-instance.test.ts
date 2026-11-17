@@ -57,7 +57,7 @@ function run(outputDataItem: string | null, completions: ReadonlyArray<readonly 
     root: Object.fromEntries((state.variables.find((entry) => entry.scope === 0)?.entries ?? [])
       .filter(([name]) => name !== "items").map(([name, value]) => [name, (value as { value: unknown }).value])),
     open: state.status === "running"
-      ? state.openItems.map((item) => state.occurrences.find((entry) => entry.id === item.occurrence)?.activation)
+      ? state.openItems.map((item) => state.occurrences.find((entry) => entry.id === item.id.occurrence)?.activation)
       : state.status,
   });
   const trace: unknown[] = [];

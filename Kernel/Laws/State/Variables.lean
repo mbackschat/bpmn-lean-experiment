@@ -134,13 +134,13 @@ theorem setVariable_frame (state : State) (target : ScopeOccurrenceId) (name : S
       (state.setVariable target name value).occurrences = state.occurrences ∧
       (state.setVariable target name value).openItems = state.openItems :=
   let same := setVariable_same state target name value
-  ⟨same.scopes, same.occurrences, same.openItems⟩
+  ⟨same.scopes, same.occurrences, same.items⟩
 
 theorem removeVariable_frame (state : State) (target : ScopeOccurrenceId) (name : String) :
     (state.removeVariable target name).scopes = state.scopes ∧
       (state.removeVariable target name).occurrences = state.occurrences ∧
       (state.removeVariable target name).openItems = state.openItems :=
   let same := removeVariable_same state target name
-  ⟨same.scopes, same.occurrences, same.openItems⟩
+  ⟨same.scopes, same.occurrences, same.items⟩
 
 end Kernel.Laws.State

@@ -73,7 +73,7 @@ structure Binds (before after : Progress) (commandId digest : String) (atMs : Na
   fresh : commandId ∉ before.ledger.map (·.commandId)
   answer : ∃ resolution,
     let result : StepResult := { commandId, ordinal := before.steps.length + 1, atMs, resolution }
-    after.steps = before.steps ++ [result] ∧ after.ledger = before.ledger ++ [{ commandId, digest, result }]
+    after.steps = before.steps ++ [result] ∧ after.ledger = before.ledger ++ [({ commandId, digest, result } : LedgerEntry)]
 
 theorem Replays.survive {before after : Progress} {entry : LedgerEntry} {digest : String} {atMs : Nat}
     (replays : Replays before after entry digest atMs) : BindingsSurvive before.ledger after.ledger := by

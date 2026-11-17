@@ -23,7 +23,7 @@ import {
   foldSynchronousEffects,
 } from "@bpmn-lean/differential";
 import {
-  FailureTag, decodeProgram, elementHeader, failureCode, failureName, hooks, observationJson, step, stimulusFromJson,
+  FailureTag, decodeProgram, elementHeader, failureCode, failureName, hooks, itemKeyText, observationJson, step, stimulusFromJson,
 } from "@bpmn-lean/kernel";
 import type { Program, State } from "@bpmn-lean/kernel";
 
@@ -214,8 +214,8 @@ test("PC-SCOPE-07: an interruption that also deletes the host's siblings is noti
   // Every wait outside the interrupted host that was open before the input goes too.
   const broad: Surgery = (_, before, after) => {
     if (before === null || removedRoots(before, after).length === 0) return after;
-    const earlier = new Set(before.openItems.map((item) => item.id));
-    return { ...after, openItems: after.openItems.filter((item) => !earlier.has(item.id)) };
+    const earlier = new Set(before.openItems.map((item) => itemKeyText(item.id)));
+    return { ...after, openItems: after.openItems.filter((item) => !earlier.has(itemKeyText(item.id))) };
   };
   await noticed("region-interruption-subtree", interruption, { surgery: broad });
 });
@@ -242,8 +242,8 @@ test("PC-TERMINATE-01: a nested Terminate that leaves a wait of its region open 
     arriveThrow: (ctx, header, payload, thrown, occurrence, state) => {
       const outcome = hooks.arriveThrow(ctx, header, payload, thrown, occurrence, state);
       if (thrown.tag !== terminate.tag || !outcome.ok) return outcome;
-      const left = state.openItems.filter((item) => item.scope === occurrence.scope && item.occurrence !== occurrence.id);
-      const owners = state.occurrences.filter((candidate) => left.some((item) => item.occurrence === candidate.id));
+      const left = state.openItems.filter((item) => item.scope === occurrence.scope && item.id.occurrence !== occurrence.id);
+      const owners = state.occurrences.filter((candidate) => left.some((item) => item.id.occurrence === candidate.id));
       return { ...outcome, value: { ...outcome.value, openItems: [...outcome.value.openItems, ...left],
         occurrences: [...outcome.value.occurrences, ...owners] } };
     },

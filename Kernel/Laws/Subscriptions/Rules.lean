@@ -26,38 +26,38 @@ everything, values that violate it.
 namespace Kernel.Laws.Subscriptions
 
 open Kernel
-open Kernel.Laws.State (Within scopeIds occurrenceIds)
+open Kernel.Laws.State (Within scopeIds occurrenceIds items_eq mem_ofItems ofItems)
 
 /-! ## Ownership and withdrawal -/
 
 /-- Every open item waits for exactly one present occurrence. -/
 def ItemsOwned (s : State) : Prop :=
-  ∀ item ∈ s.openItems, ∃ occurrence ∈ s.occurrences, occurrence.id = item.occurrence ∧
-    ∀ other ∈ s.occurrences, other.id = item.occurrence → other = occurrence
+  ∀ item ∈ s.items, ∃ occurrence ∈ s.occurrences, occurrence.id = item.id.occurrence ∧
+    ∀ other ∈ s.occurrences, other.id = item.id.occurrence → other = occurrence
 
 /-- A subscription goes with what it belongs to: no item survives the removal of its scope occurrence, and no
 subscription the removal of the host it hangs on (`ABTIMER-COMPLETE-01`, `ABMSG-COMPLETE-01`; a passive Event
 Sub-Process start goes when its scope completes). -/
 structure Withdraws (before after : State) : Prop where
-  withScope : ∀ scope ∈ scopeIds before, scope ∉ scopeIds after → ∀ item ∈ after.openItems, item.scope ≠ scope
-  withHost : ∀ host ∈ occurrenceIds before, host ∉ occurrenceIds after → ∀ item ∈ after.openItems,
+  withScope : ∀ scope ∈ scopeIds before, scope ∉ scopeIds after → ∀ item ∈ after.items, item.scope ≠ scope
+  withHost : ∀ host ∈ occurrenceIds before, host ∉ occurrenceIds after → ∀ item ∈ after.items,
     item.attachedTo ≠ some host
 
 /-! ## Keys -/
 
 /-- A Message delivery or publication on `channel` reaches only open items subscribed on that channel. -/
 def MessageReceivers (s : State) (channel : MessageChannel) (receivers : List OpenItem) : Prop :=
-  ∀ receiver ∈ receivers, receiver ∈ s.openItems ∧ receiver.kind.view.channel = some channel
+  ∀ receiver ∈ receivers, receiver ∈ s.items ∧ receiver.kind.view.channel = some channel
 
 /-- A Signal delivery, throw or intent on `address` reaches only items on an equal address of the same kind, so a name
 never reaches a QName subscription. -/
 def SignalReceivers (s : State) (address : SignalAddress) (receivers : List OpenItem) : Prop :=
-  ∀ receiver ∈ receivers, receiver ∈ s.openItems ∧ ∃ detail, receiver.kind.view.signal = some detail ∧
+  ∀ receiver ∈ receivers, receiver ∈ s.items ∧ ∃ detail, receiver.kind.view.signal = some detail ∧
     detail.address = address
 
 /-- A write in `owner` is offered only to the open Conditional items in the subtree of `owner`. -/
 def ConditionalReceivers (s : State) (owner : ScopeOccurrenceId) (receivers : List OpenItem) : Prop :=
-  ∀ receiver ∈ receivers, receiver ∈ s.openItems ∧ receiver.kind.view.conditional.isSome = true ∧
+  ∀ receiver ∈ receivers, receiver ∈ s.items ∧ receiver.kind.view.conditional.isSome = true ∧
     Within s receiver.scope owner
 
 /-! ## Event-Based Gateway -/
@@ -66,10 +66,10 @@ def ConditionalReceivers (s : State) (owner : ScopeOccurrenceId) (receivers : Li
 no arm of the gateway is open, every losing arm's reservation is gone, so a late stimulus for it finds nothing, and the
 gateway's occurrence has completed (§13.4.4, Table 13.4 Deferred Choice). -/
 structure ArmWins (before after : State) (gateway : Nat) (winner : OpenItem) : Prop where
-  armed : winner ∈ before.openItems ∧ winner.attachedTo = some gateway
-  disarmed : ∀ item ∈ after.openItems, item.attachedTo ≠ some gateway
-  losersGone : ∀ loser ∈ before.openItems, loser.attachedTo = some gateway → loser.id ≠ winner.id →
-    loser.occurrence ∉ occurrenceIds after
+  armed : winner ∈ before.items ∧ winner.attachedTo = some gateway
+  disarmed : ∀ item ∈ after.items, item.attachedTo ≠ some gateway
+  losersGone : ∀ loser ∈ before.items, loser.attachedTo = some gateway → loser.id ≠ winner.id →
+    loser.id.occurrence ∉ occurrenceIds after
   completed : gateway ∉ occurrenceIds after
 
 /-! ## Non-vacuity
@@ -86,55 +86,72 @@ def armTimer : Occurrence := { id := 4, element := ⟨"Late"⟩, scope := root, 
 def task : Occurrence := { id := 7, element := ⟨"Work"⟩, scope := sub, activation := 1 }
 
 def paidItem (kind : OpenKind) : OpenItem :=
-  { id := 5, kind, element := ⟨"Paid"⟩, scope := root, occurrence := 3, attachedTo := some 2 }
+  { id := ⟨3, .subscription, 0⟩, position := 5, kind, element := ⟨"Paid"⟩, scope := root, attachedTo := some 2 }
 def lateItem (kind : OpenKind) : OpenItem :=
-  { id := 6, kind, element := ⟨"Late"⟩, scope := root, occurrence := 4, attachedTo := some 2 }
-def workItem (kind : OpenKind) : OpenItem := { id := 8, kind, element := ⟨"Work"⟩, scope := sub, occurrence := 7 }
+  { id := ⟨4, .subscription, 0⟩, position := 6, kind, element := ⟨"Late"⟩, scope := root, attachedTo := some 2 }
+def workItem (kind : OpenKind) : OpenItem :=
+  { id := ⟨7, .wait, 0⟩, position := 8, kind, element := ⟨"Work"⟩, scope := sub }
 
 def rootScope : ScopeOccurrence := { id := root, element := none, parent := none }
 def subScope : ScopeOccurrence := { id := sub, element := some ⟨"Sub"⟩, parent := some root }
 
 def choosing (kind : OpenKind) : State :=
   { instanceId := "p", scopes := [rootScope, subScope], occurrences := [gatewayOccurrence, armMessage, armTimer, task]
-    openItems := [paidItem kind, lateItem kind, workItem kind] }
+    openItems := ofItems [paidItem kind, lateItem kind, workItem kind] }
 
 /-- `Paid` fired: the gateway, both arms and their items are gone; the begun winner has left too. -/
-def chosen (kind : OpenKind) : State := { choosing kind with occurrences := [task], openItems := [workItem kind] }
+def chosen (kind : OpenKind) : State := { choosing kind with occurrences := [task], openItems := ofItems [workItem kind] }
+
+theorem mem_choosing {kind : OpenKind} {item : OpenItem} :
+    item ∈ (choosing kind).items ↔ item = paidItem kind ∨ item = lateItem kind ∨ item = workItem kind := by
+  rw [items_eq, choosing, mem_ofItems (by simp [paidItem, lateItem, workItem])]; simp
+
+theorem mem_chosen {kind : OpenKind} {item : OpenItem} : item ∈ (chosen kind).items ↔ item = workItem kind := by
+  rw [items_eq, chosen]; simp
 
 theorem items_owned (kind : OpenKind) : ItemsOwned (choosing kind) := by
   intro item member
-  simp only [choosing, List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl | rfl
-  · exact ⟨armMessage, by simp [choosing], rfl, by simp [choosing, gatewayOccurrence, armMessage, armTimer, task, paidItem]⟩
-  · exact ⟨armTimer, by simp [choosing], rfl, by simp [choosing, gatewayOccurrence, armMessage, armTimer, task, lateItem]⟩
-  · exact ⟨task, by simp [choosing], rfl, by simp [choosing, gatewayOccurrence, armMessage, armTimer, task, workItem]⟩
+  rcases mem_choosing.mp member with rfl | rfl | rfl
+  · exact ⟨armMessage, by simp [choosing], by simp [armMessage, paidItem],
+      by simp [choosing, gatewayOccurrence, armMessage, armTimer, task, paidItem]⟩
+  · exact ⟨armTimer, by simp [choosing], by simp [armTimer, lateItem],
+      by simp [choosing, gatewayOccurrence, armMessage, armTimer, task, lateItem]⟩
+  · exact ⟨task, by simp [choosing], by simp [task, workItem],
+      by simp [choosing, gatewayOccurrence, armMessage, armTimer, task, workItem]⟩
 
 /-- An item whose occurrence was removed belongs to none. -/
 theorem orphan_rejected (kind : OpenKind) : ¬ ItemsOwned { choosing kind with occurrences := [gatewayOccurrence] } :=
   fun owned => by
-    obtain ⟨occurrence, member, same, _⟩ := owned (workItem kind) (by simp [choosing])
+    obtain ⟨occurrence, member, same, _⟩ :=
+      owned (workItem kind) (Laws.State.items_same ((mem_choosing (item := workItem kind)).mpr (by simp)) rfl)
     simp only [List.mem_singleton] at member
     subst member
     simp [gatewayOccurrence, workItem] at same
 
 theorem choice_withdraws (kind : OpenKind) : Withdraws (choosing kind) (chosen kind) where
-  withScope := by simp [scopeIds, choosing, chosen]
+  withScope := by
+    intro scope present gone item member
+    rw [mem_chosen.mp member]
+    simp only [scopeIds, chosen, choosing, List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil,
+      or_false] at present gone
+    rcases present with rfl | rfl <;> simp_all [rootScope, subScope]
   withHost := by
     intro host _ gone item member
-    simp only [chosen, List.mem_singleton] at member
-    subst member
+    rw [mem_chosen.mp member]
     simp [workItem]
 
 /-- Clearing scope 1 but keeping its task's item leaves an item without its scope. -/
 theorem kept_item_rejected (kind : OpenKind) :
     ¬ Withdraws (choosing kind) { choosing kind with scopes := [rootScope] } := fun withdraws => by
   have := withdraws.withScope sub (by simp [scopeIds, choosing, rootScope, subScope]) (by simp [scopeIds, rootScope, root, sub])
-    (workItem kind) (by simp [choosing])
+    (workItem kind) (Laws.State.items_same ((mem_choosing (item := workItem kind)).mpr (by simp)) rfl)
   simp [workItem] at this
 
 theorem message_keyed (kind : OpenKind) (channel : MessageChannel) (view : kind.view.channel = some channel) :
     MessageReceivers (choosing kind) channel [workItem kind] := by
-  simpa [MessageReceivers, choosing, workItem] using view
+  intro receiver member
+  rw [List.mem_singleton.mp member]
+  exact ⟨(mem_choosing (item := workItem kind)).mpr (by simp), view⟩
 
 /-- A receiver subscribed on another channel is not reached. -/
 theorem other_channel_rejected (kind : OpenKind) (channel other : MessageChannel) (view : kind.view.channel = some other)
@@ -146,7 +163,7 @@ theorem other_channel_rejected (kind : OpenKind) (channel other : MessageChannel
 theorem signal_keyed (kind : OpenKind) (detail : SignalWaitDetail) (view : kind.view.signal = some detail) :
     SignalReceivers (choosing kind) detail.address [workItem kind] := by
   simp only [SignalReceivers, List.mem_singleton, forall_eq]
-  exact ⟨by simp [choosing], detail, by simpa [workItem] using view, rfl⟩
+  exact ⟨(mem_choosing (item := workItem kind)).mpr (by simp), detail, by simpa [workItem] using view, rfl⟩
 
 /-- A name never reaches a QName subscription. -/
 theorem name_for_qname_rejected (kind : OpenKind) (ref : QName) (view : kind.view.signal = some { address := .qualified ref }) :
@@ -159,7 +176,8 @@ theorem name_for_qname_rejected (kind : OpenKind) (ref : QName) (view : kind.vie
 theorem conditional_in_subtree (kind : OpenKind) (view : kind.view.conditional.isSome = true) :
     ConditionalReceivers (choosing kind) root [workItem kind] := by
   simp only [ConditionalReceivers, List.mem_singleton, forall_eq]
-  exact ⟨by simp [choosing], by simpa [workItem] using view, .parent subScope root root (by simp [choosing]) rfl (.refl _)⟩
+  exact ⟨(mem_choosing (item := workItem kind)).mpr (by simp), by simpa [workItem] using view,
+    .parent subScope root root (by simp [choosing]) rfl (.refl _)⟩
 
 /-- A write in scope 1 is never offered to an item of its parent. -/
 theorem conditional_outside_rejected (kind : OpenKind) :
@@ -169,16 +187,21 @@ theorem conditional_outside_rejected (kind : OpenKind) :
   simp [root, sub] at this
 
 theorem first_arm_wins (kind : OpenKind) : ArmWins (choosing kind) (chosen kind) 2 (paidItem kind) where
-  armed := ⟨by simp [choosing], rfl⟩
-  disarmed := by simp [chosen, workItem]
-  losersGone := by simp [occurrenceIds, chosen, task, choosing, paidItem, lateItem, workItem]
+  armed := ⟨(mem_choosing (item := paidItem kind)).mpr (by simp), rfl⟩
+  disarmed := fun item member => by rw [mem_chosen.mp member]; simp [workItem]
+  losersGone := fun loser member attached differ => by
+    rcases mem_choosing.mp member with rfl | rfl | rfl
+    · simp [paidItem] at differ
+    · simp [occurrenceIds, chosen, task, lateItem]
+    · simp [workItem] at attached
   completed := by simp [occurrenceIds, chosen, task]
 
 /-- A losing arm still armed after the winner fired is no Deferred Choice. -/
 theorem loser_armed_rejected (kind : OpenKind) :
-    ¬ ArmWins (choosing kind) { chosen kind with occurrences := [task, armTimer], openItems := [lateItem kind, workItem kind] }
+    ¬ ArmWins (choosing kind)
+      { chosen kind with occurrences := [task, armTimer], openItems := ofItems [lateItem kind, workItem kind] }
       2 (paidItem kind) := fun wins => by
-  have := wins.disarmed (lateItem kind) (by simp)
+  have := wins.disarmed (lateItem kind) (by rw [items_eq, mem_ofItems (by simp [lateItem, workItem])]; simp)
   simp [lateItem] at this
 
 /-! ## Simultaneous truth
@@ -232,53 +255,75 @@ def OrderFree {κ : Type} (element : OpenItem → κ) (resolve : List OpenItem �
     (members : List OpenItem) : Prop :=
   ∀ evaluated, evaluated.Perm members → (resolve evaluated).map (·.map element) = (resolve members).map (·.map element)
 
-/-- A contest member: a Conditional item of the identity `id` on the element `name`. The witnesses below read an
-item's identity as its public element (`key`), which keeps them decidable by evaluation; distinct members carry distinct
-elements. -/
+/-- A contest member: a Conditional item reserving the occurrence `id` on the element `name`. The witnesses below read
+an item's occurrence as its public element (`key`), which keeps them decidable by evaluation; distinct members carry
+distinct elements. -/
 def member (id : Nat) (name : String) : OpenItem :=
-  { id, kind := .conditional {}, element := ⟨name⟩, scope := ⟨0⟩, occurrence := id + 10 }
+  { id := ⟨id, .subscription, 0⟩, position := id, kind := .conditional {}, element := ⟨name⟩, scope := ⟨0⟩ }
 
-def key (item : OpenItem) : Nat := item.id
+def key (item : OpenItem) : Nat := item.id.occurrence
 
 /-- `level-both-eligible`'s pair: the non-interrupting `Warn_Level` and the interrupting `Stop_Level`, which withdraws it. -/
 def warn : OpenItem := member 1 "Warn_Level"
 def stop : OpenItem := member 2 "Stop_Level"
-def mixed (a b : OpenItem) : Bool := a.id == 2 && b.id == 1
+def mixed (a b : OpenItem) : Bool := a.id.occurrence == 2 && b.id.occurrence == 1
 
 /-- Nested regions: the outer interrupting boundary `BO` withdraws the inner `BI` inside its host, not the reverse. -/
 def outer : OpenItem := member 3 "BO"
 def inner : OpenItem := member 4 "BI"
-def nested (a b : OpenItem) : Bool := a.id == 3 && b.id == 4
+def nested (a b : OpenItem) : Bool := a.id.occurrence == 3 && b.id.occurrence == 4
+
+/-- `pending-pair-*`: the pending `Pair_A`, which the later write does not offer, withdraws `Pair_B` and `Pair_C`,
+which withdraw each other. They are no contest of the later write, so a contest of them is rejected whatever its
+verdict, the refusal the kernel gave before (CIB-LIM-0053). -/
+def pairA : OpenItem := member 7 "Pair_A"
+def pairB : OpenItem := member 8 "Pair_B"
+def pairC : OpenItem := member 9 "Pair_C"
+def pair (a b : OpenItem) : Bool :=
+  (a.id.occurrence == 7 && (b.id.occurrence == 8 || b.id.occurrence == 9)) ||
+    (a.id.occurrence == 8 && b.id.occurrence == 9) || (a.id.occurrence == 9 && b.id.occurrence == 8)
+
+/-- Enabled by one activation: a Sub-Process host's interrupting boundary `BO` withdraws the start `SN` of an Event
+Sub-Process in the scope the host opened, and the scope's arming evaluates both (`Feature.Subscriptions.enabledWith`). -/
+def hostBoundary : OpenItem := member 5 "BO"
+def innerStart : OpenItem := member 6 "SN"
+def enabledTogether (a b : OpenItem) : Bool := a.id.occurrence == 5 && b.id.occurrence == 6
+
+/-- Evaluates a contest witness. An item's key equality is not exposed to evaluation, so the items are unfolded and
+their keys compared by `simp` first; what is left is closed by evaluation. -/
+macro "contest_eval" : tactic =>
+  `(tactic| ((try simp [walkRank, warn, stop, outer, inner, pairA, pairB, pairC, hostBoundary, innerStart, member, key,
+    mixed, nested, pair, enabledTogether]) <;> decide +kernel))
 
 /-- A committed verdict whose sequence the contest commits, proved by evaluation. -/
 macro "commits_by_decide" : tactic =>
-  `(tactic| (intro _ h; cases h; exact ⟨by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel,
-    by decide +kernel, by decide +kernel⟩))
+  `(tactic| (intro _ h; cases h; exact ⟨by contest_eval, by contest_eval, by contest_eval, by contest_eval,
+    by contest_eval, by contest_eval⟩))
 
 theorem mixed_both_fire : ContestWalk key mixed [] [1, 2] [warn, stop] (.ok [warn, stop]) where
-  apart := by decide +kernel
+  apart := by contest_eval
   commits := by commits_by_decide
   refused _ h := by cases h
 
 theorem mixed_interrupting_first : ContestWalk key mixed [] [2, 1] [warn, stop] (.ok [stop]) where
-  apart := by decide +kernel
+  apart := by contest_eval
   commits := by commits_by_decide
   refused _ h := by cases h
 
 /-- Under `[Warn, Stop]` both fire: the interrupting member alone leaves the listed non-interrupting one, which no
 earlier firing withdraws, unfired, and is rejected. -/
 theorem mixed_listed_member_skipped_rejected : ¬ ContestWalk key mixed [] [1, 2] [warn, stop] (.ok [stop]) :=
-  fun law => by have := (law.commits _ rfl).complete; revert this; decide +kernel
+  fun law => by have := (law.commits _ rfl).complete; revert this; contest_eval
 
 /-- Under `[Warn, Stop]` the contest is decided, so a refusal is rejected. -/
 theorem mixed_decided_refusal_rejected :
     ¬ ContestWalk key mixed [] [1, 2] [warn, stop] (.error (.unsupported "conditions-simultaneous")) :=
   fun law => (law.refused _ rfl).2 [warn, stop]
-    ⟨by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel⟩
+    ⟨by contest_eval, by contest_eval, by contest_eval, by contest_eval, by contest_eval, by contest_eval⟩
 
 theorem mixed_unlisted_refused :
     ContestWalk key mixed [] [1] [warn, stop] (.error (.unsupported "conditions-simultaneous")) where
-  apart := by decide +kernel
+  apart := by contest_eval
   commits _ h := by cases h
   refused _ h := by
     cases h
@@ -290,74 +335,60 @@ theorem mixed_unlisted_refused :
     obtain ⟨item, mem, isStop⟩ := fired
     have listed := List.all_eq_true.mp commits.chosen item mem
     simp [key, stop, member] at isStop listed
-    omega
+    simp [isStop] at listed
 
 /-- Firing the listed non-interrupting member and leaving the unlisted interrupting one is rejected. -/
 theorem mixed_unlisted_committed_rejected :
     ¬ ContestWalk key mixed [] [1] [warn, stop] (.ok [warn]) :=
-  fun law => by have := (law.commits _ rfl).decided; revert this; decide +kernel
+  fun law => by have := (law.commits _ rfl).decided; revert this; contest_eval
 
 /-- An empty ranking that fires the interrupting member by default is rejected. -/
 theorem default_winner_rejected : ¬ ContestWalk key mixed [] [] [warn, stop] (.ok [stop]) :=
-  fun law => by have := (law.commits _ rfl).chosen; revert this; decide +kernel
+  fun law => by have := (law.commits _ rfl).chosen; revert this; contest_eval
 
 /-- A firing after one that withdrew it is rejected. -/
 theorem withdrawn_fires_rejected :
     ¬ ContestWalk key mixed [] [2, 1] [warn, stop] (.ok [stop, warn]) :=
-  fun law => by have := (law.commits _ rfl).live; revert this; decide +kernel
+  fun law => by have := (law.commits _ rfl).live; revert this; contest_eval
 
 /-- A pending inner member fires first, and the ranking decides the outer one that withdraws it. -/
 theorem pending_fires_first : ContestWalk key nested [inner] [3] [outer, inner] (.ok [inner, outer]) where
-  apart := by decide +kernel
+  apart := by contest_eval
   commits := by commits_by_decide
   refused _ h := by cases h
 
-/-- `pending-pair-*`: the pending `Pair_A`, which the later write does not offer, withdraws `Pair_B` and `Pair_C`,
-which withdraw each other. They are no contest of the later write, so a contest of them is rejected whatever its
-verdict, the refusal the kernel gave before (CIB-LIM-0053). -/
-def pairA : OpenItem := member 7 "Pair_A"
-def pairB : OpenItem := member 8 "Pair_B"
-def pairC : OpenItem := member 9 "Pair_C"
-def pair (a b : OpenItem) : Bool := (a.id == 7 && (b.id == 8 || b.id == 9)) || (a.id == 8 && b.id == 9) || (a.id == 9 && b.id == 8)
-
 theorem pending_non_member_withdraws : ContestWalk key pair [pairA] [] [] (.ok []) where
-  apart := by decide +kernel
+  apart := by contest_eval
   commits := by commits_by_decide
   refused _ h := by cases h
 
 theorem pending_withdrawn_member_rejected :
     ¬ ContestWalk key pair [pairA] [] [pairB, pairC] (.error (.unsupported "conditions-simultaneous")) :=
-  fun law => by have := law.apart; revert this; decide +kernel
+  fun law => by have := law.apart; revert this; contest_eval
 
 theorem nested_outer_chosen : ContestWalk key nested [] [3] [outer, inner] (.ok [outer]) where
-  apart := by decide +kernel
+  apart := by contest_eval
   commits := by commits_by_decide
   refused _ h := by cases h
 
 theorem nested_inner_then_outer : ContestWalk key nested [] [4, 3] [outer, inner] (.ok [inner, outer]) where
-  apart := by decide +kernel
+  apart := by contest_eval
   commits := by commits_by_decide
   refused _ h := by cases h
 
 /-- The outermost-first order the kernel once took, unranked, is rejected. -/
 theorem nested_outermost_default_rejected : ¬ ContestWalk key nested [] [] [outer, inner] (.ok [outer]) :=
-  fun law => by have := (law.commits _ rfl).chosen; revert this; decide +kernel
-
-/-- Enabled by one activation: a Sub-Process host's interrupting boundary `BO` withdraws the start `SN` of an Event
-Sub-Process in the scope the host opened, and the scope's arming evaluates both (`Feature.Subscriptions.enabledWith`). -/
-def hostBoundary : OpenItem := member 5 "BO"
-def innerStart : OpenItem := member 6 "SN"
-def enabledTogether (a b : OpenItem) : Bool := a.id == 5 && b.id == 6
+  fun law => by have := (law.commits _ rfl).chosen; revert this; contest_eval
 
 theorem enabled_start_then_boundary :
     ContestWalk key enabledTogether [] [6, 5] [hostBoundary, innerStart] (.ok [innerStart, hostBoundary]) where
-  apart := by decide +kernel
+  apart := by contest_eval
   commits := by commits_by_decide
   refused _ h := by cases h
 
 theorem enabled_boundary_chosen :
     ContestWalk key enabledTogether [] [5] [hostBoundary, innerStart] (.ok [hostBoundary]) where
-  apart := by decide +kernel
+  apart := by contest_eval
   commits := by commits_by_decide
   refused _ h := by cases h
 
@@ -365,7 +396,7 @@ theorem enabled_boundary_chosen :
 rejected. -/
 theorem enabled_arming_order_rejected :
     ¬ ContestWalk key enabledTogether [] [] [hostBoundary, innerStart] (.ok [hostBoundary]) :=
-  fun law => by have := (law.commits _ rfl).chosen; revert this; decide +kernel
+  fun law => by have := (law.commits _ rfl).chosen; revert this; contest_eval
 
 /-- A resolver that answers in the order it met the members is not order-free. -/
 theorem evaluation_order_rejected : ¬ OrderFree key .ok [warn, stop] :=

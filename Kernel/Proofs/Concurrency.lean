@@ -85,7 +85,7 @@ structure Activations (state : State) (rename : OccurrenceKey → OccurrenceKey)
 /-- The open items of a state at the observation boundary: the public key of the occurrence each waits for, and its
 kind. -/
 def openKeys (state : State) : List (OccurrenceKey × OpenKind) :=
-  state.openItems.filterMap fun item => (state.occurrence? item.occurrence).map fun occurrence => (state.keyOf occurrence, item.kind)
+  state.items.filterMap fun item => (state.occurrence? item.id.occurrence).map fun occurrence => (state.keyOf occurrence, item.kind)
 
 /-- Equal at the canonical-result observation boundary up to `ids` and `keys`: status and failure, the variable sets
 by renamed scope occurrence, each set's bindings as a multiset, the journal's start and end facts and the open waits by

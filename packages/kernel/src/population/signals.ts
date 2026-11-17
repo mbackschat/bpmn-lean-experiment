@@ -135,7 +135,7 @@ export function signalReceiversOf(
   const waiting = state.openItems.flatMap((item) => {
     const signal = openKindView(item.kind).signal;
     if (signal === null || !signalAddressMatches(address, signal.address)) return [];
-    return [[instanceOf(state, item.scope), item.id, occurrence(program, state, item)] as const];
+    return [[instanceOf(state, item.scope), item.position, occurrence(program, state, item)] as const];
   });
   const ordered = mergeSort(waiting, ([leftInstance, leftItem], [rightInstance, rightItem]) =>
     compareStrings(leftInstance, rightInstance) < 0 || (leftInstance === rightInstance && leftItem <= rightItem));

@@ -26,7 +26,9 @@ before was issued at or above the counter's value before it
 structure IssuesFresh (before after : State) : Prop where
   monotone : before.nextIssue ≤ after.nextIssue
   occurrences : ∀ id ∈ occurrenceIds after, id ∉ occurrenceIds before → before.nextIssue ≤ id
-  items : ∀ id ∈ after.openItems.map (·.id), id ∉ before.openItems.map (·.id) → before.nextIssue ≤ id
+  /-- A new item's ordinal is at or above its occurrence's counter before (KD1). -/
+  items : ∀ item ∈ after.items, item.id ∉ before.items.map (·.id) →
+    before.itemOrdinals.getD item.id.occurrence 0 ≤ item.id.ordinal
   scopes : ∀ id ∈ scopeIds after, id ∉ scopeIds before → before.nextIssue ≤ id.value
 
 /-- Activation counters only grow, so a re-entered element's next occurrence has a number no earlier one had (R8,
@@ -50,7 +52,7 @@ structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep 
   scopesOutside : ∀ other ∈ before.scopes, ¬ StrictlyWithin before other.id scope → other ∈ after.scopes
   occurrencesOutside : ∀ occurrence ∈ before.occurrences, ¬ Within before occurrence.scope scope →
     occurrence ∈ after.occurrences
-  itemsOutside : ∀ item ∈ before.openItems, ¬ Within before item.scope scope → item ∈ after.openItems
+  itemsOutside : ∀ item ∈ before.items, ¬ Within before item.scope scope → item ∈ after.items
   variablesOutside : ∀ variables ∈ before.variables, ¬ Within before variables.scope scope →
     variables ∈ after.variables
   variablesOwn : ∀ variables ∈ before.variables, variables.scope = scope → variables ∈ after.variables
@@ -58,13 +60,13 @@ structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep 
   scopesInside : ∀ inner ∈ after.scopes, StrictlyWithin before inner.id scope →
     ∃ owner ∈ keep, inner.occurrence = some owner
   occurrencesInside : ∀ occurrence ∈ after.occurrences, Within before occurrence.scope scope → occurrence.id ∈ keep
-  itemsInside : ∀ item ∈ after.openItems, Within before item.scope scope → item.occurrence ∈ keep
+  itemsInside : ∀ item ∈ after.items, Within before item.scope scope → item.id.occurrence ∈ keep
   variablesInside : ∀ variables ∈ after.variables, StrictlyWithin before variables.scope scope →
     ∃ owner ∈ keep, ∃ inner ∈ after.scopes, inner.id = variables.scope ∧ inner.occurrence = some owner
   tokensInside : ∀ token ∈ after.tokens, ¬ Within before token.busyScope scope
   noNewScopes : ∀ inner ∈ after.scopes, inner ∈ before.scopes
   noNewOccurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences
-  noNewItems : ∀ item ∈ after.openItems, item ∈ before.openItems
+  noNewItems : ∀ item ∈ after.items, item ∈ before.items
   noNewVariables : ∀ variables ∈ after.variables, variables ∈ before.variables
   noIssue : after.nextIssue = before.nextIssue
   instanceKept : after.instanceId = before.instanceId
@@ -106,7 +108,7 @@ theorem CancelsWithEnds.ofDraft {before after : State} (same : after.draft = bef
 /-! ## Non-vacuity -/
 
 def cleared (kind : OpenKind) : State :=
-  { sample kind with occurrences := [subProcess, outerTask], openItems := [outerItem kind] }
+  { sample kind with occurrences := [subProcess, outerTask], openItems := ofItems [outerItem kind] }
 
 theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared kind) subScope [] where
   scopeStays := by simp [sample, cleared]
@@ -118,10 +120,10 @@ theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared ki
     · exact absurd (.refl _) outside
     · simp [cleared]
   itemsOutside := by
-    simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [mem_sample_items]
     rintro item (rfl | rfl) outside
     · exact absurd (.refl _) outside
-    · simp [cleared]
+    · simp [items_eq, cleared]
   variablesOutside := fun variables member _ => by simpa [cleared] using member
   variablesOwn := fun variables member _ => by simpa [cleared] using member
   tokensOutside := by simp [sample]
@@ -134,7 +136,7 @@ theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared ki
     simp only [cleared, List.mem_cons, List.not_mem_nil, or_false]
     rintro occurrence (rfl | rfl) within <;> exact absurd within (root_outside rfl)
   itemsInside := by
-    simp only [cleared, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [cleared, items_eq, mem_ofItems_singleton]
     rintro item rfl within
     exact absurd within (root_outside rfl)
   variablesInside := by
@@ -145,7 +147,7 @@ theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared ki
   tokensInside := by simp [cleared, sample]
   noNewScopes := by simp [cleared, sample]
   noNewOccurrences := by simp [cleared, sample]
-  noNewItems := by simp [cleared, sample]
+  noNewItems := by simp [items_eq, cleared, sample]
   noNewVariables := fun variables member => by simpa [cleared] using member
   noIssue := rfl
   instanceKept := rfl
@@ -162,7 +164,7 @@ def terminating (kind : OpenKind) : State :=
   { sample kind with occurrences := [subProcess, innerTask, outerTask, terminateEnd], nextIssue := 9 }
 
 def terminated (kind : OpenKind) : State :=
-  { terminating kind with occurrences := [subProcess, outerTask, terminateEnd], openItems := [outerItem kind] }
+  { terminating kind with occurrences := [subProcess, outerTask, terminateEnd], openItems := ofItems [outerItem kind] }
 
 theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (terminated kind) subScope [8] where
   scopeStays := by simp [terminating, terminated, sample]
@@ -175,7 +177,7 @@ theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (te
     · simp [terminated]
     · exact absurd (.refl _) outside
   itemsOutside := by
-    simp only [terminating, sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [terminating, items_eq, sample, mem_sample_itemList]
     rintro item (rfl | rfl) outside
     · exact absurd (.refl _) outside
     · simp [terminated]
@@ -194,7 +196,7 @@ theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (te
     · exact absurd within (root_outside rfl)
     · simp [terminateEnd]
   itemsInside := by
-    simp only [terminated, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [terminated, items_eq, mem_ofItems_singleton]
     rintro item rfl within
     exact absurd within (root_outside rfl)
   variablesInside := by
@@ -205,7 +207,7 @@ theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (te
   tokensInside := by simp [terminated, terminating, sample]
   noNewScopes := by simp [terminated, terminating]
   noNewOccurrences := by simp [terminated, terminating]
-  noNewItems := by simp [terminated, terminating, sample]
+  noNewItems := by simp [items_eq, terminated, terminating, sample]
   noNewVariables := fun variables member => by simpa [terminated, terminating] using member
   noIssue := rfl
   instanceKept := rfl
@@ -213,7 +215,7 @@ theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (te
 theorem sample_issues_fresh (kind : OpenKind) : IssuesFresh (sample kind) (cleared kind) where
   monotone := Nat.le_refl _
   occurrences := by simp [occurrenceIds, cleared, sample, subProcess, innerTask, outerTask]
-  items := by simp [cleared, sample, innerItem, outerItem]
+  items := by simp [items_eq, cleared, sample, innerItem, outerItem]
   scopes := by simp [scopeIds, cleared, sample]
 
 /-- An identifier reappearing below the counter breaks `IssuesFresh`: occurrence 3 returns after scope 2 was cleared. -/

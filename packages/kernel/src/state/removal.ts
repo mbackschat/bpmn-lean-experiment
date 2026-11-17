@@ -33,7 +33,8 @@ export function clearInside(state: State, scope: ScopeOccurrenceId, keep: readon
   return {
     ...journalled,
     tokens: journalled.tokens.filter((token) => !inside.includes(token.scope)),
-    openItems: journalled.openItems.filter((item) => !inside.includes(item.scope) || keep.includes(item.occurrence)),
+    openItems: journalled.openItems.filter((item) => !inside.includes(item.scope) || keep.includes(item.id.occurrence)),
+    itemOrdinals: journalled.itemOrdinals.filter(([id]) => !removed.some((occurrence) => occurrence.id === id)),
     occurrences: journalled.occurrences.filter((occurrence) =>
       !inside.includes(occurrence.scope) || keep.includes(occurrence.id)),
     scopes: journalled.scopes.filter((candidate) => !nested.includes(candidate.id)),
@@ -68,7 +69,11 @@ export function leaveScope(state: State, scope: ScopeOccurrenceId): State {
  * a scope does not cancel the occurrence that owns it.
  */
 export function removeOccurrence(state: State, id: number): State {
-  const removed: State = { ...state, occurrences: state.occurrences.filter((occurrence) => occurrence.id !== id) };
+  const removed: State = {
+    ...state,
+    occurrences: state.occurrences.filter((occurrence) => occurrence.id !== id),
+    itemOrdinals: state.itemOrdinals.filter(([occurrence]) => occurrence !== id),
+  };
   return removed.scopes.filter((scope) => scope.occurrence === id)
     .reduce((current, scope) => leaveScope(current, scope.id), removed);
 }

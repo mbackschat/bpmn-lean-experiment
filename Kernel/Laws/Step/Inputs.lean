@@ -95,7 +95,7 @@ transition's start state, so the premise speaks of every state agreeing with the
 
 /-- The fields an addressed lookup reads agree with `state`'s. -/
 def Agrees (state s : State) : Prop :=
-  s.occurrences = state.occurrences ∧ s.openItems = state.openItems ∧ s.scopes = state.scopes ∧
+  s.occurrences = state.occurrences ∧ s.items = state.items ∧ s.scopes = state.scopes ∧
     s.instanceId = state.instanceId
 
 theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : State} {transition : State → Outcome}
@@ -110,7 +110,7 @@ theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : S
       exact ⟨code, by simp [bind, Except.bind]⟩
     | ok start =>
       have agrees : Agrees state start := by
-        rcases advanceClock_ok clock with rfl | ⟨_, rfl⟩ <;> exact ⟨rfl, rfl, rfl, rfl⟩
+        rcases advanceClock_ok clock with rfl | ⟨_, rfl⟩ <;> exact ⟨rfl, Laws.State.items_congr rfl, rfl, rfl⟩
       cases chose : admitChoices hooks ctx with
       | error failure =>
         obtain ⟨code, rfl⟩ := admitChoices_error chose
@@ -126,7 +126,7 @@ theorem step_unknown {hooks : Hooks} {program : Program} {state : State} {input 
       (∃ data : TimerInput, input = .timerFire data ∧ data.occurrence = ref) ∨
       ∃ data : EffectInput, input = .effectResult data ∧ data.occurrence = ref)
     (unknown : ∀ (ctx : Ctx) (s : State), ctx.program = program → s.occurrences = state.occurrences →
-      s.openItems = state.openItems → s.scopes = state.scopes → s.instanceId = state.instanceId →
+      s.items = state.items → s.scopes = state.scopes → s.instanceId = state.instanceId →
       occurrenceOf? ctx s ref = none ∧ ∀ {α : Type} (detail : WaitView → Option α), itemDetail? ctx s ref detail = none) :
     ∃ code, step hooks program (some state) input = .error (.rejected code) := by
   have lookups : ∀ s, Agrees state s → occurrenceOf? (inputCtx hooks program input) s ref = none ∧
@@ -235,7 +235,7 @@ theorem command_ok {hooks : Hooks} {ctx : Ctx} {data : CommandInput} {state afte
 
 theorem deliverEffectResult_ok {hooks : Hooks} {ctx : Ctx} {data : EffectInput} {state after : State}
     (ran : deliverEffectResult hooks ctx data state = .ok after) :
-    ∃ item ∈ state.openItems, item.kind.view.effect.isSome = true ∧
+    ∃ item ∈ state.items, item.kind.view.effect.isSome = true ∧
       hooks.effectResult ctx item data.outcome state = .ok after := by
   rw [deliverEffectResult_eq] at ran
   split at ran

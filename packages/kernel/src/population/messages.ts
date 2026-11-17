@@ -27,6 +27,7 @@ import {
   type State,
   committed,
   failedWith,
+  itemsByPosition,
 } from "../state.js";
 import { criteriaRefusal, startCriteriaRefusal } from "../state/criteria.js";
 import { context, step } from "../step.js";
@@ -83,7 +84,7 @@ export function occurrence(program: Program, state: State, item: OpenItem): Occu
   return {
     processInstanceId: instanceOf(state, item.scope),
     element: programPublicId(program, item.element),
-    activation: occurrenceOf(state, item.occurrence)?.activation ?? 0,
+    activation: occurrenceOf(state, item.id.occurrence)?.activation ?? 0,
   };
 }
 
@@ -119,7 +120,7 @@ export function messageReceivers(
   const ctx = context(hooks, program);
   const receivers: (readonly [OccurrenceRef, MessageChannel])[] = [];
   const refusals: Failure[] = [];
-  for (const item of state.openItems) {
+  for (const item of itemsByPosition(state)) {
     const view = openKindView(item.kind);
     const message = publication.message;
     const channel = message.tag === MessageAddressTag.Channel ? message.channel : view.name === message.name ? view.channel : null;

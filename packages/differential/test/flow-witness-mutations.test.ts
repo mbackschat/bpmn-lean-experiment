@@ -229,7 +229,7 @@ test("PC-CF-08: a delivery to an earlier region's race that settles the current 
       const found = hooks.delivered(ctx, data, state);
       if (found.ok) return found;
       const activations = state.openItems.filter((item) => item.element === data.occurrence.element)
-        .flatMap((item) => state.occurrences.filter((occurrence) => occurrence.id === item.occurrence))
+        .flatMap((item) => state.occurrences.filter((occurrence) => occurrence.id === item.id.occurrence))
         .map((occurrence) => occurrence.activation);
       if (activations.length === 0) return found;
       return hooks.delivered(ctx, { ...data, occurrence: { ...data.occurrence, activation: Math.max(...activations) } }, state);

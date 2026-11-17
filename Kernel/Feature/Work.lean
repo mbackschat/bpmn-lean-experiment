@@ -189,7 +189,7 @@ def submittedItem (submission : SubmissionRule) (envelope : Envelope) : Option M
 /-- The frame an open item's outputs read (`activityScope`): CIB evaluates an output parameter in the Activity's
 execution (`OutputParameter.java:47`). -/
 def outputScope (ctx : Ctx) (state : State) (item : OpenItem) : List (String × Value) × List (String × Value) :=
-  activityScope ctx state item.occurrence item.scope
+  activityScope ctx state item.id.occurrence item.scope
 
 /-- Under CIB's counters (`MultiInstanceCounters.cibLocals`, CIB-INT-0018) an instance's installed submission naming a
 counter would rewrite CIB's loop state, which the kernel computes rather than holds: the body execution's `loopCounter`
@@ -214,7 +214,7 @@ def completeUserTask (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item 
     (values : List (String × Value)) (state : State) : Outcome := do
   admitValues (values.map (·.2))
   if let some limit := ctx.program.options.scopeChainSubmissionBytes then
-    Submission.check ctx state (state.ownScope item.occurrence item.scope) limit values
+    Submission.check ctx state (state.ownScope item.id.occurrence item.scope) limit values
   match submittedItem ctx.program.options.submission payload.envelope with
   | some loop =>
     instanceOutput loop values
@@ -222,22 +222,22 @@ def completeUserTask (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item 
     -- (CIB-EXT-0005), so it also reaches its nearest owner or the root; the slot keeps BPMN 2.0.2 §13.3.7.
     let installed := if ctx.program.options.submission == .installsVariables then
         state.signal (.write item.scope values .outward) else state
-    .ok (installed.signal (.complete item.occurrence .outgoing values .own))
+    .ok (installed.signal (.complete item.id.occurrence .outgoing values .own))
   | none =>
     match ctx.program.options.submission with
     | .installsVariables =>
       -- Dynamic-only: a submission's names are the run's data.
       if shadowsCounter ctx payload.envelope values then .error (.unsupported "multiInstance.resultShadowsInstance")
       let written ← completionOutputs ctx state.logicalTimeMs .activityLocals payload.envelope.outputs (outputScope ctx state item) values []
-      let installed := state.signal (.write (state.ownScope item.occurrence item.scope) values .outward)
-      .ok (installed.signal (.complete item.occurrence .outgoing written .outward))
+      let installed := state.signal (.write (state.ownScope item.id.occurrence item.scope) values .outward)
+      .ok (installed.signal (.complete item.id.occurrence .outgoing written .outward))
     | .outputSet =>
       let written ← completionOutputs ctx state.logicalTimeMs .outputSet payload.envelope.outputs (outputScope ctx state item) [] values
-      .ok (state.signal (.complete item.occurrence .outgoing written .outward))
+      .ok (state.signal (.complete item.id.occurrence .outgoing written .outward))
 
 /-- Replace the kind of the open item `id`, keeping its identity and attachments. -/
-def reopen (state : State) (id : Nat) (kind : OpenKind) : State :=
-  { state with openItems := state.openItems.map fun item => if item.id == id then { item with kind } else item }
+def reopen (state : State) (id : ItemKey) (kind : OpenKind) : State :=
+  { state with openItems := state.openItems.map fun _ item => if item.id == id then { item with kind } else item }
 
 /-- What an effect result value no output mapping consumes becomes: the profile's rule where CIB gives the delegate an
 execution of its own, which ends with the task: an instance of a Multi-Instance Activity, or a task with
@@ -305,16 +305,16 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
     let written ←
       completionOutputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings (outputScope ctx state item) own rest
     let installed := if own.isEmpty then state
-      else state.signal (.write (state.ownScope item.occurrence item.scope) own .outward)
-    .ok (installed.signal (effectCompletion envelope (unconsumed ctx envelope) item.occurrence written rest))
+      else state.signal (.write (state.ownScope item.id.occurrence item.scope) own .outward)
+    .ok (installed.signal (effectCompletion envelope (unconsumed ctx envelope) item.id.occurrence written rest))
   | .businessFailure code message patch => do
     admitValues (patch.map (·.2))
     match ctx.program.options.errorPathOutputs with
     | .mapped => .ok ()
     | .none => if !patch.isEmpty then .error (.rejected "error-path-outputs-not-accepted")
-    let activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0
+    let activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0
     .ok (state.signal (.raise (.error code message)
-      { element := item.element, scope := item.scope, activation, host := some item.occurrence, patch }))
+      { element := item.element, scope := item.scope, activation, host := some item.id.occurrence, patch }))
   | .technicalFailure =>
     match ctx.program.options.technicalFailure, item.kind.view.effect with
     -- Dynamic-only: a host failure is an input; no admission can tell whether it will arrive.
@@ -373,7 +373,7 @@ def triggerActivity (hooks : WorkHooks) (ctx : Ctx) (_ : Header) (payload : Acti
         let accepted ← match ctx.program.options.messageCorrelation with
           -- dynamic-only: a delivery's criteria are its caller's.
           | .modeledKey => if delivery.correlation.isEmpty then .ok true else .error (.unsupported "profile-message-correlation-api-criteria")
-          | .apiCriteria => hooks.criteriaHold state (state.ownScope item.occurrence item.scope) delivery.correlation
+          | .apiCriteria => hooks.criteriaHold state (state.ownScope item.id.occurrence item.scope) delivery.correlation
         if !accepted then .error (.rejected "message-correlation-mismatch")
         else do
           let mapped ← match item.kind.view.payload, delivery.payload with
@@ -382,7 +382,7 @@ def triggerActivity (hooks : WorkHooks) (ctx : Ctx) (_ : Header) (payload : Acti
             | false, some _ => .error (.rejected "message-payload-not-accepted")
             | false, none => .ok []
           admitValues (delivery.variables.map (·.2))
-          .ok (state.signal (.complete item.occurrence .outgoing (mapped ++ delivery.variables) .outward))
+          .ok (state.signal (.complete item.id.occurrence .outgoing (mapped ++ delivery.variables) .outward))
 
 /-- `Hooks.completeCall`: only a Call Activity starts a called instance. -/
 def completeCall (ctx : Ctx) (header : Header) (payload : ActivityPayload) (root : ScopeOccurrence)

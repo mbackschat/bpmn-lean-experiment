@@ -183,7 +183,7 @@ def enabledBoundaries (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : 
   match (state.scopes.find? (·.id == scope)).bind (·.occurrence) with
   | some host =>
     if enabledWith ctx state host != some scope then .ok (state, []) else
-    (state.openItems.filter fun item => item.attachedTo == some host && (ctx.program.boundary? item.element).isSome).foldlM
+    (state.itemsByPosition.filter fun item => item.attachedTo == some host && (ctx.program.boundary? item.element).isSome).foldlM
       (fun (state, fired) item =>
         match itemCondition? ctx item with
         | none => pure (state, fired)
@@ -347,13 +347,13 @@ def afterFiring (state : State) (item : OpenItem) : State × Option Nat :=
     let closed := state.closeItem item.id
     match Timer.successor deadlineMs
         { periodMs := recurrence.periodMs, cron := recurrence.cron, remaining := recurrence.remaining } with
-    | none => (closed, some item.occurrence)
+    | none => (closed, some item.id.occurrence)
     | some (next, followed) =>
       let (state, _) := closed.openSubscription
         (.timer { deadlineMs := next, recurrence := some { recurrence with remaining := followed.remaining } })
         item.element item.scope item.attachedTo item.passive
-      (state, some item.occurrence)
-  | some _, none => (state.closeItem item.id, some item.occurrence)
+      (state, some item.id.occurrence)
+  | some _, none => (state.closeItem item.id, some item.id.occurrence)
   | none, _ => (state, none)
 
 /-- A boundary fired: an interrupting one cancels its host, a non-interrupting one leaves it running; either way the
@@ -366,7 +366,7 @@ def fireBoundary (hooks : SubscriptionsHooks) (ctx : Ctx) (boundary : Boundary) 
     | some host =>
       if (state.occurrence? host).isNone then .error (.semanticFailure .invariant "boundary-host-gone")
       else
-        .ok (boundary.fire (some host) (some item.occurrence) item.scope values
+        .ok (boundary.fire (some host) (some item.id.occurrence) item.scope values
           ((state.closeItem item.id).withdrawOccurrence host))
   else
     let (state, reserved) := afterFiring state item
@@ -379,7 +379,7 @@ def fireCatch (hooks : SubscriptionsHooks) (ctx : Ctx) (subscription : Subscript
   let state := match item.attachedTo with
     | some gateway => (state.disarm gateway).signal (.complete gateway (.flows []) [] .outward)
     | none => state
-  .ok (state.signal (.complete item.occurrence .outgoing values .outward))
+  .ok (state.signal (.complete item.id.occurrence .outgoing values .outward))
 
 /-- An Event Sub-Process start fired: an interrupting start closes, a non-interrupting one continues as `afterFiring`
 says. The scopes feature starts the occurrence, which begins the start Event with the reservation, if any; the values
@@ -393,7 +393,7 @@ def fireEventStart (hooks : SubscriptionsHooks) (ctx : Ctx) (eventSubProcess : E
   | some (subscription, interrupting) =>
     let (state, values) ← admitFiring hooks ctx subscription item fired state
     let (state, inner) :=
-      if interrupting then ((state.closeItem item.id).withdrawInside item.scope, some item.occurrence)
+      if interrupting then ((state.closeItem item.id).withdrawInside item.scope, some item.id.occurrence)
       else afterFiring state item
     .ok (state.signal (.begin { element := eventSubProcess, scope := item.scope, writes := values, inner }))
 
@@ -416,7 +416,7 @@ def arriveCatch (ctx : Ctx) (_ : Header) (_ : EventPayload) (subscription : Subs
   match ← waitKind ctx { values := state.evalContext ctx.program occurrence.scope } subscription with
   | some kind =>
     let state := state.openItem kind occurrence
-    match state.openItems.getLast? with
+    match state.itemsByPosition.getLast? with
     | some item => do
       let (state, fires) ← armed ctx subscription item state
       pure (if fires then fireAll none [item] state else state)

@@ -465,7 +465,8 @@ theorem FrameAlongside.openSubscription {program : Program} (side : FrameAlongsi
   exact .same
 
 /-- Closing an item moves nothing `rel` reads. -/
-theorem FrameAlongside.closeItem {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s) (id : Nat) :
+theorem FrameAlongside.closeItem {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s)
+    (id : ItemKey) :
     rel (s.closeItem id) := by
   rw [Laws.State.closeItem_eq]
   exact side.frame s _ .same kept

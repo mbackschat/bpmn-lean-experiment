@@ -73,7 +73,7 @@ def ReturnContinuesCaller (hooks : Hooks) : Prop :=
     (∃ new, Queues state after new ∧ ∀ queued ∈ new, ∀ id leave writes rule, queued = .complete id leave writes rule →
       id = occurrence.id) ∧
     (∀ other ∈ state.scopes, other.id ≠ root.id → other ∈ after.scopes) ∧
-    (∀ item ∈ state.openItems, ¬ Within state item.scope root.id → item ∈ after.openItems) ∧ after.tokens = state.tokens
+    (∀ item ∈ state.items, ¬ Within state item.scope root.id → item ∈ after.items) ∧ after.tokens = state.tokens
 
 /-! ## The identities of called instances -/
 
@@ -447,7 +447,7 @@ theorem returnContinuesCaller {hooks : Hooks} (call : hooks.completeCall = Featu
   obtain ⟨outputs, rfl⟩ := Laws.Work.completeCall_queues ran
   rw [Laws.State.signal_eq]
   refine ⟨⟨[.complete occurrence.id .outgoing outputs .outward], rfl, fun queued member id leave writes rule same => ?_⟩,
-    fun other inside _ => inside, fun item inside _ => inside, rfl⟩
+    fun other inside _ => inside, fun item inside _ => Laws.State.items_same inside rfl, rfl⟩
   rw [List.mem_singleton.mp member] at same
   exact (Laws.Step.complete_inj same).1.symm
 

@@ -82,8 +82,10 @@ theorem setVariable_same (state : State) (target : ScopeOccurrenceId) (name : St
     SameButVariables state (state.setVariable target name value) := by
   unfold State.setVariable
   dsimp only
-  split <;> split <;> exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl,
-    rfl, rfl⟩
+  split <;> split <;> exact {
+      scopes := rfl, occurrences := rfl, items := rfl, ordinals := rfl, tokens := rfl, activations := rfl,
+      nextIssue := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl, signals := rfl,
+      instances := fun _ => by apply instanceOf_congr <;> rfl, instanceId := rfl, slots := rfl }
 
 /-- The variable sets after `setVariable`: the target's set rebinds or appends the name, or a new set holds it. -/
 theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
@@ -101,7 +103,10 @@ theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name
 /-- `removeVariable` changes only the variable sets and the write log. -/
 theorem removeVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) :
     SameButVariables state (state.removeVariable target name) :=
-  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ => by apply instanceOf_congr <;> rfl, rfl, rfl⟩
+  {
+      scopes := rfl, occurrences := rfl, items := rfl, ordinals := rfl, tokens := rfl, activations := rfl,
+      nextIssue := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl, signals := rfl,
+      instances := fun _ => by apply instanceOf_congr <;> rfl, instanceId := rfl, slots := rfl }
 
 /-- `keyed` keeps the last binding of each name: a binding enters unless a binding after it has its name. -/
 theorem keyed_eq : keyed [] = [] ∧ ∀ (binding : String × Value) (rest : List (String × Value)),
@@ -227,20 +232,28 @@ theorem issue_eq (state : State) : state.issue = ({ state with nextIssue := stat
 theorem openItem_eq (state : State) (kind : OpenKind) (occurrence : Occurrence) : state.openItem kind occurrence =
     { state with
         nextIssue := state.nextIssue + 1
-        openItems := state.openItems ++
-          [{ id := state.nextIssue, kind, element := occurrence.element, scope := occurrence.scope, occurrence := occurrence.id }] } := by
-  simp only [State.openItem, State.issue]
+        itemOrdinals := state.itemOrdinals.insert occurrence.id (state.itemOrdinals.getD occurrence.id 0 + 1)
+        openItems := state.openItems.insert ⟨occurrence.id, .wait, state.itemOrdinals.getD occurrence.id 0⟩
+          { id := ⟨occurrence.id, .wait, state.itemOrdinals.getD occurrence.id 0⟩, position := state.nextIssue, kind,
+            element := occurrence.element, scope := occurrence.scope } } := by
+  simp only [State.openItem, State.issue, State.issueItem, State.putItem]
 
-/-- A subscription reserves its occurrence, then issues its item. -/
+/-- A subscription reserves its occurrence, then issues its item's position and key. -/
 theorem openSubscription_eq (state : State) (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId)
     (host : Option Nat) (passive : Bool) :
     (state.openSubscription kind element scope host passive).1 =
       { (state.reserve element scope).1 with
           nextIssue := (state.reserve element scope).1.nextIssue + 1
-          openItems := (state.reserve element scope).1.openItems ++
-            [{ id := (state.reserve element scope).1.nextIssue, kind, element, scope
-               occurrence := (state.reserve element scope).2.id, attachedTo := host, passive }] } := by
-  simp only [State.openSubscription, State.issue]
+          itemOrdinals := (state.reserve element scope).1.itemOrdinals.insert (state.reserve element scope).2.id
+            ((state.reserve element scope).1.itemOrdinals.getD (state.reserve element scope).2.id 0 + 1)
+          openItems := (state.reserve element scope).1.openItems.insert
+            ⟨(state.reserve element scope).2.id, .subscription,
+              (state.reserve element scope).1.itemOrdinals.getD (state.reserve element scope).2.id 0⟩
+            { id := ⟨(state.reserve element scope).2.id, .subscription,
+                (state.reserve element scope).1.itemOrdinals.getD (state.reserve element scope).2.id 0⟩,
+              position := (state.reserve element scope).1.nextIssue, kind, element, scope, attachedTo := host,
+              passive } } := by
+  simp only [State.openSubscription, State.issue, State.issueItem, State.putItem]
 
 /-- A scope occurrence is entered at the counter, below its parent, with its locals keyed. -/
 theorem enterScope_eq (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
@@ -309,7 +322,7 @@ theorem busyScope_begin (request : BeginRequest) : (Token.begin request).busySco
 /-- The busy scope occurrences: each token's, each live open item's, each begun occurrence's, each parent and each one
 a feature slot keeps alive. -/
 theorem busyScopes_eq (state : State) : state.busyScopes = state.tokens.map (·.busyScope) ++
-    (state.openItems.filter fun item => !item.passive).map (·.scope) ++ (state.occurrences.filter (·.begun)).map (·.scope) ++
+    (state.items.filter fun item => !item.passive).map (·.scope) ++ (state.occurrences.filter (·.begun)).map (·.scope) ++
       state.scopes.filterMap (·.parent) ++ state.slots.keptAlive := by
   simp only [State.busyScopes]
 
@@ -321,8 +334,8 @@ theorem emit_eq (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId
     state.emit flows scope = { state with tokens := state.tokens ++ flows.map (Token.flow · scope) } := by
   simp only [State.emit]
 
-theorem closeItem_eq (state : State) (id : Nat) :
-    state.closeItem id = { state with openItems := state.openItems.filter (·.id != id) } := by simp only [State.closeItem]
+theorem closeItem_eq (state : State) (id : ItemKey) :
+    state.closeItem id = { state with openItems := state.openItems.erase id } := by simp only [State.closeItem]
 
 /-- A subscription's item waits for a trigger: no effect result or incident command closes it. -/
 theorem triggers_await : (∀ detail, AwaitsTrigger (.timer detail)) ∧ (∀ detail, AwaitsTrigger (.message detail)) ∧
@@ -330,7 +343,7 @@ theorem triggers_await : (∀ detail, AwaitsTrigger (.timer detail)) ∧ (∀ de
   ⟨fun _ => ⟨rfl, rfl⟩, fun _ => ⟨rfl, rfl⟩, fun _ => ⟨rfl, rfl⟩, fun _ => ⟨rfl, rfl⟩⟩
 
 theorem closeOwnItems_eq (state : State) (id : Nat) :
-    state.closeOwnItems id = { state with openItems := state.openItems.filter (·.occurrence != id) } := by
+    state.closeOwnItems id = { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != id } := by
   simp only [State.closeOwnItems]
 
 theorem removeVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) :
@@ -556,15 +569,22 @@ theorem reserve_reserves (state : State) (element : ElementId) (scope : ScopeOcc
   have instances : ∀ x, (state.reserve element scope).1.instanceOf x = state.instanceOf x :=
     instanceOf_congr (by simp [State.reserve, State.activate, State.issue])
       (by simp [State.reserve, State.activate, State.issue])
-  refine ⟨by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
-    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve], by simp [State.reserve],
-    by simp [State.reserve], by simp [State.reserve], fun keyed => ?_, by simp [State.reserve, State.activate, State.issue],
-    instances, by simp [State.reserve, State.activate, State.issue],
-    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
-    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
-    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
-    by simp [State.reserve, State.activate, State.issue], by simp [State.reserve, State.activate, State.issue],
-    by simp [State.reserve, State.activate, State.issue], rfl⟩
+  refine {
+      occurrences := by simp [State.reserve, State.activate, State.issue],
+      id := by simp [State.reserve, State.activate, State.issue],
+      nextIssue := by simp [State.reserve, State.activate, State.issue], kind := by simp [State.reserve],
+      placed := by simp [State.reserve], role := by simp [State.reserve], unbegun := by simp [State.reserve],
+      activated := fun keyed => ?_, scopes := by simp [State.reserve, State.activate, State.issue],
+      instances := instances, instanceId := by simp [State.reserve, State.activate, State.issue],
+      itemMap := by simp [State.reserve, State.activate, State.issue],
+      tokens := by simp [State.reserve, State.activate, State.issue],
+      signals := by simp [State.reserve, State.activate, State.issue],
+      variables := by simp [State.reserve, State.activate, State.issue],
+      journal := by simp [State.reserve, State.activate, State.issue],
+      draft := by simp [State.reserve, State.activate, State.issue],
+      status := by simp [State.reserve, State.activate, State.issue],
+      failure := by simp [State.reserve, State.activate, State.issue],
+      slots := by simp [State.reserve, State.activate, State.issue], continued := rfl }
   obtain ⟨activations, above, positive⟩ := activate_activated keyed (state.instanceOf scope) element .element
   exact ⟨by simpa [State.reserve, State.issue] using activations, by simpa [State.reserve, State.issue] using above,
     by simpa [State.reserve] using positive⟩
@@ -588,10 +608,15 @@ theorem startReserved_starts (state : State) {occurrence : Occurrence} (sourceTy
   revert instances
   simp only [State.startReserved, unbegun, Bool.false_eq_true, ite_false]
   intro instances
-  refine ⟨by simp [State.recordStart], ?_, by simp [State.recordStart], instances, by simp [State.recordStart],
-    by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
-    by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
-    by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart]⟩
+  refine {
+      occurrences := by simp [State.recordStart], started := ?_,
+      scopes := by simp [State.recordStart], instances := instances,
+      instanceId := by simp [State.recordStart], activations := by simp [State.recordStart],
+      nextIssue := by simp [State.recordStart], itemMap := by simp [State.recordStart],
+      tokens := by simp [State.recordStart], signals := by simp [State.recordStart],
+      variables := by simp [State.recordStart], journal := by simp [State.recordStart],
+      ended := by simp [State.recordStart], status := by simp [State.recordStart],
+      failure := by simp [State.recordStart], slots := by simp [State.recordStart] }
   rw [recordStart_started]
   simp [key]
 
@@ -618,11 +643,16 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
     obtain ⟨id, named, lookup⟩ := Option.bind_eq_some_iff.mp found
     obtain ⟨member, same⟩ := occurrence?_some lookup
     intro instances keeps
-    refine ⟨by simp [State.recordStart], by rw [recordStart_started], rfl, rfl,
-      .inl ⟨reserved, member, same ▸ named, rfl, rfl, rfl, rfl, by simp [State.recordStart], by simp [State.recordStart]⟩,
-      keeps.1, instances, by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart],
-      by simp [State.recordStart], keeps.2.1, by simp [State.recordStart], by simp [State.recordStart],
-      by simp [State.recordStart], by simp [State.recordStart], by simp [State.recordStart], rfl⟩
+    refine {
+        occurrences := by simp [State.recordStart], started := by rw [recordStart_started], scope := rfl,
+        isBegun := rfl,
+        source := .inl ⟨reserved, member, same ▸ named, rfl, rfl, rfl, rfl, by simp [State.recordStart], by simp [State.recordStart]⟩,
+        scopes := keeps.1, instances := instances, instanceId := by simp [State.recordStart],
+        itemMap := by simp [State.recordStart], tokens := by simp [State.recordStart],
+        signals := by simp [State.recordStart], variables := keeps.2.1,
+        journal := by simp [State.recordStart], ended := by simp [State.recordStart],
+        status := by simp [State.recordStart], failure := by simp [State.recordStart],
+        slots := by simp [State.recordStart], continued := rfl }
   · rename_i found
     have shape : (state.activate (state.instanceOf request.scope) request.element role).1 =
         { state with activations := (state.activate (state.instanceOf request.scope) request.element role).1.activations } := by
@@ -637,13 +667,19 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
         have := Option.bind_eq_none_iff.mp found id named
         have := List.find?_eq_none.mp this occurrence member
         simp [same] at this
-    refine ⟨by simp [State.recordStart, State.issue], by rw [recordStart_started]; simp [State.recordStart, State.issue],
-      rfl, rfl, .inr ⟨absent, by simp [State.issue], by simp [State.recordStart, State.issue], rfl, rfl, ?_⟩,
-      keeps.1, instances, by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue],
-      by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue], keeps.2.1,
-      by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue],
-      by simp [State.recordStart, State.issue], by simp [State.recordStart, State.issue],
-      by simp [State.recordStart, State.issue], rfl⟩
+    refine {
+        occurrences := by simp [State.recordStart, State.issue],
+        started := by rw [recordStart_started]; simp [State.recordStart, State.issue], scope := rfl, isBegun := rfl,
+        source := .inr ⟨absent, by simp [State.issue], by simp [State.recordStart, State.issue], rfl, rfl, ?_⟩,
+        scopes := keeps.1, instances := instances, instanceId := by simp [State.recordStart, State.issue],
+        itemMap := by simp [State.recordStart, State.issue],
+        tokens := by simp [State.recordStart, State.issue],
+        signals := by simp [State.recordStart, State.issue], variables := keeps.2.1,
+        journal := by simp [State.recordStart, State.issue],
+        ended := by simp [State.recordStart, State.issue],
+        status := by simp [State.recordStart, State.issue],
+        failure := by simp [State.recordStart, State.issue],
+        slots := by simp [State.recordStart, State.issue], continued := rfl }
     exact ⟨by simpa [State.recordStart, State.issue] using activated.activations, activated.above, activated.positive⟩
 
 /-! ## Clearing a scope occurrence -/
@@ -656,9 +692,29 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
     intro entry
     simp [State.clearInside, State.recordCancelled, mem, StrictlyWithin]
   have fewer : (s.clearInside scope keep).scopes.Sublist s.scopes := List.filter_sublist
-  refine ⟨scopes, fun occurrence => ?_, fun item => ?_, fun token => ?_, fun variables => ?_,
-    fewer, List.filter_sublist, List.filter_sublist, List.filter_sublist, List.filter_sublist, fun x member => ?_,
-    rfl, rfl, rfl, rfl, rfl, rfl, rfl, ⟨fun _ member => ?_, fun _ member => ?_, fun _ member => ?_⟩, rfl⟩
+  have ordinals : ∀ occurrence ∈ (s.clearInside scope keep).occurrences,
+      (s.clearInside scope keep).itemOrdinals.getD occurrence.id 0 = s.itemOrdinals.getD occurrence.id 0 := by
+    intro occurrence member
+    simp only [State.clearInside, State.recordCancelled] at member ⊢
+    obtain ⟨old, stays⟩ := List.mem_filter.mp member
+    refine getD_filter_keep fun _ => ?_
+    simp only [Bool.not_eq_eq_eq_not, Bool.not_true, List.any_eq_false, beq_iff_eq]
+    intro removed inRemoved same
+    simp only [List.mem_flatMap, List.mem_reverse, List.mem_filter, Bool.and_eq_true, beq_iff_eq,
+      Bool.not_eq_eq_eq_not, Bool.not_true] at inRemoved
+    obtain ⟨current, inside, held, rest⟩ := inRemoved
+    obtain ⟨sameScope, kept⟩ := rest
+    have := nodup_map_eq formed.distinct.occurrences held old same
+    subst this
+    simp [sameScope ▸ inside] at stays
+    simp [stays] at kept
+  refine {
+      scopes := scopes, occurrences := fun occurrence => ?_, items := fun item => ?_, tokens := fun token => ?_,
+      variables := fun variables => ?_, scopesSublist := fewer, occurrencesSublist := List.filter_sublist,
+      openItemsSub := ItemsSub.filter _ _, ordinals := ordinals, tokensSublist := List.filter_sublist,
+      variablesSublist := List.filter_sublist, instances := fun x member => ?_, activations := rfl, nextIssue := rfl,
+      signals := rfl, status := rfl, failure := rfl, journal := rfl, started := rfl,
+      slots := ⟨fun _ member => ?_, fun _ member => ?_, fun _ member => ?_⟩, bodies := rfl }
   rotate_left 4
   · obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
     obtain ⟨old, outside⟩ := (scopes entry).mp inside
@@ -672,7 +728,8 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
   iterate 3
     · simp only [State.clearInside, State.recordCancelled, FeatureSlots.clear] at member
       exact (List.mem_filter.mp member).1
-  all_goals simp [State.clearInside, State.recordCancelled, mem, StrictlyWithin]
+  all_goals simp [State.clearInside, State.recordCancelled, mem, StrictlyWithin, items_eq,
+    mem_itemList_filter formed.distinct.items]
 
 /-- `State.subtree` meets each scope occurrence once. -/
 private theorem search_nodup {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} :
@@ -730,7 +787,9 @@ the cancellations in `draft`: the one equation of the clearing the laws above th
 theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) : ∃ draft, s.clearInside scope keep =
     { s with
       tokens := s.tokens.filter (!(s.subtree scope).contains ·.busyScope)
-      openItems := s.openItems.filter fun item => !(s.subtree scope).contains item.scope || keep.contains item.occurrence
+      openItems := s.openItems.filter fun _ item => !(s.subtree scope).contains item.scope || keep.contains item.id.occurrence
+      itemOrdinals := s.itemOrdinals.filter fun id _ => !((s.subtree scope).reverse.flatMap fun current =>
+        s.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id).any (·.id == id)
       occurrences := s.occurrences.filter fun occurrence =>
         !(s.subtree scope).contains occurrence.scope || keep.contains occurrence.id
       scopes := s.scopes.filter (!((s.subtree scope).filter (· != scope)).contains ·.id)
@@ -805,17 +864,27 @@ theorem leaveScope_withoutRecord (s : State) (id : Nat) (scope : ScopeOccurrence
   simp only [State.leaveScope, State.clearInside, State.recordCancelled, tree, keyOf]
   simp only [withoutRecord]
   rw [removed]
-  simp only [List.filter_filter, Bool.and_comm]
+  simp only [List.filter_filter, Bool.and_comm, filter_erase_comm]
 
 /-- `State.disarm` closes the items attached to `host` and drops the reservations they hold. -/
 theorem disarm_eq (s : State) (host : Nat) : s.disarm host = { s with
-    openItems := s.openItems.filter (·.attachedTo != some host)
+    openItems := s.openItems.filter fun _ item => item.attachedTo != some host
     occurrences := s.occurrences.filter fun occurrence =>
-      occurrence.begun || !(s.openItems.filter (·.attachedTo == some host)).any (·.occurrence == occurrence.id) } := by
-  simp only [State.disarm]
+      occurrence.begun || !(s.items.filter (·.attachedTo == some host)).any (·.id.occurrence == occurrence.id)
+    itemOrdinals := s.itemOrdinals.filter fun id _ => !s.occurrences.any fun occurrence =>
+      occurrence.id == id && !occurrence.begun && (s.items.filter (·.attachedTo == some host)).any (·.id.occurrence == occurrence.id) } := by
+  simp only [State.disarm, State.mk.injEq, and_true, true_and]
+  congr 1
+  funext id _
+  simp only [List.contains_map, List.any_filter]
+  congr 2
+  funext occurrence
+  cases occurrence.begun <;> simp only [Bool.not_true, Bool.not_false, Bool.false_and, Bool.true_and, Bool.and_false,
+    Bool.and_true]
+  rw [BEq.comm, Bool.and_comm]
 
 theorem withdrawInside_eq (s : State) (scope : ScopeOccurrenceId) :
-    s.withdrawInside scope = { s with openItems := s.openItems.filter (!(s.subtree scope).contains ·.scope) } := by
+    s.withdrawInside scope = { s with openItems := s.openItems.filter fun _ item => !(s.subtree scope).contains item.scope } := by
   simp only [State.withdrawInside]
 
 theorem withdrawOccurrence_eq (s : State) (id : Nat) :

@@ -3,7 +3,7 @@
  * and the feature-owned data of `FeatureSlots`, always present and empty by default, with the records a compensation
  * run resumes by. Part of `state.ts`, which re-exports it.
  */
-import { type DefinitionRef, type ElementId, type FlowId, type Value } from "../il/types.js";
+import { assertNever, type DefinitionRef, type ElementId, type FlowId, type Value } from "../il/types.js";
 import { type OccurrenceRef } from "./input.js";
 import { type Binding } from "./wait.js";
 
@@ -47,6 +47,18 @@ export type Iteration =
   | { readonly tag: IterationTag.Waiting }
   | { readonly tag: IterationTag.Active; readonly scope: ScopeOccurrenceId }
   | { readonly tag: IterationTag.Completed; readonly output: Value | null };
+
+/** `Iteration.holds`: whether this instance runs in the scope occurrence `scope`. */
+export function iterationHolds(iteration: Iteration, scope: ScopeOccurrenceId): boolean {
+  switch (iteration.tag) {
+    case IterationTag.Active:
+      return iteration.scope === scope;
+    case IterationTag.Waiting:
+    case IterationTag.Completed:
+      return false;
+  }
+  return assertNever(iteration);
+}
 
 /**
  * A running Multi-Instance Activity: the scope occurrence it holds its instances in, its element and body occurrence,

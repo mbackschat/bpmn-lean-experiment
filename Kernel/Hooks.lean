@@ -282,9 +282,9 @@ def Ctx.requireMappings (ctx : Ctx) (context : EvalContext) (mappings : List Map
 /-- The open item with the public identity `occurrence` whose view has the detail `detail` reads, with that detail. -/
 def itemDetail? {α : Type} (ctx : Ctx) (state : State) (occurrence : OccurrenceRef) (detail : WaitView → Option α) :
     Option (OpenItem × α) :=
-  state.openItems.findSome? fun item =>
+  state.itemsByPosition.findSome? fun item =>
     if ctx.program.publicId item.element == occurrence.element &&
-        ((state.occurrence? item.occurrence).map (·.activation)) == some occurrence.activation &&
+        ((state.occurrence? item.id.occurrence).map (·.activation)) == some occurrence.activation &&
         state.instanceOf item.scope == occurrence.processInstanceId
     then (detail item.kind.view).map (item, ·) else none
 
