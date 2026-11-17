@@ -645,7 +645,7 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | T43 (MEDIUM) | T43, T44 (AD6) | the containment walk, an 11-type classification table, the completeness guard, the alias, red/green tests (212 pass, `tsc` clean) | about 33 min (lock wait 15.8 min, overlapping) | about 8 min per 150 type–property pairs, after a one-time 8 min | the remaining 110 types about 1.5–2.5 h raw (lower bound) | the semantic choice per row, the register entries for inert rows, DI and `Documentation`, non-Boolean defaults, a witness per consumed row. T45's refusal rules are priced at T1b's breadth rate |
 | T7T8 | T7, T8 (KD3, KD6) | the closure as a choice among units in TypeScript, an 11-variant sweep over 1,914 cases; `Laws.Correlation` proved against the registered hooks | about 57 min | sweep about 10–17 s per variant and seed; about 1 min and 28 lines per law rule | the pure-function law families about 25–35 min | the L1 and L2 arguments, `Subscriptions.Rules`, rules stated over a start's result, the Lean kernel under any order but today's |
 | T17, T11 | round 3 | running | | | | |
-| T9b, T12, T15, T40 | round 3 | queued | | | | |
+| T9b, T12, T15, T40, T2b | round 3; T2b measures the ripple of one `Value` arm (guards, tests, packages) | queued | | | | |
 
 **Process calibration from the proof wave (root, from git, 2026-11-17).**
 - **Elapsed time.** P1 to P8 ran from P0's closure (`4cc234abf`, 11-14 05:19) to P8's (`bca882990`, 11-16 09:46): 52.5 calendar hours, against budgets totalling 24.5 agent-days.
