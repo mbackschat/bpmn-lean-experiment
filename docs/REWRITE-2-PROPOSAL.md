@@ -95,6 +95,30 @@ The "Owner" column marks only the items on the owner's ask list: dependencies, l
 | T9 (revised) | 14 runtime `unsupported` sites are semantic gaps: an admitted model reaches an interpretation that was never selected. 11 are in Propagation and Compensation; 3 are closure rollback and interruption in `Step/Jobs.lean:24,36` and `Step/Stale.lean:66` | yes, for models that reach them | root census of the 60 `dynamic-only` marks (`q/r2/spikes/T9-result.md`): 17 Java-host fidelity, 3 capacity, 20 caller data, 6 value domain, 14 semantic gaps | each needs an interpretation, a cold review, Lean and TypeScript, scenarios and CIB evidence. Unmeasured per code; spike T9b resolves one end to end |
 | T26 | **Data volume per instance:** process data lives in the Temporal Workflow state, under bounds of 32 members per container, 16 KiB per value and 256 KiB per state. An order with 100 lines is refused (`value-outside-domain`). CIB stores variables in its database without such bounds | potentially, for data-heavy third-party processes | the bounds are at `kernel/semantics/DATA-SEMANTICS-SPEC.md` (Values) and in the [lifecycle capacity table](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-capacity). The [scalability proposal](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md) bounds chains by design but never sizes the bounds against real data | unmeasured. The design options: raise the bounds within Temporal's payload limits (an owner bound decision), or externalize large values by claim check (a store dependency, an owner decision). Research and a spike follow |
 
+**Topics found by the independent showstopper hunt (2026-11-17).**
+- The hunt was read-only, at `5fdfcd941`. Its report is `q/r2/hunt-report.md` in the session scratchpad.
+- In the "Root check" column, "verified" means the root read the cited code or document lines; "hypothesis" means nobody has run it.
+- These topics are not yet designed or calibrated. They join checkpoints 2 and 3.
+
+| # | Topic | Root check | Owner |
+|---|---|---|---|
+| T27 (F1) | **Product 2 stops working after about 100 instances.** Work, Incidents and Metrics each build an all-or-nothing snapshot with one Temporal Query per instance, capped at 100: closed instances count in `work-service.ts:117`, Incidents are hard-coded at 100 (`shared-composition.ts:120`), Metrics at 100 per version (`flow-node-metrics-aggregation-service.ts:62`) | verified | — |
+| T28 (F2) | **An instance that halts looks completed.** A halt ends the Workflow (`workflow-host.ts:583,641`), and observation reports it as `Closed` (`engine-api/src/process-observation.ts:55`). Nothing in `platform/` handles halts. One trigger: any technical failure under `bpmn-2.0.2` is `unsupported` (`kernel/src/feature/work.ts:559-561`) | verified | — |
+| T29 (F3) | **A rejected effect result is dropped.** The host deletes the effect's Activity handle and keeps going (`workflow-host.ts:608-616`), for example on `value-outside-domain` (`work.ts:467`) | verified that it is dropped; that the task then stays stuck is a hypothesis | — |
+| T30 (F4) | **History is lost when the projector falls behind a Continue-As-New.** A Run keeps only its own batches, and an older cursor is a permanent `gap` (`temporal-host/src/publication.ts:7-10,104`) | verified that the gap is permanent; that recovery starves past 1,000 candidates is a hypothesis (the limit exists in `postgresql-*-recovery-candidates.ts:8`) | — |
+| T31 (F5) | **One lost chain disables Work for every instance.** An `unknown` registration fails the whole snapshot again on every call (`work-service.ts:135-141`), and no operator action retires it | verified | — |
+| T32 (F6) | **A recurring Timer start never fires by itself.** Product 2 offers only one-shot schedules (`BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md:19`) | verified | scope: the scheduling spec excludes recurrence |
+| T33 (F7) | **Instances the engine starts itself, for example by Signal cascades, are invisible in Product 2** (`BPM-PLATFORM-HUMAN-WORK-SPEC.md:27`) | verified | — |
+| T34 (F8) | **Service Tasks bound by `class`, `delegateExpression`, `expression` or `external` are refused.** This blocks 46 of the 109 census models. Generic binding and external tasks are deferred in the [compatibility scope](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md), with reopen conditions that name a consumer, and Product 2 is that consumer | verified (census data) | **scope**: reopen a deferred family |
+| T35 (F9) | **A third party's User Tasks cannot be completed with data.** Structured forms come only from the project's rendering extension; 19 of 65 models with User Tasks use `formKey` | hunt measurement, not yet re-run by the root | Camunda Forms would be a **dependency** |
+| T36 (F10) | **The 128-Run lifetime cap halts long-running instances** (`TEMPORAL-PROCESS-LIFECYCLE-SPEC.md:102`) | verified that the bound exists; the time to reach it is an estimate | **owner-ratified bound** |
+| T24 (corrected, F11) | Persisted production history needs five owner approvals first (`PROJECT-DESIGN.md:253-259`), and a third party's use creates it. "Wipe on upgrade" is therefore **not settled**; the earlier "decided out" is withdrawn | verified | **five owner approvals listed in PROJECT-DESIGN** |
+| T37 (F12) | **`Value` is a nested inductive** (`Kernel/IL/Types/Expression.lean:24-25`), so KD7's planned guard fails on it as well as on `Slots` | verified | **architecture promise**: restate it, or flatten `Value` (non-local) |
+| T38 (F13) | **Nothing designs failure handling under the standards profile.** Incidents exist only under the CIB profiles, and a technical failure halts (T28) | verified through T28 | — |
+| T39 (F14) | Cron runs in UTC only, as the owner decided on 2026-11-08 | verified (architecture owner decisions) | disclosure; changing it reverses an owner decision |
+| T40 (F16) | **No mechanism finds Lean/TypeScript divergence beyond the corpus**, while production runs only the TypeScript kernel | hypothesis (no generator found) | — |
+| T41 (F17, F18) | Audit suspicions dropped from this list: the proof cost per breadth item, replay CPU, and models admitted that then fail at start (#77-style). Also the fidelity of Java's `Double.toString` for AD4 | carried | — |
+
 ## Remaining-to-goal ledger, not costly
 
 About 10 agent-days in total, all independent of the kernel design. The issues are #133, #93, #171, #134, #137, #142, #124, #152, #169, #170, #167, #188, #77, #100, #106, #114, #119, #107, #101, #92, #110, #112 and #67, plus the CIB harness gaps (#89, #127–#130, #105), small Product 2 surfaces (value arms, search filters, profile selection, a published bundle) and documentation corrections. Each item is costed in the domain reports.
@@ -178,7 +202,7 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 - **Footprints:** a type-level scan fails on a `Hooks` field whose type mentions `State`.
 - **Raw flags:** only `eventStart` and `eventSubProcess?` may bind the IL's interrupting flag.
 - **Queuing sites:** the queuing mechanisms are one data list (P1 census, 22 sites), and a scan fails on a queuing site outside it.
-- **Hook defaults:** the architecture's "no-op default" promise is restated as "refuse default". Refusing is the safer contract, and the code already does it (`Hooks.lean:412-416`). Restating a promise needs owner approval, so it is listed under owner items.
+- **Hook defaults:** the architecture's "no-op default" promise is restated as "refuse default". Refusing is the safer contract, and the code already does it (`Hooks.lean:412-416`). Decided as OD2 (1).
 
 ### Admission and breadth: T1, T2, T9, T20
 
@@ -216,7 +240,7 @@ The design removes P6's causes C1–C6 by construction instead of proving around
   - **Negative Integer** stays within the wire's magnitude bound.
   - **Date** is an instant in epoch milliseconds, as CIB's `java.util.Date` holds it.
 - EL coercion follows the EL specification, and the pinned `cibseven-juel` stays the oracle.
-- The size bounds stay: 1,024 B strings, 32 members per container, 256 nodes, 16 KiB. Raising them is an owner item, listed below with a recommendation.
+- The size bounds (1,024 B strings, 32 members per container, 256 nodes, 16 KiB) are raised within Temporal's payload limits to the values spike T26 measures (OD3).
 - **Premise:** `Value` has no Double or Date (`Kernel/IL/Types/Expression.lean:17-25`). Division and float literals are refused (`Kernel/Admission/Data.lean:100,130`), and CIB's invoice example uses `typeRef="double"`.
 - **Scope check:** the Core JUEL level is "EL coercion over the portable value domain" ([architecture](kernel/ARCHITECTURE-SPEC.md#runtime-state-and-step)), and Double is within CIB7's breadth.
 - **Rejected:** Lean `Float` as the stored representation. Its `BEq` is IEEE equality (NaN differs from itself), which breaks lawful equality of `Value`.
@@ -339,7 +363,7 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | `Step` is pure and total | architecture, step | Lean totality (`partial` only in codecs, root grep) and the lane proofs that unfold `Step` | enforced | kept |
 | Every evaluation runs inside the kernel, with one evaluator per profile | architecture, evaluation | guard 13 | enforced | kept |
 | JUEL levels Task fields (M3) and Events (M6) | architecture, evaluation | rows | **undelivered** | delivered as rows (AD3) |
-| Each `Hooks` field has a no-op default | architecture, hooks | — | **broken**: defaults refuse | restated as "refuse default"; **owner item 1** |
+| Each `Hooks` field has a no-op default | architecture, hooks | — | **broken**: defaults refuse | restated as "refuse default"; **OD2 (1)** |
 | `Step` alone owns hook order; cross-owner matches go through `Hooks`; at most three files per feature | architecture, hooks | guards 1, 4, 10 | enforced | kept |
 | `Laws.F` rules are proved against `Step` in the proof wave | architecture, hooks; lane | lane proofs | **partly**: 8 families witness-only (K10) | proved in the rewrite pass (KD6) |
 | Commutation is proved once over the footprints each feature declares | architecture, modules | — | **broken**: no footprints | footprints by typing (KD2); new type-level guard (KD7) |
@@ -350,7 +374,7 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | No theorems in executable modules; laws are independent of `Step`'s code | architecture, modules; lane | guard 6 | enforced | kept |
 | Lean options are pinned | architecture, modules | `scripts/verification-entrypoint.test.ts` | enforced | kept |
 | TypeScript transcribes Lean, module by module | architecture, TypeScript | guards 8, 16 | enforced | kept |
-| No proof-motivated TypeScript code | architecture, TypeScript | track review only | review-enforced | **owner item 2**: move to the review checklist |
+| No proof-motivated TypeScript code | architecture, TypeScript | track review only | review-enforced | **OD2 (2)**: moved to the review checklist |
 | `bpmn-source` refuses only parse, preservation and unknown-element cases; every semantic refusal lives in admission | architecture, TypeScript | — | **broken**: `reader.factNotCarried` decides extension meaning in the reader | AD1 moves the classification to profile data; guard 12 extended to restrict reader codes |
 | No code compares a profile identifier | architecture, profiles | guard 7 (kernel and boundary packages) | **broken in the platform**: `human-task-catalog-projection.ts:23` | PD3; guard 7 extended to `platform/` |
 | Semantic publication carries element identity, source type and transition role, no IL internals | architecture, contracts | — | **broken**: `owner`, `idle.scope` (P5) | PD2; schema guard |
@@ -361,22 +385,23 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | For every registered scenario, the platform's task set equals the engine's open User Tasks | PROJECT-DESIGN (one repository) | — | **missing** | PD4 |
 | The engine gate passes with the platform tree absent | milestone ladder, M1 | — | **missing** | PD4 |
 | The platform consumes only the engine's published contract and never constructs an occurrence identity | PROJECT-DESIGN; platform proposal | `scripts/platform-product-boundary.test.ts` (10 tests) | enforced; stale `BpmnSemantics` root at `platform-product-boundary.ts:8` | kept; stale root removed |
-| Review, definition of done and register-in-commit rules | architecture, review | review receipts | process | **owner item 3**: move to the engineering policy |
+| Review, definition of done and register-in-commit rules | architecture, review | review receipts | process | **OD2 (3)**: moved to the engineering policy |
 
-## Owner items
+## Decisions on owner items
 
-These are only items on the owner's ask list. Each was checked against the settled documents.
+For each decision, the root checked the premise in code or documents, the framing against the settled scope and `CLAUDE.md`, and the recommendation against the rejected alternative.
 
-1. **Restate the hook-default promise** as "each `Hooks` field defaults to refusal". This changes an architecture promise.
-   - **Recommendation:** accept. A refusing default makes an unregistered behavior fail loudly. A no-op default would make it silently skip meaning.
-2. **Remove "no proof-motivated TypeScript code" as an architecture promise** and move it to the track review's checklist.
-   - **Why it is an ask:** no guard, test or proof can enforce it. A scan cannot tell proof-motivated code from executable structure, and a name deny-list would pass by matching nothing.
-   - **Recommendation:** move it.
-3. **Remove the review and definition-of-done rules from the architecture's promises** and keep them as process rules in the [engineering policy](kernel/ENGINEERING-POLICY.md), enforced by review receipts.
-   - **Why it is an ask:** they govern how work is accepted, not what the code guarantees, so no guard, test or proof applies.
-   - **Recommendation:** move them.
-
-**Disclosure, not an ask.** The value size bounds stay as they are: 1,024 B strings, 32 members per container, 256 nodes and 16 KiB. They become an owner item only if spike T1a measures third-party models that exceed them.
+| # | Decision | Premise checked | Framing checked | Rejected |
+|---|---|---|---|---|
+| OD1 | **T34: generic Service Task binding is reopened as a project handler registry.** `class`, `delegateExpression`, `expression` and external-task `topic` tokens become opaque handler keys. The adopter maps them to handlers through the public effect contract (HD1). There is no Java execution, no field injection and no fetch-and-lock | census T1a: 23 of 109 models deploy with inert metadata alone, and 53 with inert metadata plus a binding map | the [compatibility scope](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) says "prefer a project handler registry first" and names the consumer condition; Product 2 adopters are that consumer. Its rows are amended in the implementation commit | keeping the families deferred: third-party Service Tasks would need hand editing |
+| OD2 | **Architecture promises.** (1) Each `Hooks` field defaults to refusal. (2) "No proof-motivated TypeScript" moves to the track review's checklist. (3) The review and definition-of-done rules move to the [engineering policy](kernel/ENGINEERING-POLICY.md). (4) "No nested inductive" is kept, with one exception: the bounded value tree `Value`. That exception is withdrawn, and `Value` flattened, if spike T2 shows that `Value`'s nesting costs proof work. `State/Slots.lean` is flattened in every case | the code refuses (`Hooks.lean:412-416`); no guard can detect proof-motivated code; `Value` is nested (`Expression.lean:24-25`) | each promise then names its enforcement (promise register) | no-op defaults, which would skip meaning silently; flattening `Value` without measured need, a non-local change |
+| OD3 | **Ratified bounds.** The 128-Run cap is removed. The value and state bounds are raised within Temporal's payload limits, to values spike T26 measures; stable refusal codes stay above them | only `successorRun` reads the Run count (`capacity.ts:170`, `workflow-host.ts:571`); the cap's original object is retired (lifecycle spec) | the bounds stay host restrictions with codes, never meaning | keeping a cap that halts long-running instances of old age |
+| OD4 | **Hosted measurement spikes are not pushed to branches.** T15 throughput, T27 Query load and T30 rollover behavior stay **unmeasured**. The reason: no Temporal server may run locally, and `CLAUDE.md` Rule 3 keeps one-off code out of the repository. They are measured in the implementation's first hosted lane, by maintained capacity witnesses with stop conditions | `CLAUDE.md` Rule 3 and Verification | a witness that protects a standing capacity contract is not a one-off test | `spike/*` branches, which would breach Rule 3 |
+| OD5 | **T32: Product 2 activates a deployed definition's Timer-start cycles at deployment**, as CIB does (CIB-INT-0029). The [scheduling spec](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md)'s exclusion of recurrence is lifted for model-declared cycles; manual one-shot schedules stay | an admitted cycle never fires today (`DEFINITION-SCHEDULING-SPEC.md:19`) | it is BPMN meaning the engine already implements; the platform only activates it | leaving admitted models that silently never start |
+| OD6 | **T35: no new forms dependency.** Product 2 renders `camunda:formData` and offers a generic variable-entry form. Embedded HTML forms and Camunda Forms (`form-js`) are disclosed as unsupported | 17 of the 19 `formKey` models in the census are `embedded:` HTML, which the adopter's application hosts; 1 uses `camunda-forms:` | an adopter's HTML would run inside the platform, a security surface outside scope | adding `@bpmn-io/form-js` for 1 of 109 models |
+| OD7 | **T24: the five persisted-history approvals are taken at the first release gate, not now.** The design builds in Worker versioning by build identity and a replay-fixture lane, so the approvals become decisions over ready mechanisms. Until then the adopter documentation states that an upgrade replaces state | `PROJECT-DESIGN.md:253-259` | the approvals bind a release, which the plan reaches at its end | approving baselines before the rewrite exists |
+| OD8 | **No new store dependency** for T15 or T26 | HD2 and OD3 need none | — | a database-backed registry or a claim-check store |
+| OD9 | **No SDK work** (#123 waits upstream). **Cron stays UTC** (owner decision of 2026-11-08; disclosed to adopters) | `CLAUDE.md` SDK rule; architecture owner decisions | — | — |
 
 ## Reuse and document verdicts
 
