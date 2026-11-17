@@ -555,7 +555,8 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | T5 | T5 (KD6) | running | | | | |
 | T1b | T1 (AD1–AD3) | running | | | | |
 | T27 | T27, T31, T30 (PD6, PD7) | running | | | | |
-| T4c | T4: U1 and the E-units on the real kernel; production factor | queued, next free slot | | | | |
+| T4c | T4: KD2′ footprint laws, U1 and the E-units on the real kernel; production factor | queued, next free slot | | | | |
+| T4d | T42 (KD8): nested pairing, the failure diamond, the work measure | queued after T4c | | | | |
 | T2 | T2, T26 (AD4) | paused, queued after T4c | | | | |
 | T17, T11, T7T8, T9b, T12, T15, T40 | round 3 | queued | | | | |
 
