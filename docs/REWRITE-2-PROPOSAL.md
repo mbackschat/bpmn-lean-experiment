@@ -664,6 +664,7 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | T17 | T16, T17, T19, T32 (HD3, HD4, PD9) | general cancellation end to end; HD3 queueing on the host machine; Signal broadcast as a calibration check | 33 min | kernel command 13–17 min; host rule 4.6 min; engine-API entry 1.6 min | engine side about 75–90 min by transfer | every Product 2 half (historically about 4 days per operator surface), hosted lanes, register entries, #131's diagnosis |
 | T2b | T2 (AD4) | the Double arm's ripple through 12 guards, 7 tests and 3 non-kernel files, all suites green | about 23 min, 5.7 min lock wait | about 1.1 min per guard, 0.45 per test, 1 per package | three arms about 2.5 h (core plus mechanical ripple) | about 17 Java sites, about 40 spec and register units, new corpus evidence, hosted evidence, reviews |
 | T12, T15, T9b | round 3 | running | | | | |
+| T4f | T4, T6 (rewrite versus targeted fix) | queued first: on the current kernel, whether the order-by-identity hooks and the arriving-occurrence join key survive up to a bijection, and option B's per-hook equivariance rate | | | | |
 | T40 | round 3 | queued | | | | |
 
 **Process calibration from the proof wave (root, from git, 2026-11-17).**
