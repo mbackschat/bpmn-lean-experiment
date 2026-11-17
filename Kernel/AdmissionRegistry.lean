@@ -87,7 +87,7 @@ def subscriptionReading (program : Program) (id : Option ElementId) : Admission.
 
 /-- A subscription's outputs read and write in the scope of `id`. -/
 def subscriptionData (program : Program) (id : Option ElementId) (subscription : Subscription) : Option String :=
-  Admission.Data.mappings program.options.evaluator (site program id) subscription.outputs <|>
+  Admission.Subscriptions.carried subscription <|> Admission.Data.mappings program.options.evaluator (site program id) subscription.outputs <|>
     Admission.MultiInstance.counterTarget (Admission.MultiInstance.countersAt program id) (targets subscription.outputs)
 
 /-- A boundary belongs to its host's body, so its outputs are in the scope enclosing the host. -/
@@ -247,7 +247,7 @@ def signalDeclarations (program : Program) : Option String :=
 def element (program : Program) (throws : List Element) : Element → Option String
   | .activity header payload =>
     Admission.Data.origin program header <|> envelopeData program header payload.envelope <|>
-      Admission.Work.handlerCount payload.envelope <|>
+      Admission.Work.handlerCount payload.envelope <|> Admission.Work.jobs payload.envelope <|>
       (payload.work.call?.bind fun work =>
         Admission.Data.mappings program.options.evaluator (site program (some header.id)) work.inputs <|>
           Admission.Data.mappings program.options.evaluator (site program (some header.id)) work.outputs) <|>
@@ -265,7 +265,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       Admission.Scopes.boundaryDependency program header payload.envelope
   | .scope header payload =>
     Admission.Data.origin program header <|> envelopeData program header payload.envelope <|>
-      Admission.Work.handlerCount payload.envelope <|>
+      Admission.Work.handlerCount payload.envelope <|> Admission.Work.jobs payload.envelope <|>
       Admission.Scopes.scope program header payload <|>
       handlerPlacement program header payload.envelope (Admission.Scopes.eventSubProcess? payload).isSome <|>
       processEventSubProcess header payload <|>
@@ -274,7 +274,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
         (Admission.MultiInstance.activityLoop program.options Admission.Data.loopExpression (some false) payload.envelope) <|>
       outputTargets program header payload.envelope.outputs <|>
       (eventSubProcessReading? payload).bind (fun (start, interrupting) =>
-        Admission.Subscriptions.eventSubProcess start interrupting) <|>
+        Admission.Subscriptions.carried start <|> Admission.Subscriptions.eventSubProcess start interrupting) <|>
       Admission.Subscriptions.eventSubProcessDeclarations (eventSubProcessStarts (program.children (some header.id))) <|>
       Admission.Subscriptions.boundaries program.options (subscriptionReading program header.parent)
         { transaction := Admission.Scopes.isTransaction payload, escalation := true } payload.envelope.boundaries <|>
@@ -296,7 +296,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
   | .gateway header payload =>
     Admission.Data.origin program header <|> Admission.Flow.gateway program payload
   | .start header payload =>
-    Admission.Data.origin program header <|> Admission.Flow.startCombination program header <|>
+    Admission.Data.origin program header <|> Admission.Work.startExtensions payload <|> Admission.Flow.startCombination program header <|>
       payload.subscription.bind fun subscription =>
         Admission.Subscriptions.start program.options (subscriptionReading program (some header.id)) header.parent.isSome subscription <|>
           subscriptionData program (some header.id) subscription

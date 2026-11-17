@@ -244,6 +244,22 @@ export const rows: readonly Row[] = [
       sourceId: "T",
     })),
   },
+  // A structured parameter value is carried and refused (AD3, E12).
+  {
+    code: "mapping.structuredParameter",
+    description: "an input parameter whose value is a camunda:list",
+    mutate: task(activity("T", userWork(), { structuredInputs: [{ target: "items", position: 0, nodes: [
+      { value: { body: literalValue(bool(true)) } }, { list: { items: [0] } },
+    ] }] })),
+    control: task(activity("T", userWork(), { inputs: [mapping("items", literalValue(bool(true)))] })),
+  },
+  {
+    code: "mapping.structuredParameter",
+    description: "an output parameter whose value is a camunda:map holding a camunda:script",
+    mutate: task(activity("T", userWork(), { structuredOutputs: [{ target: "totals", position: 0, nodes: [
+      { script: { payload: { format: "javascript", source: "1", resource: null } } }, { map: { entries: [{ key: "sum", value: 0 }] } },
+    ] }] })),
+  },
 ];
 
 refusalTests("data", rows);

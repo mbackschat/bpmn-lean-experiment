@@ -182,7 +182,7 @@ function targets(mappings: readonly Mapping[]): string[] {
 
 /** A subscription's outputs read and write in the scope of `id`. */
 function subscriptionData(program: Program, id: ElementId | null, subscription: Subscription): string | null {
-  return Data.mappings(program.options.evaluator, site(program, id), subscription.outputs) ??
+  return Subscriptions.carried(subscription) ?? Data.mappings(program.options.evaluator, site(program, id), subscription.outputs) ??
     MultiInstance.counterTarget(MultiInstance.countersAt(program, id), targets(subscription.outputs));
 }
 
@@ -402,6 +402,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => Data.origin(program, header),
         () => envelopeData(program, header, payload.envelope),
         () => Work.handlerCount(payload.envelope),
+        () => Work.jobs(payload.envelope),
         () => (call === null
           ? null
           : Data.mappings(program.options.evaluator, site(program, header.id), call.inputs) ??
@@ -426,6 +427,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => Data.origin(program, header),
         () => envelopeData(program, header, payload.envelope),
         () => Work.handlerCount(payload.envelope),
+        () => Work.jobs(payload.envelope),
         () => Scopes.scope(program, header, payload),
         () => handlerPlacement(program, header, payload.envelope, subProcess !== null),
         () => processEventSubProcess(header, payload),
@@ -436,7 +438,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => outputTargets(program, header, payload.envelope.outputs),
         () => {
           const read = eventSubProcessReading(payload);
-          return read === null ? null : Subscriptions.eventSubProcess(read[0], read[1]);
+          return read === null ? null : Subscriptions.carried(read[0]) ?? Subscriptions.eventSubProcess(read[0], read[1]);
         },
         () => Subscriptions.eventSubProcessDeclarations(eventSubProcessStarts(programChildren(program, header.id))),
         () => Subscriptions.boundaries(
@@ -455,6 +457,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
       const subscription = entry.payload.subscription;
       return first(
         () => Data.origin(program, header),
+        () => Work.startExtensions(entry.payload),
         () => FlowAdmission.startCombination(program, header),
         () => (subscription === null
           ? null

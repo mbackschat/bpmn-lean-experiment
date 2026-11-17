@@ -1,8 +1,8 @@
 import { asElement } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
-import { fixed, headerOf } from "./build.js";
+import { fixed, formRef, headerOf, retryCycle } from "./build.js";
 import { declaredImplementation, effectBinding, handlerKey } from "./binding.js";
-import { conditionExpression, eventInputs, eventOutputs, itemDefinitionId, valueSource, variableCopies } from "./data.js";
+import { conditionExpression, dataOutputDecl, eventInputs, eventOutputs, itemDefinitionId, valueSource, variableCopies } from "./data.js";
 import { FlowElementKind, ReadRefusal, ReadRefusalCode, list, optionalId, reference, requireId, targetNamespaceOf, text } from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
 import { assertNever, ctor, foreign, subscription, variable } from "./wire.js";
@@ -55,8 +55,13 @@ function laterDefinitions(event: ElementRecord, first: ElementRecord): ReadonlyA
 
 /** The subscription of a catching Event whose first definition is `first`, with its Multiple and Parallel Multiple marks. */
 function catchSubscription(ctx: ReadContext, event: ElementRecord, first: ElementRecord): KernelJson {
-  return subscription(readTrigger(ctx, event, first), eventOutputs(ctx, event),
-    laterDefinitions(event, first).map((definition) => readTrigger(ctx, event, definition)), event.parallelMultiple === true);
+  return {
+    ...(subscription(readTrigger(ctx, event, first), eventOutputs(ctx, event),
+      laterDefinitions(event, first).map((definition) => readTrigger(ctx, event, definition)), event.parallelMultiple === true) as
+      Record<string, KernelJson>),
+    dataOutputs: list(event, "dataOutputs").map(dataOutputDecl),
+    retryCycle: retryCycle(ctx, event),
+  };
 }
 
 export const isCompensationDefinition = (definition: ElementRecord | null): boolean =>
@@ -140,13 +145,19 @@ function timerSchedule(definition: ElementRecord): KernelJson {
   throw new ReadRefusal(ReadRefusalCode.EventDefinitionOnElement, optionalId(definition), "timer without a time");
 }
 
+/** A Timer definition's `camunda:exclusive`, read as `BpmnParse.java:3602` reads it: exactly `true` is true. */
+function timerExclusive(ctx: ReadContext, definition: ElementRecord): boolean | null {
+  const exclusive = ctx.attribute(definition, "exclusive");
+  return exclusive === null ? null : exclusive === "true";
+}
+
 function readTrigger(ctx: ReadContext, event: ElementRecord, definition: ElementRecord): KernelJson {
   const kind = kindOf(definition);
   switch (kind) {
     case EventDefinitionKind.Message:
       return ctor("message", { payload: messageTrigger(ctx, definition, event) });
     case EventDefinitionKind.Timer:
-      return ctor("timer", { payload: { schedule: timerSchedule(definition) } });
+      return ctor("timer", { payload: { schedule: timerSchedule(definition), exclusive: timerExclusive(ctx, definition) } });
     case EventDefinitionKind.Signal:
       return ctor("signal", { payload: signalAddress(ctx, definition) });
     case EventDefinitionKind.Conditional:
@@ -315,7 +326,12 @@ function readStart(ctx: ReadContext, node: ModelNode): Built {
   const id = requireId(node.element);
   return fixed(id, ctor("start", {
     header: headerOf(node, FlowElementKind.StartEvent),
-    payload: { subscription: startSubscription(ctx, node.element), outgoing: ctx.outgoing(id) },
+    payload: {
+      subscription: startSubscription(ctx, node.element),
+      outgoing: ctx.outgoing(id),
+      initiator: ctx.attribute(node.element, "initiator"),
+      formRef: formRef(ctx, node.element),
+    },
   }));
 }
 

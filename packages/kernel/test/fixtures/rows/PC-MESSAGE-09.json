@@ -208,7 +208,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start_Shipped"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },

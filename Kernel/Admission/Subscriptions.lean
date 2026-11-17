@@ -165,6 +165,19 @@ def definitions (subscription : Subscription) : Option String :=
   else if !subscription.alternatives.isEmpty then some "event.multipleDefinitions"
   else none
 
+/-- A catching Event's carried job settings and Data Outputs (AD3). A Timer's `camunda:exclusive`
+(`BpmnParse.java:3602`) and the Event's `camunda:failedJobRetryTimeCycle` (`DefaultFailedJobParseListener.java:49-80`)
+are refused. A Data Output of a catch with a Message must be equivalent to the Message's ItemDefinition (BPMN 2.0.2
+§10.4.1, §10.5.1); as a Receive Task's (`work.receive.dataOutputItem`), equivalence is read narrowly as the same
+ItemDefinition identifier, both absent included, and any other pair is refused (#114). -/
+def carried (subscription : Subscription) : Option String :=
+  let mismatched (trigger : MessageTrigger) : Bool :=
+    trigger.messageRef.isSome && subscription.dataOutputs.any (·.itemRef != trigger.itemRef)
+  if ((subscription.trigger.timer?).bind (·.exclusive)).isSome then some "job.exclusive"
+  else if subscription.retryCycle.isSome then some "job.retryCycle"
+  else if (subscription.trigger.message?).any mismatched then some "event.dataOutputItem"
+  else none
+
 /-- Only a Message subscription writes what its delivery carries; any other trigger's outputs would be dropped. -/
 def subscriptionOutputs (subscription : Subscription) : Option String :=
   if subscription.trigger.message?.isSome || subscription.outputs.isEmpty then none else some "event.outputs"

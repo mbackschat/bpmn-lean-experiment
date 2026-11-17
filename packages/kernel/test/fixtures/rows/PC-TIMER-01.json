@@ -208,7 +208,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start_Dates_Gateway_Delay"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -268,13 +270,16 @@
                             }
                           }
                         }
-                      }
+                      },
+                      "exclusive": null
                     }
                   }
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               }
             }
           },
@@ -418,7 +423,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -437,7 +443,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -494,13 +504,16 @@
                             }
                           }
                         }
-                      }
+                      },
+                      "exclusive": null
                     }
                   }
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               }
             }
           },
@@ -541,13 +554,16 @@
                             }
                           }
                         }
-                      }
+                      },
+                      "exclusive": null
                     }
                   }
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               }
             }
           },
@@ -588,13 +604,16 @@
                             }
                           }
                         }
-                      }
+                      },
+                      "exclusive": null
                     }
                   }
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               }
             }
           },
@@ -635,13 +654,16 @@
                             }
                           }
                         }
-                      }
+                      },
+                      "exclusive": null
                     }
                   }
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               }
             }
           },
@@ -682,13 +704,16 @@
                             }
                           }
                         }
-                      }
+                      },
+                      "exclusive": null
                     }
                   }
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               }
             }
           },
@@ -729,13 +754,16 @@
                             }
                           }
                         }
-                      }
+                      },
+                      "exclusive": null
                     }
                   }
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               }
             }
           },
@@ -776,13 +804,16 @@
                             }
                           }
                         }
-                      }
+                      },
+                      "exclusive": null
                     }
                   }
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               }
             }
           },

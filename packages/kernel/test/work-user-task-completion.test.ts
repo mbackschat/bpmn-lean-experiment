@@ -36,13 +36,13 @@ const userTask = (id: string, incoming: string[], outgoing: string[], over: Shap
         user: {
           payload: {
             name: null, assignee: null, candidateUsers: [], candidateGroups: [], formKey: null, formFields: [], dueDate: null,
-            followUpDate: null, priority: null,
+            followUpDate: null, priority: null, formRef: null,
           },
         },
       },
       envelope: {
         incoming, outgoing, inputs: over.inputs ?? [], outputs: over.outputs ?? [], boundaries: [], multiInstance: null,
-        compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false,
+        compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [],
       },
     },
   },
@@ -56,7 +56,7 @@ function program(shape: Shape): Json {
       ...(slice["options"] as Json), submission: "installsVariables", undeclaredWrite: "atInstanceRoot", conditionOrder: "beforeOutputs",
     },
     elements: [
-      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Review"] } } },
+      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Review"], initiator: null, formRef: null } } },
       userTask("Review", ["To_Review"], ["To_A", "To_D"], shape),
       ...branches.flatMap((branch) => [
         userTask(branch, [`To_${branch}`], [`End_${branch}_In`]),

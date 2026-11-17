@@ -25,7 +25,7 @@ function program(target: string, declared: readonly string[]): Json {
     ...slice,
     variables: declared,
     elements: [
-      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Task"] } } },
+      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Task"], initiator: null, formRef: null } } },
       {
         activity: {
           header: header("Task", "userTask"),
@@ -34,14 +34,14 @@ function program(target: string, declared: readonly string[]): Json {
               user: {
                 payload: {
                   name: "Decide", assignee: null, candidateUsers: [], candidateGroups: [], formKey: null, formFields: [], dueDate: null,
-                  followUpDate: null, priority: null,
+                  followUpDate: null, priority: null, formRef: null,
                 },
               },
             },
             envelope: {
               incoming: ["To_Task"], outgoing: ["To_End"], inputs: [], boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false,
               outputs: [{ target, source: { variable: { name: "Output_Decision" } }, dialect: "dataAssociation" }],
-              defaultFlow: null, asyncBefore: false, asyncAfter: false,
+              defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [],
             },
           },
         },

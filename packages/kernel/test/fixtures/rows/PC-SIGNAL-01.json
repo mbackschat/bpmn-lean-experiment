@@ -208,7 +208,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Opened"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -245,7 +247,9 @@
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               }
             }
           },

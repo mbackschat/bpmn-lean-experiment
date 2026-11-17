@@ -46,8 +46,11 @@ inductive TimerSchedule where
   | cycle (value : ValueSource) (dialect : CycleDialect)
   deriving Repr
 
+/-- `exclusive` is the definition's `camunda:exclusive`, `none` when absent (`BpmnParse.java:3602`); admission refuses
+it (`job.exclusive`). -/
 structure TimerTrigger where
   schedule : TimerSchedule
+  exclusive : Option Bool := none
   deriving Repr
 
 /-- `signalRef` is the Signal the event references, `none` when the model names none; `name` is that Signal's `name`
@@ -107,12 +110,16 @@ inductive Trigger where
   deriving Repr
 
 /-- `alternatives` are a Multiple Event's definitions after the first, in document order, and `parallelMultiple` its
-Parallel Multiple mark (BPMN 2.0.2 §10.5.1); admission refuses both (CIB-LIM-0008). -/
+Parallel Multiple mark (BPMN 2.0.2 §10.5.1); admission refuses both (CIB-LIM-0008). `dataOutputs` are the catching
+Event's Data Outputs, which `outputs` read (#114), and `retryCycle` the text of its `camunda:failedJobRetryTimeCycle`
+(`DefaultFailedJobParseListener.java:49-80`), which admission refuses (`job.retryCycle`). -/
 structure Subscription where
   trigger : Trigger
   outputs : List Mapping := []
   alternatives : List Trigger := []
   parallelMultiple : Bool := false
+  dataOutputs : List DataOutputDecl := []
+  retryCycle : Option String := none
   deriving Repr
 
 /-- `sourceId` is the identifier the model's author wrote, which publication shows; `id` is unique in the program, as
@@ -191,6 +198,14 @@ structure Envelope where
   /-- A transaction boundary before the element begins and after it completes (CIB-EXT-0027). -/
   asyncBefore : Bool := false
   asyncAfter : Bool := false
+  /-- The `camunda:exclusive` of the element's jobs, `none` when absent (`BpmnParse.java:4750-4752`), and the text of its
+  `camunda:failedJobRetryTimeCycle` (`DefaultFailedJobParseListener.java:158-178`); admission refuses both
+  (`job.exclusive`, `job.retryCycle`). -/
+  exclusive : Option Bool := none
+  retryCycle : Option String := none
+  /-- The parameters of `camunda:inputOutput` with a structured value, which `inputs` and `outputs` cannot hold. -/
+  structuredInputs : List StructuredParameter := []
+  structuredOutputs : List StructuredParameter := []
   deriving Repr
 
 /-! ## Elements -/
@@ -274,9 +289,13 @@ structure GatewayPayload where
   outgoing : List FlowId := []
   deriving Repr
 
+/-- `initiator` is the `camunda:initiator` variable name (`BpmnParse.java:1009-1012`) and `formRef` the start form's
+reference (`BpmnParse.java:1050-1075`); admission refuses both (`start.initiator`, `start.formRef`). -/
 structure StartPayload where
   subscription : Option Subscription
   outgoing : List FlowId := []
+  initiator : Option String := none
+  formRef : Option FormRef := none
   deriving Repr
 
 /-- `sourceId` is the identifier the model's author wrote, which publication shows. `Header.id` is unique in the

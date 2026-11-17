@@ -208,7 +208,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start_Approval"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -245,7 +247,9 @@
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               }
             }
           },
@@ -292,7 +296,9 @@
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               }
             }
           },
@@ -396,7 +402,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": true,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }

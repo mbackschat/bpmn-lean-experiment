@@ -14,6 +14,12 @@ import {
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
+/** A start element with `over` merged into its payload. */
+const initiated = (element: Json, over: Json): Json => {
+  const body = element.start as Json;
+  return { start: { ...body, payload: { ...(body.payload as Json), ...over } } };
+};
+
 /** The process start `S` waits for `trigger`. */
 const starting = (trigger: Json | string, outputs: Json[] = []) => (program: Json): Json =>
   replace(program, "S", start("S", trigger, outputs));
@@ -32,7 +38,7 @@ const addressed = (placed: (program: Json) => Json) => (program: Json): Json =>
 
 /** A Timer whose `kind` value is the expression `${when}`, with `over` completing its schedule. */
 const timerExpression = (kind: string, over: Json = {}): Json =>
-  ({ timer: { payload: { schedule: { [kind]: { value: computed(variable("when")), ...over } } } } });
+  ({ timer: { payload: { schedule: { [kind]: { value: computed(variable("when")), ...over } }, exclusive: null } } });
 
 /** The profile selection under which arming a malformed Timer rolls back (CIB-EXT-0036). */
 const rollingBack = (placed: (program: Json) => Json) => (program: Json): Json =>
@@ -126,6 +132,18 @@ refusalTests("starts", [
     code: "start.condition.duplicate",
     description: "two Conditional root starts with one Simple Boolean predicate",
     mutate: (program) => secondStart(condition())(submitted(starting(condition()))(program)),
+  },
+  // Carried and refused (AD3, E12).
+  {
+    code: "start.initiator",
+    description: "a root start naming a camunda:initiator variable",
+    mutate: (program) => replace(program, "S", initiated(start("S"), { initiator: "starter" })),
+    control: (program) => replace(program, "S", start("S")),
+  },
+  {
+    code: "start.formRef",
+    description: "a root start whose form is a camunda:formRef",
+    mutate: (program) => replace(program, "S", initiated(start("S"), { formRef: { key: "request", binding: "deployment", version: null } })),
   },
 ]);
 

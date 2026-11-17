@@ -496,6 +496,7 @@
         "event.condition.filter",
         "event.condition.foreign",
         "event.condition.variableEvents",
+        "event.dataOutputItem",
         "event.error.codeVariable",
         "event.error.messageVariable",
         "event.escalation.codeVariable",
@@ -527,9 +528,12 @@
         "gateway.exclusive.unconditionedFlow",
         "gateway.inclusive.noOutgoingFlow",
         "il.reference",
+        "job.exclusive",
+        "job.retryCycle",
         "link.catch",
         "link.duplicateCatch",
         "mapping.expression",
+        "mapping.structuredParameter",
         "message.correlation",
         "message.correlation.channel",
         "message.correlation.keys",
@@ -620,6 +624,8 @@
         "start.error",
         "start.error.nonInterrupting",
         "start.escalation",
+        "start.formRef",
+        "start.initiator",
         "start.messageNameExpression",
         "start.rootCombination",
         "start.signalNameExpression",
@@ -692,6 +698,7 @@
         "work.user.followUpDate",
         "work.user.formField",
         "work.user.formKey",
+        "work.user.formRef",
         "work.user.priority"
       ]
     }

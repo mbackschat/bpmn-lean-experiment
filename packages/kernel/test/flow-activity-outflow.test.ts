@@ -26,7 +26,7 @@ const routeIs = (value: string): Json => ({ simpleBoolean: { body: { stringEqual
 
 const envelope = (incoming: string[], outgoing: string[], defaultFlow: string | null = null, outputs: Json[] = []): Json => ({
   incoming, outgoing, inputs: [], outputs, boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false, defaultFlow,
-  asyncBefore: false, asyncAfter: false,
+  asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [],
 });
 
 const userTask = (id: string, incoming: string[], outgoing: string[], defaultFlow: string | null = null, outputs: Json[] = []): Json => ({
@@ -37,7 +37,7 @@ const userTask = (id: string, incoming: string[], outgoing: string[], defaultFlo
         user: {
           payload: {
             name: null, assignee: null, candidateUsers: [], candidateGroups: [], formKey: null, formFields: [["route", "string"]],
-            dueDate: null, followUpDate: null, priority: null,
+            dueDate: null, followUpDate: null, priority: null, formRef: null,
           },
         },
       },
@@ -67,7 +67,7 @@ function program(shape: Shape): Json {
       conditionOrder: shape.conditionOrder ?? "afterOutputs",
     },
     elements: [
-      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Review"] } } },
+      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Review"], initiator: null, formRef: null } } },
       userTask("Review", ["To_Review"], branches.map((branch) => `To_${branch}`), shape.defaultD === true ? "To_D" : null,
         shape.routeOutput === undefined ? [] : [{ target: "route", source: { literal: { value: { kind: "string", value: shape.routeOutput } } }, dialect: "ioParameter" }]),
       ...branches.flatMap((branch) => [

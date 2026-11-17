@@ -135,35 +135,107 @@ export const valueSource = (source: string): KernelJson =>
 /** Java `String.trim`: strips every character up to U+0020 at both ends. */
 export const javaTrim = (body: string): string => body.replace(/^[\u0000- ]+|[\u0000- ]+$/gu, "");
 
-function parameterValue(parameter: ElementRecord): KernelJson {
-  if (asElementArray(parameter.$children) !== undefined) {
-    throw new ReadRefusal(ReadRefusalCode.UnknownExtension, null,
-      `structured camunda parameter ${String(parameter.name)}`);
-  }
-  // CIB `BpmnParseUtil.parseParamValueProvider` trims a parameter's text (`BpmnParseUtil.java:206`).
-  const body = typeof parameter.$body === "string" ? javaTrim(parameter.$body) : "";
+/** A parameter text as CIB reads it: trimmed (`BpmnParseUtil.java:206`), empty as null, otherwise an EL value. */
+function parameterText(element: ElementRecord): KernelJson {
+  const body = typeof element.$body === "string" ? javaTrim(element.$body) : "";
   if (body.length === 0) return ctor("literal", { value: { kind: "null" } });
   return expressionMarkerPattern.test(body) ? valueExpression(body) : stringLiteral(body);
 }
 
-export type ParameterMappings = Readonly<{ inputs: KernelJson[]; outputs: KernelJson[]; targets: string[] }>;
+const childrenOf = (element: ElementRecord): readonly ElementRecord[] => asElementArray(element.$children) ?? [];
+const tagOf = (element: ElementRecord): string => String(element.$type).slice(String(element.$type).indexOf(":") + 1);
+
+/**
+ * Appends the value provider `provider` to `nodes` in post-order and returns its index: a `list` of nested providers, a
+ * `map` of `entry` elements, each holding its text or one nested provider, a `script`, or any other element's text
+ * (`BpmnParseUtil.java:152-239`). Map keys and script attributes stay their texts; CIB refuses a nested parameter with
+ * more than one child element, and so does the reader.
+ */
+function parameterNode(parameter: string, provider: ElementRecord, nodes: KernelJson[]): number {
+  const append = (node: KernelJson): number => nodes.push(node) - 1;
+  const nested = (holder: ElementRecord): number => {
+    const children = childrenOf(holder);
+    if (children.length > 1) {
+      throw new ReadRefusal(ReadRefusalCode.UnknownExtension, null, `camunda parameter ${parameter} with several values`);
+    }
+    const only = children[0];
+    return only === undefined ? append(ctor("value", { body: parameterText(holder) })) : parameterNode(parameter, only, nodes);
+  };
+  switch (tagOf(provider)) {
+    case "list": {
+      const items = childrenOf(provider).map((item) => parameterNode(parameter, item, nodes));
+      return append(ctor("list", { items }));
+    }
+    case "map": {
+      const entries = childrenOf(provider).filter((entry) => tagOf(entry) === "entry")
+        .map((entry) => ({ key: typeof entry.key === "string" ? entry.key : "", value: nested(entry) }));
+      return append(ctor("map", { entries }));
+    }
+    case "script":
+      return append(ctor("script", { payload: {
+        format: typeof provider.scriptFormat === "string" ? provider.scriptFormat : "",
+        source: typeof provider.$body === "string" ? provider.$body : null,
+        resource: typeof provider.resource === "string" ? provider.resource : null,
+      } }));
+    default:
+      return append(ctor("value", { body: parameterText(provider) }));
+  }
+}
+
+/** Whether a parameter's value is a nested provider (`BpmnParseUtil#parseNestedParamValueProvider`) rather than its text. */
+const structured = (parameter: ElementRecord): boolean => asElementArray(parameter.$children) !== undefined;
+
+/** A structured parameter: its target, its index among its direction's scalar parameters, and its node table. */
+function structuredParameter(parameter: ElementRecord, position: number): KernelJson {
+  const target = String(parameter.name);
+  const children = childrenOf(parameter);
+  const only = children[0];
+  if (children.length !== 1 || only === undefined) {
+    throw new ReadRefusal(ReadRefusalCode.UnknownExtension, null, `camunda parameter ${target} with several values`);
+  }
+  const nodes: KernelJson[] = [];
+  parameterNode(target, only, nodes);
+  return { target, position, nodes };
+}
+
+export type ParameterMappings = Readonly<{
+  inputs: KernelJson[];
+  outputs: KernelJson[];
+  structuredInputs: KernelJson[];
+  structuredOutputs: KernelJson[];
+  targets: string[];
+}>;
+
+/** One direction's scalar mappings and, apart, its structured parameters, each at the scalar position it precedes. */
+function direction(parameters: ReadonlyArray<ElementRecord>): Readonly<{ scalar: KernelJson[]; structured: KernelJson[] }> {
+  const scalar: KernelJson[] = [];
+  const nested: KernelJson[] = [];
+  for (const parameter of parameters) {
+    if (structured(parameter)) nested.push(structuredParameter(parameter, scalar.length));
+    else scalar.push(mapping(String(parameter.name), parameterText(parameter), MappingSyntax.IoParameter));
+  }
+  return { scalar, structured: nested };
+}
 
 /**
  * `camunda:inputOutput`, each direction in document order: CIB runs the parameters one at a time in that order
  * (`BpmnParseUtil.java:89-110`, `IoMapping.java:38-48`), so which failure ends an entry, which value a repeated target
- * keeps and what a later output reads of an earlier one depend on it (`Ctx.evaluateMappingsWith`).
+ * keeps and what a later output reads of an earlier one depend on it (`Ctx.evaluateMappingsWith`). A parameter with a
+ * structured value keeps its place among them by its position.
  */
 export function inputOutputParameters(ctx: ReadContext, element: ElementRecord): ParameterMappings {
   const blocks = ctx.extensions(element, "inputOutput");
   const parameters = blocks.flatMap((block) => asElementArray(block.$children) ?? []);
   const named = (localName: string): ElementRecord[] => parameters
     .filter((parameter) => String(parameter.$type).endsWith(`:${localName}`));
-  const inputs = named("inputParameter");
+  const inputs = direction(named("inputParameter"));
+  const outputs = direction(named("outputParameter"));
   return {
-    inputs: inputs.map((parameter) => mapping(String(parameter.name), parameterValue(parameter), MappingSyntax.IoParameter)),
-    outputs: named("outputParameter").map((parameter) =>
-      mapping(String(parameter.name), parameterValue(parameter), MappingSyntax.IoParameter)),
-    targets: inputs.map((parameter) => String(parameter.name)),
+    inputs: inputs.scalar,
+    outputs: outputs.scalar,
+    structuredInputs: inputs.structured,
+    structuredOutputs: outputs.structured,
+    targets: named("inputParameter").map((parameter) => String(parameter.name)),
   };
 }
 

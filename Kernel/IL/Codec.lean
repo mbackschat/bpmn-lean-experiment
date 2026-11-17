@@ -36,10 +36,11 @@ instance : ToJson JuelCall where
     | .other name => toJson name
 
 deriving instance FromJson, ToJson for JuelFunctionNode, JuelCallNode, JuelComputedCallNode, JuelBinaryNode,
-  JuelChoiceNode, JuelNode, Expression, ValueSource, MappingDialect, Mapping, QName, CycleDialect,
+  JuelChoiceNode, JuelNode, Expression, ValueSource, MappingDialect, Mapping, ParameterScript, ParameterEntry, ParameterNode,
+  StructuredParameter, QName, CycleDialect,
   TimerSchedule, TimerTrigger, CorrelationCriterion, MessageTrigger, DataOutputDecl, SignalTrigger, ConditionTrigger, ErrorTrigger,
   EscalationTrigger, Trigger, Subscription, Boundary, EffectBinding, MessageThrow, SignalThrow, ErrorThrow,
-  EscalationThrow, CompensationThrow, Throw, UserWork, ReceiveWork, ServiceWork, SendWork, ScriptWork, CallBinding,
+  EscalationThrow, CompensationThrow, Throw, FormRef, UserWork, ReceiveWork, ServiceWork, SendWork, ScriptWork, CallBinding,
   DecisionResultMapping, RuleWork, CallWork, Work, MultiInstanceMode, InstanceCount, MultiInstance,
   Envelope, ActivityPayload, TransactionMethod, TransactionScope, ScopeKind, ScopePayload, Placement, EventRole,
   EventPayload, EventGatewayInstantiation, GatewayKind, GatewayPayload, StartPayload, DefinitionRef, ElementOrigin, Header, Element,

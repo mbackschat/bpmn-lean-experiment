@@ -31,6 +31,9 @@ export interface MultiInstance {
    */
   readonly asyncBefore: boolean;
   readonly asyncAfter: boolean;
+  /** The inner instances' job settings, as `Envelope.exclusive` and `Envelope.retryCycle` carry the body's. */
+  readonly exclusive: boolean | null;
+  readonly retryCycle: string | null;
   /**
    * The element `loopDataInputRef` names and the `inputDataItem`'s `name`, which `MultiInstanceBinding.LoopReferences`
    * binds instead of the Data Associations (CIB-INT-0014).

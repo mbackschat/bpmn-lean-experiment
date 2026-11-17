@@ -177,7 +177,7 @@ test("a Multi-Instance loop carries its own asynchronous continuations and the l
   assert.deepEqual(u.multiInstance, {
     mode: "parallel", count: { collection: { items: { variable: { name: "O" } } } }, elementVariable: null,
     completionCondition: null, inputDataItem: "In", outputDataItem: null, outputCollection: null,
-    asyncBefore: true, asyncAfter: true, loopDataInputRef: "Ins", inputDataItemName: "item",
+    asyncBefore: true, asyncAfter: true, exclusive: null, retryCycle: null, loopDataInputRef: "Ins", inputDataItemName: "item",
   });
   const v = element(p, "V").activity.payload.envelope;
   assert.deepEqual([v.asyncBefore, v.asyncAfter], [false, false]);
@@ -434,7 +434,44 @@ test("every User Task assignment and date attribute the BPMN sets is populated",
     dueDate: { literal: { value: "2030-01-01" } },
     followUpDate: { expression: { body: { variable: { name: "later" } } } },
     priority: { literal: { value: "7" } },
+    formRef: null,
   });
+});
+
+test("the breadth facts are carried for admission to refuse: initiator, form reference, job settings, structured parameters, a catch's Data Outputs", async () => {
+  const p = await program(model(`<bpmn:startEvent id="S" camunda:initiator="starter" camunda:formRef="request" camunda:formRefBinding="version" camunda:formRefVersion="3"/>
+    <bpmn:userTask id="U" camunda:formRef="invoice" camunda:formRefBinding="latest" camunda:asyncBefore="true" camunda:exclusive="false">
+      <bpmn:extensionElements><camunda:failedJobRetryTimeCycle>R3/PT10S</camunda:failedJobRetryTimeCycle>
+        <camunda:inputOutput><camunda:inputParameter name="a">x</camunda:inputParameter>
+          <camunda:inputParameter name="items"><camunda:list><camunda:value>one</camunda:value><camunda:value>\${two}</camunda:value></camunda:list></camunda:inputParameter>
+          <camunda:outputParameter name="totals"><camunda:map><camunda:entry key="sum"><camunda:script scriptFormat="javascript">1</camunda:script></camunda:entry></camunda:map></camunda:outputParameter>
+        </camunda:inputOutput></bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics camunda:asyncAfter="true" camunda:exclusive="true" camunda:collection="xs">
+        <bpmn:extensionElements><camunda:failedJobRetryTimeCycle>PT1M,PT5M</camunda:failedJobRetryTimeCycle></bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics></bpmn:userTask>
+    <bpmn:intermediateCatchEvent id="W"><bpmn:extensionElements><camunda:failedJobRetryTimeCycle>R5/PT1M</camunda:failedJobRetryTimeCycle></bpmn:extensionElements>
+      <bpmn:timerEventDefinition camunda:exclusive="true"><bpmn:timeDuration>PT1S</bpmn:timeDuration></bpmn:timerEventDefinition></bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="C"><bpmn:dataOutput id="Out" itemSubjectRef="Order"/><bpmn:messageEventDefinition messageRef="M"/></bpmn:intermediateCatchEvent>`,
+  `<bpmn:itemDefinition id="Order"/><bpmn:message id="M" name="M" itemRef="Order"/>`));
+  const started = element(p, "S").start.payload;
+  assert.deepEqual([started.initiator, started.formRef], ["starter", { key: "request", binding: "version", version: "3" }]);
+  const user = element(p, "U").activity.payload;
+  assert.deepEqual(user.work.user.payload.formRef, { key: "invoice", binding: "latest", version: null });
+  assert.deepEqual([user.envelope.exclusive, user.envelope.retryCycle], [false, "R3/PT10S"]);
+  assert.deepEqual([user.envelope.multiInstance.exclusive, user.envelope.multiInstance.retryCycle], [true, "PT1M,PT5M"]);
+  assert.deepEqual(user.envelope.inputs.map((entry: Json) => entry.target), ["a"]);
+  assert.deepEqual(user.envelope.structuredInputs, [{ target: "items", position: 1, nodes: [
+    { value: { body: { literal: { value: { kind: "string", value: "one" } } } } },
+    { value: { body: { variable: { name: "two" } } } },
+    { list: { items: [0, 1] } },
+  ] }]);
+  assert.deepEqual(user.envelope.structuredOutputs, [{ target: "totals", position: 0, nodes: [
+    { script: { payload: { format: "javascript", source: "1", resource: null } } },
+    { map: { entries: [{ key: "sum", value: 0 }] } },
+  ] }]);
+  const timer = element(p, "W").event.payload.role.catch.subscription;
+  assert.deepEqual([timer.trigger.timer.payload.exclusive, timer.retryCycle], [true, "R5/PT1M"]);
+  assert.deepEqual(element(p, "C").event.payload.role.catch.subscription.dataOutputs, [{ id: "Out", itemRef: "Order" }]);
 });
 
 test("a candidate list's entries are trimmed as Java's String.trim trims them, and a bare last comma ends the list", async () => {

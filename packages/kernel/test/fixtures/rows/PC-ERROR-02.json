@@ -208,7 +208,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start_Fork"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -258,7 +260,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -277,7 +280,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -331,7 +338,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -350,7 +358,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -414,7 +426,9 @@
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               },
               "interrupting": true
             }
@@ -437,7 +451,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -466,11 +484,15 @@
             },
             "outputs": [],
             "alternatives": [],
-            "parallelMultiple": false
+            "parallelMultiple": false,
+            "dataOutputs": [],
+            "retryCycle": null
           },
           "outgoing": [
             "Flow_Handler_Start_Recover"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -497,7 +519,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -516,7 +539,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }

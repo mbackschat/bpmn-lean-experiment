@@ -90,6 +90,24 @@ scope (`BpmnParse.java:913-920`, `:1199-1201`, `:1754`). -/
 def handlerCount (envelope : Envelope) : Option String :=
   if envelope.compensationHandlers.length > 1 then some "compensation.handlerCount" else none
 
+/-- The settings of the jobs an asynchronous continuation creates, on the element and on its loop's instances: CIB's
+`camunda:exclusive` (`BpmnParse.java:4750-4752`) and `camunda:failedJobRetryTimeCycle`
+(`DefaultFailedJobParseListener.java:158-178`). The kernel reads neither, so both are refused while carried (AD3). -/
+def jobs (envelope : Envelope) : Option String :=
+  let loopExclusive := (envelope.multiInstance.bind (·.exclusive)).isSome
+  let loopRetry := (envelope.multiInstance.bind (·.retryCycle)).isSome
+  if envelope.exclusive.isSome || loopExclusive then some "job.exclusive"
+  else if envelope.retryCycle.isSome || loopRetry then some "job.retryCycle"
+  else none
+
+/-- A Start Event's `camunda:initiator`, which names the variable CIB sets to the starting user
+(`BpmnParse.java:1009-1012`), and its start form's `camunda:formRef` (`BpmnParse.java:1050-1075`); the kernel has no
+starting user or form reference, so both are refused while carried. -/
+def startExtensions (payload : StartPayload) : Option String :=
+  if payload.initiator.isSome then some "start.initiator"
+  else if payload.formRef.isSome then some "start.formRef"
+  else none
+
 /-- The names CIB installs from the model as variables an expression may read: every element's parameter targets and
 loop item names, and its work's names (`workNames`). A process-level item is none, since CIB parses no Property, Data
 Object or process I/O specification (`BpmnParse.java:726`). -/
@@ -301,6 +319,7 @@ def userTask (task : UserWork) : Option String :=
   if !literalField always task.assignee then some "work.user.assignee"
   else if !task.candidateUsers.all (literalField always ∘ some) then some "work.user.candidateUsers"
   else if (task.formKey.map expressionText).getD false then some "work.user.formKey"
+  else if task.formRef.isSome then some "work.user.formRef"
   else if !literalField utcInstant task.dueDate then some "work.user.dueDate"
   else if !literalField utcInstant task.followUpDate then some "work.user.followUpDate"
   else if !literalField javaInt task.priority then some "work.user.priority"

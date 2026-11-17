@@ -31,21 +31,21 @@ function program(shape: Shape = {}): Json {
   const loop = {
     mode: "parallel", count: { collection: { items: { variable: { name: "items" } } } }, elementVariable: null,
     completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: shape.user === true ? "DataOutput_Result" : null,
-    outputCollection: null, asyncBefore: false, asyncAfter: false,
+    outputCollection: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null,
     loopDataInputRef: null, inputDataItemName: "item", ...shape.loop,
   };
   const work = shape.user === true
     ? { user: { payload: { name: null, assignee: null, candidateUsers: [], candidateGroups: [], formKey: null, formFields: [],
-      dueDate: null, followUpDate: null, priority: null } } }
+      dueDate: null, followUpDate: null, priority: null, formRef: null } } }
     : { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null, taskDefinition: false } } };
   return {
     ...slice,
     options: { ...(slice["options"] as Json), ...cib, ...shape.options },
     elements: [
-      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_T"] } } },
+      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_T"], initiator: null, formRef: null } } },
       { activity: { header: header("T", shape.user === true ? "userTask" : "serviceTask"), payload: { work, envelope: {
         incoming: ["To_T"], outgoing: ["To_End"], inputs: [], outputs: [], boundaries: [], multiInstance: loop,
-        compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false } } } },
+        compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [] } } } },
       { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish",
         incoming: ["To_End"], outgoing: [], alternativeThrows: [] } } },
     ],

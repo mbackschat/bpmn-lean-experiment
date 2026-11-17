@@ -46,6 +46,7 @@ import {
   type ReceiveWork,
   type ScriptWork,
   type ServiceWork,
+  type StartPayload,
   type UserWork,
   type ValueSource,
   type Work,
@@ -152,6 +153,29 @@ function workEnvelope(options: ProfileOptions, work: Traits, fields: Envelope): 
  */
 export function handlerCount(fields: Envelope): string | null {
   return fields.compensationHandlers.length > 1 ? "compensation.handlerCount" : null;
+}
+
+/**
+ * The settings of the jobs an asynchronous continuation creates, on the element and on its loop's instances: CIB's
+ * `camunda:exclusive` (`BpmnParse.java:4750-4752`) and `camunda:failedJobRetryTimeCycle`
+ * (`DefaultFailedJobParseListener.java:158-178`). The kernel reads neither, so both are refused while carried (AD3).
+ */
+export function jobs(fields: Envelope): string | null {
+  const loop = fields.multiInstance;
+  if (fields.exclusive !== null || (loop !== null && loop.exclusive !== null)) return "job.exclusive";
+  if (fields.retryCycle !== null || (loop !== null && loop.retryCycle !== null)) return "job.retryCycle";
+  return null;
+}
+
+/**
+ * A Start Event's `camunda:initiator`, which names the variable CIB sets to the starting user
+ * (`BpmnParse.java:1009-1012`), and its start form's `camunda:formRef` (`BpmnParse.java:1050-1075`); the kernel has no
+ * starting user or form reference, so both are refused while carried.
+ */
+export function startExtensions(payload: StartPayload): string | null {
+  if (payload.initiator !== null) return "start.initiator";
+  if (payload.formRef !== null) return "start.formRef";
+  return null;
 }
 
 /**
@@ -435,6 +459,7 @@ function userTask(task: UserWork): string | null {
   if (!literalField(always, task.assignee)) return "work.user.assignee";
   if (!task.candidateUsers.every((user) => literalField(always, user))) return "work.user.candidateUsers";
   if (task.formKey !== null && expressionText(task.formKey)) return "work.user.formKey";
+  if (task.formRef !== null) return "work.user.formRef";
   if (!literalField(utcInstant, task.dueDate)) return "work.user.dueDate";
   if (!literalField(utcInstant, task.followUpDate)) return "work.user.followUpDate";
   if (!literalField(javaInt, task.priority)) return "work.user.priority";

@@ -43,7 +43,7 @@ function program(shape: Shape = {}): Json {
     mode: shape.mode ?? "parallel",
     count: { collection: { items: { variable: { name: "DataObject_Items" } } } },
     elementVariable: null, completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: null,
-    outputCollection: null, asyncBefore: false, asyncAfter: false,
+    outputCollection: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null,
     loopDataInputRef: "DataInput_Items", inputDataItemName: "item", ...shape.loop,
   };
   const into = shape.failingSibling === true ? "To_Fork" : "To_T";
@@ -55,7 +55,7 @@ function program(shape: Shape = {}): Json {
         work: { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null, taskDefinition: false } } },
         envelope: {
           incoming: ["To_T"], outgoing: [outOf], inputs: [], outputs: [], boundaries: [], multiInstance: shape.plain === true ? null : loop,
-          compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false, ...shape.envelope,
+          compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [], ...shape.envelope,
         },
       },
     },
@@ -68,7 +68,7 @@ function program(shape: Shape = {}): Json {
   });
   const never = { simpleBoolean: { body: { literal: { value: false } } } };
   const elements: Json[] = [
-    { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: [into] } } },
+    { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: [into], initiator: null, formRef: null } } },
     task,
     { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish",
       incoming: [...(shape.failingAfter === true ? [] : [outOf]), ...(shape.failingSibling === true || shape.failingAfter === true ? ["Never", "Nor"] : [])],

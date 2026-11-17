@@ -208,7 +208,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start_Fork"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -282,7 +284,9 @@
                   },
                   "outputs": [],
                   "alternatives": [],
-                  "parallelMultiple": false
+                  "parallelMultiple": false,
+                  "dataOutputs": [],
+                  "retryCycle": null
                 },
                 "interrupting": true,
                 "outgoing": [
@@ -314,6 +318,8 @@
               "outputCollection": null,
               "asyncBefore": false,
               "asyncAfter": false,
+              "exclusive": null,
+              "retryCycle": null,
               "loopDataInputRef": null,
               "inputDataItemName": null
             },
@@ -321,7 +327,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -349,7 +359,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -368,7 +379,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -484,7 +499,9 @@
                   },
                   "outputs": [],
                   "alternatives": [],
-                  "parallelMultiple": false
+                  "parallelMultiple": false,
+                  "dataOutputs": [],
+                  "retryCycle": null
                 },
                 "interrupting": true,
                 "outgoing": [
@@ -516,6 +533,8 @@
               "outputCollection": null,
               "asyncBefore": false,
               "asyncAfter": false,
+              "exclusive": null,
+              "retryCycle": null,
               "loopDataInputRef": null,
               "inputDataItemName": null
             },
@@ -523,7 +542,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -551,7 +574,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -570,7 +594,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -642,7 +670,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Batch_Start_Assess"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -683,7 +713,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": true,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }

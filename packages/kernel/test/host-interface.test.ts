@@ -132,7 +132,7 @@ test("a Timer start offers the instant of a literal date, the period of a cycle 
 });
 
 test("a Timer start whose schedule is an expression is not offered", () => {
-  const dynamic = { timer: { payload: { schedule: { duration: { value: computed(variable("delay")) } } } } };
+  const dynamic = { timer: { payload: { schedule: { duration: { value: computed(variable("delay")) } }, exclusive: null } } };
   assert.deepEqual(refusedStarts(dynamic, "timer.duration").starts, []);
 });
 

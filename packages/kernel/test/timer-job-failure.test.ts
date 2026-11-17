@@ -26,12 +26,12 @@ const decode = (continuationFailure: string) => decodeProgram({
   ...slice,
   options: { ...(slice.options as Json), continuationFailure },
   elements: [
-    { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Timer"] } } },
+    { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Timer"], initiator: null, formRef: null } } },
     {
       event: {
         header: header("Timer", "intermediateCatchEvent"),
         payload: {
-          role: { catch: { subscription: { trigger: { timer: { payload: { schedule: { duration: { value: { literal: { value: "PT2S" } } } } } } }, outputs: [], alternatives: [], parallelMultiple: false } } },
+          role: { catch: { subscription: { trigger: { timer: { payload: { schedule: { duration: { value: { literal: { value: "PT2S" } } } }, exclusive: null } } }, outputs: [], alternatives: [], parallelMultiple: false, dataOutputs: [], retryCycle: null } } },
           placement: "intermediate", incoming: ["To_Timer"], outgoing: ["To_Check"], alternativeThrows: [],
         },
       },
@@ -43,7 +43,7 @@ const decode = (continuationFailure: string) => decodeProgram({
           work: "none",
           envelope: {
             incoming: ["To_Check"], outgoing: ["To_A", "To_B"], inputs: [], outputs: [], boundaries: [], multiInstance: null,
-            compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false,
+            compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [],
           },
         },
       },

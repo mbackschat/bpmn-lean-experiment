@@ -120,6 +120,7 @@ The deleted implementation admitted data only in exact shapes: one Property, one
 | `expression.outsideSimpleBoolean`, `flow.condition.foreign` | a condition outside the Simple Boolean subset | PC-DATA-07, PC-DATA-08 |
 | `activity.inputMappings`, `activity.outputMappings` | mappings on work other than User and Service Tasks, except a plain Task's `camunda:outputParameter`s under `OutputContext.activityScope` (CIB-EXT-0031) | nothing would carry or submit them |
 | `element.origin.sourceId`, `element.origin.definition` | an element whose origin is not its own source element | no reviewed copy semantics |
+| `mapping.structuredParameter` | a `camunda:inputParameter` or `outputParameter` whose value is a `camunda:list`, `map` or `script` (`Envelope.structuredInputs`, `structuredOutputs`) | forward-compatible restriction ([AD3](../../REWRITE-2-PROPOSAL.md)); the node table is carried, a map key's expression reading and CIB's key order are uninterpreted |
 | `data.itemInaccessible` | a Data Association source or target, or a Multi-Instance loop reference, naming a Scope's item outside that Scope (validity, §10.4.1) | [scope data](#scope-data) |
 | `data.scopedItem` | a Data Association in a compensation handler naming an item of a Scope enclosing the handler, whose occurrence may have ended when the handler runs | PC-MESSAGE-03, PC-DATA-05, PC-DATA-06 |
 | dynamic: `undeclared-write` | a write to a name nothing declares, under `UndeclaredWrite.refused` | §10.4.1 |

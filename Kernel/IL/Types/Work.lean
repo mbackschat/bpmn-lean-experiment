@@ -13,6 +13,14 @@ public section
 
 namespace Kernel
 
+/-- A `camunda:formRef` and the `formRefBinding` and `formRefVersion` beside it, each the attribute's text
+(`BpmnParse.java:2851-2886`); admission refuses every one (`work.user.formRef`, `start.formRef`). -/
+structure FormRef where
+  key : String
+  binding : Option String := none
+  version : Option String := none
+  deriving Repr
+
 structure UserWork where
   name : Option String := none
   assignee : Option ValueSource := none
@@ -23,6 +31,7 @@ structure UserWork where
   dueDate : Option ValueSource := none
   followUpDate : Option ValueSource := none
   priority : Option ValueSource := none
+  formRef : Option FormRef := none
   deriving Repr
 
 /-- `instantiate` marks a Receive Task that instantiates its Process (BPMN 2.0.2 §10.3.3, Table 10.10).

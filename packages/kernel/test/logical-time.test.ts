@@ -18,13 +18,13 @@ const slice = JSON.parse(readFileSync(new URL("./fixtures/simple-boolean.program
 const header = (id: string, sourceType: string): Json => ({ id, origin: { definition: null, sourceId: id }, sourceType, parent: null });
 const envelope = (incoming: string, outgoing: string): Json => ({
   incoming: [incoming], outgoing: [outgoing], inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false,
-  defaultFlow: null, asyncBefore: false, asyncAfter: false,
+  defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [],
 });
 
 const decoded = decodeProgram({
   ...slice,
   elements: [
-    { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Task"] } } },
+    { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Task"], initiator: null, formRef: null } } },
     {
       activity: {
         header: header("Task", "userTask"),
@@ -33,7 +33,7 @@ const decoded = decodeProgram({
             user: {
               payload: {
                 name: "Wait", assignee: null, candidateUsers: [], candidateGroups: [], formKey: null, formFields: [], dueDate: null,
-                followUpDate: null, priority: null,
+                followUpDate: null, priority: null, formRef: null,
               },
             },
           },
@@ -45,7 +45,7 @@ const decoded = decodeProgram({
       event: {
         header: header("Timer", "intermediateCatchEvent"),
         payload: {
-          role: { catch: { subscription: { trigger: { timer: { payload: { schedule: { duration: { value: { literal: { value: "PT2S" } } } } } } }, outputs: [], alternatives: [], parallelMultiple: false } } },
+          role: { catch: { subscription: { trigger: { timer: { payload: { schedule: { duration: { value: { literal: { value: "PT2S" } } } }, exclusive: null } } }, outputs: [], alternatives: [], parallelMultiple: false, dataOutputs: [], retryCycle: null } } },
           placement: "intermediate", incoming: ["To_Timer"], outgoing: ["To_End"], alternativeThrows: [],
         },
       },

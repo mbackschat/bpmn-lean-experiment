@@ -66,4 +66,37 @@ structure Mapping where
   dialect : MappingDialect := .dataAssociation
   deriving Repr
 
+/-- A `camunda:script` value of a structured parameter (`BpmnParseUtil.java:224-239`): its `scriptFormat`, its inline
+text, `none` when absent, and the `resource` it names instead, as `ScriptWork` carries a Script Task's. -/
+structure ParameterScript where
+  format : String
+  source : Option String := none
+  resource : Option String := none
+  deriving Repr
+
+/-- A `camunda:map` entry: its `key` attribute's text and the index of the node holding its value. -/
+structure ParameterEntry where
+  key : String
+  value : Nat
+  deriving Repr
+
+/-- One node of a structured parameter value, the value provider CIB parses (`BpmnParseUtil.java:152-222`): a flat table
+in post-order, each child the index of an earlier node, the root last. A `value` is a text leaf read as a scalar
+parameter's text is (`Mapping.source`); list items and map entries keep document order. -/
+inductive ParameterNode where
+  | value (body : Expression)
+  | list (items : List Nat)
+  | map (entries : List ParameterEntry)
+  | script (payload : ParameterScript)
+  deriving Repr
+
+/-- A `camunda:inputParameter` or `outputParameter` whose value is a `camunda:list`, `map` or `script`, beside the
+scalar ones its direction's mappings carry: `position` is the index among those mappings before which it runs, in
+document order (`BpmnParseUtil.java:89-110`). Admission refuses every one (`mapping.structuredParameter`). -/
+structure StructuredParameter where
+  target : String
+  position : Nat
+  nodes : List ParameterNode
+  deriving Repr
+
 end Kernel

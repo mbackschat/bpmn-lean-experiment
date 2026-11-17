@@ -6,6 +6,12 @@ import { assertNever, type ValueSource } from "./expression.js";
 import type { CorrelationCriterion, DataOutputDecl, EffectBinding, MessageTrigger } from "./message.js";
 import type { CallBinding, CallWork } from "./reference.js";
 
+/**
+ * A `camunda:formRef` and the `formRefBinding` and `formRefVersion` beside it, each the attribute's text
+ * (`BpmnParse.java:2851-2886`); admission refuses every one (`work.user.formRef`, `start.formRef`).
+ */
+export interface FormRef { readonly key: string; readonly binding: string | null; readonly version: string | null; }
+
 export interface UserWork {
   readonly name: string | null;
   readonly assignee: ValueSource | null;
@@ -16,6 +22,7 @@ export interface UserWork {
   readonly dueDate: ValueSource | null;
   readonly followUpDate: ValueSource | null;
   readonly priority: ValueSource | null;
+  readonly formRef: FormRef | null;
 }
 
 /**

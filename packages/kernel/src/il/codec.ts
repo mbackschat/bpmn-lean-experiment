@@ -41,6 +41,7 @@ import {
   InstanceCountTag,
   MappingDialect,
   MessageCorrelation,
+  ParameterNodeTag,
   MultiInstanceBinding,
   MultiInstanceCompensation,
   MultiInstanceCount,
@@ -95,8 +96,13 @@ import {
   type GatewayKind,
   type Header,
   type InstanceCount,
+  type FormRef,
   type Mapping,
   type MessageTrigger,
+  type ParameterEntry,
+  type ParameterNode,
+  type ParameterScript,
+  type StructuredParameter,
   type DataOutputDecl,
   type MultiInstance,
   type ProfileOptions,
@@ -203,6 +209,21 @@ const mapping = struct<Mapping>("Mapping", {
   dialect: members("MappingDialect", MappingDialect),
 });
 
+const parameterNode = inductive<ParameterNode>("ParameterNode", {
+  [ParameterNodeTag.Value]: { body: expression },
+  [ParameterNodeTag.List]: { items: list(nat) },
+  [ParameterNodeTag.Map]: { entries: list(struct<ParameterEntry>("ParameterEntry", { key: string, value: nat })) },
+  [ParameterNodeTag.Script]: {
+    payload: struct<ParameterScript>("ParameterScript", { format: string, source: option(string), resource: option(string) }),
+  },
+});
+
+const structuredParameter = struct<StructuredParameter>("StructuredParameter", {
+  target: string,
+  position: nat,
+  nodes: list(parameterNode),
+});
+
 const timerSchedule = inductive<TimerSchedule>("TimerSchedule", {
   [TimerScheduleTag.Duration]: { value: valueSource },
   [TimerScheduleTag.Date]: { value: valueSource },
@@ -225,7 +246,7 @@ const dataOutputDecl = struct<DataOutputDecl>("DataOutputDecl", { id: string, it
 const qName = struct<QName>("QName", { namespace: option(string), localName: string });
 
 const trigger = inductive<Trigger>("Trigger", {
-  [TriggerTag.Timer]: { payload: struct("TimerTrigger", { schedule: timerSchedule }) },
+  [TriggerTag.Timer]: { payload: struct("TimerTrigger", { schedule: timerSchedule, exclusive: option(bool) }) },
   [TriggerTag.Message]: { payload: messageTrigger },
   [TriggerTag.Signal]: { payload: struct("SignalTrigger", { signalRef: option(qName), name: option(valueSource) }) },
   [TriggerTag.Condition]: {
@@ -244,6 +265,8 @@ const subscription = struct<Subscription>("Subscription", {
   outputs: list(mapping),
   alternatives: list(trigger),
   parallelMultiple: bool,
+  dataOutputs: list(dataOutputDecl),
+  retryCycle: option(string),
 });
 
 const boundary = struct<Boundary>("Boundary", {
@@ -284,6 +307,8 @@ const callBinding = inductive<CallBinding>("CallBinding", {
   [CallBindingTag.VersionTag]: { value: valueSource },
 });
 
+const formRef = struct<FormRef>("FormRef", { key: string, binding: option(string), version: option(string) });
+
 const work = inductive<Work>("Work", {
   [WorkTag.None]: {},
   [WorkTag.Manual]: {},
@@ -298,6 +323,7 @@ const work = inductive<Work>("Work", {
       dueDate: option(valueSource),
       followUpDate: option(valueSource),
       priority: option(valueSource),
+      formRef: option(formRef),
     }),
   },
   [WorkTag.Receive]: {
@@ -357,6 +383,8 @@ const multiInstance = struct<MultiInstance>("MultiInstance", {
   outputCollection: option(string),
   asyncBefore: bool,
   asyncAfter: bool,
+  exclusive: option(bool),
+  retryCycle: option(string),
   loopDataInputRef: option(string),
   inputDataItemName: option(string),
 });
@@ -373,6 +401,10 @@ const envelope = struct<Envelope>("Envelope", {
   defaultFlow: option(string),
   asyncBefore: bool,
   asyncAfter: bool,
+  exclusive: option(bool),
+  retryCycle: option(string),
+  structuredInputs: list(structuredParameter),
+  structuredOutputs: list(structuredParameter),
 });
 
 const transactionMethod = inductive<TransactionMethod>("TransactionMethod", {
@@ -443,7 +475,12 @@ const element = inductive<Element>("Element", {
   },
   [ElementTag.Start]: {
     header,
-    payload: struct("StartPayload", { subscription: option(subscription), outgoing: list(string) }),
+    payload: struct("StartPayload", {
+      subscription: option(subscription),
+      outgoing: list(string),
+      initiator: option(string),
+      formRef: option(formRef),
+    }),
   },
 });
 

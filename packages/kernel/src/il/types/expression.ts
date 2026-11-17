@@ -82,3 +82,37 @@ export enum MappingDialect {
 
 /** `target := source`, evaluated in the scope the owning element names. */
 export interface Mapping { readonly target: string; readonly source: Expression; readonly dialect: MappingDialect; }
+
+/**
+ * A `camunda:script` value of a structured parameter (`BpmnParseUtil.java:224-239`): its `scriptFormat`, its inline
+ * text, `null` when absent, and the `resource` it names instead, as `ScriptWork` carries a Script Task's.
+ */
+export interface ParameterScript { readonly format: string; readonly source: string | null; readonly resource: string | null; }
+
+/** A `camunda:map` entry: its `key` attribute's text and the index of the node holding its value. */
+export interface ParameterEntry { readonly key: string; readonly value: number; }
+
+export enum ParameterNodeTag { Value = "value", List = "list", Map = "map", Script = "script" }
+
+/**
+ * One node of a structured parameter value, the value provider CIB parses (`BpmnParseUtil.java:152-222`): a flat table
+ * in post-order, each child the index of an earlier node, the root last. A `value` is a text leaf read as a scalar
+ * parameter's text is (`Mapping.source`); list items and map entries keep document order.
+ */
+export type ParameterNode =
+  | { readonly tag: ParameterNodeTag.Value; readonly body: Expression }
+  | { readonly tag: ParameterNodeTag.List; readonly items: readonly number[] }
+  | { readonly tag: ParameterNodeTag.Map; readonly entries: readonly ParameterEntry[] }
+  | { readonly tag: ParameterNodeTag.Script; readonly payload: ParameterScript };
+
+/**
+ * A `camunda:inputParameter` or `outputParameter` whose value is a `camunda:list`, `map` or `script`, beside the scalar
+ * ones its direction's mappings carry: `position` is the index among those mappings before which it runs, in document
+ * order (`BpmnParseUtil.java:89-110`). Admission refuses every one (`mapping.structuredParameter`).
+ */
+export interface StructuredParameter {
+  readonly target: string;
+  // guard-exception(19): a structured parameter is refused whole (`mapping.structuredParameter`, admission/data.ts).
+  readonly position: number;
+  readonly nodes: readonly ParameterNode[];
+}

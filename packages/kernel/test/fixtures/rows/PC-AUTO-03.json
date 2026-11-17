@@ -208,7 +208,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_StartToService"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -249,7 +251,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": true,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }

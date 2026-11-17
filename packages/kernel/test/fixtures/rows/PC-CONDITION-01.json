@@ -101,7 +101,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start_Edge_Host"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -128,7 +130,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -166,7 +169,9 @@
                   },
                   "outputs": [],
                   "alternatives": [],
-                  "parallelMultiple": false
+                  "parallelMultiple": false,
+                  "dataOutputs": [],
+                  "retryCycle": null
                 },
                 "interrupting": false,
                 "outgoing": [
@@ -179,7 +184,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -233,7 +242,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -252,7 +262,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }

@@ -175,11 +175,17 @@ def mapping (evaluator : Evaluator) (site : Site) (entry : Mapping) : Option Str
 def mappings (evaluator : Evaluator) (site : Site) (list : List Mapping) : Option String :=
   list.findSome? (mapping evaluator site)
 
+/-- A parameter whose value is a `camunda:list`, `map` or `script` (`BpmnParseUtil.java:152-239`) produces a value no
+kernel mapping builds, so it is refused while carried (a forward-compatible restriction, AD3). -/
+def structuredParameters (fields : Envelope) : Option String :=
+  if fields.structuredInputs.isEmpty && fields.structuredOutputs.isEmpty then none else some "mapping.structuredParameter"
+
 /-- An Activity's default flow is read by `Kernel.Feature.Flow.ownFlows` (PC-CF-07). The asynchronous continuations are
 admitted: `Kernel.Step` reads them as transaction boundaries (CIB-EXT-0027). The inputs, the outputs and the loop each
 have their site. -/
 def envelope (evaluator : Evaluator) (inputs outputs loop : Site) (fields : Envelope) : Option String :=
-  mappings evaluator inputs fields.inputs <|> mappings evaluator outputs fields.outputs <|>
+  structuredParameters fields <|>
+    mappings evaluator inputs fields.inputs <|> mappings evaluator outputs fields.outputs <|>
     fields.multiInstance.bind (loopItems loop)
 
 /-- A Sequence Flow condition is read by the profile's evaluator: Simple Boolean, or under `Evaluator.juel` a JUEL

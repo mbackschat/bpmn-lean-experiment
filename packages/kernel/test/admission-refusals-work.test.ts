@@ -502,6 +502,32 @@ export const rows: readonly Row[] = [
     code: "work.rule.decisionMissing", description: "a Business Rule Task naming a decision the program does not carry",
     mutate: (program) => withOptions(withTask(ruleWork())(program), { businessRuleTask: "decisionTable" }),
   },
+  // Carried and refused (AD3, E12).
+  {
+    code: "work.user.formRef", description: "a User Task whose form is a camunda:formRef",
+    mutate: withTask(userWork({ formRef: { key: "invoice", binding: "latest", version: null } })),
+    control: withTask(userWork()),
+  },
+  {
+    code: "job.exclusive", description: "an asynchronous Task that declares camunda:exclusive",
+    mutate: withTask("manual", { asyncBefore: true, exclusive: false }),
+    control: withTask("manual", { asyncBefore: true }),
+  },
+  {
+    code: "job.exclusive", description: "a loop whose instances declare camunda:exclusive",
+    mutate: withTask(userWork(), { multiInstance: loop({ asyncBefore: true, exclusive: true }) }),
+    control: withTask(userWork(), { multiInstance: loop({ asyncBefore: true }) }),
+  },
+  {
+    code: "job.retryCycle", description: "an asynchronous Task with a camunda:failedJobRetryTimeCycle",
+    mutate: withTask("manual", { asyncBefore: true, retryCycle: "R3/PT10S" }),
+    control: withTask("manual", { asyncBefore: true }),
+  },
+  {
+    code: "job.retryCycle", description: "a loop whose instances have a camunda:failedJobRetryTimeCycle",
+    mutate: withTask(userWork(), { multiInstance: loop({ asyncBefore: true, retryCycle: "PT1M,PT5M" }) }),
+    control: withTask(userWork(), { multiInstance: loop({ asyncBefore: true }) }),
+  },
 ];
 
 refusalTests("work", rows);

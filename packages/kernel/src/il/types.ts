@@ -11,8 +11,9 @@
 
 import { CalledElementResolution, type ProfileOptions } from "./types/options.js";
 import {
-  ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
-  type SimpleBoolean, type Value, type ValueSource,
+  ExpressionTag, MappingDialect, ParameterNodeTag, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
+  type ParameterEntry, type ParameterNode, type ParameterScript, type SimpleBoolean, type StructuredParameter, type Value,
+  type ValueSource,
 } from "./types/expression.js";
 import type { Decision, DecisionResource } from "./types/decision.js";
 import {
@@ -21,8 +22,8 @@ import {
 } from "./types/reference.js";
 import type { MultiInstance } from "./types/multi-instance.js";
 import { assertNever } from "./types/expression.js";
-import type { EffectBinding, MessageTrigger } from "./types/message.js";
-import type { Work } from "./types/work.js";
+import type { DataOutputDecl, EffectBinding, MessageTrigger } from "./types/message.js";
+import type { FormRef, Work } from "./types/work.js";
 export { integerLexeme, isAscii, parseJavaInt, parseJavaLong, signedDigits, withinJavaInt } from "./types/lexical.js";
 export {
   type InstanceCount, InstanceCountTag, type MultiInstance, MultiInstanceMode,
@@ -38,8 +39,9 @@ export {
   ScopeStart, SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms,
 } from "./types/options.js";
 export {
-  ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
-  type SimpleBoolean, type Value, type ValueSource,
+  ExpressionTag, MappingDialect, ParameterNodeTag, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
+  type ParameterEntry, type ParameterNode, type ParameterScript, type SimpleBoolean, type StructuredParameter, type Value,
+  type ValueSource,
 };
 export {
   type CallBinding, CallBindingTag, type CallWork, callWorkSelects, callWorkNamesDefinition, type DefinitionRef, definitionRefEquals,
@@ -48,7 +50,7 @@ export {
 export { assertNever };
 export type { CorrelationCriterion, DataOutputDecl, EffectBinding, MessageTrigger } from "./types/message.js";
 export {
-  DecisionResultMapping, type ReceiveWork, type RuleWork, type ScriptWork, type SendWork, type ServiceWork, type UserWork, type Work,
+  DecisionResultMapping, type FormRef, type ReceiveWork, type RuleWork, type ScriptWork, type SendWork, type ServiceWork, type UserWork, type Work,
   WorkTag, workCall, workIsService, workIsUser, workReceive, workResults,
 } from "./types/work.js";
 
@@ -127,7 +129,8 @@ export type TimerSchedule =
   | { readonly tag: TimerScheduleTag.Date; readonly value: ValueSource }
   | { readonly tag: TimerScheduleTag.Cycle; readonly value: ValueSource; readonly dialect: CycleDialect };
 
-export interface TimerTrigger { readonly schedule: TimerSchedule; }
+/** `exclusive` is the definition's `camunda:exclusive`, `null` when absent (`BpmnParse.java:3602`); admission refuses it (`job.exclusive`). */
+export interface TimerTrigger { readonly schedule: TimerSchedule; readonly exclusive: boolean | null; }
 
 /**
  * `signalRef` is the Signal the event references, `null` when the model names none; `name` is that Signal's `name`
@@ -186,13 +189,17 @@ export type Trigger =
 
 /**
  * `alternatives` are a Multiple Event's definitions after the first, in document order, and `parallelMultiple` its
- * Parallel Multiple mark (BPMN 2.0.2 §10.5.1); admission refuses both (CIB-LIM-0008).
+ * Parallel Multiple mark (BPMN 2.0.2 §10.5.1); admission refuses both (CIB-LIM-0008). `dataOutputs` are the catching
+ * Event's Data Outputs, which `outputs` read (#114), and `retryCycle` the text of its `camunda:failedJobRetryTimeCycle`
+ * (`DefaultFailedJobParseListener.java:49-80`), which admission refuses (`job.retryCycle`).
  */
 export interface Subscription {
   readonly trigger: Trigger;
   readonly outputs: readonly Mapping[];
   readonly alternatives: readonly Trigger[];
   readonly parallelMultiple: boolean;
+  readonly dataOutputs: readonly DataOutputDecl[];
+  readonly retryCycle: string | null;
 }
 
 /** `sourceId` as `ElementOrigin.sourceId`: the identifier the author wrote; `id` is unique in the program. */
@@ -276,6 +283,16 @@ export interface Envelope {
   /** A transaction boundary before the element begins and after it completes (CIB-EXT-0027). */
   readonly asyncBefore: boolean;
   readonly asyncAfter: boolean;
+  /**
+   * The `camunda:exclusive` of the element's jobs, `null` when absent (`BpmnParse.java:4750-4752`), and the text of its
+   * `camunda:failedJobRetryTimeCycle` (`DefaultFailedJobParseListener.java:158-178`); admission refuses both
+   * (`job.exclusive`, `job.retryCycle`).
+   */
+  readonly exclusive: boolean | null;
+  readonly retryCycle: string | null;
+  /** The parameters of `camunda:inputOutput` with a structured value, which `inputs` and `outputs` cannot hold. */
+  readonly structuredInputs: readonly StructuredParameter[];
+  readonly structuredOutputs: readonly StructuredParameter[];
 }
 
 // Elements
@@ -362,7 +379,16 @@ export interface GatewayPayload {
   readonly outgoing: readonly FlowId[];
 }
 
-export interface StartPayload { readonly subscription: Subscription | null; readonly outgoing: readonly FlowId[]; }
+/**
+ * `initiator` is the `camunda:initiator` variable name (`BpmnParse.java:1009-1012`) and `formRef` the start form's
+ * reference (`BpmnParse.java:1050-1075`); admission refuses both (`start.initiator`, `start.formRef`).
+ */
+export interface StartPayload {
+  readonly subscription: Subscription | null;
+  readonly outgoing: readonly FlowId[];
+  readonly initiator: string | null;
+  readonly formRef: FormRef | null;
+}
 
 /**
  * `sourceId` is the identifier the model's author wrote, which publication shows. `Header.id` is unique in the program,

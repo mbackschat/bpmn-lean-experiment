@@ -208,7 +208,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Dispatch_Start_Ship"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -281,7 +283,9 @@
                   },
                   "outputs": [],
                   "alternatives": [],
-                  "parallelMultiple": false
+                  "parallelMultiple": false,
+                  "dataOutputs": [],
+                  "retryCycle": null
                 },
                 "interrupting": true,
                 "outgoing": [
@@ -294,7 +298,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -322,7 +330,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -341,7 +350,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -369,7 +382,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -388,7 +402,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -460,7 +478,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Ship_Start_Pack"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -487,7 +507,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -506,7 +527,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }

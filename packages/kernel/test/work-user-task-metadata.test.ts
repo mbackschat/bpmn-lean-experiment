@@ -30,7 +30,7 @@ test("a User Task publishes its literal assignment and form metadata", () => {
     name: "Triage case", assignee: text("alice"), candidateUsers: [text("bob"), text("carol")],
     candidateGroups: [text("triagers"), text("leads")], formKey: "embedded:app:forms/triage.html",
     formFields: [["route", "string"], ["urgent", "boolean"]], dueDate: text("2026-12-31T00:00:00Z"),
-    followUpDate: text("2026-12-24T00:00:00Z"), priority: text("070"),
+    followUpDate: text("2026-12-24T00:00:00Z"), priority: text("070"), formRef: null,
   }), {
     name: "Triage case", assignee: "alice", candidateUsers: ["bob", "carol"], candidateGroups: ["triagers", "leads"],
     formKey: "embedded:app:forms/triage.html", formFields: [["route", "string"], ["urgent", "boolean"]],

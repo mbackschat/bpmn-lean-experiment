@@ -279,12 +279,20 @@ export function mappings(evaluator: Evaluator, site: Site, list: readonly Mappin
 }
 
 /**
+ * A parameter whose value is a `camunda:list`, `map` or `script` (`BpmnParseUtil.java:152-239`) produces a value no
+ * kernel mapping builds, so it is refused while carried (a forward-compatible restriction, AD3).
+ */
+export function structuredParameters(fields: Envelope): string | null {
+  return fields.structuredInputs.length === 0 && fields.structuredOutputs.length === 0 ? null : "mapping.structuredParameter";
+}
+
+/**
  * An Activity's default flow is read by `feature/flow.ts` `ownFlows` (PC-CF-07). The asynchronous continuations are
  * admitted: `step.ts` reads them as transaction boundaries (CIB-EXT-0027). The inputs, the outputs and the loop each
  * have their site.
  */
 export function envelope(evaluator: Evaluator, inputs: Site, outputs: Site, loop: Site, fields: Envelope): string | null {
-  return mappings(evaluator, inputs, fields.inputs) ?? mappings(evaluator, outputs, fields.outputs) ??
+  return structuredParameters(fields) ?? mappings(evaluator, inputs, fields.inputs) ?? mappings(evaluator, outputs, fields.outputs) ??
     (fields.multiInstance === null ? null : loopItems(loop, fields.multiInstance));
 }
 

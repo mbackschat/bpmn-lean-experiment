@@ -208,7 +208,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start_Booking"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -263,13 +265,16 @@
                               }
                             }
                           }
-                        }
+                        },
+                        "exclusive": null
                       }
                     }
                   },
                   "outputs": [],
                   "alternatives": [],
-                  "parallelMultiple": false
+                  "parallelMultiple": false,
+                  "dataOutputs": [],
+                  "retryCycle": null
                 },
                 "interrupting": true,
                 "outgoing": [
@@ -282,7 +287,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -302,7 +311,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Booking_Items"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -361,6 +372,8 @@
               "outputCollection": null,
               "asyncBefore": false,
               "asyncAfter": false,
+              "exclusive": null,
+              "retryCycle": null,
               "loopDataInputRef": null,
               "inputDataItemName": null
             },
@@ -368,7 +381,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -388,7 +405,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Item_Book"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -415,7 +434,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -434,7 +454,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -491,13 +515,16 @@
                             }
                           }
                         }
-                      }
+                      },
+                      "exclusive": null
                     }
                   }
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               },
               "interrupting": false
             }
@@ -520,7 +547,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -549,17 +580,22 @@
                         }
                       }
                     }
-                  }
+                  },
+                  "exclusive": null
                 }
               }
             },
             "outputs": [],
             "alternatives": [],
-            "parallelMultiple": false
+            "parallelMultiple": false,
+            "dataOutputs": [],
+            "retryCycle": null
           },
           "outgoing": [
             "Flow_Due_Send"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -586,7 +622,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -605,7 +642,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -685,7 +726,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -704,7 +746,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -732,7 +778,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -751,7 +798,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
