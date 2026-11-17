@@ -346,6 +346,46 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 - Plus an API reference generated from the HTTP contract.
 - **Unmeasured,** with the reason: documentation is not calibrated by a spike. Its risk is low, and it is priced by transfer from this proposal's own writing rate.
 
+### Operating Product 2 at scale: T27–T33, T36, T38, T40
+
+**PD6. Change-driven publication and incremental read models (T27, T30, T31, T33).**
+- Each process chain keeps its unacknowledged publication batches across Continue-As-New, up to a bounded backlog. The consumer acknowledges by cursor, so a rollover never loses history (T30).
+- Each committed input also hands a small change notice, `(instance, revision)`, to a population-level change feed with a cursor. The platform's recovery worker reads the feed and pulls only the instances that changed. This replaces one Query per instance per freshness window (T27).
+- Instances the population starts, by Signal, Message or Conditional cascades, enter the feed like any other, so Product 2 registers them (T33).
+- **Work, Incidents and Metrics become incremental projections**, never all-or-nothing snapshots.
+  - Each instance carries its own freshness.
+  - A lost instance (`unknown`) is marked for that instance only. An operator action, "retire instance", removes it after confirmation (T31).
+  - Closed instances leave the active set.
+- **Premise:**
+  - all-or-nothing snapshots behind 100-instance caps (verified, T27);
+  - per-Run batch retention (`publication.ts:7-10`);
+  - the `unknown` row that blocks every snapshot (`work-service.ts:135-141`).
+- **Scope check:** the owner-approved [shared-persistence proposal](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) names "change-driven Product 1 publication that reduces polling without changing semantic authority" as its preferred reopen path, and its reopen condition is met. Feed and acknowledgement fall under "observe committed canonical state", so no consumption operation is added ([platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary)). [HUMAN-WORK-SPEC](BPM-PLATFORM-HUMAN-WORK-SPEC.md)'s "instances started outside Product 2 remain absent" is revised.
+- **Rejected:**
+  - raising the caps, which keeps N Queries per window;
+  - a database shared with the engine, which breaks the dependency direction.
+
+**PD7. A halt suspends the instance visibly; it never ends it (T28, T29, T36, T38).**
+- A chain that cannot commit stays open, suspended, with its halt record: the code, the command and the offending arrival.
+- Observation reports `suspended`, a host fact, never a semantic outcome. Product 2 lists suspended instances in Operations, with cancel (HD4's general cancellation) and resume. Resume re-offers the arrival once the cause is gone, for example after a bound was raised.
+- A host arrival the kernel rejects, such as an effect result outside the value domain, suspends the instance. It is never dropped as stale (T29).
+- Under the standards profile, a technical failure of an effect suspends the instance. BPMN defines no incident, so this is host behavior, not BPMN meaning (T38).
+- The 128-Run cap is removed (OD3), so age never halts (T36).
+- **Premise:**
+  - a halt ends the Workflow (`workflow-host.ts:583,641`), and observation reads it as `Closed` (verified);
+  - rejected arrivals are dropped (`workflow-host.ts:608-616`).
+- **Scope check:** `CLAUDE.md` keeps harness and infrastructure failures separate from semantic outcomes, which suspension preserves.
+- **Rejected:** retrying a technical failure without end, which hides a broken handler.
+
+**PD8. Generator-driven differential (T40).**
+- A model and schedule generator feeds the existing paired batch path (`lean-paired` into `kernelRun --batch`). It covers sequence, Exclusive, Parallel, Inclusive, scopes, boundaries and Multi-Instance up to small bounds.
+- It runs in the fast lane at a fixed seed, and in the hosted lane over a widening seed range.
+- Divergences fail the build.
+- **Premise:** no generator or fuzzing exists in the repository (hunt F16, root grep).
+- **Rejected:** relying on the hand-written corpus. Production runs only the TypeScript kernel.
+
+**PD9. Model-declared Timer-start cycles are activated at deployment (T32, OD5).** Deployment registers one recurring host schedule per root Timer-start cycle. A redeploy supersedes it (CIB-INT-0029). The ingress prunes the ledger by currency (HD2).
+
 ### Promise register
 
 This register lists every promise of the [kernel architecture](kernel/ARCHITECTURE-SPEC.md) and the architecture promises of [PROJECT-DESIGN](PROJECT-DESIGN.md) and the [platform proposal](BPM-PLATFORM-PROPOSAL.md). Each one names what enforces it in the rewrite-2 design.
