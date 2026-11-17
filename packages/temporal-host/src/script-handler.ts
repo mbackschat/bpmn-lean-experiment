@@ -52,7 +52,8 @@ function items(value: JsonValue | undefined): readonly JsonValue[] {
 
 /**
  * A `variableValue` in the context's form (item 4): String, Boolean, Null and Integer as themselves, a list or
- * `stringList` as an array, a map as an object; a decimal, or a collection holding one, has no form and is left out.
+ * `stringList` as an array, a map as an object; any other kind, a decimal or one this host does not know, or a
+ * collection holding one, has no form and is left out, so reading it is `unsupported`, never a host fault.
  */
 function scriptForm(value: JsonValue): ScriptForm {
   const object = record(value);
@@ -65,8 +66,8 @@ function scriptForm(value: JsonValue): ScriptForm {
       const binding = record(entry);
       return [String(binding["name"]), scriptForm(binding["value"] ?? null)] as const;
     })];
-    case "decimal": throw new LeftOut();
-    default: throw new TypeError(`unknown value kind ${String(object["kind"])}`);
+    // The arguments arrive as untyped JSON, so a kind this host does not know reaches here at run time.
+    case "decimal": default: throw new LeftOut();
   }
 }
 
