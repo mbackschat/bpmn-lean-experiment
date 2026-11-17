@@ -352,6 +352,7 @@ The design removes P6's causes C1–C6 by construction instead of proving around
   - Call binding, version and business key;
   - Multi-Instance extensions;
   - retry-cycle extensions, selected per profile.
+- Form metadata includes the start form: CIB reads `formKey` and `formData` only on the process's initial Start Event (`BpmnParse.java:1050-1075`), the reader refuses both on every Start Event, and 14 and 2 of the 109 models carry them there (root count, 2026-11-17). Product 2's start form renders them as OD6 renders a User Task's.
 - Their missing IL fields (E12: initiator, retry cycle, structured parameters, `formRef`, `exclusive`, `Subscription.outputs.itemRef` from #114) enter in one shape commit, per the forward-compatible rule.
 - The JUEL levels the architecture promised and never delivered, Task fields (M3) and Events (M6), are delivered as rows, not restated.
 - **Premise:** the K4, E1 and P1 inventories. Spike T1a measures the full barrier distribution beyond the first diagnostic.
@@ -603,6 +604,7 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | T4c | T4: KD2′ footprint laws, U1 and the E-units on the real kernel; production factor | queued, next free slot | | | | |
 | T4d | T42 (KD8): nested pairing, the failure diamond, the work measure | queued after T4c | | | | |
 | T2 | T2, T26 (AD4) | paused, queued after T4c | | | | |
+| T43 (MEDIUM) | T43, T45 (AD6, AD7) | queued after T2: the classification table and its completeness guard on a slice of metamodel types, and the refusal rules of T45 in both kernels | | | | |
 | T17, T11, T7T8, T9b, T12, T15, T40 | round 3 | queued | | | | |
 
 **Process calibration from the proof wave (root, from git, 2026-11-17).**
