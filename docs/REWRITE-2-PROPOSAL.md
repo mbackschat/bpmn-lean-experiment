@@ -23,11 +23,12 @@ The root then checked every topic's premise against the code at `87d27def2`. It 
 
 ## Headline findings
 
-1. **P6 is not on the goal's path under the profile a third party can use.**
-   - `SchedulesAgree` applies only under `branchSchedule = orderInvariant` (`Kernel/Proofs/Concurrency.lean:146-147`), which only `bpmn-2.0.2` selects.
-   - `cibseven-2.2.0` selects the deterministic `declarationDepthFirst`.
-   - `bpmn-2.0.2` evaluates Simple Boolean only (`Kernel/IL/Types/Options.lean:404`). It refuses `${…}` conditions, Scripts, output mappings, interrupting Event Sub-Processes and Terminate inside a Sub-Process.
-   - Product 2's structured forms, however, exist only under `bpmn-2.0.2`.
+1. **P6 is on the goal's path and is the costliest topic (T4).**
+   - Both profiles are in the settled scope. Product 2 compiles "against a selected profile" ([platform proposal](BPM-PLATFORM-PROPOSAL.md)), and the profiles are a standards profile and cumulative CIB Seven profiles ([PROJECT-DESIGN](PROJECT-DESIGN.md)).
+   - `SchedulesAgree` is the concurrency lane of the standards profile, `branchSchedule = orderInvariant` (`Kernel/Proofs/Concurrency.lean:146-147`). It is an architecture promise.
+   - `cibseven-2.2.0` selects the deterministic `declarationDepthFirst`, so P6 has nothing to prove there.
+   - The standards profile's Simple Boolean evaluator is settled ([conformance target](BPMN-CONFORMANCE-TARGET.md)). Its refusals of `${…}`, Scripts and output mappings are therefore correct, not a gap.
+   - **Defect:** Product 2's structured forms are bound to the `bpmn-2.0.2` identifier (`human-task-catalog-projection.ts:23`), so they are unavailable under the CIB profile (T14).
 2. **A third party's own models do not get past deployment today.** See the reproduced numbers above. The barriers are classification work inside the CIB7 ceiling: vendor metadata, expression-valued task fields, numeric types, structured parameters and similar.
 3. **A kernel rewrite reopens the closed proof lanes.** About 27,000 of the 37,481 proof lines are lemmas about the bodies of `State`, `Step` and `Hooks`.
 4. **The proofs are not yet connected to admitted models.** That admission establishes the lane premises is unproved, and [PLAN](PLAN.md) left it out of the proof wave.
@@ -42,31 +43,33 @@ The root then checked every topic's premise against the code at `87d27def2`. It 
 
 The table consolidates the audits' 40 topics; the source IDs are in brackets. "Current" is the cost on the current code, and "Rewrite" the cost designed into a rewrite. "Blocks" says whether the topic blocks the goal.
 
-| # | Topic | Blocks | Current | Rewrite | Owner decision |
+The "Owner" column marks only the items on the owner's ask list: dependencies, licensing, SDK work, workarounds, scope changes and removing an architecture promise. The root decides every other design choice and records it in the design.
+
+| # | Topic | Blocks | Current | Rewrite | Owner |
 |---|---|---|---|---|---|
-| T1 | Third-party model admission: about 30 classification and breadth items inside the CIB7 ceiling, an inert-metadata tier, and admission that reports every refusal with its element [P1, E1, E12, K4] | yes | 25–45 | 20–38 | vendor-metadata policy |
-| T2 | Value domain: Double, Date, negative integers, and bounds such as 32 members and 1 KiB strings [K5, E3] | yes | 4–15 | 2–6 | numeric tower |
-| T3 | Third-party profile: which profile Product 2 offers; forms coupled to the standards profile [K6, P6] | yes | 0.5–2 | 0.5–2 | **yes** |
-| T4 | P6 together with admission ⇒ premises, the narrow statement and footprints [K1, K2, K9, K11] | only if the standards profile is a goal profile | 40–74 | 20–40 | follows T3 |
+| T1 | Third-party model admission: about 30 classification and breadth items inside the CIB7 ceiling, an inert-metadata tier, and admission that reports every refusal with its element [P1, E1, E12, K4] | yes | 25–45 | 20–38 | — |
+| T2 | Value domain: Double, Date, negative integers, and bounds such as 32 members and 1 KiB strings [K5, E3] | yes | 4–15 | 2–6 | — |
+| T3 | Withdrawn: the profile is selected per deployment by the settled scope, so there is nothing to decide. Its remaining defect, forms bound to one profile identifier, moved to T14 | — | — | — | — |
+| T4 | P6 together with admission ⇒ premises, the narrow statement and footprints [K1, K2, K9, K11] | yes (standards-profile assurance) | 40–74 | 20–40 | — |
 | T5 | Rewrite reopens the closed lanes [K3] | no | 0 | 5–12 | — |
-| T6 | Identity scheme: internal, public, called and cascade identities (#126) [K7, E9] | partly | 4–15 | 0 if the public identity is kept, 5–8 if it changes | public identity |
-| T7 | Closure order: #120, #75, rollback points [K8] | no | 5–10 | 3–6 | imitate CIB on #75 |
+| T6 | Identity scheme: internal, public, called and cascade identities (#126) [K7, E9] | partly | 4–15 | 0 if the public identity is kept, 5–8 if it changes | — |
+| T7 | Closure order: #120, #75, rollback points [K8] | no | 5–10 | 3–6 | — |
 | T8 | Eight law families proved only on witness states [K10] | no (assurance) | 8–24 | 8–24 | — |
-| T9 | Admitted models can stop mid-run with one of 66 `unsupported` codes [K12] | partly | 1–2, plus 0.5–3 per code | same | production policy |
-| T10 | Module-shape pressure and dual transcription [K13, K14] | no | 1–3 per growth episode | 0.5–1 | budgets |
+| T9 | Admitted models can stop mid-run with one of 66 `unsupported` codes [K12] | partly | 1–2, plus 0.5–3 per code | same | — |
+| T10 | Module-shape pressure and dual transcription [K13, K14] | no | 1–3 per growth episode | 0.5–1 | — |
 | T11 | Effect contract an adopter can implement, plus Script isolation (TD-005) [P2, E7] | yes | 2–12 | 1.5–8 | — |
 | T12 | Per-request identity, authorization of deploy, start and search, and a security minimum [P3, P4] | yes | 1.5–5 | 1.5–5 | — |
 | T13 | Public publication contract without internal ids [P5] | no, but it multiplies every kernel change | 1.5–3 | 0.5 + 1–1.5 | — |
-| T14 | Profile bound in definition storage [P6] | yes | 1–2 | 0.5–1 | — |
-| T15 | Population ingress: one Workflow, about 536 waiting instances per population, append-only registry, Timer ledger [E4] | yes | 10–20 | 6–12 | sharding or a store |
+| T14 | Profile bound in definition storage by digest; Product 2 features keyed to profile capabilities, never to a profile identifier (forms today) [P6, K6] | yes | 1.5–3 | 1–2 | — |
+| T15 | Population ingress: one Workflow, about 536 waiting instances per population, append-only registry, Timer ledger [E4] | yes | 10–20 | 6–12 | only if the design needs a new store (dependency) |
 | T16 | Per-chain bounds: 32 pending Activities, a 64 KiB batch (#125), a 192 KiB program of about 100–180 elements, state growth (#169) [E5] | yes, for larger models | 6–12 | 4–8 | — |
 | T17 | Engine API gaps: general cancellation, DMN resources, variable commands, Signal and Conditional entry points (#91), cross-deployment Calls (#94) [E8, P9] | yes | 8–15 | 6–12 | — |
 | T18 | Milestone gates and the cross-product agreement test [P10] | no (assurance) | 1.5–5 | same | — |
 | T19 | Start lifecycle convergence (#136, #131, #124) [P11] | yes | 1–1.5 | same | — |
-| T20 | Human work for Camunda models: `formKey`, `formData`, assignee expressions [P12] | yes | 2–3 | same | passive form metadata |
+| T20 | Human work for Camunda models: `formKey`, `formData`, assignee expressions, admitted as passive profile data as the [platform proposal](BPM-PLATFORM-PROPOSAL.md) settles (E2) [P12] | yes | 2–3 | same | — |
 | T21 | Adopter documentation and API reference [P13] | yes | 1–2 | same | — |
 | T22 | Evidence re-retention multiplier per rebase [E10] | no | 1–3 per rebase | same | — |
-| T23 | Upstream blocks: Temporal SDK (#123), Node (TD-005) [E11] | production only | external | external | — |
+| T23 | Upstream blocks: Temporal SDK (#123), Node (TD-005) [E11] | production only | external | external | SDK work |
 | T24 | Workflow versioning and upgrades [P7, E6] | decided out | — | — | decided |
 | T25 | Deferred families: listeners, Java delegates, external tasks, connectors [E2] | decided out | — | — | settled |
 
@@ -84,14 +87,15 @@ About 10 agent-days in total, all independent of the kernel design. The issues a
 
 ## What the verified findings imply, before design
 
-- **With T3 decided as recommended, most of the cost to the goal is not kernel-core work.** The recommendation: `cibseven-2.2.0` as Product 2's default, and `bpmn-2.0.2` as a conformance profile outside the goal.
-  - T4 leaves the path.
-  - T1, T2, T11–T21 are reader, admission, host, engine-API and platform work. Their cost barely changes with a kernel rewrite.
-  - The kernel-core drivers that remain are T6, T7 and T8, together about 15–40 agent-days, against a rewrite's own T5 cost of 5–12. Checkpoint 2 has to compare targeted kernel fixes with a core rewrite on exactly these.
+- **The rewrite decision turns on the kernel core.**
+  - T1, T2 and T11–T21 are reader, admission, host, engine-API and platform work. Their cost barely changes with a kernel rewrite.
+  - The kernel-core drivers are T4, T6, T7 and T8. On the current code they cost about 55–115 agent-days; designed into a rewrite, about 30–70, plus the rewrite's own T5 of 5–12.
+  - T4 is where the two options differ most: C1–C5 are state and step shapes that a rewrite removes and a retrofit has to work around. T4 is therefore calibrated first.
 - **The total to the goal is large either way.**
-  - About 75–185 agent-days by these estimates. This takes T1 at its broad count and excludes T4.
-  - Most of it is T1: breadth inside the ceiling that a third party's own models need.
+  - About 95–225 agent-days by these estimates, with T1 at its broad count.
+  - The first rewrite took about 7.
   - The calibrations of checkpoint 3 replace these ranges with measured numbers before any plan is approved.
+- **Correction (2026-11-17):** the first version of this checkpoint took P6 off the path by recommending a third-party default profile. That re-derived settled scope and is withdrawn.
 
 ## Reuse and document verdicts
 
