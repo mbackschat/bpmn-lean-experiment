@@ -65,6 +65,15 @@ export {
   type ScopeOccurrenceId,
 };
 
+import {
+  compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsByPosition, type OpenItem, type OpenItems, sameItemKey,
+} from "./state/items.js";
+export {
+  compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsByPosition, type OpenItem, type OpenItems, sameItemKey,
+};
+import { type TreeMap } from "./state/map.js";
+export { type TreeMap };
+
 /** Guarded type: `step.ts` owns matching on it. Whom `Step` tells when an occurrence completes. */
 export enum ContinuationTag {
   /** Leave through the outgoing flows. */
@@ -119,55 +128,6 @@ export interface ScopeOccurrence {
 }
 
 export interface ScopeVariables { readonly scope: ScopeOccurrenceId; readonly entries: readonly Binding[]; }
-
-/** The role an open item plays for its occurrence (KD1's item role). */
-export enum ItemRole {
-  /** What a begun occurrence waits on (`openItem`). */
-  Wait = "wait",
-  /** A subscription holding its occurrence's reservation (`openSubscription`). */
-  Subscription = "subscription",
-}
-
-const itemRoleIndex: Readonly<Record<ItemRole, number>> = { [ItemRole.Wait]: 0, [ItemRole.Subscription]: 1 };
-
-/** An open item's structural key (KD1): its occurrence, its role and a per-occurrence ordinal (`itemOrdinals`). */
-export interface ItemKey { readonly occurrence: number; readonly role: ItemRole; readonly ordinal: number; }
-
-/** The lexicographic key order of `Kernel.ItemKey`'s `Ord`. */
-export function compareItemKey(left: ItemKey, right: ItemKey): number {
-  return left.occurrence - right.occurrence || itemRoleIndex[left.role] - itemRoleIndex[right.role] ||
-    left.ordinal - right.ordinal;
-}
-
-/** A key as text, for sets and maps keyed by value. */
-export function itemKeyText(key: ItemKey): string {
-  return `${key.occurrence}/${key.role}/${key.ordinal}`;
-}
-
-/** Two keys are one when their text forms are: keys never compare by object reference. */
-export function sameItemKey(left: ItemKey, right: ItemKey): boolean {
-  return itemKeyText(left) === itemKeyText(right);
-}
-
-/**
- * One open interaction. `id.occurrence` is the occurrence it waits for, or a subscription's reservation; the public
- * identity is the occurrence's activation of `element`. `attachedTo` is the occurrence the subscription hangs on (the
- * boundary's host, the Event-Based Gateway of an arm). A `passive` item, such as an Event Sub-Process start
- * subscription, keeps no scope occurrence alive and is removed when its scope completes.
- */
-export interface OpenItem {
-  readonly id: ItemKey;
-  /**
-   * The issue number the item took when it opened (`issue`): the order of opening, which every site that reads the items
-   * in order reads (`itemsByPosition`), never the key order of `openItems` (KD1).
-   */
-  readonly position: number;
-  readonly kind: OpenKind;
-  readonly element: ElementId;
-  readonly scope: ScopeOccurrenceId;
-  readonly attachedTo: number | null;
-  readonly passive: boolean;
-}
 
 export enum InstanceStatus { Running = "running", Completed = "completed", Cancelled = "cancelled", Failed = "failed" }
 
@@ -367,10 +327,9 @@ export interface State {
   /** The closure's work stack (`nextToken` in `step.ts`), empty once a closure settles. */
   readonly tokens: readonly Token[];
   readonly variables: readonly ScopeVariables[];
-  /** The open items in key order, one per key: the transcription of `Kernel.OpenItems`. */
-  readonly openItems: readonly OpenItem[];
+  readonly openItems: OpenItems;
   /** The next item ordinal of each occurrence that opened an item, in occurrence order, pruned with the occurrence. */
-  readonly itemOrdinals: readonly (readonly [number, number])[];
+  readonly itemOrdinals: TreeMap<number, number>;
   readonly activations: readonly ActivationCount[];
   readonly nextIssue: number;
   readonly logicalTimeMs: number;
@@ -696,16 +655,6 @@ export function startReserved(state: State, occurrence: Occurrence, sourceType: 
   return [recordStart({ ...state, occurrences }, begun, sourceType), begun];
 }
 
-/** The open items in the order they opened, by `OpenItem.position`: for every reading that depends on order. */
-export function itemsByPosition(state: State): readonly OpenItem[] {
-  return [...state.openItems].sort((left, right) => left.position - right.position);
-}
-
-/** The open item keyed `key`. */
-export function itemAt(state: State, key: ItemKey): OpenItem | undefined {
-  return state.openItems.find((item) => sameItemKey(item.id, key));
-}
-
 /** A fresh key for an item of `occurrence` in `role`: the occurrence's next ordinal, counted up. */
 export function issueItem(state: State, occurrence: number, role: ItemRole): readonly [State, ItemKey] {
   const ordinal = state.itemOrdinals.find(([id]) => id === occurrence)?.[1] ?? 0;
@@ -714,22 +663,9 @@ export function issueItem(state: State, occurrence: number, role: ItemRole): rea
   return [{ ...state, itemOrdinals }, { occurrence, role, ordinal }];
 }
 
-/**
- * Add `item` under its own key, replacing an item with that key: `Std.ExtTreeMap.insert`. It places the item by binary
- * search in the key-ordered `openItems`, since a filter and full sort at every insert dominated a closure that opens
- * an item at every pass (`closure-work-bound.test.ts`, measured 2026-11-17).
- */
+/** Add `item` under its own key, replacing an item with that key. */
 export function putItem(state: State, item: OpenItem): State {
-  const items = state.openItems;
-  let low = 0;
-  let high = items.length;
-  while (low < high) {
-    const middle = (low + high) >> 1;
-    if (compareItemKey(items[middle]!.id, item.id) < 0) low = middle + 1;
-    else high = middle;
-  }
-  const replaces = low < items.length && sameItemKey(items[low]!.id, item.id);
-  return { ...state, openItems: [...items.slice(0, low), item, ...items.slice(replaces ? low + 1 : low)] };
+  return { ...state, openItems: insertItem(state.openItems, item) };
 }
 
 /** An item waiting for the begun `occurrence`. */

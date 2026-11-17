@@ -39,7 +39,7 @@ def SubtreeRemoved (hooks : Hooks) : Prop :=
     WellFormed program before → Step.step hooks program (some before) input = .ok after →
     removed ∈ scopeIds before → removed ∉ scopeIds after →
     (∀ token ∈ after.tokens, ¬ Within before token.busyScope removed) ∧
-    (∀ item ∈ after.items, ¬ Within before item.scope removed) ∧
+    (∀ item ∈ itemList after.openItems, ¬ Within before item.scope removed) ∧
     (∀ occurrence ∈ after.occurrences, ¬ Within before occurrence.scope removed) ∧
     (∀ variables ∈ after.variables, ¬ Within before variables.scope removed)
 
@@ -50,7 +50,7 @@ share element and activation; a reservation no item waits for answers to no refe
 def Designates (program : Program) (state : State) (ref : OccurrenceRef) (occurrence : Occurrence) : Prop :=
   (program.publicId occurrence.element = ref.element ∧ occurrence.activation = ref.activation ∧
     state.instanceOf occurrence.scope = ref.processInstanceId) ∧ occurrence.role = .element ∧
-    (occurrence.begun = true ∨ ∃ item ∈ state.items, item.id.occurrence = occurrence.id)
+    (occurrence.begun = true ∨ ∃ item ∈ itemList state.openItems, item.id.occurrence = occurrence.id)
 
 /-- The input addresses the occurrence with public identity `ref`: a command, a timer firing or an effect result. -/
 def AddressedTo (input : Input) (ref : OccurrenceRef) : Prop :=
@@ -145,8 +145,8 @@ under its element's counter (`Laws.State.ItemRoles`), and the distinct identifie
 activation was read from. -/
 theorem item_designates {program : Program} {before s : State} {ref : OccurrenceRef} {item : OpenItem}
     (formed : WellFormed program before) (occurrences : s.occurrences = before.occurrences)
-    (items : s.items = before.items) (sameInstance : s.instanceOf = before.instanceOf)
-    (member : item ∈ s.items) (named : program.publicId item.element = ref.element)
+    (items : itemList s.openItems = itemList before.openItems) (sameInstance : s.instanceOf = before.instanceOf)
+    (member : item ∈ itemList s.openItems) (named : program.publicId item.element = ref.element)
     (activation : (s.occurrence? item.id.occurrence).map (·.activation) = some ref.activation)
     (instance_ : s.instanceOf item.scope = ref.processInstanceId) :
     ∃ occurrence ∈ before.occurrences, Designates program before ref occurrence := by

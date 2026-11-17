@@ -122,7 +122,7 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
 
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem Begins.items {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
-    {begun : Occurrence} (frame : Begins before after request role sourceType begun) : after.items = before.items :=
+    {begun : Occurrence} (frame : Begins before after request role sourceType begun) : itemList after.openItems = itemList before.openItems :=
   items_congr frame.itemMap.1
 
 /-- The begun occurrence takes a key no other occurrence and no start fact of `before` has: a reservation's own, or a
@@ -159,7 +159,7 @@ private theorem Begins.idNew {before after : State} {request : BeginRequest} {ro
     {sourceType : String} {begun : Occurrence} (formed : WellFormed program before)
     (begins : Begins before after request role sourceType begun)
     (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id) :
-    (∀ item ∈ before.items, item.id.occurrence ≠ begun.id ∧ item.attachedTo ≠ some begun.id) ∧
+    (∀ item ∈ itemList before.openItems, item.id.occurrence ≠ begun.id ∧ item.attachedTo ≠ some begun.id) ∧
       (∀ occurrence ∈ before.occurrences, occurrence.id = begun.id → occurrence.begun = false) ∧
       (∀ other, Queued before other → begun.id ∉ names other) ∧ before.nextIssue ≤ after.nextIssue := by
   rcases begins.source with ⟨reserved, reservation⟩ | issuedFresh
@@ -422,7 +422,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       (fun _ member => begins.signals ▸ member) (fun _ member => .inl (begins.scopes ▸ member))
   -- No open item waits on the begun occurrence: a reservation's item went before it began, a fresh one has none.
   case attachedReserved | typed =>
-    have waited : ∀ item ∈ after.items, ∀ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence →
+    have waited : ∀ item ∈ itemList after.openItems, ∀ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence →
         occurrence.begun = true → occurrence ∈ before.occurrences := fun item member occurrence inside named _ => by
       rcases members occurrence inside with rfl | ⟨old, _⟩
       · exact absurd named.symm (itemsFree item (begins.items ▸ member)).1

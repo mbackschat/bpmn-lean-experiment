@@ -89,45 +89,45 @@ structure SubscriptionsOps (program : Program) (inv : State → Prop) : Prop whe
   /-- A fired item closed, then what it waited on completed, by flows its element lists; an Event-Based Gateway's arm
   disarms and completes its Gateway first, an interrupting boundary withdraws and cancels its host first, a cycle Timer
   reopens first. -/
-  closeComplete : ∀ state item leave writes, inv state → item ∈ state.items →
+  closeComplete : ∀ state item leave writes, inv state → item ∈ itemList state.openItems →
     (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
     inv ((state.closeItem item.id).signal (.complete item.id.occurrence leave writes .outward))
-  gatewayComplete : ∀ state item gateway leave writes, inv state → item ∈ state.items →
+  gatewayComplete : ∀ state item gateway leave writes, inv state → item ∈ itemList state.openItems →
     item.attachedTo = some gateway →
     (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
     inv ((((state.closeItem item.id).disarm gateway).signal
       (.complete gateway (.flows []) [] .outward)).signal (.complete item.id.occurrence leave writes .outward))
-  interruptComplete : ∀ state item host leave writes, inv state → item ∈ state.items →
+  interruptComplete : ∀ state item host leave writes, inv state → item ∈ itemList state.openItems →
     (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
     inv ((((state.closeItem item.id).withdrawOccurrence host).signal (.cancel host)).signal
       (.complete item.id.occurrence leave writes .outward))
-  reopenComplete : ∀ state item detail leave writes, inv state → item ∈ state.items →
+  reopenComplete : ∀ state item detail leave writes, inv state → item ∈ itemList state.openItems →
     Laws.IL.Reservable program item.element → (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
     inv (((state.closeItem item.id).openSubscription (.timer detail) item.element item.scope item.attachedTo
       item.passive).1.signal (.complete item.id.occurrence leave writes .outward))
   /-- A fresh occurrence of the item's boundary in the item's scope occurrence, of a subscription that stays open,
   leaving by flows the boundary lists. -/
-  occur : ∀ state item element leave writes, inv state → item ∈ state.items → Laws.IL.BoundaryOf program element →
+  occur : ∀ state item element leave writes, inv state → item ∈ itemList state.openItems → Laws.IL.BoundaryOf program element →
     element = item.element →
     (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
     inv (state.signal (.occur element item.scope leave writes .outward))
   /-- A start Event's item closed, then its Event Sub-Process, the start's parent (`Laws.Flow.Linked`), begun with the
   item's reservation; an interrupting start withdraws the items of its scope occurrence first, a cycle Timer reopens
   first. -/
-  insideBegin : ∀ state item element writes, inv state → item ∈ state.items →
+  insideBegin : ∀ state item element writes, inv state → item ∈ itemList state.openItems →
     ((program.element? item.element).bind (·.start?)).isSome = true → Laws.Flow.Linked program item.element element →
     inv (((state.closeItem item.id).withdrawInside item.scope).signal
       (.begin { element, scope := item.scope, writes, inner := some item.id.occurrence }))
-  closeBegin : ∀ state item element writes, inv state → item ∈ state.items →
+  closeBegin : ∀ state item element writes, inv state → item ∈ itemList state.openItems →
     ((program.element? item.element).bind (·.start?)).isSome = true → Laws.Flow.Linked program item.element element →
     inv ((state.closeItem item.id).signal (.begin { element, scope := item.scope, writes, inner := some item.id.occurrence }))
-  reopenBegin : ∀ state item detail element writes, inv state → item ∈ state.items →
+  reopenBegin : ∀ state item detail element writes, inv state → item ∈ itemList state.openItems →
     ((program.element? item.element).bind (·.start?)).isSome = true → Laws.IL.Reservable program item.element →
     Laws.Flow.Linked program item.element element →
     inv (((state.closeItem item.id).openSubscription (.timer detail) item.element item.scope item.attachedTo
       item.passive).1.signal (.begin { element, scope := item.scope, writes, inner := some item.id.occurrence }))
   /-- An Event Sub-Process, the start's parent, begun without a reservation in the item's scope occurrence. -/
-  bareBegin : ∀ state item element writes, inv state → item ∈ state.items →
+  bareBegin : ∀ state item element writes, inv state → item ∈ itemList state.openItems →
     Laws.Flow.Linked program item.element element →
     inv (state.signal (.begin { element, scope := item.scope, writes }))
 
@@ -569,7 +569,7 @@ theorem afterFiring_cases (state : State) (item : OpenItem) : Feature.Subscripti
 /-- `Hooks.trigger` keeps `inv` for an item that is open. -/
 theorem trigger_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv)
     {hooks : Feature.Subscriptions.SubscriptionsHooks} {item : OpenItem} {fired : Fired} {state after : State}
-    (holds : inv state) (member : item ∈ state.items)
+    (holds : inv state) (member : item ∈ itemList state.openItems)
     (ran : Feature.Subscriptions.trigger hooks ctx item fired state = .ok after) : inv after := by
   unfold Feature.Subscriptions.trigger at ran
   split at ran

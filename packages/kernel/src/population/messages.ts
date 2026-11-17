@@ -120,7 +120,7 @@ export function messageReceivers(
   const ctx = context(hooks, program);
   const receivers: (readonly [OccurrenceRef, MessageChannel])[] = [];
   const refusals: Failure[] = [];
-  for (const item of itemsByPosition(state)) {
+  for (const item of itemsByPosition(state.openItems)) {
     const view = openKindView(item.kind);
     const message = publication.message;
     const channel = message.tag === MessageAddressTag.Channel ? message.channel : view.name === message.name ? view.channel : null;

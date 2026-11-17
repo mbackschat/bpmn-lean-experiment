@@ -105,7 +105,7 @@ def withdrawnBy (ctx : Ctx) (state : State) (item : OpenItem) : List ItemKey :=
   | none => []
   | some withdraw =>
     let kept := (withdraw.withdrawFrom state).openItems
-    (state.itemsByPosition.filter fun open_ => open_.id != item.id && !kept.contains open_.id).map (·.id)
+    ((itemsByPosition state.openItems).filter fun open_ => open_.id != item.id && !kept.contains open_.id).map (·.id)
 
 /-- The refusal of a contest the ranking leaves undecided: the Event-Based Gateway code when it holds an arm. -/
 def contestCode (ctx : Ctx) (contest : List OpenItem) : String :=
@@ -221,7 +221,7 @@ before they are offered, so a later write can find true again an item whose inte
 enqueued: that firing runs first and decides the later write's contest, as the explicit write order makes it do. -/
 def offerWrites (ctx : Ctx) (writes : List WriteEvent) (state : State) : Outcome := do
   let (state, _) ← writes.foldlM (fun (state, earlier) write => do
-    let offered := state.items.filterMap fun item =>
+    let offered := (itemList state.openItems).filterMap fun item =>
       (itemCondition? ctx item).bind fun trigger =>
         if passes trigger write && inSubtree state write.scope (homeScope state item) then some (item, trigger) else none
     let ordered := offered.mergeSort fun (left, _) (right, _) =>

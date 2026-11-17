@@ -4,8 +4,7 @@
  */
 import { assertNever, type ElementId } from "../il/types.js";
 import { type OccurrenceRef } from "./input.js";
-import { type ScopeOccurrenceId } from "./slots.js";
-import { type Binding } from "./wait.js";
+import { type Binding, type ScopeOccurrenceId } from "./slots.js";
 
 /**
  * Guarded type: `feature/propagation` owns matching on it; `feature/subscriptions`' `catches` is the cross-owner

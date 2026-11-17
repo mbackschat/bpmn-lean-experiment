@@ -404,7 +404,7 @@ function enabledBoundaries(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Re
   if (host === null || enabledWith(ctx, state, host) !== scope) return committed([state, []]);
   let current = state;
   const fired: OpenItem[] = [];
-  for (const item of itemsByPosition(state).filter((open) => open.attachedTo === host && programBoundary(ctx.program, open.element) !== null)) {
+  for (const item of itemsByPosition(state.openItems).filter((open) => open.attachedTo === host && programBoundary(ctx.program, open.element) !== null)) {
     const condition = conditionOf(ctx, item);
     if (condition === null) continue;
     const next = evaluateItem(ctx, item, condition, current);
@@ -740,7 +740,7 @@ export function arriveCatch(ctx: Ctx, _header: Header, _payload: EventPayload, s
   // the code names the first.
   if (kind.value === null) return failed(FailureTag.Unsupported, "event-catch-error");
   const opened = openItem(state, kind.value, occurrence);
-  const item = itemsByPosition(opened).at(-1);
+  const item = itemsByPosition(opened.openItems).at(-1);
   if (item === undefined) return committed(opened);
   const evaluated = armed(ctx, subscription, item, opened);
   if (!evaluated.ok) return failedWith(evaluated.failure);

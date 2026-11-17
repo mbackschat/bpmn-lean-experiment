@@ -71,12 +71,12 @@ theorem registered_removeVariables (ops : Operations inv) (facts : StateFacts) :
 
 /-- Disarming a host keeps the completion pipeline's frame and leaves nothing attached to the host. -/
 theorem disarm_frame (state : State) (host : Nat) : Laws.Step.PipelineFrame state (state.disarm host) ∧
-    ∀ item ∈ (state.disarm host).items, item.attachedTo ≠ some host := by
+    ∀ item ∈ itemList (state.disarm host).openItems, item.attachedTo ≠ some host := by
   rw [Laws.State.disarm_eq]
   refine ⟨⟨rfl, fun found member begun => ?_,
-      fun item member => Laws.State.mem_items.mpr (Laws.State.mem_itemList_filter_val.mp (Laws.State.mem_items.mp member)).1,
+      fun item member => (Laws.State.mem_itemList_filter_val.mp (member)).1,
       fun _ kept => kept⟩,
-    fun item member => by simpa using (Laws.State.mem_itemList_filter_val.mp (Laws.State.mem_items.mp member)).2⟩
+    fun item member => by simpa using (Laws.State.mem_itemList_filter_val.mp (member)).2⟩
   exact List.mem_filter.mpr ⟨member, by simp [begun]⟩
 
 /-- The host facts an arming's premises give, as Subscriptions states them. -/
@@ -98,7 +98,7 @@ theorem retained_frame {state after : State} (scopes : after.scopes = state.scop
 
 /-- `HookContract.delivered` of the registered hooks: the item a delivery fires is open. -/
 theorem registered_delivered : ∀ ctx data state item fired,
-    Registry.hooks.delivered ctx data state = .ok (item, fired) → item ∈ state.items := by
+    Registry.hooks.delivered ctx data state = .ok (item, fired) → item ∈ itemList state.openItems := by
   intro _ _ _ _ _ ran
   rw [Laws.Registry.hooks_delivered] at ran
   rcases Laws.Subscriptions.delivered_found ran with found | found

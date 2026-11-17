@@ -6,6 +6,8 @@
 import { assertNever, type DefinitionRef, type ElementId, type FlowId, type Value } from "../il/types.js";
 import { type OccurrenceRef } from "./input.js";
 import { type Binding } from "./wait.js";
+/** Re-exported for `raise.ts`, as Lean's `Kernel.State.Raise` sees `Kernel.State.Wait` only through this module. */
+export { type Binding };
 
 /** Lean's `ScopeOccurrenceId`, a structure around one `Nat`. */
 export type ScopeOccurrenceId = number;

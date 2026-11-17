@@ -26,38 +26,38 @@ everything, values that violate it.
 namespace Kernel.Laws.Subscriptions
 
 open Kernel
-open Kernel.Laws.State (Within scopeIds occurrenceIds items_eq mem_ofItems ofItems)
+open Kernel.Laws.State (Within scopeIds occurrenceIds mem_ofItems ofItems)
 
 /-! ## Ownership and withdrawal -/
 
 /-- Every open item waits for exactly one present occurrence. -/
 def ItemsOwned (s : State) : Prop :=
-  ∀ item ∈ s.items, ∃ occurrence ∈ s.occurrences, occurrence.id = item.id.occurrence ∧
+  ∀ item ∈ itemList s.openItems, ∃ occurrence ∈ s.occurrences, occurrence.id = item.id.occurrence ∧
     ∀ other ∈ s.occurrences, other.id = item.id.occurrence → other = occurrence
 
 /-- A subscription goes with what it belongs to: no item survives the removal of its scope occurrence, and no
 subscription the removal of the host it hangs on (`ABTIMER-COMPLETE-01`, `ABMSG-COMPLETE-01`; a passive Event
 Sub-Process start goes when its scope completes). -/
 structure Withdraws (before after : State) : Prop where
-  withScope : ∀ scope ∈ scopeIds before, scope ∉ scopeIds after → ∀ item ∈ after.items, item.scope ≠ scope
-  withHost : ∀ host ∈ occurrenceIds before, host ∉ occurrenceIds after → ∀ item ∈ after.items,
+  withScope : ∀ scope ∈ scopeIds before, scope ∉ scopeIds after → ∀ item ∈ itemList after.openItems, item.scope ≠ scope
+  withHost : ∀ host ∈ occurrenceIds before, host ∉ occurrenceIds after → ∀ item ∈ itemList after.openItems,
     item.attachedTo ≠ some host
 
 /-! ## Keys -/
 
 /-- A Message delivery or publication on `channel` reaches only open items subscribed on that channel. -/
 def MessageReceivers (s : State) (channel : MessageChannel) (receivers : List OpenItem) : Prop :=
-  ∀ receiver ∈ receivers, receiver ∈ s.items ∧ receiver.kind.view.channel = some channel
+  ∀ receiver ∈ receivers, receiver ∈ itemList s.openItems ∧ receiver.kind.view.channel = some channel
 
 /-- A Signal delivery, throw or intent on `address` reaches only items on an equal address of the same kind, so a name
 never reaches a QName subscription. -/
 def SignalReceivers (s : State) (address : SignalAddress) (receivers : List OpenItem) : Prop :=
-  ∀ receiver ∈ receivers, receiver ∈ s.items ∧ ∃ detail, receiver.kind.view.signal = some detail ∧
+  ∀ receiver ∈ receivers, receiver ∈ itemList s.openItems ∧ ∃ detail, receiver.kind.view.signal = some detail ∧
     detail.address = address
 
 /-- A write in `owner` is offered only to the open Conditional items in the subtree of `owner`. -/
 def ConditionalReceivers (s : State) (owner : ScopeOccurrenceId) (receivers : List OpenItem) : Prop :=
-  ∀ receiver ∈ receivers, receiver ∈ s.items ∧ receiver.kind.view.conditional.isSome = true ∧
+  ∀ receiver ∈ receivers, receiver ∈ itemList s.openItems ∧ receiver.kind.view.conditional.isSome = true ∧
     Within s receiver.scope owner
 
 /-! ## Event-Based Gateway -/
@@ -66,9 +66,9 @@ def ConditionalReceivers (s : State) (owner : ScopeOccurrenceId) (receivers : Li
 no arm of the gateway is open, every losing arm's reservation is gone, so a late stimulus for it finds nothing, and the
 gateway's occurrence has completed (§13.4.4, Table 13.4 Deferred Choice). -/
 structure ArmWins (before after : State) (gateway : Nat) (winner : OpenItem) : Prop where
-  armed : winner ∈ before.items ∧ winner.attachedTo = some gateway
-  disarmed : ∀ item ∈ after.items, item.attachedTo ≠ some gateway
-  losersGone : ∀ loser ∈ before.items, loser.attachedTo = some gateway → loser.id ≠ winner.id →
+  armed : winner ∈ itemList before.openItems ∧ winner.attachedTo = some gateway
+  disarmed : ∀ item ∈ itemList after.openItems, item.attachedTo ≠ some gateway
+  losersGone : ∀ loser ∈ itemList before.openItems, loser.attachedTo = some gateway → loser.id ≠ winner.id →
     loser.id.occurrence ∉ occurrenceIds after
   completed : gateway ∉ occurrenceIds after
 
@@ -103,11 +103,11 @@ def choosing (kind : OpenKind) : State :=
 def chosen (kind : OpenKind) : State := { choosing kind with occurrences := [task], openItems := ofItems [workItem kind] }
 
 theorem mem_choosing {kind : OpenKind} {item : OpenItem} :
-    item ∈ (choosing kind).items ↔ item = paidItem kind ∨ item = lateItem kind ∨ item = workItem kind := by
-  rw [items_eq, choosing, mem_ofItems (by simp [paidItem, lateItem, workItem])]; simp
+    item ∈ itemList (choosing kind).openItems ↔ item = paidItem kind ∨ item = lateItem kind ∨ item = workItem kind := by
+  rw [choosing, mem_ofItems (by simp [paidItem, lateItem, workItem])]; simp
 
-theorem mem_chosen {kind : OpenKind} {item : OpenItem} : item ∈ (chosen kind).items ↔ item = workItem kind := by
-  rw [items_eq, chosen]; simp
+theorem mem_chosen {kind : OpenKind} {item : OpenItem} : item ∈ itemList (chosen kind).openItems ↔ item = workItem kind := by
+  rw [chosen]; simp
 
 theorem items_owned (kind : OpenKind) : ItemsOwned (choosing kind) := by
   intro item member
@@ -201,7 +201,7 @@ theorem loser_armed_rejected (kind : OpenKind) :
     ¬ ArmWins (choosing kind)
       { chosen kind with occurrences := [task, armTimer], openItems := ofItems [lateItem kind, workItem kind] }
       2 (paidItem kind) := fun wins => by
-  have := wins.disarmed (lateItem kind) (by rw [items_eq, mem_ofItems (by simp [lateItem, workItem])]; simp)
+  have := wins.disarmed (lateItem kind) (by rw [mem_ofItems (by simp [lateItem, workItem])]; simp)
   simp [lateItem] at this
 
 /-! ## Simultaneous truth

@@ -88,7 +88,7 @@ structure StartRan (hooks : Hooks) (program : Program) (payload : StartInput) (a
 def RunsTransition (hooks : Hooks) (ctx : Ctx) (transition : State → Outcome) : Prop :=
   (∃ data, transition = command hooks ctx data) ∨ (∃ data, transition = deliverEffectResult hooks ctx data) ∨
     ∀ state after, transition state = .ok after → ∃ item fired,
-      (item ∈ state.items ∨ ∃ data, hooks.delivered ctx data state = .ok (item, fired)) ∧
+      (item ∈ itemList state.openItems ∨ ∃ data, hooks.delivered ctx data state = .ok (item, fired)) ∧
       fireItem hooks ctx item fired state = .ok after
 
 
@@ -178,7 +178,7 @@ inductive Performed (hooks : Hooks) (ctx : Ctx) : Signal → State → State →
   | onCancel {occurrence : Nat} {state : State} :
       Performed hooks ctx (.cancel occurrence) state (state.cancelOccurrence occurrence)
   | onFire {item : ItemKey} {fired : Fired} {state after : State} :
-      ((∃ open_ ∈ state.items, fireItem hooks ctx open_ fired state = .ok after) ∨ after = state) →
+      ((∃ open_ ∈ itemList state.openItems, fireItem hooks ctx open_ fired state = .ok after) ∨ after = state) →
       Performed hooks ctx (.fire item fired) state after
   | onEndInstance {status : InstanceStatus} {failure : Option InstanceFailure} {state : State} :
       Performed hooks ctx (.endInstance status failure) state (endInstance status failure state)
@@ -195,11 +195,11 @@ inductive Performed (hooks : Hooks) (ctx : Ctx) : Signal → State → State →
 /-- What a committed variable, task or incident command ran (`Step.command`). -/
 inductive Commands (hooks : Hooks) (ctx : Ctx) (state after : State) : Prop where
   | completeUserTask {header : Header} {payload : ActivityPayload} {item : OpenItem} {values : List (String × Value)} :
-      item ∈ state.items → (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) →
+      item ∈ itemList state.openItems → (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) →
       hooks.completeUserTask ctx header payload item values state = .ok after →
       Commands hooks ctx state after
   | retryIncident {item : OpenItem} {detail : IncidentDetail} {generation : Nat} :
-      item ∈ state.items → item.kind.view.incident = some detail →
+      item ∈ itemList state.openItems → item.kind.view.incident = some detail →
       hooks.retryIncident ctx item detail generation state = .ok after →
       Commands hooks ctx state after
   | cancelIncidentProcess {detail : IncidentDetail} {generation : Nat} :

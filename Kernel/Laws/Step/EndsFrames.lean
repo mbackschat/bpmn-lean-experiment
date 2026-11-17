@@ -1,7 +1,7 @@
 module
 
 public import Kernel.Laws.Step.Contract
-public import Kernel.Laws.State.Removal
+public import Kernel.Laws.State.RemovalKeeps
 public import Kernel.Laws.State.Enter
 
 /-! # Laws of the step function: what each state operation does to the end facts

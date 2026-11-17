@@ -73,7 +73,7 @@ def ReturnContinuesCaller (hooks : Hooks) : Prop :=
     (∃ new, Queues state after new ∧ ∀ queued ∈ new, ∀ id leave writes rule, queued = .complete id leave writes rule →
       id = occurrence.id) ∧
     (∀ other ∈ state.scopes, other.id ≠ root.id → other ∈ after.scopes) ∧
-    (∀ item ∈ state.items, ¬ Within state item.scope root.id → item ∈ after.items) ∧ after.tokens = state.tokens
+    (∀ item ∈ itemList state.openItems, ¬ Within state item.scope root.id → item ∈ itemList after.openItems) ∧ after.tokens = state.tokens
 
 /-! ## The identities of called instances -/
 

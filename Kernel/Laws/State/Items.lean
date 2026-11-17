@@ -1,13 +1,13 @@
 module
 
 public import Kernel.State
-import all Kernel.State
+import all Kernel.State.Items
 
 /-! # Laws of the open-item map
 
-The open items are a `Std.ExtTreeMap` keyed by `ItemKey` (KD1). The laws read them as the list `State.items`; this
-module turns the map's point lemmas into membership in that list, once, so every other law reasons about membership.
-`KeyedBy` states that each value carries its own key, which every writer keeps (`State.putItem` inserts an item under
+The open items are a `Std.ExtTreeMap` keyed by `ItemKey` (KD1), from `Kernel.State.Items`, whose bodies only this
+module sees. The laws read them as the list `itemList s.openItems`; this module turns the map's point lemmas into
+membership in that list, once, so every other law reasons about membership. `KeyedBy` states that each value carries its own key, which every writer keeps (`State.putItem` inserts an item under
 its `id`). Nothing executable imports this module.
 -/
 
@@ -135,23 +135,16 @@ theorem mem_foldl {items : List OpenItem} {m : OpenItems} (keyed : KeyedBy m) (n
 @[simp] theorem mem_ofItems_singleton {new item : OpenItem} : item ∈ itemList (ofItems [new]) ↔ item = new := by
   simp [ofItems, mem_itemList_insert keyedBy_empty, itemList_empty]
 
-theorem items_eq (s : State) : s.items = itemList s.openItems := by unfold State.items; rfl
-
-/-- Membership in a state's items is membership in its map's item list. -/
-theorem mem_items {s : State} {item : OpenItem} : item ∈ s.items ↔ item ∈ itemList s.openItems := by rw [items_eq]
-
 /-- Two states with one item map have one item list. -/
-theorem items_congr {s t : State} (same : t.openItems = s.openItems) : t.items = s.items := by
-  rw [items_eq, items_eq, same]
+theorem items_congr {s t : State} (same : t.openItems = s.openItems) : itemList t.openItems = itemList s.openItems := by
+  rw [same]
 
-theorem items_same {s t : State} {item : OpenItem} (member : item ∈ t.items) (same : t.openItems = s.openItems) :
-    item ∈ s.items := items_congr same ▸ member
+theorem items_same {s t : State} {item : OpenItem} (member : item ∈ itemList t.openItems)
+    (same : t.openItems = s.openItems) : item ∈ itemList s.openItems := items_congr same ▸ member
 
-theorem itemAt_eq (s : State) (key : ItemKey) : s.itemAt key = s.openItems[key]? := by unfold State.itemAt; rfl
-
-/-- The items in opening order are the items: `State.itemsByPosition` only orders them. -/
-@[simp] theorem mem_itemsByPosition {s : State} {item : OpenItem} : item ∈ s.itemsByPosition ↔ item ∈ s.items := by
-  unfold State.itemsByPosition; exact List.mem_mergeSort
+/-- The items in opening order are the items: `itemsByPosition` only orders them. -/
+@[simp] theorem mem_itemsByPosition {m : OpenItems} {item : OpenItem} : item ∈ itemsByPosition m ↔ item ∈ itemList m := by
+  unfold itemsByPosition; exact List.mem_mergeSort
 
 @[simp] theorem mem_ofItems {items : List OpenItem} (nodup : (items.map (·.id)).Nodup) {item : OpenItem} :
     item ∈ itemList (ofItems items) ↔ item ∈ items := by
@@ -215,8 +208,7 @@ theorem ItemsSub.subset {after before : OpenItems} (sub : ItemsSub after before)
 
 /-- What `ItemsSub` keeps, read over the states' item lists. -/
 theorem ItemsSub.items {before after : State} (sub : ItemsSub after.openItems before.openItems) :
-    after.items ⊆ before.items := by
-  rw [items_eq, items_eq]; exact sub.subset
+    itemList after.openItems ⊆ itemList before.openItems := sub.subset
 
 /-- The ordinal clause of `IssuedBelow` carries to a state whose items are some of `before`'s, whose occurrences are
 some of `before`'s, and whose counters agree with `before`'s on every occurrence that stays. -/
@@ -224,9 +216,9 @@ theorem issuedItems_transport {before after : State} (sub : ItemsSub after.openI
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences)
     (ordinals : ∀ occurrence ∈ after.occurrences,
       after.itemOrdinals.getD occurrence.id 0 = before.itemOrdinals.getD occurrence.id 0)
-    (issued : ∀ item ∈ before.items, (∃ occurrence ∈ before.occurrences, occurrence.id = item.id.occurrence) →
+    (issued : ∀ item ∈ itemList before.openItems, (∃ occurrence ∈ before.occurrences, occurrence.id = item.id.occurrence) →
       item.id.ordinal < before.itemOrdinals.getD item.id.occurrence 0) :
-    ∀ item ∈ after.items, (∃ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence) →
+    ∀ item ∈ itemList after.openItems, (∃ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence) →
       item.id.ordinal < after.itemOrdinals.getD item.id.occurrence 0 := by
   rintro item member ⟨occurrence, present, same⟩
   rw [← same, ordinals occurrence present, same]

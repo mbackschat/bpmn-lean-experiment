@@ -47,7 +47,7 @@ structure Enters (before after : State) (entry : ScopeOccurrence) (locals : List
 
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem Enters.items {before after : State} {entry : ScopeOccurrence} {locals : List (String × Value)}
-    (frame : Enters before after entry locals) : after.items = before.items :=
+    (frame : Enters before after entry locals) : itemList after.openItems = itemList before.openItems :=
   items_congr frame.itemMap.1
 
 /-- Entering a scope occurrence below one that stands, owned, if at all, by a begun occurrence running there, keeps a

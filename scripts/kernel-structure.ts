@@ -189,8 +189,8 @@ function within(inner: string, outer: string): boolean {
  * or `Kernel.<X>` (`…<X>.<Sub>` for a submodule), or one of that module's submodules; a body a deeper namesake `Laws`
  * module opens is opened by no other. An executable module's body is seen only by its own `Laws` module, so a body
  * edit is never an interface edit for anything else. Ownership follows the opener rather than the file's existence:
- * `Laws.State.Removal` and `Laws.Population.Timers` share an executable submodule's name yet read no body, and leave
- * it to `Laws.State` and `Laws.Population`. */
+ * `Laws.Population.Timers` shares an executable submodule's name yet reads no body, and leaves it to
+ * `Laws.Population`. */
 function importAllFindings(relative: string, source: string, openers: ReadonlyMap<string, readonly string[]>): string[] {
   const own = lawsPath(relative);
   return importsAll(source).flatMap((imported) => {

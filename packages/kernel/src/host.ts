@@ -327,7 +327,7 @@ function publicJournal(program: Program, journal: readonly Transition[]): Transi
 }
 
 export function hostView(program: Program, state: State): View {
-  const openWaits = itemsByPosition(state).map((item) => openWait(program, state, item));
+  const openWaits = itemsByPosition(state.openItems).map((item) => openWait(program, state, item));
   return {
     status: state.status,
     failure: state.failure === null ? null : publicFailure(program, state.failure),

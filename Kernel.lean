@@ -94,6 +94,7 @@ public import Kernel.Laws.State.Issue
 public import Kernel.Laws.State.Items
 public import Kernel.Laws.State.Keeps
 public import Kernel.Laws.State.Removal
+public import Kernel.Laws.State.RemovalKeeps
 public import Kernel.Laws.State.Reserve
 public import Kernel.Laws.State.Sample
 public import Kernel.Laws.State.Transitions
@@ -165,7 +166,9 @@ public import Kernel.Run.Wire
 public import Kernel.State
 public import Kernel.State.Criteria
 public import Kernel.State.Input
+public import Kernel.State.Items
 public import Kernel.State.Journal
+public import Kernel.State.Map
 public import Kernel.State.Raise
 public import Kernel.State.Removal
 public import Kernel.State.Slots

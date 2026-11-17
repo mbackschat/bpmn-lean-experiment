@@ -32,7 +32,7 @@ theorem hold_eq (state : State) (held : Held) :
 its instance are the ones the input's reference names. -/
 theorem itemDetail?_some {α : Type} {ctx : Ctx} {state : State} {ref : OccurrenceRef} {detail : WaitView → Option α}
     {item : OpenItem} {value : α} (found : itemDetail? ctx state ref detail = some (item, value)) :
-    item ∈ state.items ∧ ctx.program.publicId item.element = ref.element ∧
+    item ∈ itemList state.openItems ∧ ctx.program.publicId item.element = ref.element ∧
       (state.occurrence? item.id.occurrence).map (·.activation) = some ref.activation ∧
       state.instanceOf item.scope = ref.processInstanceId := by
   unfold itemDetail? at found
@@ -47,11 +47,11 @@ theorem itemDetail?_some {α : Type} {ctx : Ctx} {state : State} {ref : Occurren
 
 theorem itemDetail?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef}
     {detail : WaitView → Option α} {item : OpenItem} {value : α}
-    (found : itemDetail? ctx state occurrence detail = some (item, value)) : item ∈ state.items :=
+    (found : itemDetail? ctx state occurrence detail = some (item, value)) : item ∈ itemList state.openItems :=
   (itemDetail?_some found).1
 
 theorem item?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef} {detail : WaitView → Option α}
-    {item : OpenItem} (found : item? ctx state occurrence detail = some item) : item ∈ state.items := by
+    {item : OpenItem} (found : item? ctx state occurrence detail = some item) : item ∈ itemList state.openItems := by
   unfold item? at found
   obtain ⟨⟨_, value⟩, made, same⟩ := Option.map_eq_some_iff.mp found
   cases same

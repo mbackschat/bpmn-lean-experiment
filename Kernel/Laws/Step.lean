@@ -440,7 +440,7 @@ theorem cancel_occurrence_gone {hooks : Hooks} {ctx : Ctx} {id : Nat} {state : S
 
 theorem fire_absent {hooks : Hooks} {ctx : Ctx} {item : ItemKey} {fired : Fired} {state : State}
     (absent : state.openItems[item]? = none) : (signalWork hooks ctx (.fire item fired)).run state = .ok state := by
-  simp [signalWork, Laws.State.itemAt_eq, absent]
+  simp [signalWork, absent]
 
 /-- What a signal's work names (`Step.stale`, `Step.gone`) is read from the signal alone, never from the hooks or the
 context: a lane reads a queued signal's targets from `Step.signalWork` of any hooks and context, not `Signal`'s cases. -/
@@ -462,7 +462,7 @@ theorem occurrenceOf?_some {ctx : Ctx} {state : State} {ref : OccurrenceRef} {oc
     (found : occurrenceOf? ctx state ref = some occurrence) : occurrence ∈ state.occurrences ∧
       (ctx.program.publicId occurrence.element = ref.element ∧ occurrence.activation = ref.activation ∧
         state.instanceOf occurrence.scope = ref.processInstanceId) ∧ occurrence.role = .element ∧
-      (occurrence.begun = true ∨ ∃ item ∈ state.items, item.id.occurrence = occurrence.id) := by
+      (occurrence.begun = true ∨ ∃ item ∈ itemList state.openItems, item.id.occurrence = occurrence.id) := by
   unfold occurrenceOf? at found
   have holds := List.find?_some found
   simp only [Bool.and_eq_true, Bool.or_eq_true, beq_iff_eq, List.any_eq_true] at holds
@@ -663,7 +663,7 @@ theorem dispatchSignal_ok {hooks : Hooks} {ctx : Ctx} {signal : Signal} {state a
     split at ran
     · rename_i found
       exact .onFire (.inl ⟨_, by
-        rw [Laws.State.items_eq]; exact Laws.State.mem_itemList.mpr ⟨_, by simpa [Laws.State.itemAt_eq] using found⟩, ran⟩)
+        exact Laws.State.mem_itemList.mpr ⟨_, by simpa using found⟩, ran⟩)
     · exact .onFire (.inr (Except.ok.inj ran).symm)
   | endInstance status failure =>
     simp only [signalWork] at ran

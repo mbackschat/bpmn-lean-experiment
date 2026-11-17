@@ -113,7 +113,7 @@ theorem reserve_wellFormed {state : State} (formed : WellFormed program state) (
 theorem startReserved_wellFormed {state : State} (formed : WellFormed program state) {occurrence : Occurrence}
     (sourceType : String) (member : occurrence ∈ state.occurrences)
     (unnamed : ∀ request, Queued state request → occurrence.id ∉ names request)
-    (waitless : ∀ item ∈ state.items, item.id.occurrence ≠ occurrence.id) :
+    (waitless : ∀ item ∈ itemList state.openItems, item.id.occurrence ≠ occurrence.id) :
     WellFormed program (state.startReserved occurrence sourceType).1 := by
   cases begun : occurrence.begun
   · exact (startReserved_starts state sourceType begun).wellFormed formed member begun unnamed waitless
@@ -146,7 +146,7 @@ theorem startReserved_closeOwnItems_wellFormed {state : State} (formed : WellFor
         itemMap := ⟨by simp [starts_.itemMap.1], starts_.itemMap.2⟩, tokens := starts_.tokens,
         signals := starts_.signals, variables := starts_.variables, journal := starts_.journal, ended := starts_.ended,
         status := starts_.status, failure := starts_.failure, slots := starts_.slots } member begun (fun request queued => unnamed request queued)
-      fun item inside => by simpa using (mem_itemList_filter_val.mp (mem_items.mp inside)).2
+      fun item inside => by simpa using (mem_itemList_filter_val.mp (inside)).2
     have filtered : State.instanceOf { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != occurrence.id }
         occurrence.scope = state.instanceOf occurrence.scope := by apply instanceOf_congr <;> rfl
     rw [starts_.started]
@@ -249,7 +249,7 @@ keeps and what it leaves hanging. -/
 theorem clearInside_wellFormed {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} {keep : List Nat}
     (present : scope ∈ scopeIds s)
     (kept : ∀ occurrence ∈ s.occurrences, occurrence.id ∈ keep → ¬ StrictlyWithin s occurrence.scope scope)
-    (attached : ∀ item ∈ s.items, (¬ Within s item.scope scope ∨ item.id.occurrence ∈ keep) → ∀ host,
+    (attached : ∀ item ∈ itemList s.openItems, (¬ Within s item.scope scope ∨ item.id.occurrence ∈ keep) → ∀ host,
       item.attachedTo = some host → ∀ occurrence ∈ s.occurrences, occurrence.id = host →
         ¬ Within s occurrence.scope scope ∨ host ∈ keep) :
     WellFormed program (s.clearInside scope keep) :=

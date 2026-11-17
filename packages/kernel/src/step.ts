@@ -244,7 +244,7 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
       return other((state) => committed(cancelOccurrence(state, next.occurrence)), [], [], [], [next.occurrence]);
     case SignalTag.Fire:
       return other((state) => {
-        const open = itemAt(state, next.item);
+        const open = itemAt(state.openItems, next.item);
         return open === undefined ? committed(state) : fireItem(hooks, ctx, open, next.fired, state);
       });
     case SignalTag.EndInstance:

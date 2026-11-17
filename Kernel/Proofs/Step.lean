@@ -195,7 +195,7 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
       | gateway header payload => exact Laws.IL.start?_gateway header payload
       | start header payload => simp [Laws.IL.activity?_start] at typed
   distinct _ formed item member other inside same :=
-    formed.distinct.items.eq_of_id (Laws.State.mem_items.mp member) (Laws.State.mem_items.mp inside) same
+    formed.distinct.items.eq_of_id (member) (inside) same
   queued state signal := by rw [Laws.State.signal_eq]
   kept _ _ := ⟨by rw [Laws.State.signal_eq], by rw [Laws.State.signal_eq]⟩
   completeBegun _ _ leave writes rule formed member begun _ := complete_wellFormed formed member begun leave writes rule
@@ -386,7 +386,7 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
 
 /-- A fired item's scope occurrence stands, and so does its host, if any, begun there. -/
 theorem fired_hangs {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
-    (member : item ∈ state.items) : ∀ id, item.attachedTo = some id → ∃ occurrence ∈ (state.closeItem item.id).occurrences,
+    (member : item ∈ itemList state.openItems) : ∀ id, item.attachedTo = some id → ∃ occurrence ∈ (state.closeItem item.id).occurrences,
       occurrence.id = id ∧ occurrence.begun = true ∧ occurrence.scope = item.scope := by
   rw [Laws.State.closeItem_eq]
   exact formed.owned.attachments item member

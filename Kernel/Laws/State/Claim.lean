@@ -234,7 +234,7 @@ theorem clearInside_inner {s : State} (formed : WellFormed program s) {occurrenc
       exact notStrict
     · rw [(ready found.id innerId).2.2 found inside rfl]
       exact notStrict
-  have attached : ∀ item ∈ s.items,
+  have attached : ∀ item ∈ itemList s.openItems,
       (¬ Within s item.scope occurrence.scope ∨ item.id.occurrence ∈ occurrence.id :: inner.toList) → ∀ host,
         item.attachedTo = some host → ∀ found ∈ s.occurrences, found.id = host →
           ¬ Within s found.scope occurrence.scope ∨ host ∈ occurrence.id :: inner.toList := by
@@ -300,7 +300,7 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
   have child := instanceOf_child formedAfter entryMember (by rw [← entryIs]) (by rw [← entryIs]) presentAfter
   have entryId : entry.id = ⟨s.nextIssue⟩ := by rw [← entryIs]
   have occurrences : t.occurrences = s.occurrences := by rw [← afterIs]
-  have items : t.items = s.items := by rw [← afterIs]; exact items_congr rfl
+  have items : itemList t.openItems = itemList s.openItems := by rw [← afterIs]
   have issued : t.nextIssue = s.nextIssue + 1 := by rw [← afterIs]
   refine ⟨formedAfter, rfl, List.mem_map.mpr ⟨_, entryMember, entryId⟩, fun id innerId => ?_⟩
   obtain ⟨⟨below, facts⟩, unnamed, uncompleted, unslotted⟩ := claimable id innerId

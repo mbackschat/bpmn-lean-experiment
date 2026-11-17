@@ -1,7 +1,7 @@
 module
 
 public import Kernel.Laws.Step.Keeps
-public import Kernel.Laws.State.Removal
+public import Kernel.Laws.State.RemovalKeeps
 public import Kernel.Proofs.MultiInstance.Occurs
 public import Kernel.Proofs.Frame
 

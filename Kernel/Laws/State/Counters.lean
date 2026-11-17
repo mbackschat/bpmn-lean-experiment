@@ -1,7 +1,7 @@
 module
 
 public import Kernel.State.Removal
-import Kernel.Laws.State
+import Kernel.Laws.State.Removal
 
 /-! # Laws of the kernel state: what the counter and keying equations give
 

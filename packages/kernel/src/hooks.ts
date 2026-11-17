@@ -503,7 +503,7 @@ export function ctxRequireMappings(ctx: Ctx, context: EvalContext, mappings: rea
 export function itemDetailOf<T>(
   ctx: Ctx, state: State, occurrence: OccurrenceRef, detail: (view: WaitView) => T | null,
 ): readonly [OpenItem, T] | null {
-  for (const item of itemsByPosition(state)) {
+  for (const item of itemsByPosition(state.openItems)) {
     if (programPublicId(ctx.program, item.element) !== occurrence.element ||
       occurrenceOf(state, item.id.occurrence)?.activation !== occurrence.activation ||
       instanceOf(state, item.scope) !== occurrence.processInstanceId) continue;

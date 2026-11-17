@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.State
+public import Kernel.Laws.State.Removal
 
 /-! # Laws of the kernel state: what keying, clearing and leaving give
 

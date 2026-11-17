@@ -206,7 +206,7 @@ def publicJournal (program : Program) (journal : List Transition) : List Transit
     else none
 
 def hostView (program : Program) (state : State) : View :=
-  let openWaits := state.itemsByPosition.map (openWait program state)
+  let openWaits := (itemsByPosition state.openItems).map (openWait program state)
   { status := state.status, failure := state.failure.map (publicFailure program), openWaits
     addresses := addressesOf openWaits
     journal := publicJournal program state.journal

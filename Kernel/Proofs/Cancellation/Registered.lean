@@ -325,7 +325,7 @@ theorem runsOps_alongside {program : Program} (side : StoresAlongside program re
 /-- A fired item's completion by flows its element lists is offered where its occurrence lies, in the state the item
 was open in, which holds every occurrence of that identity the completion is queued beside. -/
 private theorem item_completesFrom {program : Program} {s t : State} (formed : WellFormed program s) (kept : rel s)
-    {item : OpenItem} (member : item ∈ s.items)
+    {item : OpenItem} (member : item ∈ itemList s.openItems)
     (occurrences : ∀ o ∈ t.occurrences, o.id = item.id.occurrence → o ∈ s.occurrences) (scopes : t.scopes = s.scopes)
     (instances : t.slots.instances = s.slots.instances) {leave : Leave}
     (named : ∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) :
@@ -339,7 +339,7 @@ private theorem item_completesFrom {program : Program} {s t : State} (formed : W
 /-- Reopening a fired item's subscription reserves a fresh occurrence, so the occurrences of the item's identity are
 those the item's state held. -/
 private theorem reopened_occurrences {program : Program} {s : State} (formed : WellFormed program s) {item : OpenItem}
-    (member : item ∈ s.items) {kind : OpenKind} {element : ElementId} {scope : ScopeOccurrenceId}
+    (member : item ∈ itemList s.openItems) {kind : OpenKind} {element : ElementId} {scope : ScopeOccurrenceId}
     {host : Option Nat} {passive : Bool} {o : Occurrence}
     (inside : o ∈ ((s.closeItem item.id).openSubscription kind element scope host passive).1.occurrences)
     (same : o.id = item.id.occurrence) : o ∈ s.occurrences := by
@@ -369,14 +369,14 @@ private theorem closed_occurrences {s : State} {id : ItemKey} :
 
 /-- An open item's scope occurrence stands once any item is closed, which keeps the scope occurrences. -/
 theorem item_stands {program : Program} {s : State} {item : OpenItem} (formed : WellFormed program s)
-    (member : item ∈ s.items) {id : ItemKey} : Laws.Step.ScopeStands (s.closeItem id) item.scope := by
+    (member : item ∈ itemList s.openItems) {id : ItemKey} : Laws.Step.ScopeStands (s.closeItem id) item.scope := by
   rw [Laws.State.closeItem_eq]
   exact List.mem_map.mp (formed.owned.itemScopes item member)
 
 /-- Work linked to what an open item of a well-formed state waits on is anchored in the item's scope occurrence of
 any state that keeps the item's occurrences: the item's reservation lies there (`Owned.itemOccurrences`). -/
 theorem item_anchored {inv : State → Prop} {program : Program} {s t : State} {item : OpenItem} {element : ElementId}
-    (formed : WellFormed program s) (member : item ∈ s.items)
+    (formed : WellFormed program s) (member : item ∈ itemList s.openItems)
     (kept : ∀ occurrence ∈ s.occurrences, occurrence ∈ t.occurrences)
     (linked : Laws.Flow.Linked program item.element element) : Laws.Flow.Anchored inv program t element item.scope := by
   obtain ⟨occurrence, inside, facts⟩ := formed.owned.itemOccurrences item member
@@ -385,7 +385,7 @@ theorem item_anchored {inv : State → Prop} {program : Program} {s t : State} {
 /-- A begin in an open item's scope occurrence, of an element linked to what the item waits on, naming no reservation
 and no incoming flow, comes from the item's reservation. -/
 theorem item_begins {inv : State → Prop} {program : Program} {s t : State} {item : OpenItem} {element : ElementId}
-    {writes : List (String × Value)} {inner : Option Nat} (formed : WellFormed program s) (member : item ∈ s.items)
+    {writes : List (String × Value)} {inner : Option Nat} (formed : WellFormed program s) (member : item ∈ itemList s.openItems)
     (kept : ∀ occurrence ∈ s.occurrences, occurrence ∈ t.occurrences)
     (linked : Laws.Flow.Linked program item.element element) :
     Laws.Flow.BeginAnchored inv program t { element, scope := item.scope, writes, inner } :=

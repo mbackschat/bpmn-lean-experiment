@@ -26,8 +26,8 @@ structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : Lis
   scopes : ∀ entry, entry ∈ after.scopes ↔ entry ∈ before.scopes ∧ ¬ StrictlyWithin before entry.id scope
   occurrences : ∀ occurrence, occurrence ∈ after.occurrences ↔
     occurrence ∈ before.occurrences ∧ (¬ Within before occurrence.scope scope ∨ occurrence.id ∈ keep)
-  items : ∀ item, item ∈ after.items ↔
-    item ∈ before.items ∧ (¬ Within before item.scope scope ∨ item.id.occurrence ∈ keep)
+  items : ∀ item, item ∈ itemList after.openItems ↔
+    item ∈ itemList before.openItems ∧ (¬ Within before item.scope scope ∨ item.id.occurrence ∈ keep)
   tokens : ∀ token, token ∈ after.tokens ↔ token ∈ before.tokens ∧ ¬ Within before token.busyScope scope
   variables : ∀ variables, variables ∈ after.variables ↔
     variables ∈ before.variables ∧ ¬ StrictlyWithin before variables.scope scope
@@ -70,7 +70,7 @@ strictly within the cleared one, and every open item the clearing leaves hangs o
 theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat} (formed : WellFormed program before)
     (cleared : Cleared before after scope keep) (present : scope ∈ scopeIds before)
     (kept : ∀ occurrence ∈ before.occurrences, occurrence.id ∈ keep → ¬ StrictlyWithin before occurrence.scope scope)
-    (attached : ∀ item ∈ before.items, (¬ Within before item.scope scope ∨ item.id.occurrence ∈ keep) → ∀ host,
+    (attached : ∀ item ∈ itemList before.openItems, (¬ Within before item.scope scope ∨ item.id.occurrence ∈ keep) → ∀ host,
       item.attachedTo = some host → ∀ occurrence ∈ before.occurrences, occurrence.id = host →
         ¬ Within before occurrence.scope scope ∨ host ∈ keep) :
     WellFormed program after := by
@@ -229,7 +229,7 @@ structure Prunes (before after : State) : Prop where
   status : after.status = before.status
   failure : after.failure = before.failure
   slots : after.slots = before.slots
-  waited : ∀ item ∈ after.items, ∀ occurrence ∈ before.occurrences,
+  waited : ∀ item ∈ itemList after.openItems, ∀ occurrence ∈ before.occurrences,
     (occurrence.id = item.id.occurrence ∨ item.attachedTo = some occurrence.id) → occurrence ∈ after.occurrences
   owners : ∀ entry ∈ after.scopes, ∀ occurrence ∈ before.occurrences, entry.occurrence = some occurrence.id →
     occurrence ∈ after.occurrences
@@ -239,7 +239,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (prunes.instances _)
   have sameStarts : starts after = starts before := by simp [starts, prunes.journal, prunes.started]
   have kept := prunes.occurrences.subset
-  have items : after.items ⊆ before.items := by rw [items_eq, items_eq]; exact prunes.items.subset
+  have items : itemList after.openItems ⊆ itemList before.openItems := by exact prunes.items.subset
   have housed : ∀ occurrence ∈ after.occurrences, occurrence.scope ∈ scopeIds after := fun occurrence member => by
     simpa [scopeIds, prunes.scopes] using formed.owned.occurrenceScopes occurrence (kept member)
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
@@ -336,7 +336,7 @@ structure Left (before after : State) (scope : ScopeOccurrenceId) : Prop where
   scopes : ∀ entry, entry ∈ after.scopes ↔ entry ∈ before.scopes ∧ ¬ Within before entry.id scope
   occurrences : ∀ occurrence, occurrence ∈ after.occurrences ↔
     occurrence ∈ before.occurrences ∧ ¬ Within before occurrence.scope scope
-  items : ∀ item, item ∈ after.items ↔ item ∈ before.items ∧ ¬ Within before item.scope scope
+  items : ∀ item, item ∈ itemList after.openItems ↔ item ∈ itemList before.openItems ∧ ¬ Within before item.scope scope
   tokens : ∀ token, token ∈ after.tokens ↔ token ∈ before.tokens ∧ ¬ Within before token.busyScope scope
   variables : ∀ variables, variables ∈ after.variables ↔
     variables ∈ before.variables ∧ ¬ Within before variables.scope scope

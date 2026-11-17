@@ -206,7 +206,7 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
     complete hooks ctx occurrence.id leave writes rule state }
   | .cancel occurrence => { acts := [occurrence], run := fun state => .ok (state.cancelOccurrence occurrence) }
   | .fire item fired => { run := fun state =>
-    match (state.itemAt item) with
+    match state.openItems[item]? with
     | some open_ => fireItem hooks ctx open_ fired state
     | none => .ok state }
   | .endInstance status failure => { run := fun state => .ok (endInstance status failure state) }
@@ -382,7 +382,7 @@ one, or a reservation an open item holds, as a Conditional arm of an Event-Based
 (`conditional-catch/condition-wins`). -/
 def occurrenceOf? (ctx : Ctx) (state : State) (ref : OccurrenceRef) : Option Occurrence :=
   state.occurrences.find? fun occurrence =>
-    (occurrence.begun || state.items.any (·.id.occurrence == occurrence.id)) && occurrence.role == .element && occurrence.activation == ref.activation &&
+    (occurrence.begun || (itemList state.openItems).any (·.id.occurrence == occurrence.id)) && occurrence.role == .element && occurrence.activation == ref.activation &&
       ctx.program.publicId occurrence.element == ref.element && state.instanceOf occurrence.scope == ref.processInstanceId
 
 /-- Run `onActivity` on the Activity an open item belongs to. -/

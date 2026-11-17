@@ -59,7 +59,7 @@ occurrence and no parked join or held wait (`SUBPROC-QUIESCE-01`); a passive ite
 keeps nothing alive. -/
 def Idle (s : State) (scope : ScopeOccurrenceId) : Prop :=
   (∀ token ∈ s.tokens, token.busyScope ≠ scope) ∧
-  (∀ item ∈ s.items, item.passive = false → item.scope ≠ scope) ∧
+  (∀ item ∈ itemList s.openItems, item.passive = false → item.scope ≠ scope) ∧
   (∀ occurrence ∈ s.occurrences, occurrence.begun = true → occurrence.scope ≠ scope) ∧
   (∀ child ∈ s.scopes, child.parent ≠ some scope) ∧
   (∀ join ∈ s.slots.parked, join.scope ≠ scope) ∧ ∀ wait ∈ s.slots.held, wait.scope ≠ scope
@@ -97,7 +97,7 @@ def InterruptingStart (interrupting : Bool) (parent : ScopeOccurrenceId) (kept :
 /-- A non-interrupting one leaves every occurrence and open item of its parent running. -/
 def NonInterruptingStart (interrupting : Bool) (before after : State) : Prop :=
   interrupting = false →
-    (∀ occurrence ∈ before.occurrences, occurrence ∈ after.occurrences) ∧ ∀ item ∈ before.items, item ∈ after.items
+    (∀ occurrence ∈ before.occurrences, occurrence ∈ after.occurrences) ∧ ∀ item ∈ itemList before.openItems, item ∈ itemList after.openItems
 
 /-! ## The state invariant under Scopes' hooks
 
@@ -410,7 +410,7 @@ theorem clearsInside_signal {before after : State} {scope : ScopeOccurrenceId} {
     (clears : ClearsInside before after scope keep) (signal : Signal) :
     ClearsInside before (after.signal signal) scope keep := by
   rw [Laws.State.signal_eq]
-  have same : ({ after with signals := after.signals ++ [signal] } : State).items = after.items :=
+  have same : (itemList ({ after with signals := after.signals ++ [signal] } : State).openItems) = itemList after.openItems :=
     Laws.State.items_congr rfl
   cases clears
   constructor <;> (try rw [same]) <;> assumption
@@ -504,8 +504,7 @@ theorem reused_activation_rejected : ¬ NextActivation "p" ⟨"Sub"⟩ counts 1 
 theorem first_traversal : NextActivation "p" ⟨"Sub"⟩ [] 1 := ⟨by simp, fun _ => rfl⟩
 
 theorem cleared_idle (kind : OpenKind) : Idle (cleared kind) subScope := by
-  simp [Idle, cleared, sample, outerTask, subProcess, outerItem, rootScope, childScope, processRoot, subScope,
-    Laws.State.items_eq]
+  simp [Idle, cleared, sample, outerTask, subProcess, outerItem, rootScope, childScope, processRoot, subScope]
 
 /-- Completing a scope occurrence whose task still waits is rejected. -/
 theorem busy_completes_rejected (kind : OpenKind) : ¬ CompletesWhenIdle (sample kind) subScope true := fun law =>

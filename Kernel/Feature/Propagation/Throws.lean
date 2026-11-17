@@ -91,7 +91,7 @@ def thrownAddress (ctx : Ctx) (context : EvalContext) (record : SignalThrow) : E
 /-- The open items of `address` in the thrower's own State, by process instance, then in arming order, the order the
 linearization of the population fixes for CIB's unordered `HashSet` (`EventSubscriptionManager.java:111-126`). -/
 def ownReceivers (state : State) (address : SignalAddress) : List OpenItem :=
-  (state.items.filter fun item => item.kind.view.signal.any (address.matches ·.address)).mergeSort fun left right =>
+  ((itemList state.openItems).filter fun item => item.kind.view.signal.any (address.matches ·.address)).mergeSort fun left right =>
     let (l, r) := (state.instanceOf left.scope, state.instanceOf right.scope)
     decide (l < r) || (l == r && left.position ≤ right.position)
 

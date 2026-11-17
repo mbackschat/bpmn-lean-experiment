@@ -186,7 +186,7 @@ function withdrawnBy(ctx: Ctx, state: State, item: OpenItem): readonly string[] 
   if (withdraw === null) return [];
   const kept = withdrawFrom(withdraw, state).openItems.map((open) => itemKeyText(open.id));
   const own = itemKeyText(item.id);
-  return itemsByPosition(state).map((open) => itemKeyText(open.id)).filter((open) => open !== own && !kept.includes(open));
+  return itemsByPosition(state.openItems).map((open) => itemKeyText(open.id)).filter((open) => open !== own && !kept.includes(open));
 }
 
 /** The refusal of a contest the ranking leaves undecided: the Event-Based Gateway code when it holds an arm. */

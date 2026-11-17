@@ -45,7 +45,7 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
 
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem Reserves.items {before after : State} {element : ElementId} {scope : ScopeOccurrenceId} {reserved : Occurrence}
-    (frame : Reserves before after element scope reserved) : after.items = before.items :=
+    (frame : Reserves before after element scope reserved) : itemList after.openItems = itemList before.openItems :=
   items_congr frame.itemMap.1
 
 /-- A reservation in a scope occurrence that stands keeps a state well-formed, and nothing queued names it: it is
@@ -286,7 +286,7 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
 
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem StartsReserved.items {before after : State} {occurrence : Occurrence} {sourceType : String}
-    (frame : StartsReserved before after occurrence sourceType) : after.items = before.items :=
+    (frame : StartsReserved before after occurrence sourceType) : itemList after.openItems = itemList before.openItems :=
   items_congr frame.itemMap.1
 
 /-- Starting an unbegun reservation that no queued begin names and no open item waits on keeps a state well-formed. -/
@@ -294,7 +294,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     (formed : WellFormed program before) (starts_ : StartsReserved before after occurrence sourceType)
     (member : occurrence ∈ before.occurrences) (unbegun : occurrence.begun = false)
     (unnamed : ∀ request, Queued before request → occurrence.id ∉ names request)
-    (waitless : ∀ item ∈ before.items, item.id.occurrence ≠ occurrence.id) : WellFormed program after := by
+    (waitless : ∀ item ∈ itemList before.openItems, item.id.occurrence ≠ occurrence.id) : WellFormed program after := by
   have keys : ∀ other, key after other = key before other := fun _ => key_congr (starts_.instances _)
   have issued := starts_.nextIssue
   have queuedBefore : ∀ request, Queued after request → Queued before request := fun request queued => by
@@ -478,7 +478,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         · exact .inl old)
       queuedBefore (fun _ member => starts_.signals ▸ member) (fun _ member => .inl (starts_.scopes ▸ member))
   case attachedReserved | typed =>
-    have waited : ∀ item ∈ after.items, ∀ found ∈ after.occurrences, found.id = item.id.occurrence →
+    have waited : ∀ item ∈ itemList after.openItems, ∀ found ∈ after.occurrences, found.id = item.id.occurrence →
         found.begun = true → found ∈ before.occurrences := fun item inside found present named _ => by
       rcases members found present with rfl | ⟨old, _⟩
       · exact absurd named.symm (waitless item (starts_.items ▸ inside))

@@ -32,7 +32,7 @@ theorem Counted.congr {before after : State} (same : after.activations = before.
 /-- The claims stay single through a change that adds no item, occurrence, queued begin or completion, issues
 nothing back and keeps the process instance of what stands. -/
 theorem ReservationsClaimed.shrink {before after : State} (claimed : ReservationsClaimed before)
-    (items : ∀ item ∈ after.items, item ∈ before.items)
+    (items : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems)
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences)
     (housed : ∀ occurrence ∈ after.occurrences, occurrence.scope ∈ scopeIds after)
     (scopes : ∀ x ∈ scopeIds after, x ∈ scopeIds before)
@@ -215,7 +215,7 @@ theorem instanceIn_exists {s : State} (formed : WellFormed program s) {x : Scope
 /-- `Beginnable` reads the counter, the occurrences, the items, the scope occurrences and their process instances. -/
 theorem Beginnable.congr {before after : State} {scope : ScopeOccurrenceId} {id : Nat} (beginnable : Beginnable before scope id)
     (issued : after.nextIssue = before.nextIssue) (occurrences : after.occurrences = before.occurrences)
-    (items : after.items = before.items) (scopes : after.scopes = before.scopes)
+    (items : itemList after.openItems = itemList before.openItems) (scopes : after.scopes = before.scopes)
     (instances : ∀ x, after.instanceOf x = before.instanceOf x) : Beginnable after scope id := by
   obtain ⟨below, facts⟩ := beginnable
   refine ⟨issued ▸ below, fun occurrence member same => ?_⟩
@@ -236,16 +236,16 @@ theorem Unbegun.transport {before after : State} {id : Nat} (unbegun : Unbegun b
 /-- What an attached item waits on stays unbegun through a change that adds no open item and begins none of what an
 open item waits on. -/
 theorem AttachedReserved.transport {before after : State} (reserved : AttachedReserved before)
-    (items : ∀ item ∈ after.items, item ∈ before.items)
-    (begun : ∀ item ∈ after.items, ∀ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence →
+    (items : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems)
+    (begun : ∀ item ∈ itemList after.openItems, ∀ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence →
       occurrence.begun = true → occurrence ∈ before.occurrences) : AttachedReserved after :=
   fun item member attached => (reserved item (items item member) attached).transport (begun item member)
 
 /-- `Typed` holds through a change that adds no open item or queued signal and begins none of what an open item
 waits on. -/
 theorem Typed.transport {program : Program} {before after : State} (typed : Typed program before)
-    (items : ∀ item ∈ after.items, item ∈ before.items)
-    (begun : ∀ item ∈ after.items, ∀ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence →
+    (items : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems)
+    (begun : ∀ item ∈ itemList after.openItems, ∀ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence →
       occurrence.begun = true → occurrence ∈ before.occurrences)
     (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) : Typed program after := fun item member started =>
   have ⟨unbegun, alone, uncompleted, waits⟩ := typed item (items item member) started
@@ -253,18 +253,18 @@ theorem Typed.transport {program : Program} {before after : State} (typed : Type
     fun leave writes rule queued => uncompleted leave writes rule (signals _ queued), waits⟩
 
 theorem AttachedReserved.shrink {before after : State} (reserved : AttachedReserved before)
-    (items : ∀ item ∈ after.items, item ∈ before.items)
+    (items : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems)
     (begun : ∀ occurrence ∈ after.occurrences, occurrence.begun = true → occurrence ∈ before.occurrences) :
     AttachedReserved after := reserved.transport items fun _ _ occurrence member _ flag => begun occurrence member flag
 
 theorem Typed.shrink {program : Program} {before after : State} (typed : Typed program before)
-    (items : ∀ item ∈ after.items, item ∈ before.items)
+    (items : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems)
     (begun : ∀ occurrence ∈ after.occurrences, occurrence.begun = true → occurrence ∈ before.occurrences)
     (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) :
     Typed program after := typed.transport items (fun _ _ occurrence member _ flag => begun occurrence member flag) signals
 
 /-- What an open item of a well-formed state waits on was issued. -/
-theorem WellFormed.waited {s : State} (formed : WellFormed program s) : ∀ item ∈ s.items, item.id.occurrence < s.nextIssue :=
+theorem WellFormed.waited {s : State} (formed : WellFormed program s) : ∀ item ∈ itemList s.openItems, item.id.occurrence < s.nextIssue :=
   fun item member =>
     have ⟨occurrence, present, named, _⟩ := formed.owned.itemOccurrences item member
     named ▸ formed.issued.occurrences occurrence present
@@ -272,8 +272,8 @@ theorem WellFormed.waited {s : State} (formed : WellFormed program s) : ∀ item
 /-- What waits for work stays on a begun occurrence through a change that adds no open item and whose unbegun
 occurrences were unbegun before or are issued since. -/
 theorem Worked.transport {before after : State} (worked : Worked before)
-    (items : ∀ item ∈ after.items, item ∈ before.items)
-    (waited : ∀ item ∈ before.items, item.id.occurrence < before.nextIssue)
+    (items : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems)
+    (waited : ∀ item ∈ itemList before.openItems, item.id.occurrence < before.nextIssue)
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence.begun = false →
       occurrence ∈ before.occurrences ∨ before.nextIssue ≤ occurrence.id) : Worked after :=
   fun item member working occurrence present named => by
@@ -285,7 +285,7 @@ theorem Worked.transport {before after : State} (worked : Worked before)
     · rfl
 
 theorem Worked.shrink {before after : State} (worked : Worked before)
-    (items : ∀ item ∈ after.items, item ∈ before.items)
+    (items : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems)
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence.begun = false → occurrence ∈ before.occurrences) :
     Worked after := fun item member working occurrence present named => by
   cases flag : occurrence.begun
@@ -328,8 +328,8 @@ theorem BodyRoles.shrink {program : Program} {before after : State} (bodies : Bo
 an item waited for before, and each of whose occurrences an item waits for carries the identity and role of one
 before. -/
 theorem ItemRoles.transport {before after : State} (roles : ItemRoles before)
-    (items : ∀ item ∈ after.items, ∃ old ∈ before.items, old.id.occurrence = item.id.occurrence)
-    (occurrences : ∀ item ∈ after.items, ∀ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence →
+    (items : ∀ item ∈ itemList after.openItems, ∃ old ∈ itemList before.openItems, old.id.occurrence = item.id.occurrence)
+    (occurrences : ∀ item ∈ itemList after.openItems, ∀ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence →
       ∃ old ∈ before.occurrences, old.id = occurrence.id ∧ old.role = occurrence.role) : ItemRoles after :=
   fun item member occurrence present named => by
     obtain ⟨old, held, same, role⟩ := occurrences item member occurrence present named
@@ -338,7 +338,7 @@ theorem ItemRoles.transport {before after : State} (roles : ItemRoles before)
     exact roles waiting open_ old held (same.trans (named.trans waits.symm))
 
 theorem ItemRoles.shrink {before after : State} (roles : ItemRoles before)
-    (items : ∀ item ∈ after.items, item ∈ before.items)
+    (items : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems)
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences) : ItemRoles after :=
   roles.transport (fun item member => ⟨item, items item member, rfl⟩)
     fun _ _ occurrence present _ => ⟨occurrence, occurrences occurrence present, rfl, rfl⟩
@@ -465,7 +465,7 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
     (once : StartedOnce after) (located : ∀ variables ∈ after.variables, variables.scope ∈ scopeIds after)
     (keyed : VariablesKeyed after) : WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (narrows.instances _)
-  have items : after.items ⊆ before.items := by rw [items_eq, items_eq]; exact narrows.items.subset
+  have items : itemList after.openItems ⊆ itemList before.openItems := by exact narrows.items.subset
   have settled := formed.settled.transport narrows.slots (Nat.le_of_eq narrows.nextIssue.symm)
     (fun _ member _ => .inl (narrows.occurrences ▸ member)) (fun _ queued => queued.shrink narrows.signals narrows.tokens)
     (fun _ member => narrows.signals.subset member) (fun _ member => .inl (narrows.scopes ▸ member))

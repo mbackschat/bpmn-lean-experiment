@@ -31,9 +31,9 @@ private theorem sample_instance (kind : OpenKind) :
 
 /-- The sample instance is well-formed under a program that declares neither of its waiting elements a start Event. -/
 theorem sample_wellFormed (kind : OpenKind) {program : Program}
-    (unstarted : ∀ item ∈ (sample kind).items, ((program.element? item.element).bind (·.start?)).isSome = false) :
+    (unstarted : ∀ item ∈ itemList (sample kind).openItems, ((program.element? item.element).bind (·.start?)).isSome = false) :
     WellFormed program (sample kind) where
-  issued := ⟨by simp [sample, subProcess, innerTask, outerTask], by simp [items_eq, sample, innerItem, outerItem, Std.ExtTreeMap.getD_insert],
+  issued := ⟨by simp [sample, subProcess, innerTask, outerTask], by simp [sample, innerItem, outerItem, Std.ExtTreeMap.getD_insert],
     by simp [sample, rootScope, childScope, processRoot, subScope]⟩
   distinct := ⟨by simp [occurrenceIds, sample, subProcess, innerTask, outerTask], keyedBy_ofItems _,
     by simp [scopeIds, sample, rootScope, childScope, processRoot, subScope],
@@ -43,9 +43,9 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
   reservations := by simp [ReservationsUnstarted, sample, subProcess, innerTask, outerTask]
   owned := {
     occurrenceScopes := by simp [sample, scopeIds, subProcess, innerTask, outerTask, rootScope, childScope]
-    itemScopes := by simp [items_eq, sample, scopeIds, innerItem, outerItem, rootScope, childScope]
-    itemOccurrences := by simp [items_eq, sample, innerItem, outerItem, subProcess, innerTask, outerTask]
-    attachments := by simp [items_eq, sample, innerItem, outerItem]
+    itemScopes := by simp [sample, scopeIds, innerItem, outerItem, rootScope, childScope]
+    itemOccurrences := by simp [sample, innerItem, outerItem, subProcess, innerTask, outerTask]
+    attachments := by simp [sample, innerItem, outerItem]
     scopeOwners := by simp [sample, rootScope, childScope, subProcess, innerTask, outerTask]
     variableScopes := by simp [sample, scopeIds, rootScope, childScope]
     tokenScopes := by simp [sample] }
@@ -69,12 +69,12 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
     simp only [OwnedBelow, sample, List.mem_cons, List.not_mem_nil, or_false]
     rintro scope (rfl | rfl) occurrence (rfl | rfl | rfl) owner <;>
       simp_all [rootScope, childScope, subProcess, innerTask, outerTask]
-  claimed := ⟨by simp [items_eq, sample, innerItem, outerItem], by simp [Queued, sample], by simp [Precedes, sample],
+  claimed := ⟨by simp [sample, innerItem, outerItem], by simp [Queued, sample], by simp [Precedes, sample],
     by simp [Precedes, sample], by simp [sample], by simp [Queued, sample], by simp [Queued, sample],
     by simp [Queued, sample]⟩
   settled := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample], by simp [sample],
     by simp [sample], by simp [sample], by simp [sample]⟩
-  attachedReserved := by simp [AttachedReserved, items_eq, sample, innerItem, outerItem]
+  attachedReserved := by simp [AttachedReserved, sample, innerItem, outerItem]
   typed := fun item member started => by simp [unstarted item member] at started
   worked := by
     simp only [Worked, sample, List.mem_cons, List.not_mem_nil, or_false]
@@ -84,7 +84,7 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
     rintro occurrence (rfl | rfl | rfl) _ <;> rfl
   raises := by simp [RaisesSound, sample]
   bodyRoles := by simp [BodyRoles, sample, subProcess, innerTask, outerTask]
-  itemRoles := by simp [ItemRoles, items_eq, sample, subProcess, innerTask, outerTask]
+  itemRoles := by simp [ItemRoles, sample, subProcess, innerTask, outerTask]
 
 /-- A start fact carrying the armed reservation's key breaks `ReservationsUnstarted`. -/
 theorem early_start_rejected (kind : OpenKind) :
@@ -116,14 +116,14 @@ theorem start_item_typed (kind : OpenKind) {program : Program}
     (inner : ((program.element? ⟨"Inner"⟩).bind (·.start?)).isSome = false) (waits : AwaitsTrigger kind) :
     Typed program { armedState kind with openItems := ofItems [innerItem kind, startItem kind] } := by
   intro item member started
-  simp only [items_eq, mem_ofItems (show ([innerItem kind, startItem kind].map (·.id)).Nodup by
+  simp only [mem_ofItems (show ([innerItem kind, startItem kind].map (·.id)).Nodup by
     simp [innerItem, startItem]), List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl
   · simp [innerItem, inner] at started
   · refine ⟨fun occurrence present named => ?_, fun other inside same => ?_, by simp [armedState, sample], waits⟩
     · simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at present
       rcases present with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation, startItem]
-    · simp only [items_eq, mem_ofItems (show ([innerItem kind, startItem kind].map (·.id)).Nodup by
+    · simp only [mem_ofItems (show ([innerItem kind, startItem kind].map (·.id)).Nodup by
         simp [innerItem, startItem]), List.mem_cons, List.not_mem_nil, or_false] at inside
       rcases inside with rfl | rfl <;> simp_all [innerItem, startItem]
 
@@ -133,7 +133,7 @@ a begun occurrence. -/
 theorem begun_start_rejected (kind : OpenKind) {program : Program}
     (outer : ((program.element? ⟨"Outer"⟩).bind (·.start?)).isSome = true) : ¬ Typed program (sample kind) :=
   fun typed => by
-    have := (typed (outerItem kind) (by simp [items_eq, sample, innerItem, outerItem]) (by simpa [outerItem] using outer)).1 outerTask
+    have := (typed (outerItem kind) (by simp [sample, innerItem, outerItem]) (by simpa [outerItem] using outer)).1 outerTask
       (by simp [sample]) (by simp [outerTask, outerItem])
     simp [outerTask] at this
 
@@ -141,8 +141,8 @@ theorem shared_start_rejected (kind : OpenKind) {program : Program}
     (outer : ((program.element? ⟨"Outer"⟩).bind (·.start?)).isSome = true) :
     ¬ Typed program { armedState kind with openItems := ofItems [startItem kind, { startItem kind with id := ⟨7, .subscription, 1⟩ }] } :=
   fun typed => by
-    have := (typed (startItem kind) (by simp [items_eq, startItem]) (by simpa [startItem] using outer)).2.1 { startItem kind with id := ⟨7, .subscription, 1⟩ }
-      (by simp [items_eq, startItem]) (by simp [startItem])
+    have := (typed (startItem kind) (by simp [startItem]) (by simpa [startItem] using outer)).2.1 { startItem kind with id := ⟨7, .subscription, 1⟩ }
+      (by simp [startItem]) (by simp [startItem])
     simp [startItem] at this
 
 /-- So does a completion of the reservation 7 queued while its item waits, which would begin it once more, and an item
@@ -151,21 +151,21 @@ theorem completed_start_rejected (kind : OpenKind) {program : Program}
     (outer : ((program.element? ⟨"Outer"⟩).bind (·.start?)).isSome = true) :
     ¬ Typed program
       { armedState kind with openItems := ofItems [startItem kind], signals := [.complete 7 .outgoing [] .outward] } :=
-  fun typed => (typed (startItem kind) (by simp [items_eq, startItem]) (by simpa [startItem] using outer)).2.2.1 .outgoing [] .outward
+  fun typed => (typed (startItem kind) (by simp [startItem]) (by simpa [startItem] using outer)).2.2.1 .outgoing [] .outward
     (by simp [startItem])
 
 theorem working_start_rejected (kind : OpenKind) {program : Program}
     (outer : ((program.element? ⟨"Outer"⟩).bind (·.start?)).isSome = true) (work : kind.view.effect.isSome = true) :
     ¬ Typed program { armedState kind with openItems := ofItems [startItem kind] } :=
   fun typed => by
-    have : kind.view.effect = none := (typed (startItem kind) (by simp [items_eq, startItem]) (by simpa [startItem] using outer)).2.2.2.1
+    have : kind.view.effect = none := (typed (startItem kind) (by simp [startItem]) (by simpa [startItem] using outer)).2.2.2.1
     simp [this] at work
 
 /-- An item that waits for an effect on the reservation 7 breaks `Worked`: no effect result completes a reservation,
 and a raise from its occurrence would leave an unbegun host. -/
 theorem working_reservation_rejected (kind : OpenKind) (work : kind.view.effect.isSome = true) :
     ¬ Worked { armedState kind with openItems := ofItems [{ outerItem kind with id := ⟨7, .wait, 0⟩ }] } := fun worked => by
-  have := worked { outerItem kind with id := ⟨7, .wait, 0⟩ } (by simp [items_eq, outerItem]) (fun waits => by
+  have := worked { outerItem kind with id := ⟨7, .wait, 0⟩ } (by simp [outerItem]) (fun waits => by
     simp only [outerItem] at waits
     rw [waits.1] at work
     cases work) reservation (by simp [armedState]) (by simp [reservation])
@@ -212,7 +212,7 @@ itself breaks `AttachedReserved`. -/
 theorem attached_reserved (kind : OpenKind) :
     AttachedReserved { armedState kind with openItems := ofItems [{ startItem kind with attachedTo := some 5 }] } := by
   intro item member _ occurrence present named
-  simp only [items_eq, mem_ofItems_singleton] at member
+  simp only [mem_ofItems_singleton] at member
   subst member
   simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at present
   rcases present with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation, startItem]
@@ -220,7 +220,7 @@ theorem attached_reserved (kind : OpenKind) :
 theorem attached_begun_rejected (kind : OpenKind) :
     ¬ AttachedReserved { sample kind with openItems := ofItems [{ outerItem kind with attachedTo := some 1 }] } :=
   fun reserved => by
-    have := reserved { outerItem kind with attachedTo := some 1 } (by simp [items_eq, outerItem]) rfl outerTask (by simp [sample])
+    have := reserved { outerItem kind with attachedTo := some 1 } (by simp [outerItem]) rfl outerTask (by simp [sample])
       (by simp [outerTask, outerItem])
     simp [outerTask] at this
 

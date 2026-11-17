@@ -285,8 +285,8 @@ theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → P
     exact inside
   obtain ⟨writtenHolds, writtenFrame⟩ := (contract none).writeOutputs _ _ _ _ _ _ leftHolds stands writing
   have identity : (state.startReserved occurrence sourceType).2.id = id := begunId.trans named
-  have free : ∀ (frame : State), (∀ item ∈ frame.items, item ∈ left.items) →
-      ∀ item ∈ frame.items, item.id.occurrence ≠ (state.startReserved occurrence sourceType).2.id ∧
+  have free : ∀ (frame : State), (∀ item ∈ itemList frame.openItems, item ∈ itemList left.openItems) →
+      ∀ item ∈ itemList frame.openItems, item.id.occurrence ≠ (state.startReserved occurrence sourceType).2.id ∧
         item.attachedTo ≠ some (state.startReserved occurrence sourceType).2.id := fun frame within item member => by
     rw [identity]
     have inLeft := within item member
