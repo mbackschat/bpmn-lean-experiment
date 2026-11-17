@@ -14,6 +14,8 @@ passed guards 1 and 2 (hence guard 17), so this scan reads calls and writes rath
   binder cap of guard 9 keeps such patterns exhaustive.
 - Fan-out (18): match sites per guarded type, codecs excluded, against `budgets` below; a new mechanism that needs
   another site changes the seam, not the budget, and the budget moves only by owner decision.
+- No pairwise proof estate (KD8 of [the rewrite-2 proposal](../docs/REWRITE-2-PROPOSAL.md)): no theorem, in any kernel
+  module, states one claim about two distinct `QueuingMechanism` constructors or two distinct wait kinds (`OpenKind`).
 
 Usage, after `./scripts/lake.sh build Kernel kernelRun`: `./scripts/lake.sh run scripts/kernel-effects.lean`.
 Prints one line per finding and exits 1 when it prints any. `--self-test` elaborates the fixture below with violations
@@ -249,6 +251,42 @@ def scan (config : Config) : MetaM Report := do
       findings := findings.push s!"G18: {count} match sites on {type}, above its budget of {budget}"
   pure { findings, sites }
 
+/-- The families KD8 keeps out of pairwise statements: the mechanisms that queue more than one unit in a closure, and
+the wait kinds. Commutation is proved once over footprints (`docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape`),
+so a theorem relating two members of one of them is the per-pair estate the first rewrite grew. -/
+def pairFamilies : List Name := [`Kernel.QueuingMechanism, `Kernel.OpenKind]
+
+/-- The separate claims a statement makes: a conjunction's conjuncts, each under the binders and hypotheses above it,
+whose constants every claim below them shares. `∀ d, P (.timer d)) ∧ ∀ d, P (.message d)` is two claims, each about
+one wait kind, and proves no more than two theorems would; `P .timer → Q .message` is one claim relating both. -/
+partial def claims (statement : Expr) : List (Array Name) :=
+  match statement.consumeMData with
+  | .forallE _ domain body _ => (claims body).map (domain.getUsedConstants ++ ·)
+  | claim =>
+    if claim.isAppOfArity ``And 2 then claims claim.appFn!.appArg! ++ claims claim.appArg!
+    else [claim.getUsedConstants]
+
+/-- KD8: every kernel theorem one of whose claims names two distinct constructors of one `pairFamilies` type. A family
+missing from the environment fails, so a renamed type cannot read as clean. -/
+def pairwiseFindings (env : Environment) (moduleOf : Name → Option Name) : Array String := Id.run do
+  let mut findings : Array String := #[]
+  let mut families : Array (Name × List Name) := #[]
+  for family in pairFamilies do
+    match env.find? family with
+    | some (.inductInfo info) => families := families.push (family, info.ctors)
+    | _ => findings := findings.push s!"KD8: {family} is not in the environment, so the pairwise scan read nothing"
+  let theorems := env.constants.fold (init := #[]) fun found declaration info =>
+    match info, moduleOf declaration with
+    | .thmInfo statement, some module => if (`Kernel).isPrefixOf module then found.push (declaration, module, statement.type) else found
+    | _, _ => found
+  for (declaration, module, statement) in theorems do
+    for claim in claims statement do
+      for (_, constructors) in families do
+        let named := constructors.filter claim.contains
+        if named.length ≥ 2 then
+          findings := findings.push s!"KD8 {module} {declaration}: one claim names {named}"
+  return findings
+
 def run (env : Environment) (config : Config) : IO Report :=
   Prod.fst <$> (scan config).run'.toIO { fileName := "kernel-effects", fileMap := default } { env }
 
@@ -327,6 +365,20 @@ def lawWrite (state : State) : State := { state with tokens := [], occurrences :
 def lawRead (used : Used) : Nat := used.unread
 def lawLifecycle (state : State) : State := state.emit.beginOccurrence
 end Laws.State
+inductive QueuingMechanism where
+  | split
+  | instances
+inductive OpenKind where
+  | timer (detail : Nat)
+  | message (detail : Nat)
+def Awaits (_ : OpenKind) : Prop := True
+namespace Laws.State
+theorem bundledKinds : (∀ detail, Awaits (.timer detail)) ∧ ∀ detail, Awaits (.message detail) :=
+  ⟨fun _ => trivial, fun _ => trivial⟩
+theorem seededKindPair (detail : Nat) (_ : Awaits (.timer detail)) : Awaits (.message detail) := trivial
+theorem seededMechanismPair (queued : QueuingMechanism → Prop) (_ : queued .split) : queued .instances ∨ True :=
+  .inr trivial
+end Laws.State
 namespace Step
 def firstMatch (element : Element) : Nat := match element with
   | .task => 1
@@ -354,6 +406,10 @@ def expectedInFixture : List String := [
   "Kernel.Used.unread: read by no non-codec declaration",
   "2 match sites on Kernel.Element, above its budget of 1"]
 
+def expectedPairs : List String := [
+  "Kernel.Laws.State.seededKindPair: one claim names [Kernel.OpenKind.timer, Kernel.OpenKind.message]",
+  "Kernel.Laws.State.seededMechanismPair: one claim names [Kernel.QueuingMechanism.split, Kernel.QueuingMechanism.instances]"]
+
 def selfTest : IO UInt32 := do
   let base ← importModules #[{ module := `Init }] {} (loadExts := true)
   let (env, messages) ← Elab.process fixture base {} (some "kernel-effects-fixture")
@@ -373,12 +429,24 @@ def selfTest : IO UInt32 := do
   if (joined.splitOn "Kernel.Laws").length > 1 then
     IO.eprintln "self-test: a Laws declaration was scanned as executable"
     failed := true
+  let pairs := "\n".intercalate (pairwiseFindings env fixtureModuleOf).toList
+  for expected in expectedPairs do
+    unless (pairs.splitOn expected).length > 1 do
+      IO.eprintln s!"self-test: the seeded pairwise statement was not reported: {expected}"
+      failed := true
+  if (pairs.splitOn "bundledKinds").length > 1 then
+    IO.eprintln "self-test: a conjunction of one-kind claims was reported as pairwise"
+    failed := true
+  unless (pairwiseFindings base fixtureModuleOf).any (fun line => (line.splitOn "read nothing").length > 1) do
+    IO.eprintln "self-test: a pairwise scan of an environment with no kernel did not fail"
+    failed := true
   let empty ← run base { moduleOf := fixtureModuleOf, budgets := [], requireEveryGuardedType := false }
   unless empty.findings.any (fun line => (line.splitOn "read nothing").length > 1 || (line.splitOn "read no ").length > 1) do
     IO.eprintln "self-test: a scan of an environment with no kernel did not fail"
     failed := true
   if failed then
     IO.eprintln joined
+    IO.eprintln pairs
     return 1
   IO.println "kernel-effects self-test: every seeded violation was reported and the empty input failed"
   return 0
@@ -397,6 +465,6 @@ unsafe def main (arguments : List String) : IO UInt32 := do
     (env.getModuleIdxFor? declaration).bind fun idx => env.header.moduleNames[idx.toNat]?
   let report ← run env { moduleOf, budgets, requireEveryGuardedType := true }
   for (type, count) in report.sites do IO.println s!"G18 sites {type}: {count}"
-  let lines := report.findings.toList.eraseDups.toArray.qsort (· < ·)
+  let lines := (report.findings ++ pairwiseFindings env moduleOf).toList.eraseDups.toArray.qsort (· < ·)
   for line in lines do IO.println line
   return if lines.isEmpty then 0 else 1
