@@ -12,7 +12,7 @@ The project is a modular kernel, rewritten by owner direction (2026-11-08). The 
 
 ## Mission
 
-Build two MIT products: a Temporal-hosted BPMN 2.0.2 execution engine bounded in breadth and depth by CIB Seven `2.2.0`, and a BPM platform (Product 2) on top of it. [Practical CIB7 Coverage](docs/PRACTICAL-CIB7-COVERAGE-TARGET.md) is the delivery target. Variants absent from CIB7 are out of scope. BPMN stays the semantic authority; CIB differences are classified, not imitated. The A12 Workflows replacement is a separate A12-owned EUPL-1.2 product, out of scope here.
+Build two MIT products: a Temporal-hosted BPMN 2.0.2 execution engine bounded in breadth and depth by CIB Seven `2.2.0`, and a BPM platform (Product 2) on top of it. Product 2, which a third party deploys and runs on their own models, is the goal (owner, 2026-11-17); [Practical CIB7 Coverage](docs/PRACTICAL-CIB7-COVERAGE-TARGET.md) was a milestone toward it, accepted on 2026-11-14. Variants absent from CIB7 are out of scope. BPMN stays the semantic authority; CIB differences are classified, not imitated. The A12 Workflows replacement is a separate A12-owned EUPL-1.2 product, out of scope here.
 
 ## Rule 1: no routine GitHub-hosted macOS
 
@@ -81,6 +81,12 @@ For every issue, find the causal mechanism before choosing a correction: name th
 ### SDK defects
 
 Never initiate Temporal SDK repair, private SDK builds, patch qualification or an SDK-fix investigation. Record the defect in [the Temporal defects ledger](docs/TEMPORAL-DEFECTS-LEDGER.md) and continue; only an explicit owner direction reopens SDK work.
+
+### Goal and milestones
+
+Design for the goal, build toward the milestone: the design covers the whole goal, and a milestone selects only what is implemented, never what is designed. A milestone is not accepted while it leaves design debt that is costly to retrofit, and every milestone acceptance presents a priced ledger of what remains to the goal; a disclosed limit is debt with a cost, never an end state.
+
+No surprises (owner, 2026-11-17): disclose to the owner, when found, every costly item (over one agent-day, a proof that crosses features, or a choice that forces non-local rework), with its evidence and cost. Every estimate carries a measured calibration or an explicit unmeasured mark, and the costliest proof or change of a plan is calibrated first. Every architecture promise is enforced by a guard, test or proof, or removed with owner approval.
 
 ### Delivery
 

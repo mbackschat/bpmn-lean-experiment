@@ -64,7 +64,7 @@ The published distribution `v0.2.0-rc.1` stays at `16c5b9f6`; the Alpha and Beta
 
 ### Practical CIB7 Coverage
 
-On 2026-10-03 the owner selected **Practical CIB7 Coverage** as the primary delivery objective, superseding the MUE-then-coverage sequence; reconfirmed on 2026-10-04, the owner intends to show and release only Practical CIB7 Coverage. No new version or tag is assigned. [PLAN](PLAN.md) owns execution order.
+On 2026-10-03 the owner selected **Practical CIB7 Coverage** as the primary delivery objective, superseding the MUE-then-coverage sequence; on 2026-11-17 the owner stated that it was a milestone toward the goal, Product 2 used by a third party on their own models, not the goal itself; reconfirmed on 2026-10-04, the owner intends to show and release only Practical CIB7 Coverage. No new version or tag is assigned. [PLAN](PLAN.md) owns execution order.
 
 The milestone closes the reviewed [practical-depth inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md) of CIB7-supported element variants and their useful compositions under the kernel's [definition of done for a row](kernel/ARCHITECTURE-SPEC.md#definition-of-done-for-a-row). Isolated element examples cannot establish broad executable coverage. The inventory distinguishes required behavior, optional compatibility integrations and CIB-unsupported exclusions.
 
