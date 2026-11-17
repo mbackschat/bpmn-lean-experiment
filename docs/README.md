@@ -24,6 +24,7 @@ The sole documentation registry. Every maintained document under `docs/` is list
 |---|---|
 | [OWNER-INTENTS-REGISTER.md](OWNER-INTENTS-REGISTER.md) | Every agent and the owner; the owner's goal, priorities, concerns and working mode, by which agents are assessed |
 | [PLAN.md](PLAN.md) | Resuming agents and the owner; delivery order, budgets, mechanism tracks and the exact resume point |
+| [REWRITE-2-PROPOSAL.md](REWRITE-2-PROPOSAL.md) | Owner and the root; the rewrite-2 preparation: every costly topic to the goal with verified evidence, unmeasured estimates, reuse and document verdicts and pending decisions |
 | [PRACTICAL-CIB7-COVERAGE-TARGET.md](PRACTICAL-CIB7-COVERAGE-TARGET.md) | Owner and contributors; the accepted milestone toward Product 2: per row its outcome with decisive acceptance, prerequisites and state |
 | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) | Contributors and stakeholders; mission, layering, authority and assurance roles, scope and milestones |
 | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) | Semantic contributors and stakeholders; the OMG conformance goal and the normative clauses it requires |
