@@ -194,7 +194,11 @@ The design removes P6's causes C1–C6 by construction instead of proving around
   - **E2, reads of a whole scope occurrence:** the Inclusive join's `positions`, `completeIdleScope`, `reoffer?`. These read through the enumerating view.
   - **E3, instance-wide indexes:** Signal receivers (`arriveThrow`), Conditional items (`written`), catchers on the ancestor chain (`raise`), `endInstance`. These use name-indexed regions, so `Apart` plus the diamond apply.
 - **The Inclusive join** is confluent once its readiness is stated over counts, not identities, provided every position-creating mechanism stays inside `Reach` (T4a F6, proved in a count model, with `spawn_breaks` as the counterexample). Under `inclusiveJoinReach = outgoingOnly` it is not confluent, because a boundary token outside the reach fires the join a second time. Only the CIB profiles select `outgoingOnly`, and they schedule by `declarationDepthFirst`. The standards profile reads `withBoundaries` ([FLOW-SEMANTICS-SPEC](kernel/semantics/FLOW-SEMANTICS-SPEC.md)). So P6 takes `orderInvariant ⇒ withBoundaries` as a premise, and a catalog guard checks it for every profile.
-- `Flow.join`'s choice of the firing arrival becomes canonical (the least key) instead of first-parked.
+- **Joins: two choices are order-dependent today** (`Kernel/Feature/Flow.lean:180-206`).
+  - **Which arrivals a join consumes.** The first parked on each flow is consumed. This becomes the least key.
+  - **The internal key of the continuation.** It is derived from the arriving occurrence, which fires. It becomes a function of the join element and the set of consumed keys.
+  - **Unchanged: the public choice.** The arriving occurrence still completes with the flows and the others with none, as CIB continues the arriving execution. Between schedules this differs only within the activation bijection KD5 allows.
+  - Spike T4c checks that this suffices without equivariance proofs downstream. If it does not, the public choice changes only with a register entry, and the change per profile is disclosed here.
 - **Premise:** C4 was measured by P6R, and #120 and #75 are open closure-order findings (K8).
 - **Scope check:** `CLAUDE.md` requires that scheduler choices stay explicit inputs, and the conformance target fixes no token order. Rejected option E, a canonical schedule for the standards profile, stays rejected.
 
