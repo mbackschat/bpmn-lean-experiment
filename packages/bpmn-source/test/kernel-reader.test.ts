@@ -421,6 +421,42 @@ test("the profile options are the full record, each non-default selected by the 
   assert.equal(kernelProfileOptions(["CIB-OP-0008"]).technicalFailure, "incident");
 });
 
+type CatalogProfile = Readonly<{ id: string; relationships: readonly string[] }>;
+
+/** The profiles of the catalog under `profiles/`, read as data so no profile identifier is named here. */
+async function catalogProfiles(): Promise<CatalogProfile[]> {
+  const catalog = new URL("../../../profiles/", import.meta.url);
+  const entries = (await readdir(catalog, { withFileTypes: true })).filter((entry) => entry.isDirectory());
+  return Promise.all(entries.map(async (entry) => {
+    const profile = JSON.parse(await readFile(new URL(`${entry.name}/profile.json`, catalog), "utf8")) as
+      { id: string; bpmn: { relationships: string[] } };
+    return { id: profile.id, relationships: profile.bpmn.relationships };
+  }));
+}
+
+/** The premise the order-invariance proof takes (docs/REWRITE-2-PROPOSAL.md, KD3): an Inclusive join is confluent only
+ * when its reach follows Boundary Events, since a boundary token outside an `outgoingOnly` reach fires it again. */
+function profilePremiseFindings(profiles: readonly CatalogProfile[]): string[] {
+  if (profiles.length === 0) return ["the profile catalog is empty, so the premise read nothing"];
+  return profiles.flatMap(({ id, relationships }) => {
+    const options = kernelProfileOptions(relationships);
+    return options.branchSchedule === "orderInvariant" && options.inclusiveJoinReach !== "withBoundaries"
+      ? [`${id}: branchSchedule orderInvariant with inclusiveJoinReach ${options.inclusiveJoinReach}`]
+      : [];
+  });
+}
+
+test("every catalog profile with an order-invariant branch schedule keeps the standards inclusive-join reach", async () => {
+  assert.deepEqual(profilePremiseFindings(await catalogProfiles()), []);
+});
+
+test("the profile premise reports a planted profile that narrows the reach under an order-invariant schedule", () => {
+  assert.deepEqual(profilePremiseFindings([{ id: "planted", relationships: ["CIB-INT-0020"] }]),
+    ["planted: branchSchedule orderInvariant with inclusiveJoinReach outgoingOnly"]);
+  assert.deepEqual(profilePremiseFindings([{ id: "planted", relationships: ["CIB-INT-0020", "CIB-OP-0016"] }]), []);
+  assert.deepEqual(profilePremiseFindings([]), ["the profile catalog is empty, so the premise read nothing"]);
+});
+
 test("every User Task assignment and date attribute the BPMN sets is populated", async () => {
   const p = await program(model(`<bpmn:userTask id="U" name="N" camunda:assignee="\${who}" camunda:candidateUsers="a, b" camunda:candidateGroups="g"
     camunda:formKey="form" camunda:dueDate="2030-01-01" camunda:followUpDate="\${later}" camunda:priority="7"/>`));
