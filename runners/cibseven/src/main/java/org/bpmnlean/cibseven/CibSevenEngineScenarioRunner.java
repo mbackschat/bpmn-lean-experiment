@@ -163,7 +163,8 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
       }
       if (undeletable != null) {
         throw new IllegalStateException(
-            "CIB could not delete the population's deployments; the engine was purged", undeletable);
+            "CIB could not delete the population's deployments; the next scenario restores the boot tables",
+            undeletable);
       }
       return new PopulationResult(
           answer.kind(),
@@ -310,7 +311,8 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
     }
 
     if (undeletable != null) {
-      throw new IllegalStateException("CIB could not delete the scenario's deployment; the engine was purged", undeletable);
+      throw new IllegalStateException(
+          "CIB could not delete the scenario's deployment; the next scenario restores the boot tables", undeletable);
     }
     return new ScenarioResult(
         ScenarioProtocol.SCENARIO_RESULT_KIND,
@@ -407,18 +409,19 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
   }
 
   /**
-   * Deletes a scenario's deployment with its instances and history, or, when CIB's cascade delete itself throws, purges
-   * the engine and returns that failure so the scenario fails as a harness failure. CIB Seven `2.2.0` throws for an
-   * instance stopped inside a Transaction's compensation (`PvmAtomicOperationDeleteCascade` reaching
-   * `CompensationBehavior#getParentActivityInstanceId`, line 82); without the purge its residue would sit under every
-   * later scenario of the same engine and fail their cleanup check.
+   * Deletes a scenario's deployment with its instances and history, or, when CIB's cascade delete itself throws, returns
+   * that failure so the scenario fails as a harness failure. CIB Seven `2.2.0` throws for an instance stopped inside a
+   * Transaction's compensation (`PvmAtomicOperationDeleteCascade` reaching
+   * `CompensationBehavior#getParentActivityInstanceId`, line 82); the rolled-back delete leaves its rows in the
+   * engine, which the next scenario's {@link #restoreBootTables} clears before it reuses the boot identifiers. Nothing
+   * else reads them: every engine has its own database and no job executor, and the failed scenario's cleanup
+   * observation is discarded with its result.
    */
   private RuntimeException deleteDeployment(String deploymentId) {
     try {
       processEngine.getRepositoryService().deleteDeployment(deploymentId, true, true, true);
       return null;
     } catch (RuntimeException failure) {
-      ((ManagementServiceImpl) processEngine.getManagementService()).purge();
       return failure;
     }
   }
@@ -442,8 +445,9 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
   /**
    * Returns the engine to the table contents it had at boot before a scenario reuses the boot identifiers. A scenario's
    * deployment cascade removes what CIB's services own, but not every row: CIB Seven `2.2.0`'s condition-start evaluation
-   * leaves its serialized start variable's runtime byte array without an owner (observed 2026-11-10). Only a purge
-   * reaches such a row; one that survives the purge fails the scenario as a harness failure.
+   * leaves its serialized start variable's runtime byte array without an owner (observed 2026-11-10), and a cascade CIB
+   * cannot complete ({@link #deleteDeployment}) leaves all of its rows. Only a purge reaches such rows; one that
+   * survives the purge fails the scenario as a harness failure.
    */
   private void restoreBootTables() {
     var management = processEngine.getManagementService();
