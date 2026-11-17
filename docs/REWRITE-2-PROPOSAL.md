@@ -173,6 +173,204 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 - **Queuing sites:** the queuing mechanisms are one data list (P1 census, 22 sites), and a scan fails on a queuing site outside it.
 - **Hook defaults:** the architecture's "no-op default" promise is restated as "refuse default". Refusing is the safer contract, and the code already does it (`Hooks.lean:412-416`). Restating a promise needs owner approval, so it is listed under owner items.
 
+### Admission and breadth: T1, T2, T9, T20
+
+**AD1. A profile-selected inert tier (T1).**
+- The reader classifies every extension attribute and element as exactly one of three things:
+  - **consumed:** read into the IL;
+  - **inert:** retained in exact source evidence and published nowhere, or published as passive metadata;
+  - **refused:** with a code.
+- The inert list is profile data, with one register entry per item. Each entry states why the item has no effect at the observation boundary; for example, `historyTimeToLive` drives only CIB's history cleanup.
+- **Premise:** the reader refuses every unconsumed extension (`bpmn-source/src/kernel-reader/model.ts:352,361`, `requireCarried`), and 50 of the 55 CIB examples carry `historyTimeToLive`.
+- **Scope check:** "Camunda/CIB extension syntax is admitted only through exact profile-selected BPMN contexts" (`PROJECT-DESIGN.md`, CIB compatibility).
+- **Rejected:** ignoring the whole `camunda:` namespace. That would silently drop meaning such as `asyncBefore` or `failedJobRetryTimeCycle`.
+
+**AD2. Admission reports every refusal (T1).**
+- Admission returns every refusal, each with its element identity, instead of the first one.
+- The checks that today carry `element: null` (`kernel/src/admission-registry.ts:643-659`) name their element, or name the definition when the check is model-wide.
+- **Premise:** one diagnostic per compile (`engine-api/src/definition.ts:63-67`).
+- **Scope check:** "report acceptance or rejection with the offending element identity and reason" ([platform proposal](BPM-PLATFORM-PROPOSAL.md#deployment-and-definitions)), and M1's exit gate.
+- **Rejected:** an engine-API loop that strips each refusal and recompiles. It masks dependent refusals and multiplies compile time.
+
+**AD3. Breadth items are coverage rows with their IL fields present (T1, T20).**
+- The items that third-party models hit become rows of the coverage target. The [compatibility scope](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) already places them in scope:
+  - form metadata, assignees, candidates and dates, with Task-field expressions at the JUEL Task-fields level;
+  - Call binding, version and business key;
+  - Multi-Instance extensions;
+  - retry-cycle extensions, selected per profile.
+- Their missing IL fields (E12: initiator, retry cycle, structured parameters, `formRef`, `exclusive`, `Subscription.outputs.itemRef` from #114) enter in one shape commit, per the forward-compatible rule.
+- The JUEL levels the architecture promised and never delivered, Task fields (M3) and Events (M6), are delivered as rows, not restated.
+- **Premise:** the K4, E1 and P1 inventories. Spike T1a measures the full barrier distribution beyond the first diagnostic.
+- **Rejected:** admitting these fields through a generic pass-through, which the forward-compatible rule forbids.
+
+**AD4. The value domain widens inside the ceiling (T2).**
+- `Value` gains Double, negative Integer and Date.
+  - **Double** is IEEE binary64, carried as its bit pattern so that equality stays lawful, and computed through the platform double in both kernels.
+  - **Negative Integer** stays within the wire's magnitude bound.
+  - **Date** is an instant in epoch milliseconds, as CIB's `java.util.Date` holds it.
+- EL coercion follows the EL specification, and the pinned `cibseven-juel` stays the oracle.
+- The size bounds stay: 1,024 B strings, 32 members per container, 256 nodes, 16 KiB. Raising them is an owner item, listed below with a recommendation.
+- **Premise:** `Value` has no Double or Date (`Kernel/IL/Types/Expression.lean:17-25`). Division and float literals are refused (`Kernel/Admission/Data.lean:100,130`), and CIB's invoice example uses `typeRef="double"`.
+- **Scope check:** the Core JUEL level is "EL coercion over the portable value domain" ([architecture](kernel/ARCHITECTURE-SPEC.md#runtime-state-and-step)), and Double is within CIB7's breadth.
+- **Rejected:** Lean `Float` as the stored representation. Its `BEq` is IEEE equality (NaN differs from itself), which breaks lawful equality of `Value`.
+- Spike T2 measures the change.
+
+**AD5. Every runtime `unsupported` code is classified (T9).**
+- Guard 20 already pairs each runtime `unsupported` code with an admission refusal, or marks it dynamic-only.
+- The design adds an inventory of the dynamic-only codes, each classified as either:
+  - a **capacity restriction**, a host bound with a stable code, which is legitimate; or
+  - a **semantic gap**, which becomes a row or an admission refusal.
+- **Premise:** 66 distinct runtime codes (root grep of the executable Lean files). Spike T9 measures the inventory.
+
+### Engine boundary and hosting: T11, T15, T16, T17, T19, T22, T23
+
+**HD1. A public effect contract (T11).**
+- A published package carries the following:
+  - the effect request and result types;
+  - a Worker factory that registers handlers by protocol and operation;
+  - the mapping from a handler's business failure, technical failure and retry exhaustion to the kernel's effect outcomes and incidents.
+- Effect Activities run on a task queue per handler protocol, separate from the Workflow's own queue. The Activity identity is the effect's identity, which the handler uses as its idempotency key.
+- **Premise:** effect Activities have no `taskQueue` (`temporal-host/src/workflow-host.ts:473,542`), the engine packages are private, and the evaluation Worker is canned (`compose.yaml:74`).
+- **Scope check:** "Project-owned effect protocol and handler identifier: in scope" ([compatibility scope](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md)). A JVM Worker is separately approved and stays out.
+- **Rejected:** letting adopters fork the private host.
+- Spike T11 calibrates it.
+
+**HD2. Population ingress scale-out by the documented path (T15).**
+- The architecture names option O2 as the scale-out path: a fan-out Workflow per command beside address-keyed registries ([population ingress](kernel/ARCHITECTURE-SPEC.md#population-ingress)). It is triggered: one population holds about 536 waiting instances (measured, see Method).
+- The design follows O2:
+  - registrations shard by address digest into registry Workflows;
+  - each command runs in its own fan-out Workflow;
+  - the ingress keeps only numbering, the command ledger and deployments;
+  - the deployment registry and the Timer-start ledger are pruned by currency, not only on redeploy.
+- No new store: PostgreSQL belongs to the platform, and the engine must not depend on it.
+- **Premise:** the bounds are at `temporal-host/src/population.ts:27-34`, and the registry is append-only.
+- **Rejected:** a database-backed registry. It would be a new engine dependency and needs owner approval.
+- **Throughput is unmeasured.** The reason: no Temporal server may run locally, so the plan's first hosted lane measures it. Spike T15 measures only the implementation rate.
+
+**HD3. Per-chain bounds become host scheduling, not refusals (T16).**
+- **Pending service Activities beyond 32** wait in the host's own queue. Effect completion order is already an explicit kernel input, so the meaning does not change.
+- **The 64 KiB batch (#125)** becomes segmented publication.
+- **The program** is read from the deployment Workflow by digest, not carried in the chain's continuation.
+- **State growth (#169)** is removed by KD1's bounded keys.
+- **Premise:** the owner-ratified bounds are at `TEMPORAL-PROCESS-LIFECYCLE-SPEC.md:83-104` and `capacity.ts:24`. The median IL is 1,082 B per element (E5's measurement).
+- **Scope check:** the bounds themselves stay as ratified. Only their effect changes, from refusal to waiting.
+- Spike T16 measures it.
+
+**HD4. The engine API closes its gaps through existing kernel mechanisms (T17, T19).**
+- **General cancellation** is a kernel command over the existing generic subtree removal.
+- **Compilation** accepts BPMN plus DMN resources (#132).
+- **Variable commands** expose `setVariables` and `removeVariables`, which the kernel and runner already have.
+- **The #91 entry points** (Signal broadcast, Conditional start evaluation, fan-out observation) are ingress commands that already exist.
+- **Cross-deployment Calls (#94)** assemble the stamped callee copies at deployment.
+- **Start lifecycle (#136, #131, #124):** every client wait has a deadline and cancels what it raced.
+- **Premise:** the engine API offers only `retryIncident` and `cancelIncidentProcess` (`engine-api/src/process-operations.ts`), and the hosting gap is recorded in the architecture.
+- Spike T17 calibrates on general cancellation, end to end. T19 is calibrated by transfer from it, and is marked as such.
+
+**HD5. Evidence survives the rewrite; profile changes are batched (T22).**
+- KD1 keeps the public identity, so retained CIB evidence stays valid byte for byte. Its sha256 binding covers the scenario and the profile, never the kernel.
+- Profile byte changes, for example AD1's inert tier, invalidate the evidence bound to that profile. So they are batched as one profile commit per track, with one re-retention each: three shards of 4.5–6.5 minutes, measured in hosted CI (E10), plus reclassification of the affected entries.
+
+**HD6. Upstream (T23).**
+- The Temporal SDK stays pinned at 1.21.0 until #123's defects are released upstream.
+- SDK work stays prohibited, and TD-005 stays an upstream Node defect.
+- No cost is planned for either; the owner decides on SDK work.
+
+### Product 2: T12, T13, T14, T18, T21
+
+**PD1. Identity per request through the pluggable boundary (T12).**
+- `resolveActor` takes the request. The default fake implementation stays, as the platform proposal settles: "a pluggable identity boundary with a fake implementation by default".
+- Every route authorizes through the policy module:
+  - deploy;
+  - start;
+  - schedule;
+  - Message start and publication;
+  - search;
+  - definitions;
+  - operations.
+- An adopter's resolver is the adopter's code, and the adopter documentation says how to write one.
+- Deploy authorization is what keeps Scripts trusted model content (T11).
+- **Premise:** the resolver takes no request (`identity-policy/src/fake-actor-resolver.ts`), and the route files listed in the verification table carry no authorization.
+- **Rejected:** an authentication provider, which the proposal excludes.
+
+**PD2. A public publication schema (T13).**
+- The engine publishes only public fields: element identity, source element type, transition role and `OccurrenceRef`. Its revisions count committed inputs, not micro-steps.
+- The platform decodes publications with a decoder generated from the schema instead of casts.
+- **Premise:** `transitionJson` publishes `owner` and `idle.scope` (`Kernel/Run.lean:236-250`), and the gateway casts at `process-publication-gateway.ts:92,98,115`.
+- **Scope check:** the architecture's own contract says "Semantic publication: element identity, source element type and transition role; no IL kinds" ([contracts](kernel/ARCHITECTURE-SPEC.md#contracts)), so today's leak breaks a promise. It is listed in the promise register.
+
+**PD3. The profile is bound by digest; features are keyed to capabilities (T14).**
+- A definition's identity stores the profile's sha256, and recompilation verifies it.
+- Product 2's features ask `definitionCapabilities` what a definition admits, for example structured forms, and never compare a profile identifier.
+- **Premise:** `engine-api/src/common.ts:36-40` stores only the profile id. `"bpmn-2.0.2"` literals appear at `human-task-catalog-projection.ts:23` and `definition-deployment-service.ts:41`.
+- **Scope check:** "No code compares a profile identifier" ([architecture](kernel/ARCHITECTURE-SPEC.md#profiles)). Guard 7 does not scan the platform; it will.
+
+**PD4. The cross-product agreement test (T18).**
+- For every registered scenario, the platform's projection of the kernel runner's committed publications must equal the engine's published open User Tasks. This is the requirement at `PROJECT-DESIGN.md:92`.
+- It runs on the kernel runner's output in the fast lane, with no Temporal.
+- The engine gate also runs with the platform tree absent, as M1's exit gate requires.
+- **Premise:** no test implements it (root check).
+
+**PD5. Adopter documentation (T21).**
+- Three guides: deploying and operating, writing an effect handler and an identity resolver, and modeling inside the admitted surface.
+- Plus an API reference generated from the HTTP contract.
+- **Unmeasured,** with the reason: documentation is not calibrated by a spike. Its risk is low, and it is priced by transfer from this proposal's own writing rate.
+
+### Promise register
+
+This register lists every promise of the [kernel architecture](kernel/ARCHITECTURE-SPEC.md) and the architecture promises of [PROJECT-DESIGN](PROJECT-DESIGN.md) and the [platform proposal](BPM-PLATFORM-PROPOSAL.md). Each one names what enforces it in the rewrite-2 design.
+
+The root checked, on 2026-11-17 at `87d27def2`:
+- **The 24 guardrails:** each has an enforcing script, found by grepping its number across `scripts/`, plus the self-test of guard 23. The Lean side of guards 1, 2 and 17 is in `scripts/kernel-dispatch.lean` and `scripts/kernel-effects.lean`.
+- **The "Missing" rows:** each was confirmed by a grep that found no enforcing artifact.
+
+| Promise | Source | Enforced by | State at `87d27def2` | In the design |
+|---|---|---|---|---|
+| The IL fixes the shape for every row; a field outside the surface is refused, never omitted | architecture, IL | guards 12, 19, 21 | enforced | kept |
+| No IL or state type is a nested or mutual inductive | architecture, IL | — | **broken**: `State/Slots.lean:71` | flattened; new environment guard (KD7) |
+| An element is a header plus one payload; slots are fixed, so the codec never varies by program | architecture, IL and state | guards 9, 11 | enforced | kept |
+| Cancellation is one generic subtree removal; one writer per effect | architecture, state | guard 17 | enforced | kept |
+| `Step` is pure and total | architecture, step | Lean totality (`partial` only in codecs, root grep) and the lane proofs that unfold `Step` | enforced | kept |
+| Every evaluation runs inside the kernel, with one evaluator per profile | architecture, evaluation | guard 13 | enforced | kept |
+| JUEL levels Task fields (M3) and Events (M6) | architecture, evaluation | rows | **undelivered** | delivered as rows (AD3) |
+| Each `Hooks` field has a no-op default | architecture, hooks | — | **broken**: defaults refuse | restated as "refuse default"; **owner item 1** |
+| `Step` alone owns hook order; cross-owner matches go through `Hooks`; at most three files per feature | architecture, hooks | guards 1, 4, 10 | enforced | kept |
+| `Laws.F` rules are proved against `Step` in the proof wave | architecture, hooks; lane | lane proofs | **partly**: 8 families witness-only (K10) | proved in the rewrite pass (KD6) |
+| Commutation is proved once over the footprints each feature declares | architecture, modules | — | **broken**: no footprints | footprints by typing (KD2); new type-level guard (KD7) |
+| P6, `SchedulesAgree` | architecture, lane; PLAN | lane proof | **open** (#163) | KD1–KD5 |
+| The host sees the kernel only through `hostRequirements`, `definitionCapabilities` and `hostView` | architecture, host | guard 4 | enforced | kept |
+| An admitted program the host cannot schedule is refused before a Workflow starts | architecture, host | `engine-api/test/definition-compilation.test.ts` | enforced | kept, with HD3's waiting instead of refusing |
+| Module table, rebuild cones, no `@[expose]`, bodies seen only by their own `Laws` | architecture, modules | guards 4, 5, 15, 22 | enforced | module table amended for `Walk` (KD4) |
+| No theorems in executable modules; laws are independent of `Step`'s code | architecture, modules; lane | guard 6 | enforced | kept |
+| Lean options are pinned | architecture, modules | `scripts/verification-entrypoint.test.ts` | enforced | kept |
+| TypeScript transcribes Lean, module by module | architecture, TypeScript | guards 8, 16 | enforced | kept |
+| No proof-motivated TypeScript code | architecture, TypeScript | track review only | review-enforced | **owner item 2**: move to the review checklist |
+| `bpmn-source` refuses only parse, preservation and unknown-element cases; every semantic refusal lives in admission | architecture, TypeScript | — | **broken**: `reader.factNotCarried` decides extension meaning in the reader | AD1 moves the classification to profile data; guard 12 extended to restrict reader codes |
+| No code compares a profile identifier | architecture, profiles | guard 7 (kernel and boundary packages) | **broken in the platform**: `human-task-catalog-projection.ts:23` | PD3; guard 7 extended to `platform/` |
+| Semantic publication carries element identity, source type and transition role, no IL internals | architecture, contracts | — | **broken**: `owner`, `idle.scope` (P5) | PD2; schema guard |
+| Schemas are the wire authority | architecture, contracts | guard 11 | enforced | kept |
+| Lean, TypeScript and retained CIB evidence agree on every scenario | architecture, lane | guard 16 | enforced | kept |
+| Hosted mechanisms are witnessed: chain handoff, capacity, replay, the population witnesses | architecture, hosting | hosted test suites | enforced | HD2 replaces the ingress witnesses |
+| The TypeScript and Temporal solution never depends on a JVM | CLAUDE.md; PROJECT-DESIGN | dependency approval only | policy-enforced | new manifest guard over the engine and platform packages |
+| For every registered scenario, the platform's task set equals the engine's open User Tasks | PROJECT-DESIGN (one repository) | — | **missing** | PD4 |
+| The engine gate passes with the platform tree absent | milestone ladder, M1 | — | **missing** | PD4 |
+| The platform consumes only the engine's published contract and never constructs an occurrence identity | PROJECT-DESIGN; platform proposal | `scripts/platform-product-boundary.test.ts` (10 tests) | enforced; stale `BpmnSemantics` root at `platform-product-boundary.ts:8` | kept; stale root removed |
+| Review, definition of done and register-in-commit rules | architecture, review | review receipts | process | **owner item 3**: move to the engineering policy |
+
+## Owner items
+
+These are only items on the owner's ask list. Each was checked against the settled documents.
+
+1. **Restate the hook-default promise** as "each `Hooks` field defaults to refusal". This changes an architecture promise.
+   - **Recommendation:** accept. A refusing default makes an unregistered behavior fail loudly. A no-op default would make it silently skip meaning.
+2. **Remove "no proof-motivated TypeScript code" as an architecture promise** and move it to the track review's checklist.
+   - **Why it is an ask:** no guard, test or proof can enforce it. A scan cannot tell proof-motivated code from executable structure, and a name deny-list would pass by matching nothing.
+   - **Recommendation:** move it.
+3. **Remove the review and definition-of-done rules from the architecture's promises** and keep them as process rules in the [engineering policy](kernel/ENGINEERING-POLICY.md), enforced by review receipts.
+   - **Why it is an ask:** they govern how work is accepted, not what the code guarantees, so no guard, test or proof applies.
+   - **Recommendation:** move them.
+
+**Disclosure, not an ask.** The value size bounds stay as they are: 1,024 B strings, 32 members per container, 256 nodes and 16 KiB. They become an owner item only if spike T1a measures third-party models that exceed them.
+
 ## Reuse and document verdicts
 
 The domain reports give a verdict per component. The sections below summarize them.
