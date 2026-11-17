@@ -22,7 +22,7 @@ import {
   noCatchAllFindings,
   tsMatchSiteCounts,
 } from "./kernel-guards-dispatch.ts";
-import { effectWriterFindings, fieldLivenessFindings } from "./kernel-guards-effects.ts";
+import { effectWriterFindings, fieldLivenessFindings, hookDefaultFindings } from "./kernel-guards-effects.ts";
 import {
   boundedNumberFindings,
   discoveryFindings,
@@ -492,6 +492,41 @@ export function cancelOccurrence(state, id) { return removeOccurrence(state, id)
   }, /cancelOccurrence called outside its writer/u);
 });
 
+const hookFiles = (leanRegistry: string, tsRegistry: string): Readonly<Record<string, string>> => ({
+  "Kernel/Hooks.lean": `module
+public import Kernel.State
+def refuse (code : String) : Nat → Nat := fun _ => 0
+structure Hooks where
+  /-- A transition hook. -/
+  arriveGateway : Nat → Nat := fun _ => refuse "gateway"
+  select : Nat → Except String Nat := fun _ => .error (.semanticFailure .invariant "select")
+  -- A notification and a query keep their own defaults.
+  cancelled : Nat → Nat := fun state => state
+  catches : Nat → Option Nat := fun _ => none
+`,
+  "Kernel/Registry.lean": `module\npublic import Kernel.Feature.Flow\nnamespace Kernel.Registry\ndef hooks : Hooks :=\n  { ${leanRegistry} }\nend Kernel.Registry\n`,
+  "packages/kernel/src/hooks.ts": `function refuse(code) { return code; }
+export const defaultHooks: Hooks = {
+  arriveGateway: () => refuse("gateway"),
+  select: () => semanticFailure(SemanticCause.Invariant, "select"),
+  cancelled: (_ctx, state) => state,
+  catches: () => null,
+};
+`,
+  "packages/kernel/src/registry.ts": `import { gateway } from "./feature/flow.js";\nexport const hooks: Hooks = {\n  ...defaultHooks,\n  ${tsRegistry}\n};\n`,
+});
+
+test("the hook-defaults guard (KD7) needs every failing default filled, in both languages, and fails on an empty tree", () => {
+  const lean = "arriveGateway := Feature.Flow.gateway\n    select := fun state => .ok state";
+  const typeScript = "arriveGateway: gateway,\n  select: (state) => state,";
+  assert.deepEqual(hookDefaultFindings(fixture(hookFiles(lean, typeScript))), []);
+  assert.deepEqual(hookDefaultFindings(fixture(hookFiles("arriveGateway := Feature.Flow.gateway", "select: (state) => state,"))), [
+    "KD7 hook defaults Kernel/Registry.lean: the registry leaves select to its failing default, which would run in production",
+    "KD7 hook defaults packages/kernel/src/registry.ts: the registry leaves arriveGateway to its failing default, which would run in production",
+  ]);
+  assert.equal(hookDefaultFindings(emptyFixture()).length, 2, "an empty tree must fail in both languages");
+});
+
 holdsItsGround("guard 19 (field liveness)", fieldLivenessFindings, {
   "packages/kernel/src/feature/data.ts": `import { setVariable } from "../state.js";\nexport function store(state) { return setVariable(state, "x"); }\n`,
 }, /IL field assignee is read by no non-codec module/u);
@@ -659,6 +694,7 @@ for (const [name, guard] of [
   ["guard 15 (options)", kernelOptionFindings],
   ["guard 15 (rebuild model)", rebuildFindings],
   ["guard 17", effectWriterFindings],
+  ["the hook-defaults guard (KD7)", hookDefaultFindings],
   ["guard 19", fieldLivenessFindings],
   ["guard 20", refusalParityFindings],
   ["guard 23 (structural inputs)", structureInputFindings],

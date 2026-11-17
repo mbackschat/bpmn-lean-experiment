@@ -1,12 +1,23 @@
 /**
  * TypeScript halves of one writer per effect (guard 17) and field liveness (guard 19) of
  * docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation; `scripts/kernel-effects.lean` is the Lean half.
+ * Also the hook-defaults guard of KD7 (docs/REWRITE-2-PROPOSAL.md), in both languages.
  *
  * Dispatch guards see matches and miss effects: nine completers passed guards 1 and 2. So this scan reads who calls the
  * effect primitives, and which state fields a spread update writes. Liveness is by field name, which is coarser than the
  * Lean scan's per-structure reading, because a TypeScript property name is shared across interfaces.
  */
-import { closeOf, emptyInputFinding, finding, isJustified, TokenKind, type KernelTree, type Source } from "./kernel-guard-scan.ts";
+import {
+  closeOf,
+  emptyInputFinding,
+  finding,
+  isJustified,
+  leanDeclarations,
+  TokenKind,
+  type KernelTree,
+  type Source,
+  type Token,
+} from "./kernel-guard-scan.ts";
 
 const kernelPrefix = "packages/kernel/src/";
 
@@ -156,4 +167,101 @@ export function fieldLivenessFindings(tree: KernelTree): string[] {
   return fields.flatMap(([field, il, line]) => read.has(field) || isJustified(il, line, 19)
     ? []
     : [finding(19, il, line, `IL field ${field} is read by no non-codec module and refused by no admission module`)]);
+}
+
+type Field = Readonly<{ name: string; line: number; value: readonly Token[] }>;
+
+/**
+ * The fields of the record the bracket at `open` opens: each name at depth one that starts a line or follows `{` or `,`
+ * and is followed by `separator` (`:` in a TypeScript object, `:=` in a Lean structure instance), with its value's tokens.
+ */
+function recordFields(tokens: readonly Token[], open: number, separator: string): Field[] {
+  const close = closeOf(tokens, open);
+  const starts: number[] = [];
+  let depth = 0;
+  for (let k = open + 1; k < close - 1; k += 1) {
+    const token = tokens[k];
+    if (token === undefined) break;
+    const previous = tokens[k - 1];
+    const leads = previous?.text === "{" || previous?.text === "," || previous?.line !== token.line;
+    if (depth === 0 && token.kind === TokenKind.Word && tokens[k + 1]?.text === separator && leads) starts.push(k);
+    if (token.kind === TokenKind.Punct && ["(", "[", "{", "⟨"].includes(token.text)) depth += 1;
+    if (token.kind === TokenKind.Punct && [")", "]", "}", "⟩"].includes(token.text)) depth -= 1;
+  }
+  return starts.map((start, index) => ({
+    name: tokens[start]?.text ?? "",
+    line: tokens[start]?.line ?? 0,
+    value: tokens.slice(start + 2, starts[index + 1] ?? close - 1),
+  }));
+}
+
+/** The fields of the Lean `structure Hooks where` block: each name in the field column followed by `:`, with its
+ * type and default value. */
+function leanStructureFields(source: Source, name: string): Field[] | null {
+  const declaration = leanDeclarations(source.tokens).find((candidate) => candidate.kind === "structure" && candidate.name === name);
+  if (declaration === undefined) return null;
+  const tokens = source.tokens.slice(declaration.tokenStart, declaration.tokenEnd);
+  const column = tokens.find((token, index) => index > 0 && token.line > (tokens[0]?.line ?? 0))?.column;
+  const starts = tokens.flatMap((token, index) =>
+    token.column === column && token.kind === TokenKind.Word && tokens[index + 1]?.text === ":" ? [index] : []);
+  return starts.map((start, index) => ({
+    name: tokens[start]?.text ?? "",
+    line: tokens[start]?.line ?? 0,
+    value: tokens.slice(start + 2, starts[index + 1] ?? tokens.length),
+  }));
+}
+
+/** The record a declaration binds: the first `{` after `binder` in `source`, read as a record literal. */
+function boundRecord(source: Source, binder: (tokens: readonly Token[], index: number) => boolean, separator: string): Field[] | null {
+  const { tokens } = source;
+  const at = tokens.findIndex((_, index) => binder(tokens, index));
+  if (at === -1) return null;
+  const open = tokens.findIndex((token, index) => index > at && token.text === "{");
+  return open === -1 ? null : recordFields(tokens, open, separator);
+}
+
+/** Whether a default fails as an unregistered mechanism: `refuse`, or the invariant failure `select`, `correlates` and
+ * `delivered` return directly (`.invariant` in Lean, `SemanticCause.Invariant` in TypeScript). */
+const fails = (field: Field): boolean => field.value.some((token, index, value) =>
+  token.text === "refuse" || token.text === ".invariant" ||
+  (token.text === "SemanticCause" && value[index + 1]?.text === "." && value[index + 2]?.text === "Invariant"));
+
+/**
+ * KD7's hook defaults: the registry fills every `Hooks` field whose default fails, the 34 transition and input hooks,
+ * so no failing default runs in production. The notifications' no-op and the queries' absent-feature answers are
+ * outside this guard; which defaults the architecture promises is owner item OD2 (1).
+ */
+export function hookDefaultFindings(tree: KernelTree): string[] {
+  const label = "KD7 hook defaults";
+  const lean = (file: string) => tree.lean.find((source) => source.file === file);
+  const typeScript = (file: string) => tree.typeScript.find((source) => source.file === file);
+  const leanHooks = lean("Kernel/Hooks.lean");
+  const leanRegistry = lean("Kernel/Registry.lean");
+  const tsHooks = typeScript(`${kernelPrefix}hooks.ts`);
+  const tsRegistry = typeScript(`${kernelPrefix}registry.ts`);
+  const pairs: ReadonlyArray<Readonly<{ defaults: Field[] | null; filled: Field[] | null; registry: Source | undefined; what: string }>> = [
+    {
+      defaults: leanHooks === undefined ? null : leanStructureFields(leanHooks, "Hooks"),
+      filled: leanRegistry === undefined ? null : boundRecord(leanRegistry,
+        (tokens, index) => tokens[index]?.text === "def" && tokens[index + 1]?.text === "hooks" && tokens[index]?.column === 0, ":="),
+      registry: leanRegistry,
+      what: "Lean `structure Hooks` and `Registry.hooks`",
+    },
+    {
+      defaults: tsHooks === undefined ? null : boundRecord(tsHooks,
+        (tokens, index) => tokens[index]?.text === "const" && tokens[index + 1]?.text === "defaultHooks", ":"),
+      filled: tsRegistry === undefined ? null : boundRecord(tsRegistry,
+        (tokens, index) => tokens[index]?.text === "const" && tokens[index + 1]?.text === "hooks", ":"),
+      registry: tsRegistry,
+      what: "TypeScript `defaultHooks` and `registry.ts#hooks`",
+    },
+  ];
+  return pairs.flatMap(({ defaults, filled, registry, what }) => {
+    const failing = (defaults ?? []).filter(fails);
+    if (failing.length === 0 || filled === null || registry === undefined) return [`${label}: read no ${what}, so the guard read nothing`];
+    const names = new Set(filled.map((field) => field.name));
+    return failing.flatMap((field) => names.has(field.name)
+      ? []
+      : [`${label} ${registry.file}: the registry leaves ${field.name} to its failing default, which would run in production`]);
+  });
 }
