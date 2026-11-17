@@ -6,8 +6,8 @@ closed dispatch and no catch-all, read from the built environment because only t
 type a `match`, `if let` or `matches` discriminates and which alternatives cover which constructors.
 
 - Closed dispatch: a guarded type is matched (`match`, `casesOn`, `rec`, `ctorIdx`) only in its owner module, the
-  module that defines it, `Kernel.IL.Codec`, the owner's own `Admission` and `Laws` modules, and `Kernel.Proofs.Step`;
-  `Element` and `EventRole` also in `Kernel.AdmissionRegistry`. A `Laws` module's compiler-generated lemmas about a
+  module that defines it, `Kernel.IL.Codec` and its submodules, the owner's own `Admission` and `Laws` modules, and
+  `Kernel.Proofs.Step`; `Element` and `EventRole` also in `Kernel.AdmissionRegistry`. A `Laws` module's compiler-generated lemmas about a
   body it sees (`generatedFromSeen`) are not its matches. Nothing compares one with `==` or
   `decide`: no guarded type has a `DecidableEq` or `BEq` instance outside its defining module.
 - No catch-all: no match alternative binds a guarded-type discriminant to a variable, so every alternative names
@@ -21,8 +21,8 @@ Prints one line per violation and exits 1 when it prints any.
 
 open Lean Meta
 
-/-- Each guarded type with the modules, besides its defining module and `Kernel.IL.Codec`, that may match it. A
-listed module also covers its submodules. -/
+/-- Each guarded type with the modules, besides its defining module and `Kernel.IL.Codec` with its submodules, that may
+match it. A listed module also covers its submodules. -/
 def owners : List (Name × List Name) := [
   (`Kernel.Element, [`Kernel.Step, `Kernel.AdmissionRegistry, `Kernel.Laws.Step, `Kernel.Proofs.Step]),
   (`Kernel.EventRole, [`Kernel.Step, `Kernel.AdmissionRegistry, `Kernel.Laws.Step, `Kernel.Proofs.Step]),
@@ -51,7 +51,7 @@ def guarded (type : Name) : Bool := owners.any (·.1 == type)
 
 def allowed (env : Environment) (type module : Name) : Bool :=
   let defining := (env.getModuleIdxFor? type).bind fun idx => env.header.moduleNames[idx.toNat]?
-  defining == some module || module == `Kernel.IL.Codec ||
+  defining == some module || (`Kernel.IL.Codec).isPrefixOf module ||
     ((owners.find? (·.1 == type)).map (·.2.any (·.isPrefixOf module))).getD false
 
 /-- The modules whose bodies the `Laws` module `laws` sees through `import all`: `Kernel.X`, `Kernel.Feature.X` and

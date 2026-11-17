@@ -114,7 +114,7 @@ function cleanBuild(lean: Lean, label: string): string[] {
 
 /** Guard 23: the dispatch scan rejects a match on a guarded type in a module that does not own it, a `Laws` module
  * matching another family's type included, and a hand-written match in the `Laws` module of the type's defining
- * module, whose exemption covers only the lemmas the compiler generates there. */
+ * module, whose exemption covers only the lemmas the compiler generates there; it accepts one in a codec submodule. */
 function proveDispatchScan(lean: Lean, directory: string): string[] {
   const file = path.join(directory, "Kernel", "Feature", "Data.lean");
   // Fully qualified: the seed lands outside the module's namespace, where an unqualified `Element` auto-binds.
@@ -125,8 +125,11 @@ function proveDispatchScan(lean: Lean, directory: string): string[] {
   // The IL defines `ScopeKind`, yet its `Laws` module may not match it by hand.
   const ilLawsFile = path.join(directory, "Kernel", "Laws", "IL.lean");
   const seededIlLaws = "def seededIlLawsDispatchViolation : Kernel.ScopeKind → Nat\n  | .embedded => 1\n  | .transaction _ => 2\n  | .eventSubProcess _ _ => 3";
+  // Every codec module may match a guarded type, `Kernel.IL.Codec`'s submodules included.
+  const codecFile = path.join(directory, "Kernel", "IL", "Codec", "Decision.lean");
+  const seededCodec = "def seededCodecSubmoduleMatch : Kernel.ScopeKind → Nat\n  | .embedded => 1\n  | .transaction _ => 2\n  | .eventSubProcess _ _ => 3";
   let findings: string[] = [];
-  edited(file, seeded, () => edited(lawsFile, seededLaws, () => edited(ilLawsFile, seededIlLaws, () => {
+  edited(file, seeded, () => edited(lawsFile, seededLaws, () => edited(ilLawsFile, seededIlLaws, () => edited(codecFile, seededCodec, () => {
     const build = lean(kernelTargets);
     if (build.status !== 0) {
       findings = [`G23: the seeded dispatch violation did not compile\n${build.output}`];
@@ -140,7 +143,10 @@ function proveDispatchScan(lean: Lean, directory: string): string[] {
     if (!/Kernel\.Laws\.IL \S+: matches guarded Kernel\.ScopeKind/u.test(scan.output)) {
       findings.push(`G23: kernel-dispatch.lean did not reject the seeded IL Laws violation\n${scan.output}`);
     }
-  })));
+    if (scan.output.includes("seededCodecSubmoduleMatch")) {
+      findings.push(`G23: kernel-dispatch.lean rejected a match in a codec submodule\n${scan.output}`);
+    }
+  }))));
   return findings;
 }
 
