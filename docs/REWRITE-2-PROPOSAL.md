@@ -585,6 +585,15 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | T2 | T2, T26 (AD4) | paused, queued after T4c | | | | |
 | T17, T11, T7T8, T9b, T12, T15, T40 | round 3 | queued | | | | |
 
+**Process calibration from the proof wave (root, from git, 2026-11-17).**
+- **Elapsed time.** P1 to P8 ran from P0's closure (`4cc234abf`, 11-14 05:19) to P8's (`bca882990`, 11-16 09:46): 52.5 calendar hours, against budgets totalling 24.5 agent-days.
+  - The local lanes closed in 3.7 to 18 hours each, against budgets of 0.5 to 8 days: P1 3.8 h, P2 and P3 together 10.5 h, P4 6.5 h, P5 5.3 h, P8 3.7 h.
+  - P6, the one proof that crosses features, stopped after 4.75 h with its theorem open. Its design table had estimated 23–33 agent-days.
+- **Lesson for every budget below.** Day budgets were 5–10× too high for local work, and unbounded for a proof that crosses features. So the plan budgets local stages from measured rates, and calibrates each cross-feature proof (P6's KD4, KD5 and KD8) by spike before it gets a budget.
+- **Module-shape pressure (causes 3 and 6).** Of the wave's 229 commits, 133 are `feat`, 50 `refactor`, 27 `fix` and 15 `docs` (`git log 4cc234abf..bca882990`). The refactors are mostly module splits forced by the 800-line target and guard 15's five-importer rule. That is about one split for every 2.7 feature commits.
+  - Rewrite-2 adds an estimated 15,000 or more proof lines (T4a, T4b), so the plan prices about 20 new modules and their splits at that measured ratio.
+  - It places the new `Laws` modules before writing them, instead of splitting under pressure.
+
 **What T4a and T4b already settle.**
 - P6R's O4, "soundness of two walks", was priced at 80–120 h. Its measured part comes to about 1 h raw. The remaining cost of T4 sits in two places, U1 and the E-units, and T4c measures both on the real kernel before any budget is set.
 - The design changed in five places on spike evidence: KD1 chose provenance keys compacted at commit; KD2 made variable regions per name and added name-indexed and enumerating regions; KD3 listed the 12 units outside the generic diamond; KD4 adopted search plus checker and found a law defect; KD5 kept the current statement form.
