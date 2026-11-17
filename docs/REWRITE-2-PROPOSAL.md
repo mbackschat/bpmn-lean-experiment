@@ -104,6 +104,75 @@ About 10 agent-days in total, all independent of the kernel design. The issues a
   - The calibrations of checkpoint 3 replace these ranges with measured numbers before any plan is approved.
 - **Correction (2026-11-17):** the first version of this checkpoint took P6 off the path by recommending a third-party default profile. That re-derived settled scope and is withdrawn.
 
+## Design
+
+Checkpoint 2. Each decision records the following:
+- its premise, verified in code or the documents;
+- its scope check against the settled documents;
+- the alternative it rejects.
+
+Where a calibration has to choose between two candidates, both are named, together with the spike that decides.
+
+### Kernel core: T4, T5, T6, T7, T8
+
+The design removes P6's causes C1–C6 by construction instead of proving around them. It keeps the IL, the expression evaluator, Decision, Correlation, Starts, admission apart from its concurrency walk, and the rule-only laws.
+
+**KD1. Identity without a global counter (C1, C2; T6).**
+- Every internal identity is structural:
+  - **occurrence key:** the enclosing scope occurrence's key, the element and an arrival discriminator;
+  - **open-item key:** the occurrence key, the item role and a per-occurrence ordinal.
+- `State.nextIssue` and its 6 issue sites go.
+- The public `OccurrenceRef` keeps CIB's numbering, `(instance, element, activation)` with activations per element in begin order. A per-element begin count, read only by publication, computes it.
+- Two candidate arrival discriminators. Spike T4a decides between them:
+  - **(i)** A per-scope ordinal. Two schedules then differ only by a permutation of sibling activations of one element, and the proof carries that local renaming.
+  - **(ii)** Provenance: the incoming flow and the emitting occurrence's key. This needs no renaming, but keys grow with loop depth, as #126 does, and need a bounded encoding.
+- **Premise:**
+  - Canonical waits are keyed by the public reference (`Kernel/Run.lean:256`), so retained CIB evidence is unaffected.
+  - Internal identities do leak into the publication JSON (`owner` and `idle.scope`, `Kernel/Run.lean:236-250`). That is fixed with T13 in the same shape commit.
+- **Scope check:**
+  - `CLAUDE.md` keeps definition identity, semantic instance identity and host identity distinct.
+  - The public identity and CIB-OP-0018 stay unchanged.
+- **Rejected:** keeping the counter and proving equivalence up to a bijection over about 60 positions. That is option B on the current kernel, estimated at 25–44 agent-days.
+
+**KD2. Hooks see a footprint, not the whole state (C3, C5; T4, T10).**
+- Today all 50 `Hooks` fields take and return the whole `State` (`Kernel/Hooks.lean:333-444`).
+- In the new design, a hook receives a view of the regions its arguments name and returns a delta over the same regions. The regions are an occurrence subtree, the variable scopes on its scope chain, and that occurrence's feature-slot entries. `Step` applies the delta.
+- Footprint soundness then holds by typing, with no lemma per hook. The architecture's promise, "Commutation is proved once over the footprints each feature declares" (`kernel/ARCHITECTURE-SPEC.md`, module rules), becomes true.
+- Order-reading hooks (C3: `ownReceivers`, `offerWrites`, the stale check) read structural keys. Under KD1 (ii) those keys are schedule-independent; under (i) they are independent up to the sibling renaming.
+- **Premise:** `Hooks.lean`, `Registry.lean` and `Laws/Hooks.lean` contain no footprint (root grep, 0 occurrences).
+- **Rejected:** declaring footprints as laws beside unchanged full-state hooks. That needs a soundness lemma per hook, about 30 closure hooks, which is P6R's O3 at 40–80 h.
+
+**KD3. The closure is a set of units (C4; T4, T7).**
+- `settle`'s fixed phase loop (`Kernel/Step.lean:352`) becomes a choice among enabled units: token arrivals, raised signals, idle-scope checks, re-offers and finishes.
+- Only an order that BPMN or a register entry fixes stays a priority. #120, signals before tokens, is classified in the register before KD3 is coded.
+- The schedule input picks among units of equal priority. `orderInvariant` admits any pick; `declarationDepthFirst` fixes it.
+- One generic diamond lemma covers units with disjoint footprints. Overlapping footprints are either refused by admission (`Apart`) or are joins, whose confluence is proved once per join kind (Parallel, Inclusive).
+- **Premise:** C4 was measured by P6R, and #120 and #75 are open closure-order findings (K8).
+- **Scope check:** `CLAUDE.md` requires that scheduler choices stay explicit inputs, and the conformance target fixes no token order. Rejected option E, a canonical schedule for the standards profile, stays rejected.
+
+**KD4. One declarative walk for admission and runtime (C6, K2; T4).**
+- `Laws.Flow.Walk` becomes the only account of what a closure can reach: an inductive relation over the IL.
+- Admission's concurrency check is a decision procedure, proved sound against `Walk`.
+- The runtime side is a provenance invariant: every enabled unit is `Walk`-reachable from its closure's origin. It is proved per feature as "each hook emits only `Walk` successors", which KD2's delta types make local.
+- This merges the two separate readings that produced #162, #187, #188 and the raw-flag class.
+- The [module table](kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape) changes: `Laws.Flow` may state `Walk` over IL queries. It still never names the admission evaluator. The decision procedure's soundness lives in `Proofs.Admission`.
+- **Premise:** `PLAN.md:97` excludes admission ⇒ premises, and `Concurrent` has 10 constructors over 9 mechanisms.
+- **Rejected:** keeping two walks and proving their agreement after the fact. That is P6R's O4, estimated at 80–120 h.
+
+**KD5. Statement (K11; T4).** `SchedulesAgree` concludes equal committed publication and equal state up to KD1's renaming (none under (ii)). Parked joins and scope order are included. This closes the gap that the strong `Sim` closes in K11.
+
+**KD6. Proofs re-established on the new core (T5, T8).**
+- The lane statements of P2–P5 and P7 carry over.
+- Their body lemmas about `State`, `Step` and `Hooks`, about 27,000 lines, are re-proved against the view and delta operations. Spike T5 measures the rate.
+- The eight witness-only law families (K10) are proved in the same pass against the registered hooks. Spike T8 measures one family.
+
+**KD7. Guards for the promises the first rewrite broke (T4, T10).**
+- **Nested inductives:** an environment scan fails on any nested or mutual inductive in IL or state types. `State/Slots.lean:71` is rewritten flat.
+- **Footprints:** a type-level scan fails on a `Hooks` field whose type mentions `State`.
+- **Raw flags:** only `eventStart` and `eventSubProcess?` may bind the IL's interrupting flag.
+- **Queuing sites:** the queuing mechanisms are one data list (P1 census, 22 sites), and a scan fails on a queuing site outside it.
+- **Hook defaults:** the architecture's "no-op default" promise is restated as "refuse default". Refusing is the safer contract, and the code already does it (`Hooks.lean:412-416`). Restating a promise needs owner approval, so it is listed under owner items.
+
 ## Reuse and document verdicts
 
 The domain reports give a verdict per component. The sections below summarize them.
