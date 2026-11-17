@@ -635,7 +635,7 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | Promise | Source | Enforced by | State at `87d27def2` | In the design |
 |---|---|---|---|---|
 | The IL fixes the shape for every row; a field outside the surface is refused, never omitted | architecture, IL | guards 12, 19, 21 | enforced | kept |
-| No IL or state type is a nested or mutual inductive | architecture, IL | — | **broken**: `State/Slots.lean:71` | flattened; new environment guard (KD7) |
+| No IL or state type is a nested or mutual inductive | architecture, IL | — | **broken**: `State/Slots.lean:71`; `Value` nests (`Expression.lean:24-25`, T37) | `Slots` flattened; new environment guard (KD7) admitting only the bounded value tree, the exception **OD2 (4)** recommends keeping, awaiting the owner |
 | An element is a header plus one payload; slots are fixed, so the codec never varies by program | architecture, IL and state | guards 9, 11 | enforced | kept |
 | Cancellation is one generic subtree removal; one writer per effect | architecture, state | guard 17 | enforced | kept |
 | `Step` is pure and total | architecture, step | Lean totality (`partial` only in codecs, root grep) and the lane proofs that unfold `Step` | enforced | kept |
@@ -644,8 +644,8 @@ The root checked, on 2026-11-17 at `87d27def2`:
 | Each `Hooks` field has a no-op default | architecture, hooks | — | **broken**: transition and input hooks refuse; the notifications are no-ops; the queries answer as if their feature were absent | restated per field class, with a guard that the registry fills every transition field (KD7); **OD2 (1)**, awaiting the owner |
 | `Step` alone owns hook order; cross-owner matches go through `Hooks`; at most three files per feature | architecture, hooks | guards 1, 4, 10 | enforced | kept |
 | `Laws.F` rules are proved against `Step` in the proof wave | architecture, hooks; lane | lane proofs | **partly**: 8 families witness-only (K10) | proved in the rewrite pass (KD6) |
-| Commutation is proved once over the footprints each feature declares | architecture, modules | — | **broken**: no footprints | footprints by typing (KD2); new type-level guard (KD7) |
-| P6, `SchedulesAgree` | architecture, lane; PLAN | lane proof | **open** (#163) | KD1–KD5 |
+| Commutation is proved once over the footprints each feature declares | architecture, modules | — | **broken**: no footprints | KD2′: a footprint-soundness lemma per hook in its own `Laws.F`, which the K5 proof of `SchedulesAgree` consumes, so a hook outside its declared footprint fails the proof build; typed views only if the owner chooses **OD10** |
+| P6, `SchedulesAgree` | architecture, lane; PLAN | lane proof | **open** (#163) | KD1–KD5 and KD8, proved in stage K5 |
 | The host sees the kernel only through `hostRequirements`, `definitionCapabilities` and `hostView` | architecture, host | guard 4 | enforced | kept |
 | An admitted program the host cannot schedule is refused before a Workflow starts | architecture, host | `engine-api/test/definition-compilation.test.ts` | enforced | kept, with HD3's waiting instead of refusing |
 | Module table, rebuild cones, no `@[expose]`, bodies seen only by their own `Laws` | architecture, modules | guards 4, 5, 15, 22 | enforced | module table amended for `Walk` (KD4) |
