@@ -10,6 +10,8 @@ Every cost below is an estimate, in agent-days of 8 agent-hours, and is unmeasur
 
 Three read-only domain audits found the topics: kernel core (K), engine boundary, hosting and evidence (E), and Product 2 (P). None of them spawned agents of its own.
 
+Every decision this proposal raises, and every owner mark, was also checked against the settled scope documents, which are listed in the [owner intents](OWNER-INTENTS-REGISTER.md). A question those documents already answer is not raised. Labels from the audits are never carried over unchecked.
+
 The root then checked every topic's premise against the code at `87d27def2`. It re-ran the measurements on a fresh build and recorded corrections; it did not take the audits' word for any finding. The reproduced measurements:
 
 - **CIB Seven's 55 non-test models through the public `compileBpmnDefinition`.**

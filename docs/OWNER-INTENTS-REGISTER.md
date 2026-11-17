@@ -5,7 +5,7 @@ The owner's standing intents, priorities, concerns and working mode, in the owne
 ## Goal and scope (2026-11-17)
 
 - The goal is Product 2: the BPM platform, deployed and used by a third party on their own BPMN models, on the engine. [Practical CIB7 Coverage](PRACTICAL-CIB7-COVERAGE-TARGET.md) was a milestone on the way, not the goal.
-- Scope is settled in the documents and is not re-derived in conversation: [PROJECT-DESIGN](PROJECT-DESIGN.md) (mission, the CIB Seven `2.2.0` implemented-breadth ceiling, no drop-in API replacement), the [conformance target](BPMN-CONFORMANCE-TARGET.md), the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) with its exclusions, and the [showcase milestone ladder](SHOWCASE-MILESTONE-LADDER-DECISION.md). Any exclusion list is at most a subset of their exclusions.
+- Scope is settled in the documents and is not re-derived in conversation: [PROJECT-DESIGN](PROJECT-DESIGN.md) (mission, the CIB Seven `2.2.0` implemented-breadth ceiling, no drop-in API replacement), the [conformance target](BPMN-CONFORMANCE-TARGET.md), the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) with its exclusions, and the [showcase milestone ladder](SHOWCASE-MILESTONE-LADDER-DECISION.md). Any exclusion list is at most a subset of their exclusions. Before a decision is raised with the owner, or marked as an owner decision in any document, it is checked against these documents and their wording is quoted. A true technical fact never narrows settled scope: for example, both profiles stay selectable even though P6 binds only the standards profile.
 - The product is gap-less and issue-less, built on the promised design, with a clean codebase.
 
 ## Priorities and concerns (2026-11-17)
