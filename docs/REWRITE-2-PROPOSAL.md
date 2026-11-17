@@ -88,6 +88,13 @@ The "Owner" column marks only the items on the owner's ask list: dependencies, l
 - The [practical target](PRACTICAL-CIB7-COVERAGE-TARGET.md#optional-integrations-and-exclusions) and the [compatibility scope proposal](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) keep these families optional and deferred.
 - The cost of that choice is disclosed, not hidden: CIB's own invoice demo uses a task listener. Listeners would cost 8–15 agent-days on the current code and 4–8 designed in.
 
+**Topics found after checkpoint 1 (2026-11-17), disclosed when found:**
+
+| # | Topic | Blocks | Evidence | Cost |
+|---|---|---|---|---|
+| T9 (revised) | 14 runtime `unsupported` sites are semantic gaps: an admitted model reaches an interpretation that was never selected. 11 are in Propagation and Compensation; 3 are closure rollback and interruption in `Step/Jobs.lean:24,36` and `Step/Stale.lean:66` | yes, for models that reach them | root census of the 60 `dynamic-only` marks (`q/r2/spikes/T9-result.md`): 17 Java-host fidelity, 3 capacity, 20 caller data, 6 value domain, 14 semantic gaps | each needs an interpretation, a cold review, Lean and TypeScript, scenarios and CIB evidence. Unmeasured per code; spike T9b resolves one end to end |
+| T26 | **Data volume per instance:** process data lives in the Temporal Workflow state, under bounds of 32 members per container, 16 KiB per value and 256 KiB per state. An order with 100 lines is refused (`value-outside-domain`). CIB stores variables in its database without such bounds | potentially, for data-heavy third-party processes | the bounds are at `kernel/semantics/DATA-SEMANTICS-SPEC.md` (Values) and in the [lifecycle capacity table](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-capacity). The [scalability proposal](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md) bounds chains by design but never sizes the bounds against real data | unmeasured. The design options: raise the bounds within Temporal's payload limits (an owner bound decision), or externalize large values by claim check (a store dependency, an owner decision). Research and a spike follow |
+
 ## Remaining-to-goal ledger, not costly
 
 About 10 agent-days in total, all independent of the kernel design. The issues are #133, #93, #171, #134, #137, #142, #124, #152, #169, #170, #167, #188, #77, #100, #106, #114, #119, #107, #101, #92, #110, #112 and #67, plus the CIB harness gaps (#89, #127–#130, #105), small Product 2 surfaces (value arms, search filters, profile selection, a published bundle) and documentation corrections. Each item is costed in the domain reports.
