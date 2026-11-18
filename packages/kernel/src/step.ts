@@ -16,8 +16,9 @@
  * instance, removing the passive items left in it. An Activity's local-variable scope occurrence has no completion of
  * its own: the completion pipeline disposes of it with its Activity.
  *
- * How a closure's failure becomes its input's outcome where CIB runs the work in a job is `step/jobs.ts`; what becomes of
- * a queued signal whose target an interruption removed is `step/stale.ts`.
+ * How a micro-step's draft becomes a journalled transition is `step/commit.ts`; how a closure's failure becomes its
+ * input's outcome where CIB runs the work in a job is `step/jobs.ts`; what becomes of a queued signal whose target an
+ * interruption removed is `step/stale.ts`.
  */
 import {
   BranchSchedule, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementGateway,
@@ -32,13 +33,14 @@ import {
   type Binding, type Cause, type CommandInput, type EffectInput, type Fired, type IncidentDetail, type Input,
   type InstanceFailure, type Leave, type Occurrence, type OccurrenceRef, type OpenItem, type Outcome,
   type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartInput, type StartTrigger, type State,
-  type Token, type Transition,
+  type Token,
   SemanticCause, semanticFailure,
   itemAt, iterationHolds,
 } from "./state.js";
 import {
   ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemDetailOf, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
 } from "./hooks.js";
+import { journalDraft } from "./step/commit.js";
 import { deferred, effectContinuation, timerJob } from "./step/jobs.js";
 import { perform, requireScope, type SignalRun } from "./step/stale.js";
 
@@ -272,21 +274,15 @@ function absorb(hooks: Hooks, ctx: Ctx, before: number, state: State): Outcome {
   return sole?.completion === true ? perform(sole, { ...state, signals: state.signals.slice(0, before) }) : committed(state);
 }
 
-/** Turn the draft into one `Transition` and tell the features what the micro-step removed and wrote. */
+/** Turn the draft into one `Transition` (`journalDraft`) and tell the features what the micro-step removed and wrote. */
 function conclude(hooks: Hooks, ctx: Ctx, cause: Cause, element: ElementId | null, owner: ScopeOccurrenceId, state: State): Outcome {
-  const { draft, writes } = state;
-  const transition: Transition = { cause, element, owner, started: draft.started, ended: draft.ended };
-  // Appends in place: copying the journal on every micro-step made a closure quadratic in its length (measured
-  // 2026-11-10 on `automatic-loop-beyond-bound`). Each input starts a fresh journal (`initial`, `onRunning`) and
-  // `conclude` is its only writer, so no state another input or a rolled-back stage keeps sees the push.
-  (state.journal as Transition[]).push(transition);
-  let current: State = { ...state, draft: emptyDraft, writes: [] };
-  for (const occurrence of draft.cancelled) {
+  let current = journalDraft(cause, element, owner, state);
+  for (const occurrence of state.draft.cancelled) {
     const notified = hooks.cancelled(ctx, occurrence, current);
     if (!notified.ok) return notified;
     current = notified.value;
   }
-  return hooks.written(ctx, writes, current);
+  return hooks.written(ctx, state.writes, current);
 }
 
 /**

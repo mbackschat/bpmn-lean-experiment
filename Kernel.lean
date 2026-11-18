@@ -100,6 +100,7 @@ public import Kernel.Laws.State.Sample
 public import Kernel.Laws.State.Transitions
 public import Kernel.Laws.State.Variables
 public import Kernel.Laws.Step
+public import Kernel.Laws.Step.Commit
 public import Kernel.Laws.Step.Contract
 public import Kernel.Laws.Step.Elements
 public import Kernel.Laws.Step.Ends
@@ -174,6 +175,7 @@ public import Kernel.State.Removal
 public import Kernel.State.Slots
 public import Kernel.State.Wait
 public import Kernel.Step
+public import Kernel.Step.Commit
 public import Kernel.Step.Jobs
 public import Kernel.Step.Stale
 

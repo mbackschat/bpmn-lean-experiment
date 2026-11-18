@@ -3,6 +3,7 @@ module
 public import Kernel.Step
 public import Kernel.Laws.Hooks
 public import Kernel.Laws.Step.Ran
+public import Kernel.Laws.Step.Commit
 public import Kernel.Laws.Step.Jobs
 public import Kernel.Laws.Step.Stale
 import all Kernel.Step
@@ -17,8 +18,8 @@ made of, phase by phase; and which hook or state operation each committed body r
 `Kernel.Laws.Step.Ran`). This is the one module that sees `Kernel.Step`'s bodies
 ([module table](../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)), and it holds only these body
 equations; it names no feature, no registry and no law of a feature, so a feature edit never rebuilds it. The bodies of
-`Kernel.Step.Jobs` and `Kernel.Step.Stale` are their own `Laws` modules' (`Kernel.Laws.Step.Jobs`,
-`Kernel.Laws.Step.Stale`), whose facts this module composes and re-exports. Nothing executable imports this module.
+`Kernel.Step.Commit`, `Kernel.Step.Jobs` and `Kernel.Step.Stale` are their own `Laws` modules' (`Kernel.Laws.Step.Commit`,
+`Kernel.Laws.Step.Jobs`, `Kernel.Laws.Step.Stale`), whose facts this module composes and re-exports. Nothing executable imports this module.
 
 What the registered hooks do is `Kernel.Laws.Registry`'s and each feature's `Laws` module's; an input body is restated
 whole here (`step_eq` and its siblings) and `Kernel.Laws.Step.Inputs` derives from it what a committed or rejected input
@@ -211,13 +212,6 @@ theorem endInstance_eq {status : InstanceStatus} {failure : Option InstanceFailu
     endInstance status failure state = { state.clearInside State.root with status, failure } := by
   simp only [endInstance]
 
-/-- The journal put in run order. -/
-theorem orderJournal_ok {outcome : Outcome} {after : State} (ran : orderJournal outcome = .ok after) :
-    ∃ settled, outcome = .ok settled ∧ after = { settled with journal := settled.journal.reverse } := by
-  cases outcome with
-  | error failure => simp [orderJournal, Except.map] at ran
-  | ok settled => exact ⟨settled, rfl, (Except.ok.inj ran).symm⟩
-
 /-! ### The inputs' bodies
 
 Each input body of `Kernel.Step` restated whole, so `Kernel.Laws.Step.Inputs` reads what a committed or rejected input
@@ -352,6 +346,7 @@ theorem conclude_ok {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Optio
             state.journal, draft := {}, writes := [] } = .ok notified ∧
       hooks.written ctx state.writes notified = .ok after := by
   unfold conclude at ran
+  rw [journalDraft_eq] at ran
   exact bind_ok ran
 
 /-- How a completed occurrence goes on (`Step.continueAfter`): by its continuation's hook, or, raised away, not at all

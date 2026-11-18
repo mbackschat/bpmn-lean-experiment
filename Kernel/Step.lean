@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Step.Commit
 public import Kernel.Step.Jobs
 public import Kernel.Step.Stale
 
@@ -21,8 +22,9 @@ by its Call Activity's, an idle Multi-Instance body by its feature; an idle proc
 removing the passive items left in it. An Activity's local-variable scope occurrence has no completion of its own: the
 completion pipeline disposes of it with its Activity.
 
-How a closure's failure becomes its input's outcome where CIB runs the work in a job is `Kernel.Step.Jobs`; what becomes
-of a queued signal whose target an interruption removed is `Kernel.Step.Stale`.
+How a micro-step's draft becomes a journalled transition is `Kernel.Step.Commit`; how a closure's failure becomes its
+input's outcome where CIB runs the work in a job is `Kernel.Step.Jobs`; what becomes of a queued signal whose target an
+interruption removed is `Kernel.Step.Stale`.
 -/
 
 public section
@@ -228,17 +230,12 @@ def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome 
       { state with signals := state.signals.take before }
   | _ => .ok state
 
-/-- Turn the draft into one `Transition` and tell the features what the micro-step removed and wrote. -/
+/-- Turn the draft into one `Transition` (`journalDraft`) and tell the features what the micro-step removed and wrote. -/
 def conclude (hooks : Hooks) (ctx : Ctx) (cause : Cause) (element : Option ElementId) (owner : ScopeOccurrenceId)
     (state : State) : Outcome := do
-  let draft := state.draft
-  let writes := state.writes
-  let transition : Transition := { cause, element, owner, started := draft.started, ended := draft.ended }
-  -- Newest first while the input runs, reversed once by `orderJournal`: appending copied the journal on every micro-step,
-  -- which made a closure quadratic in its length (measured 2026-11-10 on `automatic-loop-beyond-bound`).
-  let state := { state with journal := transition :: state.journal, draft := {}, writes := [] }
-  let state ← draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) state
-  hooks.written ctx writes state
+  let journalled := journalDraft cause element owner state
+  let journalled ← state.draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) journalled
+  hooks.written ctx state.writes journalled
 
 /-- One micro-step: run `body`, absorb its sole completion and record the transition. Each stage's failure is
 `deferred` against the state it started from, so a boundary an earlier micro-step or stage crossed counts. -/
@@ -342,10 +339,6 @@ def reoffer? (hooks : Hooks) (ctx : Ctx) (state : State) : Except Failure (Optio
         let offered ← hooks.arriveGateway ctx header payload occurrence state
         .ok (if offered.signals.isEmpty then none else some (header.id, waiting.scope, offered))
       | _, _ => .error (.semanticFailure .invariant "parked-without-gateway")
-
-/-- The journal in the order the micro-steps ran (`conclude` keeps it newest first). -/
-def orderJournal (outcome : Outcome) : Outcome :=
-  outcome.map fun state => { state with journal := state.journal.reverse }
 
 /-- Signals first, then tokens, then idle scope occurrences, then the parked joins a quiescent closure offers again
 (`reoffer?`, journalled with the `idle` cause of the join's scope occurrence), then the instance's completion. -/
