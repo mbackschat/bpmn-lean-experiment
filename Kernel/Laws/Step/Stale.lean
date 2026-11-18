@@ -101,6 +101,23 @@ theorem stale_below_removed {work : SignalWork} {state : State} {outer rest : Li
   rw [stale_eq, Bool.or_eq_true, List.any_eq_true]
   exact .inl ⟨_, named, by simp [scopeIssued_below_removed stands counted removed rest, removed rest]⟩
 
+/-- K0.7's designated change: an occurrence key issued in a scope occurrence below a removed one that its standing
+parent counted reads as issued whatever its ordinal, even one never issued, since the counter that would tell went
+with the removed subtree; work naming it while it is absent fails the input as stale, never as the invariant failure
+of a key never issued (`queued-work-occurrence-gone`). -/
+theorem stale_occurrence_below_removed {work : SignalWork} {state : State} {outer rest : List ScopeSegment}
+    {segment : ScopeSegment} {id : OccurrenceId}
+    (stands : state.scopes.any (·.id == ⟨outer⟩) = true)
+    (counted : segment.ordinal < state.scopeOrdinals.getD { parent := ⟨outer⟩, element := segment.element } 0)
+    (removed : ∀ rest, state.scopes.any (·.id == ⟨rest ++ segment :: outer⟩) = false)
+    (issuing : id.scope = ⟨rest ++ segment :: outer⟩) (absent : state.occurrence? id = none)
+    (named : id ∈ work.occurrences) :
+    work.perform state = .error (.unsupported "interrupted-before-wait") := by
+  apply perform_stale
+  rw [stale_eq, Bool.or_eq_true, List.any_eq_true, List.any_eq_true]
+  refine .inr ⟨id, named, ?_⟩
+  simp [occurrenceIssued, issuing, scopeIssued_below_removed stands counted removed rest, removed rest, absent]
+
 theorem perform_gone {work : SignalWork} {state : State} {code : String} (fresh : stale state work = false)
     (absent : gone state work = some code) : work.perform state = .error (.semanticFailure .invariant code) := by
   simp [SignalWork.perform, fresh, absent]
