@@ -27,7 +27,7 @@ export function ProcessInstanceExecutionHistory({
       <div>
         <p className={styles.eyebrow}>Committed semantic history</p>
         <h3 id="execution-history-heading">History</h3>
-        <p className={styles.summary}>Every record is one committed engine step in revision order: what caused it, the element it acted on and the scope that owns it. Records of one command share its command ID.</p>
+        <p className={styles.summary}>Every record is one committed engine step in revision order: what caused it and the element it acted on. Records of one command share its command ID.</p>
       </div>
       <ol className={styles.records}>
         {records.map(({ commandId, record }) => (
@@ -55,7 +55,6 @@ function TransitionRecord({
         <RoleFact role={record.role} />
         {record.element === null ? <><dt>Element</dt><dd>None</dd></> : <Fact label="Element" value={record.element} />}
         {record.sourceType === null ? null : <Fact label="Element type" value={record.sourceType} />}
-        <Fact label="Owner scope" value={String(record.owner)} />
       </dl>
     </>
   );
@@ -100,7 +99,7 @@ function RoleFact({ role }: Readonly<{ role: ExecutionRole }>) {
     case ExecutionRoleKind.Arrive:
       return <Fact label="Sequence Flow" value={role.flow} />;
     case ExecutionRoleKind.Idle:
-      return <Fact label="Idle scope" value={String(role.scope)} />;
+      return null;
   }
 }
 

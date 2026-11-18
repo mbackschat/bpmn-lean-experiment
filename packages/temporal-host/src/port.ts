@@ -72,7 +72,6 @@ export interface CauseView {
 
 export interface StartedView {
   readonly occurrence: OccurrenceKey;
-  readonly owner: number;
   readonly sourceType: string;
 }
 
@@ -85,7 +84,6 @@ export interface EndedView {
 export interface TransitionView {
   readonly cause: CauseView;
   readonly element: string | null;
-  readonly owner: number;
   readonly started: readonly StartedView[];
   readonly ended: readonly EndedView[];
 }

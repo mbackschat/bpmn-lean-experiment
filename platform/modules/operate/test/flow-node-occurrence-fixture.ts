@@ -41,11 +41,11 @@ export function occurrenceFirstPage(
       throughRevision: 2,
       transitions: [{
         revision: 1,
-        started: [{ occurrence: startEventOccurrence, owner: 0, sourceType: "startEvent" }],
+        started: [{ occurrence: startEventOccurrence, sourceType: "startEvent" }],
         ended: [{ occurrence: startEventOccurrence, terminal: "completed" }],
       }, {
         revision: 2,
-        started: [{ occurrence: taskOccurrence, owner: 0, sourceType: "userTask" }],
+        started: [{ occurrence: taskOccurrence, sourceType: "userTask" }],
         ended: [],
       }],
     }],

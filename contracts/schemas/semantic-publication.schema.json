@@ -173,30 +173,25 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "kind",
-            "scope"
+            "kind"
           ],
           "properties": {
             "kind": {
               "const": "idle"
-            },
-            "scope": {
-              "$ref": "#/$defs/nonnegativeSafeInteger"
             }
           }
         }
       ]
     },
     "committedTransitionRecord": {
-      "description": "One committed kernel micro-step: its role, the element it acted on with the source type that element began with, and its owning scope occurrence.",
+      "description": "One committed kernel micro-step: its role and the element it acted on with the source type that element began with; the kernel's scope-occurrence ordinals are internal and not published.",
       "type": "object",
       "additionalProperties": false,
       "required": [
         "revision",
         "role",
         "element",
-        "sourceType",
-        "owner"
+        "sourceType"
       ],
       "properties": {
         "revision": {
@@ -224,9 +219,6 @@
               "$ref": "#/$defs/nonemptyString"
             }
           ]
-        },
-        "owner": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
         }
       }
     },

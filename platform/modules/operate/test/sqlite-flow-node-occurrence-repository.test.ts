@@ -33,7 +33,7 @@ test("rejects a positive-cursor terminal or start that does not fit the retained
     for (const transition of [
       { revision: 3, started: [], ended: [{ occurrence: { ...taskOccurrence, activation: 2 }, terminal: "completed" }] },
       { revision: 3, started: [], ended: [{ occurrence: startEventOccurrence, terminal: "cancelled" }] },
-      { revision: 3, started: [{ occurrence: taskOccurrence, owner: 0, sourceType: "userTask" }], ended: [] },
+      { revision: 3, started: [{ occurrence: taskOccurrence, sourceType: "userTask" }], ended: [] },
     ] as const) {
       const page = occurrenceSecondPage();
       await assert.rejects(() => occurrences.applyPage(registration, {
@@ -198,7 +198,6 @@ function occurrenceSuffixWithSuccessor(): FlowNodeOccurrencePage {
         ...transition,
         started: [{
           occurrence: { ...taskOccurrence, elementId: "Task_2" },
-          owner: 0,
           sourceType: "userTask",
         }],
       }],

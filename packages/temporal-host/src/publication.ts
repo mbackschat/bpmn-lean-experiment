@@ -28,7 +28,6 @@ export interface ExecutionTransition {
   readonly role: CauseView;
   readonly element: string | null;
   readonly sourceType: string | null;
-  readonly owner: number;
 }
 
 export interface OccurrenceTransition {
@@ -79,7 +78,6 @@ export function appendJournal(log: PublicationLog, commandId: string, journal: r
       role: transition.cause,
       element: transition.element,
       sourceType: transition.element === null ? null : sourceTypes.get(transition.element) ?? null,
-      owner: transition.owner,
     });
     if (transition.started.length > 0 || transition.ended.length > 0) {
       occurrences.push({ revision, started: transition.started, ended: transition.ended });

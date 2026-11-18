@@ -175,9 +175,8 @@ function requireBatch(
     started.forEach((start, startIndex) => {
       const startLabel = `${itemLabel}.started[${startIndex}]`;
       requireObject(start, startLabel);
-      exact(start, startLabel, ["occurrence", "owner", "sourceType"]);
+      exact(start, startLabel, ["occurrence", "sourceType"]);
       lifecycle.start(requireKey(readOwn(start, "occurrence"), `${startLabel}.occurrence`), startLabel);
-      requireNonnegativeSafeInteger(readOwn(start, "owner"), `${startLabel}.owner`);
       requireNonemptyString(readOwn(start, "sourceType"), `${startLabel}.sourceType`);
     });
     ended.forEach((end, endIndex) => {

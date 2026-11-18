@@ -140,15 +140,11 @@
       "additionalProperties": false,
       "required": [
         "occurrence",
-        "owner",
         "sourceType"
       ],
       "properties": {
         "occurrence": {
           "$ref": "#/$defs/occurrenceKey"
-        },
-        "owner": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
         },
         "sourceType": {
           "$ref": "#/$defs/nonemptyString"

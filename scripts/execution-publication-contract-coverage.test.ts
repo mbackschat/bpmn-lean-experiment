@@ -37,9 +37,9 @@ function publicationPage() {
       fromRevision: 0,
       throughRevision: 3,
       transitions: [
-        { revision: 1, role: { kind: "input", input: "start" }, element: "StartEvent_1", sourceType: "startEvent", owner: 0 },
-        { revision: 2, role: { kind: "signal", signal: "armScope" }, element: null, sourceType: null, owner: 0 },
-        { revision: 3, role: { kind: "arrive", flow: "Flow_1" }, element: "Task_1", sourceType: "userTask", owner: 0 },
+        { revision: 1, role: { kind: "input", input: "start" }, element: "StartEvent_1", sourceType: "startEvent" },
+        { revision: 2, role: { kind: "signal", signal: "armScope" }, element: null, sourceType: null },
+        { revision: 3, role: { kind: "arrive", flow: "Flow_1" }, element: "Task_1", sourceType: "userTask" },
       ],
     }],
     current: { revision: 3, state },

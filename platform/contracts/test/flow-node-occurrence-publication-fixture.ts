@@ -40,10 +40,10 @@ export const startOccurrenceBatch = {
   fromRevision: startBatch.fromRevision,
   throughRevision: startBatch.throughRevision,
   transitions: [
-    { revision: 1, started: [{ occurrence: startEvent, owner: 0, sourceType: "startEvent" }], ended: [] },
+    { revision: 1, started: [{ occurrence: startEvent, sourceType: "startEvent" }], ended: [] },
     {
       revision: 2,
-      started: [{ occurrence: reviewTask, owner: 0, sourceType: "userTask" }],
+      started: [{ occurrence: reviewTask, sourceType: "userTask" }],
       ended: [{ occurrence: startEvent, terminal: "completed" }],
     },
   ],
@@ -63,7 +63,7 @@ export const completeOccurrenceBatch = {
   throughRevision: completeBatch.throughRevision,
   transitions: [
     { revision: 5, started: [], ended: [{ occurrence: reviewTask, terminal: "completed" }] },
-    { revision: 6, started: [{ occurrence: endEvent, owner: 0, sourceType: "endEvent" }], ended: [] },
+    { revision: 6, started: [{ occurrence: endEvent, sourceType: "endEvent" }], ended: [] },
     { revision: 7, started: [], ended: [{ occurrence: endEvent, terminal: "completed" }] },
   ],
 } as const satisfies FlowNodeOccurrenceBatch;

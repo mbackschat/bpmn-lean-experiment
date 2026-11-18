@@ -18,9 +18,9 @@ test("a committed input's journal becomes consecutive revisions with role = caus
     fromRevision: 0,
     throughRevision: 3,
     transitions: [
-      { revision: 1, role: { kind: "input", input: "start" }, element: "StartEvent_1", sourceType: "startEvent", owner: 0 },
-      { revision: 2, role: { kind: "signal", signal: "armScope" }, element: null, sourceType: null, owner: 0 },
-      { revision: 3, role: { kind: "arrive", flow: "Flow_StartToTask" }, element: "Task_Probe", sourceType: "task", owner: 0 },
+      { revision: 1, role: { kind: "input", input: "start" }, element: "StartEvent_1", sourceType: "startEvent" },
+      { revision: 2, role: { kind: "signal", signal: "armScope" }, element: null, sourceType: null },
+      { revision: 3, role: { kind: "arrive", flow: "Flow_StartToTask" }, element: "Task_Probe", sourceType: "task" },
     ],
   }]);
   assert.deepEqual(log.occurrences, [{
@@ -38,7 +38,7 @@ test("a committed input's journal becomes consecutive revisions with role = caus
 test("an element that began in an earlier input keeps the source type its start recorded", () => {
   const started = publication.appendJournal(publication.openLog(publication.initialCursor), "start", views.effectOpen.journal);
   const revisit = publication.appendJournal(started, "again", [
-    { cause: { kind: "arrive", flow: "Flow_Again" }, element: "Task_Probe", owner: 0, started: [], ended: [] },
+    { cause: { kind: "arrive", flow: "Flow_Again" }, element: "Task_Probe", started: [], ended: [] },
   ]);
   assert.equal(revisit.execution[1]!.transitions[0]!.sourceType, "task");
 });
@@ -46,7 +46,7 @@ test("an element that began in an earlier input keeps the source type its start 
 test("every execution batch has its occurrence batch over the same revisions, empty when no occurrence started or ended", () => {
   const started = publication.appendJournal(publication.openLog(publication.initialCursor), "start", views.effectOpen.journal);
   const revisit = publication.appendJournal(started, "again", [
-    { cause: { kind: "arrive", flow: "Flow_Again" }, element: "Task_Probe", owner: 0, started: [], ended: [] },
+    { cause: { kind: "arrive", flow: "Flow_Again" }, element: "Task_Probe", started: [], ended: [] },
   ]);
   const positions = (batches: readonly { commandId: string; fromRevision: number; throughRevision: number }[]) =>
     batches.map(({ commandId, fromRevision, throughRevision }) => [commandId, fromRevision, throughRevision]);

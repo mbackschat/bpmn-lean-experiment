@@ -354,6 +354,10 @@ function keyJson(key: OccurrenceKey): JsonValue {
   return { processInstanceId: key.processInstanceId, elementId: key.element, activation: key.activation, role: key.role };
 }
 
+/**
+ * A transition's cause and occurrence facts, public fields only (PD2): the kernel's scope-occurrence ordinals
+ * (`Transition.owner`, a started fact's `owner`, an idle cause's scope) are internal identities and never published.
+ */
 function causeJson(cause: Cause): JsonValue {
   switch (cause.tag) {
     case CauseTag.Input:
@@ -363,7 +367,7 @@ function causeJson(cause: Cause): JsonValue {
     case CauseTag.Arrive:
       return { kind: "arrive", flow: cause.flow };
     case CauseTag.Idle:
-      return { kind: "idle", scope: cause.scope };
+      return { kind: "idle" };
   }
   return assertNever(cause);
 }
@@ -372,8 +376,7 @@ function transitionJson(transition: Transition): JsonValue {
   return {
     cause: causeJson(transition.cause),
     element: transition.element,
-    owner: transition.owner,
-    started: transition.started.map((fact) => ({ occurrence: keyJson(fact.occurrence), owner: fact.owner, sourceType: fact.sourceType })),
+    started: transition.started.map((fact) => ({ occurrence: keyJson(fact.occurrence), sourceType: fact.sourceType })),
     ended: transition.ended.map(([key, terminal]) => ({ occurrence: keyJson(key), terminal })),
   };
 }

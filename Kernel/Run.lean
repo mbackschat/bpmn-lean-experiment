@@ -244,19 +244,19 @@ def terminalName : Terminal → String
   | .completed => "completed"
   | .cancelled => "cancelled"
 
+/-- A transition's cause and occurrence facts, public fields only (PD2): the kernel's scope-occurrence ordinals
+(`Transition.owner`, a started fact's `owner`, an idle cause's scope) are internal identities and never published. -/
 def causeJson : Cause → Json
   | .input tag => Json.mkObj [("kind", "input"), ("input", Json.str (inputTagName tag))]
   | .signal name => Json.mkObj [("kind", "signal"), ("signal", Json.str name)]
   | .arrive flow => Json.mkObj [("kind", "arrive"), ("flow", Json.str flow.value)]
-  | .idle scope => Json.mkObj [("kind", "idle"), ("scope", toJson scope.value)]
+  | .idle _ => Json.mkObj [("kind", "idle")]
 
 def transitionJson (transition : Transition) : Json :=
   Json.mkObj [("cause", causeJson transition.cause),
     ("element", match transition.element with | some element => Json.str element.value | none => Json.null),
-    ("owner", toJson transition.owner.value),
     ("started", Json.arr (transition.started.map fun fact =>
-      Json.mkObj [("occurrence", keyJson fact.occurrence), ("owner", toJson fact.owner.value),
-        ("sourceType", Json.str fact.sourceType)]).toArray),
+      Json.mkObj [("occurrence", keyJson fact.occurrence), ("sourceType", Json.str fact.sourceType)]).toArray),
     ("ended", Json.arr (transition.ended.map fun (key, terminal) =>
       Json.mkObj [("occurrence", keyJson key), ("terminal", Json.str (terminalName terminal))]).toArray)]
 

@@ -38,10 +38,9 @@ export type FlowNodeOccurrenceKey = DeepReadonly<{
   role: FlowNodeOccurrenceRole;
 }>;
 
-/** An occurrence began: its key, the scope occurrence that owns it and its element's BPMN source type. */
+/** An occurrence began: its key and its element's BPMN source type; the kernel's scope ordinal is not published. */
 export type FlowNodeOccurrenceStart = DeepReadonly<{
   occurrence: FlowNodeOccurrenceKey;
-  owner: number;
   sourceType: string;
 }>;
 

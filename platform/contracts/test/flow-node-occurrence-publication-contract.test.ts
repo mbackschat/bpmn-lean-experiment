@@ -69,7 +69,7 @@ function pageWithTransitions(transitions: readonly unknown[]) {
   };
 }
 
-const start = (occurrence: unknown) => ({ occurrence, owner: 0, sourceType: "task" });
+const start = (occurrence: unknown) => ({ occurrence, sourceType: "task" });
 const end = (occurrence: unknown, terminal = "completed") => ({ occurrence, terminal });
 
 test("decodes the exact occurrence page, request, and every closed result arm", () => {
@@ -215,13 +215,12 @@ test("requires every step to begin or end an occurrence and every fact to be exa
   rejectPage(singleStepPage([], new Array<unknown>(1)), /must start or end at least one occurrence/u);
 
   const rejectedStarts: Array<[unknown, RegExp]> = [
-    [{ ...start(startEvent), owner: -1 }, /nonnegative safe integer/u],
-    [{ ...start(startEvent), owner: 1.5 }, /nonnegative safe integer/u],
+    [{ ...start(startEvent), owner: 0 }, /public fields/u],
     [{ ...start(startEvent), sourceType: "" }, /must not be empty/u],
     [{ ...start(startEvent), sourceType: null }, /must be a string/u],
     [{ ...start(startEvent), terminal: "completed" }, /public fields/u],
-    [{ occurrence: startEvent, owner: 0 }, /public fields/u],
-    [{ owner: 0, sourceType: "task" }, /public fields/u],
+    [{ occurrence: startEvent }, /public fields/u],
+    [{ sourceType: "task" }, /public fields/u],
   ];
   for (const [fact, message] of rejectedStarts) rejectPage(singleStepPage([fact], []), message);
 

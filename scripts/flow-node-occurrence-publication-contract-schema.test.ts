@@ -33,7 +33,7 @@ function page() {
       throughRevision: 1,
       transitions: [{
         revision: 1,
-        started: [{ occurrence, owner: 0, sourceType: "startEvent" }],
+        started: [{ occurrence, sourceType: "startEvent" }],
         ended: [{ occurrence, terminal: "completed" }],
       }],
     }, {
@@ -68,7 +68,7 @@ test("validates the strict request, page, and five closed result arms", async ()
     { ...validPage, currentOpen: [] },
     { ...validPage, headRevision: Number.MAX_SAFE_INTEGER + 1 },
     { ...validPage, batches: [{ ...first, committedAtEpochMs: 0 }] },
-    { ...validPage, batches: [{ ...first, transitions: [{ revision: 1, started: [{ occurrence: { ...occurrence, role: "body" }, owner: 0, sourceType: "task" }], ended: [] }] }] },
+    { ...validPage, batches: [{ ...first, transitions: [{ revision: 1, started: [{ occurrence: { ...occurrence, role: "body" }, sourceType: "task" }], ended: [] }] }] },
     { kind: "notReady" },
     { kind: "partial", page: validPage },
   ]) {

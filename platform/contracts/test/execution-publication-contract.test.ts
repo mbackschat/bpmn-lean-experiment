@@ -77,7 +77,6 @@ function manyBatchPage(count: number) {
         role: { kind: "input", input: "command" },
         element: null,
         sourceType: null,
-        owner: 0,
       }],
     })),
     current: null,
@@ -120,8 +119,7 @@ test("accepts each kernel input kind and each role arm, and refuses unknown or e
   for (const role of [
     { kind: "signal", signal: "completeProcess" },
     { kind: "arrive", flow: "Flow_1" },
-    { kind: "idle", scope: 0 },
-    { kind: "idle", scope: 12 },
+    { kind: "idle" },
   ]) {
     const page = pageWithRecord({ role });
     assert.deepEqual(decodePage(page), page);
@@ -134,19 +132,17 @@ test("accepts each kernel input kind and each role arm, and refuses unknown or e
     [{ kind: "signal", signal: "" }, /must not be empty/u],
     [{ kind: "signal", flow: "Flow_1" }, /public fields/u],
     [{ kind: "arrive", flow: "" }, /must not be empty/u],
-    [{ kind: "idle", scope: -1 }, /nonnegative safe integer/u],
-    [{ kind: "idle", scope: 1.5 }, /nonnegative safe integer/u],
+    [{ kind: "idle", scope: 0 }, /public fields/u],
     [{ kind: "externalStimulus" }, /unknown kind/u],
     ["input", /must be an object/u],
   ];
   for (const [role, message] of rejected) rejectPage(pageWithRecord({ role }), message);
 });
 
-test("keeps element, source type and owner exact", () => {
+test("keeps element and source type exact and publishes no scope-occurrence ordinal", () => {
   for (const patch of [
     { element: null, sourceType: null },
     { element: "UserTask_Review", sourceType: null },
-    { owner: 7 },
   ]) {
     const page = pageWithRecord(patch);
     assert.deepEqual(decodePage(page), page);
@@ -156,19 +152,17 @@ test("keeps element, source type and owner exact", () => {
     [{ element: "", sourceType: "userTask" }, /must not be empty/u],
     [{ sourceType: "" }, /must not be empty/u],
     [{ element: 7 }, /must be a string/u],
-    [{ owner: -1 }, /nonnegative safe integer/u],
-    [{ owner: 1.5 }, /nonnegative safe integer/u],
-    [{ owner: Number.MAX_SAFE_INTEGER + 1 }, /nonnegative safe integer/u],
+    [{ owner: 0 }, /public fields/u],
     [{ logicalTimeMs: 0 }, /public fields/u],
     [{ positionDelta: {} }, /public fields/u],
     [{ transition: { kind: "externalStimulus" } }, /public fields/u],
   ];
   for (const [patch, message] of rejected) rejectPage(pageWithRecord(patch), message);
   const [first] = startBatch.transitions;
-  const { owner: _owner, ...withoutOwner } = first;
+  const { sourceType: _sourceType, ...withoutSourceType } = first;
   rejectPage({
     ...executionPublicationPage(),
-    batches: [{ ...startBatch, transitions: [withoutOwner, ...startBatch.transitions.slice(1)] }],
+    batches: [{ ...startBatch, transitions: [withoutSourceType, ...startBatch.transitions.slice(1)] }],
   }, /public fields/u);
 });
 
