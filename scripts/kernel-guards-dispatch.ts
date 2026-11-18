@@ -214,7 +214,51 @@ export function noCatchAllFindings(tree: KernelTree): string[] {
     }
   }
   if (!sawEnumSwitch) findings.push(emptyInputFinding(2, "switch over a kernel enum"));
-  return [...findings, ...ownerEqualityFindings(tree)];
+  return [...findings, ...ownerEqualityFindings(tree), ...unownedEqualityFindings(tree)];
+}
+
+/**
+ * The enums of the types no catch-all may cover although no module owns their dispatch (`Value`, owner decision
+ * 2026-11-17), read from `unowned` in `scripts/kernel-dispatch.lean`, the Lean scan's one copy of the list; a type maps
+ * to its enum as an owned type does. A missing list or a type without an enum is a finding, never an empty guard.
+ */
+export function unownedEnums(tree: KernelTree): { enumNames: string[]; findings: string[] } {
+  let text = "";
+  try {
+    text = readFileSync(path.join(tree.root, "scripts", "kernel-dispatch.lean"), "utf8");
+  } catch {
+    return { enumNames: [], findings: [emptyInputFinding(2, "unowned types (scripts/kernel-dispatch.lean)")] };
+  }
+  const list = /^def unowned : List Name := \[([^\]]*)\]$/mu.exec(text)?.[1];
+  const names = [...(list ?? "").matchAll(/`Kernel\.([\w.]+)/gu)].map((entry) => (entry[1] ?? "").split(".").at(-1) ?? "");
+  if (names.length === 0) return { enumNames: [], findings: ["G2: kernel-dispatch.lean has no readable `unowned` list"] };
+  const enums = typeScriptEnums(tree.typeScript);
+  const findings: string[] = [];
+  const enumNames = names.flatMap((name) => {
+    const enumName = enums.has(`${name}Tag`) ? `${name}Tag` : enums.has(name) ? name : null;
+    if (enumName === null) findings.push(`G2: unowned type ${name} has no TypeScript enum`);
+    return enumName === null ? [] : [enumName];
+  });
+  return { enumNames, findings };
+}
+
+/** Guard 2 for an unowned type: with no owner, every module decides its own meaning, so an equality test on one of its
+ * members, a hidden catch-all for every member it leaves out, fails anywhere outside a codec. */
+function unownedEqualityFindings(tree: KernelTree): string[] {
+  const { enumNames, findings } = unownedEnums(tree);
+  const comparison = new Set(["===", "!==", "==", "!="]);
+  for (const source of [...tree.typeScript, ...tree.reader]) {
+    if (allowedByOwner(moduleKey(source), ["il/codec"])) continue;
+    const { tokens } = source;
+    for (let i = 0; i < tokens.length; i += 1) {
+      const token = tokens[i];
+      if (token === undefined || !enumNames.includes(token.text) || tokens[i + 1]?.text !== "." || tokens[i + 2]?.kind !== TokenKind.Word) continue;
+      if ((comparison.has(tokens[i - 1]?.text ?? "") || comparison.has(tokens[i + 3]?.text ?? "")) && !isJustified(source, token.line, 2)) {
+        findings.push(finding(2, source, token.line, `equality test on ${token.text} member, a catch-all over the members it leaves out`));
+      }
+    }
+  }
+  return findings;
 }
 
 /** Guard 2's owner clause: an equality test on a guarded member is a hidden catch-all for every member it leaves out,

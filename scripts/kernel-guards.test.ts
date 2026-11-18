@@ -52,6 +52,8 @@ after(() => { for (const root of roots) rmSync(root, { recursive: true, force: t
 const dispatchTable = `def owners : List (Name × List Name) := [
   (\`Kernel.Element, [\`Kernel.Step]),
   (\`Kernel.Work, [\`Kernel.Feature.Work, \`Kernel.Admission.Work])]
+
+def unowned : List Name := [\`Kernel.Value]
 `;
 
 const stateTs = `export function emit(state, flows) { return { ...state, tokens: flows }; }
@@ -92,6 +94,7 @@ def work (value : Nat) : Option String := if value == 0 then some "work.user.ass
 `,
   "packages/kernel/src/il/types.ts": `export enum ElementTag { Task = "task", Gateway = "gateway" }
 export enum WorkTag { None = "none", User = "user" }
+export enum ValueTag { Null = "null", Bool = "bool" }
 export function assertNever(value: never): never { throw new Error(String(value)); }
 export interface Payload { readonly assignee: string; }
 export type Work = { readonly tag: WorkTag };
@@ -223,6 +226,16 @@ export function work(value) {
 export const isUser = (work) => work.tag === WorkTag.User;
 `,
 }, /switch over WorkTag has a default arm[\s\S]*does not end in assertNever[\s\S]*equality test on guarded WorkTag member inside its owner/u);
+
+test("guard 2 rejects an equality test on an unowned type's member in any module, and an unreadable unowned list", () => {
+  seeded(noCatchAllFindings, { "packages/kernel/src/feature/data.ts": `import { ValueTag } from "../il/types.js";
+export const isNull = (value) => value.tag === ValueTag.Null;
+` }, /G2 packages\/kernel\/src\/feature\/data\.ts:2: equality test on ValueTag member/u);
+  assert.deepEqual(noCatchAllFindings(fixture({ "packages/kernel/src/il/codec.ts": `import { ValueTag } from "./types.js";
+export const isNull = (value) => value.tag === ValueTag.Null;
+` })), []);
+  seeded(noCatchAllFindings, { "scripts/kernel-dispatch.lean": dispatchTable.replace(/def unowned[^\n]*\n/u, "") }, /no readable `unowned` list/u);
+});
 
 holdsItsGround("guard 3 (mirror enumerations)", mirrorEnumerationFindings, {
   "packages/kernel/src/feature/flow.ts": `import { ElementTag } from "../il/types.js";

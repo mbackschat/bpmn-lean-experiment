@@ -12,7 +12,10 @@ nested-inductive rule, read from the same environment because only the elaborate
   body it sees (`generatedFromSeen`) are not its matches. Nothing compares one with `==` or
   `decide`: no guarded type has a `DecidableEq` or `BEq` instance outside its defining module.
 - No catch-all: no match alternative binds a guarded-type discriminant to a variable, so every alternative names
-  the constructors it covers and a new constructor fails to compile at every dispatch site.
+  the constructors it covers and a new constructor fails to compile at every dispatch site. The same holds for the
+  types in `unowned`, which have no dispatch owner, at any depth of a pattern: where one alternative names a
+  constructor of such a type, no other alternative covers that position with a variable (`_`, a name, `if let`'s
+  fall-through), at that position or above it.
 
 - No nested inductive: no inductive type of an IL or state module (`Kernel.IL`, `Kernel.State` and their submodules)
   is nested or mutual, but `Kernel.Value`, the bounded value tree the owner admitted (OD2 (4), 2026-11-17), which
@@ -57,6 +60,11 @@ def owners : List (Name × List Name) := [
   (`Kernel.Feature.Data.Juel.JVal, [`Kernel.Feature.Data, `Kernel.Laws.Data, `Kernel.Proofs.Step])]
 
 def guarded (type : Name) : Bool := owners.any (·.1 == type)
+
+/-- Types that no catch-all may cover, with no dispatch owner: `Value`, whose meaning each feature decides at its own
+site (owner decision 2026-11-17, recorded in `docs/REWRITE-2-PROPOSAL.md`): one owner would move per-feature
+semantics into the IL layer or hide each site's decision behind accessors. -/
+def unowned : List Name := [`Kernel.Value]
 
 def allowed (env : Environment) (type module : Name) : Bool :=
   let defining := (env.getModuleIdxFor? type).bind fun idx => env.header.moduleNames[idx.toNat]?
@@ -128,10 +136,57 @@ def analyzeMatcher (matcher : Name) (info : Match.MatcherInfo) : MetaM (List (Na
           if pattern.isFVar && constructors > 1 && !catchAll.contains type then catchAll := catchAll ++ [type]
     pure (types, catchAll)
 
+/-- A step into a pattern: the constructor applied and the index of its field. -/
+abbrev PatternStep := Name × Nat
+
+/-- The positions of a pattern where a constructor of an `unowned` type is named, with that type, and the positions a
+variable covers, each as a path from its discriminant. -/
+partial def positions (env : Environment) (path : List PatternStep) (pattern : Expr) :
+    MetaM (List (List PatternStep × Name) × List (List PatternStep)) := do
+  let pattern := pattern.consumeMData
+  if pattern.isFVar then return ([], [path])
+  let .const head _ := pattern.getAppFn | return ([], [])
+  let some (.ctorInfo ctor) := env.find? head | return ([], [])
+  let mut named : List (List PatternStep × Name) := []
+  if unowned.contains ctor.induct then named := [(path, ctor.induct)]
+  let mut variables : List (List PatternStep) := []
+  for (field, index) in (pattern.getAppArgs.extract ctor.numParams pattern.getAppNumArgs).toList.zipIdx do
+    let (inner, covered) ← positions env (path ++ [(head, index)]) field
+    named := named ++ inner
+    variables := variables ++ covered
+  return (named, variables)
+
+/-- The `unowned` types some alternative of a matcher covers with a variable at or above a position where another
+alternative names one of their constructors. -/
+def unownedCatchAll (matcher : Name) (info : Match.MatcherInfo) : MetaM (List Name) := do
+  let constant ← getConstInfo matcher
+  let env ← getEnv
+  forallTelescope constant.type fun xs _ => do
+    let alternatives := (xs.extract (info.numParams + 1 + info.numDiscrs) xs.size).toList
+    let mut perAlternative : List (List (List PatternStep × Name) × List (List PatternStep)) := []
+    for alternative in alternatives do
+      let found ← forallTelescope (← inferType alternative) fun _ conclusion => do
+        let mut named : List (List PatternStep × Name) := []
+        let mut variables : List (List PatternStep) := []
+        for (pattern, position) in (conclusion.getAppArgs.toList.take info.numDiscrs).zipIdx do
+          let (inner, covered) ← positions env [(`discriminant, position)] pattern
+          named := named ++ inner
+          variables := variables ++ covered
+        pure (named, variables)
+      perAlternative := perAlternative ++ [found]
+    let mut types : List Name := []
+    for ((_, variables), index) in perAlternative.zipIdx do
+      for ((named, _), other) in perAlternative.zipIdx do
+        if other == index then continue
+        for (path, type) in named do
+          if variables.any (·.isPrefixOf path) && !types.contains type then types := types ++ [type]
+    pure types
+
 def scan (env : Environment) : MetaM (List Finding × Bool) := do
   let mut findings : List Finding := []
   let mut stepMatchesElement := false
   let mut analyzed : Std.HashMap Name (List (Nat × Name) × List Name) := {}
+  let mut unownedAnalyzed : Std.HashMap Name (List Name) := {}
   for (declaration, info) in env.constants.map₁.toList do
     let some idx := env.getModuleIdxFor? declaration | continue
     let some module := env.header.moduleNames[idx.toNat]? | continue
@@ -157,6 +212,15 @@ def scan (env : Environment) : MetaM (List Finding × Bool) := do
             findings := findings ++ [{ module, declaration, message := s!"matches guarded {type} outside its owner" }]
         for type in catchAll do
           findings := findings ++ [{ module, declaration, message := s!"catch-all alternative over guarded {type}" }]
+        let unownedCatchAlls ← match unownedAnalyzed.get? used with
+          | some result => pure result
+          | none => do
+            let result ← unownedCatchAll used matcherInfo
+            unownedAnalyzed := unownedAnalyzed.insert used result
+            pure result
+        unless (`Kernel.IL.Codec).isPrefixOf module do
+          for type in unownedCatchAlls do
+            findings := findings ++ [{ module, declaration, message := s!"catch-all alternative over {type}" }]
   pure (findings, stepMatchesElement)
 
 /-- The modules whose inductive types are IL or state types, none of which may be nested or mutual. -/

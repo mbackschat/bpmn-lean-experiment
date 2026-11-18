@@ -114,14 +114,18 @@ function cleanBuild(lean: Lean, label: string): string[] {
 
 /** Guard 23: the dispatch scan rejects a match on a guarded type in a module that does not own it, a `Laws` module
  * matching another family's type included, and a hand-written match in the `Laws` module of the type's defining
- * module, whose exemption covers only the lemmas the compiler generates there; it accepts one in a codec submodule.
- * Its guard 9 part rejects a nested and a mutual inductive in an IL module, the OD2 (4) mark on a type other than
- * `Value` with a field nesting outside the admitted arms, and `Value` once its mark is gone, which it reads from the
- * source, so that seed needs no rebuild. */
+ * module, whose exemption covers only the lemmas the compiler generates there; it accepts one in a codec submodule. It
+ * rejects a catch-all nested over the unowned `Value` and accepts an exhaustive `Value` match in any module. Its guard 9
+ * part rejects a nested and a mutual inductive in an IL module, the OD2 (4) mark on a type other than `Value` with a
+ * field nesting outside the admitted arms, and `Value` once its mark is gone, which it reads from the source, so that
+ * seed needs no rebuild. */
 function proveDispatchScan(lean: Lean, directory: string): string[] {
   const file = path.join(directory, "Kernel", "Feature", "Data.lean");
   // Fully qualified: the seed lands outside the module's namespace, where an unqualified `Element` auto-binds.
-  const seeded = "def seededDispatchViolation : Kernel.Element → Nat\n  | .activity .. => 1\n  | _ => 0";
+  const seeded = "def seededDispatchViolation : Kernel.Element → Nat\n  | .activity .. => 1\n  | _ => 0\n" +
+    // `Value` has no owner, so any module may match it, but never with a catch-all, a nested one included.
+    "def seededValueMatch : Kernel.Value → Nat\n  | .null => 0\n  | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => 1\n" +
+    "def seededValueCatchAll : Option Kernel.Value → Nat\n  | some (.string _) => 1\n  | _ => 0";
   // A `Laws` module matches only its own family's guarded types: Flow's laws may match `GatewayKind`, never `ScopeKind`.
   const lawsFile = path.join(directory, "Kernel", "Laws", "Flow.lean");
   const seededLaws = "def seededLawsDispatchViolation : Kernel.ScopeKind → Nat\n  | .embedded => 1\n  | .transaction _ => 2\n  | .eventSubProcess _ _ => 3";
@@ -153,6 +157,12 @@ function proveDispatchScan(lean: Lean, directory: string): string[] {
     }
     if (!/Kernel\.Laws\.IL \S+: matches guarded Kernel\.ScopeKind/u.test(scan.output)) {
       findings.push(`G23: kernel-dispatch.lean did not reject the seeded IL Laws violation\n${scan.output}`);
+    }
+    if (!/seededValueCatchAll: catch-all alternative over Kernel\.Value/u.test(scan.output)) {
+      findings.push(`G23: kernel-dispatch.lean did not reject the seeded nested catch-all over Value\n${scan.output}`);
+    }
+    if (scan.output.includes("seededValueMatch")) {
+      findings.push(`G23: kernel-dispatch.lean rejected an exhaustive match on the unowned Value\n${scan.output}`);
     }
     if (scan.output.includes("seededCodecSubmoduleMatch")) {
       findings.push(`G23: kernel-dispatch.lean rejected a match in a codec submodule\n${scan.output}`);
