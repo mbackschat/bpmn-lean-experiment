@@ -6,9 +6,9 @@ public import Kernel.Laws.MultiInstance.Rules
 
 What a running body keeps while `Kernel.Feature.MultiInstance` enters and queues its instances (`Entering`), the
 left-fold lemma the entering runs on (`foldl_prefix`), the begins it queues (`Requested`, `QueuedAs`, `QueueKeeps`),
-what an instance's completion records and a body's completion writes (`recorded`, `OutputFits`, `WritesCollection`),
-and the facts about the waiting slots `MultiInstance.opening` picks from, stated without naming the feature so that they
-stay outside its rebuild cone (guard 15); `Kernel.Laws.MultiInstance` proves what the hooks keep and do of them. Nothing
+and what an instance's completion records and a body's completion writes (`recorded`, `OutputFits`,
+`WritesCollection`), stated without naming the feature so that they stay outside its rebuild cone (guard 15);
+`Kernel.Laws.MultiInstance` proves what the hooks keep and do of them. Nothing
 executable imports this module.
 -/
 
@@ -142,62 +142,6 @@ def WritesCollection (program : Program) (loop : MultiInstance) (run : MultiInst
   ∀ name value, (name, value) ∈ writes → program.options.multiInstanceOutputs = .aggregates ∧
     (∀ slot ∈ run.instances, ∃ output, slot = .completed output) ∧
     (loop.outputDataItem.isSome → OutputsFit run loop → ∃ outputs, ListsOutputs value outputs ∧ Collects run (some outputs))
-
-/-- The slots of `instances` whose index the waiting-slot list `MultiInstance.opening` picks from lists are the waiting
-ones. -/
-theorem waiting_mem {instances : List Iteration} {index : Nat} :
-    index ∈ (instances.zipIdx.filterMap fun (slot, index) =>
-      match slot with
-      | .waiting => some index
-      | .active _ => none
-      | .completed _ => none) ↔ instances[index]? = some .waiting := by
-  constructor
-  · intro member
-    obtain ⟨⟨slot, at_⟩, inside, picked⟩ := List.mem_filterMap.mp member
-    have found := List.mem_zipIdx_iff_getElem?.mp inside
-    cases slot <;> simp at picked
-    subst picked
-    exact found
-  · intro found
-    exact List.mem_filterMap.mpr ⟨(.waiting, index), List.mem_zipIdx_iff_getElem?.mpr found, rfl⟩
-
-/-- The waiting-slot list `MultiInstance.opening` picks from is in increasing index order. -/
-theorem waiting_ordered (instances : List Iteration) :
-    (instances.zipIdx.filterMap fun (slot, index) =>
-      match slot with
-      | .waiting => some index
-      | .active _ => none
-      | .completed _ => none).Pairwise (· < ·) := by
-  refine List.Pairwise.filterMap (R := fun a b : Iteration × Nat => a.2 < b.2) _ ?_ ?_
-  · intro first second lower one picked two picked'
-    obtain ⟨slot, at_⟩ := first
-    obtain ⟨slot', at'⟩ := second
-    cases slot <;> cases slot' <;> simp at picked picked'
-    subst picked picked'
-    exact lower
-  · have := List.pairwise_map (R := (· < ·)) (f := Prod.snd) (l := instances.zipIdx) |>.mp
-    apply this
-    rw [List.zipIdx_map_snd]
-    exact List.pairwise_lt_range'
-
-/-- The first member of a list in increasing order is its member no smaller member precedes. -/
-theorem take_one_ordered {l : List Nat} (ordered : l.Pairwise (· < ·)) {x : Nat} :
-    x ∈ l.take 1 ↔ x ∈ l ∧ ∀ y < x, y ∉ l := by
-  cases l with
-  | nil => simp
-  | cons first rest =>
-    have later := (List.pairwise_cons.mp ordered).1
-    rw [List.take_succ_cons, List.take_zero, List.mem_singleton]
-    constructor
-    · rintro rfl
-      refine ⟨List.mem_cons_self .., fun y lower member => ?_⟩
-      rcases List.mem_cons.mp member with rfl | inside
-      · exact Nat.lt_irrefl _ lower
-      · exact Nat.lt_asymm lower (later y inside)
-    · rintro ⟨member, least⟩
-      rcases List.mem_cons.mp member with same | inside
-      · exact same
-      · exact absurd (List.mem_cons_self ..) (least first (later x inside))
 
 /-- The slot an instance's completion finds active in its scope occurrence. -/
 theorem slot_found {run : MultiInstanceRun} {scope : ScopeOccurrenceId} {index : Nat}

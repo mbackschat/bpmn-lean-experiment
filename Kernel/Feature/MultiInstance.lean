@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Feature.MultiInstance.Opening
 
 /-! # Multi-Instance Activities
 
@@ -24,21 +25,6 @@ boundary leaves the occurrence with every instance in it and writes nothing (`PM
 public section
 
 namespace Kernel.Feature.MultiInstance
-
-/-- The instances to begin now: every waiting one in parallel, else the first waiting one once none runs. -/
-def opening (mode : MultiInstanceMode) (instances : List Iteration) : List Nat :=
-  let waiting := (instances.zipIdx.filterMap fun (slot, index) =>
-    match slot with
-    | .waiting => some index
-    | .active _ => none
-    | .completed _ => none)
-  let running := instances.any fun
-    | .active _ => true
-    | .waiting => false
-    | .completed _ => false
-  match mode with
-  | .parallel => waiting
-  | .sequential => if running then [] else waiting.take 1
 
 def slotFilled : Iteration → Bool
   | .completed _ => true

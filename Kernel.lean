@@ -22,6 +22,7 @@ public import Kernel.Feature.Data.Juel.Coercion
 public import Kernel.Feature.Decision
 public import Kernel.Feature.Flow
 public import Kernel.Feature.MultiInstance
+public import Kernel.Feature.MultiInstance.Opening
 public import Kernel.Feature.Propagation
 public import Kernel.Feature.Propagation.Candidates
 public import Kernel.Feature.Propagation.Throws
@@ -70,6 +71,7 @@ public import Kernel.Laws.Hooks
 public import Kernel.Laws.IL
 public import Kernel.Laws.MultiInstance
 public import Kernel.Laws.MultiInstance.Entering
+public import Kernel.Laws.MultiInstance.Opening
 public import Kernel.Laws.MultiInstance.Rules
 public import Kernel.Laws.MultiInstance.Witnesses
 public import Kernel.Laws.Population

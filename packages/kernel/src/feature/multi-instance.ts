@@ -74,46 +74,7 @@ import {
 import {
   EvaluationTag, collectionItems, evalContext, hold, leaveScope, multiInstanceRunItems, ownVariables, type Ctx,
 } from "../hooks.js";
-
-function waitingIndex(slot: Iteration, index: number): readonly number[] {
-  switch (slot.tag) {
-    case IterationTag.Waiting:
-      return [index];
-    case IterationTag.Active:
-    case IterationTag.Completed:
-      return [];
-  }
-  return assertNever(slot);
-}
-
-function isActive(slot: Iteration): boolean {
-  switch (slot.tag) {
-    case IterationTag.Active:
-      return true;
-    case IterationTag.Waiting:
-    case IterationTag.Completed:
-      return false;
-  }
-  return assertNever(slot);
-}
-
-/** The feature's one match on the mode; every mode-specific rule below reads it. */
-function sequential(mode: MultiInstanceMode): boolean {
-  switch (mode) {
-    case MultiInstanceMode.Parallel:
-      return false;
-    case MultiInstanceMode.Sequential:
-      return true;
-  }
-  return assertNever(mode);
-}
-
-/** The instances to begin now: every waiting one in parallel, else the first waiting one once none runs. */
-function opening(mode: MultiInstanceMode, instances: readonly Iteration[]): readonly number[] {
-  const waiting = instances.flatMap(waitingIndex);
-  if (!sequential(mode)) return waiting;
-  return instances.some(isActive) ? [] : waiting.slice(0, 1);
-}
+import { opening, sequential } from "./multi-instance/opening.js";
 
 function slotFilled(slot: Iteration): boolean {
   switch (slot.tag) {

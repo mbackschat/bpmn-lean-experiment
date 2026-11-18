@@ -2,6 +2,7 @@ module
 
 public import Kernel.Laws.MultiInstance.Rules
 public import Kernel.Laws.MultiInstance.Entering
+public import Kernel.Laws.MultiInstance.Opening
 public import Kernel.Laws.IL
 public import Kernel.Feature.MultiInstance
 import all Kernel.Feature.MultiInstance
@@ -14,8 +15,6 @@ and the Multi-Instance lane's rules of `Kernel.Laws.MultiInstance.Rules`. This i
 bodies; what follows from these facts without them is `Kernel.Proofs.MultiInstance.Hooks`'. Nothing executable imports
 this module.
 -/
-
--- size-exception: the only module that may open Kernel.Feature.MultiInstance's bodies (guard 5), and a laws submodule naming the feature falls outside its rebuild cone (guard 15), so a split waits on splitting the feature module; owner review pending (K0.6, 2026-11-18)
 
 @[expose] public section
 
@@ -206,81 +205,6 @@ theorem queueInstances_keeps (ops : MultiInstanceOps program inv settled)
       exact empty (entering.frame deferred (carry _ entering.2.1) (by rw [Laws.State.deferBegins_eq])
         (by rw [Laws.State.deferBegins_eq]; exact .refl _) (by rw [Laws.State.deferBegins_eq]))
     · exact empty signalled
-
-/-! ### Opening instances
-
-`MultiInstance.opening` names the waiting slots in index order, all of them for a parallel body (`opening_parallel`)
-and for a sequential one none while an instance runs (`opening_running`), else the first (`opening_idle`). -/
-
-/-- The instances `MultiInstance.opening` names, in increasing index order. -/
-theorem opening_ordered (mode : MultiInstanceMode) (instances : List Iteration) :
-    (Feature.MultiInstance.opening mode instances).Pairwise (· < ·) := by
-  unfold Feature.MultiInstance.opening
-  cases mode with
-  | parallel => exact waiting_ordered instances
-  | sequential =>
-    dsimp only
-    split
-    · exact List.Pairwise.nil
-    · exact (waiting_ordered instances).sublist (List.take_sublist _ _)
-
-/-- `MultiInstance.opening` names each slot once. -/
-theorem opening_nodup (mode : MultiInstanceMode) (instances : List Iteration) :
-    (Feature.MultiInstance.opening mode instances).Nodup :=
-  (opening_ordered mode instances).imp Nat.ne_of_lt
-
-/-- The instances `MultiInstance.opening` names wait. -/
-theorem opening_waiting {mode : MultiInstanceMode} {instances : List Iteration} {index : Nat}
-    (named : index ∈ Feature.MultiInstance.opening mode instances) : instances[index]? = some .waiting := by
-  unfold Feature.MultiInstance.opening at named
-  cases mode with
-  | parallel => exact waiting_mem.mp named
-  | sequential =>
-    dsimp only at named
-    split at named
-    · simp at named
-    · exact waiting_mem.mp (List.mem_of_mem_take named)
-
-/-- A parallel body opens every waiting slot. -/
-theorem opening_parallel {instances : List Iteration} {index : Nat} :
-    index ∈ Feature.MultiInstance.opening .parallel instances ↔ instances[index]? = some .waiting := by
-  unfold Feature.MultiInstance.opening
-  exact waiting_mem
-
-/-- A sequential body opens no slot while an instance runs. -/
-theorem opening_running {instances : List Iteration} (running : ∃ scope, Iteration.active scope ∈ instances) :
-    Feature.MultiInstance.opening .sequential instances = [] := by
-  obtain ⟨scope, active⟩ := running
-  unfold Feature.MultiInstance.opening
-  dsimp only
-  split
-  · rfl
-  · rename_i quiet
-    exact absurd (List.any_eq_true.mpr ⟨_, active, rfl⟩) quiet
-
-/-- A body that opens a slot runs in parallel or has no running instance. -/
-theorem opening_quiet {mode : MultiInstanceMode} {instances : List Iteration}
-    (opened : Feature.MultiInstance.opening mode instances ≠ []) :
-    mode = .parallel ∨ ∀ scope, Iteration.active scope ∉ instances := by
-  cases mode with
-  | parallel => exact .inl rfl
-  | sequential => exact .inr fun scope active => opened (opening_running ⟨scope, active⟩)
-
-/-- A sequential body with no running instance opens its first waiting slot. -/
-theorem opening_idle {instances : List Iteration} (idle : ∀ scope, Iteration.active scope ∉ instances) {index : Nat} :
-    index ∈ Feature.MultiInstance.opening .sequential instances ↔
-      instances[index]? = some .waiting ∧ ∀ earlier < index, instances[earlier]? ≠ some .waiting := by
-  unfold Feature.MultiInstance.opening
-  dsimp only
-  split
-  · rename_i running
-    obtain ⟨slot, inside, picked⟩ := List.any_eq_true.mp running
-    cases slot with
-    | active scope => exact absurd inside (idle scope)
-    | waiting => simp at picked
-    | completed _ => simp at picked
-  · exact (take_one_ordered (waiting_ordered instances)).trans
-      (and_congr waiting_mem (forall_congr' fun _ => imp_congr_right fun _ => not_congr waiting_mem))
 
 /-- Under `cibLocals` and an item local not named `loopCounter`, the scope occurrence `scope` holds
 `loopCounter = index` (CIB-INT-0018). -/
