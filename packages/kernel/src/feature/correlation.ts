@@ -126,8 +126,22 @@ function criterionHolds(state: State, scope: ScopeOccurrenceId, criterion: Corre
     const held = state.variables.find((entry) => entry.scope === owner)?.entries.find(([key]) => key === name);
     return held !== undefined && sameKindAndValue(held[1], criterion.expected);
   };
-  const names = (actual: string | null): boolean =>
-    criterion.expected.tag === ValueTag.String && actual !== null && criterion.expected.value === actual;
+  const names = (actual: string | null): boolean => {
+    const expected = criterion.expected;
+    switch (expected.tag) {
+      case ValueTag.String:
+        return actual !== null && expected.value === actual;
+      case ValueTag.Null:
+      case ValueTag.Bool:
+      case ValueTag.Int:
+      case ValueTag.Decimal:
+      case ValueTag.StringList:
+      case ValueTag.List:
+      case ValueTag.Map:
+        return false;
+    }
+    return assertNever(expected);
+  };
   const target = criterion.target;
   switch (target.tag) {
     case CriterionTargetTag.ProcessVariable:
@@ -163,14 +177,25 @@ function criteria(trigger: Trigger): readonly CorrelationCriterion[] {
 function keyValue(ctx: Ctx, context: EvalContext, criterion: CorrelationCriterion): Result<string> {
   const evaluation = ctx.evaluate(context, criterion.value);
   switch (evaluation.tag) {
-    case EvaluationTag.Value:
-      if (evaluation.result.tag !== ValueTag.String) {
-        return failed(FailureTag.Unsupported, "correlation-key-type"); // dynamic-only: a key's value type is the run's data
+    case EvaluationTag.Value: {
+      const result = evaluation.result;
+      switch (result.tag) {
+        case ValueTag.String:
+          if (result.value === "") {
+            return failed(FailureTag.Unsupported, "correlation-key-empty"); // dynamic-only: a key's value is the run's data
+          }
+          return committed(result.value);
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return failed(FailureTag.Unsupported, "correlation-key-type"); // dynamic-only: a key's value type is the run's data
       }
-      if (evaluation.result.value === "") {
-        return failed(FailureTag.Unsupported, "correlation-key-empty"); // dynamic-only: a key's value is the run's data
-      }
-      return committed(evaluation.result.value);
+      return assertNever(result);
+    }
     case EvaluationTag.Failure:
       if (evaluation.code === "unknown-variable") {
         return failed(FailureTag.Unsupported, "correlation-key-unbound"); // dynamic-only: whether a key's variable is bound is the run's data
@@ -220,7 +245,19 @@ function criterionMatches(criterion: CorrelationCriterion, delivered: Correlatio
   switch (target.tag) {
     case CriterionTargetTag.ProcessVariable: {
       const value = delivered.expected;
-      return committed(criterion.key === target.name && value.tag === ValueTag.String && value.value === expected);
+      switch (value.tag) {
+        case ValueTag.String:
+          return committed(criterion.key === target.name && value.value === expected);
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return committed(false);
+      }
+      return assertNever(value);
     }
     // `criteriaRefusal` refused every other target before; the cases keep the switch total.
     case CriterionTargetTag.LocalVariable:

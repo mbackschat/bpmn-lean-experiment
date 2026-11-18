@@ -53,7 +53,7 @@ mutual
 def nodes : Value → Nat
   | .list items => 1 + itemNodes items
   | .map entries => 1 + entryNodes entries
-  | _ => 1
+  | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ => 1
 
 def itemNodes : List Value → Nat
   | [] => 0
@@ -113,7 +113,7 @@ end
 most 1,024 UTF-8 bytes. -/
 def WholeStringList : Value → Prop
   | .stringList items => items.length ≤ 32 ∧ ∀ text ∈ items, text.utf8ByteSize ≤ 1024
-  | _ => False
+  | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .list _ | .map _ => False
 
 /-- A value an input may carry: a portable root value of at most 256 nodes and 16,384 canonical JSON bytes, or a
 `stringList` as a whole. -/

@@ -101,7 +101,10 @@ def counterLocals (ctx : Ctx) (counts : List (String × Nat)) : List (String × 
 def holdsCounts (ctx : Ctx) (variables : List (String × Value)) (counts : List (String × Nat)) : Bool :=
   (counterLocals ctx counts).all fun (name, _) =>
     match variables.lookup name, counts.lookup name with
-    | some (.int actual), some expected => actual == expected
+    | some actual, some expected =>
+      match actual with
+      | .int actual => actual == expected
+      | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
     | _, _ => false
 
 /-- Queue the begins of instances already entered, in item order. Under `declarationDepthFirst` a parallel body defers
@@ -251,10 +254,13 @@ def submitted (loop : MultiInstance) (run : MultiInstanceRun) (writes : List (St
   match loop.outputDataItem, writes with
   | none, _ => .ok none
   | some _, [(_, value)] =>
-    match run.collection, value with
-    | .stringList _, .string _ => .ok (some value)
-    | .stringList _, _ => .error (.rejected "instance-output-kind")
-    | _, _ => .ok (some value)
+    match run.collection with
+    | .stringList _ =>
+      match value with
+      | .string _ => .ok (some value)
+      | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ =>
+        .error (.rejected "instance-output-kind")
+    | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .list _ | .map _ => .ok (some value)
   | _, _ => .error (.rejected "undeclared-output")
 
 /-- The body is done: complete it, writing the output collection when every slot is filled. -/
@@ -316,8 +322,11 @@ def stops (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (index : N
     if run.results.any (!results.contains ·) then .error (.unsupported "multiInstance.sequentialResultLeftover")
     else
       match ctx.evaluate (conditionContext ctx loop run index scope state) condition with
-      | .value (.bool holds) => .ok holds
-      | .value _ => .error (.rolledBack "multiInstance.completionNotBoolean")
+      | .value result =>
+        match result with
+        | .bool holds => .ok holds
+        | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ =>
+          .error (.rolledBack "multiInstance.completionNotBoolean")
       | .failure code => .error (.rolledBack code)
       | .unsupported code => .error (.unsupported code)
 
@@ -352,12 +361,15 @@ def nextItems (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (next 
       | .unsupported code, _ => .error (.unsupported code)
       | .failure "unknown-variable", .variable _ => removed
       | .failure code, _ => .error (.rolledBack code)
-      | .value .null, _ => removed
       | .value value, _ =>
-        match collectionItems value with
-        | none => .error (.rolledBack "multiInstance.notACollection")
-        | some members =>
-          if next < members.length then .ok members else .error (.rolledBack "multiInstance.collectionShortened")
+        let read : Except Failure (List Value) :=
+          match collectionItems value with
+          | none => .error (.rolledBack "multiInstance.notACollection")
+          | some members =>
+            if next < members.length then .ok members else .error (.rolledBack "multiInstance.collectionShortened")
+        match value with
+        | .null => removed
+        | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => read
 
 /-- `Hooks.instanceCompleted`: fill the instance's slot, evaluate the completion condition in the instance's scope
 occurrence, leave it, then finish, close early or continue, updating the body's counter locals first. -/

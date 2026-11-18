@@ -598,18 +598,18 @@ theorem submitted_fits {ctx : Ctx} {run : MultiInstanceRun} {loop : MultiInstanc
     obtain rfl : other = loop := Option.some.inj ((linked : _ = some other).symm.trans looped)
     split at ran
     · simp_all
-    · split at ran <;> (try cases ran) <;> rfl
+    · split at ran <;> (try split at ran) <;> cases ran <;> rfl
     · cases ran
   · intro value is items collection
     split at ran
     · cases ran
       cases is
-    · split at ran
+    · simp only [collection] at ran
+      split at ran
       · cases ran
-        simp_all
-        exact ⟨_, is.symm⟩
-      · cases ran
-      · simp_all
+        cases is
+        exact ⟨_, rfl⟩
+      all_goals cases ran
     · cases ran
 
 /-- What a committed `Hooks.instanceCompleted` did for the instance in `scope`: it found the body's record `run` and
@@ -827,7 +827,8 @@ theorem holdsCounts_lookup {ctx : Ctx} {variables : List (String × Value)} {nam
   split at each
   · rename_i actual expected found same
     obtain rfl := Option.some.inj same
-    rw [found, beq_iff_eq.mp each]
+    rw [found]
+    cases actual <;> simp_all
   · cases each
 
 /-- The filled slots `MultiInstance.bodyCounts` counts. -/

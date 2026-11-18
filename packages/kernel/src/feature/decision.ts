@@ -202,9 +202,22 @@ function literalValue(literal: FeelLiteral): Result<Value> {
 
 /** Three-valued FEEL comparison of a converted input with a number literal: `null` is FEEL's null. */
 function ordering(value: Value, bound: FeelLiteral): number | null {
-  if (value.tag !== ValueTag.Int || bound.tag !== FeelLiteralTag.Number) return null;
-  const difference = BigInt(value.value) * 10n ** BigInt(bound.scale) - bound.coefficient;
-  return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+  if (bound.tag !== FeelLiteralTag.Number) return null;
+  switch (value.tag) {
+    case ValueTag.Int: {
+      const difference = BigInt(value.value) * 10n ** BigInt(bound.scale) - bound.coefficient;
+      return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+    }
+    case ValueTag.Null:
+    case ValueTag.Bool:
+    case ValueTag.Decimal:
+    case ValueTag.String:
+    case ValueTag.StringList:
+    case ValueTag.List:
+    case ValueTag.Map:
+      return null;
+  }
+  return assertNever(value);
 }
 
 function satisfies(operator: Comparison, order: number): boolean {
@@ -225,13 +238,49 @@ function satisfies(operator: Comparison, order: number): boolean {
 function equalsLiteral(value: Value, literal: FeelLiteral): boolean {
   switch (literal.tag) {
     case FeelLiteralTag.Null:
-      return value.tag === ValueTag.Null;
+      switch (value.tag) {
+        case ValueTag.Null:
+          return true;
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(value);
     case FeelLiteralTag.Number:
       return ordering(value, literal) === 0;
     case FeelLiteralTag.String:
-      return value.tag === ValueTag.String && value.value === literal.value;
+      switch (value.tag) {
+        case ValueTag.String:
+          return value.value === literal.value;
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(value);
     case FeelLiteralTag.Bool:
-      return value.tag === ValueTag.Bool && value.value === literal.value;
+      switch (value.tag) {
+        case ValueTag.Bool:
+          return value.value === literal.value;
+        case ValueTag.Null:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(value);
   }
   return assertNever(literal);
 }
@@ -319,11 +368,61 @@ function ruleEntries(outputs: readonly DecisionOutput[], rule: DecisionRule): Re
 function sameValue(left: Value, right: Value): boolean {
   switch (left.tag) {
     case ValueTag.Null:
-      return right.tag === ValueTag.Null;
+      switch (right.tag) {
+        case ValueTag.Null:
+          return true;
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(right);
     case ValueTag.Bool:
+      switch (right.tag) {
+        case ValueTag.Bool:
+          return right.value === left.value;
+        case ValueTag.Null:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(right);
     case ValueTag.Int:
+      switch (right.tag) {
+        case ValueTag.Int:
+          return right.value === left.value;
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(right);
     case ValueTag.String:
-      return right.tag === left.tag && right.value === left.value;
+      switch (right.tag) {
+        case ValueTag.String:
+          return right.value === left.value;
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(right);
     case ValueTag.Decimal:
     case ValueTag.StringList:
     case ValueTag.List:

@@ -24,12 +24,18 @@ def simpleBoolean (variables : List (String × Value)) : SimpleBoolean → Bool
   | .isPresent name => (lookup variables name).isSome
   | .isNull name =>
     match lookup variables name with
-    | some .null => true
-    | _ => false
+    | some value =>
+      match value with
+      | .null => true
+      | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+    | none => false
   | .stringEquals name expected =>
     match lookup variables name with
-    | some (.string actual) => actual == expected
-    | _ => false
+    | some value =>
+      match value with
+      | .string actual => actual == expected
+      | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => false
+    | none => false
 
 def evaluate (context : EvalContext) : Expression → Evaluation
   | .literal value => .value value

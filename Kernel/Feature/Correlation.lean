@@ -58,9 +58,12 @@ def criterionHolds (state : State) (scope : ScopeOccurrenceId) (criterion : Corr
     | some (_, value) => sameKindAndValue value criterion.expected
     | none => false
   let names (actual : Option String) : Bool :=
-    match criterion.expected, actual with
-    | .string expected, some actual => expected == actual
-    | _, _ => false
+    match criterion.expected with
+    | .string expected =>
+      match actual with
+      | some actual => expected == actual
+      | none => false
+    | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => false
   match criterion.target with
   | .processVariable name => holds root name
   | .localVariable name => holds scope name
@@ -82,10 +85,13 @@ the key domain excludes, so it is refused like an empty or non-String one, never
 def keyValue (ctx : Ctx) (context : EvalContext) (criterion : CorrelationCriterion) :
     Except Failure String :=
   match ctx.evaluate context criterion.value with
-  -- dynamic-only: a key's value is the run's data.
-  | .value (.string key) => if key.isEmpty then .error (.unsupported "correlation-key-empty") else .ok key
-  -- dynamic-only: a key's value type is the run's data.
-  | .value _ => .error (.unsupported "correlation-key-type")
+  | .value value =>
+    match value with
+    -- dynamic-only: a key's value is the run's data.
+    | .string key => if key.isEmpty then .error (.unsupported "correlation-key-empty") else .ok key
+    | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ =>
+      -- dynamic-only: a key's value type is the run's data.
+      .error (.unsupported "correlation-key-type")
   -- dynamic-only: whether a key's variable is bound is the run's data.
   | .failure "unknown-variable" => .error (.unsupported "correlation-key-unbound")
   -- Unreachable: `message.correlation.value` admits only a variable read, which fails only as `unknown-variable`.
@@ -109,7 +115,7 @@ def correlationMatches (ctx : Ctx) (context : EvalContext) (bound : List Correla
     | .processVariable key =>
       criterion.key == key && match delivered.expected with
         | .string value => value == expected
-        | _ => false
+        | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => false
     -- `criteriaRefusal` refused every other target above; the arm keeps the match total.
     | .localVariable _ | .businessKey | .processInstance => false
 

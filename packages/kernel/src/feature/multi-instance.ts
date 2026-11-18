@@ -224,7 +224,32 @@ function counterLocals(ctx: Ctx, counts: Counts): readonly Binding[] {
 function holdsCounts(ctx: Ctx, variables: readonly Binding[], counts: Counts): boolean {
   return counterLocals(ctx, counts).every(([name, expected]) => {
     const actual = variables.find(([held]) => held === name)?.[1];
-    return actual !== undefined && actual.tag === ValueTag.Int && expected.tag === ValueTag.Int && actual.value === expected.value;
+    if (actual === undefined) return false;
+    switch (actual.tag) {
+      case ValueTag.Int:
+        switch (expected.tag) {
+          case ValueTag.Int:
+            return actual.value === expected.value;
+          case ValueTag.Null:
+          case ValueTag.Bool:
+          case ValueTag.Decimal:
+          case ValueTag.String:
+          case ValueTag.StringList:
+          case ValueTag.List:
+          case ValueTag.Map:
+            return false;
+        }
+        return assertNever(expected);
+      case ValueTag.Null:
+      case ValueTag.Bool:
+      case ValueTag.Decimal:
+      case ValueTag.String:
+      case ValueTag.StringList:
+      case ValueTag.List:
+      case ValueTag.Map:
+        return false;
+    }
+    return assertNever(actual);
   });
 }
 
@@ -272,7 +297,21 @@ function beginInstances(ctx: Ctx, loop: MultiInstance, items: readonly Value[], 
 function outputCollection(collection: Value, collected: readonly Value[]): Value {
   switch (collection.tag) {
     case ValueTag.StringList:
-      return { tag: ValueTag.StringList, items: collected.flatMap((value) => (value.tag === ValueTag.String ? [value.value] : [])) };
+      return { tag: ValueTag.StringList, items: collected.flatMap((value): string[] => {
+        switch (value.tag) {
+          case ValueTag.String:
+            return [value.value];
+          case ValueTag.Null:
+          case ValueTag.Bool:
+          case ValueTag.Int:
+          case ValueTag.Decimal:
+          case ValueTag.StringList:
+          case ValueTag.List:
+          case ValueTag.Map:
+            return [];
+        }
+        return assertNever(value);
+      }) };
     case ValueTag.List:
     case ValueTag.Null:
     case ValueTag.Bool:
@@ -451,8 +490,31 @@ function submitted(loop: MultiInstance, run: MultiInstanceRun, writes: readonly 
   const [only] = writes;
   if (writes.length !== 1 || only === undefined) return failed(FailureTag.Rejected, "undeclared-output");
   const value = only[1];
-  if (run.collection.tag === ValueTag.StringList && value.tag !== ValueTag.String) return failed(FailureTag.Rejected, "instance-output-kind");
-  return committed(value);
+  switch (run.collection.tag) {
+    case ValueTag.StringList:
+      switch (value.tag) {
+        case ValueTag.String:
+          return committed(value);
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return failed(FailureTag.Rejected, "instance-output-kind");
+      }
+      return assertNever(value);
+    case ValueTag.Null:
+    case ValueTag.Bool:
+    case ValueTag.Int:
+    case ValueTag.Decimal:
+    case ValueTag.String:
+    case ValueTag.List:
+    case ValueTag.Map:
+      return committed(value);
+  }
+  return assertNever(run.collection);
 }
 
 /** The body is done: complete it, writing the output collection when every slot is filled. */
@@ -538,10 +600,22 @@ function stops(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: numb
   if ((run.results ?? []).some((name) => !results.includes(name))) return failed(FailureTag.Unsupported, "multiInstance.sequentialResultLeftover");
   const evaluation = ctx.evaluate(conditionContext(ctx, loop, run, index, scope, state), loop.completionCondition);
   switch (evaluation.tag) {
-    case EvaluationTag.Value:
-      return evaluation.result.tag === ValueTag.Bool
-        ? committed(evaluation.result.value)
-        : failed(FailureTag.RolledBack, "multiInstance.completionNotBoolean");
+    case EvaluationTag.Value: {
+      const result = evaluation.result;
+      switch (result.tag) {
+        case ValueTag.Bool:
+          return committed(result.value);
+        case ValueTag.Null:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return failed(FailureTag.RolledBack, "multiInstance.completionNotBoolean");
+      }
+      return assertNever(result);
+    }
     case EvaluationTag.Failure:
       return failed(FailureTag.RolledBack, evaluation.code);
     case EvaluationTag.Unsupported:
@@ -593,10 +667,24 @@ function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: n
     case EvaluationTag.Failure:
       return evaluation.code === "unknown-variable" && read.tag === ExpressionTag.Variable ? removed : failed(FailureTag.RolledBack, evaluation.code);
     case EvaluationTag.Value: {
-      if (evaluation.result.tag === ValueTag.Null) return removed;
-      const members = collectionItems(evaluation.result);
-      if (members === null) return failed(FailureTag.RolledBack, "multiInstance.notACollection");
-      return next < members.length ? committed(members) : failed(FailureTag.RolledBack, "multiInstance.collectionShortened");
+      const result = evaluation.result;
+      switch (result.tag) {
+        case ValueTag.Null:
+          return removed;
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+        {
+          const members = collectionItems(result);
+          if (members === null) return failed(FailureTag.RolledBack, "multiInstance.notACollection");
+          return next < members.length ? committed(members) : failed(FailureTag.RolledBack, "multiInstance.collectionShortened");
+        }
+      }
+      return assertNever(result);
     }
   }
   return assertNever(evaluation);

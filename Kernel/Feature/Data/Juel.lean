@@ -123,46 +123,69 @@ def javaEquals (left : JVal) (right : Value) : Option Bool :=
   | .int a _ =>
     match right with
     | .int b => if a != b then some false else none
-    | _ => some false
+    | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
   | .decimal a scaleA =>
     match right with
     | .decimal b scaleB => some (a == b && scaleA == (scaleB : Int))
-    | _ => some false
+    | .null | .bool _ | .int _ | .string _ | .stringList _ | .list _ | .map _ => some false
   | .list items => valueEquals (.list items) right
   | .map entries => valueEquals (.map entries) right
   | .null =>
     match right with
     | .null => some true
-    | _ => some false
+    | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
   | .bool a =>
     match right with
     | .bool b => some (a == b)
-    | _ => some false
+    | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
   | .string a =>
     match right with
     | .string b => some (a == b)
-    | _ => some false
+    | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => some false
 where
   /-- Two context values, both of unknown class at every depth. -/
   valueEquals : Value → Value → Option Bool
-    | .int a, .int b => if a != b then some false else none
-    | .decimal a scaleA, .decimal b scaleB => some (a == b && scaleA == scaleB)
-    | .list left, .list right =>
-      if left.length != right.length then some false
-      else allEqual ((left.attach.zip right).map fun (⟨a, _⟩, b) => valueEquals a b)
-    | .stringList left, .stringList right => some (left == right)
-    | .stringList left, .list right => textsEqual left right
-    | .list left, .stringList right => textsEqual right left
-    | .map left, .map right =>
-      if left.length != right.length then some false
-      else allEqual (left.attach.map fun ⟨entry, _⟩ =>
-        match right.find? (·.1 == entry.1) with
-        | some (_, other) => valueEquals entry.2 other
-        | none => some false)
-    | .null, .null => some true
-    | .bool a, .bool b => some (a == b)
-    | .string a, .string b => some (a == b)
-    | _, _ => some false
+    | .int a, right =>
+      match right with
+      | .int b => if a != b then some false else none
+      | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
+    | .decimal a scaleA, right =>
+      match right with
+      | .decimal b scaleB => some (a == b && scaleA == scaleB)
+      | .null | .bool _ | .int _ | .string _ | .stringList _ | .list _ | .map _ => some false
+    | .list left, right =>
+      match right with
+      | .list right =>
+        if left.length != right.length then some false
+        else allEqual ((left.attach.zip right).map fun (⟨a, _⟩, b) => valueEquals a b)
+      | .stringList right => textsEqual right left
+      | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .map _ => some false
+    | .stringList left, right =>
+      match right with
+      | .stringList right => some (left == right)
+      | .list right => textsEqual left right
+      | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .map _ => some false
+    | .map left, right =>
+      match right with
+      | .map right =>
+        if left.length != right.length then some false
+        else allEqual (left.attach.map fun ⟨entry, _⟩ =>
+          match right.find? (·.1 == entry.1) with
+          | some (_, other) => valueEquals entry.2 other
+          | none => some false)
+      | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ => some false
+    | .null, right =>
+      match right with
+      | .null => some true
+      | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
+    | .bool a, right =>
+      match right with
+      | .bool b => some (a == b)
+      | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
+    | .string a, right =>
+      match right with
+      | .string b => some (a == b)
+      | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => some false
   termination_by left => sizeOf left
   decreasing_by
     all_goals simp_wf
@@ -175,7 +198,7 @@ where
     else some ((texts.zip items).all fun (text, item) =>
       match item with
       | .string other => other == text
-      | _ => false)
+      | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => false)
 
 def decided (answer : Option Bool) : Eval Bool :=
   match answer with

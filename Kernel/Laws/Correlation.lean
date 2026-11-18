@@ -127,9 +127,12 @@ outside the key domain and are `unsupported`, never a mismatch or a semantic fai
 rolls the command back, and an unsupported evaluation stays unsupported. -/
 def KeyVerdict (evaluation : Evaluation) (verdict : Except Failure String) : Prop :=
   match evaluation with
-  | .value (.string key) =>
-    (key ≠ "" ∧ verdict = .ok key) ∨ (key = "" ∧ verdict = .error (.unsupported "correlation-key-empty"))
-  | .value _ => verdict = .error (.unsupported "correlation-key-type")
+  | .value value =>
+    match value with
+    | .string key =>
+      (key ≠ "" ∧ verdict = .ok key) ∨ (key = "" ∧ verdict = .error (.unsupported "correlation-key-empty"))
+    | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ =>
+      verdict = .error (.unsupported "correlation-key-type")
   | .failure code =>
     (code = "unknown-variable" ∧ verdict = .error (.unsupported "correlation-key-unbound")) ∨
       (code ≠ "unknown-variable" ∧ verdict = .error (.rolledBack code))
