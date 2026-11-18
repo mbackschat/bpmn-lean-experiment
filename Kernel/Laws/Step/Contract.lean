@@ -526,6 +526,8 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
     item.kind.view.incident = some detail → hooks.retryIncident ctx item detail generation state = .ok after → inv ctx.program after
   cancelIncidentProcess : ∀ ctx detail generation state after, inv ctx.program state →
     hooks.cancelIncidentProcess ctx detail generation state = .ok after → inv ctx.program after
+  failJob : ∀ ctx item job state after, inv ctx.program state → item ∈ itemList state.openItems →
+    item.kind.view.job = some job → hooks.failJob ctx item job state = .ok after → inv ctx.program after
   triggerActivity : ∀ ctx header payload item fired state after, inv ctx.program state → item ∈ itemList state.openItems →
     (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) → hooks.triggerActivity ctx header payload item fired state = .ok after → inv ctx.program after
   trigger : ∀ ctx item fired state after, inv ctx.program state → item ∈ itemList state.openItems →

@@ -131,7 +131,8 @@
                 "command",
                 "deliver",
                 "timerFire",
-                "effectResult"
+                "effectResult",
+                "cancelInstance"
               ]
             }
           }

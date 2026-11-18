@@ -20,25 +20,25 @@ import {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
   messageChannelEquals, type MessageWaitDetail, type OpenKind, OpenKindTag, openKindView, optionalChannelEquals,
   type SendDescriptor, type SignalAddress, SignalAddressTag, signalAddressMatches, type SignalWaitDetail, type TimerDetail,
-  type TimerRecurrence, type UserTaskDetail, type WaitView,
+  type TimerRecurrence, type UserTaskDetail, type WaitView, type IncidentSubject, IncidentSubjectTag, type JobDetail,
 } from "./state/wait.js";
 export {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
   messageChannelEquals, type MessageWaitDetail, type OpenKind, OpenKindTag, openKindView, optionalChannelEquals,
   type SendDescriptor, type SignalAddress, SignalAddressTag, signalAddressMatches, type SignalWaitDetail, type TimerDetail,
-  type TimerRecurrence, type UserTaskDetail, type WaitView,
+  type TimerRecurrence, type UserTaskDetail, type WaitView, type IncidentSubject, IncidentSubjectTag, type JobDetail,
 };
 import {
   type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
   type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
-  SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput,
+  SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
 } from "./state/input.js";
 export {
   type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
   type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
-  SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput,
+  SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
 };
 import {
   type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,

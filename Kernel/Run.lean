@@ -60,6 +60,7 @@ def inputTagName : InputTag → String
   | .deliver => "deliver"
   | .timerFire => "timerFire"
   | .effectResult => "effectResult"
+  | .cancelInstance => "cancelInstance"
 
 def definitionRefJson (ref : DefinitionRef) : Json :=
   Json.mkObj [("key", Json.str ref.key), ("version", nullable ref.version toJson),
@@ -71,6 +72,15 @@ def effectFields (effect : EffectDetail) : List (String × Json) :=
     ("arguments", Codec.bindingsToJson effect.arguments), ("failures", toJson effect.failures),
     ("send", nullable effect.send fun send => Json.mkObj [("recipient", nullable send.recipient Json.str),
       ("correlation", Codec.bindingsToJson send.correlation)])]
+
+/-- A job publishes its due time, as CIB exposes a job's due date; its retries and failures are not observed (AD8). -/
+def jobFields (job : JobDetail) : List (String × Json) :=
+  [("dueMs", toJson job.dueMs)]
+
+/-- What an incident's failure belongs to, published under its own member: `effect` or `job`. -/
+def subjectFields : IncidentSubject → List (String × Json)
+  | .effect effect => [("effect", Json.mkObj (effectFields effect))]
+  | .job job => [("job", Json.mkObj (jobFields job))]
 
 def userTaskFields (task : UserTaskDetail) : List (String × Json) :=
   [("name", nullable task.name Json.str), ("assignee", nullable task.assignee Json.str),
@@ -84,8 +94,9 @@ def userTaskFields (task : UserTaskDetail) : List (String × Json) :=
 /-- A wait's detail kind and fields, read from the one view field its kind sets (`OpenKind.view`). -/
 def detail (view : WaitView) : Option (String × List (String × Json)) :=
   (view.userTask.map fun task => ("userTask", userTaskFields task)) <|>
-  (view.incident.map fun incident => ("incident", [("effect", Json.mkObj (effectFields incident.effect)),
-    ("generation", toJson incident.generation), ("cancellable", toJson incident.cancellable)])) <|>
+  (view.incident.map fun incident => ("incident", subjectFields incident.subject ++
+    [("generation", toJson incident.generation), ("cancellable", toJson incident.cancellable)])) <|>
+  (view.job.map fun job => ("job", jobFields job)) <|>
   (view.effect.map fun effect => ("effect", effectFields effect)) <|>
   (view.signal.map fun signal => ("signal", Codec.signalAddressToJson signal.address ++ [("payload", toJson signal.payload)])) <|>
   (view.conditional.map fun condition => ("conditional", [("variableName", nullable condition.variableName Json.str),

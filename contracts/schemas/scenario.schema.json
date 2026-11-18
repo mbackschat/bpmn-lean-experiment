@@ -46,6 +46,9 @@
           },
           {
             "$ref": "#/$defs/effectResult"
+          },
+          {
+            "$ref": "#/$defs/cancelInstance"
           }
         ]
       }
@@ -570,6 +573,9 @@
         },
         {
           "$ref": "#/$defs/effectResult"
+        },
+        {
+          "$ref": "#/$defs/cancelInstance"
         }
       ]
     },
@@ -1085,6 +1091,33 @@
         },
         "outcome": {
           "$ref": "#/$defs/effectOutcome"
+        },
+        "at": {
+          "$ref": "#/$defs/logicalTime"
+        },
+        "conditionChoices": {
+          "$ref": "#/$defs/conditionChoices"
+        }
+      }
+    },
+    "cancelInstance": {
+      "description": "General cancellation of the process instance it names (HD4); the kernel refuses it as unsupported `cancel-instance` until its stage fills it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "processInstanceId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "cancelInstance"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "processInstanceId": {
+          "$ref": "#/$defs/nonEmptyString"
         },
         "at": {
           "$ref": "#/$defs/logicalTime"

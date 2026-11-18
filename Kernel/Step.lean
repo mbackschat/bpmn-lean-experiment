@@ -66,6 +66,7 @@ def inputHead : Input → InputTag × Option Nat × List ConditionChoice
   | .deliver payload => (.deliver, payload.atMs, payload.conditionChoices)
   | .timerFire payload => (.timerFire, some (payload.atMs.getD payload.logicalTimeMs), payload.conditionChoices)
   | .effectResult payload => (.effectResult, payload.atMs, payload.conditionChoices)
+  | .cancelInstance payload => (.cancelInstance, payload.atMs, payload.conditionChoices)
 
 /-- Reject an input's ranking of competing Conditional items before its transition: an element listed twice
 (`condition-choice-duplicate`; the schema's `uniqueItems` does not reach a caller that decodes without it), or one that
@@ -480,5 +481,7 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
   | .effectResult data =>
     effectContinuation ctx data fun data =>
       onRunning hooks ctx (.effectResult data) before (deliverEffectResult hooks ctx data)
+  -- dynamic-only: an input, which no admission sees; general cancellation is HD4's, refused until its stage fills it
+  | .cancelInstance _ => .error (.unsupported "cancel-instance")
 
 end Kernel.Step

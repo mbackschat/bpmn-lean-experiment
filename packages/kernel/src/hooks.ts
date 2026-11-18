@@ -58,6 +58,7 @@ import {
   visible,
   type Binding,
   type IncidentDetail,
+  type JobDetail,
   type ConditionChoice,
   type CorrelationMatch,
   type DeliveryInput,
@@ -611,6 +612,8 @@ export interface Hooks {
   readonly retryIncident: (ctx: Ctx, item: OpenItem, incident: IncidentDetail, generation: number, state: State) => Outcome;
   /** Work: cancel the process of the open incident whose detail is given, for the generation the command names. */
   readonly cancelIncidentProcess: (ctx: Ctx, incident: IncidentDetail, generation: number, state: State) => Outcome;
+  /** Work: the open job item, whose detail is given, failed (`step/jobs.ts#jobFailure`). */
+  readonly failJob: (ctx: Ctx, item: OpenItem, job: JobDetail, state: State) => Outcome;
   /** Work: a message or timer subscription an Activity opened itself (a Receive Task) fired. */
   readonly triggerActivity: (
     ctx: Ctx, header: Header, payload: ActivityPayload, item: OpenItem, fired: Fired, state: State) => Outcome;
@@ -708,6 +711,7 @@ export const defaultHooks: Hooks = {
   effectResult: () => refuse("effectResult"),
   retryIncident: () => refuse("retryIncident"),
   cancelIncidentProcess: () => refuse("cancelIncidentProcess"),
+  failJob: () => refuse("failJob"),
   triggerActivity: () => refuse("triggerActivity"),
   trigger: () => refuse("trigger"),
   arm: () => refuse("arm"),

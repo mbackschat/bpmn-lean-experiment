@@ -91,6 +91,11 @@ theorem hooks_retryIncident : Registry.hooks.retryIncident = Feature.Work.retryI
 theorem hooks_cancelIncidentProcess : Registry.hooks.cancelIncidentProcess = Feature.Work.cancelIncidentProcess := by
   simp only [Registry.hooks]
 
+/-- No job fails yet: the job model's stage fills `Hooks.failJob` (AD8). -/
+theorem hooks_failJob : Registry.hooks.failJob = fun _ _ _ _ => .error (.unsupported "job-failure") := by
+  funext ctx item job state
+  simp only [Registry.hooks, Registry.jobFailureRefused]
+
 /-- Subscriptions disarms every completing occurrence. -/
 theorem hooks_leave : Registry.hooks.leave = Feature.Subscriptions.leave := by
   simp only [Registry.hooks]

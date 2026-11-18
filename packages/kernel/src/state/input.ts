@@ -166,6 +166,17 @@ export interface EffectInput {
 }
 
 /**
+ * General cancellation of the process instance `processInstanceId` names (HD4): an input of its own, since an instance
+ * holding no published wait has no occurrence a command could address. `step.ts` refuses it until the cancellation's
+ * stage fills it.
+ */
+export interface CancelInstanceInput {
+  readonly processInstanceId: string;
+  readonly atMs: number | null;
+  readonly conditionChoices: readonly ConditionChoice[];
+}
+
+/**
  * Guarded type: `step.ts` owns matching on it. Every payload carries `atMs`, the input's logical time in milliseconds:
  * the clock advances to it before the input's transition, so a timer armed by the input counts from it, and `null` leaves
  * the clock where it is. Logical time is an explicit input, never a wall clock.
@@ -180,7 +191,8 @@ export type Input =
   | { readonly tag: InputTag.Command; readonly payload: CommandInput }
   | { readonly tag: InputTag.Deliver; readonly payload: DeliveryInput }
   | { readonly tag: InputTag.TimerFire; readonly payload: TimerInput }
-  | { readonly tag: InputTag.EffectResult; readonly payload: EffectInput };
+  | { readonly tag: InputTag.EffectResult; readonly payload: EffectInput }
+  | { readonly tag: InputTag.CancelInstance; readonly payload: CancelInstanceInput };
 
 /** What an expression reads: the variables in view and the logical time, never a wall clock. */
 export interface EvalContext {

@@ -72,6 +72,8 @@ function route(input: Input): Route {
     case InputTag.Deliver: return Route.Deliver;
     case InputTag.TimerFire: return Route.TimerFire;
     case InputTag.EffectResult: return Route.EffectResult;
+    // HD4: general cancellation rides the command Update.
+    case InputTag.CancelInstance: return Route.Command;
   }
   return assertNever(input);
 }

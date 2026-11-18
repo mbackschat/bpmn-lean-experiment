@@ -54,7 +54,7 @@ function itemOfT(state: State): Readonly<{ incident: number | null; failures: nu
   const [item] = state.openItems.filter((entry) => entry.element === "T");
   assert.ok(item !== undefined, "T has no open item");
   const { tag, detail } = item.kind as unknown as { tag: string; detail: Record<string, unknown> };
-  const effect = (tag === "incident" ? detail["effect"] : detail) as { failures: number };
+  const effect = (tag === "incident" ? (detail["subject"] as { detail: unknown }).detail : detail) as { failures: number };
   return { incident: tag === "incident" ? detail["generation"] as number : null, failures: effect.failures };
 }
 

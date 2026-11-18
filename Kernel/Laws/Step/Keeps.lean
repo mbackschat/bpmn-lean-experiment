@@ -294,7 +294,7 @@ theorem reoffer_keeps (contract : HookContract hooks inv) (phases : ClosurePhase
 theorem transition_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) {ctx : Ctx}
     {transition : State → Outcome} (runs : RunsTransition hooks ctx transition) {state after : State}
     (holds : inv ctx.program state) (ran : transition state = .ok after) : inv ctx.program after := by
-  rcases runs with ⟨data, same⟩ | ⟨data, same⟩ | fires
+  rcases runs with ⟨data, same⟩ | ⟨data, same⟩ | ⟨data, same⟩ | fires
   · subst same
     cases command_ok ran with
     | completeUserTask open_ activity ran => exact contract.completeUserTask _ _ _ _ _ _ _ holds open_ activity ran
@@ -305,6 +305,9 @@ theorem transition_keeps (contract : HookContract hooks inv) (phases : ClosurePh
   · subst same
     obtain ⟨_, open_, effect, ran⟩ := deliverEffectResult_ok ran
     exact contract.effectResult _ _ _ _ _ holds open_ effect ran
+  · subst same
+    obtain ⟨_, _, found, ran⟩ := jobFailure_ok ran
+    exact contract.failJob _ _ _ _ _ holds (Laws.Hooks.itemDetail?_mem found) (Laws.Hooks.itemDetail?_view found) ran
   · obtain ⟨_, _, picked, fired⟩ := fires _ _ ran
     rcases picked with open_ | ⟨_, delivered⟩
     · exact fireItem_keeps contract holds open_ fired

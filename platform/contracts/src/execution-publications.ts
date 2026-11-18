@@ -43,6 +43,7 @@ export const ExecutionInputKind = {
   Deliver: "deliver",
   TimerFire: "timerFire",
   EffectResult: "effectResult",
+  CancelInstance: "cancelInstance",
 } as const;
 
 export type ExecutionInputKind = typeof ExecutionInputKind[keyof typeof ExecutionInputKind];

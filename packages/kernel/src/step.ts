@@ -621,6 +621,8 @@ export function step(hooks: Hooks, program: Program, before: State | null, input
     case InputTag.EffectResult:
       return effectContinuation(ctx, input.payload, (data) =>
         onRunning(hooks, ctx, InputTag.EffectResult, data.atMs, before, (state) => deliverEffectResult(hooks, ctx, data, state)));
+    case InputTag.CancelInstance: // HD4's general cancellation, refused until its stage fills it
+      return failed(FailureTag.Unsupported, "cancel-instance"); // dynamic-only: an input, which no admission sees
   }
   return assertNever(input);
 }

@@ -2,7 +2,8 @@
  * Outcomes the caller's input decides and no admission can see (`dynamic-only`), under the standards profile of
  * `base()`: API correlation criteria delivered to a Message catch that models no key, which `MessageCorrelation.ModeledKey`
  * does not claim, and a technical failure of a Service Task's effect, which `TechnicalFailure.HostFailure` leaves to the
- * host. Each runs through lean-paired.ts, so the Lean kernel answers it too.
+ * host; and a general cancellation of the instance, which no stage fills yet (HD4). Each runs through lean-paired.ts, so
+ * the Lean kernel answers it too.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -36,4 +37,10 @@ test("a Service Task's technical failure is unsupported when the profile leaves 
   const failure: Json = { kind: "effectResult", commandId: "fail", occurrence, outcome: { kind: "technicalFailure" } };
   assert.deepEqual(outcomes(task(activity("T", serviceWork()))(base()), failure),
     [["committed", null], ["unsupported", "effect-technical-failure"]]);
+});
+
+test("a general cancellation of the instance is unsupported until its stage fills it (HD4)", () => {
+  const cancel: Json = { kind: "cancelInstance", commandId: "cancel", processInstanceId: "I" };
+  assert.deepEqual(outcomes(task(activity("T", serviceWork()))(base()), cancel),
+    [["committed", null], ["unsupported", "cancel-instance"]]);
 });

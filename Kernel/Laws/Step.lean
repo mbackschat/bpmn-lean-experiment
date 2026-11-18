@@ -242,7 +242,8 @@ theorem step_eq {hooks : Hooks} {program : Program} {before : Option State} {inp
         | some item => fireItem hooks ctx item (.timer data.logicalTimeMs) state
       | .effectResult data =>
         effectContinuation ctx data fun data =>
-          onRunning hooks ctx (.effectResult data) before (deliverEffectResult hooks ctx data) := by
+          onRunning hooks ctx (.effectResult data) before (deliverEffectResult hooks ctx data)
+      | .cancelInstance _ => .error (.unsupported "cancel-instance") := by
   unfold step; rfl
 
 /-- `Step.admittedStartsFired` restated: a start's submitted values are admitted before its starts are fired. -/

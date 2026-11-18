@@ -371,6 +371,8 @@ structure Hooks where
   retryIncident : Ctx → OpenItem → IncidentDetail → Nat → State → Outcome := fun _ _ _ _ => refuse "retryIncident"
   /-- Work: cancel the process of the open incident whose detail is given, for the generation the command names. -/
   cancelIncidentProcess : Ctx → IncidentDetail → Nat → State → Outcome := fun _ _ _ => refuse "cancelIncidentProcess"
+  /-- Work: the open job item, whose detail is given, failed (`Step.jobFailure`). -/
+  failJob : Ctx → OpenItem → JobDetail → State → Outcome := fun _ _ _ => refuse "failJob"
   /-- Work: a message or timer subscription an Activity opened itself (a Receive Task) fired. -/
   triggerActivity : Ctx → Header → ActivityPayload → OpenItem → Fired → State → Outcome :=
     fun _ _ _ _ _ => refuse "triggerActivity"

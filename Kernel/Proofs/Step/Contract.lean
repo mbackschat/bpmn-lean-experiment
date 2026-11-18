@@ -486,6 +486,8 @@ theorem registered_contract_of {inv : Program → State → Prop} (ops : Feature
   cancelIncidentProcess _ _ _ _ _ holds ran := by
     rw [Laws.Registry.hooks_cancelIncidentProcess] at ran
     exact Laws.Work.cancelIncidentProcess_keeps (ops.work _) holds ran
+  failJob _ _ _ _ _ _ _ _ ran := by
+    simp [Laws.Registry.hooks_failJob] at ran
   triggerActivity _ _ _ _ _ _ _ holds member activity ran := by
     rw [Laws.Registry.hooks_triggerActivity] at ran
     exact Laws.Work.triggerActivity_keeps (ops.work _) holds member activity ran

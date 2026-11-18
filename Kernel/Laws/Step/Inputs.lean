@@ -63,15 +63,16 @@ theorem step_ok {hooks : Hooks} {program : Program} {before : Option State} {inp
       exact ⟨payload, by simp, by simp, ⟨start, initial, moved, final, clocked, stepped, settled, made, fired, admitted,
         chosen⟩⟩
   · exact .inr ⟨_, _, .inl ⟨_, rfl⟩, ran⟩
-  · refine .inr ⟨_, _, .inr (.inr fun state after transition => ?_), ran⟩
+  · refine .inr ⟨_, _, .inr (.inr (.inr fun state after transition => ?_)), ran⟩
     obtain ⟨⟨item, fired⟩, picked, fire⟩ := bind_ok transition
     exact ⟨item, fired, .inr ⟨_, picked⟩, fire⟩
-  · refine .inr ⟨_, _, .inr (.inr fun state after transition => ?_), timerJob_ok ran⟩
+  · refine .inr ⟨_, _, .inr (.inr (.inr fun state after transition => ?_)), timerJob_ok ran⟩
     split at transition
     · simp at transition
     · exact ⟨_, _, .inl (Laws.Hooks.item?_mem ‹_›), transition⟩
   · obtain ⟨reported, ran⟩ := effectContinuation_ok ran
     exact .inr ⟨_, _, .inr (.inl ⟨reported, rfl⟩), ran⟩
+  · simp at ran
 
 theorem nextToken_rest {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
     (next : nextToken ctx state = some (token, rest)) : rest.Sublist state.tokens := by

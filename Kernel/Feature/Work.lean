@@ -325,7 +325,8 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
       -- incident is stale (CIB-EXT-0013; `fulfilment-repeated-incident` publishes generation 2 after one retry).
       let effect := { detail with failures := detail.failures + 1 }
       .ok (reopen state item.id
-        (.incident { effect, generation := effect.failures, cancellable := ctx.program.options.incidentProcessCancellation }))
+        (.incident { subject := .effect effect, generation := effect.failures
+                     cancellable := ctx.program.options.incidentProcessCancellation }))
   -- Dynamic-only: what a host could not represent is known only once the effect ran.
   | .unsupported code => .error (.unsupported code)
 
@@ -339,7 +340,11 @@ Process instance, which deletes its called instances with it (`CibSevenCommandEx
 A command naming another generation than the open incident's is stale and rejected, so it never resolves an incident its
 issuer did not observe. -/
 def retryIncident (_ : Ctx) (item : OpenItem) (incident : IncidentDetail) (generation : Nat) (state : State) : Outcome :=
-  if generation != incident.generation then staleIncident else .ok (reopen state item.id (.effect incident.effect))
+  if generation != incident.generation then staleIncident
+  else match incident.subject with
+    | .effect effect => .ok (reopen state item.id (.effect effect))
+    -- dynamic-only: no feature opens a job's incident until the job model's stage (AD8) retries it
+    | .job _ => .error (.unsupported "job-incident-retry")
 
 /-- See `retryIncident`. -/
 def cancelIncidentProcess (_ : Ctx) (incident : IncidentDetail) (generation : Nat) (state : State) : Outcome :=

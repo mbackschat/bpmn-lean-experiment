@@ -87,7 +87,7 @@ structure StartRan (hooks : Hooks) (program : Program) (payload : StartInput) (a
 `Hooks.delivered` picked. -/
 def RunsTransition (hooks : Hooks) (ctx : Ctx) (transition : State → Outcome) : Prop :=
   (∃ data, transition = command hooks ctx data) ∨ (∃ data, transition = deliverEffectResult hooks ctx data) ∨
-    ∀ state after, transition state = .ok after → ∃ item fired,
+    (∃ data, transition = jobFailure hooks ctx data) ∨ ∀ state after, transition state = .ok after → ∃ item fired,
       (item ∈ itemList state.openItems ∨ ∃ data, hooks.delivered ctx data state = .ok (item, fired)) ∧
       fireItem hooks ctx item fired state = .ok after
 

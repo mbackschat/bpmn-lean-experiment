@@ -140,6 +140,17 @@ structure EffectInput where
   conditionChoices : List ConditionChoice := []
   deriving Repr
 
+/-- General cancellation of the process instance `processInstanceId` names (HD4): an input of its own, since an
+instance holding no published wait has no occurrence a command could address. `Kernel.Step` refuses it until the
+cancellation's stage fills it. -/
+structure CancelInstanceInput where
+  processInstanceId : String
+  /-- The input's logical time (`Input.atMs`). -/
+  atMs : Option Nat := none
+  /-- The input's ranking of competing Conditional items (`Input.conditionChoices`). -/
+  conditionChoices : List ConditionChoice := []
+  deriving Repr
+
 /-- Guarded type: `Kernel.Step` owns matching on it. Every payload carries `atMs`, the input's logical time in
 milliseconds: the clock advances to it before the input's transition, so a timer armed by the input counts from it, and
 `none` leaves the clock where it is. Logical time is an explicit input, never a wall clock.
@@ -154,6 +165,7 @@ inductive Input where
   | deliver (payload : DeliveryInput)
   | timerFire (payload : TimerInput)
   | effectResult (payload : EffectInput)
+  | cancelInstance (payload : CancelInstanceInput)
   deriving Repr
 
 /-- What an expression reads: the variables in view and the logical time, never a wall clock. -/

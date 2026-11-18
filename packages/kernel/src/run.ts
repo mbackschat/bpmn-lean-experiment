@@ -42,6 +42,9 @@ import {
   FailureTag,
   type Cause,
   type EffectDetail,
+  type IncidentSubject,
+  IncidentSubjectTag,
+  type JobDetail,
   type Input,
   type InstanceFailure,
   type OccurrenceKey,
@@ -127,13 +130,30 @@ function userTaskFields(task: UserTaskDetail): Record<string, JsonValue> {
   };
 }
 
+/** A job publishes its due time, as CIB exposes a job's due date; its retries and failures are not observed (AD8). */
+function jobFields(job: JobDetail): Record<string, JsonValue> {
+  return { dueMs: job.dueMs };
+}
+
+/** What an incident's failure belongs to, published under its own member: `effect` or `job`. */
+function subjectFields(subject: IncidentSubject): Record<string, JsonValue> {
+  switch (subject.tag) {
+    case IncidentSubjectTag.Effect:
+      return { effect: effectFields(subject.detail) };
+    case IncidentSubjectTag.Job:
+      return { job: jobFields(subject.detail) };
+  }
+  return assertNever(subject);
+}
+
 /** A wait's detail kind and fields, read from the one view field its kind sets (`openKindView`). */
 function detail(view: WaitView): readonly [string, Record<string, JsonValue>] | null {
   if (view.userTask !== null) return ["userTask", userTaskFields(view.userTask)];
   if (view.incident !== null) {
     const incident = view.incident;
-    return ["incident", { effect: effectFields(incident.effect), generation: incident.generation, cancellable: incident.cancellable }];
+    return ["incident", { ...subjectFields(incident.subject), generation: incident.generation, cancellable: incident.cancellable }];
   }
+  if (view.job !== null) return ["job", jobFields(view.job)];
   if (view.effect !== null) return ["effect", effectFields(view.effect)];
   if (view.signal !== null) return ["signal", { ...signalAddressToJson(view.signal.address), payload: view.signal.payload }];
   if (view.conditional !== null) {

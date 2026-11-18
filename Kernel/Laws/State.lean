@@ -275,7 +275,7 @@ theorem closeItem_eq (state : State) (id : ItemKey) :
 /-- A subscription's item waits for a trigger: no effect result or incident command closes it. -/
 theorem triggers_await : (∀ detail, AwaitsTrigger (.timer detail)) ∧ (∀ detail, AwaitsTrigger (.message detail)) ∧
     (∀ detail, AwaitsTrigger (.signal detail)) ∧ ∀ detail, AwaitsTrigger (.conditional detail) :=
-  ⟨fun _ => ⟨rfl, rfl⟩, fun _ => ⟨rfl, rfl⟩, fun _ => ⟨rfl, rfl⟩, fun _ => ⟨rfl, rfl⟩⟩
+  ⟨fun _ => ⟨rfl, rfl, rfl⟩, fun _ => ⟨rfl, rfl, rfl⟩, fun _ => ⟨rfl, rfl, rfl⟩, fun _ => ⟨rfl, rfl, rfl⟩⟩
 
 theorem closeOwnItems_eq (state : State) (id : Nat) :
     state.closeOwnItems id = { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != id } := by

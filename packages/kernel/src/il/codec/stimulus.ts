@@ -413,6 +413,10 @@ function inputFromJson(
       const outcome = effectOutcomeFromJson(present(json, "outcome"));
       return [{ tag: InputTag.EffectResult, payload: { occurrence: ref, outcome, atMs, conditionChoices } }, null];
     }
+    case "cancelInstance": {
+      const processInstanceId = get(stringField(json, "processInstanceId"));
+      return [{ tag: InputTag.CancelInstance, payload: { processInstanceId, atMs, conditionChoices } }, null];
+    }
   }
   throw new Refusal(`unknown stimulus kind ${kind}`);
 }
@@ -423,6 +427,7 @@ const stimulusForms: Readonly<Record<string, readonly [readonly string[], readon
   deliver: [["occurrence", "trigger"], ["correlation", "payload", "variables", "at", "conditionChoices"]],
   timerFire: [["occurrence", "logicalTimeMs"], ["at", "conditionChoices"]],
   effectResult: [["occurrence", "outcome"], ["at", "conditionChoices"]],
+  cancelInstance: [["processInstanceId"], ["at", "conditionChoices"]],
 };
 
 /** One scenario stimulus with the Timer firing it states, every refusal carrying its strict-decoding code. */

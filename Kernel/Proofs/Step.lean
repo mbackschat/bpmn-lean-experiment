@@ -180,7 +180,7 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
     cases start : (program.element? item.element).bind (·.start?) with
     | none => rfl
     | some _ =>
-      obtain ⟨_, _, _, ⟨effect, incident⟩⟩ := formed.typed item member (by rw [start]; rfl)
+      obtain ⟨_, _, _, ⟨effect, incident, _⟩⟩ := formed.typed item member (by rw [start]; rfl)
       rw [effect, incident] at waits
       simp at waits
   activity element _ _ typed := by

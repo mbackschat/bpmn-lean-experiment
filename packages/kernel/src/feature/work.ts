@@ -55,6 +55,7 @@ import {
   enterScope,
   failed,
   failedWith,
+  IncidentSubjectTag,
   leaveOutgoing,
   leaveRaised,
   localScope,
@@ -567,7 +568,8 @@ function technicalFailure(ctx: Ctx, item: OpenItem, state: State): Outcome {
       const effect = { ...detail, failures: detail.failures + 1 };
       const cancellable = ctx.program.options.incidentProcessCancellation;
       return committed(reopen(state, item.id, {
-        tag: OpenKindTag.Incident, detail: { effect, generation: effect.failures, cancellable },
+        tag: OpenKindTag.Incident,
+        detail: { subject: { tag: IncidentSubjectTag.Effect, detail: effect }, generation: effect.failures, cancellable },
       }));
     }
   }
@@ -589,7 +591,15 @@ function staleIncident(): Outcome {
  */
 export function retryIncident(_ctx: Ctx, item: OpenItem, incident: IncidentDetail, generation: number, state: State): Outcome {
   if (generation !== incident.generation) return staleIncident();
-  return committed(reopen(state, item.id, { tag: OpenKindTag.Effect, detail: incident.effect }));
+  const subject = incident.subject;
+  switch (subject.tag) {
+    case IncidentSubjectTag.Effect:
+      return committed(reopen(state, item.id, { tag: OpenKindTag.Effect, detail: subject.detail }));
+    case IncidentSubjectTag.Job:
+      // dynamic-only: no feature opens a job's incident until the job model's stage (AD8) retries it
+      return failed(FailureTag.Unsupported, "job-incident-retry");
+  }
+  return assertNever(subject);
 }
 
 /** See `retryIncident`. */

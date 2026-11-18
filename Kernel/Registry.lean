@@ -33,6 +33,11 @@ def startsHooks : Feature.Starts.StartsHooks :=
 def subscriptionsHooks : Feature.Subscriptions.SubscriptionsHooks :=
   { correlationAccepts := Feature.Correlation.correlationAccepts }
 
+/-- `Hooks.failJob` until the job model's stage (AD8) fills it with Work's failure. -/
+def jobFailureRefused (_ : Ctx) (_ : OpenItem) (_ : JobDetail) (_ : State) : Outcome :=
+  -- dynamic-only: no feature opens a job item before that stage, so no admission sees one
+  .error (.unsupported "job-failure")
+
 def hooks : Hooks :=
   { arriveStart := Feature.Starts.arriveStart startsHooks
     arriveActivity := Feature.Work.arriveActivity workHooks
@@ -49,6 +54,7 @@ def hooks : Hooks :=
     effectResult := Feature.Work.effectResult
     retryIncident := Feature.Work.retryIncident
     cancelIncidentProcess := Feature.Work.cancelIncidentProcess
+    failJob := jobFailureRefused
     triggerActivity := Feature.Work.triggerActivity workHooks
     trigger := Feature.Subscriptions.trigger subscriptionsHooks
     arm := Feature.Subscriptions.arm

@@ -65,4 +65,14 @@ theorem rejected_effectContinuation {ctx : Ctx} {data : EffectInput} {run : Effe
   unfold effectContinuation
   split <;> simp_all
 
+/-- A committed job failure failed the job item the firing addresses (`Hooks.failJob`). -/
+theorem jobFailure_ok {hooks : Hooks} {ctx : Ctx} {data : TimerInput} {state after : State}
+    (ran : jobFailure hooks ctx data state = .ok after) :
+    ∃ item job, itemDetail? ctx state data.occurrence (·.job) = some (item, job) ∧
+      hooks.failJob ctx item job state = .ok after := by
+  unfold jobFailure at ran
+  split at ran
+  · simp at ran
+  · exact ⟨_, _, ‹_›, ran⟩
+
 end Kernel.Laws.Step

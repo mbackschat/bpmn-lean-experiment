@@ -79,7 +79,8 @@
         "command",
         "deliver",
         "timerFire",
-        "effectResult"
+        "effectResult",
+        "cancelInstance"
       ]
     },
     "startTrigger": {
@@ -130,7 +131,8 @@
         "conditional",
         "timer",
         "effect",
-        "incident"
+        "incident",
+        "job"
       ]
     },
     "instanceStatus": {

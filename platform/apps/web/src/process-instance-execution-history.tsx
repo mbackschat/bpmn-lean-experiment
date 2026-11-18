@@ -86,6 +86,8 @@ function inputTitle(input: ExecutionInputKind): string {
       return "Timer firing";
     case ExecutionInputKind.EffectResult:
       return "Effect result";
+    case ExecutionInputKind.CancelInstance:
+      return "Instance cancellation";
   }
 }
 

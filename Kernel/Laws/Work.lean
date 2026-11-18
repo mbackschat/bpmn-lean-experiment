@@ -287,8 +287,10 @@ theorem retryIncident_keeps {inv : State → Prop} (ops : WorkOps program inv) {
   unfold Feature.Work.retryIncident Feature.Work.staleIncident at ran
   split at ran
   · cases ran
-  · cases ran
-    exact reopen_keeps ops holds member (.inr (by rw [waits]; rfl)) _
+  · split at ran
+    · cases ran
+      exact reopen_keeps ops holds member (.inr (by rw [waits]; rfl)) _
+    · cases ran
 
 /-- `Hooks.cancelIncidentProcess` keeps `inv`. -/
 theorem cancelIncidentProcess_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {incident : IncidentDetail}

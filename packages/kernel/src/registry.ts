@@ -13,7 +13,7 @@ import * as Subscriptions from "./feature/subscriptions.js";
 import * as Starts from "./feature/starts.js";
 import * as Correlation from "./feature/correlation.js";
 import * as Delivery from "./feature/subscriptions/delivery.js";
-import { WriteRule } from "./state.js";
+import { FailureTag, WriteRule, failed, type Outcome } from "./state.js";
 
 /** What Work reaches of its sub-features: Decision's tables, Correlation's API criteria and a Message payload's bindings. */
 const workHooks: Work.WorkHooks = {
@@ -38,6 +38,12 @@ const propagationHooks: Propagation.PropagationHooks = {
   handlerRecord: Compensation.runningRecord,
 };
 
+/** `Hooks.failJob` until the job model's stage (AD8) fills it with Work's failure. */
+function jobFailureRefused(): Outcome {
+  // dynamic-only: no feature opens a job item before that stage, so no admission sees one
+  return failed(FailureTag.Unsupported, "job-failure");
+}
+
 export const hooks: Hooks = {
   ...defaultHooks,
   arriveStart: (ctx, header, payload, trigger, occurrence, state) => Starts.arriveStart(startsHooks, ctx, header, payload, trigger, occurrence, state),
@@ -55,6 +61,7 @@ export const hooks: Hooks = {
   effectResult: Work.effectResult,
   retryIncident: Work.retryIncident,
   cancelIncidentProcess: Work.cancelIncidentProcess,
+  failJob: jobFailureRefused,
   triggerActivity: (ctx, header, payload, item, fired, state) => Work.triggerActivity(workHooks, ctx, header, payload, item, fired, state),
   trigger: (ctx, item, fired, state) => Subscriptions.trigger(subscriptionsHooks, ctx, item, fired, state),
   arm: Subscriptions.arm,

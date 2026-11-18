@@ -549,6 +549,37 @@
               "$ref": "#/$defs/incidentDetail"
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "definition",
+            "input",
+            "detail"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+            },
+            "definition": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/definitionRef"
+                }
+              ]
+            },
+            "input": {
+              "const": "timerFire"
+            },
+            "detail": {
+              "$ref": "#/$defs/jobDetail"
+            }
+          }
         }
       ]
     },
@@ -917,12 +948,29 @@
         }
       }
     },
-    "incidentDetail": {
+    "jobDetail": {
+      "description": "A job the kernel runs as an input of its own (AD8): only its due time is observed, as CIB exposes a job's due date.",
       "type": "object",
       "additionalProperties": false,
       "required": [
         "kind",
-        "effect",
+        "dueMs"
+      ],
+      "properties": {
+        "kind": {
+          "const": "job"
+        },
+        "dueMs": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        }
+      }
+    },
+    "incidentDetail": {
+      "description": "An incident names its subject by exactly one member: the failed effect or the failed job.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
         "generation",
         "cancellable"
       ],
@@ -931,45 +979,87 @@
           "const": "incident"
         },
         "effect": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "protocol",
-            "operation",
-            "arguments",
-            "failures",
-            "send"
-          ],
-          "properties": {
-            "protocol": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
-            },
-            "operation": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
-            },
-            "arguments": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
-            },
-            "failures": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
-            },
-            "send": {
-              "oneOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "$ref": "#/$defs/sendDescriptor"
-                }
-              ]
-            }
-          }
+          "$ref": "#/$defs/incidentEffect"
+        },
+        "job": {
+          "$ref": "#/$defs/incidentJob"
         },
         "generation": {
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
         },
         "cancellable": {
           "type": "boolean"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "effect": {
+              "$ref": "#/$defs/incidentEffect"
+            }
+          },
+          "required": [
+            "effect"
+          ]
+        },
+        {
+          "properties": {
+            "job": {
+              "$ref": "#/$defs/incidentJob"
+            }
+          },
+          "required": [
+            "job"
+          ]
+        }
+      ]
+    },
+    "incidentEffect": {
+      "description": "The failed effect an incident replaces.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "operation",
+        "arguments",
+        "failures",
+        "send"
+      ],
+      "properties": {
+        "protocol": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "operation": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "arguments": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
+        },
+        "failures": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        },
+        "send": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sendDescriptor"
+            }
+          ]
+        }
+      }
+    },
+    "incidentJob": {
+      "description": "The failed job an incident replaces (AD8): only its due time is observed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dueMs"
+      ],
+      "properties": {
+        "dueMs": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
         }
       }
     },

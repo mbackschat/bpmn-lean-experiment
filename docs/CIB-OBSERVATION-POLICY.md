@@ -89,6 +89,7 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `openWaits[].detail.variableEvents` | `adapter-derived` | `camunda:variableEvents` list of the deployed model's conditional event definition (`CibSevenOpenWaitProjector.conditionalDetail`) |
 | `openWaits[].detail.lastValue` | `not-claimed` | The runner writes null; CIB exposes no last evaluated condition value |
 | `openWaits[].detail.deadlineMs` | `adapter-derived` | `Job.getDuedate` minus the fixed logical epoch (`CibSevenOpenWaitProjector.projectJobs`) |
+| `openWaits[].detail.dueMs` | `not-claimed` | A job wait the kernel runs as an input of its own (`OpenKind.job`, AD8); no job model opens one yet, and the runner projects no such wait |
 | `openWaits[].detail.recurrence` | `adapter-derived` | `CibSevenOpenWaitProjector.recurrence` over `TimerEntity.getRepeat`; null when the timer does not repeat |
 | `openWaits[].detail.recurrence.periodMs` | `adapter-derived` | Period of an ISO `R[n]/[start/]period` repeat expression parsed to milliseconds, null for cron (`CibSevenOpenWaitProjector.recurrence`) |
 | `openWaits[].detail.recurrence.cron` | `engine-observed` | The raw repeat expression when it is not an ISO repeat (`CibSevenOpenWaitProjector.recurrence`) |
@@ -140,6 +141,8 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `openWaits[].detail.effect.send.correlation[].value.scale` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.send.correlation[].value.value[].name` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.send.correlation[].value.value[].value` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.job` | `not-claimed` | An incident's failed job the kernel runs itself (`IncidentSubject.job`, AD8); no job model opens one yet, and the runner projects no such incident |
+| `openWaits[].detail.job.dueMs` | `not-claimed` | The failed job's due time; no job model opens one yet, and the runner projects no such incident |
 | `openWaits[].detail.generation` | `adapter-derived` | The count of distinct public failed-job incidents seen for the job in this scenario (`CibSevenOpenWaitProjector.projectEffect`), not an engine field |
 | `openWaits[].detail.cancellable` | `adapter-decided` | The scenario's declared `incidents.cancellable` option (`ScenarioProtocol.Options.incidentsCancellable`), passed through by `CibSevenOpenWaitProjector.projectEffect`; no CIB fact |
 | `failure` | `not-claimed` | `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |

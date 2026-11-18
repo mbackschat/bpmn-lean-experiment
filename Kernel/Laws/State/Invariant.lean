@@ -362,7 +362,7 @@ def AttachedReserved (s : State) : Prop :=
   ∀ item ∈ itemList s.openItems, item.attachedTo.isSome = true → Unbegun s item.id.occurrence
 
 /-- What an item waits for is a trigger, not work: no effect result or incident command closes it. -/
-def AwaitsTrigger (kind : OpenKind) : Prop := kind.view.effect = none ∧ kind.view.incident = none
+def AwaitsTrigger (kind : OpenKind) : Prop := kind.view.effect = none ∧ kind.view.incident = none ∧ kind.view.job = none
 
 /-- An item of an element the program declares a start Event, an Event Sub-Process start's, holds an unbegun
 reservation alone, which no queued completion completes, and waits for a trigger: `Feature.Subscriptions.trigger`
