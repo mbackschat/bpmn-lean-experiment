@@ -19,7 +19,7 @@ namespace Kernel.Proofs.Former
 
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds InstanceIn)
-open Kernel.Laws.Compensation (recordElements recordsElements InstanceLinked RecordHeld RecordFrom Uncalled)
+open Kernel.Laws.Compensation (recordElements InstanceLinked RecordHeld RecordFrom Uncalled)
 
 /-! ## Instance roots -/
 
@@ -293,10 +293,11 @@ theorem anchored_placed {program : Program} {s : State} (refs : ReferencesPlaced
 
 /-! ## Stored records -/
 
-/-- A record a lane state holds where `Laws.Compensation.RecordHeld` says is placed where it is linked to. -/
+/-- Elements a record a lane state holds names, where `Laws.Compensation.RecordHeld` says, are placed where it is
+linked to. -/
 theorem recordHeld_placed {program : Program} {s : State} (formed : WellFormed program s) (lane : PlacedLane program s)
-    {record : Compensable} {scope : ScopeOccurrenceId} (held : RecordHeld program s record scope)
-    (stands : scope ∈ scopeIds s) : ∀ element ∈ recordElements record, PlacedIn program s element scope := by
+    {elements : List ElementId} {scope : ScopeOccurrenceId} (held : RecordHeld program s elements scope)
+    (stands : scope ∈ scopeIds s) : ∀ element ∈ elements, PlacedIn program s element scope := by
   obtain ⟨source, at_, holding, rest⟩ := held
   obtain ⟨linked, names⟩ := rest
   intro element named
@@ -329,7 +330,7 @@ theorem recordFrom_placed {program : Program} {s : State} (refs : ReferencesPlac
   · obtain ⟨host, inside, header, rest⟩ := handled element (by simpa using handler)
     obtain ⟨envelope, has, listed⟩ := rest
     exact here.alike (by rw [refs.handlers host inside envelope has element listed, header, subject])
-  · obtain ⟨child, inside, named⟩ := Laws.Compensation.recordsElements_cases child
+  · obtain ⟨child, inside, named⟩ := List.mem_flatMap.mp child
     exact recordHeld_placed formed lane (children child inside) stands element named
 
 end Kernel.Proofs.Former

@@ -79,6 +79,7 @@ import {
   semanticFailure,
 } from "../state.js";
 import { ScopeRole, ctxRunsAsInstance, leaveScope, type Ctx } from "../hooks.js";
+import { begunChildren, keptRecords } from "./compensation/kept.js";
 
 function store(state: State, compensation: Compensations): State {
   return { ...state, slots: { ...state.slots, compensation } };
@@ -160,7 +161,7 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
     element: occurrence.element,
     activation: occurrence.activation,
   };
-  const record: Compensable = { subject: occurrence.element, handler, scope: target, occurrence: reference, completion, snapshot, children: inner };
+  const record: Compensable = { subject: occurrence.element, handler, scope: target, occurrence: reference, completion, snapshot, children: inner.flatMap(keptRecords) };
   return committed(store(issued, { ...compensation, retained: [...outer, record] }));
 }
 
@@ -252,7 +253,7 @@ function beginHandler(
   const handler = record.handler;
   if (handler === null) {
     const [entered, context] = enterScope(state, record.subject, scope, record.snapshot, null);
-    const pending = record.children.map((child) => ({ ...child, scope: context }));
+    const pending = begunChildren(record, context);
     const compensation = entered.slots.compensation;
     const nested: CompensationRun = {
       trigger, scope: context, pending, running: [], leave: null, resume: { tag: ResumeTag.Group, outer: scope, context },
@@ -267,7 +268,7 @@ function beginHandler(
   }
   const [entered, context] = enterScope(state, handler, scope, record.snapshot, null);
   const compensation = entered.slots.compensation;
-  const children = record.children.map((child) => ({ ...child, scope: context }));
+  const children = begunChildren(record, context);
   const stored = store(entered, { ...compensation, retained: [...compensation.retained, ...children] });
   return committed([signal(stored, {
     tag: SignalTag.Begin,

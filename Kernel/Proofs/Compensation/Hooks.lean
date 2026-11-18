@@ -197,8 +197,7 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
       fun outer context resumed => by cases resumed; rfl) nested
     have unheld : Laws.Compensation.Unheld (withRun (s.enterScope record.subject scope record.snapshot none).1
         { trigger, scope := (s.enterScope record.subject scope record.snapshot none).2,
-          pending := record.children.map fun child => { child with scope :=
-            (s.enterScope record.subject scope record.snapshot none).2 },
+          pending := Feature.Compensation.begunChildren record (s.enterScope record.subject scope record.snapshot none).2,
           leave := none, resume := some (.group scope (s.enterScope record.subject scope record.snapshot none).2) })
         (s.enterScope record.subject scope record.snapshot none).2 := fun run inside running => by
       simp only [withRun, stored, slots, List.mem_append, List.mem_singleton] at inside
@@ -212,9 +211,12 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
       (source.imp fun _ found => ⟨found.1, found.2⟩)).trans post.moves, fun n => ?_, fun run inside => ?_,
       fun run inside => ?_, fun context' inside => ?_, fun record' below => ?_, fun later inside => ?_⟩
     · have bound := post.counted n
+      have fewer : (completionsIn (Feature.Compensation.begunChildren record
+          (s.enterScope record.subject scope record.snapshot none).2)).count n ≤
+            (record.children.map (·.completion)).count n :=
+        Laws.Compensation.begunChildren_count record _ n
       simp only [withRun, stored, slots, count_completions, List.flatMap_append, List.count_append, List.flatMap_cons,
-        List.flatMap_nil, List.append_nil, runCompletions, completionsIn_rescope, List.map_nil,
-        childrenCompletions_one] at bound ⊢
+        List.flatMap_nil, List.append_nil, runCompletions, List.map_nil, childrenCompletions_one] at bound ⊢
       omega
     · rcases post.runs run inside with ⟨old, other⟩ | good
       · simp only [withRun, stored, slots, List.mem_append, List.mem_singleton] at old
@@ -247,14 +249,17 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
     obtain ⟨contextEq, slots, next, _⟩ := entered_eq s handler scope record.snapshot
     rw [store_stored]
     have tameHandled := tame_withRetained tame handler scope record.snapshot
-      (records := record.children.map fun child => { child with scope := (s.enterScope handler scope record.snapshot none).2 })
-      fun child inside => by obtain ⟨_, _, rfl⟩ := List.mem_map.mp inside; rfl
+      (records := Feature.Compensation.begunChildren record (s.enterScope handler scope record.snapshot none).2)
+      (Laws.Compensation.begunChildren_scope record _)
     refine ⟨tame_signal tameHandled _, (moves_withRetained s handler scope record.snapshot _).trans
       (moves_signal _ (Laws.Step.untriggered_begin _)), fun n => ?_, fun run inside => .inl ?_, fun run inside => ?_,
       fun context' inside => ?_, fun record' below => ?_, fun next inside => .inl ?_⟩
-    · rw [Laws.State.signal_eq]
-      simp only [stored, slots, count_completions, completionsIn_append, List.count_append,
-        completionsIn_rescope, childrenCompletions_one]
+    · have fewer : (completionsIn (Feature.Compensation.begunChildren record
+          (s.enterScope handler scope record.snapshot none).2)).count n ≤
+            (record.children.map (·.completion)).count n :=
+        Laws.Compensation.begunChildren_count record _ n
+      rw [Laws.State.signal_eq]
+      simp only [stored, slots, count_completions, completionsIn_append, List.count_append, childrenCompletions_one]
       omega
     · rw [Laws.State.signal_eq] at inside
       simpa only [withRetained, stored, slots] using inside
@@ -264,11 +269,12 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
       simp only [stored, next]
       exact ⟨Nat.le_refl _, Nat.lt_succ_self _⟩
     · rw [Laws.State.signal_eq]
-      simp only [stored, slots, List.mem_append, List.mem_map]
+      simp only [stored, slots, List.mem_append]
       constructor
-      · rintro (old | ⟨child, _, rfl⟩)
+      · rintro (old | new)
         · exact old
-        · simp [contextEq] at below
+        · rw [Laws.Compensation.begunChildren_scope record _ _ new, contextEq] at below
+          exact absurd below (Nat.lt_irrefl _)
       · exact .inl
     · rw [Laws.State.signal_eq] at inside
       simpa only [withRetained, stored, slots] using inside
@@ -683,7 +689,9 @@ theorem completed_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence} {
       · rw [placedAt]; exact standing
     · have same := whole n
       have single : completionsIn [record] = record.completion :: completionsIn inner := by
-        rw [← children]; simp [completionsIn, completionsOf_eq]
+        simp only [completionsIn, List.flatMap_cons, List.flatMap_nil, List.append_nil, completionsOf_eq, children,
+          List.map_flatMap, Laws.Compensation.keptRecords_completions]
+        rfl
       simp only [stored, count_completions, completionsIn_append, List.count_append, single, List.count_cons,
         numbered] at same ⊢
       omega

@@ -27,25 +27,21 @@ Completion numbers and triggers are counted, so that a state inside a hook that 
 while the handlers it begins already hold their children, still bounds what the hook's result holds. -/
 
 theorem completionsOf_eq (record : Compensable) :
-    completionsOf record = record.completion :: completionsIn record.children := by
-  cases record; simp [completionsOf]
+    completionsOf record = record.completion :: record.children.map (·.completion) := rfl
 
 theorem completionsIn_append (left right : List Compensable) :
     completionsIn (left ++ right) = completionsIn left ++ completionsIn right := by
-  induction left with
-  | nil => simp [completionsIn]
-  | cons record rest ih => simp [completionsIn, ih]
+  simp [completionsIn]
 
 /-- A record moved into another scope occurrence keeps its completion numbers. -/
 theorem completionsIn_rescope (records : List Compensable) (scope : ScopeOccurrenceId) :
     completionsIn (records.map fun record => { record with scope }) = completionsIn records := by
-  induction records with
-  | nil => rfl
-  | cons record rest ih => simp only [List.map_cons, completionsIn, ih, completionsOf_eq]
+  simp only [completionsIn, List.flatMap_map]
+  rfl
 
-/-- The completion numbers of the children the records keep. -/
+/-- The completion numbers of the records `records` keep. -/
 def childrenCompletions (records : List Compensable) : List Nat :=
-  records.flatMap fun record => completionsIn record.children
+  records.flatMap fun record => record.children.map (·.completion)
 
 theorem count_completionsIn (n : Nat) (records : List Compensable) :
     (completionsIn records).count n =
@@ -162,7 +158,7 @@ theorem count_completions_le {before after : Compensations} (retained : after.re
   (completions_sublist retained runs).count_le n
 
 theorem childrenCompletions_one (record : Compensable) :
-    childrenCompletions [record] = completionsIn record.children := by
+    childrenCompletions [record] = record.children.map (·.completion) := by
   simp [childrenCompletions]
 
 /-- `s` holding `compensation`: `Compensation.store`, read without its body (`Laws.Compensation.store_eq`). -/
@@ -462,14 +458,8 @@ theorem tame_of {program : Program} {s : State} (wf : WellFormed program s) (ret
     wf.issued.scopes, fun run inside => (wf.settled.runsPlaced run inside).1⟩
 
 theorem completion_mem {record : Compensable} {records : List Compensable} (member : record ∈ records) :
-    record.completion ∈ completionsIn records := by
-  induction records with
-  | nil => cases member
-  | cons head rest ih =>
-    simp only [completionsIn, List.mem_append]
-    rcases List.mem_cons.mp member with rfl | later
-    · exact .inl (by rw [completionsOf_eq]; exact List.mem_cons_self ..)
-    · exact .inr (ih later)
+    record.completion ∈ completionsIn records :=
+  List.mem_flatMap.mpr ⟨record, member, by rw [completionsOf_eq]; exact List.mem_cons_self ..⟩
 
 /-- Completion numbers held apart keep every claimed record out of retention. -/
 theorem claims_of_apart {compensation : Compensations} (apart : CompletionsApart compensation) :

@@ -23,7 +23,7 @@ namespace Kernel.Proofs.Former
 
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds Queued)
-open Kernel.Laws.Compensation (recordElements recordsElements)
+open Kernel.Laws.Compensation (recordElements)
 
 /-- A leave names no flow. -/
 def Unnamed (leave : Leave) : Prop := ∀ selected, leave = .flows selected → selected = []
@@ -468,7 +468,7 @@ theorem misplaced_record_rejected :
       (placedCompensating definition { retained := [{ subject := ⟨"A"⟩, handler := none, scope := ⟨1⟩ }] }) :=
   fun lane => placed_misplaced (definition := definition)
     (lane.records _ (List.mem_singleton_self _) (placed_present definition) ⟨"A"⟩
-      (by simp [recordElements, recordsElements]))
+      (by simp [recordElements]))
     (placed_calledRoot (definition := definition) rfl) (by simp [placedCompensating, placedState])
 
 /-- A run's pending record of the root process inside a called instance breaks `PlacedLane.pending`. -/
@@ -477,7 +477,7 @@ theorem misplaced_pending_rejected (thrown : OccurrenceRef) :
         { runs := [placedRun thrown ⟨1⟩ [{ subject := ⟨"A"⟩, handler := none, scope := ⟨1⟩ }] none] }) :=
   fun lane => placed_misplaced (definition := definition)
     (lane.pending _ (List.mem_singleton_self _) (placed_present definition) _ (List.mem_singleton_self _) ⟨"A"⟩
-      (by simp [recordElements, recordsElements]))
+      (by simp [recordElements]))
     (placed_calledRoot (definition := definition) rfl) (by simp [placedCompensating, placedState])
 
 /-- A called root anchors no element of a program that declares no process (`Laws.Flow.CalledAnchor`). -/

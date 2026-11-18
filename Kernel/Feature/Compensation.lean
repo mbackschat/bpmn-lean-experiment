@@ -3,6 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.IL.Footprint
 public import Kernel.IL.Paths
+public import Kernel.Feature.Compensation.Kept
 
 /-! # Compensation and Transaction cancellation
 
@@ -101,7 +102,7 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
           activation := occurrence.activation }
       let record : Compensable :=
         { subject := occurrence.element, handler, scope := target, occurrence := some reference, completion, snapshot,
-          children := inner }
+          children := inner.flatMap keptRecords }
       .ok (store state { compensation with retained := outer ++ [record] })
 
 /-- Every element declared inside `element`, at any depth. -/
@@ -175,7 +176,7 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
     match record.handler with
     | none => do
       let (state, context) := state.enterScope record.subject scope record.snapshot none
-      let pending := record.children.map fun child => { child with scope := context }
+      let pending := begunChildren record context
       let compensation := state.slots.compensation
       let nested : CompensationRun :=
         { trigger, scope := context, pending, leave := none, resume := some (.group scope context) }
@@ -190,7 +191,7 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
         else
           let (state, context) := state.enterScope handler scope record.snapshot none
           let compensation := state.slots.compensation
-          let children := record.children.map fun child => { child with scope := context }
+          let children := begunChildren record context
           let state := store state { compensation with retained := compensation.retained ++ children }
           .ok (state.signal (.begin { element := handler, scope := context, continuation := .compensation scope }),
             context)

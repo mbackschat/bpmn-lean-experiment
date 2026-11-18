@@ -14,6 +14,7 @@ public import Kernel.Admission.Work
 public import Kernel.Admission.Work.Decision
 public import Kernel.AdmissionRegistry
 public import Kernel.Feature.Compensation
+public import Kernel.Feature.Compensation.Kept
 public import Kernel.Feature.Correlation
 public import Kernel.Feature.Data
 public import Kernel.Feature.Data.Juel
@@ -52,6 +53,7 @@ public import Kernel.IL.Types.Options
 public import Kernel.IL.Types.Reference
 public import Kernel.IL.Types.Work
 public import Kernel.Laws.Compensation
+public import Kernel.Laws.Compensation.Kept
 public import Kernel.Laws.Compensation.Rules
 public import Kernel.Laws.Compensation.Runs
 public import Kernel.Laws.Compensation.Witnesses

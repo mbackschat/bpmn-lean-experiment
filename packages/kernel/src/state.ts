@@ -41,7 +41,7 @@ export {
   SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
 };
 import {
-  type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
+  type Compensable, type CompensableChild, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave, leaveFlows, leaveOutgoing,
   leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Held, type Resume, ResumeTag,
   type ScopeOccurrenceId,
@@ -59,7 +59,7 @@ export {
   ActivationRole, type Cause, CauseTag, type OccurrenceKey, type StartedFact, Terminal, type Transition,
 };
 export {
-  type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
+  type Compensable, type CompensableChild, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave, leaveFlows, leaveOutgoing,
   leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Held, type Resume, ResumeTag,
   type ScopeOccurrenceId,

@@ -229,10 +229,10 @@ theorem Ended.complete {inv : State → Prop} {settled : State → Nat → Prop}
 /-! ## Where stored records come from -/
 
 /-- A record held in `state` names its own elements where it is held. -/
-theorem RecordHeld.narrow {program : Program} {state : State} {record other : Compensable}
-    {scope at_ : ScopeOccurrenceId} (held : RecordHeld program state record scope)
-    (fewer : ∀ element ∈ recordElements other, element ∈ recordElements record)
-    (linked : InstanceLinked program state scope at_) : RecordHeld program state other at_ := by
+theorem RecordHeld.narrow {program : Program} {state : State} {elements others : List ElementId}
+    {scope at_ : ScopeOccurrenceId} (held : RecordHeld program state elements scope)
+    (fewer : ∀ element ∈ others, element ∈ elements)
+    (linked : InstanceLinked program state scope at_) : RecordHeld program state others at_ := by
   obtain ⟨source, from_, holding, rest⟩ := held
   exact ⟨source, from_, holding, rest.1.trans linked, fun element named => rest.2 element (fewer element named)⟩
 
@@ -258,13 +258,14 @@ theorem StoredFrom.mono {program : Program} {state : State} {resumed more : Resu
 
 /-- A record `state` retains is held where it is retained. -/
 theorem RecordHeld.retained {program : Program} {state : State} {record : Compensable}
-    (member : record ∈ state.slots.compensation.retained) : RecordHeld program state record record.scope :=
+    (member : record ∈ state.slots.compensation.retained) :
+    RecordHeld program state (recordElements record) record.scope :=
   ⟨record, _, .inl ⟨member, rfl⟩, .refl _, fun _ => id⟩
 
 /-- A record a run of `state` holds pending is held in the run's scope occurrence. -/
 theorem RecordHeld.pending {program : Program} {state : State} {run : CompensationRun} {record : Compensable}
     (member : run ∈ state.slots.compensation.runs) (pending : record ∈ run.pending) :
-    RecordHeld program state record run.scope :=
+    RecordHeld program state (recordElements record) run.scope :=
   ⟨record, _, .inr ⟨run, member, pending, rfl⟩, .refl _, fun _ => id⟩
 
 /-- A run appended to a compensation that comes from `state` keeps it coming from there, for records from there and a
@@ -282,10 +283,10 @@ theorem StoredFrom.append {program : Program} {state : State} {resumed : Resume 
     exact ⟨pending, fun resume same => .inr (resumes resume same)⟩
 
 /-- Where a record comes from reads only the scope occurrences, the occurrences and the compensation slot. -/
-theorem RecordHeld.congr {program : Program} {s t : State} {record : Compensable} {scope : ScopeOccurrenceId}
+theorem RecordHeld.congr {program : Program} {s t : State} {elements : List ElementId} {scope : ScopeOccurrenceId}
     (scopes : t.scopes = s.scopes) (occurrences : t.occurrences = s.occurrences)
-    (slot : t.slots.compensation = s.slots.compensation) (held : RecordHeld program s record scope) :
-    RecordHeld program t record scope := by
+    (slot : t.slots.compensation = s.slots.compensation) (held : RecordHeld program s elements scope) :
+    RecordHeld program t elements scope := by
   obtain ⟨source, at_, holding, rest⟩ := held
   exact ⟨source, at_, by rw [slot]; exact holding, rest.1.congr scopes occurrences, rest.2⟩
 
@@ -311,26 +312,25 @@ theorem StoredFrom.weaken {program : Program} {state : State} {inv more : State 
     StoredFrom program state (ResumeQueued more state) compensation :=
   stored.mono fun _ ⟨queue, holds, rest⟩ => ⟨queue, implies queue holds, rest⟩
 
-/-- The children of a record a run of `state` holds pending, moved into a context entered for it below the run's scope
-occurrence, come from that record: the context calls no instance. -/
+/-- Records naming only elements of a record a run of `state` holds pending, as the records it keeps do once they are
+begun in a context entered for it below the run's scope occurrence, come from that record: the context calls no
+instance. -/
 theorem entered_children {inv : State → Prop} {settled : State → Nat → Prop} {program : Program}
     (ops : RunsOps program inv settled) {state : State} {run : CompensationRun} {scope : ScopeOccurrenceId}
     (member : run ∈ state.slots.compensation.runs) (own : run.scope = scope) {record : Compensable}
-    (pending : record ∈ run.pending) (element : ElementId) (locals : List (String × Value)) :
-    ∀ child ∈ record.children.map (fun child => { child with scope := (state.enterScope element scope locals none).2 }),
+    (pending : record ∈ run.pending) (element : ElementId) (locals : List (String × Value)) {records : List Compensable}
+    (kept : ∀ child ∈ records, ∀ named ∈ recordElements child, named ∈ recordElements record) :
+    ∀ child ∈ records,
       RecordFrom program (state.enterScope element scope locals none).1 child (state.enterScope element scope locals none).2 := by
   subst own
   obtain ⟨named, -, scopesEq, slotsEq⟩ := ops.entered state element run.scope locals
   intro child inside
-  obtain ⟨original, inChildren, rfl⟩ := List.mem_map.mp inside
   have linked : InstanceLinked program (state.enterScope element run.scope locals none).1
       (state.enterScope element run.scope locals none).2 run.scope := by
     rw [named]
     exact .parent { id := ⟨state.nextIssue⟩, element := some element, parent := some run.scope, occurrence := none }
       run.scope (by rw [scopesEq]; exact List.mem_append_right _ (List.mem_singleton_self _)) rfl (Or.inl rfl)
-  refine .inl (RecordHeld.narrow (.pending (by rw [slotsEq]; exact member) pending) (fun element listed => ?_) linked.symm)
-  rw [recordElements_scope] at listed
-  exact recordElements_child inChildren listed
+  exact .inl (RecordHeld.narrow (.pending (by rw [slotsEq]; exact member) pending) (kept child inside) linked.symm)
 
 theorem ended_store {inv : State → Prop} {settled : State → Nat → Prop} {program : Program} (ops : RunsOps program inv settled) {state : State}
     (holds : inv state) (scope : ScopeOccurrenceId) (compensation : Compensations)

@@ -598,15 +598,26 @@ structure InstanceData where
   definition : Option DefinitionRef := none
   deriving Repr
 
-/-- `children` keeps the records of a completed Sub-Process for later compensation (F5). `completion` orders them. -/
+/-- A kept record, flat: `group` holds the completion numbers of the kept records it lies within (K0.5). -/
+structure CompensableChild where
+  subject : ElementId
+  handler : Option ElementId
+  occurrence : Option OccurrenceRef := none
+  completion : Nat := 0
+  snapshot : List (String × Value) := []
+  group : List Nat := []
+  deriving Repr
+
+/-- `children` keeps the records of a completed Sub-Process for later compensation (F5), at every depth, each under
+its group key. `completion` orders them. -/
 structure Compensable where
   subject : ElementId
-  handler : ElementId
+  handler : Option ElementId
   scope : ScopeOccurrenceId
   occurrence : Option OccurrenceRef := none
   completion : Nat := 0
   snapshot : List (String × Value) := []
-  children : List Compensable := []
+  children : List CompensableChild := []
   deriving Repr
 
 -- add to `FeatureSlots`; `held` changes from `List Parked` to `List Held` (M11, PC-COMPENSATION-04)

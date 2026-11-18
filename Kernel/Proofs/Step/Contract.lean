@@ -198,7 +198,8 @@ theorem completed_keeps {inv : State → Prop} {ctx : Ctx} (ops : Laws.Compensat
     · exact same ▸ .refl _
     have named : entry.id = occurrence.scope := by simpa using List.find?_some found
     exact named ▸ .parent entry target (List.mem_of_find?_eq_some found) link (.inr (.inl ⟨_, rest.1, rest.2⟩))
-  have moved : ∀ record ∈ inner, Laws.Compensation.RecordHeld ctx.program state record target := fun record held => by
+  have moved : ∀ record ∈ inner, Laws.Compensation.RecordHeld ctx.program state
+      (Laws.Compensation.recordElements record) target := fun record held => by
     obtain ⟨owned, found, named⟩ := inside record held
     obtain ⟨present, owns, scope⟩ := Laws.Compensation.ownedScope_spec owned found
     exact ⟨record, record.scope, .inl ⟨perm.subset (List.mem_append_left _ held), rfl⟩, named ▸
@@ -228,10 +229,12 @@ theorem completed_keeps {inv : State → Prop} {ctx : Ctx} (ops : Laws.Compensat
     rcases List.mem_append.mp held with old | new
     · exact kept other old
     rw [List.mem_singleton.mp new, placedAt]
-    refine .inr ⟨occurrence, member, subject, linked, fun chosen named => ?_, fun child inside => moved child
-      (children ▸ inside)⟩
-    obtain ⟨element, envelope, found, rest⟩ := (Laws.Compensation.placement_from placed).2 chosen (kept'.2.2 ▸ named)
-    exact ⟨element, Laws.IL.element?_mem found, subject ▸ Laws.IL.element?_header found, envelope, rest⟩
+    refine .inr ⟨occurrence, member, subject, linked, fun chosen named => ?_, fun child inside => ?_⟩
+    · obtain ⟨element, envelope, found, rest⟩ := (Laws.Compensation.placement_from placed).2 chosen (kept'.2.2 ▸ named)
+      exact ⟨element, Laws.IL.element?_mem found, subject ▸ Laws.IL.element?_header found, envelope, rest⟩
+    · obtain ⟨source, held, kept⟩ := List.mem_flatMap.mp (children ▸ inside)
+      exact .narrow (moved source held) (fun _ named => by
+        rw [← Laws.Compensation.keptRecords_elements]; exact List.mem_flatMap.mpr ⟨child, kept, named⟩) (.refl _)
   rw [Laws.Compensation.store_eq]
   exact ⟨ops.store _ _ (ops.issue state holds) (fun _ member => slots ▸ member)
       (stored.congr scopes occurrences (congrArg (·.compensation) slots)), scopes, occurrences, items,

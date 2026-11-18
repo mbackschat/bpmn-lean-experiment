@@ -30,18 +30,13 @@ def RetainedPresent (s : State) : Prop :=
 def RunsUnfinished (s : State) : Prop :=
   ∀ run ∈ s.slots.compensation.runs, run.pending ≠ [] ∨ run.running ≠ []
 
-mutual
+/-- The completion numbers of `record` and of the records it keeps, at every depth. -/
+def completionsOf (record : Compensable) : List Nat :=
+  Laws.Compensation.heldCompletions record
 
-/-- The completion numbers of `record` and of the records it keeps as children, at every depth. -/
-def completionsOf : Compensable → List Nat
-  | { completion, children, .. } => completion :: completionsIn children
-
-/-- The completion numbers of `records`, each with the records it keeps as children at every depth. -/
-def completionsIn : List Compensable → List Nat
-  | [] => []
-  | record :: rest => completionsOf record ++ completionsIn rest
-
-end
+/-- The completion numbers of `records`, each with the records it keeps at every depth. -/
+def completionsIn (records : List Compensable) : List Nat :=
+  records.flatMap completionsOf
 
 /-- The completion numbers a compensation slot holds, each record once: the retained records and every pending one,
 each with the children it keeps at every depth, and each running one by its own number only, since its children were
@@ -179,12 +174,12 @@ def holdingState (compensation : Compensations) (signals : List Signal) : State 
 /-- Two records of one completion number break `CompletionsApart`. -/
 theorem shared_completion_rejected :
     ¬ CompletionsApart { retained := [recordA, { recordA with subject := thrower }] } := by
-  simp [CompletionsApart, completions, completionsIn, completionsOf, recordA]
+  simp [CompletionsApart, completions, completionsIn, completionsOf, Laws.Compensation.heldCompletions, recordA]
 
 /-- A completion number not yet issued breaks `CompletionsIssued`. -/
 theorem unissued_completion_rejected :
     ¬ CompletionsIssued { holdingState { retained := [recordA] } [] with nextIssue := 1 } := by
-  simp [CompletionsIssued, completions, completionsIn, completionsOf, holdingState, recordA]
+  simp [CompletionsIssued, completions, completionsIn, completionsOf, Laws.Compensation.heldCompletions, holdingState, recordA]
 
 /-- A run whose pending record may start breaks `RunsSettled`. -/
 theorem ready_pending_rejected : ¬ RunsSettled (fun _ _ => False) (holdingState { runs := [pendingRun] } []) := fun settled =>

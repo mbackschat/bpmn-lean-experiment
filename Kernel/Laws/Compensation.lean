@@ -4,6 +4,7 @@ public import Kernel.Hooks
 public import Kernel.Feature.Compensation
 public import Kernel.Laws.Compensation.Rules
 public import Kernel.Laws.Compensation.Runs
+public import Kernel.Laws.Compensation.Kept
 import all Kernel.Feature.Compensation
 import Kernel.Laws.Hooks
 
@@ -186,13 +187,13 @@ theorem beginHandler_spec {ctx : Ctx} {trigger : OccurrenceRef} {scope : ScopeOc
       ((record.handler = none ∧ state.enterScope record.subject scope record.snapshot none = (entered, context) ∧
         Feature.Compensation.advance ctx context trigger (Feature.Compensation.store entered { entered.slots.compensation with
           runs := entered.slots.compensation.runs ++ [{
-            trigger, scope := context, pending := record.children.map (fun child => { child with scope := context }),
+            trigger, scope := context, pending := Feature.Compensation.begunChildren record context,
             leave := none, resume := some (.group scope context) }] }) less = .ok after) ∨
        ∃ handler element, record.handler = some handler ∧ ctx.program.element? handler = some element ∧
         (element.activity?.isSome ∨ element.scope?.isSome) ∧
         state.enterScope handler scope record.snapshot none = (entered, context) ∧
         after = (Feature.Compensation.store entered { entered.slots.compensation with
-          retained := entered.slots.compensation.retained ++ record.children.map fun child => { child with scope := context } }).signal
+          retained := entered.slots.compensation.retained ++ Feature.Compensation.begunChildren record context }).signal
           (.begin { element := handler, scope := context, continuation := .compensation scope })) := by
   cases fuel with
   | zero => simp [Feature.Compensation.beginHandler] at ran
@@ -391,7 +392,8 @@ theorem completed_spec {ctx : Ctx} {occurrence : Occurrence} {state after : Stat
         ((Retains true handler grouped none ∧ after = Feature.Compensation.store state { state.slots.compensation with
             retained := outer ++ inner.map fun record => { record with scope := target } }) ∨
           ∃ record, Retains true handler grouped (some record) ∧ record.subject = occurrence.element ∧
-            record.scope = target ∧ record.completion = state.issue.2 ∧ record.children = inner ∧
+            record.scope = target ∧ record.completion = state.issue.2 ∧
+            record.children = inner.flatMap Feature.Compensation.keptRecords ∧
             after = Feature.Compensation.store state.issue.1 { state.slots.compensation with retained := outer ++ [record] }) := by
   unfold Feature.Compensation.completed at ran
   split at ran
@@ -732,6 +734,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → Nat → Prop} {pro
           have entering := follows record.subject subject
           have enter := ops.enter state record.subject scope record.snapshot holds stands subject
           have children := entered_children ops owned own pending record.subject record.snapshot
+            (begunChildren_elements record (state.enterScope record.subject scope record.snapshot none).2)
           rw [named] at nested children ⊢
           generalize (state.enterScope record.subject scope record.snapshot none).1 = entered
             at nested issuedNext scopesEq slotsEq enter entering children
@@ -807,7 +810,8 @@ theorem runs_keep {inv : State → Prop} {settled : State → Nat → Prop} {pro
                 ⟨fun record pending => .inl (.pending member pending), fun _ same => .inl ⟨run, member, same⟩⟩⟩
             rcases List.mem_append.mp member with old | new
             · exact .inl (.retained old)
-            · obtain ⟨original, -, rfl⟩ := List.mem_map.mp new
-              exact entered_children ops owned own pending handler record.snapshot _ new
+            · rw [begunChildren_scope record _ child new]
+              exact entered_children ops owned own pending handler record.snapshot
+                (begunChildren_elements record _) _ new
 
 end Kernel.Laws.Compensation

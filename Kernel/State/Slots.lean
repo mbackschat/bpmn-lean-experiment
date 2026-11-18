@@ -63,11 +63,25 @@ structure MultiInstanceRun where
   results : List String := []
   deriving Repr
 
+/-- A record a completed Sub-Process's record keeps (`Compensable.children`), flat: the `Compensable` it was, without a
+scope occurrence, which it takes only when its holder's handler or group begins, and its group key `group`, the
+completion numbers of the kept records it lies within, outermost first, `[]` for one its holder keeps directly. The
+key, not a nested list, says which records a begun record keeps in turn, so no state type nests. -/
+structure CompensableChild where
+  subject : ElementId
+  handler : Option ElementId
+  occurrence : Option OccurrenceRef := none
+  completion : Nat := 0
+  snapshot : List (String × Value) := []
+  group : List Nat := []
+  deriving Repr
+
 /-- A completed Activity or Scope whose compensation handler may still run: it completed in `scope`, and its
 handler restores `snapshot` ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md)). `completion` orders the
-records of one scope. `children` keeps the records of a completed Sub-Process, for its handler to trigger recursively
-(§13.5.5; CIB moves them into an event-scope tree, `CompensationUtil.createEventScopeExecution`). A record without a
-`handler` is a group whose compensation runs its `children`. -/
+records of one scope. `children` keeps the records of a completed Sub-Process at every depth, each under its group key,
+for its handler to trigger recursively (§13.5.5; CIB moves them into an event-scope tree,
+`CompensationUtil.createEventScopeExecution`). A record without a `handler` is a group whose compensation runs its
+children. -/
 structure Compensable where
   subject : ElementId
   handler : Option ElementId
@@ -75,7 +89,7 @@ structure Compensable where
   occurrence : Option OccurrenceRef := none
   completion : Nat := 0
   snapshot : List (String × Value) := []
-  children : List Compensable := []
+  children : List CompensableChild := []
   deriving Repr
 
 /-- One compensation trigger in progress for the records retained in `scope`: handlers still `pending`, and those

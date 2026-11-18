@@ -80,10 +80,25 @@ export interface MultiInstanceRun {
 }
 
 /**
+ * A record a completed Sub-Process's record keeps (`Compensable.children`), flat: the `Compensable` it was, without a
+ * scope occurrence, which it takes only when its holder's handler or group begins, and its group key `group`, the
+ * completion numbers of the kept records it lies within, outermost first, `[]` for one its holder keeps directly. The
+ * key, not a nested list, says which records a begun record keeps in turn, so no state type nests.
+ */
+export interface CompensableChild {
+  readonly subject: ElementId;
+  readonly handler: ElementId | null;
+  readonly occurrence: OccurrenceRef | null;
+  readonly completion: number;
+  readonly snapshot: readonly Binding[];
+  readonly group: readonly number[];
+}
+
+/**
  * A completed Activity or Scope whose compensation handler may still run: it completed in `scope`, and its handler
  * restores `snapshot` (BPMN 2.0.2 §13.5.5). `completion` orders the records of one scope. `children` keeps the records
- * of a completed Sub-Process, for its handler to trigger recursively (§13.5.5). A record without a `handler` is a group
- * whose compensation runs its `children`.
+ * of a completed Sub-Process at every depth, each under its group key, for its handler to trigger recursively
+ * (§13.5.5). A record without a `handler` is a group whose compensation runs its children.
  */
 export interface Compensable {
   readonly subject: ElementId;
@@ -92,7 +107,7 @@ export interface Compensable {
   readonly occurrence: OccurrenceRef | null;
   readonly completion: number;
   readonly snapshot: readonly Binding[];
-  readonly children: readonly Compensable[];
+  readonly children: readonly CompensableChild[];
 }
 
 /**
