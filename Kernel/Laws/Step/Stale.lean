@@ -43,6 +43,19 @@ theorem scopeIssued_of_issued {state : State} {scope : ScopeOccurrenceId} (issue
     · simp only [stands, Bool.false_eq_true, ite_false]
       exact ih (history.closed segment rest held)
 
+/-- The designated KD1 change: a key below a removed scope occurrence `segment` entered in `⟨outer⟩`, which stands and
+counted it, reads as issued whether or not some history holds it, since the counters that would tell went with the
+removed subtree; work naming it is stale (`stale_below_removed`), never the invariant failure of a key never issued. -/
+theorem scopeIssued_below_removed {state : State} {outer : List ScopeSegment} {segment : ScopeSegment}
+    (stands : state.scopes.any (·.id == ⟨outer⟩) = true)
+    (counted : segment.ordinal < state.scopeOrdinals.getD { parent := ⟨outer⟩, element := segment.element } 0)
+    (removed : ∀ rest, state.scopes.any (·.id == ⟨rest ++ segment :: outer⟩) = false) (rest : List ScopeSegment) :
+    scopeIssued state ⟨rest ++ segment :: outer⟩ = true := by
+  simp only [scopeIssued]
+  induction rest with
+  | nil => simp only [List.nil_append, scopeIssued.go, stands, ite_true, decide_eq_true_eq]; exact counted
+  | cons inner rest ih => simp only [List.cons_append, scopeIssued.go, removed rest, Bool.false_eq_true, ite_false]; exact ih
+
 /-- `Step.gone` restated. -/
 theorem gone_eq {state : State} {work : SignalWork} : gone state work =
     if work.requires.any (fun scope => !state.scopes.any (·.id == scope)) then some "queued-work-scope-gone"
@@ -63,6 +76,18 @@ theorem perform_ok {work : SignalWork} {state after : State} (ran : work.perform
 theorem perform_stale {work : SignalWork} {state : State} (refused : stale state work = true) :
     work.perform state = .error (.unsupported "interrupted-before-wait") := by
   simp [SignalWork.perform, refused]
+
+/-- Work naming a key below a removed scope occurrence that its standing parent counted fails the input as stale
+(`scopeIssued_below_removed`). -/
+theorem stale_below_removed {work : SignalWork} {state : State} {outer rest : List ScopeSegment} {segment : ScopeSegment}
+    (stands : state.scopes.any (·.id == ⟨outer⟩) = true)
+    (counted : segment.ordinal < state.scopeOrdinals.getD { parent := ⟨outer⟩, element := segment.element } 0)
+    (removed : ∀ rest, state.scopes.any (·.id == ⟨rest ++ segment :: outer⟩) = false)
+    (named : ⟨rest ++ segment :: outer⟩ ∈ work.scopes) :
+    work.perform state = .error (.unsupported "interrupted-before-wait") := by
+  apply perform_stale
+  rw [stale_eq, Bool.or_eq_true, List.any_eq_true]
+  exact .inl ⟨_, named, by simp [scopeIssued_below_removed stands counted removed rest, removed rest]⟩
 
 theorem perform_gone {work : SignalWork} {state : State} {code : String} (fresh : stale state work = false)
     (absent : gone state work = some code) : work.perform state = .error (.semanticFailure .invariant code) := by
